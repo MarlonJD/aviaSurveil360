@@ -1,0 +1,40 @@
+# AVIASURVEIL 360 Planning Pack
+
+This ZIP contains **Markdown-only planning documents** for a proposed Civil Aviation Authority surveillance, audit, findings, CAP and evidence management product. It intentionally contains no code, no HTML, no CSS, no JS and no database files.
+
+## Product definition
+
+**AVIASURVEIL 360** is a task-based oversight platform for Civil Aviation Authorities. It helps CAA teams plan audits, run checklists, issue findings, receive corrective action plans from auditees, review evidence, track due dates, close findings and monitor oversight performance.
+
+## Core product thesis
+
+Do not build an EMPIC-like complex enterprise screen first. Build a simple, role-based product where each user immediately understands what to do next:
+
+- Inspector: What do I inspect or review today?
+- Auditee: What does the CAA need from my organization?
+- Manager: Where are we exposed, delayed or overloaded?
+- Admin: Which template or rule must be configured?
+
+## Recommended reading order
+
+1. `00_RESEARCH_AND_POSITIONING/MARKET_RESEARCH_SUMMARY.md`
+2. `01_PRODUCT_PLAN/PRODUCT_VISION.md`
+3. `01_PRODUCT_PLAN/MVP_SCOPE_AND_ROADMAP.md`
+4. `02_UX_PLAN/UX_PRINCIPLES.md`
+5. `03_WORKFLOWS/MASTER_WORKFLOW.md`
+6. `05_SCREEN_SPECS/SCREEN_INVENTORY_AND_FORMS.md`
+7. `08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.md`
+
+
+## Source Notes
+- EMPIC Solutions — surveillance layer, checklists, findings, CAP, evidence, external stakeholder access: https://www.empic.aero/solutions/
+- EMPIC-EAP booklet — external stakeholder web client and corrective action handling: https://www.empic.aero/wp-content/uploads/2022/05/Booklet_202205_eng.pdf
+- TrustFlight Centrik 5 QMS — aviation quality, safety, risk, workflows, documents and dashboards: https://www.trustflight.com/products/centrik-5-qms/
+- ASQS/iQSMS Quality Management Module via Aircraft IT — internal/external audits, auditee guest users, due-date emails and finding status: https://www.aircraftit.com/vendors/comply365-2/quality-management-module/
+- ICAO / UK CAAi audit training material — oversight activity, audit reports, findings and observations: https://www.icao.int/sites/default/files/APAC/Meetings/2025/2025%20COSCAP%20SEA%20AND%20UK%20CAAi%20AGA%20CERT%20AND%20SURV/5-Presentations/08-Conducting-Audits_v02_COSCAP.pdf
+- Irish Aviation Authority UAM-020 — root cause, CAP, target completion and evidence expectations: https://www.iaa.ie/docs/default-source/publications/advisory-memoranda/uas-advisory-memoranda-%28uam%29/uam-020---guidance-on-the-competent-authority-oversight-audits.pdf
+- ANAO CASA surveillance audit report — planning, data, tracking and reporting weaknesses in regulator surveillance: https://www.anao.gov.au/work/performance-audit/civil-aviation-safety-authority-planning-and-conduct-surveillance-activities
+- UK CAA compliance monitoring sample checklist/finding form: https://www.caa.co.uk/media/0g3ekh5a/sample-compliance-monitioring-audit-checklists-and-findings-form-1.docx
+- FOCA supervision review — Level 1/Level 2 finding handling examples: https://www.newsd.admin.ch/newsd/message/attachments/66693.pdf
+- GOV.UK Design System / Service Manual — simple form and question-page patterns: https://design-system.service.gov.uk/patterns/question-pages/ and https://www.gov.uk/service-manual/design/form-structure
+- Nielsen Norman Group — complex application and dashboard usability principles: https://www.nngroup.com/articles/complex-application-design/ and https://www.nngroup.com/articles/dashboards-preattentive/

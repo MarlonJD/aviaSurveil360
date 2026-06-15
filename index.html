@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AviaSurveil360 — Clickable Demo</title>
+  <meta name="description" content="AviaSurveil360 frontend clickable demo for stakeholder feedback. Mock data only." />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- Demo banner: makes it unmistakable this is a mock -->
+  <div class="demo-ribbon" id="demo-ribbon">
+    <span class="demo-ribbon__dot" aria-hidden="true"></span>
+    <strong>DEMO</strong>
+    <span class="demo-ribbon__text">Frontend clickable prototype — mock data and client-side state only. No backend, database, or real integrations.</span>
+    <button class="demo-ribbon__reset" id="reset-demo" type="button">Reset demo</button>
+  </div>
+
+  <!-- App shell, rendered/toggled by js/app.js -->
+  <div id="app-root"></div>
+
+  <!-- Toast / in-UI notification host (mock notifications) -->
+  <div id="toast-host" class="toast-host" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Modal host (CAP form, finding form, evidence dialogs) -->
+  <div id="modal-host" class="modal-host" hidden></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/helpers.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+/* ==========================================================================
+   AviaSurveil360 — Helpers (formatting, lookups, KPIs, OHI, log, notify)
+   ========================================================================== */
+
+/* ----------------------------- Text / dates ----------------------------- */
+function esc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  var p = iso.split('-');
+  if (p.length !== 3) return iso;
+  return parseInt(p[2], 10) + ' ' + MONTHS[parseInt(p[1], 10) - 1] + ' ' + p[0];
+}
+
+function dateVal(iso) { return new Date(iso + 'T00:00:00'); }
+
+function daysBetween(aIso, bIso) {
+  var ms = dateVal(bIso) - dateVal(aIso);
+  return Math.round(ms / 86400000);
+}
+
+/* Due status relative to DEMO_TODAY. Closed findings are never overdue/due-soon. */
+function dueInfo(finding) {
+  if (finding.status === 'CLOSED' || !finding.dueDate) {
+    return { overdue: false, dueSoon: false, days: null, label: '—' };
+  }
+  var days = daysBetween(DEMO_TODAY, finding.dueDate); // +ve = days remaining
+  var out = { days: days, overdue: false, dueSoon: false, label: '' };
+  if (days < 0) { out.overdue = true; out.label = Math.abs(days) + ' day' + (Math.abs(days) === 1 ? '' : 's') + ' overdue'; }
+  else if (days === 0) { out.dueSoon = true; out.label = 'Due today'; }
+  else if (days <= 7) { out.dueSoon = true; out.label = 'Due in ' + days + ' day' + (days === 1 ? '' : 's'); }
+  else { out.label = 'Due in ' + days + ' days'; }
+  return out;
+}
+
+/* ----------------------------- Lookups ----------------------------- */
+function orgById(id) { for (var i = 0; i < state.orgs.length; i++) if (state.orgs[i].id === id) return state.orgs[i]; return null; }
+function orgName(id) { var o = orgById(id); return o ? o.name : '—'; }
+function auditById(id) { for (var i = 0; i < state.audits.length; i++) if (state.audits[i].id === id) return state.audits[i]; return null; }
+function findingById(id) { for (var i = 0; i < state.findings.length; i++) if (state.findings[i].id === id) return state.findings[i]; return null; }
+
+function roleName(roleKey) { return ROLES[roleKey] ? ROLES[roleKey].name : '—'; }
+
+/* Findings visible to the current role. Auditee sees ONLY its own org. */
+function visibleFindings() {
+  if (state.role === 'auditee') {
+    var org = ROLES.auditee.org;
+    return state.findings.filter(function (f) { return f.orgId === org; });
+  }
+  return state.findings.slice();
+}
+
+/* ----------------------------- Finding presentation ----------------------------- */
+function statusMeta(finding) { return FINDING_STATUS[finding.status] || FINDING_STATUS.WAITING_CAP; }
+
+function ownerLabel(finding) {
+  var m = statusMeta(finding);
+  if (!m.ownerRole) return '—';
+  if (m.ownerRole === 'auditee') return orgName(finding.orgId) + ' (Auditee)';
+  return 'CAA Inspector';
+}
+
+function nextActionLabel(finding) { return statusMeta(finding).next; }
+
+function severityHtml(finding) {
+  var s = SEVERITY[finding.severity];
+  return '<span class="sev ' + s.cls + '">' + esc(s.label) + '</span>';
+}
+
+function statusBadge(finding) {
+  var m = statusMeta(finding);
+  var html = '<span class="badge badge--' + m.badge + '"><span class="dot"></span>' + esc(m.label) + '</span>';
+  var d = dueInfo(finding);
+  if (d.overdue) html += ' <span class="badge badge--danger"><span class="dot"></span>Overdue</span>';
+  else if (d.dueSoon) html += ' <span class="badge badge--warn"><span class="dot"></span>Due Soon</span>';
+  return html;
+}
+
+/* The single most relevant action for a finding given the current role. */
+function primaryActionFor(finding) {
+  var m = statusMeta(finding);
+  if (finding.status === 'CLOSED') return { label: 'View report', action: 'report', cls: 'btn' };
+  if (state.role === 'auditee') {
+    if (finding.status === 'WAITING_CAP' || finding.status === 'CAP_MORE_INFO') return { label: 'Submit CAP', action: 'cap', cls: 'btn btn--primary' };
+    if (finding.status === 'EVIDENCE_REQUIRED' || finding.status === 'EVIDENCE_MORE_INFO') return { label: 'Upload evidence', action: 'evidence', cls: 'btn btn--primary' };
+    return { label: 'View finding', action: 'open', cls: 'btn' };
+  }
+  if (state.role === 'inspector' || state.role === 'manager') {
+    if (finding.status === 'CAP_SUBMITTED') return { label: 'Review CAP', action: 'reviewcap', cls: 'btn btn--primary' };
+    if (finding.status === 'EVIDENCE_SUBMITTED') return { label: 'Review evidence', action: 'reviewev', cls: 'btn btn--primary' };
+    return { label: 'View finding', action: 'open', cls: 'btn' };
+  }
+  return { label: 'View finding', action: 'open', cls: 'btn' };
+}
+
+/* ----------------------------- KPIs ----------------------------- */
+function isClosedAudit(a) { return a.status === 'Report Issued' || a.status === 'Closed'; }
+
+function computeKpis() {
+  var f = state.findings;
+  var open = f.filter(function (x) { return x.status !== 'CLOSED'; });
+  var closed = f.filter(function (x) { return x.status === 'CLOSED'; });
+  var overdue = open.filter(function (x) { return dueInfo(x).overdue; });
+  var critical = open.filter(function (x) { return x.severity === 1; });
+
+  var planned = state.audits.length;
+  var completed = state.audits.filter(isClosedAudit).length;
+
+  var closureDays = closed
+    .filter(function (x) { return x.issuedDate && x.closedDate; })
+    .map(function (x) { return Math.max(0, daysBetween(x.issuedDate, x.closedDate)); });
+  var avgClosure = closureDays.length
+    ? Math.round(closureDays.reduce(function (a, b) { return a + b; }, 0) / closureDays.length)
+    : 0;
+
+  return {
+    plannedAudits: planned,
+    completedAudits: completed,
+    planCompletion: planned ? Math.round((completed / planned) * 100) : 0,
+    openFindings: open.length,
+    closedFindings: closed.length,
+    overdueFindings: overdue.length,
+    criticalFindings: critical.length,
+    totalFindings: f.length,
+    avgClosure: avgClosure
+  };
+}
+
+/* Oversight Health Index — management indicator only (no enforcement). */
+function computeOHI() {
+  var k = computeKpis();
+  var total = Math.max(k.totalFindings, 1);
+  var open = Math.max(k.openFindings, 1);
+
+  var planComp = k.planCompletion;                                   // 0..100
+  var overdueScore = (1 - k.overdueFindings / total) * 100;          // fewer overdue = higher
+  var criticalScore = (1 - k.criticalFindings / total) * 100;        // less exposure = higher
+  var capEffScore = (k.closedFindings / total) * 100;                // closure throughput
+  var orgsRepeat = state.orgs.filter(function (o) { return o.repeatFindings > 0; }).length;
+  var repeatScore = (1 - orgsRepeat / Math.max(state.orgs.length, 1)) * 100;
+  var workloadScore = 82;                                            // demo: balanced workload
+
+  var score = Math.round(
+    planComp * 0.20 +
+    overdueScore * 0.25 +
+    criticalScore * 0.20 +
+    capEffScore * 0.15 +
+    repeatScore * 0.10 +
+    workloadScore * 0.10
+  );
+  score = Math.max(0, Math.min(100, score));
+
+  var band, color;
+  if (score >= 90) { band = 'Excellent'; color = '#1f9d62'; }
+  else if (score >= 75) { band = 'Healthy'; color = '#1f9d62'; }
+  else if (score >= 60) { band = 'Needs Attention'; color = '#c77700'; }
+  else { band = 'Critical'; color = '#c0392b'; }
+
+  return {
+    score: score, band: band, color: color,
+    components: [
+      { label: 'Plan Completion Rate', weight: 20, value: Math.round(planComp) },
+      { label: 'Overdue Finding Ratio', weight: 25, value: Math.round(overdueScore) },
+      { label: 'Critical Finding Exposure', weight: 20, value: Math.round(criticalScore) },
+      { label: 'CAP / Closure Effectiveness', weight: 15, value: Math.round(capEffScore) },
+      { label: 'Repeat Finding Rate', weight: 10, value: Math.round(repeatScore) },
+      { label: 'Inspector Workload Balance', weight: 10, value: Math.round(workloadScore) }
+    ]
+  };
+}
+
+/* ----------------------------- Audit log + notifications ----------------------------- */
+function currentActorLabel() {
+  var r = ROLES[state.role];
+  if (!r) return 'System';
+  var suffix = state.role === 'auditee' ? ' (Auditee)' : ' (' + r.name + ')';
+  return r.user + suffix;
+}
+
+function addLog(action, target, actorOverride) {
+  state.auditLog.unshift({
+    id: 'L' + (state.logSeq++),
+    time: logTimestamp(),
+    actor: actorOverride || currentActorLabel(),
+    action: action,
+    target: target,
+    system: false
+  });
+}
+
+function logTimestamp() {
+  var d = new Date();
+  function p(n) { return (n < 10 ? '0' : '') + n; }
+  return DEMO_TODAY + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+function pushNotification(role, icon, text) {
+  state.notifications.unshift({ id: 'N' + (state.notifSeq++), role: role, icon: icon, text: text, time: 'Just now', unread: true });
+  if (role === state.role) toast(icon + ' Notification', text, 'info');
+}
+
+function unreadCount(role) {
+  return state.notifications.filter(function (n) { return n.role === role && n.unread; }).length;
+}
+
+/* ----------------------------- Toast ----------------------------- */
+function toast(title, msg, type) {
+  var host = document.getElementById('toast-host');
+  if (!host) return;
+  var el = document.createElement('div');
+  el.className = 'toast' + (type === 'ok' ? ' is-ok' : type === 'warn' ? ' is-warn' : '');
+  var icon = type === 'ok' ? '✅' : type === 'warn' ? '⚠️' : 'ℹ️';
+  el.innerHTML =
+    '<div class="toast__icon">' + icon + '</div>' +
+    '<div><div class="toast__title">' + esc(title) + '</div>' +
+    '<div class="toast__msg">' + esc(msg) + '</div></div>';
+  host.appendChild(el);
+  setTimeout(function () {
+    el.style.transition = 'opacity .3s, transform .3s';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(8px)';
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
+  }, 4200);
+}
