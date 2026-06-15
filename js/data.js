@@ -255,7 +255,7 @@ function seedState() {
     notifSeq: 100,
     logSeq: 100,
     wizard: null,               // New Audit Wizard working data
-    ui: { notifOpen: false }
+    ui: { notifOpen: false, menuOpen: false }
   };
 }
 

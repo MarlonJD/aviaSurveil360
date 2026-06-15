@@ -81,7 +81,8 @@ function render() {
   var notifPanel = state.ui.notifOpen ? renderNotifPanel() : '';
 
   root.innerHTML =
-    '<div class="shell">' +
+    '<div class="shell' + (state.ui.menuOpen ? ' menu-open' : '') + '">' +
+      '<div class="sidebar-backdrop" data-act="toggle-menu"></div>' +
       '<aside class="sidebar">' +
         '<div class="sidebar__brand"><div class="sidebar__logo">A360</div>' +
           '<div class="sidebar__brandtext"><b>AviaSurveil360</b><span>OVERSIGHT WORKBENCH</span></div></div>' +
@@ -92,6 +93,7 @@ function render() {
       '</aside>' +
       '<div class="main">' +
         '<header class="topbar">' +
+          '<button class="topbar__menu" data-act="toggle-menu" aria-label="Open menu">☰</button>' +
           '<div class="topbar__crumbs">' + crumbs() + '</div>' +
           '<div class="topbar__spacer"></div>' +
           '<div class="role-switch"><span class="role-switch__label">View as</span>' +
@@ -221,6 +223,7 @@ function go(view, opts) {
   if (opts.orgId !== undefined && opts.orgId !== null && opts.orgId !== '') state.params.orgId = opts.orgId;
   state.params.filter = opts.filter || null;
   state.ui.notifOpen = false;
+  state.ui.menuOpen = false;
   closeModal();
   render();
 }
@@ -230,6 +233,7 @@ function setRole(roleKey) {
   state.role = roleKey;
   state.params = {};
   state.ui.notifOpen = false;
+  state.ui.menuOpen = false;
   state.view = homeView(roleKey);
   closeModal();
   render();
@@ -275,8 +279,9 @@ function handleAction(act, el) {
 
   switch (act) {
     case 'role': setRole(el.getAttribute('data-role')); break;
-    case 'logout': state.role = null; state.view = 'login'; state.ui.notifOpen = false; closeModal(); render(); break;
+    case 'logout': state.role = null; state.view = 'login'; state.ui.notifOpen = false; state.ui.menuOpen = false; closeModal(); render(); break;
     case 'nav': go(view, { auditId: id, findingId: id, orgId: id, filter: filter }); break;
+    case 'toggle-menu': state.ui.menuOpen = !state.ui.menuOpen; render(); break;
 
     case 'notif-toggle':
       state.ui.notifOpen = !state.ui.notifOpen;
