@@ -227,7 +227,7 @@ button { font-family: inherit; }
   display: grid; place-items: center; font-weight: 700;
 }
 
-.content { padding: 22px 24px 60px; max-width: 1180px; width: 100%; }
+.content { padding: 22px 28px 60px; width: 100%; }
 
 /* ============================ Page header ============================ */
 .page-head { margin-bottom: 18px; display: flex; align-items: flex-start; gap: 16px; }
