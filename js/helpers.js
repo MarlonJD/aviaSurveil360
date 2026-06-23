@@ -46,6 +46,11 @@ function orgById(id) { for (var i = 0; i < state.orgs.length; i++) if (state.org
 function orgName(id) { var o = orgById(id); return o ? o.name : '—'; }
 function auditById(id) { for (var i = 0; i < state.audits.length; i++) if (state.audits[i].id === id) return state.audits[i]; return null; }
 function findingById(id) { for (var i = 0; i < state.findings.length; i++) if (state.findings[i].id === id) return state.findings[i]; return null; }
+function regulatoryDocumentById(id) { for (var i = 0; i < state.regulatoryDocuments.length; i++) if (state.regulatoryDocuments[i].id === id) return state.regulatoryDocuments[i]; return null; }
+function regulatoryTraceById(id) { for (var i = 0; i < state.regulatoryTraces.length; i++) if (state.regulatoryTraces[i].id === id) return state.regulatoryTraces[i]; return null; }
+function riskProfileByOrgId(orgId) { for (var i = 0; i < state.riskProfiles.length; i++) if (state.riskProfiles[i].orgId === orgId) return state.riskProfiles[i]; return null; }
+function aiSuggestionById(id) { for (var i = 0; i < state.aiSuggestions.length; i++) if (state.aiSuggestions[i].id === id) return state.aiSuggestions[i]; return null; }
+function capEffectivenessByFindingId(id) { for (var i = 0; i < state.capEffectiveness.length; i++) if (state.capEffectiveness[i].findingId === id) return state.capEffectiveness[i]; return null; }
 
 function roleName(roleKey) { return ROLES[roleKey] ? ROLES[roleKey].name : '—'; }
 
@@ -56,6 +61,83 @@ function visibleFindings() {
     return state.findings.filter(function (f) { return f.orgId === org; });
   }
   return state.findings.slice();
+}
+
+function selectedFilter(key, fallback) {
+  return (state.selectedFilters && state.selectedFilters[key]) || fallback || 'all';
+}
+
+function setSelectedFilter(key, value) {
+  if (!state.selectedFilters) state.selectedFilters = {};
+  state.selectedFilters[key] = value || 'all';
+  persistAfterAction();
+}
+
+function offlineOutboxItems() {
+  return (state.offlineOutbox || []).slice().sort(function (a, b) {
+    return (b.createdAt || '').localeCompare(a.createdAt || '');
+  });
+}
+
+function waitingOutboxItems() {
+  return offlineOutboxItems().filter(function (item) { return item.status === V2_STATUS.waitingForConnection; });
+}
+
+function regulatoryTraceForQuestion(questionId) {
+  var traceId = state.questionTraces ? state.questionTraces[questionId] : null;
+  return traceId ? regulatoryTraceById(traceId) : null;
+}
+
+function regulatoryTraceForFinding(finding) {
+  if (!finding) return null;
+  if (finding.traceId) return regulatoryTraceById(finding.traceId);
+  if (finding.reference && finding.reference.indexOf('crew training') > -1) return regulatoryTraceById('TRACE-OPS-TRG-4.2');
+  if (finding.id && finding.id.indexOf('OPS-') === 0) return regulatoryTraceById('TRACE-OPS-TRG-4.2');
+  return null;
+}
+
+function humanStatus(status) {
+  var map = {
+    published: 'Published',
+    draft: 'Draft',
+    under_review: 'Under Review',
+    superseded: 'Superseded',
+    waiting_for_connection: 'Waiting for connection',
+    synced_to_demo_state: 'Synced to demo state',
+    accepted: 'Accepted',
+    edited: 'Edited',
+    rejected: 'Rejected',
+    pending_review: 'Pending Review',
+    missing_evidence: 'Missing evidence',
+    effective_with_monitoring: 'Effective with monitoring',
+    pending_evidence: 'Pending evidence',
+    monitoring: 'Monitoring',
+    in_progress: 'In Progress',
+    planned: 'Planned'
+  };
+  return map[status] || status || '—';
+}
+
+function statusTone(status) {
+  if (status === V2_STATUS.published || status === V2_STATUS.accepted || status === V2_STATUS.syncedToDemoState || status === 'effective_with_monitoring') return 'ok';
+  if (status === V2_STATUS.underReview || status === V2_STATUS.waitingForConnection || status === 'missing_evidence' || status === 'pending_evidence' || status === 'in_progress') return 'warn';
+  if (status === V2_STATUS.rejected) return 'danger';
+  if (status === V2_STATUS.draft || status === V2_STATUS.pendingReview || status === 'planned' || status === 'monitoring') return 'info';
+  return 'neutral';
+}
+
+function v2Badge(status) {
+  return '<span class="badge badge--' + statusTone(status) + '"><span class="dot"></span>' + esc(humanStatus(status)) + '</span>';
+}
+
+function demoBadge(label, tone) {
+  return '<span class="badge badge--' + (tone || 'neutral') + '"><span class="dot"></span>' + esc(label) + '</span>';
+}
+
+function nowIsoDemo() {
+  var d = new Date();
+  function p(n) { return (n < 10 ? '0' : '') + n; }
+  return DEMO_TODAY + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
 }
 
 /* ----------------------------- Finding presentation ----------------------------- */

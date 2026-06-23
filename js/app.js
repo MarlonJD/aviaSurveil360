@@ -6,6 +6,11 @@
 var NAV = {
   manager: [
     { view: 'dashboard', label: 'Dashboard', icon: '📊' },
+    { view: 'safety-intelligence', label: 'Safety Intelligence', icon: '⌁' },
+    { view: 'org-risk', label: 'Org Risk Profile', icon: '◇', id: 'ORG-XYZ' },
+    { view: 'usoap-readiness', label: 'USOAP Readiness', icon: '◎' },
+    { view: 'cap-effectiveness', label: 'CAP Effectiveness', icon: '✓' },
+    { view: 'ssp-nasp', label: 'SSP/NASP', icon: '▣' },
     { view: 'calendar',  label: 'Surveillance Plan', icon: '🗓️' },
     { view: 'findings',  label: 'Findings', icon: '⚑' },
     { view: 'organizations', label: 'Organizations', icon: '🏢' },
@@ -13,6 +18,10 @@ var NAV = {
   ],
   inspector: [
     { view: 'dashboard', label: 'Dashboard', icon: '📊' },
+    { view: 'package-builder', label: 'Package Builder', icon: '▤' },
+    { view: 'offline-field', label: 'Offline Field', icon: '⇄' },
+    { view: 'ai-assistant', label: 'AI Assistant', icon: '✦' },
+    { view: 'cap-effectiveness', label: 'CAP Effectiveness', icon: '✓' },
     { view: 'calendar',  label: 'Audit Plan', icon: '🗓️' },
     { view: 'findings',  label: 'Findings', icon: '⚑' },
     { view: 'organizations', label: 'Organizations', icon: '🏢' },
@@ -24,7 +33,9 @@ var NAV = {
     { view: 'reports',     label: 'Reports', icon: '📄' }
   ],
   admin: [
+    { view: 'regulatory-library', label: 'Regulatory Library', icon: '§' },
     { view: 'templates', label: 'Templates', icon: '🗂️' },
+    { view: 'package-builder', label: 'Package Builder', icon: '▤' },
     { view: 'users',     label: 'Users', icon: '👥' },
     { view: 'settings',  label: 'Settings', icon: '⚙️' },
     { view: 'auditlog',  label: 'Audit Log', icon: '📜' }
@@ -36,7 +47,12 @@ var VIEW_TITLES = {
   reports: 'Reports', report: 'Report', messages: 'Messages', templates: 'Templates',
   'template-preview': 'Template Preview', auditlog: 'Audit Log', 'audit-detail': 'Audit Detail',
   checklist: 'Checklist Runner', finding: 'Finding Detail', wizard: 'New Audit Wizard',
-  organizations: 'Organizations', 'org-detail': 'Organization', users: 'Users', settings: 'Settings'
+  organizations: 'Organizations', 'org-detail': 'Organization', users: 'Users', settings: 'Settings',
+  'safety-intelligence': 'Safety Intelligence', 'org-risk': 'Organization Risk Profile',
+  'regulatory-library': 'Regulatory Library', 'package-builder': 'Inspection Package Builder',
+  'offline-field': 'Offline Field Inspection', 'usoap-readiness': 'USOAP Readiness',
+  'cap-effectiveness': 'CAP Effectiveness', 'ai-assistant': 'AI Inspector Assistant',
+  'ssp-nasp': 'SSP/NASP Management'
 };
 
 var ROLE_DESC = {
@@ -65,7 +81,8 @@ function render() {
   var navHtml = nav.map(function (n) {
     var active = isNavActive(n.view) ? ' active' : '';
     var badge = navBadge(n.view);
-    return '<button class="nav-item' + active + '" data-act="nav" data-view="' + n.view + '">' +
+    var navId = n.id ? ' data-id="' + esc(n.id) + '"' : '';
+    return '<button class="nav-item' + active + '" data-act="nav" data-view="' + n.view + '"' + navId + '>' +
       '<span class="nav-item__icon">' + n.icon + '</span><span>' + esc(n.label) + '</span>' +
       (badge ? '<span class="nav-item__badge">' + badge + '</span>' : '') + '</button>';
   }).join('');
@@ -89,7 +106,7 @@ function render() {
         '<nav class="sidebar__nav"><div class="nav-section">' + esc(r.name) + '</div>' + navHtml + '</nav>' +
         '<div class="sidebar__foot"><button class="nav-item" data-act="logout">' +
           '<span class="nav-item__icon">⤺</span><span>Role select</span></button>' +
-          '<div style="padding:8px 11px">Demo build · mock data</div></div>' +
+          '<div style="padding:8px 11px">Demo data · frontend-only · saved in this browser</div></div>' +
       '</aside>' +
       '<div class="main">' +
         '<header class="topbar">' +
@@ -123,6 +140,7 @@ function isNavActive(view) {
   if (view === 'reports' && state.view === 'report') return true;
   if (view === 'templates' && state.view === 'template-preview') return true;
   if (view === 'organizations' && state.view === 'org-detail') return true;
+  if (view === 'org-risk' && state.view === 'org-risk') return true;
   return false;
 }
 
@@ -163,6 +181,15 @@ function crumbs() {
 function renderContent() {
   switch (state.view) {
     case 'dashboard': return state.role === 'manager' ? viewManagerDashboard() : viewInspectorDashboard();
+    case 'safety-intelligence': return viewSafetyIntelligenceDashboard();
+    case 'org-risk': return viewOrganizationRiskProfile();
+    case 'regulatory-library': return viewRegulatoryLibrary();
+    case 'package-builder': return viewInspectionPackageBuilder();
+    case 'offline-field': return viewOfflineFieldInspection();
+    case 'usoap-readiness': return viewUsoapReadiness();
+    case 'cap-effectiveness': return viewCapEffectiveness();
+    case 'ai-assistant': return viewAiAssistant();
+    case 'ssp-nasp': return viewSspNaspDashboard();
     case 'calendar': return viewCalendar();
     case 'audit-detail': return viewAuditDetail();
     case 'checklist': return viewChecklistRunner();
@@ -201,7 +228,7 @@ function renderLogin() {
       '<div class="role-grid">' + cards + '</div>' +
       '<div class="login__foot">Demo scenario: a CAA Inspector raises <b>Finding OPS-2026-001</b> for Airline XYZ from a Flight Operations checklist. ' +
       'The auditee submits a CAP and evidence; the inspector reviews and closes the finding; the manager dashboard updates. ' +
-      'This is a mock prototype — no real authentication, storage or integrations.</div>' +
+      'This is a mock prototype — no real authentication, backend, database or integrations. V2 demo actions are saved only in this browser.</div>' +
     '</div></div></div>';
 }
 
@@ -221,10 +248,17 @@ function go(view, opts) {
   if (opts.auditId !== undefined && opts.auditId !== null && opts.auditId !== '') state.params.auditId = opts.auditId;
   if (opts.findingId !== undefined && opts.findingId !== null && opts.findingId !== '') state.params.findingId = opts.findingId;
   if (opts.orgId !== undefined && opts.orgId !== null && opts.orgId !== '') state.params.orgId = opts.orgId;
-  state.params.filter = opts.filter || null;
+  if (view === 'org-risk' && !state.params.orgId) state.params.orgId = 'ORG-XYZ';
+  if (opts.filter) {
+    if (!state.selectedFilters) state.selectedFilters = {};
+    state.selectedFilters[view] = opts.filter;
+    if (view === 'findings') state.selectedFilters.findings = opts.filter;
+  }
+  state.params.filter = opts.filter || selectedFilter(view, view === 'findings' ? selectedFilter('findings', 'all') : null);
   state.ui.notifOpen = false;
   state.ui.menuOpen = false;
   closeModal();
+  persistAfterAction();
   render();
 }
 
@@ -236,6 +270,7 @@ function setRole(roleKey) {
   state.ui.menuOpen = false;
   state.view = homeView(roleKey);
   closeModal();
+  persistAfterAction();
   render();
 }
 
@@ -279,15 +314,17 @@ function handleAction(act, el) {
 
   switch (act) {
     case 'role': setRole(el.getAttribute('data-role')); break;
-    case 'logout': state.role = null; state.view = 'login'; state.ui.notifOpen = false; state.ui.menuOpen = false; closeModal(); render(); break;
+    case 'logout': state.role = null; state.view = 'login'; state.ui.notifOpen = false; state.ui.menuOpen = false; closeModal(); persistAfterAction(); render(); break;
     case 'nav': go(view, { auditId: id, findingId: id, orgId: id, filter: filter }); break;
     case 'toggle-menu': state.ui.menuOpen = !state.ui.menuOpen; render(); break;
+    case 'set-filter': setSelectedFilter(el.getAttribute('data-key'), el.getAttribute('data-val')); render(); break;
 
     case 'notif-toggle':
       state.ui.notifOpen = !state.ui.notifOpen;
       if (state.ui.notifOpen) {
         state.notifications.forEach(function (n) { if (n.role === state.role) n.unread = false; });
       }
+      persistAfterAction();
       render();
       break;
 
@@ -318,6 +355,11 @@ function handleAction(act, el) {
     case 'wizard-back': wizardBack(); break;
     case 'wizard-create': wizardCreate(); break;
 
+    case 'toggle-offline': toggleSimulatedOffline(); break;
+    case 'offline-field-action': createOfflineFieldAction(); break;
+    case 'sync-outbox': syncOfflineOutbox(true); render(); break;
+    case 'ai-decision': recordAiDecision(id, el.getAttribute('data-decision')); break;
+
     case 'mock-pick': mockPick(el.getAttribute('data-target')); break;
     case 'mock-export': toast('Export simulated', 'A PDF would be generated here. This demo only previews the report.', 'ok'); break;
     case 'close-modal': closeModal(); break;
@@ -332,12 +374,14 @@ function startChecklist(auditId) {
   a.checklistStarted = true;
   if (a.status === 'Scheduled' || a.status === 'Planned') a.status = 'In Progress';
   addLog('Checklist started', a.id);
+  persistAfterAction();
   go('checklist', { auditId: auditId });
 }
 
 function answerItem(q, valx) {
   if (!state.checklistAnswers[q]) state.checklistAnswers[q] = {};
   state.checklistAnswers[q].answer = valx;
+  persistAfterAction();
   render();
 }
 
@@ -348,6 +392,7 @@ function issueFinding(auditId, q) {
   var id = 'OPS-2026-' + String(state.findingSeq).padStart(3, '0');
 
   var internalNote = val('fd-internal');
+  var trace = regulatoryTraceForQuestion(q);
   var finding = {
     id: id,
     title: val('fd-title') || 'Checklist non-compliance',
@@ -356,6 +401,7 @@ function issueFinding(auditId, q) {
     auditId: a.id,
     severity: parseInt(val('fd-sev') || '2', 10),
     reference: (item ? item.ref : 'Configured rule (regulatory reference)'),
+    traceId: trace ? trace.id : null,
     basis: 'Checklist item answered Non-Compliant',
     status: 'WAITING_CAP',
     capRequired: true,
@@ -366,6 +412,7 @@ function issueFinding(auditId, q) {
     closureType: null,
     responsiblePerson: '',
     cap: null,
+    capRevisions: [],
     evidence: [],
     commentsToAuditee: [],
     internalNotes: internalNote ? [{ author: currentActorLabel(), date: DEMO_TODAY, text: internalNote }] : []
@@ -382,6 +429,7 @@ function issueFinding(auditId, q) {
   pushNotification('manager', '⚑', 'Finding ' + id + ' (' + SEVERITY[finding.severity].label + ') issued for ' + orgName(a.orgId) + '.');
   closeModal();
   toast('Finding issued', id + ' created and sent to the auditee.', 'ok');
+  persistAfterAction();
   go('finding', { findingId: id });
 }
 
@@ -393,10 +441,22 @@ function submitCap(id) {
     toast('Missing information', 'Please complete root cause, corrective action, preventive action, responsible person and target date.', 'warn');
     return;
   }
-  f.cap = {
+  var revId = 'CAPREV-' + id + '-' + String((f.capRevisions ? f.capRevisions.length : 0) + 1);
+  var capRecord = {
+    id: revId,
     rootCause: root, correctiveAction: corr, preventiveAction: prev,
     responsible: resp, targetDate: date, submittedDate: DEMO_TODAY, status: 'Submitted'
   };
+  f.cap = capRecord;
+  if (!f.capRevisions) f.capRevisions = [];
+  f.capRevisions.push({
+    id: revId,
+    findingId: id,
+    status: V2_STATUS.pendingReview,
+    submittedDate: DEMO_TODAY,
+    targetDate: date,
+    payloadSummary: 'Root cause, corrective action, preventive action and target date submitted.'
+  });
   f.responsiblePerson = resp;
   f.status = 'CAP_SUBMITTED';
   pickedFiles['cap-file'] = null;
@@ -404,6 +464,7 @@ function submitCap(id) {
   pushNotification('inspector', '📝', 'CAP submitted on ' + id + ' by ' + orgName(f.orgId) + ' — waiting for your review.');
   closeModal();
   toast('CAP submitted', 'Your corrective action plan was sent to the CAA for review.', 'ok');
+  persistAfterAction();
   render();
 }
 
@@ -416,6 +477,7 @@ function capDecision(id, decision) {
 
   if (decision === 'accept') {
     f.cap.status = 'Accepted';
+    if (f.capRevisions && f.capRevisions.length) f.capRevisions[f.capRevisions.length - 1].status = V2_STATUS.accepted;
     f.status = 'EVIDENCE_REQUIRED';
     addLog('CAP accepted', id);
     pushNotification('auditee', '✅', 'Your CAP for ' + id + ' was accepted. Please upload evidence that the action is complete.');
@@ -423,12 +485,14 @@ function capDecision(id, decision) {
     toast('CAP accepted', 'CAP accepted — but the finding stays open until evidence is accepted.', 'ok');
   } else {
     f.cap.status = 'More Information Requested';
+    if (f.capRevisions && f.capRevisions.length) f.capRevisions[f.capRevisions.length - 1].status = 'more_information_requested';
     f.status = 'CAP_MORE_INFO';
     addLog('CAP — more information requested', id);
     pushNotification('auditee', '↩️', 'The CAA requested more information on your CAP for ' + id + '.');
     closeModal();
     toast('More information requested', 'The auditee has been asked to revise the CAP.', 'warn');
   }
+  persistAfterAction();
   render();
 }
 
@@ -440,9 +504,10 @@ function submitEvidence(id) {
   var maxV = 0;
   f.evidence.forEach(function (e) { if (e.version > maxV) maxV = e.version; });
   var note = val('ev-note');
+  var nextVersion = maxV + 1;
   f.evidence.push({
-    id: 'EV-' + Date.now(), fileName: file.name, size: file.size,
-    uploadedDate: DEMO_TODAY, version: maxV + 1, status: 'Uploaded', note: note
+    id: 'EV-' + id + '-' + nextVersion, fileName: file.name, size: file.size, type: 'mock-file-name-only',
+    uploadedDate: DEMO_TODAY, version: nextVersion, status: 'Uploaded', note: note
   });
   f.status = 'EVIDENCE_SUBMITTED';
   pickedFiles['ev-file'] = null;
@@ -450,6 +515,7 @@ function submitEvidence(id) {
   pushNotification('inspector', '📎', 'Evidence submitted on ' + id + ' by ' + orgName(f.orgId) + ' — waiting for your review.');
   closeModal();
   toast('Evidence uploaded', 'Your evidence was sent to the CAA for review (mock — file name only).', 'ok');
+  persistAfterAction();
   render();
 }
 
@@ -480,6 +546,7 @@ function evDecision(id, decision) {
     closeModal();
     toast('More information requested', 'The auditee has been asked for additional evidence.', 'warn');
   }
+  persistAfterAction();
   render();
 }
 
@@ -499,6 +566,7 @@ function doAuthorizedClosure(id) {
   pushNotification('manager', '⚖️', 'Finding ' + id + ' closed via authorized closure (recorded in the audit trail).');
   closeModal();
   toast('Finding closed', id + ' closed under an authorized closure decision (audit-logged).', 'ok');
+  persistAfterAction();
   render();
 }
 
@@ -510,6 +578,104 @@ function sendReminder(id) {
   pushNotification('auditee', '⏰', 'Reminder from the CAA: ' + id + ' — ' + nextActionLabel(f) + '. This finding ' + when + '.');
   addLog('Reminder sent to auditee', id);
   toast('Reminder sent', 'A traceable reminder was sent to ' + orgName(f.orgId) + ' (in-app — no email).', 'ok');
+  persistAfterAction();
+  render();
+}
+
+function queueOfflineAction(type, entityType, entityId, payload) {
+  var outboxId = 'OUTBOX-' + String(state.outboxSeq++).padStart(3, '0');
+  var item = {
+    id: outboxId,
+    type: type,
+    entityType: entityType,
+    entityId: entityId,
+    payloadSummary: payload.payloadSummary,
+    payload: payload,
+    status: V2_STATUS.waitingForConnection,
+    message: 'Internet unavailable - saved locally. It will sync automatically when connection returns.',
+    createdAt: nowIsoDemo(),
+    lastSyncAttempt: null,
+    syncedAt: null
+  };
+  state.offlineOutbox.push(item);
+  state.offline.lastMessage = item.message;
+  addLog('Offline item saved locally (demo)', entityId || outboxId);
+  persistAfterAction();
+  return item;
+}
+
+function toggleSimulatedOffline() {
+  if (!state.offline) state.offline = { simulated: false, lastMessage: null };
+  state.offline.simulated = !state.offline.simulated;
+  if (state.offline.simulated) {
+    state.offline.lastMessage = 'Internet unavailable - saved locally. It will sync automatically when connection returns.';
+    toast('Offline simulated', state.offline.lastMessage, 'warn');
+    persistAfterAction();
+    render();
+    return;
+  }
+  state.offline.lastMessage = 'Simulated connection restored - waiting outbox items are marked synced to demo state.';
+  syncOfflineOutbox(false);
+  toast('Simulated online', 'Offline outbox items marked synced to demo state. This is not production sync.', 'ok');
+  render();
+}
+
+function createOfflineFieldAction() {
+  if (!state.offline || !state.offline.simulated) {
+    toast('Turn on Simulate offline', 'Use the Simulate offline control first, then save the mock field action.', 'warn');
+    return;
+  }
+  var auditId = state.fieldPackage.auditId;
+  var payload = {
+    auditId: auditId,
+    findingId: 'OPS-2026-001',
+    fileName: 'Training_Record_Field_Photo.jpg',
+    note: 'Mock field note captured while offline. File name only; no file storage.',
+    payloadSummary: 'Mock evidence filename and field note captured for ' + auditId + '.'
+  };
+  queueOfflineAction('field_evidence_note', 'audit', auditId, payload);
+  toast('Saved locally', 'Internet unavailable - saved locally. It will sync automatically when connection returns.', 'warn');
+  render();
+}
+
+function syncOfflineOutbox(showToast) {
+  var changed = 0;
+  (state.offlineOutbox || []).forEach(function (item) {
+    if (item.status === V2_STATUS.waitingForConnection) {
+      item.status = V2_STATUS.syncedToDemoState;
+      item.lastSyncAttempt = nowIsoDemo();
+      item.syncedAt = nowIsoDemo();
+      changed++;
+      addLog('Offline item synced (demo)', item.entityId || item.id, 'System (demo sync)');
+    }
+  });
+  if (changed === 0 && showToast) {
+    toast('Outbox already synced', 'No waiting simulated offline items were found.', 'info');
+  }
+  persistAfterAction();
+  if (showToast && changed > 0) toast('Outbox synced', changed + ' item(s) marked synced to demo state.', 'ok');
+}
+
+function recordAiDecision(id, decision) {
+  var s = aiSuggestionById(id);
+  if (!s) return;
+  var finalText = val('ai-edit-' + id) || s.draft;
+  if (decision === V2_STATUS.edited && !finalText) {
+    toast('Draft text required', 'Please keep or enter the edited AI draft before recording the decision.', 'warn');
+    return;
+  }
+  s.status = decision;
+  s.decision = {
+    id: 'AIDEC-' + String(state.aiDecisionSeq++).padStart(3, '0'),
+    suggestionId: id,
+    status: decision,
+    reviewer: currentActorLabel(),
+    decidedAt: nowIsoDemo(),
+    finalText: decision === V2_STATUS.rejected ? '' : finalText
+  };
+  addLog('AI suggestion ' + humanStatus(decision).toLowerCase() + ' (demo)', id);
+  toast('AI decision recorded', 'Decision saved in this browser for demo only. Authorized review is still required.', 'ok');
+  persistAfterAction();
   render();
 }
 
@@ -581,6 +747,7 @@ function wizardCreate() {
   addLog('Audit scheduled', id);
   pushNotification('manager', '🗓️', 'New audit ' + id + ' (' + audit.type + ' — ' + orgName(audit.orgId) + ') scheduled for ' + (function () { return fmtDate(audit.date); })() + '.');
   toast('Audit scheduled', id + ' added to the 2026 plan.', 'ok');
+  persistAfterAction();
   go('audit-detail', { auditId: id });
 }
 
@@ -604,12 +771,13 @@ document.addEventListener('change', function (e) {
 });
 
 document.getElementById('reset-demo').addEventListener('click', function () {
+  clearDemoState();
   seedState();
   pickedFiles = {};
   render();
-  toast('Demo reset', 'All mock data and state were reset to the starting point.', 'ok');
+  toast('Demo reset', 'All browser-saved demo state was cleared and reset to the starting point.', 'ok');
 });
 
 /* ----------------------------- Boot ----------------------------- */
-seedState();
+initializeState();
 render();

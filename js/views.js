@@ -19,13 +19,347 @@ function pageHead(title, purpose, actionsHtml) {
 function kpiCard(label, value, foot, opts) {
   opts = opts || {};
   var cls = opts.tone ? ' is-' + opts.tone : '';
-  var dataView = opts.view ? ' data-act="nav" data-view="' + opts.view + '"' + (opts.filter ? ' data-filter="' + opts.filter + '"' : '') : '';
+  var dataView = opts.view ? ' data-act="nav" data-view="' + opts.view + '"' +
+    (opts.filter ? ' data-filter="' + opts.filter + '"' : '') +
+    (opts.id ? ' data-id="' + opts.id + '"' : '') : '';
   return '' +
     '<div class="kpi"' + dataView + '>' +
       '<div class="kpi__label">' + esc(label) + '</div>' +
       '<div class="kpi__value' + cls + '">' + value + '</div>' +
       (foot ? '<div class="kpi__foot">' + esc(foot) + '</div>' : '') +
     '</div>';
+}
+
+function guardrailStrip(items) {
+  return '<div class="guardrail-strip">' + items.map(function (item) {
+    var tone = item.tone || 'neutral';
+    return demoBadge(item.label, tone);
+  }).join('') + '</div>';
+}
+
+function regulatoryTraceHtml(trace, compact) {
+  if (!trace) return '';
+  return '<div class="reg-trace' + (compact ? ' reg-trace--compact' : '') + '">' +
+    '<div class="reg-trace__head"><span class="reg-trace__mark">Regulatory Trace</span>' +
+      demoBadge(trace.demoLabel || 'Mock regulatory library', 'neutral') +
+      demoBadge(trace.legalGuardrail || 'Not a legal decision', 'warn') +
+      v2Badge(trace.approvalState) +
+    '</div>' +
+    '<div class="reg-trace__grid">' +
+      '<div><span>Source</span><b>' + esc(trace.sourceDocument) + '</b></div>' +
+      '<div><span>Version</span><b>' + esc(trace.version) + '</b></div>' +
+      '<div><span>Clause / PQ</span><b>' + esc(trace.clauseRef) + '</b></div>' +
+      '<div><span>Effective</span><b>' + esc(fmtDate(trace.effectiveDate)) + '</b></div>' +
+      '<div><span>Applicability</span><b>' + esc(trace.applicabilityReason) + '</b></div>' +
+      '<div><span>Linked checklist/evidence</span><b>' + esc(trace.linkedChecklist + ' · ' + trace.linkedEvidence) + '</b></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function compactMetric(label, value, tone) {
+  return '<div class="compact-metric"><span>' + esc(label) + '</span><b class="' + (tone ? 'is-' + tone : '') + '">' + esc(value) + '</b></div>';
+}
+
+/* =========================== Frontend V2 screens =========================== */
+function viewSafetyIntelligenceDashboard() {
+  var filter = selectedFilter('safety', 'all');
+  var open = state.findings.filter(function (f) { return f.status !== 'CLOSED'; });
+  var overdue = open.filter(function (f) { return dueInfo(f).overdue; });
+  var repeat = state.riskProfiles.filter(function (r) { return r.drivers.join(' ').toLowerCase().indexOf('repeat') > -1; });
+  var waiting = state.findings.filter(function (f) { return f.status === 'CAP_SUBMITTED' || f.status === 'EVIDENCE_SUBMITTED'; });
+  var topRisk = state.riskProfiles.slice().sort(function (a, b) { return b.score - a.score; })[0];
+
+  var chips = [
+    { key: 'all', label: 'All signals' },
+    { key: 'overdue', label: 'Overdue' },
+    { key: 'repeat', label: 'Repeat' }
+  ].map(function (c) {
+    return '<button class="btn btn--sm' + (filter === c.key ? ' btn--primary' : '') + '" data-act="set-filter" data-key="safety" data-val="' + c.key + '">' + esc(c.label) + '</button>';
+  }).join('');
+
+  var alerts = state.riskProfiles.filter(function (r) {
+    if (filter === 'repeat') return r.drivers.join(' ').toLowerCase().indexOf('repeat') > -1;
+    if (filter === 'overdue') return state.findings.some(function (f) { return f.orgId === r.orgId && dueInfo(f).overdue; });
+    return true;
+  }).map(function (r) {
+    return '<div class="list__row" data-act="nav" data-view="org-risk" data-id="' + r.orgId + '">' +
+      '<div class="list__main"><div class="list__title">' + esc(orgName(r.orgId)) + ' <span class="risk-band">' + esc(r.band) + '</span></div>' +
+      '<div class="list__meta"><span><b>Mock risk indicator:</b> ' + r.score + '</span><span><b>Drivers:</b> ' + esc(r.drivers.join(', ')) + '</span></div></div>' +
+      '<div class="list__side"><button class="btn btn--sm" data-act="nav" data-view="org-risk" data-id="' + r.orgId + '">Open profile</button></div></div>';
+  }).join('');
+
+  return pageHead('Safety Intelligence Dashboard', 'Decide which risk, delay, or workload issue needs management attention today.', chips) +
+    guardrailStrip([
+      { label: 'Demo data' },
+      { label: 'mock risk indicator', tone: 'info' },
+      { label: 'Not a legal decision', tone: 'warn' },
+      { label: DEMO_PERSISTENCE_CONFIG.label, tone: 'neutral' }
+    ]) +
+    '<div class="grid grid--kpi mb-16">' +
+      kpiCard('Highest Mock Risk', topRisk ? topRisk.score : '—', topRisk ? orgName(topRisk.orgId) + ' · opens risk profile' : 'No risk profile', { tone: 'warn', view: 'org-risk', id: topRisk ? topRisk.orgId : 'ORG-XYZ' }) +
+      kpiCard('Overdue CAP/Evidence', overdue.length, 'Open findings past Due Date', { tone: overdue.length ? 'danger' : 'ok', view: 'findings', filter: 'overdue' }) +
+      kpiCard('Waiting CAA Review', waiting.length, 'CAP/evidence decisions pending', { tone: waiting.length ? 'warn' : 'ok', view: 'findings', filter: 'capreview' }) +
+    '</div>' +
+    '<div class="grid grid--main">' +
+      '<div class="card"><div class="card__head"><h3>Management Attention Queue</h3><span class="sub">Every signal links to an organization or finding</span></div><div class="list">' +
+        (alerts || '<div class="empty">No safety intelligence signals for this filter.</div>') + '</div></div>' +
+      '<div class="v2-panel">' +
+        '<h3>Recommended Management Action</h3>' +
+        '<p>' + esc(topRisk ? topRisk.recommendedAction : 'Review open findings and CAP/evidence queues.') + '</p>' +
+        '<div class="divider"></div>' +
+        compactMetric('Repeat risk profiles', String(repeat.length), repeat.length ? 'warn' : 'ok') +
+        compactMetric('Section workload', 'Balanced (demo)', 'info') +
+        compactMetric('Plan slippage', '2 planned audits not started', 'warn') +
+      '</div>' +
+    '</div>';
+}
+
+function viewOrganizationRiskProfile() {
+  var orgId = state.params.orgId || 'ORG-XYZ';
+  var org = orgById(orgId) || orgById('ORG-XYZ');
+  var profile = riskProfileByOrgId(org.id) || state.riskProfiles[0];
+  var fs = state.findings.filter(function (f) { return f.orgId === org.id; });
+  var audits = state.audits.filter(function (a) { return a.orgId === org.id; });
+  var trace = regulatoryTraceById(profile.traceId);
+
+  var findings = fs.length ? fs.map(findingRow).join('') : '<div class="empty">No findings for this organization.</div>';
+  var auditRows = audits.map(function (a) {
+    return '<div class="row-between small v2-rowlink" data-act="nav" data-view="audit-detail" data-id="' + a.id + '">' +
+      '<span><b>' + esc(a.id) + '</b> · ' + esc(a.type) + '</span><span class="muted">' + esc(fmtDate(a.date)) + ' · ' + esc(a.status) + '</span></div>';
+  }).join('');
+
+  return pageHead('Organization Risk Profile — ' + org.name, 'Understand why this organization needs oversight attention before planning or opening an inspection.',
+    '<button class="btn" data-act="nav" data-view="safety-intelligence">Back to safety intelligence</button>') +
+    guardrailStrip([
+      { label: 'Demo data' },
+      { label: 'mock risk indicator', tone: 'info' },
+      { label: 'Not a legal decision', tone: 'warn' }
+    ]) +
+    '<div class="grid grid--main">' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="card"><div class="card__head"><h3>Risk Dossier</h3><span class="sub">Why this organization appears in a risk alert</span></div><div class="card__body">' +
+          '<div class="risk-score"><div class="risk-score__num">' + profile.score + '</div><div><b>' + esc(profile.band) + '</b><p>' + esc(profile.recommendedAction) + '</p></div></div>' +
+          '<div class="divider"></div><div class="chip-list">' + profile.drivers.map(function (d) { return '<span class="tag-pill">' + esc(d) + '</span>'; }).join('') + '</div>' +
+          '<div class="divider"></div>' + regulatoryTraceHtml(trace, true) +
+        '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Findings</h3></div><div class="list">' + findings + '</div></div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="v2-panel"><h3>Operating Context</h3>' +
+          compactMetric('CAP performance', profile.capPerformance, 'warn') +
+          compactMetric('Fleet/management change', profile.fleetChange, 'info') +
+          compactMetric('Occurrence trend placeholder', profile.occurrenceTrend, 'neutral') +
+        '</div>' +
+        '<div class="card"><div class="card__head"><h3>Audit History</h3></div><div class="card__body">' + auditRows + '</div></div>' +
+      '</div>' +
+    '</div>';
+}
+
+function viewRegulatoryLibrary() {
+  var filter = selectedFilter('regulatory', 'all');
+  var docs = state.regulatoryDocuments.filter(function (d) { return filter === 'all' || d.status === filter; });
+  var chips = [
+    { key: 'all', label: 'All' },
+    { key: V2_STATUS.published, label: 'Published' },
+    { key: V2_STATUS.underReview, label: 'Under Review' },
+    { key: V2_STATUS.draft, label: 'Draft' }
+  ].map(function (c) {
+    return '<button class="btn btn--sm' + (filter === c.key ? ' btn--primary' : '') + '" data-act="set-filter" data-key="regulatory" data-val="' + c.key + '">' + esc(c.label) + '</button>';
+  }).join('');
+
+  var rows = docs.map(function (d) {
+    var clauses = d.clauses.map(function (c) {
+      return '<div class="clause-row"><div><b>' + esc(c.reference) + '</b> · ' + esc(c.title) + '</div>' +
+        '<div class="muted small">' + esc(c.applicability) + ' · Expected evidence: ' + esc(c.expectedEvidence.join(', ')) + '</div></div>';
+    }).join('');
+    var changes = d.changeHistory.map(function (c) {
+      return '<div class="timeline mini"><div class="tl-item"><div class="tl-item__time">' + esc(fmtDate(c.date)) + '</div><div class="tl-item__txt">' + esc(c.summary) + '</div></div></div>';
+    }).join('');
+    return '<div class="card mb-16"><div class="card__head"><h3>' + esc(d.family + ' · ' + d.title) + '</h3><div class="spacer"></div>' +
+      v2Badge(d.status) + '</div><div class="card__body">' +
+      '<div class="metaline mb-16">' + metaItem('Document ID', d.id) + metaItem('Version', d.version) + metaItem('Effective date', fmtDate(d.effectiveDate)) +
+        metaItem('Supersedes', d.supersedes || '—') + metaItem('Superseded by', d.supersededBy || '—') + '</div>' +
+      '<div class="reg-section-title">Clauses / configured rules</div>' + clauses +
+      '<div class="reg-section-title mt-16">Mock change history</div>' + changes +
+      '</div></div>';
+  }).join('');
+
+  return pageHead('Regulatory Library', 'Inspect current references, versions, effective dates, configured rules and change status.', chips) +
+    guardrailStrip([
+      { label: 'Mock regulatory library' },
+      { label: 'Demo data' },
+      { label: 'Not a legal decision', tone: 'warn' },
+      { label: 'No real regulatory ingestion', tone: 'neutral' }
+    ]) +
+    (rows || '<div class="empty">No regulatory documents match this filter.</div>');
+}
+
+function viewInspectionPackageBuilder() {
+  var pkg = state.inspectionPackage;
+  var org = orgById(pkg.organizationId);
+  var risk = riskProfileByOrgId(pkg.organizationId);
+  var questionRows = pkg.questions.map(function (q) {
+    return '<div class="package-question">' +
+      '<div class="package-question__head"><b>' + esc(q.text) + '</b>' + v2Badge(pkg.status) + '</div>' +
+      '<p><b>Why included:</b> ' + esc(q.whyIncluded) + '</p>' +
+      '<p><b>Expected evidence:</b> ' + esc(q.expectedEvidence.join(', ')) + '</p>' +
+      regulatoryTraceHtml(regulatoryTraceById(q.traceId), true) +
+    '</div>';
+  }).join('');
+
+  return pageHead('Dynamic Inspection Package Builder', 'Build an inspection package and understand why each checklist question is included.',
+    '<button class="btn btn--primary" data-act="nav" data-view="checklist" data-id="' + pkg.auditId + '">Open runnable checklist</button>') +
+    guardrailStrip([
+      { label: 'mock inspection package' },
+      { label: 'Mock regulatory library' },
+      { label: 'Not an official checklist publication', tone: 'warn' },
+      { label: DEMO_PERSISTENCE_CONFIG.label }
+    ]) +
+    '<div class="grid grid--main">' +
+      '<div class="card"><div class="card__head"><h3>Package Draft</h3><span class="sub">Backend-ready API-shaped mock record</span></div><div class="card__body">' +
+        '<div class="metaline mb-16">' + metaItem('Package ID', pkg.id) + metaItem('Organization', org ? org.name : pkg.organizationId) +
+        metaItem('Audit type', pkg.auditType) + metaItem('Domain', pkg.domain) + metaItem('Status', humanStatus(pkg.status)) + '</div>' +
+        '<div class="reg-section-title">Proposed checklist questions</div>' + questionRows +
+      '</div></div>' +
+      '<div class="v2-panel"><h3>Risk Focus</h3><div class="chip-list">' + pkg.riskFocus.map(function (f) { return '<span class="tag-pill">' + esc(f) + '</span>'; }).join('') + '</div>' +
+        '<div class="divider"></div>' + compactMetric('Mock risk score', risk ? String(risk.score) : '—', 'warn') +
+        compactMetric('Recommended action', risk ? risk.recommendedAction : '—', 'info') +
+      '</div>' +
+    '</div>';
+}
+
+function viewOfflineFieldInspection() {
+  var pkg = state.fieldPackage;
+  var outbox = offlineOutboxItems();
+  var waiting = waitingOutboxItems().length;
+  var statusBadge = state.offline && state.offline.simulated
+    ? demoBadge('Offline simulated', 'warn')
+    : demoBadge('Simulated online', 'ok');
+  var outboxRows = outbox.length ? outbox.map(function (item) {
+    return '<div class="outbox-item"><div><b>' + esc(item.id) + '</b> · ' + esc(item.payloadSummary) +
+      '<div class="muted small">' + esc(item.message) + '</div><div class="muted small">Created ' + esc(item.createdAt) +
+      (item.syncedAt ? ' · synced ' + esc(item.syncedAt) : '') + '</div></div>' + v2Badge(item.status) + '</div>';
+  }).join('') : '<div class="empty">No simulated offline outbox items yet.</div>';
+
+  return pageHead('Offline Field Inspection', 'Show what can be collected offline and what still needs sync.',
+    '<button class="btn ' + (state.offline && state.offline.simulated ? 'btn--danger' : 'btn--primary') + '" data-act="toggle-offline">Simulate offline</button>') +
+    guardrailStrip([
+      { label: 'Offline simulated', tone: 'warn' },
+      { label: 'Demo data' },
+      { label: 'No production sync', tone: 'neutral' },
+      { label: DEMO_PERSISTENCE_CONFIG.label }
+    ]) +
+    '<div class="offline-status mb-16">' + statusBadge +
+      '<div><b>' + esc(state.offline && state.offline.lastMessage ? state.offline.lastMessage : 'Use Simulate offline to queue a mock field action.') + '</b>' +
+      '<p>Offline behavior is a stakeholder illustration only. It is not an encrypted mobile store or evidence chain-of-custody.</p></div></div>' +
+    '<div class="grid grid--main">' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="card"><div class="card__head"><h3>Checked-out Field Package</h3><span class="sub">offline simulated</span></div><div class="card__body">' +
+          '<div class="metaline mb-16">' + metaItem('Package', pkg.id) + metaItem('Audit', pkg.auditId) + metaItem('Checked out by', pkg.checkedOutBy) +
+          metaItem('Status', humanStatus(pkg.status)) + '</div>' +
+          '<div class="chip-list">' + pkg.localItems.map(function (i) { return '<span class="tag-pill">' + esc(i) + '</span>'; }).join('') + '</div>' +
+          '<div class="divider"></div><button class="btn btn--primary" data-act="offline-field-action">Save mock field evidence action</button>' +
+        '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Offline Outbox</h3><span class="sub">' + waiting + ' waiting for connection</span><div class="spacer"></div>' +
+          '<button class="btn btn--sm" data-act="sync-outbox">Mark waiting items synced</button></div><div class="card__body">' + outboxRows + '</div></div>' +
+      '</div>' +
+      '<div class="v2-panel"><h3>Field Capture Placeholders</h3>' +
+        compactMetric('Photos/videos/audio', 'Filename placeholders only', 'neutral') +
+        compactMetric('Signature', 'Placeholder only', 'neutral') +
+        compactMetric('Conflict warning', 'Example state only', 'warn') +
+        compactMetric('Attachment queue', waiting + ' waiting', waiting ? 'warn' : 'ok') +
+      '</div>' +
+    '</div>';
+}
+
+function viewUsoapReadiness() {
+  var rows = state.usoapReadiness.map(function (r) {
+    return '<div class="card mb-16"><div class="card__head"><h3>' + esc(r.pqId) + '</h3><div class="spacer"></div>' + v2Badge(r.readinessStatus) + '</div>' +
+      '<div class="card__body"><div class="metaline mb-16">' + metaItem('Critical Element', r.criticalElement) + metaItem('Audit area', r.auditArea) +
+      metaItem('Applicability', r.applicability) + metaItem('Linked CAP/Finding', r.linkedCapIds.join(', ') || '—') + '</div>' +
+      '<div class="callout mb-16">' + esc(r.note) + '</div>' + regulatoryTraceHtml(regulatoryTraceById(r.traceId), true) +
+      '<div class="reg-section-title mt-16">Verification history</div>' + r.verificationHistory.map(function (v) {
+        return '<div class="row-between small"><span>' + esc(fmtDate(v.date)) + '</span><b>' + esc(v.result) + '</b></div>';
+      }).join('') + '</div></div>';
+  }).join('');
+  return pageHead('USOAP Readiness Workspace', 'See PQ/CE gaps, missing evidence and readiness history without claiming official EI outcome.') +
+    guardrailStrip([
+      { label: 'Demo data' },
+      { label: 'Mock PQ readiness' },
+      { label: 'No official EI score', tone: 'warn' },
+      { label: 'Not a legal decision', tone: 'warn' }
+    ]) + rows;
+}
+
+function viewCapEffectiveness() {
+  var rows = state.capEffectiveness.map(function (c) {
+    var f = findingById(c.findingId);
+    var revs = c.revisionHistory.map(function (r) {
+      return '<div class="row-between small"><span><b>' + esc(r.id) + '</b> · ' + esc(fmtDate(r.submittedDate)) + '</span>' + v2Badge(r.status) + '</div>';
+    }).join('');
+    return '<div class="card mb-16"><div class="card__head"><h3>' + esc(c.findingId) + '</h3><div class="spacer"></div>' +
+      (f ? statusBadge(f) : demoBadge('Historical CAP', 'neutral')) + '</div><div class="card__body">' +
+      '<div class="metaline mb-16">' + metaItem('Organization', orgName(c.orgId)) + metaItem('Root cause quality', c.rootCauseQuality) +
+      metaItem('Effectiveness verification', humanStatus(c.verificationStatus)) + metaItem('Post-closure review', c.postClosureReview) + '</div>' +
+      '<div class="callout mb-16">CAP acceptance is not finding closure. Effectiveness review is separate from evidence acceptance and closure.</div>' +
+      '<div class="reg-section-title">Revision history</div>' + revs +
+      '<div class="reg-section-title mt-16">Recurrence / reopen path</div><p class="small">' + esc(c.recurrenceIndicator) + ' ' + esc(c.reopenPath) + '</p>' +
+      '</div></div>';
+  }).join('');
+  return pageHead('CAP Effectiveness', 'Decide whether accepted CAP actions worked after closure and whether recurrence needs attention.') +
+    guardrailStrip([
+      { label: 'Demo data' },
+      { label: 'CAP accepted is not finding closed', tone: 'warn' },
+      { label: 'Not a legal decision', tone: 'warn' }
+    ]) + rows;
+}
+
+function viewAiAssistant() {
+  var cards = state.aiSuggestions.map(function (s) {
+    var decision = s.decision ? '<div class="callout mt-12"><b>Recorded decision:</b> ' + humanStatus(s.decision.status) +
+      ' by ' + esc(s.decision.reviewer) + ' · saved in this browser for demo only.</div>' : '';
+    return '<div class="card mb-16"><div class="card__head"><h3>' + esc(s.title) + '</h3><div class="spacer"></div>' +
+      demoBadge('AI-generated draft - requires authorized review', 'warn') + v2Badge(s.status) + '</div><div class="card__body">' +
+      '<div class="small muted mb-8">Sources: ' + esc(s.sourceRefs.join(' · ')) + '</div>' +
+      '<textarea class="ai-draft" id="ai-edit-' + esc(s.id) + '">' + esc(s.decision && s.decision.finalText ? s.decision.finalText : s.draft) + '</textarea>' +
+      '<div class="callout mt-12">' + esc(s.limitation) + ' Not a legal decision.</div>' +
+      regulatoryTraceHtml(regulatoryTraceById(s.traceId), true) +
+      decision +
+      '<div class="row-actions mt-16">' +
+        '<button class="btn btn--ok btn--sm" data-act="ai-decision" data-id="' + s.id + '" data-decision="' + V2_STATUS.accepted + '">Accept draft</button>' +
+        '<button class="btn btn--primary btn--sm" data-act="ai-decision" data-id="' + s.id + '" data-decision="' + V2_STATUS.edited + '">Record edit</button>' +
+        '<button class="btn btn--danger btn--sm" data-act="ai-decision" data-id="' + s.id + '" data-decision="' + V2_STATUS.rejected + '">Reject</button>' +
+      '</div></div></div>';
+  }).join('');
+  return pageHead('AI Inspector Assistant Panel', 'Review source-referenced draft assistance with accept, edit and reject controls.') +
+    guardrailStrip([
+      { label: 'AI-generated draft - requires authorized review', tone: 'warn' },
+      { label: 'Demo data' },
+      { label: 'Not a legal decision', tone: 'warn' },
+      { label: 'No real AI service', tone: 'neutral' }
+    ]) + cards;
+}
+
+function viewSspNaspDashboard() {
+  var objectives = state.sspNasp.objectives.map(function (o) {
+    var spiRows = o.spis.map(function (s) {
+      return '<div class="spi-row"><div><b>' + esc(s.label) + '</b><div class="muted small">Target: ' + esc(s.target) + '</div></div><div><b>' + esc(s.current) + '</b><div class="muted small">' + esc(s.trend) + '</div></div></div>';
+    }).join('');
+    var actionRows = o.naspActions.map(function (a) {
+      return '<div class="row-between small v2-rowlink"><span><b>' + esc(a.id) + '</b> · ' + esc(a.owner) + '</span><span>' + esc(fmtDate(a.targetDate)) + ' · ' + humanStatus(a.status) + '</span></div>' +
+        '<div class="small muted">Linked oversight findings: ' + esc(a.linkedFindingIds.join(', ')) + '</div>';
+    }).join('');
+    return '<div class="card mb-16"><div class="card__head"><h3>' + esc(o.title) + '</h3><div class="spacer"></div>' + v2Badge(o.status) + '</div>' +
+      '<div class="card__body"><div class="reg-section-title">Safety Performance Indicators</div>' + spiRows +
+      '<div class="reg-section-title mt-16">NASP actions</div>' + actionRows + '</div></div>';
+  }).join('');
+  return pageHead('SSP/NASP Management Dashboard', 'Track safety objectives, SPI trends, NASP actions and responsible sections.') +
+    guardrailStrip([
+      { label: 'Demo data' },
+      { label: 'supports monitoring' },
+      { label: 'Not a legal decision', tone: 'warn' },
+      { label: 'No automatic state safety determination', tone: 'neutral' }
+    ]) + objectives;
 }
 
 /* A finding row for list views. Shows owner, due date, status, next action. */
@@ -366,6 +700,7 @@ function viewChecklistRunner() {
             '<span><b>Regulatory reference:</b> ' + esc(it.ref) + '</span>' +
             '<span><b>Expected evidence:</b> ' + esc(it.evidence) + '</span>' +
           '</div>' +
+          regulatoryTraceHtml(regulatoryTraceForQuestion(it.id), true) +
         '</div>' +
       '</div>' +
       '<div class="cl-item__body">' +
@@ -500,6 +835,7 @@ function viewFinding() {
           '<div class="metaline__k">Description</div><div class="mt-12">' + esc(f.description) + '</div>' +
           '<div class="metaline__k mt-16">Finding basis / regulatory reference</div>' +
           '<div class="mt-12 small muted">' + esc(f.reference) + ' · ' + esc(f.basis) + '</div>' +
+          regulatoryTraceHtml(regulatoryTraceForFinding(f), true) +
         '</div></div>' +
         '<div class="card"><div class="card__head"><h3>Corrective Action Plan (CAP)</h3><div class="spacer"></div>' +
           (isAuditee && (f.status === 'WAITING_CAP' || f.status === 'CAP_MORE_INFO')
@@ -662,6 +998,7 @@ function viewTemplatePreview() {
       '<div style="flex:1"><div class="cl-item__q">' + esc(it.text) + '</div>' +
       '<div class="cl-item__refs"><span><b>Regulatory reference:</b> ' + esc(it.ref) + '</span>' +
       '<span><b>Expected evidence:</b> ' + esc(it.evidence) + '</span></div>' +
+      regulatoryTraceHtml(regulatoryTraceForQuestion(it.id), true) +
       '<div class="answers" style="opacity:.55;pointer-events:none">' +
         '<span class="answer">Compliant</span><span class="answer">Non-Compliant</span>' +
         '<span class="answer">Observation</span><span class="answer">Not Applicable</span></div>' +

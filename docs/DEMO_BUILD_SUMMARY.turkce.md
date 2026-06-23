@@ -3,133 +3,211 @@
 > İngilizce kanonik sürüm: [`DEMO_BUILD_SUMMARY.md`](DEMO_BUILD_SUMMARY.md).
 > Bu dosya paydaş aktarımı içindir; çakışma olursa İngilizce sürüm esastır.
 
-**Yapı türü:** Paydaş geri bildirimi için yalnızca ön yüz (frontend) tıklanabilir demo.
-**Teknoloji:** HTML + CSS + Saf (Vanilla) JavaScript. Yalnızca sahte veri ve istemci tarafı durum.
-**Üretime hazır değildir.** Backend, veritabanı, API, gerçek kimlik doğrulama, gerçek dosya
-yükleme, gerçek e-posta/SMS/bildirim servisi, gerçek belge depolama, BI aracı, çevrimdışı
-uygulama, ödeme veya e-imza yoktur. Her "kaydet", "yükle", "gönder" ve "rapor" tarayıcıda
-simüle edilir.
+**Yapı türü:** Paydaş geri bildirimi için yalnızca ön yüz (frontend) V2 tıklanabilir demo.
+**Teknoloji:** HTML + CSS + Saf (Vanilla) JavaScript. Sahte veri, istemci tarafı durum
+ve küçük bir saklama sınırı arkasında tarayıcıya özel demo kalıcılığı.
+**Üretime hazır değildir.** Backend, veritabanı, API, gerçek kimlik doğrulama,
+gerçek dosya yükleme, gerçek AI servisi, gerçek düzenleyici doküman alma,
+gerçek bildirim servisi, gerçek belge depolama, mobil/çevrimdışı uygulama,
+e-imza veya framework geçişi yoktur.
 
-**Tarih bağlamı:** Uygulama "bugün" olarak **15 Haziran 2026** tarihini kullanır; böylece
-"Yakında Dolacak" / "Gecikmiş" hesapları deterministiktir.
+**Tarih bağlamı:** Uygulama "bugün" olarak **15 Haziran 2026** tarihini kullanır;
+böylece **Due Soon** / **Overdue** hesapları deterministiktir.
 
 ---
 
 ## Nasıl çalıştırılır
 
-Proje kök dizininden herhangi bir statik sunucu ile açın:
+`index.html` dosyasını doğrudan tarayıcıda açın veya klasörü statik olarak servis edin:
 
-```
+```bash
 python3 -m http.server 4360
-# ardından http://localhost:4360/ adresini açın
 ```
 
-Ya da `index.html` dosyasını doğrudan tarayıcıda açın (`file://` üzerinden çalışır; modül
-yok, derleme adımı yok). İstediğiniz an sağ üstteki **Reset demo** ile başlangıç durumuna
-dönebilirsiniz.
+Üst şeritteki **Reset demo**, bu tarayıcıda saklanan demo durumunu temizler ve
+başlangıç verisine döndürür.
 
 ---
 
-## Roller
+## Değişen dosyalar
 
-1. **CAA Manager (Yönetici)** — gözetim, risk, 2026 denetim planı, Oversight Health Index.
-2. **CAA Inspector (Denetçi)** — denetim ve checklist yürütür, bulgu açar, CAP ve kanıt inceler, bulgu kapatır.
-3. **Auditee (Denetlenen — Airline XYZ)** — yalnızca kendi kuruluşunu görür; CAP gönderir, kanıt yükler.
-4. **Admin Preview** — checklist şablonlarını ve denetim kaydını (audit log) önizler.
+| Dosya | Amaç |
+|---|---|
+| `index.html` | Demo şeridi artık tarayıcıya kayıtlı frontend-only demo olduğunu ve gerçek backend/AI/regülasyon entegrasyonu olmadığını belirtir. |
+| `css/styles.css` | V2 ekranları, Regulatory Trace, offline outbox, AI taslak kontrolleri ve 390px mobil düzeni. |
+| `js/data.js` | Backend'e yakın sahte kayıtlar, V2 seed verileri, açık status değerleri ve izole `localStorage` demo saklama yardımcıları. |
+| `js/helpers.js` | Seçiciler, status yardımcıları, regulatory trace lookup, outbox yardımcıları ve demo badge yardımcıları. |
+| `js/views.js` | Mevcut ekranlar, dokuz V2 ekranı ve yeniden kullanılabilir Regulatory Trace görünümü. |
+| `js/app.js` | V2 navigasyonu, merkezi kalıcılık çağrıları, simüle offline geçişleri, AI karar geçişleri ve yeni kayıtlar için stabil ID üretimi. |
+| `docs/DEMO_BUILD_SUMMARY.md` | İngilizce kanonik özet. |
+| `docs/DEMO_BUILD_SUMMARY.turkce.md` | Bu Türkçe paydaş özeti. |
 
-Rol değiştirmek için üst bardaki **View as** seçicisini veya kenar çubuğundaki **Role select**
-bağlantısını kullanın.
-
----
-
-## Uygulanan ekranlar
-
-1. Rol Seçme / Giriş Demosu
-2. Yönetici Panosu (KPI + Oversight Health Index)
-3. Denetçi Panosu
-4. Denetim Plan Takvimi (2026 planı, 12 ay)
-5. Yeni Denetim Sihirbazı (5 adımda yeni denetim oluşturup planlama)
-6. Denetim Detayı
-7. Checklist Yürütücü (Checklist Runner)
-8. Bulgu Detayı — 6 adımlı yaşam döngüsü göstergesi
-9. Denetlenen "Bulgularım" (My Findings)
-10. CAP Gönderme Formu (sade dilde yardım metinleri)
-11. Kanıt Yükleme + Kanıt İnceleme (ayrı denetlenen/denetçi diyalogları)
-12. Kapatılmış Bulgu / Rapor Önizleme
-13. Admin Checklist Şablon Önizleme
-14. Kuruluş kaydı (liste + kuruluş detayı) — Yönetici / Denetçi
-15. Admin Users (salt-okunur) ve Admin Settings (salt-okunur yapılandırma önizlemesi)
-16. Bulgu listesi (filtreli), Rapor listesi, Denetlenen Mesajları, Admin Denetim Kaydı
-
-Rol navigasyonu UX planına uygun: Yönetici (Pano, Denetim Planı, Bulgular,
-Kuruluşlar, Raporlar), Denetçi (Pano, Denetim Planı, Bulgular, Kuruluşlar,
-Raporlar), Denetlenen (Bulgularım, Mesajlar, Raporlar), Admin (Şablonlar,
-Kullanıcılar, Ayarlar, Denetim Kaydı).
+Backend, veritabanı, API, framework geçişi, gerçek dosya saklama, gerçek AI
+servisi, gerçek regülasyon içe aktarma veya gerçek bildirim servisi eklenmedi.
 
 ---
 
-## Doğrulanan demo senaryosu (uçtan uca, konsol hatası yok)
+## Roller ve ekranlar
 
-1. Yönetici 2026 planını ve panoyu görür — başlangıç: 3 açık bulgu, OHI **61 (Dikkat Gerekiyor)**.
-2. Denetçi Airline XYZ Operatör Denetimini (`AUD-2026-001`) açar ve Flight Operations checklist'ini başlatır.
-3. Denetçi **"Mürettebat eğitim kayıtları tam ve güncel mi?"** sorusunu **Non-Compliant** işaretler.
-4. Denetçi **OPS-2026-001** bulgusunu açar (Level 2 Major, son tarih 15 Tem 2026) — durum *CAP Bekliyor*.
-5. Denetlenen (Airline XYZ) yalnızca kendi bulgularını görür; CAP gönderir (kök neden, düzeltici/önleyici faaliyet, sorumlu, hedef tarih).
-6. Denetçi **CAP'i kabul eder** → durum *CAP Kabul Edildi — Kanıt Gerekli* olur. **Bulgu kapanmaz.**
-7. Denetlenen `Training_Record_Updated.pdf` sahte kanıtını yükler.
-8. Denetçi kanıtı inceler ve **kabul eder** → bulgu **Kapatıldı** (kapatma dayanağı: kanıt kabul edildi).
-9. Yönetici panosu güncellenir: kapanan bulgular 2 → 3, ortalama kapatma süresi 24 → 16 gün, OHI **61 → 64**.
+Mevcut roller korunmuştur:
 
-**Ayrıca doğrulandı:** Yeni Denetim Sihirbazı (5 adımda denetim planlama); Yetkili Kapatma
-(gerekçe zorunlu, denetim kaydına işlenir, denetlenene gösterilmez); Kuruluş kaydı listesi/detayı;
-Admin Users/Settings önizlemeleri; ve **izlenebilir hatırlatma** (CAA, açık bulgu için
-denetlenene ekran içi hatırlatma gönderir + denetim kaydına işlenir — gerçek e-posta yok).
+1. **CAA Manager** — yönetim gözetimi, denetim planı, bulgular, kuruluşlar, raporlar.
+2. **CAA Inspector** — denetim/checklist yürütme, bulgu açma, CAP/kanıt inceleme.
+3. **Auditee (Airline XYZ)** — kendi bulguları, CAP gönderimi, kanıt dosya adı gönderimi.
+4. **Admin Preview** — şablonlar, kullanıcılar, ayarlar, audit log, regulatory preview.
 
----
+Eklenen Frontend V2 ekranları:
 
-## Korunan ürün kuralları
+1. Safety Intelligence Dashboard
+2. Organization Risk Profile
+3. Regulatory Library
+4. Dynamic Inspection Package Builder
+5. Offline Field Inspection
+6. USOAP Readiness Workspace
+7. CAP Effectiveness
+8. AI Inspector Assistant Panel
+9. SSP/NASP Management Dashboard
 
-- **CAP kabulü kapatma değildir.** Kapatma, kabul edilmiş kanıta (ya da gerekçeli ve audit-log'lu yetkili kapatmaya) bağlıdır.
-- **Her bulgu**; sahip, son tarih, durum ve sonraki aksiyonu gösterir.
-- **Denetlenen izolasyonu.** Denetlenen yalnızca Airline XYZ bulgularını görür; **Internal CAA Note**, denetçi iş yükü, diğer kuruluşlar ve dahili risk skoru denetlenene asla gösterilmez.
-- **Comment to Auditee** ile **Internal CAA Note** ayrı tutulur.
-- **Due Date / Target / Due Soon / Overdue** dili kullanılır; ağır SLA modülü yoktur.
-- **Oversight Health Index yalnızca bir göstergedir** — otomatik yaptırım, askıya alma veya kapatma tetiklemez.
-- Düzenleyici ifadeler dikkatli kullanılır ("regulatory reference", "configured rule", "finding basis", "expected evidence"); raporlar yasal belge değil, demo önizlemesidir.
+V1 iş akışı ekranları erişilebilir kalır: rol seçimi, yönetici/denetçi panoları,
+denetim takvimi, denetim detayı, checklist runner, bulgu detayı, Auditee My
+Findings, CAP formu, kanıt formu/inceleme, rapor önizleme, admin şablon
+önizleme, kuruluşlar, kullanıcılar, ayarlar, raporlar, mesajlar ve audit log.
 
 ---
 
-## Sahte (gerçek olmayan) öğeler
+## Demo kalıcılığı
 
-- **Kimlik doğrulama:** yalnızca rol seçimi; parola/oturum/MFA yok.
-- **Dosya yükleme:** yalnızca dosya adı ve boyutu gösterilir; hiçbir şey okunmaz/yüklenmez/saklanmaz. Kanıt sürümleri bellekte tutulur ve eski sürümlerin üzerine yazılmaz.
-- **Bildirimler:** ekran içi toast + role özel bildirim paneli. E-posta/SMS yok.
-- **Raporlar:** ekranda önizleme; "Export PDF (mock)" yalnızca bir toast gösterir.
-- **Panolar / KPI / OHI:** bellekteki verilerden canlı hesaplanır; kapatmadan sonra değişir.
-- **Denetim kaydı:** bellekte tutulan bir liste; kalıcı veya değiştirilemez değildir.
-- **Kalıcılık yok:** sayfa yenileme veya **Reset demo** başlangıç verisine döner.
+Demo artık `aviasurveil360:v2-demo-state` anahtarı altında şu sahte öğeleri
+tarayıcıda saklar:
+
+- oluşturulan bulgular
+- CAP gönderimleri ve CAP revision biçimli kayıtlar
+- sahte kanıt dosya adları ve evidence version biçimli kayıtlar
+- AI accept/edit/reject kararları
+- seçilen filtreler
+- simüle offline outbox öğeleri
+
+`localStorage` erişimi yalnızca `js/data.js` içinde `loadDemoState`,
+`saveDemoState`, `clearDemoState`, `persistAfterAction` ve `initializeState`
+yardımcıları arkasındadır. View ve modal kodları doğrudan storage kullanmaz;
+merkezi action fonksiyonlarını çağırır.
+
+Bu yalnızca tarayıcıya özel demo kalıcılığıdır. Üretim kalıcılığı, yetkilendirme,
+audit saklama, kanıt zinciri veya yasal kayıt değildir.
 
 ---
 
-## Bilinen kısıtlar
+## Simüle offline davranışı
 
-- Durum yalnızca bellektedir; sayfa yenilenince sıfırlanır (demo için bilinçli tercih).
-- Yalnızca **Flight Operations Audit** şablonu yürütülebilir; diğerleri Admin listesinde önizlemedir.
-- Sihirbazla oluşturulan denetimler yalnızca bellekteki plana eklenir (yenileme/sıfırlamada kaybolur).
-- Diğer kuruluşların verileri Yönetici panosunu gerçekçi göstermek içindir; gerçek veri değildir.
-- Erişilebilirlik makul düzeydedir ancak resmi olarak denetlenmemiştir.
-- Düzen masaüstü/dizüstü genişlikleri için ayarlanmıştır; mobil uygulama değildir.
+**Offline Field Inspection** ekranında **Simulate offline** kontrolü vardır.
+Offline simülasyonu açıkken denetçi sahte bir saha kanıt aksiyonu kaydedebilir.
+Bu aksiyon **Offline Outbox** içinde şu mesajla saklanır:
+
+```text
+Internet unavailable - saved locally. It will sync automatically when connection returns.
+```
+
+Simüle online duruma dönünce bekleyen öğeler `synced_to_demo_state` olur ve audit
+log içine `Offline item synced (demo)` kaydı düşer. UI bunu açıkça **Offline
+simulated** ve **No production sync** olarak etiketler.
+
+Service worker, şifreli lokal saklama, gerçek attachment queue, mobil uygulama,
+conflict engine veya üretim offline sync eklenmedi.
 
 ---
 
-## Paydaşlara sorulacak sorular
+## Regulatory Trace
 
-1. `Denetim → Checklist → Bulgu → CAP → Kanıt → İnceleme → Kapatma` döngüsü süreçlerinize uyuyor mu?
-2. Bulguyu kim **açabilmeli**, kim **kapatabilmeli**?
-3. Kapatma için **her zaman kanıt** mı gerekli, yoksa açık bir "yetkili kapatma" yolu mu lazım (ve kim kullanabilir)?
-4. Denetlenen **son tarih uzatması** isteyebilmeli mi, bu nasıl görünmeli?
-5. **Comment to Auditee** ile **Internal CAA Note** ayrımı yeterince net mi?
-6. Yöneticiler için en önemli **pano metriği** hangisi; **Oversight Health Index**'in "yalnızca gösterge" çerçevesi kabul edilebilir mi?
-7. Sırada hangi **denetim alanı** demolansın (Airworthiness, Ramp, Security, Cabin, Dangerous Goods)?
-8. Doğru **önem (severity) sözlüğü** ne olmalı (Level 1 Critical / Level 2 Major / Level 3 Minor / Observation)?
-9. Hangi yetenekler demoda kalsın, hangileri **Faz 2 (MVP)** olsun — örn. denetim oluşturma sihirbazı, hatırlatmalar, kuruluş kaydı, gerçek kanıt depolama?
+V2 ekranlarında ve ilgili mevcut yüzeylerde yeniden kullanılabilir **Regulatory
+Trace** gösterimi vardır. Sahte kaynak doküman/sürüm, clause veya PQ referansı,
+effective date, applicability reason, bağlı checklist/evidence ve approval state
+gösterir.
+
+Bu yalnızca demo verisidir. Gerçek düzenleyici materyal içe aktarmaz; yasal,
+enforcement, sertifika, USOAP veya closure kararı oluşturmaz.
+
+---
+
+## UI guardrail etiketleri
+
+Gelişmiş yetenekler ekranda açıkça şöyle etiketlenir:
+
+- `Demo data`
+- `Mock regulatory library`
+- `Offline simulated`
+- `AI-generated draft - requires authorized review`
+- `Not a legal decision`
+- `Frontend-only demo - saved in this browser`
+- `No production sync`
+- `No real AI service`
+- `No real regulatory ingestion`
+
+Korunan ürün kuralları:
+
+- CAP kabulü bulgu kapatma değildir.
+- Bulgu yalnızca kanıt kabulünden sonra veya yetkili kapatma ile kapanır.
+- Auditee; Internal CAA Note, denetçi iş yükü, başka kuruluşlar, dahili risk
+  skoru, regulatory governance veya AI governance verisi görmez.
+- `Comment to Auditee` ve `Internal CAA Note` ayrı kalır.
+- Mock upload yalnızca dosya adını gösterir/saklar.
+
+---
+
+## Doğrulama sonuçları
+
+Durum: **verified locally** (frontend-only demo).
+
+Çalıştırılan syntax kontrolleri:
+
+```bash
+node --check js/data.js
+node --check js/helpers.js
+node --check js/views.js
+node --check js/app.js
+```
+
+Playwright ile `index.html` üzerinde tarayıcı smoke testi yapıldı; konsol hatası yok.
+Doğrulananlar:
+
+- dokuz V2 ekranının role uygun navigasyonla erişilebilir olması
+- mevcut Operator Audit senaryosunun uçtan uca çalışması
+- CAP kabulünden sonra `OPS-2026-001` durumunun `EVIDENCE_REQUIRED` kalması
+- kanıt kabulünden sonra `OPS-2026-001` durumunun `CLOSED` olması
+- auditee görünümünde `Internal CAA Notes` sayısının `0` olması
+- refresh sonrası bulgu, CAP, kanıt dosya adı, AI kararı ve offline outbox durumunun korunması
+- Reset demo sonrası `localStorage` ve oluşturulan demo durumunun temizlenmesi
+- offline outbox'ın beklemeden `synced_to_demo_state` durumuna geçmesi
+- audit log içinde `Offline item synced (demo)` kaydı oluşması
+- tüm yeni V2 ekranlarında 390px viewport için yatay taşma olmaması
+
+Final browser evidence özeti:
+
+```text
+afterIssue: WAITING_CAP
+afterSubmitCap: CAP_SUBMITTED
+afterAcceptCap: EVIDENCE_REQUIRED
+afterSubmitEvidence: EVIDENCE_SUBMITTED
+afterAcceptEvidence: CLOSED
+aiDecision: edited
+outboxStatus after refresh: synced_to_demo_state
+reset storage: null
+console errors: []
+mobile scrollWidth/clientWidth: 390/390 on all V2 screens
+```
+
+---
+
+## Sahte öğeler ve kısıtlar
+
+- Rol seçimi gerçek kimlik doğrulama değildir.
+- Tarayıcı kalıcılığı üretim storage değildir.
+- Kanıt yalnızca dosya adı yakalar; dosya okunmaz veya yüklenmez.
+- Regulatory Library mock/source-shaped veridir.
+- USOAP readiness resmi ICAO assessment değildir ve EI iyileşmesi iddiası yoktur.
+- SSP/NASP yalnızca izlemeyi destekler; otomatik state safety determination değildir.
+- AI önerileri yalnızca taslaktır; resmi çıktı yayımlayamaz.
+- Offline outbox simüledir; mobil/offline-ready implementation değildir.
+- Audit log demo durumudur; değiştirilemez audit evidence değildir.
+- `README.md` ve `MANIFEST.md` halen eski Markdown-only paket anlatımını içerir;
+  runnable prototype harici paydaşlara devredilecekse ayrı bir package-truth
+  cleanup ile güncellenmelidir.

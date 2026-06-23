@@ -1,11 +1,12 @@
 # AviaSurveil360 — Demo Build Summary
 
-**Build type:** Frontend-only clickable demo for stakeholder feedback.
-**Stack:** HTML + CSS + Vanilla JavaScript. Mock data and client-side state only.
-**Not production-ready.** No backend, database, API, real authentication, real file
-upload, real email/SMS/notification service, real document storage, BI builder,
-offline app, payment, e-signature, or framework. Every "save", "upload", "send"
-and "report" is simulated in the browser.
+**Build type:** Frontend-only V2 clickable demo for stakeholder feedback.
+**Stack:** HTML + CSS + Vanilla JavaScript. Mock data, client-side state, and
+browser-only demo persistence through a small storage boundary.
+**Not production-ready.** No backend, database, API, real authentication, real
+file upload, real AI service, real regulatory ingestion, real notification
+service, real document storage, mobile/offline app, e-signature, or framework
+migration.
 
 **Demo date context:** the app treats `15 June 2026` as "today" so Due Soon /
 Overdue math is deterministic.
@@ -14,144 +15,199 @@ Overdue math is deterministic.
 
 ## How to run
 
-From the project root, serve the folder with any static server and open it, e.g.:
+Open `index.html` directly in a browser, or serve the folder with any static
+server:
 
-```
+```bash
 python3 -m http.server 4360
-# then open http://localhost:4360/
 ```
 
-Or simply open `index.html` directly in a browser (it runs from `file://` —
-plain `<script>` tags, no modules, no build step). Use **Reset demo** (top-right)
-to return to the starting state at any time.
+Use **Reset demo** in the top ribbon to clear this browser's saved demo state
+and return to seed data.
 
 ---
 
-## Changed / added files
+## Changed files
 
 | File | Purpose |
 |---|---|
-| `index.html` | App shell: demo ribbon, app root, toast host, modal host, script includes. |
-| `css/styles.css` | All styling — restrained navy/slate CAA palette, dashboards, lifecycle stepper, report sheet, modals, responsive rules. |
-| `js/data.js` | Mock data + client state: roles, severities, finding statuses, organizations, the Flight Operations checklist template, the 2026 audit plan, seed findings, notifications, audit log, and `seedState()`. |
-| `js/helpers.js` | Formatting, date/Due-status logic, lookups, role-scoped visibility, finding presentation, KPI computation, Oversight Health Index, audit-log + notification + toast helpers. |
-| `js/views.js` | All screen renderers (return HTML strings) and the modal builders. |
-| `js/app.js` | Controller: role-based navigation, routing, event delegation, and every lifecycle mutation (issue finding, submit/accept CAP, upload/accept evidence, close). |
-| `docs/plans/2026-06-14-aviasurveil-demo-only-prototype-plan.md` | Saved execution plan (objective, scope, stages, verification, risks, execution prompt). |
-| `docs/plans/index.md` | Active plan tracking index. |
-| `docs/DEMO_BUILD_SUMMARY.md` | This file. |
-| `.claude/launch.json` | Local static-server config used to preview the demo (dev convenience only). |
+| `index.html` | Demo ribbon now states frontend-only browser persistence and no real backend/AI/regulatory integrations. |
+| `css/styles.css` | V2 responsive UI for regulatory trace ribbons, governance panels, offline outbox, AI draft controls, and 390px mobile behavior. |
+| `js/data.js` | Backend-ready mock records, seed V2 datasets, status values, and isolated `localStorage` demo storage helpers. |
+| `js/helpers.js` | Selectors, status helpers, regulatory trace lookups, outbox helpers, and demo badge helpers. |
+| `js/views.js` | Existing screens plus the nine Frontend V2 screens and reusable Regulatory Trace display. |
+| `js/app.js` | V2 navigation, centralized persistence calls, simulated offline transitions, AI decision transitions, and stable ID generation for new records. |
+| `docs/DEMO_BUILD_SUMMARY.md` | This English canonical build summary. |
+| `docs/DEMO_BUILD_SUMMARY.turkce.md` | Turkish companion summary for stakeholder handoff. |
+| `docs/plans/index.md` | Updated only if the active plan status / next todo changes. |
 
-No numbered source/reference docs under `docs/0X_*` were modified.
-
----
-
-## Roles implemented
-
-1. **CAA Manager** — oversight, risk, the 2026 surveillance plan, Oversight Health Index.
-2. **CAA Inspector** — runs audits and checklists, issues findings, reviews CAP and evidence, closes findings.
-3. **Auditee (Airline XYZ)** — sees only its own organization; submits CAP, uploads evidence.
-4. **Admin Preview** — previews checklist templates and the audit log.
-
-Switch roles from the **View as** selector in the top bar, or return to the role
-select screen via the sidebar.
+No backend, database, API, framework migration, real file storage, real AI
+service, real regulatory ingestion, or real notification service was added.
 
 ---
 
-## Screens implemented
+## Roles and screens
 
-1. Role Switch / Login Demo
-2. Manager Dashboard (KPIs + Oversight Health Index)
-3. Inspector Dashboard
-4. Audit Plan Calendar (2026 surveillance plan, all 12 months)
-5. New Audit Wizard (5 steps — create and schedule a new audit into the plan)
-6. Audit Detail
-7. Checklist Runner
-8. Finding Detail with 6-step lifecycle stepper
-9. Auditee My Findings
-10. CAP Submission Form (plain-language helper text)
-11. Evidence Upload + Evidence Review (separate auditee/inspector dialogs)
-12. Closed Finding / Report Preview
-13. Admin Checklist Template Preview
-14. Organizations registry (list + organization detail) — Manager / Inspector
-15. Admin Users (read-only) and Admin Settings (read-only configured-rules preview)
-16. Findings list (filterable), Reports list, Auditee Messages, Admin Audit Log (supporting screens)
+Existing role flow remains:
 
-Role navigation now matches the UX plan: Manager (Dashboard, Surveillance Plan,
-Findings, Organizations, Reports), Inspector (Dashboard, Audit Plan, Findings,
-Organizations, Reports), Auditee (My Findings, Messages, Reports), Admin
-(Templates, Users, Settings, Audit Log).
+1. **CAA Manager** — management oversight, surveillance plan, findings, organizations, reports.
+2. **CAA Inspector** — audit execution, checklist runner, findings, CAP/evidence review.
+3. **Auditee (Airline XYZ)** — own findings, CAP submission, evidence filename submission.
+4. **Admin Preview** — templates, users, settings, audit log, regulatory preview.
 
----
+Frontend V2 screens added:
 
-## Verified demo scenario (end to end, no console errors)
+1. Safety Intelligence Dashboard
+2. Organization Risk Profile
+3. Regulatory Library
+4. Dynamic Inspection Package Builder
+5. Offline Field Inspection
+6. USOAP Readiness Workspace
+7. CAP Effectiveness
+8. AI Inspector Assistant Panel
+9. SSP/NASP Management Dashboard
 
-1. Manager sees the 2026 surveillance plan and dashboard — baseline: 3 open findings, OHI **61 (Needs Attention)**.
-2. Inspector opens the Airline XYZ Operator Audit (`AUD-2026-001`) and starts the Flight Operations checklist.
-3. Inspector marks **"Are crew training records complete and up to date?"** as **Non-Compliant**.
-4. Inspector issues **Finding OPS-2026-001** (Level 2 Major, due 15 Jul 2026) — status *Waiting for CAP*.
-5. Auditee (Airline XYZ) sees only its own findings, submits the CAP (root cause, corrective action, preventive action, responsible person, target date).
-6. Inspector **accepts the CAP** → status becomes *CAP Accepted — Evidence Required*. **The finding does NOT close.**
-7. Auditee uploads mock evidence `Training_Record_Updated.pdf`.
-8. Inspector reviews and **accepts the evidence** → finding **Closed** (closure basis: evidence accepted and verified).
-9. Manager dashboard updates: closed findings 2 → 3, average closure time 24 → 16 days, OHI **61 → 64**.
-
-The audit log records the full chain: Finding issued → CAP submitted → CAP accepted
-→ Evidence submitted → Evidence accepted → Finding closed.
-
-**Also verified:**
-- **New Audit Wizard** — Manager/Inspector schedules a new audit through all 5 steps; it is added to the 2026 plan (`AUD-2026-009`) and opens its detail page.
-- **Authorized closure** — Inspector closes a finding without evidence; the reason is required (empty reason is blocked) and the closure is recorded in the audit trail. The auditee never sees this control or another organization's finding.
-- **Organizations registry** (list + detail), **Admin Users**, and **Admin Settings** render correctly; role navigation matches the UX plan.
-- **Traceable reminder** — a CAA reminder on an auditee-owned finding adds an in-app notification and an audit-log entry (`Reminder sent to auditee`). Auditee navigation stays scoped to My Findings / Messages / Reports (no Organizations / Users / Settings).
+Existing V1 workflow screens remain reachable: role select, manager dashboard,
+inspector dashboard, audit plan calendar, audit detail, checklist runner,
+finding detail, auditee My Findings, CAP form, evidence form/review, closure
+report preview, admin template preview, organizations, users, settings, reports,
+messages, and audit log.
 
 ---
 
-## Product rules enforced in the demo
+## Backend-ready demo persistence
 
-- **CAP accepted is not closure.** Closure is gated on accepted evidence (or an authorized, audit-logged path). Verified: accepting the CAP leaves the finding open at *Evidence Required*.
-- **Authorized closure** is wired as a CAA-only alternative path: it requires a typed reason, is recorded in the audit trail (`Finding closed (authorized closure)`), and is not offered to the auditee.
-- **Traceable reminders** replace email follow-up: on an open finding the auditee owes a response on, a CAA user can "Send reminder to auditee", which posts an in-app notification and an audit-log entry — no real email is sent.
-- **Every finding shows owner, due date, status and next action** — on list rows, the dashboard, and the finding detail.
-- **Auditee isolation.** The auditee sees only Airline XYZ findings; the **Internal CAA Notes** section, inspector workload, other organizations, and internal risk scoring are never rendered for the auditee role. Verified in the DOM.
-- **Comment to Auditee vs Internal CAA Note** are separate inputs in the review dialogs and separate sections on the finding detail.
-- **Due Date / Target / Due Soon / Overdue** language is used; no heavy SLA module.
-- **Oversight Health Index is an indicator only** — the UI states it triggers no automatic enforcement, suspension, or closure.
-- **Careful regulatory wording** — "regulatory reference", "configured rule", "finding basis", "expected evidence"; reports are marked as mock previews, not legal documents.
+The demo now persists these mock items in `localStorage` under
+`aviasurveil360:v2-demo-state`:
 
----
+- created findings
+- CAP submissions and CAP revision-shaped records
+- mock evidence filenames and evidence version-shaped records
+- AI accept/edit/reject decisions
+- selected filters
+- simulated offline outbox items
 
-## Mocked items (explicitly not real)
+`localStorage` access is isolated in `js/data.js` behind `loadDemoState`,
+`saveDemoState`, `clearDemoState`, `persistAfterAction`, and `initializeState`.
+Views and modals call centralized action functions instead of using storage
+directly. Records use stable IDs and explicit status values so a later backend
+can replace the demo storage boundary with API calls with less UI rework.
 
-- **Authentication:** role selection only; no credentials, sessions, or MFA.
-- **File upload:** selecting a file shows a **file name and size only** — nothing is read, uploaded, or stored. Evidence "versions" are tracked in memory and preserved (old versions are not overwritten).
-- **Notifications:** in-UI toast + a per-role notification panel. No email/SMS/WhatsApp.
-- **Reports:** an on-screen preview sheet. "Export PDF (mock)" only shows a toast — no file is generated.
-- **Dashboards / KPIs / OHI:** computed live from the in-memory findings/audits, so they change after closure. The OHI formula uses the documented component weights but with demo-simplified inputs.
-- **Audit log:** an in-memory list; not tamper-evident or persisted.
-- **Persistence:** none. A page refresh or **Reset demo** returns to the seed data.
+This is still browser-only demo persistence. It is not production persistence,
+authorization, audit storage, evidence chain-of-custody, or legal recordkeeping.
 
 ---
 
-## Known limitations
+## Simulated offline behavior
 
-- State is in-memory only; refreshing the page resets everything (by design for a demo).
-- Only one checklist template (**Flight Operations Audit**) is runnable; other templates appear in the Admin list as preview-only. The New Audit Wizard lets you schedule any template, but the runner only renders the Flight Operations items.
-- Audits created with the New Audit Wizard are added to the in-memory plan only (lost on refresh / reset).
-- Seed numbers for other organizations exist only to make the Manager view realistic; they are not a real data set.
-- Accessibility is reasonable (semantic headings, contrast, keyboard-focusable controls) but not formally audited.
-- Layout is tuned for desktop/laptop widths with a basic responsive fallback; it is not a mobile app.
+The **Offline Field Inspection** screen includes a **Simulate offline** control.
+When offline simulation is on, the inspector can save a mock field evidence
+action. The action is stored in the **Offline Outbox** with:
+
+```text
+Internet unavailable - saved locally. It will sync automatically when connection returns.
+```
+
+When simulated online state returns, waiting outbox items move to
+`synced_to_demo_state`, and the audit log records `Offline item synced (demo)`.
+The UI labels this as **Offline simulated** and **No production sync**.
+
+No service worker, encrypted local store, real attachment queue, mobile app,
+conflict engine, or production offline sync was created.
 
 ---
 
-## Stakeholder feedback questions
+## Regulatory trace pattern
 
-1. Does the `Audit → Checklist → Finding → CAP → Evidence → Review → Closure` lifecycle match your surveillance process?
-2. Who should be allowed to **issue** findings, and who should be allowed to **close** them?
-3. Is **evidence always required before closure**, or do you need an explicit "authorized closure" path (and who may use it)?
-4. Should the auditee be able to **request a due-date extension**, and how should that appear?
-5. Is the split between **Comment to Auditee** and **Internal CAA Note** clear and sufficient?
-6. Which **dashboard metric** matters most to managers, and is the **Oversight Health Index** framing acceptable as an indicator-only signal?
-7. Which **audit domain** should we demo next (Airworthiness, Ramp, Security, Cabin, Dangerous Goods)?
-8. What is the right **severity vocabulary** (Level 1 Critical / Level 2 Major / Level 3 Minor / Observation)?
-9. Which capabilities belong in the demo vs **Phase 2 (MVP)** — e.g. audit creation wizard, reminders, organization registry, real evidence storage?
+A reusable **Regulatory Trace** display appears on V2 screens and relevant
+existing surfaces. It shows mock source document/version, clause or PQ reference,
+effective date, applicability reason, linked checklist/evidence, approval state,
+and guardrails such as **Mock regulatory library** and **Not a legal decision**.
+
+This is demo data only. It does not ingest real regulatory material and does not
+create legal, enforcement, certificate, USOAP, or closure decisions.
+
+---
+
+## Guardrails shown in the UI
+
+Advanced capabilities are visibly labeled as:
+
+- `Demo data`
+- `Mock regulatory library`
+- `Offline simulated`
+- `AI-generated draft - requires authorized review`
+- `Not a legal decision`
+- `Frontend-only demo - saved in this browser`
+- `No production sync`
+- `No real AI service`
+- `No real regulatory ingestion`
+
+The original product rules remain preserved:
+
+- CAP accepted is not finding closure.
+- A finding closes only after evidence acceptance or authorized closure.
+- Auditee views do not show internal CAA notes, inspector workload, other
+  organizations, internal risk scoring, regulatory governance data, or AI
+  governance data.
+- `Comment to Auditee` and `Internal CAA Note` remain separate.
+- Mock uploads store/display filenames only.
+
+---
+
+## Verification results
+
+Status: **verified locally** for the frontend-only demo.
+
+Automated syntax checks:
+
+```bash
+node --check js/data.js
+node --check js/helpers.js
+node --check js/views.js
+node --check js/app.js
+```
+
+Browser smoke verification used Playwright against `index.html` with no console
+errors. Verified:
+
+- all nine V2 screens are reachable by role-appropriate navigation
+- original Operator Audit scenario still works end to end
+- CAP acceptance leaves `OPS-2026-001` at `EVIDENCE_REQUIRED`
+- evidence acceptance closes `OPS-2026-001`
+- auditee view showed `0` occurrences of `Internal CAA Notes`
+- refresh preserves created finding, CAP, evidence filename, AI decision, and offline outbox state
+- Reset demo clears `localStorage` and removes created demo state
+- offline outbox transitions from waiting to `synced_to_demo_state`
+- audit log records `Offline item synced (demo)`
+- 390px viewport had no horizontal overflow on all new V2 screens
+
+Final browser evidence summary:
+
+```text
+afterIssue: WAITING_CAP
+afterSubmitCap: CAP_SUBMITTED
+afterAcceptCap: EVIDENCE_REQUIRED
+afterSubmitEvidence: EVIDENCE_SUBMITTED
+afterAcceptEvidence: CLOSED
+aiDecision: edited
+outboxStatus after refresh: synced_to_demo_state
+reset storage: null
+console errors: []
+mobile scrollWidth/clientWidth: 390/390 on all V2 screens
+```
+
+---
+
+## Mocked items and limitations
+
+- Role selection is not authentication.
+- Browser persistence is not production storage.
+- Mock evidence captures filenames only; no files are read or uploaded.
+- Regulatory library content is mock/source-shaped only.
+- USOAP readiness is not an official ICAO assessment and does not claim EI improvement.
+- SSP/NASP supports monitoring only; it is not an automatic state safety determination.
+- AI suggestions are drafts only and cannot publish official outputs.
+- Offline outbox is simulated and is not a mobile/offline-ready implementation.
+- Audit log is demo state, not immutable audit evidence.
+- README/MANIFEST still describe the older Markdown-only package and should be updated in a separate package-truth cleanup if this runnable prototype is handed off externally.
