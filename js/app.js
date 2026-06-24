@@ -2,43 +2,80 @@
    AviaSurveil360 — App controller (routing, role switch, actions)
    ========================================================================== */
 
-/* Navigation per role: task-first, no heavy enterprise menus. */
+/* Navigation per role: three primary experiences with grouped IA. */
 var NAV = {
   manager: [
-    { view: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { view: 'safety-intelligence', label: 'Safety Intelligence', icon: '⌁' },
-    { view: 'org-risk', label: 'Org Risk Profile', icon: '◇', id: 'ORG-XYZ' },
-    { view: 'usoap-readiness', label: 'USOAP Readiness', icon: '◎' },
+    { section: 'Dashboard' },
+    { view: 'dashboard', label: 'My Dashboard', icon: '▦' },
+    { view: 'safety-intelligence', label: 'Team Dashboard', icon: '⌁' },
+    { view: 'ssp-nasp', label: 'Executive Dashboard', icon: '▣' },
+    { section: 'Oversight' },
+    { view: 'calendar', label: 'Surveillance Plans', icon: '▤' },
+    { view: 'calendar', label: 'Oversight Calendar', icon: '◴' },
+    { section: 'Organisations' },
+    { view: 'organizations', label: 'Operators / Providers', icon: '🏢' },
+    { view: 'org-risk', label: 'Risk Profiles', icon: '◇', id: 'ORG-XYZ' },
+    { section: 'Findings & CAPs' },
+    { view: 'findings', label: 'Open Findings', icon: '⚑', filter: 'open' },
+    { view: 'findings', label: 'CAP Review Queue', icon: '✓', filter: 'capreview' },
+    { view: 'findings', label: 'Overdue Actions', icon: '!', filter: 'overdue' },
+    { view: 'cap-effectiveness', label: 'Repeat Findings', icon: '↻' },
+    { section: 'USOAP / SSP' },
+    { view: 'usoap-readiness', label: 'Protocol Questions', icon: '◎' },
+    { view: 'ssp-nasp', label: 'SSP Indicators', icon: '▣' },
+    { section: 'Analytics' },
+    { view: 'safety-intelligence', label: 'Risk Trends', icon: '⌁' },
     { view: 'cap-effectiveness', label: 'CAP Effectiveness', icon: '✓' },
-    { view: 'ssp-nasp', label: 'SSP/NASP', icon: '▣' },
-    { view: 'calendar',  label: 'Surveillance Plan', icon: '🗓️' },
-    { view: 'findings',  label: 'Findings', icon: '⚑' },
-    { view: 'organizations', label: 'Organizations', icon: '🏢' },
-    { view: 'reports',   label: 'Reports', icon: '📄' }
+    { view: 'dashboard', label: 'Inspector Workload', icon: '▥' }
   ],
   inspector: [
-    { view: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { view: 'package-builder', label: 'Package Builder', icon: '▤' },
+    { section: 'Dashboard' },
+    { view: 'dashboard', label: "Today’s Workbench", icon: '▦' },
+    { section: 'Oversight' },
+    { view: 'calendar', label: 'Inspections', icon: '◴' },
+    { view: 'calendar', label: 'Audits', icon: '▤' },
+    { view: 'package-builder', label: 'Inspection Packages', icon: '▧' },
     { view: 'offline-field', label: 'Offline Field', icon: '⇄' },
-    { view: 'ai-assistant', label: 'AI Assistant', icon: '✦' },
-    { view: 'cap-effectiveness', label: 'CAP Effectiveness', icon: '✓' },
-    { view: 'calendar',  label: 'Audit Plan', icon: '🗓️' },
-    { view: 'findings',  label: 'Findings', icon: '⚑' },
-    { view: 'organizations', label: 'Organizations', icon: '🏢' },
-    { view: 'reports',   label: 'Reports', icon: '📄' }
+    { section: 'Organisations' },
+    { view: 'organizations', label: 'Operators / Providers', icon: '🏢' },
+    { view: 'org-risk', label: 'Risk Profiles', icon: '◇', id: 'ORG-XYZ' },
+    { section: 'Findings & CAPs' },
+    { view: 'findings', label: 'Open Findings', icon: '⚑', filter: 'open' },
+    { view: 'findings', label: 'CAP Review Queue', icon: '✓', filter: 'capreview' },
+    { view: 'findings', label: 'Overdue Actions', icon: '!', filter: 'overdue' },
+    { view: 'cap-effectiveness', label: 'Repeat Findings', icon: '↻' },
+    { section: 'Regulations' },
+    { view: 'regulatory-library', label: 'NAMCARS Library', icon: '§' },
+    { view: 'regulatory-library', label: 'Cross-Reference', icon: '⌘' },
+    { view: 'package-builder', label: 'Checklist Builder', icon: '▧' },
+    { section: 'Evidence & Documents' },
+    { view: 'offline-field', label: 'Inspection Evidence', icon: '⇄' },
+    { view: 'reports', label: 'Reports', icon: '📄' },
+    { section: 'Knowledge Hub' },
+    { view: 'reports', label: 'Previous Findings', icon: '◷' },
+    { view: 'ai-assistant', label: 'AI Safety Assistant', icon: '✦' }
   ],
   auditee: [
-    { view: 'my-findings', label: 'My Findings', icon: '⚑' },
-    { view: 'messages',    label: 'Messages', icon: '📨' },
-    { view: 'reports',     label: 'Reports', icon: '📄' }
+    { section: 'Service Provider Portal' },
+    { view: 'my-findings', label: 'Findings & CAPs', icon: '⚑' },
+    { view: 'my-findings', label: 'CAP Uploads', icon: '⇧' },
+    { view: 'messages', label: 'CAA Responses', icon: '📨' },
+    { view: 'reports', label: 'Documents Shared', icon: '📄' }
   ],
   admin: [
-    { view: 'regulatory-library', label: 'Regulatory Library', icon: '§' },
+    { section: 'Regulations' },
+    { view: 'regulatory-library', label: 'NAMCARS Library', icon: '§' },
+    { view: 'regulatory-library', label: 'Regulatory Cross-Reference', icon: '⌘' },
+    { view: 'templates', label: 'Checklist Builder', icon: '▧' },
+    { section: 'Evidence & Documents' },
     { view: 'templates', label: 'Templates', icon: '🗂️' },
-    { view: 'package-builder', label: 'Package Builder', icon: '▤' },
-    { view: 'users',     label: 'Users', icon: '👥' },
-    { view: 'settings',  label: 'Settings', icon: '⚙️' },
-    { view: 'auditlog',  label: 'Audit Log', icon: '📜' }
+    { view: 'reports', label: 'Reports', icon: '📄' },
+    { section: 'Administration' },
+    { view: 'users', label: 'Users / Roles', icon: '👥' },
+    { view: 'settings', label: 'Configurations', icon: '⚙️' },
+    { view: 'settings', label: 'Notification Rules', icon: '◌' },
+    { view: 'organizations', label: 'Organisation Master Data', icon: '🏢' },
+    { view: 'auditlog', label: 'Audit Log', icon: '📜' }
   ]
 };
 
@@ -56,12 +93,19 @@ var VIEW_TITLES = {
 };
 
 var ROLE_DESC = {
-  manager: 'Oversight, risk and the 2026 surveillance plan.',
-  inspector: 'Run audits, complete checklists, review CAP and evidence.',
-  auditee: 'Airline XYZ portal — respond to what the CAA needs.',
-  admin: 'Preview checklist templates and the audit log.'
+  manager: 'Supervisor / Manager Dashboard — performance, risk, workload, SSP and CAP oversight.',
+  inspector: 'Inspector Workspace — daily operations, assigned packages, CAP review and field work.',
+  auditee: 'Service Provider Portal — findings, CAP uploads, responses and shared documents.',
+  admin: 'Administration — regulatory library, templates, users, configuration and audit log.'
 };
 var ROLE_ICON = { manager: '📊', inspector: '✈️', auditee: '🏢', admin: '⚙️' };
+
+var EXPERIENCE_LABEL = {
+  manager: 'Supervisor / Manager Dashboard',
+  inspector: 'Inspector Workspace',
+  auditee: 'Service Provider Portal',
+  admin: 'Administration'
+};
 
 /* Temporary "picked file" names for mock uploads. */
 var pickedFiles = {};
@@ -79,10 +123,12 @@ function render() {
 
   var nav = NAV[state.role] || [];
   var navHtml = nav.map(function (n) {
+    if (n.section) return '<div class="nav-section">' + esc(n.section) + '</div>';
     var active = isNavActive(n.view) ? ' active' : '';
     var badge = navBadge(n.view);
     var navId = n.id ? ' data-id="' + esc(n.id) + '"' : '';
-    return '<button class="nav-item' + active + '" data-act="nav" data-view="' + n.view + '"' + navId + '>' +
+    var navFilter = n.filter ? ' data-filter="' + esc(n.filter) + '"' : '';
+    return '<button class="nav-item' + active + '" data-act="nav" data-view="' + n.view + '"' + navId + navFilter + '>' +
       '<span class="nav-item__icon">' + n.icon + '</span><span>' + esc(n.label) + '</span>' +
       (badge ? '<span class="nav-item__badge">' + badge + '</span>' : '') + '</button>';
   }).join('');
@@ -91,7 +137,7 @@ function render() {
   var unread = unreadCount(state.role);
 
   var roleOptions = ['manager', 'inspector', 'auditee', 'admin'].map(function (k) {
-    return '<option value="' + k + '"' + (k === state.role ? ' selected' : '') + '>' + esc(ROLES[k].name) +
+    return '<option value="' + k + '"' + (k === state.role ? ' selected' : '') + '>' + esc(EXPERIENCE_LABEL[k] || ROLES[k].name) +
       (k === 'auditee' ? ' — Airline XYZ' : '') + '</option>';
   }).join('');
 
@@ -103,7 +149,7 @@ function render() {
       '<aside class="sidebar">' +
         '<div class="sidebar__brand"><div class="sidebar__logo">A360</div>' +
           '<div class="sidebar__brandtext"><b>AviaSurveil360</b><span>OVERSIGHT WORKBENCH</span></div></div>' +
-        '<nav class="sidebar__nav"><div class="nav-section">' + esc(r.name) + '</div>' + navHtml + '</nav>' +
+        '<nav class="sidebar__nav"><div class="experience-label">' + esc(EXPERIENCE_LABEL[state.role] || r.name) + '</div>' + navHtml + '</nav>' +
         '<div class="sidebar__foot"><button class="nav-item" data-act="logout">' +
           '<span class="nav-item__icon">⤺</span><span>Role select</span></button>' +
           '<div style="padding:8px 11px">Demo data · frontend-only · saved in this browser</div></div>' +
@@ -113,7 +159,7 @@ function render() {
           '<button class="topbar__menu" data-act="toggle-menu" aria-label="Open menu">☰</button>' +
           '<div class="topbar__crumbs">' + crumbs() + '</div>' +
           '<div class="topbar__spacer"></div>' +
-          '<div class="role-switch"><span class="role-switch__label">View as</span>' +
+          '<div class="role-switch"><span class="role-switch__label">Experience</span>' +
             '<select id="role-select">' + roleOptions + '</select></div>' +
           '<div style="position:relative">' +
             '<button class="iconbtn" data-act="notif-toggle" aria-label="Notifications">🔔' +
@@ -121,7 +167,7 @@ function render() {
             notifPanel +
           '</div>' +
           '<div class="who"><div class="who__avatar" style="background:' + r.color + '">' + esc(r.initials) + '</div>' +
-            '<div><div class="who__name">' + esc(r.user) + '</div><div class="who__role">' + esc(r.name) +
+            '<div><div class="who__name">' + esc(r.user) + '</div><div class="who__role">' + esc(EXPERIENCE_LABEL[state.role] || r.name) +
             (state.role === 'auditee' ? ' · Airline XYZ' : '') + '</div></div></div>' +
         '</header>' +
         '<main class="content">' + renderContent() + '</main>' +
@@ -216,7 +262,7 @@ function renderLogin() {
     var r = ROLES[k];
     return '<button class="role-card" data-act="role" data-role="' + k + '">' +
       '<div class="role-card__icon" style="background:' + r.color + '">' + ROLE_ICON[k] + '</div>' +
-      '<div><div class="role-card__name">' + esc(r.name) + (k === 'auditee' ? ' — Airline XYZ' : '') + '</div>' +
+      '<div><div class="role-card__name">' + esc(EXPERIENCE_LABEL[k] || r.name) + (k === 'auditee' ? ' — Airline XYZ' : '') + '</div>' +
       '<div class="role-card__desc">' + esc(ROLE_DESC[k]) + '</div>' +
       '<div class="role-card__q">“' + esc(r.question) + '”</div></div></button>';
   }).join('');

@@ -10,7 +10,7 @@ inside each plan artifact.
 | Plan | Status | Next Todo |
 |---|---|---|
 | [Demo-Only Prototype Plan](2026-06-14-aviasurveil-demo-only-prototype-plan.md) | ready-for-verification | Demo built and verified end-to-end in a browser (no console errors). All required screens plus New Audit Wizard, Organizations registry, Admin Users/Settings, authorized-closure path, and traceable reminders; bilingual build summary written (`docs/DEMO_BUILD_SUMMARY.md` + `.turkce.md`). Next: stakeholder review/sign-off, then move to `completed/`. |
-| [NCAA Platform V2 And MVP Plan](2026-06-23-ncaa-platform-v2-and-mvp-plan.md) | ready-for-verification | Frontend V2 demo implemented and verified locally with browser persistence, simulated offline outbox, Regulatory Trace, AI draft decisions, and all nine V2 screens. Next: stakeholder review/sign-off, then choose the follow-up track (README/MANIFEST package-truth cleanup, production MVP architecture execution, regulatory owner packet, offline mobile discovery, or AI governance discovery). |
+| [NCAA Platform V2 And MVP Plan](2026-06-23-ncaa-platform-v2-and-mvp-plan.md) | ready-for-verification | Frontend V2 demo implemented and verified locally with browser persistence, simulated offline outbox, Regulatory Trace, AI draft decisions, all nine V2 screens, Furkan role-experience IA feedback, and Inspector Today’s Workbench. Next: stakeholder review/sign-off of the three-experience IA, then choose the follow-up track (README/MANIFEST package-truth cleanup, production MVP architecture execution, regulatory owner packet, offline mobile discovery, or AI governance discovery). |
 
 ## Companion indexes
 

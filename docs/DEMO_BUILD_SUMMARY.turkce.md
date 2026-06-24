@@ -34,11 +34,11 @@ başlangıç verisine döndürür.
 | Dosya | Amaç |
 |---|---|
 | `index.html` | Demo şeridi artık tarayıcıya kayıtlı frontend-only demo olduğunu ve gerçek backend/AI/regülasyon entegrasyonu olmadığını belirtir. |
-| `css/styles.css` | V2 ekranları, Regulatory Trace, offline outbox, AI taslak kontrolleri ve 390px mobil düzeni. |
+| `css/styles.css` | Rol bazlı çalışma alanları, Today’s Workbench, Regulatory Trace, offline outbox, AI taslak kontrolleri ve 390px mobil düzeni. |
 | `js/data.js` | Backend'e yakın sahte kayıtlar, V2 seed verileri, açık status değerleri ve izole `localStorage` demo saklama yardımcıları. |
 | `js/helpers.js` | Seçiciler, status yardımcıları, regulatory trace lookup, outbox yardımcıları ve demo badge yardımcıları. |
-| `js/views.js` | Mevcut ekranlar, dokuz V2 ekranı ve yeniden kullanılabilir Regulatory Trace görünümü. |
-| `js/app.js` | V2 navigasyonu, merkezi kalıcılık çağrıları, simüle offline geçişleri, AI karar geçişleri ve yeni kayıtlar için stabil ID üretimi. |
+| `js/views.js` | Mevcut ekranlar, Today’s Workbench, dokuz V2 ekranı, Service Provider Portal çerçevesi ve yeniden kullanılabilir Regulatory Trace görünümü. |
+| `js/app.js` | Rol bazlı deneyim navigasyonu, merkezi kalıcılık çağrıları, simüle offline geçişleri, AI karar geçişleri ve yeni kayıtlar için stabil ID üretimi. |
 | `docs/DEMO_BUILD_SUMMARY.md` | İngilizce kanonik özet. |
 | `docs/DEMO_BUILD_SUMMARY.turkce.md` | Bu Türkçe paydaş özeti. |
 
@@ -47,14 +47,47 @@ servisi, gerçek regülasyon içe aktarma veya gerçek bildirim servisi eklenmed
 
 ---
 
-## Roller ve ekranlar
+## Rol bazlı deneyimler ve ekranlar
 
-Mevcut roller korunmuştur:
+Demo artık front-end’i üç ana rol bazlı deneyim etrafında sunar:
 
-1. **CAA Manager** — yönetim gözetimi, denetim planı, bulgular, kuruluşlar, raporlar.
-2. **CAA Inspector** — denetim/checklist yürütme, bulgu açma, CAP/kanıt inceleme.
-3. **Auditee (Airline XYZ)** — kendi bulguları, CAP gönderimi, kanıt dosya adı gönderimi.
-4. **Admin Preview** — şablonlar, kullanıcılar, ayarlar, audit log, regulatory preview.
+1. **Inspector Workspace** — günlük operasyon ekranı; atanmış denetimler,
+   kanıt inceleme, CAP review, regülasyon arama, risk sinyalleri ve hızlı
+   aksiyonlar.
+2. **Supervisor / Manager Dashboard** — performans, risk, workload, SSP, CAP
+   oversight, surveillance planning ve yönetici görünürlüğü.
+3. **Service Provider Portal** — auditee tarafı; bulgular, CAP yükleme,
+   CAA’ye görünür cevaplar ve sahte belge/dosya adı paylaşımı.
+
+Admin Preview, demo içi ayar ve şablon önizleme yüzeyi olarak korunur.
+
+Deneyim detayları:
+
+1. **CAA Manager** — Supervisor / Manager Dashboard, yönetim gözetimi, denetim
+   planı, bulgular, kuruluşlar, raporlar, SSP/NASP ve CAP effectiveness.
+2. **CAA Inspector** — Inspector Workspace, Today’s Workbench,
+   denetim/checklist yürütme, bulgu açma, CAP/kanıt inceleme, regülasyon arama,
+   AI taslak asistanı ve simüle offline saha ekranı.
+3. **Auditee (Airline XYZ)** — Service Provider Portal; kendi bulguları, CAP
+   gönderimi, kanıt dosya adı gönderimi, CAA’ye görünür yorumlar ve closure
+   status.
+4. **Admin Preview** — şablonlar, kullanıcılar, ayarlar, audit log ve
+   regulatory preview.
+
+Inspector ana ekranı artık **Today’s Workbench** olarak düzenlenmiştir:
+
+- `A. Attention Needed` — overdue CAPs, yüksek riskli operatörler, yaklaşan
+  auditler, repeat findings ve review bekleyen evidence.
+- `B. My Upcoming Work` — planlı inspection’lar, hazırlık bekleyen paketler,
+  yazılacak raporlar ve CAP review işleri.
+- `C. Risk Signals` — yükselen operator risk skoru, tekrar eden regulatory
+  references, geciken CAP trendleri ve operational change alert’leri.
+- `D. Quick Actions` — New inspection, assigned package açma, CAP review,
+  regulation search ve report generation.
+
+Sol navigasyon artık role göre görünen gruplu bilgi mimarisini kullanır:
+Dashboard, Oversight, Organisations, Findings & CAPs, Regulations, USOAP / SSP,
+Evidence & Documents, Analytics, Knowledge Hub ve Administration.
 
 Eklenen Frontend V2 ekranları:
 
@@ -169,11 +202,18 @@ node --check js/app.js
 Playwright ile `index.html` üzerinde tarayıcı smoke testi yapıldı; konsol hatası yok.
 Doğrulananlar:
 
+- Inspector Workspace'in `Today’s Workbench` ile açılması
+- `Today’s Workbench` içinde `A. Attention Needed`, `B. My Upcoming Work`,
+  `C. Risk Signals` ve `D. Quick Actions` bölümlerinin görünmesi
+- `New inspection` hızlı aksiyonunun New Audit Wizard ekranını açması
+- Supervisor / Manager Dashboard ve SSP/NASP dashboard ekranlarının erişilebilir kalması
+- Service Provider Portal çerçevesinin auditee rolünde görünmesi
 - dokuz V2 ekranının role uygun navigasyonla erişilebilir olması
 - mevcut Operator Audit senaryosunun uçtan uca çalışması
 - CAP kabulünden sonra `OPS-2026-001` durumunun `EVIDENCE_REQUIRED` kalması
 - kanıt kabulünden sonra `OPS-2026-001` durumunun `CLOSED` olması
-- auditee görünümünde `Internal CAA Notes` sayısının `0` olması
+- auditee görünümünde `Internal CAA Note`, `Inspector Workload`, regulatory
+  governance, AI governance veya başka kuruluş metninin görünmemesi
 - refresh sonrası bulgu, CAP, kanıt dosya adı, AI kararı ve offline outbox durumunun korunması
 - Reset demo sonrası `localStorage` ve oluşturulan demo durumunun temizlenmesi
 - offline outbox'ın beklemeden `synced_to_demo_state` durumuna geçmesi
@@ -193,6 +233,8 @@ outboxStatus after refresh: synced_to_demo_state
 reset storage: null
 console errors: []
 mobile scrollWidth/clientWidth: 390/390 on all V2 screens
+Today’s Workbench mobile scrollWidth/clientWidth: 390/390
+Service Provider Portal mobile scrollWidth/clientWidth: 390/390
 ```
 
 ---

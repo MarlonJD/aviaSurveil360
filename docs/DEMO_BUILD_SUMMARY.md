@@ -32,11 +32,11 @@ and return to seed data.
 | File | Purpose |
 |---|---|
 | `index.html` | Demo ribbon now states frontend-only browser persistence and no real backend/AI/regulatory integrations. |
-| `css/styles.css` | V2 responsive UI for regulatory trace ribbons, governance panels, offline outbox, AI draft controls, and 390px mobile behavior. |
+| `css/styles.css` | V2 responsive UI for role-based workspaces, Today’s Workbench, regulatory trace ribbons, governance panels, offline outbox, AI draft controls, and 390px mobile behavior. |
 | `js/data.js` | Backend-ready mock records, seed V2 datasets, status values, and isolated `localStorage` demo storage helpers. |
 | `js/helpers.js` | Selectors, status helpers, regulatory trace lookups, outbox helpers, and demo badge helpers. |
-| `js/views.js` | Existing screens plus the nine Frontend V2 screens and reusable Regulatory Trace display. |
-| `js/app.js` | V2 navigation, centralized persistence calls, simulated offline transitions, AI decision transitions, and stable ID generation for new records. |
+| `js/views.js` | Existing screens plus Today’s Workbench, the nine Frontend V2 screens, Service Provider Portal framing, and reusable Regulatory Trace display. |
+| `js/app.js` | Role-based experience navigation, centralized persistence calls, simulated offline transitions, AI decision transitions, and stable ID generation for new records. |
 | `docs/DEMO_BUILD_SUMMARY.md` | This English canonical build summary. |
 | `docs/DEMO_BUILD_SUMMARY.turkce.md` | Turkish companion summary for stakeholder handoff. |
 | `docs/plans/index.md` | Updated only if the active plan status / next todo changes. |
@@ -46,14 +46,50 @@ service, real regulatory ingestion, or real notification service was added.
 
 ---
 
-## Roles and screens
+## Role-based experiences and screens
 
-Existing role flow remains:
+The demo now frames the front end around three main role-based experiences:
 
-1. **CAA Manager** — management oversight, surveillance plan, findings, organizations, reports.
-2. **CAA Inspector** — audit execution, checklist runner, findings, CAP/evidence review.
-3. **Auditee (Airline XYZ)** — own findings, CAP submission, evidence filename submission.
-4. **Admin Preview** — templates, users, settings, audit log, regulatory preview.
+1. **Inspector Workspace** — daily operational workbench for assigned audits,
+   evidence review, CAP review, regulatory lookup, risk signals, and quick
+   actions.
+2. **Supervisor / Manager Dashboard** — performance, risk, workload, SSP, CAP
+   oversight, surveillance planning, and executive visibility.
+3. **Service Provider Portal** — the auditee-facing experience for findings,
+   CAP submission, CAA-visible responses, and mock document/filename sharing.
+
+The Admin Preview remains a demo administration surface for configuration and
+template preview.
+
+Experience details:
+
+1. **CAA Manager** — Supervisor / Manager Dashboard, management oversight,
+   surveillance plan, findings, organizations, reports, SSP/NASP, and CAP
+   effectiveness.
+2. **CAA Inspector** — Inspector Workspace, Today’s Workbench, audit execution,
+   checklist runner, findings, CAP/evidence review, regulatory lookup, AI draft
+   assistant, and offline field inspection simulation.
+3. **Auditee (Airline XYZ)** — Service Provider Portal for own findings, CAP
+   submission, evidence filename submission, CAA-visible comments, and closure
+   status.
+4. **Admin Preview** — templates, users, settings, audit log, and regulatory
+   preview.
+
+The Inspector home screen is now **Today’s Workbench**, organized into:
+
+- `A. Attention Needed` — overdue CAPs, high-risk operators, upcoming audits,
+  repeat findings, and evidence waiting for review.
+- `B. My Upcoming Work` — planned inspections, package preparation, reports to
+  write, and CAP reviews.
+- `C. Risk Signals` — rising operator risk, recurring regulatory references,
+  delayed CAP trends, and operational change alerts.
+- `D. Quick Actions` — New inspection, open assigned package, review CAP, search
+  regulation, and generate report.
+
+The left navigation now uses grouped information architecture for Dashboard,
+Oversight, Organisations, Findings & CAPs, Regulations, USOAP / SSP, Evidence &
+Documents, Analytics, Knowledge Hub, and Administration, shown only where
+appropriate for each role.
 
 Frontend V2 screens added:
 
@@ -171,11 +207,18 @@ node --check js/app.js
 Browser smoke verification used Playwright against `index.html` with no console
 errors. Verified:
 
+- Inspector Workspace opens on `Today’s Workbench`
+- `Today’s Workbench` shows `A. Attention Needed`, `B. My Upcoming Work`,
+  `C. Risk Signals`, and `D. Quick Actions`
+- `New inspection` quick action opens the New Audit Wizard
+- Supervisor / Manager Dashboard and SSP/NASP dashboard remain reachable
+- Service Provider Portal framing is visible to the auditee role
 - all nine V2 screens are reachable by role-appropriate navigation
 - original Operator Audit scenario still works end to end
 - CAP acceptance leaves `OPS-2026-001` at `EVIDENCE_REQUIRED`
 - evidence acceptance closes `OPS-2026-001`
-- auditee view showed `0` occurrences of `Internal CAA Notes`
+- auditee view showed no visible `Internal CAA Note`, `Inspector Workload`,
+  regulatory governance, AI governance, or other-organization wording
 - refresh preserves created finding, CAP, evidence filename, AI decision, and offline outbox state
 - Reset demo clears `localStorage` and removes created demo state
 - offline outbox transitions from waiting to `synced_to_demo_state`
@@ -195,6 +238,8 @@ outboxStatus after refresh: synced_to_demo_state
 reset storage: null
 console errors: []
 mobile scrollWidth/clientWidth: 390/390 on all V2 screens
+Today’s Workbench mobile scrollWidth/clientWidth: 390/390
+Service Provider Portal mobile scrollWidth/clientWidth: 390/390
 ```
 
 ---

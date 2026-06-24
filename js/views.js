@@ -451,7 +451,7 @@ function viewManagerDashboard() {
   }).join('') : '<div class="empty">No critical or overdue findings right now.</div>';
 
   return '' +
-    pageHead('Manager Dashboard', 'Where are we exposed, delayed or overloaded?') +
+    pageHead('Supervisor / Manager Dashboard', 'Performance, risk, workload, SSP and CAP oversight.') +
     '<div class="grid grid--kpi mb-16">' +
       kpiCard('Open Findings', k.openFindings, 'Across all organizations', { view: 'findings', filter: 'open' }) +
       kpiCard('Overdue Findings', k.overdueFindings, 'Past due date', { tone: k.overdueFindings ? 'danger' : 'ok', view: 'findings', filter: 'overdue' }) +
@@ -503,55 +503,87 @@ function viewManagerDashboard() {
     '</div>';
 }
 
+function workbenchItem(tone, title, meta, actionLabel, view, id, filter) {
+  var act = view ? ' data-act="nav" data-view="' + esc(view) + '"' : '';
+  var idAttr = id ? ' data-id="' + esc(id) + '"' : '';
+  var filterAttr = filter ? ' data-filter="' + esc(filter) + '"' : '';
+  return '<div class="workbench-item' + (tone ? ' is-' + tone : '') + '"' + act + idAttr + filterAttr + '>' +
+    '<div class="workbench-item__main"><b>' + esc(title) + '</b><span>' + esc(meta) + '</span></div>' +
+    (actionLabel ? '<button class="btn btn--sm" data-act="nav" data-view="' + esc(view) + '"' + idAttr + filterAttr + '>' + esc(actionLabel) + '</button>' : '') +
+  '</div>';
+}
+
+function quickAction(label, view, id, filter, primary) {
+  return '<button class="btn ' + (primary ? 'btn--primary' : '') + ' btn--block" data-act="nav" data-view="' + esc(view) + '"' +
+    (id ? ' data-id="' + esc(id) + '"' : '') + (filter ? ' data-filter="' + esc(filter) + '"' : '') + '>' + esc(label) + '</button>';
+}
+
 /* =========================== Inspector dashboard =========================== */
 function viewInspectorDashboard() {
-  var me = ROLES.inspector.user;
   var todays = state.audits.filter(function (a) { return a.date === DEMO_TODAY; });
-  var inProgress = state.audits.filter(function (a) { return a.status === 'In Progress'; });
+  var weekEnd = '2026-06-22';
+  var upcomingWeek = state.audits.filter(function (a) { return a.date >= DEMO_TODAY && a.date <= weekEnd; });
+  var plannedLater = state.audits.filter(function (a) { return a.status === 'Planned' || a.status === 'Scheduled'; });
   var capReview = state.findings.filter(function (f) { return f.status === 'CAP_SUBMITTED'; });
   var evReview = state.findings.filter(function (f) { return f.status === 'EVIDENCE_SUBMITTED'; });
   var open = state.findings.filter(function (f) { return f.status !== 'CLOSED'; });
-  var dueSoon = open.filter(function (f) { return dueInfo(f).dueSoon; });
   var overdue = open.filter(function (f) { return dueInfo(f).overdue; });
+  var repeatProfiles = state.riskProfiles.filter(function (r) { return r.drivers.join(' ').toLowerCase().indexOf('repeat') > -1; });
+  var highRisk = state.riskProfiles.slice().sort(function (a, b) { return b.score - a.score; })[0];
+  var reportAudits = state.audits.filter(function (a) { return a.status === 'Report Issued' || a.status === 'Closed'; });
 
-  var todaysHtml = todays.length ? todays.map(function (a) {
-    var label = a.checklistStarted ? 'Continue checklist' : 'Start inspection';
-    return '<div class="list__row" data-act="nav" data-view="audit-detail" data-id="' + a.id + '">' +
-      '<div class="list__main"><div class="list__title">' + esc(a.ref) + ' — ' + esc(orgName(a.orgId)) + '</div>' +
-      '<div class="list__meta"><span><b>Domain:</b> ' + esc(a.domain) + '</span><span><b>Mode:</b> ' + esc(a.mode) + '</span>' +
-      '<span><b>Lead:</b> ' + esc(a.lead) + '</span></div></div>' +
-      '<div class="list__side"><span class="badge badge--info"><span class="dot"></span>' + esc(a.status) + '</span>' +
-      '<button class="btn btn--primary btn--sm" data-act="' + (a.checklistStarted ? 'nav' : 'start-checklist') + '"' +
-        (a.checklistStarted ? ' data-view="checklist" ' : ' ') + 'data-id="' + a.id + '">' + esc(label) + '</button></div></div>';
-  }).join('') : '<div class="empty">No inspections scheduled for today.</div>';
+  var attention = [
+    workbenchItem(overdue.length ? 'danger' : 'ok', 'Overdue CAPs / actions', overdue.length + ' open item(s) past Due Date', 'Open overdue', 'findings', null, 'overdue'),
+    workbenchItem(highRisk && highRisk.score > 75 ? 'warn' : 'info', 'High-risk operator', highRisk ? orgName(highRisk.orgId) + ' · mock risk score ' + highRisk.score : 'No high-risk operator', 'Open risk profile', 'org-risk', highRisk ? highRisk.orgId : 'ORG-XYZ'),
+    workbenchItem(todays.length ? 'info' : 'neutral', 'Upcoming audits', todays.length + ' scheduled today; ' + upcomingWeek.length + ' this week', 'Open calendar', 'calendar'),
+    workbenchItem(repeatProfiles.length ? 'warn' : 'ok', 'Repeat findings', repeatProfiles.length + ' organization profile(s) with repeat signals', 'Review repeats', 'cap-effectiveness'),
+    workbenchItem(evReview.length ? 'warn' : 'ok', 'Evidence waiting review', evReview.length + ' file(s) waiting for CAA decision', 'Review evidence', 'findings', null, 'evreview')
+  ].join('');
 
-  var queueHtml = function (arr, emptyTxt) {
-    if (!arr.length) return '<div class="empty">' + esc(emptyTxt) + '</div>';
-    return arr.map(findingRow).join('');
-  };
+  var upcoming = [
+    workbenchItem(upcomingWeek.length ? 'info' : 'neutral', 'This week’s planned inspections', upcomingWeek.length + ' inspection(s) scheduled through ' + fmtDate(weekEnd), 'Open inspections', 'calendar'),
+    workbenchItem('info', 'Preparation pending packages', 'Airline XYZ Flight Operations package is draft-ready', 'Open package', 'package-builder'),
+    workbenchItem(reportAudits.length ? 'neutral' : 'ok', 'Reports to write / review', reportAudits.length + ' report preview(s) available', 'Open reports', 'reports'),
+    workbenchItem(capReview.length ? 'warn' : 'ok', 'CAP review queue', capReview.length + ' submitted CAP(s) waiting review', 'Review CAPs', 'findings', null, 'capreview')
+  ].join('');
+
+  var riskSignals = [
+    workbenchItem('warn', 'Risk score rising operators', highRisk ? orgName(highRisk.orgId) + ' is the top mock risk profile' : 'No rising operator signal', 'Inspect signal', 'safety-intelligence'),
+    workbenchItem('warn', 'Repeated regulation references', 'Crew training record evidence appears in repeat oversight signals', 'Open cross-reference', 'regulatory-library'),
+    workbenchItem(overdue.length ? 'danger' : 'ok', 'Delayed CAP trend', overdue.length + ' overdue item(s) in current demo state', 'Open overdue', 'findings', null, 'overdue'),
+    workbenchItem('info', 'Operational change alert', 'Airline XYZ fleet/management change placeholder in risk dossier', 'Open dossier', 'org-risk', 'ORG-XYZ')
+  ].join('');
 
   return '' +
-    pageHead('Inspector Dashboard', 'What do I need to inspect or review today?') +
-    '<div class="grid grid--kpi mb-16">' +
-      kpiCard("Today's Inspections", todays.length, 'Scheduled for ' + fmtDate(DEMO_TODAY), { view: 'calendar' }) +
-      kpiCard('CAPs Waiting Review', capReview.length, 'Submitted by auditees', { tone: capReview.length ? 'warn' : 'ok', view: 'findings', filter: 'capreview' }) +
-      kpiCard('Evidence Waiting Review', evReview.length, 'Awaiting your decision', { tone: evReview.length ? 'warn' : 'ok', view: 'findings', filter: 'evreview' }) +
+    pageHead('Today’s Workbench', 'Inspector Workspace for daily operations: attention, upcoming work, risk signals and fast actions.') +
+    guardrailStrip([
+      { label: 'Inspector Workspace' },
+      { label: 'Demo data' },
+      { label: 'Frontend-only demo - saved in this browser' }
+    ]) +
+    '<div class="workbench-hero mb-16">' +
+      '<div><div class="workbench-hero__eyebrow">Today · ' + esc(fmtDate(DEMO_TODAY)) + '</div>' +
+      '<h2>What needs inspection or review now?</h2>' +
+      '<p>Designed around the inspector’s daily operating question, not a generic dashboard.</p></div>' +
+      '<div class="workbench-hero__metrics">' +
+        compactMetric('Today’s inspections', String(todays.length), todays.length ? 'info' : 'neutral') +
+        compactMetric('CAP reviews', String(capReview.length), capReview.length ? 'warn' : 'ok') +
+        compactMetric('Evidence reviews', String(evReview.length), evReview.length ? 'warn' : 'ok') +
+      '</div>' +
     '</div>' +
-    '<div class="grid grid--kpi mb-16">' +
-      kpiCard('Checklists In Progress', inProgress.length, 'Audits underway', { view: 'calendar' }) +
-      kpiCard('Due Soon', dueSoon.length, 'Findings due within 7 days', { tone: dueSoon.length ? 'warn' : 'ok', view: 'findings', filter: 'duesoon' }) +
-      kpiCard('Overdue', overdue.length, 'Past due date', { tone: overdue.length ? 'danger' : 'ok', view: 'findings', filter: 'overdue' }) +
+    '<div class="grid grid--2 mb-16">' +
+      '<div class="card"><div class="card__head"><h3>A. Attention Needed</h3><span class="sub">overdue, high-risk, repeat, evidence</span></div><div class="card__body workbench-list">' + attention + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>B. My Upcoming Work</h3><span class="sub">this week, prep, reports, CAP review</span></div><div class="card__body workbench-list">' + upcoming + '</div></div>' +
     '</div>' +
-    '<div class="card mb-16">' +
-      '<div class="card__head"><h3>Today\'s Inspections</h3><div class="spacer"></div>' +
-        '<button class="btn btn--sm" data-act="nav" data-view="calendar">Audit plan</button></div>' +
-      '<div class="list">' + todaysHtml + '</div>' +
-    '</div>' +
-    '<div class="grid grid--2">' +
-      '<div class="card"><div class="card__head"><h3>CAPs Waiting Review</h3></div><div class="list">' +
-        queueHtml(capReview, 'No CAPs waiting for review.') + '</div></div>' +
-      '<div class="card"><div class="card__head"><h3>Evidence Waiting Review</h3></div><div class="list">' +
-        queueHtml(evReview, 'No evidence waiting for review.') + '</div></div>' +
+    '<div class="grid grid--main">' +
+      '<div class="card"><div class="card__head"><h3>C. Risk Signals</h3><span class="sub">operator score, repeat regulation, CAP trend, operational change</span></div><div class="card__body workbench-list">' + riskSignals + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>D. Quick Actions</h3></div><div class="card__body quick-actions">' +
+        '<button class="btn btn--primary btn--block" data-act="new-audit">New inspection</button>' +
+        quickAction('Open assigned audit package', 'package-builder') +
+        quickAction('Review CAP', 'findings', null, 'capreview') +
+        quickAction('Search regulation', 'regulatory-library') +
+        quickAction('Generate report', 'reports') +
+      '</div></div>' +
     '</div>';
 }
 
@@ -568,8 +600,8 @@ function viewAuditeeMyFindings() {
   var rows = mine.length ? mine.map(findingRow).join('') : '<div class="empty">Your organization has no open findings. Nothing is required right now.</div>';
 
   return '' +
-    pageHead('My Findings — ' + ROLES.auditee.orgName, 'What does the CAA need from my organization?') +
-    '<div class="scope-note">🔒 You are viewing only ' + esc(ROLES.auditee.orgName) + ' data. Internal CAA notes, inspector workload and other organizations are not shown.</div>' +
+    pageHead('Service Provider Portal — ' + ROLES.auditee.orgName, 'Findings, CAP uploads, CAA responses and shared documents for your organization.') +
+    '<div class="scope-note">🔒 You are viewing only ' + esc(ROLES.auditee.orgName) + ' portal data. CAA-only working information is outside this portal.</div>' +
     '<div class="grid grid--kpi mb-16">' +
       kpiCard('My Open Findings', open.length, 'Need a response or are in review') +
       kpiCard('CAP Required', capReq.length, 'Submit a corrective action plan', { tone: capReq.length ? 'warn' : 'ok' }) +
