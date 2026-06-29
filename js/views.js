@@ -1001,7 +1001,7 @@ function viewManagerDashboard() {
         '</div>' +
         '<div class="card">' +
           '<div class="card__head"><h3>2026 Surveillance Plan</h3><div class="spacer"></div>' +
-            '<button class="btn btn--sm" data-act="nav" data-view="calendar">Open plan calendar</button></div>' +
+            '<button class="btn btn--sm" data-act="nav" data-view="calendar">Open work queue</button></div>' +
           '<div class="card__body">' +
             '<div class="row-between mb-8"><span class="muted small">Plan completion</span><b>' + k.completedAudits + ' of ' + k.plannedAudits + ' audits</b></div>' +
             '<div class="progress"><div class="progress__bar" style="width:' + k.planCompletion + '%"></div></div>' +
@@ -1071,13 +1071,13 @@ function viewInspectorDashboard() {
   var attention = [
     workbenchItem(overdue.length ? 'danger' : 'ok', 'Overdue CAPs / actions', overdue.length + ' open item(s) past Due Date', 'Open overdue', 'findings', null, 'overdue'),
     workbenchItem(highRisk && highRisk.score > 75 ? 'warn' : 'info', 'High-risk operator', highRisk ? orgName(highRisk.orgId) + ' · mock risk score ' + highRisk.score : 'No high-risk operator', 'Open risk profile', 'org-risk', highRisk ? highRisk.orgId : 'ORG-XYZ'),
-    workbenchItem(todays.length ? 'info' : 'neutral', 'Upcoming audits', todays.length + ' scheduled today; ' + upcomingWeek.length + ' this week', 'Open calendar', 'calendar'),
+    workbenchItem(todays.length ? 'info' : 'neutral', 'Audit work queue', todays.length + ' scheduled today; ' + upcomingWeek.length + ' this week', 'Open queue', 'calendar'),
     workbenchItem(repeatProfiles.length ? 'warn' : 'ok', 'Repeat findings', repeatProfiles.length + ' organization profile(s) with repeat signals', 'Review repeats', 'cap-effectiveness'),
     workbenchItem(evReview.length ? 'warn' : 'ok', 'Evidence waiting review', evReview.length + ' file(s) waiting for CAA decision', 'Review evidence', 'findings', null, 'evreview')
   ].join('');
 
   var upcoming = [
-    workbenchItem(upcomingWeek.length ? 'info' : 'neutral', 'This week’s planned inspections', upcomingWeek.length + ' inspection(s) scheduled through ' + fmtDate(weekEnd), 'Open inspections', 'calendar'),
+    workbenchItem(upcomingWeek.length ? 'info' : 'neutral', 'This week’s inspections', upcomingWeek.length + ' inspection(s) scheduled through ' + fmtDate(weekEnd), 'Open queue', 'calendar'),
     workbenchItem('info', 'Preparation pending packages', 'Airline XYZ Flight Operations package is draft-ready', 'Open package', 'package-builder'),
     workbenchItem(reportAudits.length ? 'neutral' : 'ok', 'Reports to write / review', reportAudits.length + ' report preview(s) available', 'Open reports', 'reports'),
     workbenchItem(capReview.length ? 'warn' : 'ok', 'CAP review queue', capReview.length + ' submitted CAP(s) waiting review', 'Review CAPs', 'findings', null, 'capreview')
@@ -1152,35 +1152,116 @@ function viewAuditeeMyFindings() {
       '<div class="list">' + rows + '</div></div>';
 }
 
-/* =========================== Audit Plan Calendar =========================== */
-function viewCalendar() {
-  var byMonth = {};
-  for (var i = 0; i < 12; i++) byMonth[i] = [];
-  state.audits.forEach(function (a) {
-    var m = parseInt(a.date.split('-')[1], 10) - 1;
-    byMonth[m].push(a);
+/* =========================== Audit Work Queue =========================== */
+var AUDIT_FILTER_LABELS = {
+  all: 'All Audits',
+  mine: 'My Turn',
+  waiting: 'Waiting on Others',
+  overdue: 'Overdue',
+  active: 'Active',
+  completed: 'Completed'
+};
+
+function sortedAuditsForQueue(list) {
+  return list.slice().sort(function (a, b) {
+    var aClosed = isClosedAudit(a);
+    var bClosed = isClosedAudit(b);
+    if (aClosed !== bClosed) return aClosed ? 1 : -1;
+    var ad = auditDueInfo(a).days;
+    var bd = auditDueInfo(b).days;
+    if (ad === null && bd === null) return a.date < b.date ? -1 : 1;
+    if (ad === null) return 1;
+    if (bd === null) return -1;
+    if (ad !== bd) return ad - bd;
+    return a.id.localeCompare(b.id);
   });
-  var cells = '';
-  for (var mo = 0; mo < 12; mo++) {
-    var evs = byMonth[mo].sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (a) {
-      var cls = isClosedAudit(a) ? 'is-done' : (a.status === 'In Progress' ? 'is-progress' : '');
-      return '<div class="cal-event ' + cls + '" data-act="nav" data-view="audit-detail" data-id="' + a.id + '">' +
-        '<b>' + esc(orgName(a.orgId)) + '</b>' +
-        '<span>' + esc(a.type) + ' · ' + esc(a.date.split('-')[2]) + ' ' + MONTHS[mo] + ' · ' + esc(a.status) + '</span></div>';
-    }).join('');
-    cells += '<div class="cal__month"><div class="cal__mname">' + MONTHS_LONG[mo] + ' 2026</div>' +
-      '<div class="cal__events">' + (evs || '<div class="cal__empty">No audits planned</div>') + '</div></div>';
+}
+
+function filterAudits(filter) {
+  var audits = state.audits.slice();
+  switch (filter) {
+    case 'mine': return audits.filter(function (a) { return auditTurnInfo(a).label === 'Your turn'; });
+    case 'waiting': return audits.filter(function (a) { return auditTurnInfo(a).label.indexOf('Waiting on ') === 0; });
+    case 'overdue': return audits.filter(function (a) { return auditDueInfo(a).overdue; });
+    case 'active': return audits.filter(function (a) { return !isClosedAudit(a); });
+    case 'completed': return audits.filter(isClosedAudit);
+    default: return audits;
   }
-  var purpose = state.role === 'manager' ? 'The 2026 surveillance plan across all organizations.' : 'Your assigned audits across the 2026 plan.';
-  var legend = '<span class="badge badge--info"><span class="dot"></span>Planned / Scheduled</span> ' +
-               '<span class="badge badge--warn"><span class="dot"></span>In Progress</span> ' +
-               '<span class="badge badge--ok"><span class="dot"></span>Completed</span>';
-  var actions = legend;
+}
+
+function auditRow(a) {
+  var d = auditDueInfo(a);
+  var dueText = isClosedAudit(a) ? a.status + ' · ' + fmtDate(a.date) : fmtDate(a.date) + ' · ' + d.label;
+  var dueCls = d.overdue ? 'style="color:var(--danger);font-weight:600"' : (d.dueSoon ? 'style="color:var(--warn);font-weight:600"' : '');
+  var turn = auditTurnInfo(a);
+  var pa = primaryActionForAudit(a);
+  var actionView = pa.view ? ' data-view="' + esc(pa.view) + '"' : '';
+  return '' +
+    '<div class="list__row audit-row" data-act="nav" data-view="audit-detail" data-id="' + esc(a.id) + '">' +
+      '<div class="list__main">' +
+        '<div class="list__title">' +
+          '<span class="tag-pill">' + esc(a.id) + '</span> ' + esc(orgName(a.orgId)) + ' · ' + esc(a.type) +
+        '</div>' +
+        '<div class="list__meta">' +
+          '<span><b>Next action:</b> ' + esc(auditStatusMeta(a).next) + '</span>' +
+          '<span><b>Owner:</b> ' + esc(auditOwnerLabel(a)) + '</span>' +
+          '<span ' + dueCls + '><b>Due Date:</b> ' + esc(dueText) + '</span>' +
+          '<span><b>Lead:</b> ' + esc(a.lead) + '</span>' +
+        '</div>' +
+        '<div class="audit-row__turn-note">' + esc(turn.detail) + '</div>' +
+      '</div>' +
+      '<div class="list__side">' +
+        '<span class="turn-badge is-' + esc(turn.tone) + '">' + esc(turn.label) + '</span>' +
+        auditStatusBadge(a) +
+        '<button class="' + pa.cls + ' btn--sm" data-act="' + esc(pa.action) + '"' + actionView + ' data-id="' + esc(a.id) + '">' + esc(pa.label) + '</button>' +
+      '</div>' +
+    '</div>';
+}
+
+function auditNextActionBar(a) {
+  var turn = auditTurnInfo(a);
+  var pa = primaryActionForAudit(a);
+  var actionView = pa.view ? ' data-view="' + esc(pa.view) + '"' : '';
+  var toneStyle = turn.tone === 'danger'
+    ? 'background:var(--danger-bg);border-color:#eccbc6'
+    : (turn.tone === 'ok' ? 'background:var(--ok-bg);border-color:#bfe6d0' : '');
+  return '<div class="nextbar" style="' + toneStyle + '">' +
+    '<div class="nextbar__icon">-&gt;</div>' +
+    '<div class="nextbar__txt"><b>' + esc(turn.label) + ':</b> ' + esc(auditStatusMeta(a).next) +
+    ' &nbsp;·&nbsp; <b>Owner:</b> ' + esc(auditOwnerLabel(a)) +
+    '<div class="small muted">' + esc(turn.detail) + '</div></div>' +
+    '<button class="' + pa.cls + '" data-act="' + esc(pa.action) + '"' + actionView + ' data-id="' + esc(a.id) + '">' + esc(pa.label) + '</button>' +
+  '</div>';
+}
+
+function viewCalendar() {
+  var filter = state.params.filter || selectedFilter('calendar', 'active');
+  var list = sortedAuditsForQueue(filterAudits(filter));
+  var active = state.audits.filter(function (a) { return !isClosedAudit(a); });
+  var myTurn = state.audits.filter(function (a) { return auditTurnInfo(a).label === 'Your turn'; });
+  var waiting = state.audits.filter(function (a) { return auditTurnInfo(a).label.indexOf('Waiting on ') === 0; });
+  var overdue = state.audits.filter(function (a) { return auditDueInfo(a).overdue; });
+  var completed = state.audits.filter(isClosedAudit);
+  var chips = ['active', 'mine', 'waiting', 'overdue', 'completed', 'all'].map(function (key) {
+    return '<button class="btn btn--sm' + (filter === key ? ' btn--primary' : '') + '" data-act="nav" data-view="calendar" data-filter="' + key + '">' +
+      esc(AUDIT_FILTER_LABELS[key]) + '</button>';
+  }).join(' ');
+  var actions = chips;
   if (state.role === 'manager' || state.role === 'inspector') {
     actions += ' <button class="btn btn--primary btn--sm" data-act="new-audit">+ New Audit</button>';
   }
-  return pageHead(state.role === 'manager' ? '2026 Surveillance Plan' : 'Audit Plan Calendar', purpose, actions) +
-    '<div class="cal">' + cells + '</div>';
+  var rows = list.length ? list.map(auditRow).join('') : '<div class="empty">No audits match this filter.</div>';
+  return pageHead('Audit Work Queue', 'Audits and inspections in one due-date queue. The top signal shows whether action is yours or waiting on someone else.', actions) +
+    '<div class="queue-summary mb-16">' +
+      compactMetric('Active audits', String(active.length), active.length ? 'info' : 'neutral') +
+      compactMetric('Your turn', String(myTurn.length), myTurn.length ? 'warn' : 'ok') +
+      compactMetric('Waiting on others', String(waiting.length), waiting.length ? 'neutral' : 'ok') +
+      compactMetric('Overdue', String(overdue.length), overdue.length ? 'danger' : 'ok') +
+      compactMetric('Completed', String(completed.length), 'ok') +
+    '</div>' +
+    '<div class="card"><div class="card__head"><h3>' + esc(AUDIT_FILTER_LABELS[filter]) + '</h3>' +
+    '<span class="sub">' + list.length + ' audit' + (list.length === 1 ? '' : 's') + ' sorted by Due Date</span></div>' +
+    '<div class="list">' + rows + '</div></div>';
 }
 
 /* =========================== Audit Detail =========================== */
@@ -1203,12 +1284,15 @@ function viewAuditDetail() {
 
   return '' +
     pageHead(a.ref + ' — ' + orgName(a.orgId), 'Operator Audit overview and checklist entry point.', actions) +
+    auditNextActionBar(a) +
     '<div class="grid grid--main">' +
       '<div class="card">' +
         '<div class="card__head"><h3>Audit Details</h3><div class="spacer"></div>' +
-          '<span class="badge badge--info"><span class="dot"></span>' + esc(a.status) + '</span></div>' +
+          auditStatusBadge(a) + '</div>' +
         '<div class="card__body">' +
           '<div class="metaline">' +
+            metaItem('Next action', auditStatusMeta(a).next) +
+            metaItem('Current owner', auditOwnerLabel(a)) +
             metaItem('Organization', orgName(a.orgId)) +
             metaItem('Audit type', a.type) +
             metaItem('Domain', a.domain) +

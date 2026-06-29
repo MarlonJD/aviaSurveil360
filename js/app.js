@@ -17,8 +17,7 @@ var NAV = {
     { view: 'safety-intelligence', label: 'Team Dashboard', icon: '⌁' },
     { view: 'ssp-nasp', label: 'Executive Dashboard', icon: '▣' },
     { section: 'Oversight' },
-    { view: 'calendar', label: 'Surveillance Plans', icon: '▤' },
-    { view: 'calendar', label: 'Oversight Calendar', icon: '◴' },
+    { view: 'calendar', label: 'Audit Work Queue', icon: '▤' },
     { section: 'Organisations' },
     { view: 'organizations', label: 'Operators / Providers', icon: '🏢' },
     { view: 'org-risk', label: 'Risk Profiles', icon: '◇', id: 'ORG-XYZ' },
@@ -39,8 +38,7 @@ var NAV = {
     { section: 'Dashboard' },
     { view: 'dashboard', label: "Today’s Workbench", icon: '▦' },
     { section: 'Oversight' },
-    { view: 'calendar', label: 'Inspections', icon: '◴' },
-    { view: 'calendar', label: 'Audits', icon: '▤' },
+    { view: 'calendar', label: 'Audits & Inspections', icon: '▤' },
     { view: 'package-builder', label: 'Inspection Packages', icon: '▧' },
     { view: 'offline-field', label: 'Offline Field', icon: '⇄' },
     { section: 'Organisations' },
@@ -122,7 +120,7 @@ var NAV = {
 };
 
 var VIEW_TITLES = {
-  dashboard: 'Dashboard', calendar: 'Audit Plan', findings: 'Findings', 'my-findings': 'My Findings',
+  dashboard: 'Dashboard', calendar: 'Audit Work Queue', findings: 'Findings', 'my-findings': 'My Findings',
   reports: 'Reports', report: 'Report', messages: 'Messages', templates: 'Templates',
   'template-preview': 'Template Preview', auditlog: 'Audit Log', 'audit-detail': 'Audit Detail',
   checklist: 'Checklist Runner', finding: 'Finding Detail', wizard: 'New Audit Wizard',
@@ -254,6 +252,10 @@ function isNavActive(view) {
 
 function navBadge(view) {
   var f = visibleFindings();
+  if (view === 'calendar') {
+    var a = state.audits.filter(function (x) { return auditTurnInfo(x).label === 'Your turn'; }).length;
+    return a || '';
+  }
   if (state.role === 'manager' && view === 'findings') {
     var n = f.filter(function (x) { return dueInfo(x).overdue; }).length;
     return n || '';
@@ -371,7 +373,8 @@ function go(view, opts) {
     state.selectedFilters[view] = opts.filter;
     if (view === 'findings') state.selectedFilters.findings = opts.filter;
   }
-  state.params.filter = opts.filter || selectedFilter(view, view === 'findings' ? selectedFilter('findings', 'all') : null);
+  var fallbackFilter = view === 'findings' ? selectedFilter('findings', 'all') : (view === 'calendar' ? 'active' : null);
+  state.params.filter = opts.filter || fallbackFilter || selectedFilter(view, null);
   state.ui.notifOpen = false;
   state.ui.menuOpen = false;
   closeModal();

@@ -191,6 +191,109 @@ function primaryActionFor(finding) {
 /* ----------------------------- KPIs ----------------------------- */
 function isClosedAudit(a) { return a.status === 'Report Issued' || a.status === 'Closed'; }
 
+/* ----------------------------- Audit presentation ----------------------------- */
+function auditDueInfo(audit) {
+  if (isClosedAudit(audit) || !audit.date) {
+    return { overdue: false, dueSoon: false, days: null, label: isClosedAudit(audit) ? 'Complete' : '-' };
+  }
+  var days = daysBetween(DEMO_TODAY, audit.date);
+  var out = { days: days, overdue: false, dueSoon: false, label: '' };
+  if (days < 0) {
+    out.overdue = true;
+    out.label = Math.abs(days) + ' day' + (Math.abs(days) === 1 ? '' : 's') + ' overdue';
+  } else if (days === 0) {
+    out.dueSoon = true;
+    out.label = 'Today';
+  } else if (days <= 7) {
+    out.dueSoon = true;
+    out.label = 'Due in ' + days + ' day' + (days === 1 ? '' : 's');
+  } else {
+    out.label = 'Due in ' + days + ' days';
+  }
+  return out;
+}
+
+function auditStatusMeta(audit) {
+  if (audit.status === 'Planned') {
+    return { badge: 'info', ownerRole: 'manager', next: 'Confirm schedule / release to inspector' };
+  }
+  if (audit.status === 'Scheduled') {
+    return { badge: 'info', ownerRole: 'inspector', next: audit.checklistStarted ? 'Continue checklist' : 'Start checklist' };
+  }
+  if (audit.status === 'In Progress') {
+    return { badge: 'warn', ownerRole: 'inspector', next: audit.checklistStarted ? 'Continue checklist / prepare report' : 'Start checklist' };
+  }
+  if (isClosedAudit(audit)) {
+    return { badge: 'ok', ownerRole: null, next: 'No action - audit complete' };
+  }
+  return { badge: 'neutral', ownerRole: 'manager', next: 'Review audit status' };
+}
+
+function auditOwnerLabel(audit) {
+  var m = auditStatusMeta(audit);
+  if (!m.ownerRole) return '-';
+  if (m.ownerRole === 'manager') return 'Department Manager';
+  if (m.ownerRole === 'inspector') return 'CAA Inspector';
+  return roleName(m.ownerRole);
+}
+
+function auditAssignedToCurrentUser(audit) {
+  var r = ROLES[state.role];
+  if (!r || !audit) return false;
+  if (audit.lead === r.user) return true;
+  return Array.isArray(audit.team) && audit.team.indexOf(r.user) > -1;
+}
+
+function auditTurnInfo(audit) {
+  var meta = auditStatusMeta(audit);
+  if (!meta.ownerRole) {
+    return { label: 'No action needed', detail: 'This audit is complete.', tone: 'ok' };
+  }
+  var ownerLabelText = auditOwnerLabel(audit);
+  var yourTurn = meta.ownerRole === state.role;
+  if (meta.ownerRole === 'inspector' || meta.ownerRole === 'leadInspector') {
+    yourTurn = (state.role === 'inspector' || state.role === 'leadInspector') && auditAssignedToCurrentUser(audit);
+  }
+  if (yourTurn) {
+    var d = auditDueInfo(audit);
+    return {
+      label: 'Your turn',
+      detail: 'Action required from you.',
+      tone: d.overdue ? 'danger' : (d.dueSoon ? 'warn' : 'info')
+    };
+  }
+  return {
+    label: 'Waiting on ' + ownerLabelText,
+    detail: 'Nothing required from you right now.',
+    tone: 'neutral'
+  };
+}
+
+function auditStatusBadge(audit) {
+  var m = auditStatusMeta(audit);
+  var d = auditDueInfo(audit);
+  var html = '<span class="badge badge--' + m.badge + '"><span class="dot"></span>' + esc(audit.status) + '</span>';
+  if (d.overdue) html += ' <span class="badge badge--danger"><span class="dot"></span>Overdue</span>';
+  else if (d.dueSoon) html += ' <span class="badge badge--warn"><span class="dot"></span>Due Soon</span>';
+  return html;
+}
+
+function primaryActionForAudit(audit) {
+  if (!audit || isClosedAudit(audit)) {
+    return { label: 'View audit', action: 'nav', view: 'audit-detail', cls: 'btn' };
+  }
+  var turn = auditTurnInfo(audit);
+  if (turn.label === 'Your turn' && auditStatusMeta(audit).ownerRole === 'inspector') {
+    return {
+      label: audit.checklistStarted ? 'Continue checklist' : 'Start checklist',
+      action: audit.checklistStarted ? 'nav' : 'start-checklist',
+      view: audit.checklistStarted ? 'checklist' : null,
+      cls: 'btn btn--primary'
+    };
+  }
+  return { label: 'View audit', action: 'nav', view: 'audit-detail', cls: 'btn' };
+}
+
 function computeKpis() {
   var f = state.findings;
   var open = f.filter(function (x) { return x.status !== 'CLOSED'; });
