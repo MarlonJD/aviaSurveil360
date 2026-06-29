@@ -60,6 +60,542 @@ function compactMetric(label, value, tone) {
   return '<div class="compact-metric"><span>' + esc(label) + '</span><b class="' + (tone ? 'is-' + tone : '') + '">' + esc(value) + '</b></div>';
 }
 
+function approvalProgressHtml(record) {
+  var approval = record.approval;
+  if (!approval || !approval.chain) return '';
+  var summary = approvalSummary(record);
+  return '<div class="approval-rail">' + approval.chain.map(function (stage, idx) {
+    var cls = idx < approval.currentIndex || summary.outcome === 'approved' ? ' done' : (idx === approval.currentIndex && !summary.outcome ? ' current' : '');
+    var mark = idx < approval.currentIndex || summary.outcome === 'approved' ? '✓' : (idx === approval.currentIndex && !summary.outcome ? '•' : idx + 1);
+    return '<div class="approval-step' + cls + '">' +
+      '<div class="approval-step__dot">' + esc(mark) + '</div>' +
+      '<div class="approval-step__label">' + esc(stage.label) + '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+function approvalHistoryHtml(record) {
+  var history = record.approval && record.approval.history ? record.approval.history : [];
+  if (!history.length) return '<div class="muted small">No approval history yet.</div>';
+  return '<div class="approval-history">' + history.map(function (entry) {
+    return '<div class="approval-history__item">' +
+      '<div class="approval-history__head"><b>' + esc(approvalActionLabel(entry.action)) + '</b><span>' + esc(entry.date) + '</span></div>' +
+      '<div class="approval-history__actor">' + esc(entry.actor) + ' · ' + esc(roleName(entry.role)) + '</div>' +
+      (entry.comment ? '<div class="approval-history__comment">' + esc(entry.comment) + '</div>' : '') +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+function approvalDecisionButton(record, decision, label, tone, primary) {
+  var cls = 'btn btn--sm';
+  if (primary) cls += ' btn--primary';
+  else if (tone === 'ok') cls += ' btn--ok';
+  else if (tone === 'danger') cls += ' btn--danger';
+  return '<button class="' + cls + '" data-act="approval-action" data-id="' + esc(record.id) +
+    '" data-decision="' + esc(decision) + '">' + esc(label) + '</button>';
+}
+
+function approvalDecisionPanelHtml(record) {
+  var summary = approvalSummary(record);
+  if (summary.outcome) {
+    return '<div class="decision-panel is-final">' +
+      '<div class="decision-panel__title">' + esc(summary.statusLabel) + '</div>' +
+      '<p class="small muted">This demo item has no current approval owner.</p>' +
+    '</div>';
+  }
+
+  if (summary.ownerRole !== state.role) {
+    return '<div class="decision-panel">' +
+      '<div class="decision-panel__title">Waiting for ' + esc(summary.ownerLabel) + '</div>' +
+      '<p class="small muted">Current next action: ' + esc(summary.nextAction) + '.</p>' +
+    '</div>';
+  }
+
+  var buttons = '';
+  if (state.role === 'manager') {
+    buttons = approvalDecisionButton(record, 'forward', 'Submit to GM', null, true);
+  } else if (state.role === 'gm') {
+    if (record.approvalType === 'checklist') {
+      buttons =
+        approvalDecisionButton(record, 'approve', 'Approve Checklist', 'ok') +
+        approvalDecisionButton(record, 'return', 'Return to Department Manager', 'danger') +
+        approvalDecisionButton(record, 'reject', 'Reject', 'danger');
+    } else {
+      buttons =
+        approvalDecisionButton(record, 'forward', record.budgetRequired ? 'Send to Finance Review' : 'Forward to ED', null, true) +
+        approvalDecisionButton(record, 'return', 'Return to Department Manager', 'danger') +
+        approvalDecisionButton(record, 'reject', 'Reject', 'danger');
+    }
+  } else if (state.role === 'finance') {
+    buttons =
+      approvalDecisionButton(record, 'approve', 'Approve Budget', 'ok') +
+      approvalDecisionButton(record, 'approve_with_adjustment', 'Approve with Adjustment', null, true) +
+      approvalDecisionButton(record, 'finance_not_approved', 'Finance Not Approved', 'danger');
+  } else if (state.role === 'executiveDirector') {
+    buttons =
+      approvalDecisionButton(record, 'approve', 'Approve Plan', 'ok') +
+      approvalDecisionButton(record, 'return', 'Return to GM', 'danger') +
+      approvalDecisionButton(record, 'reject', 'Reject', 'danger');
+  }
+
+  return '<div class="decision-panel">' +
+    '<div class="decision-panel__title">' + esc(summary.ownerLabel) + ' Decision</div>' +
+    '<label class="decision-panel__label" for="approval-note-' + esc(record.id) + '">Decision note / mandatory reason</label>' +
+    '<textarea id="approval-note-' + esc(record.id) + '" class="decision-panel__note" placeholder="Required for Return, Reject, and Finance Not Approved. Optional for approvals."></textarea>' +
+    '<div class="decision-panel__actions">' + buttons + '</div>' +
+  '</div>';
+}
+
+function planningApprovalPurposeForRole() {
+  if (state.role === 'manager') return 'Track submitted planning items and revise them if they are returned.';
+  if (state.role === 'gm') return 'Route the budget-required planning item through Finance before ED approval.';
+  if (state.role === 'finance') return 'Review the mock budget and either approve, adjust, or return it to GM action.';
+  if (state.role === 'executiveDirector') return 'Give final approval or return the item to GM with a reason.';
+  return 'Review the internal CAA governance approval chain.';
+}
+
+function viewPlanningApprovals() {
+  var item = state.planningItems && state.planningItems.length ? state.planningItems[0] : null;
+  if (!item) return pageHead('Planning Approvals', '') + '<div class="empty">No planning approval items are seeded.</div>';
+  var summary = approvalSummary(item);
+  var meta = approvalMetaForStatus(item.status);
+  var isBudget = item.budgetRequired ? 'Budget Required' : 'No Budget Review';
+  var financeText = item.financeReview
+    ? humanStatus(item.financeReview.decision) + ' · ' + (item.financeReview.reason || item.financeReview.comment || 'No note')
+    : 'Not reviewed yet';
+
+  return pageHead('Planning Approval — ' + item.id, planningApprovalPurposeForRole()) +
+    guardrailStrip([
+      { label: 'Frontend-only demo' },
+      { label: 'Mock approval history', tone: 'info' },
+      { label: 'No real authorization service', tone: 'warn' }
+    ]) +
+    '<div class="governance-hero mb-16">' +
+      '<div>' +
+        '<div class="governance-hero__eyebrow">Phase 0B · thin planning approval slice</div>' +
+        '<h2>' + esc(item.title) + '</h2>' +
+        '<p>' + esc(item.purpose) + '</p>' +
+      '</div>' +
+      '<div class="governance-hero__metrics">' +
+        compactMetric('Current owner', summary.ownerLabel, summary.statusTone) +
+        compactMetric('Next action', summary.nextAction, 'info') +
+        compactMetric('Status', summary.statusLabel, summary.statusTone) +
+      '</div>' +
+    '</div>' +
+    '<div class="grid grid--kpi mb-16">' +
+      kpiCard('Approval Status', esc(meta.label), 'Derived from the current stage', { tone: meta.tone }) +
+      kpiCard('Requested Budget', esc(item.requestedBudget), isBudget, { tone: item.budgetRequired ? 'warn' : 'neutral' }) +
+      kpiCard('Target Month', esc(item.targetMonth), item.department) +
+    '</div>' +
+    '<div class="grid grid--main">' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="card"><div class="card__head"><h3>Planning Item Dossier</h3><span class="sub">CAA internal mock item</span></div><div class="card__body">' +
+          '<div class="metaline">' +
+            metaItem('Organization', item.organization) +
+            metaItem('Department', item.department) +
+            metaItem('Risk category', item.riskCategory) +
+            metaItem('Trigger type', item.triggerType) +
+            metaItem('Budget required', item.budgetRequired ? 'Yes' : 'No') +
+            metaItem('Proposed inspectors', item.proposedInspectors.join(', ')) +
+            metaItem('Finance review', financeText) +
+            metaItem('Current owner', summary.ownerLabel) +
+          '</div>' +
+        '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Approval Progress</h3><span class="sub">Configured owner path</span></div><div class="card__body">' +
+          approvalProgressHtml(item) +
+        '</div></div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="card"><div class="card__head"><h3>Decision Panel</h3><span class="sub">Role-aware controls</span></div><div class="card__body">' +
+          approvalDecisionPanelHtml(item) +
+        '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Approval History</h3><span class="sub">Append-only demo log</span></div><div class="card__body">' +
+          approvalHistoryHtml(item) +
+        '</div></div>' +
+      '</div>' +
+    '</div>';
+}
+
+function planningBoardColumn(item) {
+  if (item.approval && item.approval.outcome !== 'approved') return approvalSummary(item).statusLabel;
+  return planningPrepMeta(item.preparation.status).label;
+}
+
+function planningPrepActionPanel(item) {
+  var prep = item.preparation;
+  var body = '<div class="decision-panel__title">Current preparation step</div>' +
+    '<p class="small muted">' + esc(planningPrepMeta(prep.status).label) + '</p>';
+
+  if (state.role === 'gm' && item.approval.outcome === 'approved' && prep.status === 'not_released') {
+    body += '<div class="decision-panel__actions"><button class="btn btn--primary" data-act="planning-release" data-id="' + esc(item.id) + '">Release to Department</button></div>';
+  } else if (state.role === 'manager' && prep.status === 'released_to_department') {
+    body += '<div class="decision-panel__actions"><button class="btn btn--primary" data-act="planning-accept" data-id="' + esc(item.id) + '">Accept Released Audit</button></div>';
+  } else if (state.role === 'manager' && prep.status === 'accepted_by_department') {
+    body += '<div class="form-row"><label>Lead Inspector</label><select id="prep-lead"><option>Caner Yildiz</option><option>Aylin Sezer</option></select></div>' +
+      '<div class="decision-panel__actions"><button class="btn btn--primary" data-act="planning-assign-lead" data-id="' + esc(item.id) + '">Assign Lead Inspector</button></div>';
+  } else if (state.role === 'leadInspector' && prep.status === 'lead_inspector_assigned') {
+    body += '<div class="form-2col"><div class="form-row"><label>Start date</label><input id="prep-start" type="date" value="2026-09-10"></div>' +
+      '<div class="form-row"><label>End date</label><input id="prep-end" type="date" value="2026-09-12"></div></div>' +
+      '<div class="form-row"><label>Resources</label><textarea id="prep-resources">2 inspectors, document review package</textarea></div>' +
+      '<div class="decision-panel__actions"><button class="btn btn--primary" data-act="planning-propose-team" data-id="' + esc(item.id) + '">Propose Team / Dates / Resources</button></div>';
+  } else if (state.role === 'manager' && prep.status === 'team_schedule_proposed') {
+    body += '<div class="callout">Lead proposed ' + esc((prep.proposedTeam || []).join(', ')) + ' · ' + esc(prep.proposedStartDate || '—') + ' to ' + esc(prep.proposedEndDate || '—') + '.</div>' +
+      '<div class="decision-panel__actions"><button class="btn btn--primary" data-act="planning-confirm-prep" data-id="' + esc(item.id) + '">Confirm & Generate Mock Package</button></div>';
+  } else {
+    body += '<div class="callout">No action is available for this role at the current step.</div>';
+  }
+  return '<div class="decision-panel">' + body + '</div>';
+}
+
+function planningPrepHistoryHtml(item) {
+  var history = item.preparation.history || [];
+  if (!history.length) return '<div class="muted small">No release/preparation events yet.</div>';
+  return '<div class="approval-history">' + history.map(function (entry) {
+    return '<div class="approval-history__item"><div class="approval-history__head"><b>' + esc(humanStatus(entry.action)) + '</b><span>' + esc(entry.date) + '</span></div>' +
+      '<div class="approval-history__actor">' + esc(entry.actor) + ' · ' + esc(roleName(entry.role)) + '</div>' +
+      (entry.comment ? '<div class="approval-history__comment">' + esc(entry.comment) + '</div>' : '') + '</div>';
+  }).join('') + '</div>';
+}
+
+function viewPlanningBoard() {
+  var item = state.planningItems && state.planningItems.length ? state.planningItems[0] : null;
+  if (!item) return pageHead('Planning Board', '') + '<div class="empty">No planning item is seeded.</div>';
+  var prepMeta = planningPrepMeta(item.preparation.status);
+  var approval = approvalSummary(item);
+  var columns = ['Under GM Review', 'Finance Review', 'Pending ED Approval', 'Approved', 'Released to Department', 'Ready for Execution'];
+  var board = columns.map(function (col) {
+    var active = planningBoardColumn(item) === col || (approval.statusLabel === col);
+    return '<div class="planning-column' + (active ? ' is-active' : '') + '"><div class="planning-column__title">' + esc(col) + '</div>' +
+      (active ? '<div class="planning-card"><b>' + esc(item.id) + '</b><span>' + esc(item.title) + '</span></div>' : '<div class="planning-column__empty">No item</div>') +
+    '</div>';
+  }).join('');
+  var pkg = item.preparation.assignmentPackage
+    ? '<div class="callout"><b>' + esc(item.preparation.assignmentPackage.title) + '</b><br><span class="small muted">' +
+      esc(item.preparation.assignmentPackage.note) + '</span></div>'
+    : '<div class="muted small">Assignment package is generated only after Department Manager confirmation.</div>';
+
+  return pageHead('Planning Board / Audit Preparation', 'Workflow-driven planning board and release path. Cards are not drag-movable in this demo.') +
+    guardrailStrip([
+      { label: 'Mock planning board' },
+      { label: 'No real assignment package generation', tone: 'warn' },
+      { label: 'Frontend-only state', tone: 'info' }
+    ]) +
+    '<div class="planning-board mb-16">' + board + '</div>' +
+    '<div class="grid grid--main">' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="card"><div class="card__head"><h3>Planning Item Detail</h3><div class="spacer"></div>' + demoBadge(prepMeta.label, prepMeta.tone) + '</div><div class="card__body">' +
+          '<div class="metaline">' +
+            metaItem('Organization', item.organization) +
+            metaItem('Department', item.department) +
+            metaItem('Approval status', approval.statusLabel) +
+            metaItem('Preparation status', prepMeta.label) +
+            metaItem('Lead Inspector', item.preparation.leadInspector || '—') +
+            metaItem('Team', item.preparation.proposedTeam.length ? item.preparation.proposedTeam.join(', ') : '—') +
+            metaItem('Date range', item.preparation.proposedStartDate ? item.preparation.proposedStartDate + ' to ' + item.preparation.proposedEndDate : '—') +
+            metaItem('Resources', item.preparation.resources || '—') +
+          '</div>' +
+        '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Mock Audit Assignment Package</h3></div><div class="card__body">' + pkg + '</div></div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="card"><div class="card__head"><h3>Next Preparation Action</h3></div><div class="card__body">' + planningPrepActionPanel(item) + '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Release / Preparation History</h3></div><div class="card__body">' + planningPrepHistoryHtml(item) + '</div></div>' +
+      '</div>' +
+    '</div>';
+}
+
+function activeChecklistApproval() {
+  var checklist = state.managedChecklists && state.managedChecklists.length ? state.managedChecklists[0] : null;
+  if (!checklist) return null;
+  var version = null;
+  for (var i = 0; i < checklist.versions.length; i++) {
+    if (checklist.versions[i].id === 'CL-FOPS-v2.4') version = checklist.versions[i];
+  }
+  return { checklist: checklist, version: version || checklist.versions[0] };
+}
+
+function viewChecklistApprovals() {
+  var bundle = activeChecklistApproval();
+  if (!bundle || !bundle.version) return pageHead('Checklist Approvals', '') + '<div class="empty">No checklist approval items are seeded.</div>';
+  var checklist = bundle.checklist;
+  var version = bundle.version;
+  var summary = approvalSummary(version);
+  var meta = approvalMetaForStatus(version.status);
+  var questionCount = version.questionIds ? version.questionIds.length : 0;
+  var activeVersion = checklist.versions.filter(function (item) { return item.version === checklist.publishedVersion; })[0];
+
+  return pageHead('Checklist Approval — ' + checklist.name, 'Department Manager to GM approval shell using the shared approval primitive.') +
+    guardrailStrip([
+      { label: 'Frontend-only demo' },
+      { label: 'Mock checklist approval', tone: 'info' },
+      { label: 'Inspector cannot edit configuration', tone: 'warn' }
+    ]) +
+    '<div class="governance-hero mb-16">' +
+      '<div>' +
+        '<div class="governance-hero__eyebrow">Phase 1A · checklist approval shell</div>' +
+        '<h2>' + esc(checklist.name) + ' v' + esc(version.version) + '</h2>' +
+        '<p>' + esc(version.changeReason) + '</p>' +
+      '</div>' +
+      '<div class="governance-hero__metrics">' +
+        compactMetric('Current owner', summary.ownerLabel, summary.statusTone) +
+        compactMetric('Next action', summary.nextAction, 'info') +
+        compactMetric('Status', summary.statusLabel, summary.statusTone) +
+      '</div>' +
+    '</div>' +
+    '<div class="grid grid--kpi mb-16">' +
+      kpiCard('Version Status', esc(meta.label), 'Checklist approval lifecycle', { tone: meta.tone }) +
+      kpiCard('Questions', String(questionCount), 'Seeded from current demo checklist') +
+      kpiCard('Published Active', activeVersion ? 'v' + esc(activeVersion.version) : 'None', 'Prior active version stays unchanged') +
+    '</div>' +
+    '<div class="grid grid--main">' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="card"><div class="card__head"><h3>Checklist Version Dossier</h3><span class="sub">Phase 1A shell only</span></div><div class="card__body">' +
+          '<div class="metaline">' +
+            metaItem('Checklist ID', checklist.id) +
+            metaItem('Department', checklist.department) +
+            metaItem('Inspection type', checklist.inspectionType) +
+            metaItem('Version', version.version) +
+            metaItem('Created by', version.createdBy) +
+            metaItem('Reason for change', version.changeReason) +
+            metaItem('Impact', version.impact || 'No impact note') +
+            metaItem('Current owner', summary.ownerLabel) +
+          '</div>' +
+          '<div class="callout mt-16">This shell proves GM approval controls only. Question Bank, Builder, Version History, and publish/archive behavior remain Phase 1B/1C.</div>' +
+        '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Approval Progress</h3><span class="sub">Department Manager -> GM</span></div><div class="card__body">' +
+          approvalProgressHtml(version) +
+        '</div></div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="card"><div class="card__head"><h3>Decision Panel</h3><span class="sub">GM approve / return / reject</span></div><div class="card__body">' +
+          approvalDecisionPanelHtml(version) +
+        '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Approval History</h3><span class="sub">Append-only demo log</span></div><div class="card__body">' +
+          approvalHistoryHtml(version) +
+        '</div></div>' +
+      '</div>' +
+    '</div>';
+}
+
+function checklistStatusBadge(status) {
+  var meta = approvalMetaForStatus(status);
+  return demoBadge(meta.label, meta.tone);
+}
+
+function viewQuestionBank() {
+  var canEdit = canManageChecklistConfig(state.role);
+  var rows = (state.questionBank || []).map(function (q) {
+    return '<div class="list__row is-static">' +
+      '<div class="list__main"><div class="list__title"><span class="tag-pill">' + esc(q.id) + '</span>' + esc(q.title) + '</div>' +
+      '<div class="list__meta"><span><b>Department:</b> ' + esc(q.department) + '</span><span><b>Category:</b> ' + esc(q.category) + '</span>' +
+      '<span><b>Regulatory reference:</b> ' + esc(q.regulationRef) + '</span></div>' +
+      '<div class="small muted mt-12">' + esc(q.text) + '</div></div>' +
+      '<div class="list__side">' + demoBadge(q.status, q.status === 'Active' ? 'ok' : 'neutral') + '</div>' +
+    '</div>';
+  }).join('');
+  var createPanel = canEdit
+    ? '<div class="card mb-16"><div class="card__head"><h3>New Question</h3><span class="sub">Mock item, saved in browser</span></div><div class="card__body">' +
+        '<div class="form-2col"><div class="form-row"><label>Title</label><input id="qb-title" type="text" value="Training evidence reconciliation"></div>' +
+        '<div class="form-row"><label>Question text</label><input id="qb-text" type="text" value="Does the training matrix reconcile to sampled crew certificate evidence?"></div></div>' +
+        '<button class="btn btn--primary" data-act="qb-create">+ New Question</button>' +
+      '</div></div>'
+    : '<div class="scope-note">Read-only preview. Inspectors cannot edit checklist configuration in this demo.</div>';
+
+  return pageHead('Question Bank', 'Reusable checklist questions with configured references and expected evidence.') +
+    guardrailStrip([
+      { label: 'Mock configuration data' },
+      { label: 'Regulatory references only', tone: 'warn' }
+    ]) +
+    createPanel +
+    '<div class="card"><div class="card__head"><h3>Questions</h3><span class="sub">' + state.questionBank.length + ' active items</span></div><div class="list">' + rows + '</div></div>';
+}
+
+function viewChecklistBuilder() {
+  var checklist = activeManagedChecklist();
+  if (!checklist) return pageHead('Checklist Builder', '') + '<div class="empty">No managed checklist is seeded.</div>';
+  var canEdit = canManageChecklistConfig(state.role);
+  var editable = editableChecklistVersion(checklist);
+  var active = checklist.versions.filter(function (version) { return version.status === 'published_active'; })[0];
+  var working = editable || active;
+  var isEditable = canEdit && editable && (editable.status === 'draft' || editable.status === 'checklist_returned');
+
+  var bankRows = (state.questionBank || []).map(function (q) {
+    var already = working && working.questionIds && working.questionIds.indexOf(q.id) > -1;
+    return '<div class="package-question">' +
+      '<div><b>' + esc(q.id) + ' · ' + esc(q.title) + '</b><p>' + esc(q.text) + '</p></div>' +
+      (isEditable && !already ? '<button class="btn btn--sm" data-act="checklist-add-question" data-id="' + esc(working.id) + '" data-question="' + esc(q.id) + '">+ Add</button>' :
+        '<span class="badge badge--neutral"><span class="dot"></span>' + (already ? 'In version' : 'Read-only') + '</span>') +
+    '</div>';
+  }).join('');
+
+  var versionRows = working && working.questionIds ? working.questionIds.map(function (qid, idx) {
+    return '<div class="package-question">' +
+      '<div><b>' + esc(idx + 1) + '. ' + esc(checklistQuestionLabel(qid)) + '</b><p class="small muted">' + esc(qid) + '</p></div>' +
+      (isEditable ? '<div class="row-actions">' +
+        '<button class="btn btn--sm" data-act="checklist-move-question" data-id="' + esc(working.id) + '" data-question="' + esc(qid) + '" data-direction="up">Up</button>' +
+        '<button class="btn btn--sm" data-act="checklist-move-question" data-id="' + esc(working.id) + '" data-question="' + esc(qid) + '" data-direction="down">Down</button>' +
+      '</div>' : checklistStatusBadge(working.status)) +
+    '</div>';
+  }).join('') : '<div class="empty">No questions in this version.</div>';
+
+  var draftPanel = editable
+    ? '<div class="callout mb-16"><b>Working version:</b> v' + esc(editable.version) + ' · ' + esc(approvalMetaForStatus(editable.status).label) + '. Reason for Change: ' + esc(editable.changeReason) + '</div>'
+    : '<div class="card mb-16"><div class="card__head"><h3>Create New Draft Version</h3><span class="sub">Reason for Change is mandatory</span></div><div class="card__body">' +
+        '<div class="form-row"><label>Reason for Change <span class="req">*</span></label><textarea id="cl-change-reason" placeholder="Explain why this checklist needs a new version."></textarea></div>' +
+        (canEdit ? '<button class="btn btn--primary" data-act="checklist-draft">Create Draft From Active</button>' : '<div class="scope-note">Read-only preview. Inspectors cannot create checklist versions.</div>') +
+      '</div></div>';
+
+  var submitAction = editable && state.role === 'manager' && (editable.status === 'draft' || editable.status === 'checklist_returned')
+    ? '<button class="btn btn--primary" data-act="checklist-submit-version" data-id="' + esc(editable.id) + '">Submit for GM Approval</button>' : '';
+
+  return pageHead('Checklist Builder', 'Build and order checklist questions without changing the active published version.', submitAction) +
+    guardrailStrip([
+      { label: 'Frontend-only demo' },
+      { label: 'Version history preserved', tone: 'info' },
+      { label: 'No production rule publishing', tone: 'warn' }
+    ]) +
+    (!canEdit ? '<div class="scope-note">Read-only preview. Inspectors cannot edit checklist configuration.</div>' : '') +
+    draftPanel +
+    '<div class="grid grid--main">' +
+      '<div class="card"><div class="card__head"><h3>' + esc(checklist.name) + ' Questions</h3><span class="sub">v' + esc(working.version) + '</span></div><div class="card__body">' + versionRows + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Question Bank</h3><span class="sub">Add from reusable bank</span></div><div class="card__body">' + bankRows + '</div></div>' +
+    '</div>';
+}
+
+function viewChecklistVersions() {
+  var checklist = activeManagedChecklist();
+  if (!checklist) return pageHead('Version History', '') + '<div class="empty">No managed checklist is seeded.</div>';
+  var rows = checklist.versions.slice().reverse().map(function (version) {
+    var summary = approvalSummary(version);
+    var publish = state.role === 'manager' && version.status === 'checklist_approved'
+      ? '<button class="btn btn--sm btn--primary" data-act="checklist-publish-version" data-id="' + esc(version.id) + '">Publish Active</button>' : '';
+    return '<tr>' +
+      '<td><b>v' + esc(version.version) + '</b><div class="small muted">' + esc(version.id) + '</div></td>' +
+      '<td>' + checklistStatusBadge(version.status) + '</td>' +
+      '<td>' + esc(version.createdBy) + '</td>' +
+      '<td>' + esc(version.changeReason) + '</td>' +
+      '<td>' + esc(summary.ownerLabel) + '</td>' +
+      '<td style="text-align:right">' + publish + '</td>' +
+    '</tr>';
+  }).join('');
+  return pageHead('Version History — ' + checklist.name, 'Checklist versions are never edited in place; publishing archives the prior active version.') +
+    guardrailStrip([
+      { label: 'Append-only version concept' },
+      { label: 'Mock publishing only', tone: 'warn' }
+    ]) +
+    '<div class="card card__body--flush"><table class="table"><thead><tr>' +
+      '<th>Version</th><th>Status</th><th>Created By</th><th>Reason for Change</th><th>Current Owner</th><th></th></tr></thead><tbody>' +
+      rows + '</tbody></table></div>';
+}
+
+function viewRoleHome() {
+  var role = state.role;
+  var r = ROLES[role] || {};
+  var profiles = {
+    leadInspector: {
+      title: 'Lead Inspector',
+      purpose: 'Review assigned inspections, potential findings and report readiness.',
+      queueTitle: 'Lead Review Queue',
+      queueSub: 'Inspection execution and report-control work',
+      chain: 'Report approval: Lead Inspector -> Department Manager -> GM -> ED',
+      boundary: 'Lead Inspector reviews potential findings and sets severity before conversion. Finding closure still requires accepted evidence or authorized closure.',
+      kpis: [
+        ['Potential Findings', '2', 'Awaiting lead review', 'warn', 'findings'],
+        ['Reports In Draft', '3', 'Preliminary or final', 'info', 'reports'],
+        ['Assigned Audits', '4', 'Current plan items', 'neutral', 'calendar']
+      ],
+      rows: [
+        ['OPS-2026-001', 'Potential finding from Flight Operations checklist', 'Severity review pending', 'findings'],
+        ['AUD-2026-001', 'Airline XYZ Operator Audit', 'Team and checklist execution', 'calendar'],
+        ['RPT-2026-004', 'Preliminary report package', 'Lead sign-off before DM review', 'reports']
+      ]
+    },
+    gm: {
+      title: 'General Manager',
+      purpose: 'Review planning packages, budget routing and report approvals.',
+      queueTitle: 'GM Approval Queue',
+      queueSub: 'Plans and reports requiring management decision',
+      chain: 'Planning approval: Department Manager -> GM -> Finance -> ED',
+      boundary: 'GM approval does not release an audit by itself. Finance and ED approval are still required before release.',
+      kpis: [
+        ['Plans Waiting', '3', 'Department submissions', 'warn', 'calendar'],
+        ['Finance Routing', '2', 'Budget review needed', 'info', 'calendar'],
+        ['Reports Waiting', '1', 'Final report review', 'neutral', 'reports']
+      ],
+      rows: [
+        ['PLAN-2026-Q3', 'Quarterly surveillance plan', 'Check scope and budget rationale', 'calendar'],
+        ['AUD-2026-001', 'Airline XYZ Operator Audit', 'Release candidate after approvals', 'calendar'],
+        ['RPT-2026-002', 'Final report package', 'GM review before ED approval', 'reports']
+      ]
+    },
+    finance: {
+      title: 'Finance Review',
+      purpose: 'Review planned audit budget and resource requests before ED approval.',
+      queueTitle: 'Finance Review Queue',
+      queueSub: 'Budget, travel and resource checks',
+      chain: 'Finance is between GM review and ED approval for planning.',
+      boundary: 'Finance reviews cost and resource justification only. It does not make regulatory, finding-closure or enforcement decisions.',
+      kpis: [
+        ['Budget Reviews', '2', 'Waiting finance action', 'warn', 'calendar'],
+        ['Returned Items', '1', 'Needs department revision', 'danger', 'calendar'],
+        ['Ready For ED', '1', 'Finance accepted', 'ok', 'calendar']
+      ],
+      rows: [
+        ['PLAN-2026-Q3', 'Surveillance plan budget', 'Travel and inspector-day review', 'calendar'],
+        ['AUD-2026-006', 'Maintenance provider inspection', 'Budget rationale returned', 'calendar'],
+        ['AUD-2026-001', 'Airline XYZ Operator Audit', 'Finance accepted for ED review', 'calendar']
+      ]
+    },
+    executiveDirector: {
+      title: 'Executive Director',
+      purpose: 'Final approval for released plans and final report packages.',
+      queueTitle: 'Executive Approval Queue',
+      queueSub: 'Final governance approvals',
+      chain: 'Planning: DM -> GM -> Finance -> ED. Report: Lead -> DM -> GM -> ED.',
+      boundary: 'ED approval is an internal governance step in this demo. Enforcement remains a separate authorized process, not an automatic outcome.',
+      kpis: [
+        ['Plan Approvals', '1', 'Ready for final approval', 'warn', 'calendar'],
+        ['Final Reports', '2', 'Awaiting ED approval', 'info', 'reports'],
+        ['Returned', '0', 'Revision requested', 'ok', 'reports']
+      ],
+      rows: [
+        ['PLAN-2026-Q3', 'Quarterly surveillance plan', 'Final approval before GM release', 'calendar'],
+        ['RPT-2026-002', 'Final report package', 'ED approval required', 'reports'],
+        ['RPT-2026-004', 'Preliminary report path', 'Not ready for ED review', 'reports']
+      ]
+    }
+  };
+  var cfg = profiles[role] || profiles.leadInspector;
+  var rows = cfg.rows.map(function (row) {
+    return '<div class="list__row" data-act="nav" data-view="' + row[3] + '">' +
+      '<div class="list__main"><div class="list__title"><span class="tag-pill">' + esc(row[0]) + '</span>' + esc(row[1]) + '</div>' +
+      '<div class="list__meta"><span><b>Next action:</b> ' + esc(row[2]) + '</span></div></div>' +
+      '<div class="list__side"><button class="btn btn--sm" data-act="nav" data-view="' + row[3] + '">Open</button></div>' +
+    '</div>';
+  }).join('');
+  var kpis = cfg.kpis.map(function (k) {
+    return kpiCard(k[0], k[1], k[2], { tone: k[3], view: k[4] });
+  }).join('');
+
+  return pageHead(cfg.title, r.question || cfg.purpose) +
+    guardrailStrip([
+      { label: 'Frontend-only demo' },
+      { label: 'Mock governance queues', tone: 'info' },
+      { label: 'Not a legal decision', tone: 'warn' }
+    ]) +
+    '<div class="grid grid--kpi mb-16">' + kpis + '</div>' +
+    '<div class="grid grid--main">' +
+      '<div class="card"><div class="card__head"><h3>' + esc(cfg.queueTitle) + '</h3><span class="sub">' + esc(cfg.queueSub) + '</span></div>' +
+        '<div class="list">' + rows + '</div></div>' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="card"><div class="card__head"><h3>Approval Chain</h3></div><div class="card__body">' +
+          '<div class="callout">' + esc(cfg.chain) + '</div>' +
+        '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Authority Boundary</h3></div><div class="card__body small">' + esc(cfg.boundary) + '</div></div>' +
+      '</div>' +
+    '</div>';
+}
+
 /* =========================== Frontend V2 screens =========================== */
 function viewSafetyIntelligenceDashboard() {
   var filter = selectedFilter('safety', 'all');
@@ -713,15 +1249,28 @@ function viewChecklistRunner() {
     function aBtn(val, label, selCls) {
       return '<button class="answer ' + (sel === val ? selCls : '') + '" data-act="answer" data-q="' + it.id + '" data-val="' + val + '">' + esc(label) + '</button>';
     }
-    var flagged = sel === 'noncompliant';
+    var flagged = sel === 'noncompliant' || sel === 'observation';
     var noteHtml = '';
     if (flagged) {
       if (ans.findingId) {
         noteHtml = '<div class="cl-finding-note"><span>⚑</span><div>Finding <b>' + esc(ans.findingId) + '</b> created from this item. ' +
           '<a data-act="nav" data-view="finding" data-id="' + ans.findingId + '" style="cursor:pointer">Open finding →</a></div></div>';
+      } else if (ans.potentialFindingId) {
+        var pf = potentialFindingById(ans.potentialFindingId);
+        noteHtml = '<div class="cl-finding-note"><span>⚑</span><div>Potential Finding <b>' + esc(ans.potentialFindingId) + '</b> ' +
+          (pf ? esc(approvalMetaForStatus(pf.status).label || humanStatus(pf.status)) : 'created') +
+          '. Lead Inspector review is required before a real Finding is issued.</div></div>';
       } else {
-        noteHtml = '<div class="cl-finding-note"><span>⚑</span><div>Marked <b>Non-Compliant</b>. This requires a finding.' +
-          '</div><button class="btn btn--danger btn--sm" style="margin-left:auto" data-act="create-finding" data-q="' + it.id + '" data-id="' + a.id + '">Create Finding</button></div>';
+        var fileList = ans.evidenceFiles && ans.evidenceFiles.length
+          ? '<div class="filechip"><div class="filechip__icon">PDF</div><div style="flex:1"><div class="filechip__name">' + esc(ans.evidenceFiles.join(', ')) + '</div><div class="filechip__meta">selected (mock filename only)</div></div></div>'
+          : '<div class="small muted mt-12">No mock evidence filename selected.</div>';
+        noteHtml = '<div class="cl-finding-note"><span>⚑</span><div style="flex:1">Marked <b>' + esc(CHECKLIST_RESULTS[sel]) + '</b>. Add the required comment before creating a Potential Finding.' +
+          '<div class="form-row mt-12"><label>Inspector comment <span class="req">*</span></label>' +
+          '<textarea data-field="checklist-comment" data-q="' + esc(it.id) + '" placeholder="Required for Non-Compliant or Observation.">' + esc(ans.comment || '') + '</textarea></div>' +
+          fileList + '<div class="row-actions mt-12">' +
+          '<button class="btn btn--sm" data-act="mock-checklist-evidence" data-q="' + esc(it.id) + '">Select mock evidence filename</button>' +
+          '<button class="btn btn--danger btn--sm" data-act="create-potential" data-q="' + esc(it.id) + '" data-id="' + a.id + '">Create Potential Finding</button></div>' +
+          '</div></div>';
       }
     }
     return '<div class="cl-item' + (flagged ? ' flagged' : '') + '">' +
@@ -755,6 +1304,166 @@ function viewChecklistRunner() {
       '<div class="callout mt-12">Mark <b>Are crew training records complete and up to date?</b> as <b>Non-Compliant</b> to raise a finding, as in the demo scenario.</div>' +
     '</div></div>' +
     itemsHtml;
+}
+
+function viewLeadReviewQueue() {
+  var potentials = (state.potentialFindings || []).slice().sort(function (a, b) {
+    return (b.createdDate || '').localeCompare(a.createdDate || '');
+  });
+  var pending = potentials.filter(function (pf) { return pf.status === 'pending_lead_review'; });
+  var converted = potentials.filter(function (pf) { return pf.status === 'converted'; });
+  var returned = potentials.filter(function (pf) { return pf.status === 'returned_to_inspector'; });
+
+  var rows = potentials.length ? potentials.map(function (pf) {
+    var audit = auditById(pf.auditId);
+    var status = approvalMetaForStatus(pf.status);
+    var canDecide = state.role === 'leadInspector' && pf.status === 'pending_lead_review';
+    var decision = canDecide
+      ? '<div class="divider"></div><div class="form-row"><label>Finding title</label><input id="pf-title-' + esc(pf.id) + '" type="text" value="Crew training records incomplete"></div>' +
+        '<div class="form-row"><label>Lead severity <span class="req">*</span></label><select id="pf-severity-' + esc(pf.id) + '">' +
+          '<option value="">Select severity</option><option value="3">Level 3 Minor</option><option value="2">Level 2 Major</option><option value="1">Level 1 Critical</option><option value="0">Observation</option>' +
+        '</select></div>' +
+        '<div class="form-row"><label>Reason for return/dismissal</label><textarea id="pf-reason-' + esc(pf.id) + '" placeholder="Required only for Return or Dismiss."></textarea></div>' +
+        '<div class="row-actions">' +
+          '<button class="btn btn--primary" data-act="convert-potential" data-id="' + esc(pf.id) + '">Convert to Finding</button>' +
+          '<button class="btn" data-act="return-potential" data-id="' + esc(pf.id) + '">Return to Inspector</button>' +
+          '<button class="btn btn--danger" data-act="dismiss-potential" data-id="' + esc(pf.id) + '">Dismiss</button>' +
+        '</div>'
+      : (pf.findingId ? '<div class="mt-12"><button class="btn btn--sm" data-act="nav" data-view="finding" data-id="' + esc(pf.findingId) + '">Open Finding</button></div>' : '');
+    return '<div class="card mb-16"><div class="card__head"><h3>' + esc(pf.id) + ' · ' + esc(CHECKLIST_RESULTS[pf.result] || humanStatus(pf.result)) + '</h3><div class="spacer"></div>' +
+      demoBadge(status.label || humanStatus(pf.status), status.tone || statusTone(pf.status)) + '</div><div class="card__body">' +
+      '<div class="metaline">' +
+        metaItem('Audit', pf.auditId) +
+        metaItem('Organization', orgName(pf.orgId)) +
+        metaItem('Lead audit', audit ? audit.lead : '—') +
+        metaItem('Created by', pf.createdBy) +
+        metaItem('Question', pf.questionId) +
+        metaItem('Mock evidence files', pf.evidenceFiles.length ? pf.evidenceFiles.join(', ') : 'None') +
+      '</div>' +
+      '<div class="divider"></div><div class="metaline__k">Checklist item</div><div class="mt-12">' + esc(pf.checklistText) + '</div>' +
+      '<div class="metaline__k mt-16">Inspector comment</div><div class="mt-12 small muted">' + esc(pf.comment) + '</div>' +
+      decision +
+    '</div></div>';
+  }).join('') : '<div class="empty">No Potential Findings have been created yet.</div>';
+
+  return pageHead('Lead Review Queue', 'Review Potential Findings before they become real Findings in the CAP/Evidence/Closure flow.') +
+    guardrailStrip([
+      { label: 'Lead Inspector split' },
+      { label: 'Severity set by Lead only', tone: 'info' },
+      { label: 'Auditee sees only real Findings', tone: 'warn' }
+    ]) +
+    '<div class="grid grid--kpi mb-16">' +
+      kpiCard('Pending Review', pending.length, 'Potential Findings waiting', { tone: pending.length ? 'warn' : 'ok' }) +
+      kpiCard('Converted', converted.length, 'Entered Finding lifecycle', { tone: converted.length ? 'info' : 'neutral' }) +
+      kpiCard('Returned', returned.length, 'Back to Inspector', { tone: returned.length ? 'warn' : 'neutral' }) +
+    '</div>' +
+    rows;
+}
+
+function reportDecisionButton(report, decision, label, tone, primary) {
+  var cls = 'btn btn--sm';
+  if (primary) cls += ' btn--primary';
+  else if (tone === 'ok') cls += ' btn--ok';
+  else if (tone === 'danger') cls += ' btn--danger';
+  return '<button class="' + cls + '" data-act="report-approval" data-id="' + esc(report.id) + '" data-decision="' + esc(decision) + '">' + esc(label) + '</button>';
+}
+
+function reportDecisionPanelHtml(report) {
+  var summary = approvalSummary(report);
+  if (report.finalLocked) {
+    return '<div class="decision-panel is-final"><div class="decision-panel__title">Final Report Locked</div>' +
+      '<p class="small muted">Final report is non-editable in demo state. Audit closes only after ED approval.</p></div>';
+  }
+  if (summary.ownerRole !== state.role) {
+    return '<div class="decision-panel"><div class="decision-panel__title">Waiting for ' + esc(summary.ownerLabel) + '</div>' +
+      '<p class="small muted">Current next action: ' + esc(summary.nextAction) + '.</p></div>';
+  }
+  var buttons = '';
+  if (state.role === 'leadInspector') {
+    buttons = reportDecisionButton(report, 'forward', 'Submit Preliminary Report', null, true);
+  } else if (state.role === 'manager') {
+    buttons =
+      reportDecisionButton(report, 'approve', 'Approve to GM', 'ok') +
+      reportDecisionButton(report, 'return', 'Return to Lead', 'danger') +
+      reportDecisionButton(report, 'reject', 'Reject', 'danger');
+  } else if (state.role === 'gm') {
+    buttons =
+      reportDecisionButton(report, 'approve', 'Approve to ED', 'ok') +
+      reportDecisionButton(report, 'return', 'Return to Department Manager', 'danger') +
+      reportDecisionButton(report, 'reject', 'Reject', 'danger');
+  } else if (state.role === 'executiveDirector') {
+    buttons =
+      reportDecisionButton(report, 'approve', 'Approve Final Report', 'ok') +
+      reportDecisionButton(report, 'return', 'Return to GM', 'danger') +
+      reportDecisionButton(report, 'reject', 'Reject', 'danger');
+  }
+  var enforcement = state.role === 'manager'
+    ? '<div class="divider"></div><div class="form-row"><label>Enforcement recommendation only</label><select id="report-enforcement-type-' + esc(report.id) + '">' +
+      '<option value="">No recommendation</option><option>Administrative</option><option>Warning</option><option>Suspension</option><option>Other</option></select></div>' +
+      '<div class="form-row"><label>Recommendation reason</label><textarea id="report-enforcement-reason-' + esc(report.id) + '" placeholder="Recommendation only; never automatic."></textarea></div>'
+    : '';
+  return '<div class="decision-panel"><div class="decision-panel__title">' + esc(summary.ownerLabel) + ' Decision</div>' +
+    '<label class="decision-panel__label" for="report-note-' + esc(report.id) + '">Decision note / mandatory return reason</label>' +
+    '<textarea id="report-note-' + esc(report.id) + '" class="decision-panel__note" placeholder="Required for Return or Reject. Optional for approval."></textarea>' +
+    enforcement +
+    '<div class="decision-panel__actions">' + buttons + '</div></div>';
+}
+
+function viewAuditReportsApproval() {
+  var report = state.auditReports && state.auditReports.length ? state.auditReports[0] : null;
+  if (!report) return pageHead('Audit Reports', '') + '<div class="empty">No audit report is seeded.</div>';
+  var audit = auditById(report.auditId);
+  var summary = approvalSummary(report);
+  var status = approvalMetaForStatus(report.status);
+  var recommendation = report.enforcementRecommendation
+    ? report.enforcementRecommendation.type + ' — ' + report.enforcementRecommendation.reason
+    : 'None recorded';
+  var signature = report.mockDigitalSignature
+    ? '<div class="report__stamp">' + esc(report.mockDigitalSignature.label) + '</div><div class="small muted mt-12">Signed by ' + esc(report.mockDigitalSignature.signer) + ' · ' + esc(fmtDate(report.mockDigitalSignature.date)) + '</div>'
+    : '<div class="muted small">Mock signature appears only after ED approval.</div>';
+  var findings = state.findings.filter(function (finding) { return finding.auditId === report.auditId; });
+
+  return pageHead('Preliminary / Final Report — ' + report.id, 'Mock report approval chain: Lead Inspector -> Department Manager -> GM -> Executive Director.',
+    '<button class="btn" data-act="mock-export">Preview PDF (mock)</button><button class="btn" data-act="mock-export">Preview Word (mock)</button>') +
+    guardrailStrip([
+      { label: 'Mock report module' },
+      { label: 'Mock digital signature only', tone: 'warn' },
+      { label: 'Enforcement recommendation only', tone: 'warn' }
+    ]) +
+    '<div class="grid grid--kpi mb-16">' +
+      kpiCard('Report Status', esc(status.label), report.finalLocked ? 'Locked final report' : 'Editable demo draft', { tone: status.tone }) +
+      kpiCard('Current Owner', esc(summary.ownerLabel), summary.nextAction, { tone: summary.statusTone }) +
+      kpiCard('Audit Status', audit ? esc(audit.status) : '—', report.auditId) +
+    '</div>' +
+    '<div class="grid grid--main">' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="card"><div class="card__head"><h3>Report Overview</h3><div class="spacer"></div>' + demoBadge(status.label, status.tone) + '</div><div class="card__body">' +
+          '<div class="metaline">' +
+            metaItem('Audit', report.auditId) +
+            metaItem('Report number', report.reportNumber || 'Generated after ED approval') +
+            metaItem('Lead Inspector', audit ? audit.lead : '—') +
+            metaItem('Approved by', report.approvedBy || '—') +
+            metaItem('Approval date', report.approvalDate ? fmtDate(report.approvalDate) : '—') +
+            metaItem('Enforcement recommendation', recommendation) +
+          '</div>' +
+        '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Executive Summary</h3><span class="sub">AI-generated draft requires authorized review</span></div><div class="card__body">' +
+          '<div class="callout">' + esc(report.executiveSummaryDraft) + '</div>' +
+        '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Findings / Observations / Recommendations</h3></div><div class="card__body">' +
+          '<div class="reg-section-title">Findings from audit</div>' +
+          (findings.length ? findings.map(function (finding) { return '<div class="package-question"><div><b>' + esc(finding.id) + '</b><p>' + esc(finding.title) + '</p></div>' + statusBadge(finding) + '</div>'; }).join('') : '<div class="muted small">No converted findings for this audit yet.</div>') +
+          '<div class="reg-section-title mt-16">Observations</div>' + report.observations.map(function (item) { return '<div class="small muted mb-8">' + esc(item) + '</div>'; }).join('') +
+          '<div class="reg-section-title mt-16">Recommendations</div>' + report.recommendations.map(function (item) { return '<div class="small muted mb-8">' + esc(item) + '</div>'; }).join('') +
+        '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Final Report Signature</h3></div><div class="card__body">' + signature + '</div></div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="card"><div class="card__head"><h3>Approval Progress</h3></div><div class="card__body">' + approvalProgressHtml(report) + '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Decision Panel</h3></div><div class="card__body">' + reportDecisionPanelHtml(report) + '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Approval History</h3></div><div class="card__body">' + approvalHistoryHtml(report) + '</div></div>' +
+      '</div>' +
+    '</div>';
 }
 
 /* =========================== Finding Detail =========================== */

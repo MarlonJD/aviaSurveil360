@@ -7,6 +7,13 @@ var NAV = {
   manager: [
     { section: 'Dashboard' },
     { view: 'dashboard', label: 'My Dashboard', icon: '▦' },
+    { view: 'planning-board', label: 'Planning Board', icon: '▤' },
+    { view: 'planning-approvals', label: 'Planning Approvals', icon: '✓' },
+    { view: 'checklist-approvals', label: 'Checklist Approvals', icon: '▧' },
+    { view: 'question-bank', label: 'Question Bank', icon: '□' },
+    { view: 'checklist-builder', label: 'Checklist Builder', icon: '▧' },
+    { view: 'checklist-versions', label: 'Version History', icon: '◷' },
+    { view: 'audit-reports', label: 'Audit Reports', icon: '📄' },
     { view: 'safety-intelligence', label: 'Team Dashboard', icon: '⌁' },
     { view: 'ssp-nasp', label: 'Executive Dashboard', icon: '▣' },
     { section: 'Oversight' },
@@ -67,6 +74,8 @@ var NAV = {
     { view: 'regulatory-library', label: 'NAMCARS Library', icon: '§' },
     { view: 'regulatory-library', label: 'Regulatory Cross-Reference', icon: '⌘' },
     { view: 'templates', label: 'Checklist Builder', icon: '▧' },
+    { view: 'question-bank', label: 'Question Bank', icon: '□' },
+    { view: 'checklist-versions', label: 'Version History', icon: '◷' },
     { section: 'Evidence & Documents' },
     { view: 'templates', label: 'Templates', icon: '🗂️' },
     { view: 'reports', label: 'Reports', icon: '📄' },
@@ -76,6 +85,39 @@ var NAV = {
     { view: 'settings', label: 'Notification Rules', icon: '◌' },
     { view: 'organizations', label: 'Organisation Master Data', icon: '🏢' },
     { view: 'auditlog', label: 'Audit Log', icon: '📜' }
+  ],
+  /* Governance-expansion roles. Foundation nav points to existing demo screens;
+     dedicated workspaces/approval queues arrive in later phases of
+     docs/plans/2026-06-28-caa-governance-workflow-and-roles-plan.md. */
+  leadInspector: [
+    { section: 'Workspace' },
+    { view: 'lead-review', label: 'Lead Review Queue', icon: '▦' },
+    { view: 'planning-board', label: 'Audit Preparation', icon: '▤' },
+    { view: 'audit-reports', label: 'Audit Reports', icon: '📄' },
+    { section: 'Oversight' },
+    { view: 'calendar', label: 'Audits', icon: '▤' },
+    { view: 'reports', label: 'Reports', icon: '📄' }
+  ],
+  gm: [
+    { section: 'Approvals' },
+    { view: 'planning-board', label: 'Planning Board', icon: '▤' },
+    { view: 'planning-approvals', label: 'Planning Approvals', icon: '✓' },
+    { view: 'checklist-approvals', label: 'Checklist Approvals', icon: '▧' },
+    { view: 'audit-reports', label: 'Audit Reports', icon: '📄' },
+    { view: 'calendar', label: 'Surveillance Plans', icon: '▤' },
+    { section: 'Reports' },
+    { view: 'reports', label: 'Reports', icon: '📄' }
+  ],
+  finance: [
+    { section: 'Review' },
+    { view: 'planning-approvals', label: 'Budget Reviews', icon: '✓' },
+    { view: 'calendar', label: 'Planned Audits', icon: '▤' }
+  ],
+  executiveDirector: [
+    { section: 'Workspace' },
+    { view: 'planning-approvals', label: 'Executive Approvals', icon: '✓' },
+    { view: 'audit-reports', label: 'Audit Reports', icon: '📄' },
+    { view: 'reports', label: 'Reports', icon: '📄' }
   ]
 };
 
@@ -89,23 +131,41 @@ var VIEW_TITLES = {
   'regulatory-library': 'Regulatory Library', 'package-builder': 'Inspection Package Builder',
   'offline-field': 'Offline Field Inspection', 'usoap-readiness': 'USOAP Readiness',
   'cap-effectiveness': 'CAP Effectiveness', 'ai-assistant': 'AI Inspector Assistant',
-  'ssp-nasp': 'SSP/NASP Management'
+  'ssp-nasp': 'SSP/NASP Management', 'role-home': 'Home', 'planning-approvals': 'Planning Approvals',
+  'checklist-approvals': 'Checklist Approvals', 'question-bank': 'Question Bank',
+  'checklist-builder': 'Checklist Builder', 'checklist-versions': 'Version History',
+  'lead-review': 'Lead Review Queue', 'planning-board': 'Planning Board',
+  'audit-reports': 'Audit Reports'
 };
 
 var ROLE_DESC = {
-  manager: 'Supervisor / Manager Dashboard — performance, risk, workload, SSP and CAP oversight.',
   inspector: 'Inspector Workspace — daily operations, assigned packages, CAP review and field work.',
+  leadInspector: 'Lead Inspector — checklist assignment, review, convert-to-finding and report sign-off.',
+  manager: 'Department Manager — planning items, approvals, scheduling and department oversight.',
+  gm: 'General Manager — planning and report approvals, budget routing and audit release.',
+  finance: 'Finance Review — budget and resource review for planned audits.',
+  executiveDirector: 'Executive Director — final approval of plans and audit reports.',
   auditee: 'Service Provider Portal — findings, CAP uploads, responses and shared documents.',
   admin: 'Administration — regulatory library, templates, users, configuration and audit log.'
 };
-var ROLE_ICON = { manager: '📊', inspector: '✈️', auditee: '🏢', admin: '⚙️' };
+var ROLE_ICON = {
+  inspector: '✈️', leadInspector: '🧭', manager: '📊', gm: '🏛️',
+  finance: '💷', executiveDirector: '🎖️', auditee: '🏢', admin: '⚙️'
+};
 
 var EXPERIENCE_LABEL = {
-  manager: 'Supervisor / Manager Dashboard',
   inspector: 'Inspector Workspace',
+  leadInspector: 'Lead Inspector',
+  manager: 'Department Manager',
+  gm: 'General Manager',
+  finance: 'Finance Review',
+  executiveDirector: 'Executive Director',
   auditee: 'Service Provider Portal',
   admin: 'Administration'
 };
+
+/* Display order for the role-select dropdown and the login role cards. */
+var ROLE_ORDER = ['inspector', 'leadInspector', 'manager', 'gm', 'finance', 'executiveDirector', 'auditee', 'admin'];
 
 /* Temporary "picked file" names for mock uploads. */
 var pickedFiles = {};
@@ -113,6 +173,8 @@ var pickedFiles = {};
 function homeView(role) {
   if (role === 'auditee') return 'my-findings';
   if (role === 'admin') return 'templates';
+  if (role === 'gm' || role === 'finance' || role === 'executiveDirector') return 'planning-approvals';
+  if (role === 'leadInspector') return 'lead-review';
   return 'dashboard';
 }
 
@@ -136,7 +198,7 @@ function render() {
   var r = ROLES[state.role];
   var unread = unreadCount(state.role);
 
-  var roleOptions = ['manager', 'inspector', 'auditee', 'admin'].map(function (k) {
+  var roleOptions = ROLE_ORDER.map(function (k) {
     return '<option value="' + k + '"' + (k === state.role ? ' selected' : '') + '>' + esc(EXPERIENCE_LABEL[k] || ROLES[k].name) +
       (k === 'auditee' ? ' — Airline XYZ' : '') + '</option>';
   }).join('');
@@ -236,6 +298,14 @@ function renderContent() {
     case 'cap-effectiveness': return viewCapEffectiveness();
     case 'ai-assistant': return viewAiAssistant();
     case 'ssp-nasp': return viewSspNaspDashboard();
+    case 'planning-approvals': return viewPlanningApprovals();
+    case 'checklist-approvals': return viewChecklistApprovals();
+    case 'question-bank': return viewQuestionBank();
+    case 'checklist-builder': return viewChecklistBuilder();
+    case 'checklist-versions': return viewChecklistVersions();
+    case 'lead-review': return viewLeadReviewQueue();
+    case 'planning-board': return viewPlanningBoard();
+    case 'audit-reports': return viewAuditReportsApproval();
     case 'calendar': return viewCalendar();
     case 'audit-detail': return viewAuditDetail();
     case 'checklist': return viewChecklistRunner();
@@ -253,12 +323,13 @@ function renderContent() {
     case 'org-detail': return viewOrgDetail();
     case 'users': return viewUsers();
     case 'settings': return viewSettings();
+    case 'role-home': return viewRoleHome();
     default: return state.role === 'manager' ? viewManagerDashboard() : viewInspectorDashboard();
   }
 }
 
 function renderLogin() {
-  var cards = ['manager', 'inspector', 'auditee', 'admin'].map(function (k) {
+  var cards = ROLE_ORDER.map(function (k) {
     var r = ROLES[k];
     return '<button class="role-card" data-act="role" data-role="' + k + '">' +
       '<div class="role-card__icon" style="background:' + r.color + '">' + ROLE_ICON[k] + '</div>' +
@@ -376,6 +447,11 @@ function handleAction(act, el) {
 
     case 'start-checklist': startChecklist(id); break;
     case 'answer': answerItem(q, el.getAttribute('data-val')); break;
+    case 'mock-checklist-evidence': handleMockChecklistEvidence(q); break;
+    case 'create-potential': handleCreatePotentialFinding(id, q); break;
+    case 'convert-potential': handleConvertPotentialFinding(id); break;
+    case 'return-potential': handleReturnPotentialFinding(id); break;
+    case 'dismiss-potential': handleDismissPotentialFinding(id); break;
     case 'create-finding': openModal(modalFindingForm(id, q)); break;
     case 'issue-finding': issueFinding(id, q); break;
 
@@ -405,6 +481,19 @@ function handleAction(act, el) {
     case 'offline-field-action': createOfflineFieldAction(); break;
     case 'sync-outbox': syncOfflineOutbox(true); render(); break;
     case 'ai-decision': recordAiDecision(id, el.getAttribute('data-decision')); break;
+    case 'approval-action': handleApprovalAction(id, el.getAttribute('data-decision')); break;
+    case 'qb-create': handleCreateQuestionBankItem(); break;
+    case 'checklist-draft': handleCreateChecklistDraft(); break;
+    case 'checklist-add-question': handleAddQuestionToVersion(id, el.getAttribute('data-question')); break;
+    case 'checklist-move-question': handleMoveChecklistQuestion(id, el.getAttribute('data-question'), el.getAttribute('data-direction')); break;
+    case 'checklist-submit-version': handleSubmitChecklistVersion(id); break;
+    case 'checklist-publish-version': handlePublishChecklistVersion(id); break;
+    case 'planning-release': handlePlanningRelease(id); break;
+    case 'planning-accept': handlePlanningAccept(id); break;
+    case 'planning-assign-lead': handlePlanningAssignLead(id); break;
+    case 'planning-propose-team': handlePlanningProposeTeam(id); break;
+    case 'planning-confirm-prep': handlePlanningConfirmPrep(id); break;
+    case 'report-approval': handleReportApproval(id, el.getAttribute('data-decision')); break;
 
     case 'mock-pick': mockPick(el.getAttribute('data-target')); break;
     case 'mock-export': toast('Export simulated', 'A PDF would be generated here. This demo only previews the report.', 'ok'); break;
@@ -429,6 +518,79 @@ function answerItem(q, valx) {
   state.checklistAnswers[q].answer = valx;
   persistAfterAction();
   render();
+}
+
+function setChecklistComment(q, comment) {
+  if (!state.checklistAnswers[q]) state.checklistAnswers[q] = {};
+  state.checklistAnswers[q].comment = comment || '';
+  persistAfterAction();
+}
+
+function handleMockChecklistEvidence(q) {
+  if (!state.checklistAnswers[q]) state.checklistAnswers[q] = {};
+  state.checklistAnswers[q].evidenceFiles = ['Training_Record_Sample.pdf'];
+  toast('Mock evidence selected', 'Training_Record_Sample.pdf attached as a file name only. No upload or storage occurs.', 'ok');
+  persistAfterAction();
+  render();
+}
+
+function handleCreatePotentialFinding(auditId, q) {
+  var ans = state.checklistAnswers[q] || {};
+  try {
+    recordChecklistResult(auditId, q, ans.answer, ans.comment, ans.evidenceFiles || []);
+    var potential = createPotentialFinding(auditId, q, { actorName: ROLES[state.role].user });
+    addLog('Potential Finding created', potential.id);
+    pushNotification('leadInspector', '⚑', potential.id + ' is waiting for Lead Inspector review.');
+    toast('Potential Finding created', potential.id + ' sent to Lead Inspector review.', 'ok');
+    persistAfterAction();
+    render();
+  } catch (err) {
+    toast('Potential Finding not created', err && err.message ? err.message : 'Complete the checklist result first.', 'warn');
+  }
+}
+
+function handleConvertPotentialFinding(id) {
+  try {
+    var severity = val('pf-severity-' + id);
+    var finding = convertPotentialFindingToFinding(id, {
+      actorName: ROLES[state.role].user,
+      severity: severity,
+      title: val('pf-title-' + id) || 'Crew training records incomplete'
+    });
+    addLog('Potential Finding converted to Finding', finding.id);
+    pushNotification('auditee', '⚑', 'New finding ' + finding.id + ' was issued to ' + orgName(finding.orgId) + '. A CAP is required.');
+    pushNotification('manager', '⚑', 'Lead Inspector converted ' + id + ' to finding ' + finding.id + '.');
+    toast('Finding created', finding.id + ' entered the existing CAP/Evidence/Closure flow.', 'ok');
+    persistAfterAction();
+    go('finding', { findingId: finding.id });
+  } catch (err) {
+    toast('Conversion not recorded', err && err.message ? err.message : 'Severity is required before conversion.', 'warn');
+  }
+}
+
+function handleReturnPotentialFinding(id) {
+  try {
+    returnPotentialFinding(id, val('pf-reason-' + id), ROLES[state.role].user);
+    addLog('Potential Finding returned to Inspector', id);
+    pushNotification('inspector', '↩️', id + ' was returned by the Lead Inspector for revision.');
+    toast('Returned', id + ' returned to Inspector with a required reason.', 'warn');
+    persistAfterAction();
+    render();
+  } catch (err) {
+    toast('Return not recorded', err && err.message ? err.message : 'Reason is required.', 'warn');
+  }
+}
+
+function handleDismissPotentialFinding(id) {
+  try {
+    dismissPotentialFinding(id, val('pf-reason-' + id), ROLES[state.role].user);
+    addLog('Potential Finding dismissed', id);
+    toast('Dismissed', id + ' dismissed with a required reason.', 'ok');
+    persistAfterAction();
+    render();
+  } catch (err) {
+    toast('Dismissal not recorded', err && err.message ? err.message : 'Reason is required.', 'warn');
+  }
 }
 
 function issueFinding(auditId, q) {
@@ -725,6 +887,289 @@ function recordAiDecision(id, decision) {
   render();
 }
 
+function approvalActor() {
+  var r = ROLES[state.role] || {};
+  return { role: state.role, name: r.user || 'Unknown actor' };
+}
+
+function approvalDecisionLogLabel(decision) {
+  var labels = {
+    forward: 'Planning approval forwarded',
+    forward_ed: 'Planning approval forwarded to ED',
+    approve: 'Planning approval approved',
+    approve_with_adjustment: 'Planning budget approved with adjustment',
+    finance_not_approved: 'Planning finance not approved',
+    return: 'Planning approval returned for revision',
+    reject: 'Planning approval rejected'
+  };
+  return labels[decision] || 'Planning approval decision';
+}
+
+function handleApprovalAction(id, decision) {
+  var item = planningItemById(id) || checklistVersionById(id);
+  if (!item) {
+    toast('Approval item not found', 'The selected approval item could not be found in demo state.', 'warn');
+    return;
+  }
+  var note = val('approval-note-' + id);
+  try {
+    applyApprovalDecision(item, {
+      decision: decision,
+      actor: approvalActor(),
+      comment: note,
+      reason: note
+    });
+  } catch (err) {
+    toast('Decision not recorded', err && err.message ? err.message : 'This approval action is not available.', 'warn');
+    return;
+  }
+
+  var summary = approvalSummary(item);
+  var targetLabel = item.id || id;
+  addLog(approvalDecisionLogLabel(decision), targetLabel);
+  if (summary.ownerRole) {
+    pushNotification(summary.ownerRole, '🧾', targetLabel + ' is now waiting for ' + summary.ownerLabel + '.');
+  } else if (summary.outcome === 'approved') {
+    pushNotification('manager', '✅', targetLabel + ' approved by the governance chain.');
+  }
+  toast('Decision recorded', targetLabel + ' — ' + summary.statusLabel + '.', summary.statusTone === 'danger' ? 'warn' : 'ok');
+  persistAfterAction();
+  render();
+}
+
+function handleCreateQuestionBankItem() {
+  if (!canManageChecklistConfig(state.role)) {
+    toast('Read-only', 'Inspectors cannot edit checklist configuration in this demo.', 'warn');
+    return;
+  }
+  var item = createQuestionBankItem({
+    title: val('qb-title') || 'Training evidence reconciliation',
+    text: val('qb-text') || 'Does the training matrix reconcile to sampled crew certificate evidence?',
+    commentRequired: true,
+    evidenceRequired: true
+  });
+  addLog('Question bank item created (demo)', item.id);
+  toast('Question created', item.id + ' added to the mock Question Bank.', 'ok');
+  persistAfterAction();
+  render();
+}
+
+function handleCreateChecklistDraft() {
+  var checklist = activeManagedChecklist();
+  if (!checklist || !canManageChecklistConfig(state.role)) {
+    toast('Read-only', 'Checklist configuration editing is limited to configuration roles in this demo.', 'warn');
+    return;
+  }
+  try {
+    var draft = createChecklistDraftVersion(checklist, {
+      actorName: ROLES[state.role].user,
+      actorRole: state.role,
+      reason: val('cl-change-reason')
+    });
+    addLog('Checklist draft version created', draft.id);
+    toast('Draft created', 'Version ' + draft.version + ' created with a required reason for change.', 'ok');
+    persistAfterAction();
+    render();
+  } catch (err) {
+    toast('Draft not created', err && err.message ? err.message : 'Reason for Change is required.', 'warn');
+  }
+}
+
+function handleAddQuestionToVersion(versionId, questionId) {
+  if (!canManageChecklistConfig(state.role)) {
+    toast('Read-only', 'Inspectors cannot edit checklist configuration in this demo.', 'warn');
+    return;
+  }
+  var version = checklistVersionById(versionId);
+  if (!version || (version.status !== 'draft' && version.status !== 'checklist_returned')) {
+    toast('Version locked', 'Only Draft or Returned checklist versions can be edited.', 'warn');
+    return;
+  }
+  addQuestionToChecklistVersion(version, questionId);
+  addLog('Question added to checklist version', version.id);
+  toast('Question added', questionId + ' added to version ' + version.version + '.', 'ok');
+  persistAfterAction();
+  render();
+}
+
+function handleMoveChecklistQuestion(versionId, questionId, direction) {
+  if (!canManageChecklistConfig(state.role)) {
+    toast('Read-only', 'Inspectors cannot edit checklist configuration in this demo.', 'warn');
+    return;
+  }
+  var version = checklistVersionById(versionId);
+  if (!version || (version.status !== 'draft' && version.status !== 'checklist_returned')) return;
+  moveChecklistQuestion(version, questionId, direction);
+  persistAfterAction();
+  render();
+}
+
+function handleSubmitChecklistVersion(versionId) {
+  var version = checklistVersionById(versionId);
+  if (!version || state.role !== 'manager') {
+    toast('Submit unavailable', 'Only the Department Manager can submit checklist versions for GM approval in this demo.', 'warn');
+    return;
+  }
+  try {
+    applyApprovalDecision(version, {
+      decision: 'forward',
+      actor: approvalActor(),
+      comment: 'Submitted checklist version for GM approval.'
+    });
+    addLog('Checklist version submitted for GM approval', version.id);
+    pushNotification('gm', '▧', version.id + ' is waiting for GM checklist approval.');
+    toast('Submitted', version.id + ' sent to GM approval.', 'ok');
+    persistAfterAction();
+    render();
+  } catch (err) {
+    toast('Submit unavailable', err && err.message ? err.message : 'Version could not be submitted.', 'warn');
+  }
+}
+
+function handlePublishChecklistVersion(versionId) {
+  var checklist = activeManagedChecklist();
+  var version = checklistVersionById(versionId);
+  if (!checklist || !version || state.role !== 'manager') {
+    toast('Publish unavailable', 'Only the Department Manager can publish an approved checklist version in this demo.', 'warn');
+    return;
+  }
+  try {
+    publishChecklistVersion(checklist, version, { actorName: ROLES[state.role].user, actorRole: state.role });
+    addLog('Checklist version published active (demo)', version.id);
+    toast('Published Active', 'Version ' + version.version + ' is now active; prior active version archived.', 'ok');
+    persistAfterAction();
+    render();
+  } catch (err) {
+    toast('Publish unavailable', err && err.message ? err.message : 'Only an approved version can be published.', 'warn');
+  }
+}
+
+function planningActor() {
+  return { actorRole: state.role, actorName: ROLES[state.role].user };
+}
+
+function planningItemForAction(id) {
+  return planningItemById(id) || (state.planningItems && state.planningItems[0]);
+}
+
+function handlePlanningRelease(id) {
+  var item = planningItemForAction(id);
+  try {
+    releasePlanningItem(item, planningActor());
+    addLog('Planning item released to department', item.id);
+    pushNotification('manager', '▤', item.id + ' released by GM and waiting for Department Manager acceptance.');
+    toast('Released', item.id + ' released to Department Manager.', 'ok');
+    persistAfterAction();
+    render();
+  } catch (err) {
+    toast('Release unavailable', err && err.message ? err.message : 'Planning item could not be released.', 'warn');
+  }
+}
+
+function handlePlanningAccept(id) {
+  var item = planningItemForAction(id);
+  try {
+    acceptReleasedPlanningItem(item, planningActor());
+    addLog('Released audit accepted by department', item.id);
+    toast('Accepted', item.id + ' accepted by Department Manager.', 'ok');
+    persistAfterAction();
+    render();
+  } catch (err) {
+    toast('Acceptance unavailable', err && err.message ? err.message : 'Planning item could not be accepted.', 'warn');
+  }
+}
+
+function handlePlanningAssignLead(id) {
+  var item = planningItemForAction(id);
+  try {
+    assignLeadInspectorToPlanningItem(item, {
+      actorRole: state.role,
+      actorName: ROLES[state.role].user,
+      leadInspector: val('prep-lead') || 'Caner Yildiz'
+    });
+    addLog('Lead Inspector assigned', item.id);
+    pushNotification('leadInspector', '▤', item.id + ' is waiting for team/date/resource proposal.');
+    toast('Lead assigned', item.preparation.leadInspector + ' assigned as Lead Inspector.', 'ok');
+    persistAfterAction();
+    render();
+  } catch (err) {
+    toast('Lead assignment unavailable', err && err.message ? err.message : 'Lead Inspector could not be assigned.', 'warn');
+  }
+}
+
+function handlePlanningProposeTeam(id) {
+  var item = planningItemForAction(id);
+  try {
+    proposePlanningTeamAndSchedule(item, {
+      actorRole: state.role,
+      actorName: ROLES[state.role].user,
+      team: ['Caner Yildiz', 'Aylin Sezer'],
+      startDate: val('prep-start') || '2026-09-10',
+      endDate: val('prep-end') || '2026-09-12',
+      resources: val('prep-resources') || '2 inspectors, document review package'
+    });
+    addLog('Lead team and schedule proposed', item.id);
+    pushNotification('manager', '▤', item.id + ' team and schedule proposal is ready for Department Manager confirmation.');
+    toast('Proposal saved', 'Team, dates, and resources proposed for Department Manager confirmation.', 'ok');
+    persistAfterAction();
+    render();
+  } catch (err) {
+    toast('Proposal unavailable', err && err.message ? err.message : 'Lead proposal could not be recorded.', 'warn');
+  }
+}
+
+function handlePlanningConfirmPrep(id) {
+  var item = planningItemForAction(id);
+  try {
+    confirmPlanningPreparation(item, planningActor());
+    addLog('Audit assignment package generated (demo)', item.id);
+    toast('Ready for Execution', 'Mock Audit Assignment Package generated. No real document service was used.', 'ok');
+    persistAfterAction();
+    render();
+  } catch (err) {
+    toast('Confirmation unavailable', err && err.message ? err.message : 'Preparation could not be confirmed.', 'warn');
+  }
+}
+
+function handleReportApproval(id, decision) {
+  var report = auditReportById(id) || (state.auditReports && state.auditReports[0]);
+  if (!report) {
+    toast('Report not found', 'The selected audit report could not be found in demo state.', 'warn');
+    return;
+  }
+  var recommendation = null;
+  if (state.role === 'manager') {
+    var recType = val('report-enforcement-type-' + report.id);
+    var recReason = val('report-enforcement-reason-' + report.id);
+    if (recType || recReason) {
+      recommendation = {
+        type: recType || 'Warning',
+        reason: recReason || 'Recommendation only; requires separate authorized human decision.'
+      };
+    }
+  }
+  try {
+    applyReportApprovalDecision(report, {
+      decision: decision,
+      actor: { role: state.role, name: ROLES[state.role].user },
+      comment: val('report-note-' + report.id),
+      reason: val('report-note-' + report.id),
+      enforcementRecommendation: recommendation
+    });
+    addLog('Report approval decision recorded', report.id);
+    if (report.finalLocked) {
+      addLog('Audit closed after ED report approval', report.auditId);
+      toast('Final report locked', 'Mock final report generated and audit closed after ED approval.', 'ok');
+    } else {
+      toast('Report decision recorded', report.id + ' — ' + approvalSummary(report).statusLabel + '.', 'ok');
+    }
+    persistAfterAction();
+    render();
+  } catch (err) {
+    toast('Report decision not recorded', err && err.message ? err.message : 'Decision could not be recorded.', 'warn');
+  }
+}
+
 /* ----------------------------- New Audit Wizard ----------------------------- */
 function startWizard() {
   state.wizard = {
@@ -814,6 +1259,9 @@ document.addEventListener('click', function (e) {
 
 document.addEventListener('change', function (e) {
   if (e.target && e.target.id === 'role-select') setRole(e.target.value);
+  if (e.target && e.target.getAttribute && e.target.getAttribute('data-field') === 'checklist-comment') {
+    setChecklistComment(e.target.getAttribute('data-q'), e.target.value);
+  }
 });
 
 document.getElementById('reset-demo').addEventListener('click', function () {

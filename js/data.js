@@ -8,7 +8,7 @@ var DEMO_TODAY = '2026-06-15';
 
 /* Demo persistence boundary. Views must not call localStorage directly. */
 var DEMO_STORAGE_KEY = 'aviasurveil360:v2-demo-state';
-var DEMO_STATE_VERSION = 2;
+var DEMO_STATE_VERSION = 3;
 var DEMO_PERSISTENCE_CONFIG = {
   storageKey: DEMO_STORAGE_KEY,
   label: 'Frontend-only demo - saved in this browser',
@@ -17,6 +17,9 @@ var DEMO_PERSISTENCE_CONFIG = {
     'created findings',
     'CAP submissions',
     'mock evidence filenames',
+    'mock planning approvals',
+    'mock checklist approvals',
+    'mock potential findings',
     'AI accept/edit/reject decisions',
     'selected filters',
     'simulated offline outbox items'
@@ -24,17 +27,30 @@ var DEMO_PERSISTENCE_CONFIG = {
   disclaimer: 'Stored in this browser for demo only. No backend, real file storage, legal decision, production sync, or production audit trail.'
 };
 
-/* ----------------------------- Roles ----------------------------- */
+/* ----------------------------- Roles -----------------------------
+   Seven distinct switchable roles for the governance workflow expansion
+   (see docs/plans/2026-06-28-caa-governance-workflow-and-roles-plan.md),
+   plus Admin Preview retained as a configuration role. The `manager` key is
+   kept (display = Department Manager) so existing role-conditional code keeps
+   working; a later phase may rename the key to `departmentManager`. */
 var ROLES = {
-  manager:   { key: 'manager',   name: 'CAA Manager',    user: 'Selin Demir',  initials: 'SD', color: '#6b4fb0',
-               question: 'Where are we exposed, delayed or overloaded?' },
-  inspector: { key: 'inspector', name: 'CAA Inspector',  user: 'Caner Yildiz', initials: 'CY', color: '#2f6fd6',
-               question: 'What do I need to inspect or review today?' },
-  auditee:   { key: 'auditee',   name: 'Auditee',        user: 'James Carter', initials: 'JC', color: '#1f9d62',
-               org: 'ORG-XYZ', orgName: 'Airline XYZ',
-               question: 'What does the CAA need from my organization?' },
-  admin:     { key: 'admin',     name: 'Admin Preview',  user: 'System Admin', initials: 'AP', color: '#c77700',
-               question: 'Which template or rule must be configured?' }
+  inspector:        { key: 'inspector',        name: 'Inspector',          user: 'Aylin Sezer',  initials: 'AS', color: '#2f6fd6',
+                      question: 'What do I need to inspect or review today?' },
+  leadInspector:    { key: 'leadInspector',    name: 'Lead Inspector',     user: 'Caner Yildiz', initials: 'CY', color: '#1d4f99',
+                      question: 'What needs review, conversion to finding, or report sign-off?' },
+  manager:          { key: 'manager',          name: 'Department Manager', user: 'Selin Demir',  initials: 'SD', color: '#6b4fb0',
+                      question: 'Where are we exposed, delayed or overloaded?' },
+  gm:               { key: 'gm',               name: 'General Manager',    user: 'Okan Demir',   initials: 'OD', color: '#0f766e',
+                      question: 'Which audits and budgets should I approve or release?' },
+  finance:          { key: 'finance',          name: 'Finance Review',     user: 'Derya Acar',   initials: 'DA', color: '#b45309',
+                      question: 'Is the requested budget and resource justified?' },
+  executiveDirector:{ key: 'executiveDirector',name: 'Executive Director', user: 'Ufuk Aslan',   initials: 'UA', color: '#9f1239',
+                      question: 'What needs my final approval to proceed?' },
+  auditee:          { key: 'auditee',          name: 'Auditee',            user: 'James Carter', initials: 'JC', color: '#1f9d62',
+                      org: 'ORG-XYZ', orgName: 'Airline XYZ',
+                      question: 'What does the CAA need from my organization?' },
+  admin:            { key: 'admin',            name: 'Admin Preview',      user: 'System Admin', initials: 'AP', color: '#c77700',
+                      question: 'Which template or rule must be configured?' }
 };
 
 /* ----------------------------- Severity ----------------------------- */
@@ -113,6 +129,39 @@ var SEED_CHECKLIST = {
   ]
 };
 
+var SEED_QUESTION_BANK = [
+  { id: 'QB-001', title: 'Operations manual currency', text: 'Is the Operations Manual current and approved?',
+    regulationRef: 'Configured rule FOPS-OM-01 (regulatory reference)', department: 'Flight Operations',
+    category: 'Documentation', commentRequired: false, evidenceRequired: true, allowPotentialFinding: true,
+    inspectorGuidance: 'Check the current revision record and approval page.',
+    exampleEvidence: 'Approved Operations Manual revision record', notes: 'Demo question bank item.', status: 'Active' },
+  { id: 'QB-002', title: 'Crew training records', text: 'Are crew training records complete and up to date?',
+    regulationRef: 'Configured rule FOPS-CRT-04 (regulatory reference)', department: 'Flight Operations',
+    category: 'Training', commentRequired: true, evidenceRequired: true, allowPotentialFinding: true,
+    inspectorGuidance: 'Sample crew records against the training matrix.',
+    exampleEvidence: 'Crew training matrix and completion certificates', notes: 'Hero scenario question.', status: 'Active' },
+  { id: 'QB-003', title: 'Flight time limitation records', text: 'Are Flight Time Limitation (FTL) records maintained?',
+    regulationRef: 'Configured rule FOPS-FTL-02 (regulatory reference)', department: 'Flight Operations',
+    category: 'Records', commentRequired: false, evidenceRequired: true, allowPotentialFinding: true,
+    inspectorGuidance: 'Review a sample FTL monitoring report.',
+    exampleEvidence: 'FTL monitoring report for the audited period', notes: 'Demo question bank item.', status: 'Active' },
+  { id: 'QB-004', title: 'MEL availability', text: 'Is the Minimum Equipment List (MEL) approved and available to crews?',
+    regulationRef: 'Configured rule FOPS-MEL-03 (regulatory reference)', department: 'Flight Operations',
+    category: 'Operational control', commentRequired: false, evidenceRequired: true, allowPotentialFinding: true,
+    inspectorGuidance: 'Confirm approved MEL distribution to operating crew.',
+    exampleEvidence: 'Approved MEL and crew distribution evidence', notes: 'Demo question bank item.', status: 'Active' },
+  { id: 'QB-005', title: 'Dangerous goods training', text: 'Are dangerous goods training certificates valid?',
+    regulationRef: 'Configured rule FOPS-DG-05 (regulatory reference)', department: 'Flight Operations',
+    category: 'Training', commentRequired: false, evidenceRequired: true, allowPotentialFinding: true,
+    inspectorGuidance: 'Sample certificate validity dates.',
+    exampleEvidence: 'Valid dangerous goods training certificates', notes: 'Demo question bank item.', status: 'Active' },
+  { id: 'QB-006', title: 'Training evidence cross-check', text: 'Does the training matrix reconcile to sampled crew certificate evidence?',
+    regulationRef: 'Configured rule FOPS-CRT-04 (regulatory reference)', department: 'Flight Operations',
+    category: 'Evidence quality', commentRequired: true, evidenceRequired: true, allowPotentialFinding: true,
+    inspectorGuidance: 'Cross-check the matrix row against at least one certificate sample.',
+    exampleEvidence: 'Training matrix row plus matching certificate sample', notes: 'Added for checklist management demo.', status: 'Active' }
+];
+
 /* Other templates only shown in Admin preview list (not runnable in demo). */
 var SEED_TEMPLATE_LIBRARY = [
   { id: 'TPL-FOPS-2026', name: 'Flight Operations Audit', domain: 'Flight Operations', version: 'v3.2 (2026)', items: 5, status: 'Published' },
@@ -120,6 +169,64 @@ var SEED_TEMPLATE_LIBRARY = [
   { id: 'TPL-RAMP-2026', name: 'Ramp Inspection (SAFA-style)', domain: 'Ramp', version: 'v1.4 (2026)', items: 12, status: 'Published' },
   { id: 'TPL-SEC-2026',  name: 'Aviation Security Audit', domain: 'Security', version: 'v1.1 (2026)', items: 10, status: 'Draft' },
   { id: 'TPL-CAB-2026',  name: 'Cabin Safety Audit', domain: 'Cabin Safety', version: 'v2.3 (2026)', items: 6, status: 'Published' }
+];
+
+var SEED_MANAGED_CHECKLISTS = [
+  {
+    id: 'CL-FOPS',
+    name: 'Flight Operations Surveillance',
+    department: 'Flight Operations',
+    inspectionType: 'Routine / Risk Based',
+    publishedVersion: '2.3',
+    versions: [
+      {
+        id: 'CL-FOPS-v2.3',
+        version: '2.3',
+        status: 'published_active',
+        approvalType: 'checklist',
+        createdBy: 'Selin Demir',
+        createdDate: '2026-05-10',
+        changeReason: 'Current active checklist used by the runnable demo.',
+        questionIds: ['q1', 'q2', 'q3', 'q4', 'q5'],
+        approval: {
+          chain: [
+            { role: 'manager', label: 'Department Manager', returnToRole: null },
+            { role: 'gm', label: 'GM Approval', returnToRole: 'manager' }
+          ],
+          currentIndex: 1,
+          outcome: 'approved',
+          returnPolicy: 'configured_role',
+          history: [
+            { actor: 'Selin Demir', role: 'manager', action: 'submitted', date: '2026-05-10 09:20', comment: 'Submitted active Flight Operations checklist version.' },
+            { actor: 'Okan Demir', role: 'gm', action: 'approved', date: '2026-05-11 11:05', comment: 'Approved for demo active use.' }
+          ]
+        }
+      },
+      {
+        id: 'CL-FOPS-v2.4',
+        version: '2.4',
+        status: 'under_review',
+        approvalType: 'checklist',
+        createdBy: 'Selin Demir',
+        createdDate: '2026-06-15',
+        changeReason: 'Clarify expected evidence for crew training record checks before Q3 surveillance.',
+        impact: 'Inspector checklist wording only; no production rule or legal obligation is changed.',
+        questionIds: ['q1', 'q2', 'q3', 'q4', 'q5'],
+        approval: {
+          chain: [
+            { role: 'manager', label: 'Department Manager', returnToRole: null },
+            { role: 'gm', label: 'GM Approval', returnToRole: 'manager' }
+          ],
+          currentIndex: 1,
+          outcome: null,
+          returnPolicy: 'configured_role',
+          history: [
+            { actor: 'Selin Demir', role: 'manager', action: 'submitted', date: '2026-06-15 11:10', comment: 'Submitted checklist version 2.4 for GM approval.' }
+          ]
+        }
+      }
+    ]
+  }
 ];
 
 /* ----------------------------- Audits (2026 surveillance plan) ----------------------------- */
@@ -232,6 +339,43 @@ var SEED_FINDINGS = [
     evidence: [ { id: 'EV-3', fileName: 'Manual_Ack_Register.pdf', size: '0.8 MB', uploadedDate: '2026-05-05', version: 1, status: 'Accepted' } ],
     commentsToAuditee: [ { author: 'Caner Yildiz', date: '2026-05-10', text: 'Acknowledgement register accepted. Closed.' } ],
     internalNotes: []
+  }
+];
+
+var SEED_POTENTIAL_FINDINGS = [];
+
+var SEED_AUDIT_REPORTS = [
+  {
+    id: 'RPT-AUD-2026-001',
+    auditId: 'AUD-2026-001',
+    title: 'Airline XYZ Operator Audit Report',
+    reportType: 'Preliminary / Final',
+    status: 'draft',
+    approvalType: 'report',
+    finalLocked: false,
+    reportNumber: null,
+    approvalDate: null,
+    approvedBy: null,
+    mockDigitalSignature: null,
+    enforcementRecommendation: null,
+    executiveSummaryDraft: 'AI-generated draft - requires authorized review. The operator audit identified a repeated crew training record control weakness requiring CAP and evidence follow-up.',
+    observations: ['Crew training evidence needs clearer reconciliation to sampled matrix rows.'],
+    recommendations: ['Require CAP/evidence follow-up before closure. Enforcement recommendation, if any, remains human-authorized only.'],
+    attachments: ['Training_Record_Sample.pdf (mock filename only)', 'Checklist_Response_Summary.pdf (mock)'],
+    approval: {
+      chain: [
+        { role: 'leadInspector', label: 'Lead Inspector', returnToRole: null },
+        { role: 'manager', label: 'Department Manager', returnToRole: 'leadInspector' },
+        { role: 'gm', label: 'GM Review', returnToRole: 'manager' },
+        { role: 'executiveDirector', label: 'Executive Director Approval', returnToRole: 'gm' }
+      ],
+      currentIndex: 0,
+      outcome: null,
+      returnPolicy: 'configured_role',
+      history: [
+        { actor: 'Caner Yildiz', role: 'leadInspector', action: 'draft_created', date: '2026-06-15 13:00', comment: 'Preliminary report draft created for approval workflow.' }
+      ]
+    }
   }
 ];
 
@@ -544,11 +688,66 @@ var SEED_SSP_NASP = {
   ]
 };
 
+/* ----------------------------- Planning approvals (Phase 0B thin slice) ----------------------------- */
+var SEED_PLANNING_ITEMS = [
+  {
+    id: 'PLAN-2026-Q3-OPS',
+    title: 'Q3 Flight Operations Surveillance Plan',
+    department: 'Flight Operations',
+    organization: 'Airline XYZ',
+    organizationId: 'ORG-XYZ',
+    purpose: 'Focused Q3 operator audit plan for repeated crew training record oversight.',
+    riskCategory: 'Repeat training-record finding',
+    triggerType: 'Risk based / repeat finding',
+    budgetRequired: true,
+    requestedBudget: 'USD 12,500',
+    targetMonth: '2026-09',
+    proposedInspectors: ['Caner Yildiz', 'Aylin Sezer'],
+    status: 'submitted_to_gm',
+    financeReview: null,
+    preparation: {
+      status: 'not_released',
+      releasedBy: null,
+      releasedDate: null,
+      acceptedBy: null,
+      acceptedDate: null,
+      leadInspector: null,
+      proposedTeam: [],
+      proposedStartDate: null,
+      proposedEndDate: null,
+      resources: null,
+      assignmentPackage: null,
+      history: []
+    },
+    approval: {
+      chain: [
+        { role: 'manager', label: 'Department Manager', returnToRole: null },
+        { role: 'gm', label: 'GM Review', returnToRole: 'manager' },
+        { role: 'finance', label: 'Finance Review', returnToRole: 'gm', notApprovedReturnToRole: 'gm' },
+        { role: 'executiveDirector', label: 'Executive Director Approval', returnToRole: 'gm' }
+      ],
+      currentIndex: 1,
+      outcome: null,
+      returnPolicy: 'configured_role',
+      history: [
+        {
+          actor: 'Selin Demir',
+          role: 'manager',
+          action: 'submitted',
+          date: '2026-06-15 10:30',
+          comment: 'Submitted budget-required Q3 Flight Operations surveillance item for GM review.'
+        }
+      ]
+    }
+  }
+];
+
 /* ----------------------------- Notifications (in-UI only) ----------------------------- */
 var SEED_NOTIFICATIONS = [
   { id: 'N1', role: 'inspector', icon: '📋', text: 'Operator Audit for Airline XYZ is scheduled for today.', time: 'Today 08:10', unread: true },
   { id: 'N2', role: 'inspector', icon: '📎', text: 'Evidence submitted on RAMP-2026-005 is waiting for your review.', time: 'Yesterday', unread: true },
   { id: 'N3', role: 'manager',   icon: '⚠️', text: 'AWO-2026-003 (Level 2 Major) is now Overdue.', time: 'Today 07:55', unread: true },
+  { id: 'N5', role: 'gm', icon: '🧾', text: 'Planning item PLAN-2026-Q3-OPS is waiting for GM review.', time: 'Today 10:30', unread: true },
   { id: 'N4', role: 'auditee',   icon: '📨', text: 'Welcome to the Auditee Portal. Open My Findings to see required actions.', time: 'Today', unread: true }
 ];
 
@@ -561,7 +760,10 @@ var SEED_AUDIT_LOG = [
 
 /* ----------------------------- Users (Admin preview, read-only) ----------------------------- */
 var SEED_USERS = [
-  { name: 'Selin Demir',  role: 'CAA Manager',   org: '—',                 mfa: 'On',  status: 'Active' },
+  { name: 'Selin Demir',  role: 'Department Manager', org: '—',            mfa: 'On',  status: 'Active' },
+  { name: 'Okan Demir',   role: 'General Manager',    org: '—',            mfa: 'On',  status: 'Active' },
+  { name: 'Derya Acar',   role: 'Finance Review',     org: '—',            mfa: 'On',  status: 'Active' },
+  { name: 'Ufuk Aslan',   role: 'Executive Director', org: '—',            mfa: 'On',  status: 'Active' },
   { name: 'Caner Yildiz', role: 'Lead Inspector', org: '—',                mfa: 'On',  status: 'Active' },
   { name: 'Aylin Sezer',  role: 'CAA Inspector',  org: '—',                mfa: 'On',  status: 'Active' },
   { name: 'Mehmet Aydin', role: 'CAA Inspector',  org: '—',                mfa: 'On',  status: 'Active' },
@@ -586,8 +788,12 @@ function freshState() {
     orgs: deepClone(SEED_ORGS),
     audits: deepClone(SEED_AUDITS),
     checklist: deepClone(SEED_CHECKLIST),
+    questionBank: deepClone(SEED_QUESTION_BANK),
     templateLibrary: deepClone(SEED_TEMPLATE_LIBRARY),
+    managedChecklists: deepClone(SEED_MANAGED_CHECKLISTS),
     findings: deepClone(SEED_FINDINGS),
+    potentialFindings: deepClone(SEED_POTENTIAL_FINDINGS),
+    auditReports: deepClone(SEED_AUDIT_REPORTS),
     regulatoryDocuments: deepClone(SEED_REGULATORY_DOCUMENTS),
     regulatoryTraces: deepClone(SEED_REGULATORY_TRACES),
     questionTraces: deepClone(SEED_QUESTION_TRACES),
@@ -599,6 +805,7 @@ function freshState() {
     aiSuggestions: deepClone(SEED_AI_SUGGESTIONS),
     sspNasp: deepClone(SEED_SSP_NASP),
     offlineOutbox: deepClone(SEED_OFFLINE_OUTBOX),
+    planningItems: deepClone(SEED_PLANNING_ITEMS),
     offline: { simulated: false, lastMessage: null },
     selectedFilters: {
       findings: 'all',
@@ -611,11 +818,13 @@ function freshState() {
     auditLog: deepClone(SEED_AUDIT_LOG),
     checklistAnswers: {},       // { itemId: { answer, comment, findingId } } for the live audit
     findingSeq: 1,              // OPS-2026-00X live counter
+    potentialSeq: 1,            // PF-2026-00X live counter
     auditSeq: 9,                // AUD-2026-00X counter for the New Audit Wizard
     notifSeq: 100,
     logSeq: 100,
     outboxSeq: 1,
     aiDecisionSeq: 1,
+    questionSeq: 7,
     wizard: null,               // New Audit Wizard working data
     ui: { notifOpen: false, menuOpen: false }
   };
@@ -637,9 +846,23 @@ function mergeDemoState(saved) {
   base.selectedFilters = Object.assign(freshState().selectedFilters, saved.selectedFilters || {});
   base.offline = Object.assign({ simulated: false, lastMessage: null }, saved.offline || {});
   if (!Array.isArray(base.offlineOutbox)) base.offlineOutbox = [];
+  if (!Array.isArray(base.potentialFindings)) base.potentialFindings = deepClone(SEED_POTENTIAL_FINDINGS);
+  if (!Array.isArray(base.auditReports)) base.auditReports = deepClone(SEED_AUDIT_REPORTS);
   if (!Array.isArray(base.aiSuggestions)) base.aiSuggestions = deepClone(SEED_AI_SUGGESTIONS);
   if (!Array.isArray(base.regulatoryDocuments)) base.regulatoryDocuments = deepClone(SEED_REGULATORY_DOCUMENTS);
   if (!Array.isArray(base.regulatoryTraces)) base.regulatoryTraces = deepClone(SEED_REGULATORY_TRACES);
+  if (!Array.isArray(base.planningItems)) base.planningItems = deepClone(SEED_PLANNING_ITEMS);
+  base.planningItems.forEach(function (item) {
+    if (!item.preparation) {
+      var seed = SEED_PLANNING_ITEMS.filter(function (s) { return s.id === item.id; })[0] || SEED_PLANNING_ITEMS[0];
+      item.preparation = deepClone(seed.preparation);
+    }
+    if (!Array.isArray(item.preparation.history)) item.preparation.history = [];
+  });
+  if (!Array.isArray(base.managedChecklists)) base.managedChecklists = deepClone(SEED_MANAGED_CHECKLISTS);
+  if (!Array.isArray(base.questionBank)) base.questionBank = deepClone(SEED_QUESTION_BANK);
+  if (!base.questionSeq) base.questionSeq = 7;
+  if (!base.potentialSeq) base.potentialSeq = 1;
   if (!base.questionTraces) base.questionTraces = deepClone(SEED_QUESTION_TRACES);
   base.demoStateVersion = DEMO_STATE_VERSION;
   return base;

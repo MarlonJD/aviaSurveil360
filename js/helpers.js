@@ -113,16 +113,21 @@ function humanStatus(status) {
     pending_evidence: 'Pending evidence',
     monitoring: 'Monitoring',
     in_progress: 'In Progress',
-    planned: 'Planned'
+    planned: 'Planned',
+    pending_lead_review: 'Pending Lead Review',
+    returned_to_inspector: 'Returned to Inspector',
+    converted: 'Converted',
+    dismissed: 'Dismissed'
   };
   return map[status] || status || '—';
 }
 
 function statusTone(status) {
   if (status === V2_STATUS.published || status === V2_STATUS.accepted || status === V2_STATUS.syncedToDemoState || status === 'effective_with_monitoring') return 'ok';
-  if (status === V2_STATUS.underReview || status === V2_STATUS.waitingForConnection || status === 'missing_evidence' || status === 'pending_evidence' || status === 'in_progress') return 'warn';
+  if (status === V2_STATUS.underReview || status === V2_STATUS.waitingForConnection || status === 'missing_evidence' || status === 'pending_evidence' || status === 'in_progress' || status === 'pending_lead_review' || status === 'returned_to_inspector') return 'warn';
   if (status === V2_STATUS.rejected) return 'danger';
-  if (status === V2_STATUS.draft || status === V2_STATUS.pendingReview || status === 'planned' || status === 'monitoring') return 'info';
+  if (status === V2_STATUS.draft || status === V2_STATUS.pendingReview || status === 'planned' || status === 'monitoring' || status === 'converted') return 'info';
+  if (status === 'dismissed') return 'neutral';
   return 'neutral';
 }
 
