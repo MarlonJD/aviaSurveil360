@@ -13,7 +13,7 @@ const context = {
 };
 vm.createContext(context);
 
-['js/data.js', 'js/helpers.js', 'js/approval.js', 'js/views.js'].forEach((file) => {
+['js/data.js', 'js/helpers.js', 'js/approval.js', 'js/planning.js', 'js/views.js'].forEach((file) => {
   const code = fs.readFileSync(path.join(root, file), 'utf8');
   vm.runInContext(code, context, { filename: file });
 });
@@ -23,9 +23,11 @@ context.state.role = 'gm';
 context.state.view = 'planning-approvals';
 
 let html = context.viewPlanningApprovals();
-assert.match(html, /Planning Approval — PLAN-2026-Q3-OPS/);
+assert.match(html, /Planning/);
+assert.match(html, /Single planning panel for approval, release, and audit preparation/);
 assert.match(html, /Send to Finance Review/);
 assert.doesNotMatch(html, /Forward to ED/);
+assert.doesNotMatch(html, /Phase 0B|thin planning approval slice/i);
 
 context.applyApprovalDecision(context.state.planningItems[0], {
   decision: 'forward',
@@ -34,6 +36,7 @@ context.applyApprovalDecision(context.state.planningItems[0], {
 });
 context.state.role = 'finance';
 html = context.viewPlanningApprovals();
+assert.match(html, /Finance Review/);
 assert.match(html, /Approve with Adjustment/);
 assert.match(html, /Finance Not Approved/);
 
@@ -46,5 +49,11 @@ context.state.role = 'gm';
 html = context.viewPlanningApprovals();
 assert.match(html, /Returned to GM Action/);
 assert.match(html, /Travel amount needs narrower scope/);
+
+context.state.view = 'planning-board';
+html = context.viewPlanningBoard();
+assert.match(html, /Planning/);
+assert.match(html, /Preparation/);
+assert.match(html, /Next Preparation Action/);
 
 console.log('planning-render-smoke: ok');

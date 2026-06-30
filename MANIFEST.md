@@ -68,5 +68,7 @@ This package intentionally contains Markdown files only.
 - `09_SCENARIOS/OTHER_DOMAIN_SCENARIOS_AND_EDGE_CASES.turkce.md`
 - `10_REFERENCES/GLOSSARY_AND_SOURCE_NOTES.md`
 - `10_REFERENCES/GLOSSARY_AND_SOURCE_NOTES.turkce.md`
+- `docs/plans/2026-06-30-planning-panel-simplification-plan.md`
+- `tests/planning-workspace-smoke.test.js`
 - `README.md`
 - `README.turkce.md`

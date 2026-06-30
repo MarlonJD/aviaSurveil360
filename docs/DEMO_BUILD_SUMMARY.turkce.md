@@ -237,6 +237,34 @@ Today’s Workbench mobile scrollWidth/clientWidth: 390/390
 Service Provider Portal mobile scrollWidth/clientWidth: 390/390
 ```
 
+### Planning panel sadeleştirmesi - 2026-06-30
+
+Durum: **frontend-only Planning panel güncellemesi verified locally**.
+
+Planlama artık Department Manager, General Manager, Finance Review, Executive
+Director ve ilgili Lead Inspector hazırlık işleri için tek bir `Planning`
+panelinde toplandı. Eski Planning Board ve Planning Approvals ayrımı yalnızca
+mevcut link/test uyumluluğu için wrapper olarak korunur; ayrı top-level
+kullanıcı navigasyonu olarak gösterilmez.
+
+`Department Manager -> GM -> Finance Review -> Executive Director` onay zinciri
+korundu. Executive Director onayından sonra Planning paneli görünür biçimde `GM
+Release to Department`, Department Manager kabulü, Lead Inspector ataması,
+team/date/resource önerisi, Department Manager confirmation ve `Ready for
+Execution` adımlarına devam eder.
+
+`Audit Work Queue` saha/denetim iş kuyruğu olarak kaldı. Ayrı bir planning
+governance modülü değildir.
+
+Bu davranış hala mock/demo davranışıdır: backend, gerçek kimlik doğrulama,
+gerçek yetkilendirme servisi, gerçek finans entegrasyonu, gerçek upload/storage,
+e-signature servisi veya gerçek doküman üretimi eklenmedi.
+
+Rendered browser smoke geçici local static server ile
+`http://127.0.0.1:8765/` üzerinde çalıştırıldı; console warning/error listesi
+boştu ve Planning workspace ile Audit Work Queue kanıt ekranlarında desktop
+scrollWidth/clientWidth `1280/1280` kaldı.
+
 ---
 
 ## Sahte öğeler ve kısıtlar

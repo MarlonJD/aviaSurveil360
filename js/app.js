@@ -7,8 +7,7 @@ var NAV = {
   manager: [
     { section: 'Dashboard' },
     { view: 'dashboard', label: 'My Dashboard', icon: '▦' },
-    { view: 'planning-board', label: 'Planning Board', icon: '▤' },
-    { view: 'planning-approvals', label: 'Planning Approvals', icon: '✓' },
+    { view: 'planning', label: 'Planning', icon: '▤' },
     { view: 'checklist-approvals', label: 'Checklist Approvals', icon: '▧' },
     { view: 'question-bank', label: 'Question Bank', icon: '□' },
     { view: 'checklist-builder', label: 'Checklist Builder', icon: '▧' },
@@ -38,7 +37,7 @@ var NAV = {
     { section: 'Dashboard' },
     { view: 'dashboard', label: "Today’s Workbench", icon: '▦' },
     { section: 'Oversight' },
-    { view: 'calendar', label: 'Audits & Inspections', icon: '▤' },
+    { view: 'calendar', label: 'Audit Work Queue', icon: '▤' },
     { view: 'package-builder', label: 'Inspection Packages', icon: '▧' },
     { view: 'offline-field', label: 'Offline Field', icon: '⇄' },
     { section: 'Organisations' },
@@ -90,7 +89,7 @@ var NAV = {
   leadInspector: [
     { section: 'Workspace' },
     { view: 'lead-review', label: 'Lead Review Queue', icon: '▦' },
-    { view: 'planning-board', label: 'Audit Preparation', icon: '▤' },
+    { view: 'planning', label: 'Planning', icon: '▤' },
     { view: 'audit-reports', label: 'Audit Reports', icon: '📄' },
     { section: 'Oversight' },
     { view: 'calendar', label: 'Audits', icon: '▤' },
@@ -98,22 +97,19 @@ var NAV = {
   ],
   gm: [
     { section: 'Approvals' },
-    { view: 'planning-board', label: 'Planning Board', icon: '▤' },
-    { view: 'planning-approvals', label: 'Planning Approvals', icon: '✓' },
+    { view: 'planning', label: 'Planning', icon: '▤' },
     { view: 'checklist-approvals', label: 'Checklist Approvals', icon: '▧' },
     { view: 'audit-reports', label: 'Audit Reports', icon: '📄' },
-    { view: 'calendar', label: 'Surveillance Plans', icon: '▤' },
     { section: 'Reports' },
     { view: 'reports', label: 'Reports', icon: '📄' }
   ],
   finance: [
     { section: 'Review' },
-    { view: 'planning-approvals', label: 'Budget Reviews', icon: '✓' },
-    { view: 'calendar', label: 'Planned Audits', icon: '▤' }
+    { view: 'planning', label: 'Planning', icon: '▤' }
   ],
   executiveDirector: [
     { section: 'Workspace' },
-    { view: 'planning-approvals', label: 'Executive Approvals', icon: '✓' },
+    { view: 'planning', label: 'Planning', icon: '▤' },
     { view: 'audit-reports', label: 'Audit Reports', icon: '📄' },
     { view: 'reports', label: 'Reports', icon: '📄' }
   ]
@@ -129,10 +125,10 @@ var VIEW_TITLES = {
   'regulatory-library': 'Regulatory Library', 'package-builder': 'Inspection Package Builder',
   'offline-field': 'Offline Field Inspection', 'usoap-readiness': 'USOAP Readiness',
   'cap-effectiveness': 'CAP Effectiveness', 'ai-assistant': 'AI Inspector Assistant',
-  'ssp-nasp': 'SSP/NASP Management', 'role-home': 'Home', 'planning-approvals': 'Planning Approvals',
+  'ssp-nasp': 'SSP/NASP Management', 'role-home': 'Home', planning: 'Planning', 'planning-approvals': 'Planning',
   'checklist-approvals': 'Checklist Approvals', 'question-bank': 'Question Bank',
   'checklist-builder': 'Checklist Builder', 'checklist-versions': 'Version History',
-  'lead-review': 'Lead Review Queue', 'planning-board': 'Planning Board',
+  'lead-review': 'Lead Review Queue', 'planning-board': 'Planning',
   'audit-reports': 'Audit Reports'
 };
 
@@ -171,7 +167,7 @@ var pickedFiles = {};
 function homeView(role) {
   if (role === 'auditee') return 'my-findings';
   if (role === 'admin') return 'templates';
-  if (role === 'gm' || role === 'finance' || role === 'executiveDirector') return 'planning-approvals';
+  if (role === 'gm' || role === 'finance' || role === 'executiveDirector') return 'planning';
   if (role === 'leadInspector') return 'lead-review';
   return 'dashboard';
 }
@@ -239,6 +235,7 @@ function render() {
 
 function isNavActive(view) {
   if (view === state.view) return true;
+  if (view === 'planning' && (state.view === 'planning-approvals' || state.view === 'planning-board')) return true;
   // keep parent nav highlighted on detail screens
   if (view === 'calendar' && (state.view === 'audit-detail' || state.view === 'checklist')) return true;
   if (view === 'findings' && state.view === 'finding' && state.role !== 'auditee') return true;
@@ -300,6 +297,7 @@ function renderContent() {
     case 'cap-effectiveness': return viewCapEffectiveness();
     case 'ai-assistant': return viewAiAssistant();
     case 'ssp-nasp': return viewSspNaspDashboard();
+    case 'planning': return viewPlanningWorkspace();
     case 'planning-approvals': return viewPlanningApprovals();
     case 'checklist-approvals': return viewChecklistApprovals();
     case 'question-bank': return viewQuestionBank();
@@ -368,6 +366,8 @@ function go(view, opts) {
   if (opts.findingId !== undefined && opts.findingId !== null && opts.findingId !== '') state.params.findingId = opts.findingId;
   if (opts.orgId !== undefined && opts.orgId !== null && opts.orgId !== '') state.params.orgId = opts.orgId;
   if (view === 'org-risk' && !state.params.orgId) state.params.orgId = 'ORG-XYZ';
+  if (opts.tab) state.params.tab = opts.tab;
+  else if (view !== 'planning' && view !== 'planning-approvals' && view !== 'planning-board') delete state.params.tab;
   if (opts.filter) {
     if (!state.selectedFilters) state.selectedFilters = {};
     state.selectedFilters[view] = opts.filter;
@@ -430,12 +430,13 @@ function handleAction(act, el) {
   var id = el.getAttribute('data-id');
   var view = el.getAttribute('data-view');
   var filter = el.getAttribute('data-filter');
+  var tab = el.getAttribute('data-tab');
   var q = el.getAttribute('data-q');
 
   switch (act) {
     case 'role': setRole(el.getAttribute('data-role')); break;
     case 'logout': state.role = null; state.view = 'login'; state.ui.notifOpen = false; state.ui.menuOpen = false; closeModal(); persistAfterAction(); render(); break;
-    case 'nav': go(view, { auditId: id, findingId: id, orgId: id, filter: filter }); break;
+    case 'nav': go(view, { auditId: id, findingId: id, orgId: id, filter: filter, tab: tab }); break;
     case 'toggle-menu': state.ui.menuOpen = !state.ui.menuOpen; render(); break;
     case 'set-filter': setSelectedFilter(el.getAttribute('data-key'), el.getAttribute('data-val')); render(); break;
 

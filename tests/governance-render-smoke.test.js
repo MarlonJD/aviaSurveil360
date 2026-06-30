@@ -22,14 +22,79 @@ vm.createContext(context);
 
 context.state = context.freshState();
 
+function resetPlanning(role) {
+  context.state = context.freshState();
+  context.state.role = role;
+  context.state.view = 'planning';
+  return context.state.planningItems[0];
+}
+
+let item = resetPlanning('gm');
+let html = context.viewPlanningWorkspace();
+assert.match(html, /Planning/);
+assert.match(html, /Send to Finance Review/);
+assert.doesNotMatch(html, /Planning Board|Planning Approvals/);
+
+item = resetPlanning('finance');
+context.applyApprovalDecision(item, {
+  decision: 'forward',
+  actor: { role: 'gm', name: context.ROLES.gm.user },
+  comment: 'Send to Finance.'
+});
+html = context.viewPlanningWorkspace();
+assert.match(html, /Planning/);
+assert.match(html, /Approve Budget/);
+assert.match(html, /Finance Review/);
+
+item = resetPlanning('executiveDirector');
+context.applyApprovalDecision(item, {
+  decision: 'forward',
+  actor: { role: 'gm', name: context.ROLES.gm.user },
+  comment: 'Send to Finance.'
+});
+context.applyApprovalDecision(item, {
+  decision: 'approve',
+  actor: { role: 'finance', name: context.ROLES.finance.user },
+  comment: 'Budget accepted.'
+});
+html = context.viewPlanningWorkspace();
+assert.match(html, /Planning/);
+assert.match(html, /Approve Plan/);
+assert.match(html, /Executive Director Approval/);
+
+item = resetPlanning('leadInspector');
+context.applyApprovalDecision(item, {
+  decision: 'forward',
+  actor: { role: 'gm', name: context.ROLES.gm.user },
+  comment: 'Send to Finance.'
+});
+context.applyApprovalDecision(item, {
+  decision: 'approve',
+  actor: { role: 'finance', name: context.ROLES.finance.user },
+  comment: 'Budget accepted.'
+});
+context.applyApprovalDecision(item, {
+  decision: 'approve',
+  actor: { role: 'executiveDirector', name: context.ROLES.executiveDirector.user },
+  comment: 'Approved.'
+});
+context.releasePlanningItem(item, { actorRole: 'gm', actorName: context.ROLES.gm.user });
+context.acceptReleasedPlanningItem(item, { actorRole: 'manager', actorName: context.ROLES.manager.user });
+context.assignLeadInspectorToPlanningItem(item, {
+  actorRole: 'manager',
+  actorName: context.ROLES.manager.user,
+  leadInspector: context.ROLES.leadInspector.user
+});
+html = context.viewPlanningWorkspace('preparation');
+assert.match(html, /Planning/);
+assert.match(html, /Propose Team \/ Dates \/ Resources/);
+
 const cases = [
-  ['gm', 'Planning Approval', () => context.viewPlanningApprovals()],
   ['gm', 'Checklist Approval', () => context.viewChecklistApprovals()],
   ['manager', 'Question Bank', () => context.viewQuestionBank()],
   ['manager', 'Checklist Builder', () => context.viewChecklistBuilder()],
   ['manager', 'Version History', () => context.viewChecklistVersions()],
   ['leadInspector', 'Lead Review Queue', () => context.viewLeadReviewQueue()],
-  ['manager', 'Planning Board', () => context.viewPlanningBoard()],
   ['leadInspector', 'Preliminary / Final Report', () => context.viewAuditReportsApproval()]
 ];
 

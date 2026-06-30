@@ -147,78 +147,12 @@ function approvalDecisionPanelHtml(record) {
 }
 
 function planningApprovalPurposeForRole() {
-  if (state.role === 'manager') return 'Track submitted planning items and revise them if they are returned.';
-  if (state.role === 'gm') return 'Route the budget-required planning item through Finance before ED approval.';
-  if (state.role === 'finance') return 'Review the mock budget and either approve, adjust, or return it to GM action.';
-  if (state.role === 'executiveDirector') return 'Give final approval or return the item to GM with a reason.';
-  return 'Review the internal CAA governance approval chain.';
-}
-
-function viewPlanningApprovals() {
-  var item = state.planningItems && state.planningItems.length ? state.planningItems[0] : null;
-  if (!item) return pageHead('Planning Approvals', '') + '<div class="empty">No planning approval items are seeded.</div>';
-  var summary = approvalSummary(item);
-  var meta = approvalMetaForStatus(item.status);
-  var isBudget = item.budgetRequired ? 'Budget Required' : 'No Budget Review';
-  var financeText = item.financeReview
-    ? humanStatus(item.financeReview.decision) + ' · ' + (item.financeReview.reason || item.financeReview.comment || 'No note')
-    : 'Not reviewed yet';
-
-  return pageHead('Planning Approval — ' + item.id, planningApprovalPurposeForRole()) +
-    guardrailStrip([
-      { label: 'Frontend-only demo' },
-      { label: 'Mock approval history', tone: 'info' },
-      { label: 'No real authorization service', tone: 'warn' }
-    ]) +
-    '<div class="governance-hero mb-16">' +
-      '<div>' +
-        '<div class="governance-hero__eyebrow">Phase 0B · thin planning approval slice</div>' +
-        '<h2>' + esc(item.title) + '</h2>' +
-        '<p>' + esc(item.purpose) + '</p>' +
-      '</div>' +
-      '<div class="governance-hero__metrics">' +
-        compactMetric('Current owner', summary.ownerLabel, summary.statusTone) +
-        compactMetric('Next action', summary.nextAction, 'info') +
-        compactMetric('Status', summary.statusLabel, summary.statusTone) +
-      '</div>' +
-    '</div>' +
-    '<div class="grid grid--kpi mb-16">' +
-      kpiCard('Approval Status', esc(meta.label), 'Derived from the current stage', { tone: meta.tone }) +
-      kpiCard('Requested Budget', esc(item.requestedBudget), isBudget, { tone: item.budgetRequired ? 'warn' : 'neutral' }) +
-      kpiCard('Target Month', esc(item.targetMonth), item.department) +
-    '</div>' +
-    '<div class="grid grid--main">' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card"><div class="card__head"><h3>Planning Item Dossier</h3><span class="sub">CAA internal mock item</span></div><div class="card__body">' +
-          '<div class="metaline">' +
-            metaItem('Organization', item.organization) +
-            metaItem('Department', item.department) +
-            metaItem('Risk category', item.riskCategory) +
-            metaItem('Trigger type', item.triggerType) +
-            metaItem('Budget required', item.budgetRequired ? 'Yes' : 'No') +
-            metaItem('Proposed inspectors', item.proposedInspectors.join(', ')) +
-            metaItem('Finance review', financeText) +
-            metaItem('Current owner', summary.ownerLabel) +
-          '</div>' +
-        '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Approval Progress</h3><span class="sub">Configured owner path</span></div><div class="card__body">' +
-          approvalProgressHtml(item) +
-        '</div></div>' +
-      '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card"><div class="card__head"><h3>Decision Panel</h3><span class="sub">Role-aware controls</span></div><div class="card__body">' +
-          approvalDecisionPanelHtml(item) +
-        '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Approval History</h3><span class="sub">Append-only demo log</span></div><div class="card__body">' +
-          approvalHistoryHtml(item) +
-        '</div></div>' +
-      '</div>' +
-    '</div>';
-}
-
-function planningBoardColumn(item) {
-  if (item.approval && item.approval.outcome !== 'approved') return approvalSummary(item).statusLabel;
-  return planningPrepMeta(item.preparation.status).label;
+  if (state.role === 'manager') return 'Track planning approvals, release acceptance and department preparation in one panel.';
+  if (state.role === 'gm') return 'Route the planning item through Finance and ED, then release it to the department.';
+  if (state.role === 'finance') return 'Review the mock budget and return the item to GM action if needed.';
+  if (state.role === 'executiveDirector') return 'Give final planning approval or return the item to GM with a reason.';
+  if (state.role === 'leadInspector') return 'Prepare the released audit by proposing team, dates and resources.';
+  return 'Review the internal CAA planning workflow.';
 }
 
 function planningPrepActionPanel(item) {
@@ -247,6 +181,115 @@ function planningPrepActionPanel(item) {
   return '<div class="decision-panel">' + body + '</div>';
 }
 
+function planningWorkspaceTab(forcedTab) {
+  var tab = forcedTab || (state.params && state.params.tab);
+  if (!tab && state.view === 'planning-approvals') tab = 'approval';
+  if (!tab && state.view === 'planning-board') tab = 'preparation';
+  var allowed = { overview: true, approval: true, preparation: true };
+  return allowed[tab] ? tab : 'overview';
+}
+
+function planningWorkspaceTabsHtml(activeTab) {
+  var tabs = [
+    ['overview', 'Overview'],
+    ['approval', 'Approval'],
+    ['preparation', 'Preparation']
+  ];
+  return '<div class="planning-tabs mb-16" role="tablist">' + tabs.map(function (tab) {
+    var active = tab[0] === activeTab;
+    return '<button class="planning-tab' + (active ? ' is-active' : '') + '" role="tab" aria-selected="' + (active ? 'true' : 'false') +
+      '" data-act="nav" data-view="planning" data-tab="' + esc(tab[0]) + '">' + esc(tab[1]) + '</button>';
+  }).join('') + '</div>';
+}
+
+function planningNextAction(item) {
+  var approval = approvalSummary(item);
+  var prep = item.preparation || { status: 'not_released' };
+  if (approval.outcome === 'rejected') return approval.nextAction;
+  if (approval.outcome !== 'approved') return approval.nextAction;
+  if (prep.status === 'not_released') return 'GM Release to Department';
+  if (prep.status === 'released_to_department') return 'Department Manager accept released audit';
+  if (prep.status === 'accepted_by_department') return 'Department Manager assign Lead Inspector';
+  if (prep.status === 'lead_inspector_assigned') return 'Lead Inspector propose team, dates, and resources';
+  if (prep.status === 'team_schedule_proposed') return 'Department Manager confirm and generate mock assignment package';
+  if (prep.status === 'ready_for_execution') return 'Ready for execution';
+  return planningPrepMeta(prep.status).label;
+}
+
+function planningCurrentOwner(item) {
+  var approval = approvalSummary(item);
+  var prep = item.preparation || { status: 'not_released' };
+  if (approval.outcome === 'rejected') return approval.ownerLabel;
+  if (approval.outcome !== 'approved') return approval.ownerLabel;
+  if (prep.status === 'not_released') return roleName('gm');
+  if (prep.status === 'released_to_department') return roleName('manager');
+  if (prep.status === 'accepted_by_department') return roleName('manager');
+  if (prep.status === 'lead_inspector_assigned') return roleName('leadInspector');
+  if (prep.status === 'team_schedule_proposed') return roleName('manager');
+  if (prep.status === 'ready_for_execution') return roleName('leadInspector');
+  return 'CAA Planning Team';
+}
+
+function planningFinanceReviewText(item) {
+  if (!item.financeReview) return 'Not reviewed yet';
+  return humanStatus(item.financeReview.decision) + ' · ' + (item.financeReview.reason || item.financeReview.comment || 'No note');
+}
+
+function planningApprovalCompleteText(summary) {
+  if (summary.outcome === 'approved') return 'Yes - Approved';
+  if (summary.outcome === 'rejected') return 'No - Rejected';
+  return 'No - ' + summary.statusLabel;
+}
+
+function planningPrepCompleteText(prep) {
+  return prep.status === 'ready_for_execution' ? 'Yes - Ready for execution' : 'No - ' + planningPrepMeta(prep.status).label;
+}
+
+function planningNextActionPanelHtml(item) {
+  var summary = approvalSummary(item);
+  var prep = item.preparation;
+  return '<div class="decision-panel planning-next-action">' +
+    '<div class="decision-panel__title">Next Action</div>' +
+    '<div class="metaline">' +
+      metaItem('Who owns this now?', planningCurrentOwner(item)) +
+      metaItem('What must happen next?', planningNextAction(item)) +
+      metaItem('Is approval complete?', planningApprovalCompleteText(summary)) +
+      metaItem('Is preparation complete?', planningPrepCompleteText(prep)) +
+    '</div>' +
+  '</div>';
+}
+
+function planningDossierHtml(item) {
+  return '<div class="metaline">' +
+    metaItem('Organization', item.organization) +
+    metaItem('Department', item.department) +
+    metaItem('Risk category', item.riskCategory) +
+    metaItem('Trigger type', item.triggerType) +
+    metaItem('Requested budget', item.requestedBudget) +
+    metaItem('Budget required', item.budgetRequired ? 'Yes' : 'No') +
+    metaItem('Target month', item.targetMonth) +
+    metaItem('Proposed inspectors', item.proposedInspectors.join(', ')) +
+    metaItem('Finance review', planningFinanceReviewText(item)) +
+  '</div>';
+}
+
+function planningPreparationDetailHtml(item) {
+  var prep = item.preparation;
+  return '<div class="metaline">' +
+    metaItem('Preparation status', planningPrepMeta(prep.status).label) +
+    metaItem('Lead Inspector', prep.leadInspector || '-') +
+    metaItem('Team', prep.proposedTeam.length ? prep.proposedTeam.join(', ') : '-') +
+    metaItem('Date range', prep.proposedStartDate ? prep.proposedStartDate + ' to ' + prep.proposedEndDate : '-') +
+    metaItem('Resources', prep.resources || '-') +
+  '</div>';
+}
+
+function planningAssignmentPackageHtml(item) {
+  var pkg = item.preparation.assignmentPackage;
+  if (!pkg) return '<div class="muted small">Assignment package is generated only after Department Manager confirmation.</div>';
+  return '<div class="callout"><b>' + esc(pkg.title) + '</b><br><span class="small muted">' + esc(pkg.note) + '</span></div>';
+}
+
 function planningPrepHistoryHtml(item) {
   var history = item.preparation.history || [];
   if (!history.length) return '<div class="muted small">No release/preparation events yet.</div>';
@@ -257,51 +300,94 @@ function planningPrepHistoryHtml(item) {
   }).join('') + '</div>';
 }
 
-function viewPlanningBoard() {
-  var item = state.planningItems && state.planningItems.length ? state.planningItems[0] : null;
-  if (!item) return pageHead('Planning Board', '') + '<div class="empty">No planning item is seeded.</div>';
+function planningWorkspaceOverviewHtml(item) {
   var prepMeta = planningPrepMeta(item.preparation.status);
-  var approval = approvalSummary(item);
-  var columns = ['Under GM Review', 'Finance Review', 'Pending ED Approval', 'Approved', 'Released to Department', 'Ready for Execution'];
-  var board = columns.map(function (col) {
-    var active = planningBoardColumn(item) === col || (approval.statusLabel === col);
-    return '<div class="planning-column' + (active ? ' is-active' : '') + '"><div class="planning-column__title">' + esc(col) + '</div>' +
-      (active ? '<div class="planning-card"><b>' + esc(item.id) + '</b><span>' + esc(item.title) + '</span></div>' : '<div class="planning-column__empty">No item</div>') +
-    '</div>';
-  }).join('');
-  var pkg = item.preparation.assignmentPackage
-    ? '<div class="callout"><b>' + esc(item.preparation.assignmentPackage.title) + '</b><br><span class="small muted">' +
-      esc(item.preparation.assignmentPackage.note) + '</span></div>'
-    : '<div class="muted small">Assignment package is generated only after Department Manager confirmation.</div>';
+  return '<div class="grid grid--main">' +
+    '<div style="display:flex;flex-direction:column;gap:16px">' +
+      '<div class="card"><div class="card__head"><h3>Planning Item Detail</h3><span class="sub">CAA internal mock item</span></div><div class="card__body">' + planningDossierHtml(item) + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Approval Progress</h3><span class="sub">Department Manager -> GM -> Finance Review -> Executive Director</span></div><div class="card__body">' + approvalProgressHtml(item) + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Preparation Detail</h3><div class="spacer"></div>' + demoBadge(prepMeta.label, prepMeta.tone) + '</div><div class="card__body">' + planningPreparationDetailHtml(item) + '</div></div>' +
+    '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:16px">' +
+      '<div class="card"><div class="card__head"><h3>Current Planning Step</h3></div><div class="card__body">' + planningNextActionPanelHtml(item) + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Approval Decision</h3><span class="sub">Role-aware controls</span></div><div class="card__body">' + approvalDecisionPanelHtml(item) + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Preparation Action</h3><span class="sub">Release and audit preparation</span></div><div class="card__body">' + planningPrepActionPanel(item) + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Approval History</h3><span class="sub">Append-only demo log</span></div><div class="card__body">' + approvalHistoryHtml(item) + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Preparation History</h3><span class="sub">Release and readiness events</span></div><div class="card__body">' + planningPrepHistoryHtml(item) + '</div></div>' +
+    '</div>' +
+  '</div>';
+}
 
-  return pageHead('Planning Board / Audit Preparation', 'Workflow-driven planning board and release path. Cards are not drag-movable in this demo.') +
+function planningWorkspaceApprovalHtml(item) {
+  return '<div class="grid grid--main">' +
+    '<div style="display:flex;flex-direction:column;gap:16px">' +
+      '<div class="card"><div class="card__head"><h3>Approval Progress</h3><span class="sub">Configured owner path</span></div><div class="card__body">' + approvalProgressHtml(item) + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Planning Item Detail</h3><span class="sub">Approval context</span></div><div class="card__body">' + planningDossierHtml(item) + '</div></div>' +
+    '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:16px">' +
+      '<div class="card"><div class="card__head"><h3>Decision Panel</h3><span class="sub">Role-aware controls</span></div><div class="card__body">' + approvalDecisionPanelHtml(item) + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Approval History</h3><span class="sub">Append-only demo log</span></div><div class="card__body">' + approvalHistoryHtml(item) + '</div></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function planningWorkspacePreparationHtml(item) {
+  var prepMeta = planningPrepMeta(item.preparation.status);
+  return '<div class="grid grid--main">' +
+    '<div style="display:flex;flex-direction:column;gap:16px">' +
+      '<div class="card"><div class="card__head"><h3>Preparation Detail</h3><div class="spacer"></div>' + demoBadge(prepMeta.label, prepMeta.tone) + '</div><div class="card__body">' + planningPreparationDetailHtml(item) + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Mock Audit Assignment Package</h3></div><div class="card__body">' + planningAssignmentPackageHtml(item) + '</div></div>' +
+    '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:16px">' +
+      '<div class="card"><div class="card__head"><h3>Next Preparation Action</h3></div><div class="card__body">' + planningPrepActionPanel(item) + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Release / Preparation History</h3></div><div class="card__body">' + planningPrepHistoryHtml(item) + '</div></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function viewPlanningWorkspace(forcedTab) {
+  var item = state.planningItems && state.planningItems.length ? state.planningItems[0] : null;
+  if (!item) return pageHead('Planning', '') + '<div class="empty">No planning item is seeded.</div>';
+  if (!item.preparation) item.preparation = { status: 'not_released', proposedTeam: [], history: [] };
+  if (!item.preparation.proposedTeam) item.preparation.proposedTeam = [];
+  if (!item.preparation.history) item.preparation.history = [];
+  var activeTab = planningWorkspaceTab(forcedTab);
+  var approval = approvalSummary(item);
+  var prepMeta = planningPrepMeta(item.preparation.status);
+  var approvalMeta = approvalMetaForStatus(item.status);
+  var body = activeTab === 'approval'
+    ? planningWorkspaceApprovalHtml(item)
+    : (activeTab === 'preparation' ? planningWorkspacePreparationHtml(item) : planningWorkspaceOverviewHtml(item));
+
+  return pageHead('Planning', 'Single planning panel for approval, release, and audit preparation.') +
     guardrailStrip([
-      { label: 'Mock planning board' },
-      { label: 'No real assignment package generation', tone: 'warn' },
-      { label: 'Frontend-only state', tone: 'info' }
+      { label: 'Frontend-only demo' },
+      { label: 'Mock approval history', tone: 'info' },
+      { label: 'No real authorization service', tone: 'warn' }
     ]) +
-    '<div class="planning-board mb-16">' + board + '</div>' +
-    '<div class="grid grid--main">' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card"><div class="card__head"><h3>Planning Item Detail</h3><div class="spacer"></div>' + demoBadge(prepMeta.label, prepMeta.tone) + '</div><div class="card__body">' +
-          '<div class="metaline">' +
-            metaItem('Organization', item.organization) +
-            metaItem('Department', item.department) +
-            metaItem('Approval status', approval.statusLabel) +
-            metaItem('Preparation status', prepMeta.label) +
-            metaItem('Lead Inspector', item.preparation.leadInspector || '—') +
-            metaItem('Team', item.preparation.proposedTeam.length ? item.preparation.proposedTeam.join(', ') : '—') +
-            metaItem('Date range', item.preparation.proposedStartDate ? item.preparation.proposedStartDate + ' to ' + item.preparation.proposedEndDate : '—') +
-            metaItem('Resources', item.preparation.resources || '—') +
-          '</div>' +
-        '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Mock Audit Assignment Package</h3></div><div class="card__body">' + pkg + '</div></div>' +
+    '<div class="governance-hero planning-workspace__hero mb-16">' +
+      '<div>' +
+        '<div class="governance-hero__eyebrow">Canonical planning workspace</div>' +
+        '<h2>' + esc(item.title) + '</h2>' +
+        '<p>' + esc(item.purpose) + '</p>' +
       '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card"><div class="card__head"><h3>Next Preparation Action</h3></div><div class="card__body">' + planningPrepActionPanel(item) + '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Release / Preparation History</h3></div><div class="card__body">' + planningPrepHistoryHtml(item) + '</div></div>' +
+      '<div class="governance-hero__metrics">' +
+        compactMetric('Current owner', planningCurrentOwner(item), approval.outcome === 'approved' ? prepMeta.tone : approval.statusTone) +
+        compactMetric('Next action', planningNextAction(item), 'info') +
+        compactMetric('Approval status', approval.statusLabel, approvalMeta.tone) +
+        compactMetric('Preparation status', prepMeta.label, prepMeta.tone) +
       '</div>' +
-    '</div>';
+    '</div>' +
+    planningWorkspaceTabsHtml(activeTab) +
+    body;
+}
+
+function viewPlanningApprovals() {
+  return viewPlanningWorkspace('approval');
+}
+
+function viewPlanningBoard() {
+  return viewPlanningWorkspace('preparation');
 }
 
 function activeChecklistApproval() {
@@ -502,7 +588,7 @@ function viewRoleHome() {
       kpis: [
         ['Potential Findings', '2', 'Awaiting lead review', 'warn', 'findings'],
         ['Reports In Draft', '3', 'Preliminary or final', 'info', 'reports'],
-        ['Assigned Audits', '4', 'Current plan items', 'neutral', 'calendar']
+        ['Audit Preparation', '1', 'Released planning item', 'neutral', 'planning']
       ],
       rows: [
         ['OPS-2026-001', 'Potential finding from Flight Operations checklist', 'Severity review pending', 'findings'],
@@ -518,13 +604,13 @@ function viewRoleHome() {
       chain: 'Planning approval: Department Manager -> GM -> Finance -> ED',
       boundary: 'GM approval does not release an audit by itself. Finance and ED approval are still required before release.',
       kpis: [
-        ['Plans Waiting', '3', 'Department submissions', 'warn', 'calendar'],
-        ['Finance Routing', '2', 'Budget review needed', 'info', 'calendar'],
+        ['Plans Waiting', '3', 'Department submissions', 'warn', 'planning'],
+        ['Finance Routing', '2', 'Budget review needed', 'info', 'planning'],
         ['Reports Waiting', '1', 'Final report review', 'neutral', 'reports']
       ],
       rows: [
-        ['PLAN-2026-Q3', 'Quarterly surveillance plan', 'Check scope and budget rationale', 'calendar'],
-        ['AUD-2026-001', 'Airline XYZ Operator Audit', 'Release candidate after approvals', 'calendar'],
+        ['PLAN-2026-Q3', 'Quarterly surveillance plan', 'Check scope and budget rationale', 'planning'],
+        ['AUD-2026-001', 'Airline XYZ Operator Audit', 'Release candidate after approvals', 'planning'],
         ['RPT-2026-002', 'Final report package', 'GM review before ED approval', 'reports']
       ]
     },
@@ -536,14 +622,14 @@ function viewRoleHome() {
       chain: 'Finance is between GM review and ED approval for planning.',
       boundary: 'Finance reviews cost and resource justification only. It does not make regulatory, finding-closure or enforcement decisions.',
       kpis: [
-        ['Budget Reviews', '2', 'Waiting finance action', 'warn', 'calendar'],
-        ['Returned Items', '1', 'Needs department revision', 'danger', 'calendar'],
-        ['Ready For ED', '1', 'Finance accepted', 'ok', 'calendar']
+        ['Budget Reviews', '2', 'Waiting finance action', 'warn', 'planning'],
+        ['Returned Items', '1', 'Needs department revision', 'danger', 'planning'],
+        ['Ready For ED', '1', 'Finance accepted', 'ok', 'planning']
       ],
       rows: [
-        ['PLAN-2026-Q3', 'Surveillance plan budget', 'Travel and inspector-day review', 'calendar'],
-        ['AUD-2026-006', 'Maintenance provider inspection', 'Budget rationale returned', 'calendar'],
-        ['AUD-2026-001', 'Airline XYZ Operator Audit', 'Finance accepted for ED review', 'calendar']
+        ['PLAN-2026-Q3', 'Surveillance plan budget', 'Travel and inspector-day review', 'planning'],
+        ['AUD-2026-006', 'Maintenance provider inspection', 'Budget rationale returned', 'planning'],
+        ['AUD-2026-001', 'Airline XYZ Operator Audit', 'Finance accepted for ED review', 'planning']
       ]
     },
     executiveDirector: {
@@ -554,12 +640,12 @@ function viewRoleHome() {
       chain: 'Planning: DM -> GM -> Finance -> ED. Report: Lead -> DM -> GM -> ED.',
       boundary: 'ED approval is an internal governance step in this demo. Enforcement remains a separate authorized process, not an automatic outcome.',
       kpis: [
-        ['Plan Approvals', '1', 'Ready for final approval', 'warn', 'calendar'],
+        ['Plan Approvals', '1', 'Ready for final approval', 'warn', 'planning'],
         ['Final Reports', '2', 'Awaiting ED approval', 'info', 'reports'],
         ['Returned', '0', 'Revision requested', 'ok', 'reports']
       ],
       rows: [
-        ['PLAN-2026-Q3', 'Quarterly surveillance plan', 'Final approval before GM release', 'calendar'],
+        ['PLAN-2026-Q3', 'Quarterly surveillance plan', 'Final approval before GM release', 'planning'],
         ['RPT-2026-002', 'Final report package', 'ED approval required', 'reports'],
         ['RPT-2026-004', 'Preliminary report path', 'Not ready for ED review', 'reports']
       ]

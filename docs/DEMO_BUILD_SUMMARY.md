@@ -242,6 +242,34 @@ Today’s Workbench mobile scrollWidth/clientWidth: 390/390
 Service Provider Portal mobile scrollWidth/clientWidth: 390/390
 ```
 
+### Planning panel simplification - 2026-06-30
+
+Status: **frontend-only Planning panel update verified locally**.
+
+The demo now has a single `Planning` panel for Department Manager, General
+Manager, Finance Review, Executive Director, and relevant Lead Inspector audit
+preparation work. The prior split between Planning Board and Planning Approvals
+is kept only as compatibility wrappers for existing links/tests; it is no
+longer exposed as separate top-level user-facing navigation.
+
+The `Department Manager -> GM -> Finance Review -> Executive Director` planning
+approval chain is preserved. After Executive Director approval, the Planning
+panel visibly continues to `GM Release to Department`, Department Manager
+acceptance, Lead Inspector assignment, team/date/resource proposal, Department
+Manager confirmation, and `Ready for Execution`.
+
+`Audit Work Queue` remains the inspector/audit execution queue. It is not a
+separate planning governance module.
+
+This remains mock/demo behavior only: no backend, real authentication, real
+authorization service, real finance integration, real upload/storage, e-signature
+service, or document-generation service was added.
+
+Rendered browser smoke used a temporary local static server at
+`http://127.0.0.1:8765/`; console warnings/errors were empty and desktop
+scrollWidth/clientWidth stayed `1280/1280` on the Planning workspace and Audit
+Work Queue evidence screens.
+
 ---
 
 ## Mocked items and limitations
