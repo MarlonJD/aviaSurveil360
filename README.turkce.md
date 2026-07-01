@@ -1,10 +1,23 @@
-# AVIASURVEIL 360 Planlama Paketi
+# AviaSurveil360 Planlama Paketi ve Frontend Demo
 
-Bu ZIP, Sivil Havacılık Otoriteleri için önerilen surveillance, audit, finding, CAP ve evidence management ürününe ait **sadece Markdown dokümanlarından** oluşur. İçinde kod, HTML, CSS, JS veya database dosyası yoktur.
+Bu depo, Sivil Havacılık Otoriteleri için önerilen surveillance, audit,
+finding, CAP ve evidence management ürününe ait yapılandırılmış planlama paketi
+ile **frontend-only statik clickable demo** içerir.
+
+Çalıştırılabilir demo `index.html`, `css/`, `js/`, mock data, client-side state
+ve `tests/` altındaki hedefli Node smoke testlerinden oluşur.
+
+**Demo-only / production-ready değil:** backend, database, API, gerçek
+authentication, gerçek authorization enforcement, gerçek file upload, gerçek AI
+service, gerçek regulatory ingestion, gerçek notification service, production
+audit log veya framework migration yoktur.
 
 ## Ürün tanımı
 
-**AVIASURVEIL 360**, CAA ekiplerinin audit planlamasına, checklist yürütmesine, finding oluşturmasına, auditee CAP cevabı almasına, evidence incelemesine, due date takibine, finding kapatmasına ve oversight performansını izlemesine yardım eden task-based oversight platformudur.
+**AviaSurveil360**, CAA ekiplerinin audit planlamasına, checklist yürütmesine,
+finding oluşturmasına, auditee CAP cevabı almasına, evidence incelemesine, due
+date takibine, finding kapatmasına ve oversight performansını izlemesine yardım
+eden task-based oversight platformudur.
 
 ## Ana ürün tezi
 
@@ -24,6 +37,12 @@ Bu ZIP, Sivil Havacılık Otoriteleri için önerilen surveillance, audit, findi
 5. `03_WORKFLOWS/MASTER_WORKFLOW.md`
 6. `05_SCREEN_SPECS/SCREEN_INVENTORY_AND_FORMS.md`
 7. `08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.md`
+8. `DEMO_BUILD_SUMMARY.md`
+9. `plans/index.md`
+
+Clickable demo için `index.html` dosyasını doğrudan browser'da açın veya bu
+klasörü local static server ile servis edin. Güncel verification status ve demo
+sınırları için `docs/DEMO_BUILD_SUMMARY.md` dosyasına bakın.
 
 
 ## Kaynak Notları

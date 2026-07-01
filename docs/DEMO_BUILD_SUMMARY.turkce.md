@@ -237,6 +237,91 @@ Today’s Workbench mobile scrollWidth/clientWidth: 390/390
 Service Provider Portal mobile scrollWidth/clientWidth: 390/390
 ```
 
+### CAA Governance browser QA - 2026-06-29
+
+Durum: CAA Governance frontend-only demo hattı için **desktop ve mobil browser
+QA verified locally**.
+
+AviaSurveil360 Agent Harness Runbook aktif CAA Governance iş akışına uygulandı.
+Doğrulama frontend-only demo sınırını korudu: backend, veritabanı, API, gerçek
+kimlik doğrulama, gerçek upload, gerçek AI servisi, gerçek regülasyon içe
+aktarma, gerçek bildirim servisi veya production audit-log hazır oluşu
+eklenmedi ve iddia edilmedi.
+
+Syntax ve deterministik smoke kontrolleri geçti:
+
+```bash
+node --check js/data.js
+node --check js/helpers.js
+node --check js/approval.js
+node --check js/planning.js
+node --check js/checklists.js
+node --check js/inspection.js
+node --check js/reports.js
+node --check js/views.js
+node --check js/app.js
+node tests/approval-smoke.test.js
+node tests/checklist-approval-smoke.test.js
+node tests/checklist-management-smoke.test.js
+node tests/governance-render-smoke.test.js
+node tests/inspection-execution-smoke.test.js
+node tests/planning-render-smoke.test.js
+node tests/planning-release-smoke.test.js
+node tests/report-approval-smoke.test.js
+node tests/audit-work-queue-smoke.test.js
+node tests/demo-boundary-smoke.test.js
+```
+
+Desktop browser click-through ile şu governance yolları yerelde doğrulandı:
+
+- Department Manager, General Manager, Finance Review ve Executive Director
+  planlama onay zinciri, final `Approved` durumuna kadar.
+- `CL-FOPS-v2.4` için General Manager checklist approval.
+- Lead Inspector -> Department Manager -> General Manager -> Executive Director
+  rapor onay zinciri, `Final Report Locked` durumuna kadar.
+- Inspector `Audit Work Queue` ve `Offline Field Inspection` demo sınırı.
+- Auditee portal izolasyonu: görünür `Internal CAA Note` veya `Inspector
+  Workload` yok.
+- Admin `Question Bank`; configured references ve expected evidence görünür.
+
+Yerel screenshot kanıtı
+`/private/tmp/aviasurveil360-governance-qa/` altında alındı:
+
+- `01-login-desktop.png`
+- `02-planning-approved-desktop.png`
+- `03-planning-ready-desktop.png`
+- `04-checklist-approved-desktop.png`
+- `05-final-report-locked-desktop.png`
+- `06-inspector-work-queue-desktop.png`
+- `07-offline-field-desktop.png`
+- `08-auditee-portal-desktop.png`
+- `09-admin-question-bank-desktop.png`
+- `10-mobile-planning-approval-verified.png`
+
+Mobil Planning Approval yeniden koşumu:
+
+- `10-mobile-planning-approval.png`, Planning Approval görsel kanıtı olarak
+  **kabul edilmedi**. Ekran Manager Dashboard'u yakaladı; zayıf assertion ise
+  gizli navigasyon metnini yakalamıştı.
+- Kabul edilen yeniden koşum,
+  `/private/tmp/aviasurveil360-governance-qa/10-mobile-planning-approval-verified.png`
+  dosyasını `http://127.0.0.1:4360/` üzerinden 390px mobil viewport ile yakaladı.
+- Kabul edilen kanıt gizli navigasyon metnine değil görünür içeriğe dayanır:
+  `Planning Approval — PLAN-2026-Q3-OPS` viewport içinde görünür,
+  `Q3 Flight Operations Surveillance Plan` dossier görünür, console
+  warning/error listesi boştur ve mobile scrollWidth/clientWidth `390/390`dır.
+- Eski blocker note,
+  `docs/plans/notes/2026-06-29-governance-browser-qa-mobile-blocker.md`
+  içinde kapatıldı.
+
+Görsel QA polish takibi tamamlandı: rapor approval progress kartı sidebar içinde
+compact approval rail varyantını kullanıyor; böylece `Department Manager` gibi
+uzun governance etiketleri, onay workflow'u değişmeden okunabilir kalıyor.
+Geçici browser profiliyle yapılan local headless Chrome QA, report approval
+sayfasını, compact rail class'ını, `Department Manager` etiketini
+`247px × 17px` olarak ve desktop yatay taşma olmadığını (`1280/1280`) doğruladı.
+Screenshot: `/private/tmp/aviasurveil360-report-approval-compact.png`.
+
 ### Planning panel sadeleştirmesi - 2026-06-30
 
 Durum: **frontend-only Planning panel güncellemesi verified locally**.
@@ -256,7 +341,7 @@ Execution` adımlarına devam eder.
 `Audit Work Queue` saha/denetim iş kuyruğu olarak kaldı. Ayrı bir planning
 governance modülü değildir.
 
-Bu davranış hala mock/demo davranışıdır: backend, gerçek kimlik doğrulama,
+Bu davranış hâlâ mock/demo davranışıdır: backend, gerçek kimlik doğrulama,
 gerçek yetkilendirme servisi, gerçek finans entegrasyonu, gerçek upload/storage,
 e-signature servisi veya gerçek doküman üretimi eklenmedi.
 
@@ -278,6 +363,6 @@ scrollWidth/clientWidth `1280/1280` kaldı.
 - AI önerileri yalnızca taslaktır; resmi çıktı yayımlayamaz.
 - Offline outbox simüledir; mobil/offline-ready implementation değildir.
 - Audit log demo durumudur; değiştirilemez audit evidence değildir.
-- `README.md` ve `MANIFEST.md` halen eski Markdown-only paket anlatımını içerir;
-  runnable prototype harici paydaşlara devredilecekse ayrı bir package-truth
-  cleanup ile güncellenmelidir.
+- `README.md`, `README.turkce.md` ve `MANIFEST.md` artık mevcut planlama paketi
+  + frontend-only static clickable demo şeklini anlatır; production-readiness
+  yine iddia edilmez.

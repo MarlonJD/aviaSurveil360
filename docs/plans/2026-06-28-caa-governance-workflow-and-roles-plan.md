@@ -1,7 +1,7 @@
 # CAA Governance Workflow And Multi-Role Expansion Plan
 
 - **Date:** 2026-06-28
-- **Status:** active
+- **Status:** ready-for-verification
 - **Build mode:** Frontend-only clickable demo (HTML + CSS + Vanilla JS, mock
   data, client-side state). No backend/DB/API/auth, per `AGENTS.md`.
 - **Related plans:**
@@ -15,6 +15,14 @@
      Approval vertical slice must come first to prove the stakeholder's
      `Department Manager → GM → Finance → ED` chain.
   3. Role model = **all seven roles as distinct switchable actors**.
+
+**Current implementation note (2026-06-29):** Phases 0-4 are implemented in the
+frontend-only demo and are `verified locally` with syntax checks, deterministic
+Node smoke checks, desktop browser QA, and mobile Planning Approval content
+visual QA. The former mobile Planning Approval blocker is closed in
+`docs/plans/notes/2026-06-29-governance-browser-qa-mobile-blocker.md`.
+Production-readiness is not claimed. Next step: stakeholder review/sign-off
+before moving this plan to `completed/`.
 
 ---
 
@@ -552,45 +560,31 @@ closed, manager dashboards update.
 
 ## Execution Prompt
 
-> Work in the AviaSurveil360 repo. Read `AGENTS.md` first, then this plan
-> (`docs/plans/2026-06-28-caa-governance-workflow-and-roles-plan.md`). Keep the
-> build **frontend-only**: HTML + CSS + Vanilla JS, mock data, client-side state,
-> no backend/DB/API/auth/real upload/real signature/framework. Preserve all
-> existing demo behavior (Finding → CAP → Evidence → Closure, auditee isolation,
-> regulatory trace, AI, USOAP, SSP, offline outbox).
->
-> Implement the **remaining Phase 0 foundation** plus **Phase 0B Planning
-> Approval vertical slice** from the plan. Do not start Checklist Management
-> until this slice is verified.
->
-> 1. Keep the existing role-registry foundation intact: Inspector, Lead
->    Inspector, Department Manager, GM, Finance, Executive Director, Auditee, and
->    Admin Preview must remain switchable. Add defensive `mergeDemoState()`
->    defaults and bump `DEMO_STATE_VERSION` only if new persisted collections are
->    introduced.
-> 2. Build the reusable approval-chain primitive. Put logic in `js/helpers.js` or
->    a plain included `js/approval.js`; put shared progress-bar,
->    approval-history, and decision-panel rendering in `js/views.js` or a plain
->    included module view file. The primitive must support Approve,
->    Return-for-Revision with mandatory reason, Reject with mandatory reason,
->    Finance `Not Approved`, append-only history, current owner / next action /
->    status derivation, and configured return destinations (`returnToRole` /
->    `returnPolicy`) rather than blindly returning one stage.
-> 3. Add `SEED_PLANNING_ITEMS` with one budget-required item:
->    `Department Manager → GM → Finance → Executive Director`. Add the smallest
->    planning-approval screens needed for DM, GM, Finance, and ED to open the
->    item and act on it. GM sends budget-required items to Finance; Finance
->    `Not Approved` returns to GM action with reason; ED Return goes to GM with
->    reason; ED Approve marks the item Approved.
-> 4. Keep this as a thin slice. Do not build the full Planning Board,
->    Released Audits, Audit Assignment Package, Checklist Management, Inspection
->    execution, or Report module in this pass.
->
-> Verify by opening `index.html` (or `python3 -m http.server 4360`): switch
-> every role with no console errors; run the planning item through GM → Finance
-> Not Approved → GM → Finance Approved with Adjustment → ED Approved; confirm
-> progress/history/current owner are correct and append-only. Keep terminology
-> and mock/demo labels consistent with `AGENTS.md`. Then update
-> `docs/plans/index.md` with the next concrete todo. Do not start Checklist
-> Management until Phase 0B is verified. Do not commit, push, or change branches
-> unless explicitly asked.
+```text
+You are working in /Users/marlonjd/Developer/web/aviaSurveil360.
+
+Task: perform stakeholder review/sign-off for the CAA Governance Workflow And Multi-Role Expansion demo lane.
+
+Read first:
+- AGENTS.md
+- docs/plans/index.md
+- docs/plans/2026-06-28-caa-governance-workflow-and-roles-plan.md
+- docs/DEMO_BUILD_SUMMARY.md
+- docs/plans/notes/2026-06-29-governance-browser-qa-mobile-blocker.md
+- docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md
+
+Do:
+1. Review the verified-local evidence for syntax, Node smoke checks, desktop browser QA, and mobile Planning Approval visual QA.
+2. Prepare a compact stakeholder sign-off readout covering the implemented governance flows: Planning Approval, Checklist Approval, Report Approval, Inspector Work Queue/Offline Field, Auditee isolation, and Admin Question Bank.
+3. Keep the demo-only boundary explicit: no backend, database, API, real auth, real upload, real AI, real regulatory ingestion, real notification service, production audit-log readiness, or production readiness.
+4. If stakeholder/user sign-off is explicitly given, move this plan to `docs/plans/completed/` and update the completed index per AGENTS.md.
+5. If new gaps are found, record them in `docs/plans/notes/` and keep the plan `ready-for-verification` or mark it `blocked` as appropriate.
+
+Verification:
+- Active plan index and notes index match the final status.
+- `docs/DEMO_BUILD_SUMMARY.md` remains the canonical evidence file.
+- Any new blocker is recorded durably instead of only in chat.
+
+Final response:
+- State Done / Remaining / Blocked / Verification / Next.
+```

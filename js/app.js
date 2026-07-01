@@ -23,7 +23,6 @@ var NAV = {
     { section: 'Findings & CAPs' },
     { view: 'findings', label: 'Open Findings', icon: '⚑', filter: 'open' },
     { view: 'findings', label: 'CAP Review Queue', icon: '✓', filter: 'capreview' },
-    { view: 'findings', label: 'Overdue Actions', icon: '!', filter: 'overdue' },
     { view: 'cap-effectiveness', label: 'Repeat Findings', icon: '↻' },
     { section: 'USOAP / SSP' },
     { view: 'usoap-readiness', label: 'Protocol Questions', icon: '◎' },
@@ -38,20 +37,12 @@ var NAV = {
     { view: 'dashboard', label: "Today’s Workbench", icon: '▦' },
     { section: 'Oversight' },
     { view: 'calendar', label: 'Audit Work Queue', icon: '▤' },
-    { view: 'package-builder', label: 'Inspection Packages', icon: '▧' },
-    { view: 'offline-field', label: 'Offline Field', icon: '⇄' },
     { section: 'Organisations' },
     { view: 'organizations', label: 'Operators / Providers', icon: '🏢' },
     { view: 'org-risk', label: 'Risk Profiles', icon: '◇', id: 'ORG-XYZ' },
     { section: 'Findings & CAPs' },
     { view: 'findings', label: 'Open Findings', icon: '⚑', filter: 'open' },
     { view: 'findings', label: 'CAP Review Queue', icon: '✓', filter: 'capreview' },
-    { view: 'findings', label: 'Overdue Actions', icon: '!', filter: 'overdue' },
-    { view: 'cap-effectiveness', label: 'Repeat Findings', icon: '↻' },
-    { section: 'Regulations' },
-    { view: 'regulatory-library', label: 'NAMCARS Library', icon: '§' },
-    { view: 'regulatory-library', label: 'Cross-Reference', icon: '⌘' },
-    { view: 'package-builder', label: 'Checklist Builder', icon: '▧' },
     { section: 'Evidence & Documents' },
     { view: 'offline-field', label: 'Inspection Evidence', icon: '⇄' },
     { view: 'reports', label: 'Reports', icon: '📄' },
@@ -123,7 +114,7 @@ var VIEW_TITLES = {
   organizations: 'Organizations', 'org-detail': 'Organization', users: 'Users', settings: 'Settings',
   'safety-intelligence': 'Safety Intelligence', 'org-risk': 'Organization Risk Profile',
   'regulatory-library': 'Regulatory Library', 'package-builder': 'Inspection Package Builder',
-  'offline-field': 'Offline Field Inspection', 'usoap-readiness': 'USOAP Readiness',
+  'offline-field': 'Inspection Evidence', 'usoap-readiness': 'USOAP Readiness',
   'cap-effectiveness': 'CAP Effectiveness', 'ai-assistant': 'AI Inspector Assistant',
   'ssp-nasp': 'SSP/NASP Management', 'role-home': 'Home', planning: 'Planning', 'planning-approvals': 'Planning',
   'checklist-approvals': 'Checklist Approvals', 'question-bank': 'Question Bank',
@@ -172,10 +163,29 @@ function homeView(role) {
   return 'dashboard';
 }
 
+var INSPECTOR_RESTRICTED_VIEWS = {
+  'checklist-approvals': true,
+  'checklist-builder': true,
+  'checklist-versions': true,
+  'package-builder': true,
+  'question-bank': true,
+  'regulatory-library': true,
+  'template-preview': true,
+  templates: true
+};
+
+function normalizeViewForRole() {
+  if (state.role === 'inspector' && INSPECTOR_RESTRICTED_VIEWS[state.view]) {
+    state.view = homeView(state.role);
+    state.params = {};
+  }
+}
+
 /* ----------------------------- Render ----------------------------- */
 function render() {
   var root = document.getElementById('app-root');
   if (!state.role) { root.innerHTML = renderLogin(); return; }
+  normalizeViewForRole();
 
   var nav = NAV[state.role] || [];
   var navHtml = nav.map(function (n) {
@@ -250,7 +260,8 @@ function isNavActive(view) {
 function navBadge(view) {
   var f = visibleFindings();
   if (view === 'calendar') {
-    var a = state.audits.filter(function (x) { return auditTurnInfo(x).label === 'Your turn'; }).length;
+    var queueAudits = typeof auditsForQueueScope === 'function' ? auditsForQueueScope() : state.audits;
+    var a = queueAudits.filter(function (x) { return !isClosedAudit(x); }).length;
     return a || '';
   }
   if (state.role === 'manager' && view === 'findings') {
@@ -258,7 +269,9 @@ function navBadge(view) {
     return n || '';
   }
   if (state.role === 'inspector' && view === 'findings') {
-    var n2 = f.filter(function (x) { return x.status === 'CAP_SUBMITTED' || x.status === 'EVIDENCE_SUBMITTED'; }).length;
+    var n2 = f.filter(function (x) {
+      return !dueInfo(x).overdue && (x.status === 'CAP_SUBMITTED' || x.status === 'EVIDENCE_SUBMITTED');
+    }).length;
     return n2 || '';
   }
   if (state.role === 'auditee' && view === 'my-findings') {
@@ -1263,6 +1276,12 @@ document.addEventListener('click', function (e) {
 
 document.addEventListener('change', function (e) {
   if (e.target && e.target.id === 'role-select') setRole(e.target.value);
+  if (e.target && e.target.getAttribute && e.target.getAttribute('data-field') === 'checklist-comment') {
+    setChecklistComment(e.target.getAttribute('data-q'), e.target.value);
+  }
+});
+
+document.addEventListener('input', function (e) {
   if (e.target && e.target.getAttribute && e.target.getAttribute('data-field') === 'checklist-comment') {
     setChecklistComment(e.target.getAttribute('data-q'), e.target.value);
   }

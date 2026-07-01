@@ -1,10 +1,23 @@
-# AVIASURVEIL 360 Planning Pack
+# AviaSurveil360 Planning Pack And Frontend Demo
 
-This ZIP contains **Markdown-only planning documents** for a proposed Civil Aviation Authority surveillance, audit, findings, CAP and evidence management product. It intentionally contains no code, no HTML, no CSS, no JS and no database files.
+This repository contains a structured planning pack plus a **frontend-only static
+clickable demo** for a proposed Civil Aviation Authority surveillance, audit,
+findings, CAP, and evidence management product.
+
+The executable demo is `index.html` with `css/`, `js/`, mock data, client-side
+state, and targeted Node smoke tests under `tests/`.
+
+**Demo-only / not production-ready:** there is no backend, database, API, real
+authentication, real authorization enforcement, real file upload, real AI
+service, real regulatory ingestion, real notification service, production audit
+log, or framework migration.
 
 ## Product definition
 
-**AVIASURVEIL 360** is a task-based oversight platform for Civil Aviation Authorities. It helps CAA teams plan audits, run checklists, issue findings, receive corrective action plans from auditees, review evidence, track due dates, close findings and monitor oversight performance.
+**AviaSurveil360** is a task-based oversight platform for Civil Aviation
+Authorities. It helps CAA teams plan audits, run checklists, issue findings,
+receive corrective action plans from auditees, review evidence, track due dates,
+close findings, and monitor oversight performance.
 
 ## Core product thesis
 
@@ -24,6 +37,12 @@ Do not build an EMPIC-like complex enterprise screen first. Build a simple, role
 5. `03_WORKFLOWS/MASTER_WORKFLOW.md`
 6. `05_SCREEN_SPECS/SCREEN_INVENTORY_AND_FORMS.md`
 7. `08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.md`
+8. `DEMO_BUILD_SUMMARY.md`
+9. `plans/index.md`
+
+For the clickable demo, open `index.html` directly in a browser or serve this
+folder with a local static server. See `docs/DEMO_BUILD_SUMMARY.md` for current
+verification status and known demo limitations.
 
 
 ## Source Notes

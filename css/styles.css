@@ -443,7 +443,7 @@ button { font-family: inherit; }
 /* ============================ Audit queue ============================ */
 .queue-summary {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -994,6 +994,24 @@ button { font-family: inherit; }
 .approval-step.current .approval-step__label {
   color: var(--warn);
   font-weight: 650;
+}
+.approval-card--compact .approval-rail {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.approval-card--compact .approval-step {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  text-align: left;
+  gap: 10px;
+  padding: 0;
+}
+.approval-card--compact .approval-step::before { display: none; }
+.approval-card--compact .approval-step__dot { margin: 0; }
+.approval-card--compact .approval-step__label {
+  margin-top: 0;
+  overflow-wrap: break-word;
 }
 .decision-panel {
   display: flex;

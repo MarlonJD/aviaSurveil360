@@ -1,0 +1,144 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+
+const root = path.resolve(__dirname, '..');
+const elements = new Map();
+
+function stubElement(id) {
+  if (!elements.has(id)) {
+    elements.set(id, {
+      id,
+      value: '',
+      innerHTML: '',
+      hidden: false,
+      addEventListener() {},
+      closest() { return null; }
+    });
+  }
+  return elements.get(id);
+}
+
+const context = {
+  console,
+  window: { scrollTo() {} },
+  document: {
+    addEventListener() {},
+    getElementById: stubElement,
+    querySelectorAll() { return []; }
+  },
+  setTimeout,
+  clearTimeout
+};
+vm.createContext(context);
+
+[
+  'js/data.js',
+  'js/helpers.js',
+  'js/approval.js',
+  'js/checklists.js',
+  'js/inspection.js',
+  'js/planning.js',
+  'js/reports.js',
+  'js/views.js',
+  'js/app.js'
+].forEach((file) => {
+  vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
+});
+
+Object.assign(context.state, context.freshState());
+context.state.role = 'inspector';
+context.state.view = 'dashboard';
+context.state.params = {};
+context.render();
+
+const html = elements.get('app-root').innerHTML;
+const inspectorNavLabels = context.NAV.inspector
+  .filter((item) => item.label)
+  .map((item) => item.label)
+  .join(' ');
+
+assert.match(html, /Today’s Workbench/);
+assert.match(html, /Audit Work Queue/);
+assert.match(html, /Inspection Evidence/);
+assert.match(html, /Operators \/ Providers/);
+assert.doesNotMatch(html, /Offline Field/);
+assert.doesNotMatch(html, /Inspection Packages/);
+assert.doesNotMatch(html, /NAMCARS Library/);
+assert.doesNotMatch(html, /Cross-Reference/);
+assert.doesNotMatch(html, /Checklist Builder/);
+assert.doesNotMatch(html, /Search regulation/);
+assert.doesNotMatch(html, /Open cross-reference/);
+assert.doesNotMatch(html, /Preparation pending packages/);
+assert.doesNotMatch(html, /Open assigned audit package/);
+assert.doesNotMatch(html, /data-view="package-builder"/);
+assert.doesNotMatch(html, /data-view="regulatory-library"/);
+assert.doesNotMatch(html, /data-view="checklist-builder"/);
+assert.doesNotMatch(html, /data-view="templates"/);
+assert.doesNotMatch(html, /Overdue Actions/);
+assert.doesNotMatch(html, /Overdue CAPs \/ actions/);
+assert.doesNotMatch(html, /Delayed CAP trend/);
+assert.doesNotMatch(html, /Open overdue/);
+assert.doesNotMatch(html, /data-filter="overdue"/);
+assert.doesNotMatch(html, /Repeat Findings/);
+assert.doesNotMatch(html, /Repeat findings/);
+assert.doesNotMatch(html, /Review repeats/);
+assert.doesNotMatch(html, /Repeated regulation references/);
+assert.doesNotMatch(html, /repeat oversight signals/i);
+assert.doesNotMatch(html, /data-view="cap-effectiveness"/);
+assert.doesNotMatch(inspectorNavLabels, /Inspection Packages/);
+assert.doesNotMatch(inspectorNavLabels, /NAMCARS Library/);
+assert.doesNotMatch(inspectorNavLabels, /Cross-Reference/);
+assert.doesNotMatch(inspectorNavLabels, /Checklist Builder/);
+assert.doesNotMatch(inspectorNavLabels, /Offline Field/);
+assert.doesNotMatch(inspectorNavLabels, /Overdue Actions/);
+assert.doesNotMatch(inspectorNavLabels, /Repeat Findings/);
+assert.equal(context.NAV.inspector.some((item) => item.view === 'package-builder'), false);
+assert.equal(context.NAV.inspector.some((item) => item.view === 'regulatory-library'), false);
+assert.equal(context.NAV.inspector.some((item) => item.view === 'checklist-builder'), false);
+assert.equal(context.NAV.inspector.some((item) => item.view === 'templates'), false);
+assert.equal(context.NAV.inspector.some((item) => item.view === 'cap-effectiveness'), false);
+assert.equal(context.NAV.manager.some((item) => item.view === 'checklist-builder' && item.label === 'Checklist Builder'), true);
+assert.equal(context.NAV.admin.some((item) => item.view === 'regulatory-library' && item.label === 'NAMCARS Library'), true);
+assert.equal(context.NAV.manager.some((item) => item.view === 'cap-effectiveness' && item.label === 'Repeat Findings'), true);
+
+context.state.view = 'regulatory-library';
+context.state.params = {};
+context.render();
+const restrictedRegulatoryHtml = elements.get('app-root').innerHTML;
+assert.match(restrictedRegulatoryHtml, /Today’s Workbench/);
+assert.doesNotMatch(restrictedRegulatoryHtml, /Regulatory Library/);
+assert.doesNotMatch(restrictedRegulatoryHtml, /NAMCARS Library/);
+assert.doesNotMatch(restrictedRegulatoryHtml, /Cross-Reference/);
+
+context.state.view = 'checklist-builder';
+context.state.params = {};
+context.render();
+const restrictedBuilderHtml = elements.get('app-root').innerHTML;
+assert.match(restrictedBuilderHtml, /Today’s Workbench/);
+assert.doesNotMatch(restrictedBuilderHtml, /Checklist Builder/);
+
+context.state.view = 'findings';
+context.state.params = { filter: 'open' };
+context.render();
+const findingsHtml = elements.get('app-root').innerHTML;
+assert.match(findingsHtml, /Open Findings/);
+assert.match(findingsHtml, /SEC-2026-002/);
+assert.match(findingsHtml, /RAMP-2026-005/);
+assert.doesNotMatch(findingsHtml, /AWO-2026-003/);
+assert.doesNotMatch(findingsHtml, /Maintenance task sign-off overdue/);
+assert.doesNotMatch(findingsHtml, /Overdue Findings/);
+assert.doesNotMatch(findingsHtml, /data-filter="overdue"/);
+
+context.state.view = 'offline-field';
+context.render();
+const evidenceHtml = elements.get('app-root').innerHTML;
+const evidenceVisibleText = evidenceHtml.replace(/<[^>]+>/g, ' ');
+assert.match(evidenceHtml, /Inspection Evidence/);
+assert.doesNotMatch(evidenceHtml, /Offline Field Inspection/);
+assert.doesNotMatch(evidenceVisibleText, /Offline|offline|sync/i);
+assert.match(evidenceHtml, /Field Evidence Package/);
+assert.match(evidenceHtml, /Evidence Notes/);
+
+console.log('inspector-nav-smoke: ok');

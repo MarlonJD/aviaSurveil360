@@ -1,0 +1,98 @@
+# AviaSurveil360 Agent Harness Registry
+
+This registry tells agents where to look before editing and where to record
+evidence afterward. It is an inventory, not a new product specification.
+
+## Instruction Surfaces
+
+| Surface | Purpose |
+|---|---|
+| `../../AGENTS.md` | Highest local authority for scope, product rules, planning, verification, git, and demo boundaries. |
+| `../../CLAUDE.md` | Claude-facing project guidance; defer to `AGENTS.md` when conflicts exist. |
+| `index.md` | Canonical harness entrypoint. |
+| `output-contract.md` | Response shape, status labels, evidence wording, and forbidden claims. |
+| `verification-matrix.md` | Local command ladder and risk-based verification. |
+| `entropy-cleanup-checklist.md` | Drift and cleanup queue for future harness maintenance. |
+
+## Product Source Documents
+
+| Folder | Use when |
+|---|---|
+| `../00_RESEARCH_AND_POSITIONING/` | Market context, positioning, and product decisions. |
+| `../01_PRODUCT_PLAN/` | Product vision, MVP scope, roadmap, and module architecture. |
+| `../02_UX_PLAN/` | UX principles, navigation, and role information architecture. |
+| `../03_WORKFLOWS/` | Surveillance, checklist, Finding, CAP, evidence, reminders, and escalation workflows. |
+| `../04_MODULES/` | Module-level fields, states, actions, rules, and acceptance criteria. |
+| `../05_SCREEN_SPECS/` | Screen inventory and form-level expectations. |
+| `../06_DATA_AND_RULES/` | Conceptual data model, statuses, permissions, visibility, and security rules. |
+| `../07_ANALYTICS/` | Oversight Health Index, KPI, and report rules. |
+| `../08_DEMO_AND_BUILD_HANDOFF/` | Demo prompt, acceptance criteria, full-MVP prompt, and applied runbook. |
+| `../09_SCENARIOS/` | Demo scenario and edge-case replay paths. |
+| `../10_REFERENCES/` | Glossary, terminology, and source notes. |
+
+## Plans, Evidence, And Notes
+
+| Surface | Use |
+|---|---|
+| `../plans/index.md` | Active plan status and one next concrete todo per active plan. |
+| `../plans/2026-06-29-agent-harness-readiness-completion-plan.md` | Current harness completion plan and execution prompt. |
+| `../plans/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md` | Historical partial-adaptation record superseded by the readiness completion plan. |
+| `../plans/notes/index.md` | Durable note tracker. |
+| `../DEMO_BUILD_SUMMARY.md` | Current demo evidence, local verification status, and production gaps. |
+| `../DEMO_BUILD_SUMMARY.turkce.md` | Turkish stakeholder companion summary when demo evidence changes. |
+
+## Static Demo Surfaces
+
+| Surface | Purpose |
+|---|---|
+| `../../index.html` | Static demo entrypoint. |
+| `../../css/styles.css` | Demo layout, responsive behavior, and visual treatment. |
+| `../../js/data.js` | Mock data and browser-only demo persistence boundary. |
+| `../../js/helpers.js` | Shared helpers, visibility helpers, and rendering helpers. |
+| `../../js/approval.js` | Shared mock approval-chain primitive. |
+| `../../js/planning.js` | Planning approval and audit-preparation demo logic. |
+| `../../js/checklists.js` | Checklist management demo logic. |
+| `../../js/inspection.js` | Inspection execution and Potential Finding demo logic. |
+| `../../js/reports.js` | Preliminary/final report approval demo logic. |
+| `../../js/views.js` | Static demo screen rendering. |
+| `../../js/app.js` | Role routing, UI actions, mock interactions, and bootstrapping. |
+
+## Local Smoke Tests
+
+There is no `package.json`; run tests directly with `node`.
+
+| Test | Main coverage |
+|---|---|
+| `../../tests/harness-docs-smoke.test.js` | Harness package structure, links, labels, and forbidden readiness claims. |
+| `../../tests/demo-boundary-smoke.test.js` | Auditee isolation, CAP closure boundary, mock evidence filename-only behavior. |
+| `../../tests/approval-smoke.test.js` | Shared approval-chain behavior. |
+| `../../tests/checklist-approval-smoke.test.js` | Checklist approval workflow. |
+| `../../tests/checklist-management-smoke.test.js` | Checklist management behavior. |
+| `../../tests/governance-render-smoke.test.js` | Governance render surfaces. |
+| `../../tests/inspection-execution-smoke.test.js` | Inspection execution and Finding lifecycle behavior. |
+| `../../tests/planning-render-smoke.test.js` | Planning approval rendering. |
+| `../../tests/planning-release-smoke.test.js` | Planning release behavior. |
+| `../../tests/report-approval-smoke.test.js` | Report approval workflow. |
+| `../../tests/audit-work-queue-smoke.test.js` | Inspector work queue behavior. |
+
+## Task-To-Source Routing
+
+| Task type | Read first | Record result in |
+|---|---|---|
+| Harness readiness | `index.md`, completion plan, `../plans/index.md` | Completion plan, plan index, this package. |
+| Status readout | `../plans/index.md`, relevant plan, `../DEMO_BUILD_SUMMARY.md` | Chat only unless repo status is stale. |
+| Product docs | Relevant numbered docs and `../10_REFERENCES/` | Matching English doc and Turkish companion when required. |
+| Prototype behavior | Active plan, relevant workflow/module docs, static demo files | Targeted tests, demo summary when evidence changes. |
+| Role visibility | `../06_DATA_AND_RULES/STATUS_PERMISSION_SECURITY.md`, auditee portal docs | Targeted tests and demo summary if behavior changes. |
+| Finding/CAP/Evidence | Workflow docs and module docs for findings, CAP, evidence | Targeted tests and plan/evidence summary. |
+| UI/visual QA | UX docs, screen specs, active plan | Screenshot/browser evidence and demo summary when accepted. |
+| Plan lifecycle | `../../AGENTS.md`, `../plans/index.md`, target plan | Plan file, index row, note if durable gap exists. |
+
+## Forbidden Production Surfaces
+
+The current repo must not gain backend services, database migrations, API
+servers, real auth, real upload/storage, real AI integrations, real regulatory
+ingestion, notification delivery services, production audit-log infrastructure,
+GitHub Actions, hosted runners, scheduled workflows, remote CI, package-manager
+test scripts, branch changes, commits, pushes, PRs, or GitHub comments unless a
+future user request explicitly asks for that exact action.

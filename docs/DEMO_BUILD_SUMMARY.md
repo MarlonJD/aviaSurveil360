@@ -242,6 +242,90 @@ Today’s Workbench mobile scrollWidth/clientWidth: 390/390
 Service Provider Portal mobile scrollWidth/clientWidth: 390/390
 ```
 
+### CAA Governance browser QA - 2026-06-29
+
+Status: **desktop and mobile browser QA verified locally** for the CAA
+Governance frontend-only demo lane.
+
+The AviaSurveil360 Agent Harness Runbook was applied to the active CAA
+Governance workflow lane. Verification kept the frontend-only demo boundary:
+no backend, database, API, real authentication, real upload, real AI service,
+real regulatory ingestion, real notification service, or production audit-log
+readiness was added or claimed.
+
+Syntax and deterministic smoke checks passed:
+
+```bash
+node --check js/data.js
+node --check js/helpers.js
+node --check js/approval.js
+node --check js/planning.js
+node --check js/checklists.js
+node --check js/inspection.js
+node --check js/reports.js
+node --check js/views.js
+node --check js/app.js
+node tests/approval-smoke.test.js
+node tests/checklist-approval-smoke.test.js
+node tests/checklist-management-smoke.test.js
+node tests/governance-render-smoke.test.js
+node tests/inspection-execution-smoke.test.js
+node tests/planning-render-smoke.test.js
+node tests/planning-release-smoke.test.js
+node tests/report-approval-smoke.test.js
+node tests/audit-work-queue-smoke.test.js
+node tests/demo-boundary-smoke.test.js
+```
+
+Desktop browser click-through verified these governance paths locally:
+
+- Department Manager, General Manager, Finance Review, and Executive Director
+  planning approval chain through final `Approved` state.
+- General Manager checklist approval for `CL-FOPS-v2.4`.
+- Lead Inspector -> Department Manager -> General Manager -> Executive
+  Director report approval chain through `Final Report Locked`.
+- Inspector `Audit Work Queue` and `Offline Field Inspection` demo boundary.
+- Auditee portal isolation: no visible `Internal CAA Note` or `Inspector
+  Workload`.
+- Admin `Question Bank` with configured references and expected evidence.
+
+Local screenshot evidence was captured under
+`/private/tmp/aviasurveil360-governance-qa/`:
+
+- `01-login-desktop.png`
+- `02-planning-approved-desktop.png`
+- `03-planning-ready-desktop.png`
+- `04-checklist-approved-desktop.png`
+- `05-final-report-locked-desktop.png`
+- `06-inspector-work-queue-desktop.png`
+- `07-offline-field-desktop.png`
+- `08-auditee-portal-desktop.png`
+- `09-admin-question-bank-desktop.png`
+- `10-mobile-planning-approval-verified.png`
+
+Mobile Planning Approval rerun:
+
+- `10-mobile-planning-approval.png` is **not accepted** as Planning Approval
+  visual evidence. It captured the Manager Dashboard while a weak assertion
+  matched hidden navigation text.
+- The approved rerun captured
+  `/private/tmp/aviasurveil360-governance-qa/10-mobile-planning-approval-verified.png`
+  through `http://127.0.0.1:4360/` at a 390px mobile viewport.
+- The accepted evidence used visible content, not hidden navigation text:
+  `Planning Approval — PLAN-2026-Q3-OPS` was visible in the viewport, the
+  `Q3 Flight Operations Surveillance Plan` dossier was visible, console
+  warnings/errors were empty, and mobile scrollWidth/clientWidth was `390/390`.
+- The former blocker note is closed in
+  `docs/plans/notes/2026-06-29-governance-browser-qa-mobile-blocker.md`.
+
+Visual QA polish follow-up completed: the report approval progress card now uses
+the compact approval rail variant in the sidebar, so longer governance labels
+such as `Department Manager` remain readable without changing the approval
+workflow. Local headless Chrome QA with a temporary browser profile verified the
+report approval page, compact rail class, `Department Manager` label at
+`247px × 17px`, and no desktop horizontal overflow (`1280/1280`). Screenshot:
+`/private/tmp/aviasurveil360-report-approval-compact.png`.
+
 ### Planning panel simplification - 2026-06-30
 
 Status: **frontend-only Planning panel update verified locally**.
@@ -283,4 +367,5 @@ Work Queue evidence screens.
 - AI suggestions are drafts only and cannot publish official outputs.
 - Offline outbox is simulated and is not a mobile/offline-ready implementation.
 - Audit log is demo state, not immutable audit evidence.
-- README/MANIFEST still describe the older Markdown-only package and should be updated in a separate package-truth cleanup if this runnable prototype is handed off externally.
+- README/MANIFEST now describe the current planning pack plus frontend-only
+  static clickable demo shape; production-readiness is still not claimed.

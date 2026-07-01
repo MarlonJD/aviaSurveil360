@@ -18,21 +18,31 @@ context.state.params = {};
 
 let html = context.viewCalendar();
 assert.match(html, /Audit Work Queue/);
-assert.match(html, /Audits and inspections in one due-date queue/);
+assert.match(html, /Assigned audits in a simple queue/);
 assert.doesNotMatch(html, /January 2026/);
-assert.match(html, /Your turn/);
-assert.match(html, /Waiting on Department Manager/);
+assert.match(html, /data-filter="active"/);
+assert.match(html, /data-filter="completed"/);
+assert.match(html, /Active audits/);
+assert.match(html, /Completed/);
+assert.doesNotMatch(html, /data-filter="mine"/);
+assert.doesNotMatch(html, /data-filter="waiting"/);
+assert.doesNotMatch(html, /data-filter="overdue"/);
+assert.doesNotMatch(html, /data-filter="all"/);
+assert.doesNotMatch(html, /\+ New Audit/);
 
 const overdueIndex = html.indexOf('AUD-2026-005');
 const todayIndex = html.indexOf('AUD-2026-001');
-const futureIndex = html.indexOf('AUD-2026-006');
-assert.ok(overdueIndex > -1 && todayIndex > -1 && futureIndex > -1, 'active audit rows render');
+assert.ok(overdueIndex > -1 && todayIndex > -1, 'assigned active audit rows render');
+assert.doesNotMatch(html, /AUD-2026-006/);
+assert.doesNotMatch(html, /AUD-2026-007/);
+assert.doesNotMatch(html, /AUD-2026-008/);
 assert.ok(overdueIndex < todayIndex, 'overdue audit is sorted before today');
-assert.ok(todayIndex < futureIndex, 'today audit is sorted before future audits');
+assert.match(html, /Continue checklist/);
+assert.match(html, /Start checklist/);
 
 context.state.params = { auditId: 'AUD-2026-001' };
 html = context.viewAuditDetail();
-assert.match(html, /Your turn:/);
+assert.match(html, /Next action:/);
 assert.match(html, /Start checklist/);
 assert.match(html, /Current owner/);
 

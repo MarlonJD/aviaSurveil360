@@ -854,42 +854,38 @@ function viewOfflineFieldInspection() {
   var pkg = state.fieldPackage;
   var outbox = offlineOutboxItems();
   var waiting = waitingOutboxItems().length;
-  var statusBadge = state.offline && state.offline.simulated
-    ? demoBadge('Offline simulated', 'warn')
-    : demoBadge('Simulated online', 'ok');
+  var statusBadge = demoBadge('Evidence capture demo', 'neutral');
   var outboxRows = outbox.length ? outbox.map(function (item) {
     return '<div class="outbox-item"><div><b>' + esc(item.id) + '</b> · ' + esc(item.payloadSummary) +
-      '<div class="muted small">' + esc(item.message) + '</div><div class="muted small">Created ' + esc(item.createdAt) +
-      (item.syncedAt ? ' · synced ' + esc(item.syncedAt) : '') + '</div></div>' + v2Badge(item.status) + '</div>';
-  }).join('') : '<div class="empty">No simulated offline outbox items yet.</div>';
+      '<div class="muted small">Demo evidence note captured for this inspection.</div><div class="muted small">Created ' + esc(item.createdAt) +
+      '</div></div>' + demoBadge('Saved note', 'ok') + '</div>';
+  }).join('') : '<div class="empty">No evidence notes yet.</div>';
 
-  return pageHead('Offline Field Inspection', 'Show what can be collected offline and what still needs sync.',
-    '<button class="btn ' + (state.offline && state.offline.simulated ? 'btn--danger' : 'btn--primary') + '" data-act="toggle-offline">Simulate offline</button>') +
+  return pageHead('Inspection Evidence', 'Review mock field evidence captured during an inspection.',
+    '<button class="btn btn--primary" data-act="offline-field-action">Save mock evidence note</button>') +
     guardrailStrip([
-      { label: 'Offline simulated', tone: 'warn' },
       { label: 'Demo data' },
-      { label: 'No production sync', tone: 'neutral' },
+      { label: 'Filename placeholders only', tone: 'neutral' },
       { label: DEMO_PERSISTENCE_CONFIG.label }
     ]) +
     '<div class="offline-status mb-16">' + statusBadge +
-      '<div><b>' + esc(state.offline && state.offline.lastMessage ? state.offline.lastMessage : 'Use Simulate offline to queue a mock field action.') + '</b>' +
-      '<p>Offline behavior is a stakeholder illustration only. It is not an encrypted mobile store or evidence chain-of-custody.</p></div></div>' +
+      '<div><b>Use Save mock evidence note to add a demo evidence entry.</b>' +
+      '<p>This is a stakeholder illustration only. It is not a production evidence repository or chain-of-custody record.</p></div></div>' +
     '<div class="grid grid--main">' +
       '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card"><div class="card__head"><h3>Checked-out Field Package</h3><span class="sub">offline simulated</span></div><div class="card__body">' +
+        '<div class="card"><div class="card__head"><h3>Field Evidence Package</h3><span class="sub">demo package</span></div><div class="card__body">' +
           '<div class="metaline mb-16">' + metaItem('Package', pkg.id) + metaItem('Audit', pkg.auditId) + metaItem('Checked out by', pkg.checkedOutBy) +
           metaItem('Status', humanStatus(pkg.status)) + '</div>' +
           '<div class="chip-list">' + pkg.localItems.map(function (i) { return '<span class="tag-pill">' + esc(i) + '</span>'; }).join('') + '</div>' +
-          '<div class="divider"></div><button class="btn btn--primary" data-act="offline-field-action">Save mock field evidence action</button>' +
+          '<div class="divider"></div><button class="btn btn--primary" data-act="offline-field-action">Save mock evidence note</button>' +
         '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Offline Outbox</h3><span class="sub">' + waiting + ' waiting for connection</span><div class="spacer"></div>' +
-          '<button class="btn btn--sm" data-act="sync-outbox">Mark waiting items synced</button></div><div class="card__body">' + outboxRows + '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Evidence Notes</h3><span class="sub">' + outbox.length + ' saved in demo</span></div><div class="card__body">' + outboxRows + '</div></div>' +
       '</div>' +
       '<div class="v2-panel"><h3>Field Capture Placeholders</h3>' +
         compactMetric('Photos/videos/audio', 'Filename placeholders only', 'neutral') +
         compactMetric('Signature', 'Placeholder only', 'neutral') +
-        compactMetric('Conflict warning', 'Example state only', 'warn') +
-        compactMetric('Attachment queue', waiting + ' waiting', waiting ? 'warn' : 'ok') +
+        compactMetric('Finding link', 'Example state only', 'warn') +
+        compactMetric('Attachments', waiting + ' pending', waiting ? 'warn' : 'ok') +
       '</div>' +
     '</div>';
 }
@@ -1145,34 +1141,26 @@ function viewInspectorDashboard() {
   var todays = state.audits.filter(function (a) { return a.date === DEMO_TODAY; });
   var weekEnd = '2026-06-22';
   var upcomingWeek = state.audits.filter(function (a) { return a.date >= DEMO_TODAY && a.date <= weekEnd; });
-  var plannedLater = state.audits.filter(function (a) { return a.status === 'Planned' || a.status === 'Scheduled'; });
-  var capReview = state.findings.filter(function (f) { return f.status === 'CAP_SUBMITTED'; });
-  var evReview = state.findings.filter(function (f) { return f.status === 'EVIDENCE_SUBMITTED'; });
-  var open = state.findings.filter(function (f) { return f.status !== 'CLOSED'; });
-  var overdue = open.filter(function (f) { return dueInfo(f).overdue; });
-  var repeatProfiles = state.riskProfiles.filter(function (r) { return r.drivers.join(' ').toLowerCase().indexOf('repeat') > -1; });
+  var actionableFindings = inspectorActionableFindings();
+  var capReview = actionableFindings.filter(function (f) { return f.status === 'CAP_SUBMITTED'; });
+  var evReview = actionableFindings.filter(function (f) { return f.status === 'EVIDENCE_SUBMITTED'; });
   var highRisk = state.riskProfiles.slice().sort(function (a, b) { return b.score - a.score; })[0];
   var reportAudits = state.audits.filter(function (a) { return a.status === 'Report Issued' || a.status === 'Closed'; });
 
   var attention = [
-    workbenchItem(overdue.length ? 'danger' : 'ok', 'Overdue CAPs / actions', overdue.length + ' open item(s) past Due Date', 'Open overdue', 'findings', null, 'overdue'),
     workbenchItem(highRisk && highRisk.score > 75 ? 'warn' : 'info', 'High-risk operator', highRisk ? orgName(highRisk.orgId) + ' · mock risk score ' + highRisk.score : 'No high-risk operator', 'Open risk profile', 'org-risk', highRisk ? highRisk.orgId : 'ORG-XYZ'),
     workbenchItem(todays.length ? 'info' : 'neutral', 'Audit work queue', todays.length + ' scheduled today; ' + upcomingWeek.length + ' this week', 'Open queue', 'calendar'),
-    workbenchItem(repeatProfiles.length ? 'warn' : 'ok', 'Repeat findings', repeatProfiles.length + ' organization profile(s) with repeat signals', 'Review repeats', 'cap-effectiveness'),
     workbenchItem(evReview.length ? 'warn' : 'ok', 'Evidence waiting review', evReview.length + ' file(s) waiting for CAA decision', 'Review evidence', 'findings', null, 'evreview')
   ].join('');
 
   var upcoming = [
     workbenchItem(upcomingWeek.length ? 'info' : 'neutral', 'This week’s inspections', upcomingWeek.length + ' inspection(s) scheduled through ' + fmtDate(weekEnd), 'Open queue', 'calendar'),
-    workbenchItem('info', 'Preparation pending packages', 'Airline XYZ Flight Operations package is draft-ready', 'Open package', 'package-builder'),
     workbenchItem(reportAudits.length ? 'neutral' : 'ok', 'Reports to write / review', reportAudits.length + ' report preview(s) available', 'Open reports', 'reports'),
     workbenchItem(capReview.length ? 'warn' : 'ok', 'CAP review queue', capReview.length + ' submitted CAP(s) waiting review', 'Review CAPs', 'findings', null, 'capreview')
   ].join('');
 
   var riskSignals = [
     workbenchItem('warn', 'Risk score rising operators', highRisk ? orgName(highRisk.orgId) + ' is the top mock risk profile' : 'No rising operator signal', 'Inspect signal', 'safety-intelligence'),
-    workbenchItem('warn', 'Repeated regulation references', 'Crew training record evidence appears in repeat oversight signals', 'Open cross-reference', 'regulatory-library'),
-    workbenchItem(overdue.length ? 'danger' : 'ok', 'Delayed CAP trend', overdue.length + ' overdue item(s) in current demo state', 'Open overdue', 'findings', null, 'overdue'),
     workbenchItem('info', 'Operational change alert', 'Airline XYZ fleet/management change placeholder in risk dossier', 'Open dossier', 'org-risk', 'ORG-XYZ')
   ].join('');
 
@@ -1194,16 +1182,14 @@ function viewInspectorDashboard() {
       '</div>' +
     '</div>' +
     '<div class="grid grid--2 mb-16">' +
-      '<div class="card"><div class="card__head"><h3>A. Attention Needed</h3><span class="sub">overdue, high-risk, repeat, evidence</span></div><div class="card__body workbench-list">' + attention + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>A. Attention Needed</h3><span class="sub">high-risk, evidence</span></div><div class="card__body workbench-list">' + attention + '</div></div>' +
       '<div class="card"><div class="card__head"><h3>B. My Upcoming Work</h3><span class="sub">this week, prep, reports, CAP review</span></div><div class="card__body workbench-list">' + upcoming + '</div></div>' +
     '</div>' +
     '<div class="grid grid--main">' +
-      '<div class="card"><div class="card__head"><h3>C. Risk Signals</h3><span class="sub">operator score, repeat regulation, CAP trend, operational change</span></div><div class="card__body workbench-list">' + riskSignals + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>C. Risk Signals</h3><span class="sub">operator score, CAP trend, operational change</span></div><div class="card__body workbench-list">' + riskSignals + '</div></div>' +
       '<div class="card"><div class="card__head"><h3>D. Quick Actions</h3></div><div class="card__body quick-actions">' +
         '<button class="btn btn--primary btn--block" data-act="new-audit">New inspection</button>' +
-        quickAction('Open assigned audit package', 'package-builder') +
         quickAction('Review CAP', 'findings', null, 'capreview') +
-        quickAction('Search regulation', 'regulatory-library') +
         quickAction('Generate report', 'reports') +
       '</div></div>' +
     '</div>';
@@ -1240,13 +1226,10 @@ function viewAuditeeMyFindings() {
 
 /* =========================== Audit Work Queue =========================== */
 var AUDIT_FILTER_LABELS = {
-  all: 'All Audits',
-  mine: 'My Turn',
-  waiting: 'Waiting on Others',
-  overdue: 'Overdue',
   active: 'Active',
   completed: 'Completed'
 };
+var AUDIT_QUEUE_FILTERS = ['active', 'completed'];
 
 function sortedAuditsForQueue(list) {
   return list.slice().sort(function (a, b) {
@@ -1263,15 +1246,23 @@ function sortedAuditsForQueue(list) {
   });
 }
 
-function filterAudits(filter) {
+function auditsForQueueScope() {
   var audits = state.audits.slice();
+  if (state.role !== 'inspector') return audits;
+  return audits.filter(function (a) {
+    if (!auditAssignedToCurrentUser(a)) return false;
+    if (isClosedAudit(a)) return true;
+    var ownerRole = auditStatusMeta(a).ownerRole;
+    return ownerRole === 'inspector' || ownerRole === 'leadInspector';
+  });
+}
+
+function filterAudits(filter) {
+  var audits = auditsForQueueScope();
   switch (filter) {
-    case 'mine': return audits.filter(function (a) { return auditTurnInfo(a).label === 'Your turn'; });
-    case 'waiting': return audits.filter(function (a) { return auditTurnInfo(a).label.indexOf('Waiting on ') === 0; });
-    case 'overdue': return audits.filter(function (a) { return auditDueInfo(a).overdue; });
-    case 'active': return audits.filter(function (a) { return !isClosedAudit(a); });
     case 'completed': return audits.filter(isClosedAudit);
-    default: return audits;
+    case 'active':
+    default: return audits.filter(function (a) { return !isClosedAudit(a); });
   }
 }
 
@@ -1279,7 +1270,6 @@ function auditRow(a) {
   var d = auditDueInfo(a);
   var dueText = isClosedAudit(a) ? a.status + ' · ' + fmtDate(a.date) : fmtDate(a.date) + ' · ' + d.label;
   var dueCls = d.overdue ? 'style="color:var(--danger);font-weight:600"' : (d.dueSoon ? 'style="color:var(--warn);font-weight:600"' : '');
-  var turn = auditTurnInfo(a);
   var pa = primaryActionForAudit(a);
   var actionView = pa.view ? ' data-view="' + esc(pa.view) + '"' : '';
   return '' +
@@ -1294,10 +1284,8 @@ function auditRow(a) {
           '<span ' + dueCls + '><b>Due Date:</b> ' + esc(dueText) + '</span>' +
           '<span><b>Lead:</b> ' + esc(a.lead) + '</span>' +
         '</div>' +
-        '<div class="audit-row__turn-note">' + esc(turn.detail) + '</div>' +
       '</div>' +
       '<div class="list__side">' +
-        '<span class="turn-badge is-' + esc(turn.tone) + '">' + esc(turn.label) + '</span>' +
         auditStatusBadge(a) +
         '<button class="' + pa.cls + ' btn--sm" data-act="' + esc(pa.action) + '"' + actionView + ' data-id="' + esc(a.id) + '">' + esc(pa.label) + '</button>' +
       '</div>' +
@@ -1313,36 +1301,33 @@ function auditNextActionBar(a) {
     : (turn.tone === 'ok' ? 'background:var(--ok-bg);border-color:#bfe6d0' : '');
   return '<div class="nextbar" style="' + toneStyle + '">' +
     '<div class="nextbar__icon">-&gt;</div>' +
-    '<div class="nextbar__txt"><b>' + esc(turn.label) + ':</b> ' + esc(auditStatusMeta(a).next) +
-    ' &nbsp;·&nbsp; <b>Owner:</b> ' + esc(auditOwnerLabel(a)) +
-    '<div class="small muted">' + esc(turn.detail) + '</div></div>' +
+    '<div class="nextbar__txt"><b>Next action:</b> ' + esc(auditStatusMeta(a).next) +
+    ' &nbsp;·&nbsp; <b>Current owner:</b> ' + esc(auditOwnerLabel(a)) + '</div>' +
     '<button class="' + pa.cls + '" data-act="' + esc(pa.action) + '"' + actionView + ' data-id="' + esc(a.id) + '">' + esc(pa.label) + '</button>' +
   '</div>';
 }
 
 function viewCalendar() {
-  var filter = state.params.filter || selectedFilter('calendar', 'active');
+  var requestedFilter = state.params.filter || selectedFilter('calendar', 'active');
+  var filter = AUDIT_QUEUE_FILTERS.indexOf(requestedFilter) > -1 ? requestedFilter : 'active';
+  state.params.filter = filter;
+  if (state.selectedFilters) state.selectedFilters.calendar = filter;
+  var scopedAudits = auditsForQueueScope();
   var list = sortedAuditsForQueue(filterAudits(filter));
-  var active = state.audits.filter(function (a) { return !isClosedAudit(a); });
-  var myTurn = state.audits.filter(function (a) { return auditTurnInfo(a).label === 'Your turn'; });
-  var waiting = state.audits.filter(function (a) { return auditTurnInfo(a).label.indexOf('Waiting on ') === 0; });
-  var overdue = state.audits.filter(function (a) { return auditDueInfo(a).overdue; });
-  var completed = state.audits.filter(isClosedAudit);
-  var chips = ['active', 'mine', 'waiting', 'overdue', 'completed', 'all'].map(function (key) {
+  var active = scopedAudits.filter(function (a) { return !isClosedAudit(a); });
+  var completed = scopedAudits.filter(isClosedAudit);
+  var chips = AUDIT_QUEUE_FILTERS.map(function (key) {
     return '<button class="btn btn--sm' + (filter === key ? ' btn--primary' : '') + '" data-act="nav" data-view="calendar" data-filter="' + key + '">' +
       esc(AUDIT_FILTER_LABELS[key]) + '</button>';
   }).join(' ');
   var actions = chips;
-  if (state.role === 'manager' || state.role === 'inspector') {
+  if (state.role === 'manager') {
     actions += ' <button class="btn btn--primary btn--sm" data-act="new-audit">+ New Audit</button>';
   }
-  var rows = list.length ? list.map(auditRow).join('') : '<div class="empty">No audits match this filter.</div>';
-  return pageHead('Audit Work Queue', 'Audits and inspections in one due-date queue. The top signal shows whether action is yours or waiting on someone else.', actions) +
+  var rows = list.length ? list.map(auditRow).join('') : '<div class="empty">No assigned audits match this filter.</div>';
+  return pageHead('Audit Work Queue', 'Assigned audits in a simple queue. Use Active for open work and Completed for finished audits.', actions) +
     '<div class="queue-summary mb-16">' +
       compactMetric('Active audits', String(active.length), active.length ? 'info' : 'neutral') +
-      compactMetric('Your turn', String(myTurn.length), myTurn.length ? 'warn' : 'ok') +
-      compactMetric('Waiting on others', String(waiting.length), waiting.length ? 'neutral' : 'ok') +
-      compactMetric('Overdue', String(overdue.length), overdue.length ? 'danger' : 'ok') +
       compactMetric('Completed', String(completed.length), 'ok') +
     '</div>' +
     '<div class="card"><div class="card__head"><h3>' + esc(AUDIT_FILTER_LABELS[filter]) + '</h3>' +
@@ -1420,6 +1405,12 @@ function viewChecklistRunner() {
       return '<button class="answer ' + (sel === val ? selCls : '') + '" data-act="answer" data-q="' + it.id + '" data-val="' + val + '">' + esc(label) + '</button>';
     }
     var flagged = sel === 'noncompliant' || sel === 'observation';
+    var commentRequired = checklistResultRequiresComment(sel);
+    var commentHtml = '<div class="form-row mt-12">' +
+      '<label>Inspector comment' + (commentRequired ? ' <span class="req">*</span>' : '') + '</label>' +
+      '<textarea data-field="checklist-comment" data-q="' + esc(it.id) + '" placeholder="' +
+        (commentRequired ? 'Required for Non-Compliant or Observation.' : 'Optional note for the audit report.') + '">' +
+        esc(ans.comment || '') + '</textarea></div>';
     var noteHtml = '';
     if (flagged) {
       if (ans.findingId) {
@@ -1434,10 +1425,9 @@ function viewChecklistRunner() {
         var fileList = ans.evidenceFiles && ans.evidenceFiles.length
           ? '<div class="filechip"><div class="filechip__icon">PDF</div><div style="flex:1"><div class="filechip__name">' + esc(ans.evidenceFiles.join(', ')) + '</div><div class="filechip__meta">selected (mock filename only)</div></div></div>'
           : '<div class="small muted mt-12">No mock evidence filename selected.</div>';
-        noteHtml = '<div class="cl-finding-note"><span>⚑</span><div style="flex:1">Marked <b>' + esc(CHECKLIST_RESULTS[sel]) + '</b>. Add the required comment before creating a Potential Finding.' +
-          '<div class="form-row mt-12"><label>Inspector comment <span class="req">*</span></label>' +
-          '<textarea data-field="checklist-comment" data-q="' + esc(it.id) + '" placeholder="Required for Non-Compliant or Observation.">' + esc(ans.comment || '') + '</textarea></div>' +
-          fileList + '<div class="row-actions mt-12">' +
+        var evidenceFormatHelp = '<div class="small muted mt-12"><b>Accepted evidence examples:</b> report/document (PDF, DOCX), image/photo (JPG, PNG), audio recording (MP3, M4A), spreadsheet/data (XLSX, CSV). Demo only: select a filename; no real upload occurs.</div>';
+        noteHtml = '<div class="cl-finding-note"><span>⚑</span><div style="flex:1">Marked <b>' + esc(CHECKLIST_RESULTS[sel]) + '</b>. Add the required comment above before creating a Potential Finding.' +
+          evidenceFormatHelp + fileList + '<div class="row-actions mt-12">' +
           '<button class="btn btn--sm" data-act="mock-checklist-evidence" data-q="' + esc(it.id) + '">Select mock evidence filename</button>' +
           '<button class="btn btn--danger btn--sm" data-act="create-potential" data-q="' + esc(it.id) + '" data-id="' + a.id + '">Create Potential Finding</button></div>' +
           '</div></div>';
@@ -1460,7 +1450,7 @@ function viewChecklistRunner() {
           aBtn('noncompliant', 'Non-Compliant', 'sel-noncompliant') +
           aBtn('observation', 'Observation', 'sel-observation') +
           aBtn('na', 'Not Applicable', 'sel-na') +
-        '</div>' + noteHtml +
+        '</div>' + commentHtml + noteHtml +
       '</div>' +
     '</div>';
   }).join('');
@@ -1629,7 +1619,7 @@ function viewAuditReportsApproval() {
         '<div class="card"><div class="card__head"><h3>Final Report Signature</h3></div><div class="card__body">' + signature + '</div></div>' +
       '</div>' +
       '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card"><div class="card__head"><h3>Approval Progress</h3></div><div class="card__body">' + approvalProgressHtml(report) + '</div></div>' +
+        '<div class="card approval-card--compact"><div class="card__head"><h3>Approval Progress</h3></div><div class="card__body">' + approvalProgressHtml(report) + '</div></div>' +
         '<div class="card"><div class="card__head"><h3>Decision Panel</h3></div><div class="card__body">' + reportDecisionPanelHtml(report) + '</div></div>' +
         '<div class="card"><div class="card__head"><h3>Approval History</h3></div><div class="card__body">' + approvalHistoryHtml(report) + '</div></div>' +
       '</div>' +
@@ -1776,8 +1766,19 @@ var FILTER_LABELS = {
   closed: 'Closed Findings', capreview: 'CAPs Waiting Review', evreview: 'Evidence Waiting Review', duesoon: 'Findings Due Soon'
 };
 
+function inspectorActionableFindings() {
+  return visibleFindings().filter(function (finding) {
+    return !dueInfo(finding).overdue;
+  });
+}
+
+function findingsForCurrentRoleList() {
+  if (state.role === 'inspector') return inspectorActionableFindings();
+  return visibleFindings();
+}
+
 function filterFindings(filter) {
-  var f = visibleFindings();
+  var f = findingsForCurrentRoleList();
   switch (filter) {
     case 'open': return f.filter(function (x) { return x.status !== 'CLOSED'; });
     case 'overdue': return f.filter(function (x) { return dueInfo(x).overdue; });
@@ -1792,8 +1793,12 @@ function filterFindings(filter) {
 
 function viewFindings() {
   var filter = state.params.filter || 'all';
+  var chipKeys = state.role === 'inspector'
+    ? ['all', 'open', 'critical', 'closed']
+    : ['all', 'open', 'overdue', 'critical', 'closed'];
+  if (chipKeys.indexOf(filter) === -1) filter = 'open';
   var list = filterFindings(filter);
-  var chips = ['all', 'open', 'overdue', 'critical', 'closed'].map(function (key) {
+  var chips = chipKeys.map(function (key) {
     return '<button class="btn btn--sm' + (filter === key ? ' btn--primary' : '') + '" data-act="nav" data-view="findings" data-filter="' + key + '">' +
       esc(FILTER_LABELS[key]) + '</button>';
   }).join(' ');

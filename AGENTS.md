@@ -56,6 +56,10 @@ Start with these files before product, implementation, or prototype work:
 For Turkish phrasing, stakeholder summaries, or local-language handoffs, also
 read the matching `.turkce.md` files.
 
+For agent harness routing, output contracts, registry, verification matrix, and
+entropy cleanup, use `docs/agent-harness/index.md` as the canonical harness
+entrypoint.
+
 ## Product Rules
 
 - AviaSurveil360 is a focused CAA surveillance and oversight workbench, not a

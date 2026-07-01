@@ -1,74 +1,122 @@
-# Markdown File Manifest
+# AviaSurveil360 Package Manifest
 
-This package intentionally contains Markdown files only.
+This repository is a planning pack plus a **frontend-only static clickable
+demo**. It is not a production system.
 
-- `00_RESEARCH_AND_POSITIONING/MARKET_RESEARCH_SUMMARY.md`
-- `00_RESEARCH_AND_POSITIONING/MARKET_RESEARCH_SUMMARY.turkce.md`
-- `00_RESEARCH_AND_POSITIONING/PRODUCT_POSITIONING_AND_DECISIONS.md`
-- `00_RESEARCH_AND_POSITIONING/PRODUCT_POSITIONING_AND_DECISIONS.turkce.md`
-- `01_PRODUCT_PLAN/MODULE_ARCHITECTURE.md`
-- `01_PRODUCT_PLAN/MODULE_ARCHITECTURE.turkce.md`
-- `01_PRODUCT_PLAN/MVP_SCOPE_AND_ROADMAP.md`
-- `01_PRODUCT_PLAN/MVP_SCOPE_AND_ROADMAP.turkce.md`
-- `01_PRODUCT_PLAN/PRODUCT_VISION.md`
-- `01_PRODUCT_PLAN/PRODUCT_VISION.turkce.md`
-- `02_UX_PLAN/NAVIGATION_AND_INFORMATION_ARCHITECTURE.md`
-- `02_UX_PLAN/NAVIGATION_AND_INFORMATION_ARCHITECTURE.turkce.md`
-- `02_UX_PLAN/UX_PRINCIPLES.md`
-- `02_UX_PLAN/UX_PRINCIPLES.turkce.md`
-- `03_WORKFLOWS/AUDIT_CHECKLIST_WORKFLOW.md`
-- `03_WORKFLOWS/AUDIT_CHECKLIST_WORKFLOW.turkce.md`
-- `03_WORKFLOWS/FINDING_CAP_EVIDENCE_WORKFLOW.md`
-- `03_WORKFLOWS/FINDING_CAP_EVIDENCE_WORKFLOW.turkce.md`
-- `03_WORKFLOWS/MASTER_WORKFLOW.md`
-- `03_WORKFLOWS/MASTER_WORKFLOW.turkce.md`
-- `03_WORKFLOWS/REMINDERS_AND_ESCALATION_WORKFLOW.md`
-- `03_WORKFLOWS/REMINDERS_AND_ESCALATION_WORKFLOW.turkce.md`
-- `03_WORKFLOWS/SURVEILLANCE_PLANNING_WORKFLOW.md`
-- `03_WORKFLOWS/SURVEILLANCE_PLANNING_WORKFLOW.turkce.md`
-- `04_MODULES/ADMIN_CONFIGURATION.md`
-- `04_MODULES/ADMIN_CONFIGURATION.turkce.md`
-- `04_MODULES/AUDITEE_PORTAL.md`
-- `04_MODULES/AUDITEE_PORTAL.turkce.md`
-- `04_MODULES/AUDIT_PLANNING.md`
-- `04_MODULES/AUDIT_PLANNING.turkce.md`
-- `04_MODULES/CAP_MANAGEMENT.md`
-- `04_MODULES/CAP_MANAGEMENT.turkce.md`
-- `04_MODULES/CHECKLIST_BUILDER_AND_RUNNER.md`
-- `04_MODULES/CHECKLIST_BUILDER_AND_RUNNER.turkce.md`
-- `04_MODULES/DASHBOARDS_AND_REPORTS.md`
-- `04_MODULES/DASHBOARDS_AND_REPORTS.turkce.md`
-- `04_MODULES/EVIDENCE_REPOSITORY.md`
-- `04_MODULES/EVIDENCE_REPOSITORY.turkce.md`
-- `04_MODULES/FINDINGS_MANAGEMENT.md`
-- `04_MODULES/FINDINGS_MANAGEMENT.turkce.md`
-- `04_MODULES/NOTIFICATIONS_AND_REMINDERS.md`
-- `04_MODULES/NOTIFICATIONS_AND_REMINDERS.turkce.md`
-- `04_MODULES/ORGANIZATION_REGISTRY.md`
-- `04_MODULES/ORGANIZATION_REGISTRY.turkce.md`
-- `05_SCREEN_SPECS/SCREEN_INVENTORY_AND_FORMS.md`
-- `05_SCREEN_SPECS/SCREEN_INVENTORY_AND_FORMS.turkce.md`
-- `06_DATA_AND_RULES/CONCEPTUAL_DATA_MODEL.md`
-- `06_DATA_AND_RULES/CONCEPTUAL_DATA_MODEL.turkce.md`
-- `06_DATA_AND_RULES/STATUS_PERMISSION_SECURITY.md`
-- `06_DATA_AND_RULES/STATUS_PERMISSION_SECURITY.turkce.md`
-- `07_ANALYTICS/OVERSIGHT_HEALTH_INDEX_AND_KPIS.md`
-- `07_ANALYTICS/OVERSIGHT_HEALTH_INDEX_AND_KPIS.turkce.md`
-- `07_ANALYTICS/REPORT_CATALOG.md`
-- `07_ANALYTICS/REPORT_CATALOG.turkce.md`
-- `08_DEMO_AND_BUILD_HANDOFF/ACCEPTANCE_CRITERIA_AND_FEEDBACK.md`
-- `08_DEMO_AND_BUILD_HANDOFF/ACCEPTANCE_CRITERIA_AND_FEEDBACK.turkce.md`
-- `08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.md`
-- `08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.turkce.md`
-- `08_DEMO_AND_BUILD_HANDOFF/FULL_MVP_BUILD_PROMPT_LATER.md`
-- `08_DEMO_AND_BUILD_HANDOFF/FULL_MVP_BUILD_PROMPT_LATER.turkce.md`
-- `09_SCENARIOS/DEMO_SCENARIO_OPERATOR_AUDIT.md`
-- `09_SCENARIOS/DEMO_SCENARIO_OPERATOR_AUDIT.turkce.md`
-- `09_SCENARIOS/OTHER_DOMAIN_SCENARIOS_AND_EDGE_CASES.md`
-- `09_SCENARIOS/OTHER_DOMAIN_SCENARIOS_AND_EDGE_CASES.turkce.md`
-- `10_REFERENCES/GLOSSARY_AND_SOURCE_NOTES.md`
-- `10_REFERENCES/GLOSSARY_AND_SOURCE_NOTES.turkce.md`
-- `docs/plans/2026-06-30-planning-panel-simplification-plan.md`
+Demo boundary: no backend, database, API, real authentication, real
+authorization enforcement, real file upload/storage, real AI service, real
+regulatory ingestion, real notification service, production audit log, or
+framework migration is included.
+
+## Root Files
+
+- `AGENTS.md` — repo-local agent instructions and source-of-truth routing.
+- `CLAUDE.md` — Claude-facing project guidance.
+- `README.md` — English package overview.
+- `README.turkce.md` — Turkish package overview.
+- `MANIFEST.md` — this package inventory.
+- `index.html` — frontend-only static clickable demo entry point.
+
+## Static Prototype
+
+- `css/styles.css` — demo styling and responsive behavior.
+- `js/data.js` — mock data, status maps, and browser-only demo persistence
+  boundary.
+- `js/helpers.js` — shared helpers, role visibility helpers, status helpers,
+  demo notifications, and rendering helpers.
+- `js/approval.js` — shared mock approval-chain primitive.
+- `js/planning.js` — planning approval and audit-preparation demo logic.
+- `js/checklists.js` — checklist management demo logic.
+- `js/inspection.js` — inspection execution and Potential Finding demo logic.
+- `js/reports.js` — preliminary/final report approval demo logic.
+- `js/views.js` — static demo screen rendering.
+- `js/app.js` — role routing, UI action handling, mock interactions, and demo
+  bootstrapping.
+
+## Smoke Tests
+
+There is no `package.json`; do not assume `npm test`.
+
+- `tests/approval-smoke.test.js`
+- `tests/audit-work-queue-smoke.test.js`
+- `tests/checklist-approval-smoke.test.js`
+- `tests/checklist-management-smoke.test.js`
+- `tests/demo-boundary-smoke.test.js`
+- `tests/governance-render-smoke.test.js`
+- `tests/harness-docs-smoke.test.js`
+- `tests/inspection-execution-smoke.test.js`
+- `tests/planning-release-smoke.test.js`
+- `tests/planning-render-smoke.test.js`
 - `tests/planning-workspace-smoke.test.js`
-- `README.md`
-- `README.turkce.md`
+- `tests/report-approval-smoke.test.js`
+
+## Agent Harness
+
+- `docs/agent-harness/index.md` — canonical harness entrypoint for future
+  agents.
+- `docs/agent-harness/output-contract.md` — required status, evidence, and
+  final-readout contract.
+- `docs/agent-harness/registry.md` — source, plan, evidence, static demo, and
+  local test registry.
+- `docs/agent-harness/verification-matrix.md` — local-only verification ladder
+  for docs, JS, workflow, UI, and boundary-sensitive tasks.
+- `docs/agent-harness/entropy-cleanup-checklist.md` — drift and cleanup tracker
+  for stale harness instructions, evidence labels, plan state, and package
+  truth.
+
+## Build Evidence And Handoff
+
+- `docs/DEMO_BUILD_SUMMARY.md` — English canonical demo evidence, verification
+  status, and known limitations.
+- `docs/DEMO_BUILD_SUMMARY.turkce.md` — Turkish stakeholder companion summary.
+- `docs/08_DEMO_AND_BUILD_HANDOFF/ACCEPTANCE_CRITERIA_AND_FEEDBACK.md`
+- `docs/08_DEMO_AND_BUILD_HANDOFF/ACCEPTANCE_CRITERIA_AND_FEEDBACK.turkce.md`
+- `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`
+- `docs/08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.md`
+- `docs/08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.turkce.md`
+- `docs/08_DEMO_AND_BUILD_HANDOFF/FULL_MVP_BUILD_PROMPT_LATER.md`
+- `docs/08_DEMO_AND_BUILD_HANDOFF/FULL_MVP_BUILD_PROMPT_LATER.turkce.md`
+
+## Product Source Documents
+
+- `docs/00_RESEARCH_AND_POSITIONING/` — market research and product
+  positioning.
+- `docs/01_PRODUCT_PLAN/` — product vision, MVP scope, roadmap, and module
+  architecture.
+- `docs/02_UX_PLAN/` — UX principles and navigation/information architecture.
+- `docs/03_WORKFLOWS/` — surveillance, checklist, Finding/CAP/Evidence, and
+  reminder workflows.
+- `docs/04_MODULES/` — module-level planning for audit planning, checklist
+  builder, findings, CAP, evidence, auditee portal, dashboards, notifications,
+  organization registry, and admin configuration.
+- `docs/05_SCREEN_SPECS/` — screen inventory and form specs.
+- `docs/06_DATA_AND_RULES/` — conceptual data model, status, permission,
+  security, and audit rules.
+- `docs/07_ANALYTICS/` — Oversight Health Index, KPIs, and report catalog.
+- `docs/09_SCENARIOS/` — demo scenario and other domain scenarios.
+- `docs/10_REFERENCES/` — glossary and source notes.
+
+Most stakeholder-facing canonical docs have matching `.turkce.md` companion
+files in the same folder.
+
+## Active Plans
+
+- `docs/plans/index.md` — active plan tracking index.
+- `docs/plans/2026-06-14-aviasurveil-demo-only-prototype-plan.md`
+- `docs/plans/2026-06-23-ncaa-platform-v2-and-mvp-plan.md`
+- `docs/plans/2026-06-28-caa-governance-workflow-and-roles-plan.md`
+- `docs/plans/2026-06-29-agent-harness-readiness-completion-plan.md`
+- `docs/plans/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`
+- `docs/plans/2026-06-30-planning-panel-simplification-plan.md`
+
+## Plan Notes
+
+- `docs/plans/notes/index.md` — durable blocker/handoff/accepted-risk note
+  tracking.
+- `docs/plans/notes/2026-06-29-governance-browser-qa-mobile-blocker.md`
+
+## Production Boundary
+
+The files above support stakeholder feedback and local demo verification only.
+They do not prove regulatory, security, enforcement, evidence repository,
+notification, mobile/offline, reporting, audit-log, or production readiness.
