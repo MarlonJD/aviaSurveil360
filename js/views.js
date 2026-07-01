@@ -60,6 +60,82 @@ function compactMetric(label, value, tone) {
   return '<div class="compact-metric"><span>' + esc(label) + '</span><b class="' + (tone ? 'is-' + tone : '') + '">' + esc(value) + '</b></div>';
 }
 
+function renderAttentionStrip(items) {
+  return '<div class="attention-strip">' + items.map(function (item) {
+    return '<div class="attention-pill' + (item.tone ? ' is-' + item.tone : '') + '">' +
+      '<span>' + esc(item.label) + '</span><b>' + esc(item.value) + '</b></div>';
+  }).join('') + '</div>';
+}
+
+function workItemActionButton(item) {
+  var action = item.primaryAction;
+  if (!action) return '';
+  var id = action.id || (item.route && item.route.id) || item.id;
+  var attrs = ' data-act="' + esc(action.action || 'nav') + '"';
+  if (action.view) attrs += ' data-view="' + esc(action.view) + '"';
+  if (id) attrs += ' data-id="' + esc(id) + '"';
+  return '<button class="' + esc(action.cls || 'btn') + ' btn--sm"' + attrs + '>' + esc(action.label || 'Open') + '</button>';
+}
+
+function workItemRowAttrs(item) {
+  if (!item.route || !item.route.view) return '';
+  return ' data-act="nav" data-view="' + esc(item.route.view) + '"' + (item.route.id ? ' data-id="' + esc(item.route.id) + '"' : '');
+}
+
+function workItemRowHtml(item, options) {
+  options = options || {};
+  var priority = item.priority || { label: 'Normal', tone: 'neutral' };
+  var rowClasses = ['ops-row'];
+  if (item.child) rowClasses.push('ops-row--child');
+  else rowClasses.push('ops-row--parent');
+  if (priority.tone === 'danger') rowClasses.push('ops-row--danger');
+  else if (priority.tone === 'warn') rowClasses.push('ops-row--attention');
+  else if (priority.tone === 'ok') rowClasses.push('ops-row--ok');
+  if (options.selectedId && (options.selectedId === item.id || (item.route && options.selectedId === item.route.id))) rowClasses.push('is-selected');
+
+  var orgCell = options.hideOrganization ? '' : '<td>' + esc(item.organization || '-') + '</td>';
+  return '<tr class="' + rowClasses.join(' ') + '"' + workItemRowAttrs(item) + '>' +
+    '<td><span class="ops-priority is-' + esc(priority.tone || 'neutral') + '">' + esc(priority.label || 'Normal') + '</span></td>' +
+    '<td><div class="ops-cell-title">' + esc(item.title) + '</div><div class="ops-cell-sub">' + esc(item.subtitle || item.type || item.id) + '</div></td>' +
+    orgCell +
+    '<td>' + esc(item.lifecycle || '-') + '</td>' +
+    '<td>' + esc(item.owner || '-') + '</td>' +
+    '<td><b>' + esc(item.nextAction || '-') + '</b></td>' +
+    '<td>' + esc(item.dueText || '-') + '</td>' +
+    '<td>' + (item.statusHtml || '') + '</td>' +
+    '<td><div class="ops-actions">' + workItemActionButton(item) + '</div></td>' +
+  '</tr>';
+}
+
+function flattenWorkItems(items, includeChildren) {
+  var out = [];
+  items.forEach(function (item) {
+    out.push(item);
+    if (includeChildren && item.children && item.children.length) {
+      item.children.forEach(function (child) { out.push(child); });
+    }
+  });
+  return out;
+}
+
+function renderOpsTable(items, options) {
+  options = options || {};
+  if (!items || !items.length) return '<div class="empty">' + esc(options.empty || 'No work items match this view.') + '</div>';
+  var rows = flattenWorkItems(items, options.includeChildren).map(function (item) {
+    return workItemRowHtml(item, options);
+  }).join('');
+  var orgHead = options.hideOrganization ? '' : '<th>Organization</th>';
+  return '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
+    '<th style="width:96px">Priority</th><th>Item</th>' + orgHead +
+    '<th>Lifecycle</th><th>Owner</th><th>Next Action</th><th>Due Date / Target</th><th>Status</th><th style="width:124px;text-align:right">Open</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+function dossierPanel(title, bodyHtml, subHtml) {
+  return '<div class="dossier-panel"><div class="dossier-panel__head"><h3>' + esc(title) + '</h3>' +
+    (subHtml ? '<span class="sub">' + esc(subHtml) + '</span>' : '') + '</div><div class="dossier-panel__body">' + bodyHtml + '</div></div>';
+}
+
 function approvalProgressHtml(record) {
   var approval = record.approval;
   if (!approval || !approval.chain) return '';
@@ -355,6 +431,7 @@ function viewPlanningWorkspace(forcedTab) {
   var approval = approvalSummary(item);
   var prepMeta = planningPrepMeta(item.preparation.status);
   var approvalMeta = approvalMetaForStatus(item.status);
+  var planningItems = (state.planningItems || []).map(workItemFromPlanningItem).sort(workItemSort);
   var body = activeTab === 'approval'
     ? planningWorkspaceApprovalHtml(item)
     : (activeTab === 'preparation' ? planningWorkspacePreparationHtml(item) : planningWorkspaceOverviewHtml(item));
@@ -365,6 +442,8 @@ function viewPlanningWorkspace(forcedTab) {
       { label: 'Mock approval history', tone: 'info' },
       { label: 'No real authorization service', tone: 'warn' }
     ]) +
+    '<h2 class="section-heading">Planning Workbench</h2>' +
+    renderOpsTable(planningItems, { selectedId: item.id, empty: 'No planning work items are seeded.' }) +
     '<div class="governance-hero planning-workspace__hero mb-16">' +
       '<div>' +
         '<div class="governance-hero__eyebrow">Canonical planning workspace</div>' +
@@ -409,6 +488,22 @@ function viewChecklistApprovals() {
   var meta = approvalMetaForStatus(version.status);
   var questionCount = version.questionIds ? version.questionIds.length : 0;
   var activeVersion = checklist.versions.filter(function (item) { return item.version === checklist.publishedVersion; })[0];
+  var approvalItem = {
+    id: version.id,
+    type: 'Checklist Version',
+    title: checklist.name + ' v' + version.version,
+    subtitle: version.changeReason,
+    organization: checklist.department,
+    priority: summary.ownerRole === state.role ? workItemPriority('Your review', 'warn', 3) : workItemPriority('Approval', meta.tone, 20),
+    lifecycle: summary.statusLabel,
+    owner: summary.ownerLabel,
+    nextAction: summary.nextAction,
+    dueText: 'Target before Q3 surveillance',
+    statusHtml: checklistStatusBadge(version.status),
+    primaryAction: { label: 'Open dossier', action: 'nav', view: 'checklist-approvals', cls: 'btn btn--primary' },
+    route: { view: 'checklist-approvals', id: version.id },
+    children: []
+  };
 
   return pageHead('Checklist Approval — ' + checklist.name, 'Department Manager to GM approval shell using the shared approval primitive.') +
     guardrailStrip([
@@ -416,7 +511,14 @@ function viewChecklistApprovals() {
       { label: 'Mock checklist approval', tone: 'info' },
       { label: 'Inspector cannot edit configuration', tone: 'warn' }
     ]) +
-    '<div class="governance-hero mb-16">' +
+    renderAttentionStrip([
+      { label: 'Version Status', value: meta.label, tone: meta.tone },
+      { label: 'Questions', value: String(questionCount), tone: 'info' },
+      { label: 'Published Active', value: activeVersion ? 'v' + activeVersion.version : 'None', tone: 'ok' }
+    ]) +
+    '<h2 class="section-heading">Checklist Approval Queue</h2>' +
+    renderOpsTable([approvalItem], { empty: 'No checklist approval items are seeded.' }) +
+    '<div class="governance-hero mt-16 mb-16">' +
       '<div>' +
         '<div class="governance-hero__eyebrow">Phase 1A · checklist approval shell</div>' +
         '<h2>' + esc(checklist.name) + ' v' + esc(version.version) + '</h2>' +
@@ -428,14 +530,9 @@ function viewChecklistApprovals() {
         compactMetric('Status', summary.statusLabel, summary.statusTone) +
       '</div>' +
     '</div>' +
-    '<div class="grid grid--kpi mb-16">' +
-      kpiCard('Version Status', esc(meta.label), 'Checklist approval lifecycle', { tone: meta.tone }) +
-      kpiCard('Questions', String(questionCount), 'Seeded from current demo checklist') +
-      kpiCard('Published Active', activeVersion ? 'v' + esc(activeVersion.version) : 'None', 'Prior active version stays unchanged') +
-    '</div>' +
     '<div class="grid grid--main">' +
       '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card"><div class="card__head"><h3>Checklist Version Dossier</h3><span class="sub">Phase 1A shell only</span></div><div class="card__body">' +
+        dossierPanel('Checklist Version Dossier',
           '<div class="metaline">' +
             metaItem('Checklist ID', checklist.id) +
             metaItem('Department', checklist.department) +
@@ -446,19 +543,13 @@ function viewChecklistApprovals() {
             metaItem('Impact', version.impact || 'No impact note') +
             metaItem('Current owner', summary.ownerLabel) +
           '</div>' +
-          '<div class="callout mt-16">This shell proves GM approval controls only. Question Bank, Builder, Version History, and publish/archive behavior remain Phase 1B/1C.</div>' +
-        '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Approval Progress</h3><span class="sub">Department Manager -> GM</span></div><div class="card__body">' +
-          approvalProgressHtml(version) +
-        '</div></div>' +
+          '<div class="callout mt-16">This shell proves GM approval controls only. Question Bank, Builder, Version History, and publish/archive behavior remain Phase 1B/1C.</div>',
+          'Phase 1A shell only') +
+        dossierPanel('Approval Progress', approvalProgressHtml(version), 'Department Manager -> GM') +
       '</div>' +
       '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card"><div class="card__head"><h3>Decision Panel</h3><span class="sub">GM approve / return / reject</span></div><div class="card__body">' +
-          approvalDecisionPanelHtml(version) +
-        '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Approval History</h3><span class="sub">Append-only demo log</span></div><div class="card__body">' +
-          approvalHistoryHtml(version) +
-        '</div></div>' +
+        dossierPanel('Decision Panel', approvalDecisionPanelHtml(version), 'GM approve / return / reject') +
+        dossierPanel('Approval History', approvalHistoryHtml(version), 'Append-only demo log') +
       '</div>' +
     '</div>';
 }
@@ -471,13 +562,14 @@ function checklistStatusBadge(status) {
 function viewQuestionBank() {
   var canEdit = canManageChecklistConfig(state.role);
   var rows = (state.questionBank || []).map(function (q) {
-    return '<div class="list__row is-static">' +
-      '<div class="list__main"><div class="list__title"><span class="tag-pill">' + esc(q.id) + '</span>' + esc(q.title) + '</div>' +
-      '<div class="list__meta"><span><b>Department:</b> ' + esc(q.department) + '</span><span><b>Category:</b> ' + esc(q.category) + '</span>' +
-      '<span><b>Regulatory reference:</b> ' + esc(q.regulationRef) + '</span></div>' +
-      '<div class="small muted mt-12">' + esc(q.text) + '</div></div>' +
-      '<div class="list__side">' + demoBadge(q.status, q.status === 'Active' ? 'ok' : 'neutral') + '</div>' +
-    '</div>';
+    return '<tr>' +
+      '<td><div class="ops-cell-title">' + esc(q.title) + '</div><div class="ops-cell-sub">' + esc(q.id) + ' · ' + esc(q.text) + '</div></td>' +
+      '<td>' + esc(q.department) + '</td>' +
+      '<td>' + esc(q.category) + '</td>' +
+      '<td>' + esc(q.regulationRef) + '<div class="ops-cell-sub">Expected evidence: ' + esc(q.exampleEvidence) + '</div></td>' +
+      '<td>' + (q.commentRequired ? demoBadge('Comment required', 'warn') : demoBadge('Comment optional', 'neutral')) + '</td>' +
+      '<td>' + demoBadge(q.status, q.status === 'Active' ? 'ok' : 'neutral') + '</td>' +
+    '</tr>';
   }).join('');
   var createPanel = canEdit
     ? '<div class="card mb-16"><div class="card__head"><h3>New Question</h3><span class="sub">Mock item, saved in browser</span></div><div class="card__body">' +
@@ -493,7 +585,10 @@ function viewQuestionBank() {
       { label: 'Regulatory references only', tone: 'warn' }
     ]) +
     createPanel +
-    '<div class="card"><div class="card__head"><h3>Questions</h3><span class="sub">' + state.questionBank.length + ' active items</span></div><div class="list">' + rows + '</div></div>';
+    '<h2 class="section-heading">Questions</h2>' +
+    '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
+      '<th>Question</th><th>Department</th><th>Category</th><th>Reference / expected evidence</th><th>Comment</th><th>Status</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 function viewChecklistBuilder() {
@@ -507,22 +602,30 @@ function viewChecklistBuilder() {
 
   var bankRows = (state.questionBank || []).map(function (q) {
     var already = working && working.questionIds && working.questionIds.indexOf(q.id) > -1;
-    return '<div class="package-question">' +
-      '<div><b>' + esc(q.id) + ' · ' + esc(q.title) + '</b><p>' + esc(q.text) + '</p></div>' +
-      (isEditable && !already ? '<button class="btn btn--sm" data-act="checklist-add-question" data-id="' + esc(working.id) + '" data-question="' + esc(q.id) + '">+ Add</button>' :
-        '<span class="badge badge--neutral"><span class="dot"></span>' + (already ? 'In version' : 'Read-only') + '</span>') +
-    '</div>';
+    return '<tr>' +
+      '<td><div class="ops-cell-title">' + esc(q.title) + '</div><div class="ops-cell-sub">' + esc(q.id) + ' · ' + esc(q.text) + '</div></td>' +
+      '<td>' + esc(q.regulationRef) + '</td>' +
+      '<td>' + esc(q.exampleEvidence) + '</td>' +
+      '<td><div class="ops-actions">' + (isEditable && !already ? '<button class="btn btn--sm" data-act="checklist-add-question" data-id="' + esc(working.id) + '" data-question="' + esc(q.id) + '">Add</button>' :
+        '<span class="badge badge--neutral"><span class="dot"></span>' + (already ? 'In version' : 'Read-only') + '</span>') + '</div></td>' +
+    '</tr>';
   }).join('');
 
   var versionRows = working && working.questionIds ? working.questionIds.map(function (qid, idx) {
-    return '<div class="package-question">' +
-      '<div><b>' + esc(idx + 1) + '. ' + esc(checklistQuestionLabel(qid)) + '</b><p class="small muted">' + esc(qid) + '</p></div>' +
-      (isEditable ? '<div class="row-actions">' +
+    return '<tr>' +
+      '<td><span class="ops-priority is-neutral">' + esc(idx + 1) + '</span></td>' +
+      '<td><div class="ops-cell-title">' + esc(checklistQuestionLabel(qid)) + '</div><div class="ops-cell-sub">' + esc(qid) + '</div></td>' +
+      '<td>' + checklistStatusBadge(working.status) + '</td>' +
+      '<td><div class="ops-actions">' + (isEditable ?
         '<button class="btn btn--sm" data-act="checklist-move-question" data-id="' + esc(working.id) + '" data-question="' + esc(qid) + '" data-direction="up">Up</button>' +
-        '<button class="btn btn--sm" data-act="checklist-move-question" data-id="' + esc(working.id) + '" data-question="' + esc(qid) + '" data-direction="down">Down</button>' +
-      '</div>' : checklistStatusBadge(working.status)) +
-    '</div>';
-  }).join('') : '<div class="empty">No questions in this version.</div>';
+        '<button class="btn btn--sm" data-act="checklist-move-question" data-id="' + esc(working.id) + '" data-question="' + esc(qid) + '" data-direction="down">Down</button>'
+        : '<span class="muted small">Locked</span>') + '</div></td>' +
+    '</tr>';
+  }).join('') : '';
+  var currentVersionTable = versionRows
+    ? '<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th style="width:82px">Order</th><th>Question</th><th>Status</th><th style="width:150px;text-align:right">Actions</th></tr></thead><tbody>' + versionRows + '</tbody></table></div>'
+    : '<div class="empty">No questions in this version.</div>';
+  var bankTable = '<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Reusable question</th><th>Reference</th><th>Expected evidence</th><th style="width:130px;text-align:right">Action</th></tr></thead><tbody>' + bankRows + '</tbody></table></div>';
 
   var draftPanel = editable
     ? '<div class="callout mb-16"><b>Working version:</b> v' + esc(editable.version) + ' · ' + esc(approvalMetaForStatus(editable.status).label) + '. Reason for Change: ' + esc(editable.changeReason) + '</div>'
@@ -543,8 +646,8 @@ function viewChecklistBuilder() {
     (!canEdit ? '<div class="scope-note">Read-only preview. Inspectors cannot edit checklist configuration.</div>' : '') +
     draftPanel +
     '<div class="grid grid--main">' +
-      '<div class="card"><div class="card__head"><h3>' + esc(checklist.name) + ' Questions</h3><span class="sub">v' + esc(working.version) + '</span></div><div class="card__body">' + versionRows + '</div></div>' +
-      '<div class="card"><div class="card__head"><h3>Question Bank</h3><span class="sub">Add from reusable bank</span></div><div class="card__body">' + bankRows + '</div></div>' +
+      dossierPanel(checklist.name + ' Questions', currentVersionTable, 'v' + working.version) +
+      dossierPanel('Question Bank', bankTable, 'Add from reusable bank') +
     '</div>';
 }
 
@@ -555,7 +658,7 @@ function viewChecklistVersions() {
     var summary = approvalSummary(version);
     var publish = state.role === 'manager' && version.status === 'checklist_approved'
       ? '<button class="btn btn--sm btn--primary" data-act="checklist-publish-version" data-id="' + esc(version.id) + '">Publish Active</button>' : '';
-    return '<tr>' +
+    return '<tr class="ops-row">' +
       '<td><b>v' + esc(version.version) + '</b><div class="small muted">' + esc(version.id) + '</div></td>' +
       '<td>' + checklistStatusBadge(version.status) + '</td>' +
       '<td>' + esc(version.createdBy) + '</td>' +
@@ -569,7 +672,7 @@ function viewChecklistVersions() {
       { label: 'Append-only version concept' },
       { label: 'Mock publishing only', tone: 'warn' }
     ]) +
-    '<div class="card card__body--flush"><table class="table"><thead><tr>' +
+    '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
       '<th>Version</th><th>Status</th><th>Created By</th><th>Reason for Change</th><th>Current Owner</th><th></th></tr></thead><tbody>' +
       rows + '</tbody></table></div>';
 }
@@ -699,16 +802,12 @@ function viewSafetyIntelligenceDashboard() {
     return '<button class="btn btn--sm' + (filter === c.key ? ' btn--primary' : '') + '" data-act="set-filter" data-key="safety" data-val="' + c.key + '">' + esc(c.label) + '</button>';
   }).join('');
 
-  var alerts = state.riskProfiles.filter(function (r) {
+  var filteredProfiles = state.riskProfiles.filter(function (r) {
     if (filter === 'repeat') return r.drivers.join(' ').toLowerCase().indexOf('repeat') > -1;
     if (filter === 'overdue') return state.findings.some(function (f) { return f.orgId === r.orgId && dueInfo(f).overdue; });
     return true;
-  }).map(function (r) {
-    return '<div class="list__row" data-act="nav" data-view="org-risk" data-id="' + r.orgId + '">' +
-      '<div class="list__main"><div class="list__title">' + esc(orgName(r.orgId)) + ' <span class="risk-band">' + esc(r.band) + '</span></div>' +
-      '<div class="list__meta"><span><b>Mock risk indicator:</b> ' + r.score + '</span><span><b>Drivers:</b> ' + esc(r.drivers.join(', ')) + '</span></div></div>' +
-      '<div class="list__side"><button class="btn btn--sm" data-act="nav" data-view="org-risk" data-id="' + r.orgId + '">Open profile</button></div></div>';
-  }).join('');
+  });
+  var signalItems = filteredProfiles.map(workItemFromRiskProfile).sort(workItemSort);
 
   return pageHead('Safety Intelligence Dashboard', 'Decide which risk, delay, or workload issue needs management attention today.', chips) +
     guardrailStrip([
@@ -717,19 +816,19 @@ function viewSafetyIntelligenceDashboard() {
       { label: 'Not a legal decision', tone: 'warn' },
       { label: DEMO_PERSISTENCE_CONFIG.label, tone: 'neutral' }
     ]) +
-    '<div class="grid grid--kpi mb-16">' +
-      kpiCard('Highest Mock Risk', topRisk ? topRisk.score : '—', topRisk ? orgName(topRisk.orgId) + ' · opens risk profile' : 'No risk profile', { tone: 'warn', view: 'org-risk', id: topRisk ? topRisk.orgId : 'ORG-XYZ' }) +
-      kpiCard('Overdue CAP/Evidence', overdue.length, 'Open findings past Due Date', { tone: overdue.length ? 'danger' : 'ok', view: 'findings', filter: 'overdue' }) +
-      kpiCard('Waiting CAA Review', waiting.length, 'CAP/evidence decisions pending', { tone: waiting.length ? 'warn' : 'ok', view: 'findings', filter: 'capreview' }) +
-    '</div>' +
+    renderAttentionStrip([
+      { label: 'Highest Mock Risk', value: topRisk ? topRisk.score + ' · ' + orgName(topRisk.orgId) : '0', tone: topRisk ? 'warn' : 'ok' },
+      { label: 'Overdue CAP/Evidence', value: String(overdue.length), tone: overdue.length ? 'danger' : 'ok' },
+      { label: 'Waiting CAA Review', value: String(waiting.length), tone: waiting.length ? 'warn' : 'ok' },
+      { label: 'Repeat risk profiles', value: String(repeat.length), tone: repeat.length ? 'warn' : 'ok' }
+    ]) +
     '<div class="grid grid--main">' +
-      '<div class="card"><div class="card__head"><h3>Management Attention Queue</h3><span class="sub">Every signal links to an organization or finding</span></div><div class="list">' +
-        (alerts || '<div class="empty">No safety intelligence signals for this filter.</div>') + '</div></div>' +
+      '<div><h2 class="section-heading">Management Signal Table</h2>' +
+        renderOpsTable(signalItems, { empty: 'No safety intelligence signals for this filter.' }) + '</div>' +
       '<div class="v2-panel">' +
         '<h3>Recommended Management Action</h3>' +
         '<p>' + esc(topRisk ? topRisk.recommendedAction : 'Review open findings and CAP/evidence queues.') + '</p>' +
         '<div class="divider"></div>' +
-        compactMetric('Repeat risk profiles', String(repeat.length), repeat.length ? 'warn' : 'ok') +
         compactMetric('Section workload', 'Balanced (demo)', 'info') +
         compactMetric('Plan slippage', '2 planned audits not started', 'warn') +
       '</div>' +
@@ -744,11 +843,10 @@ function viewOrganizationRiskProfile() {
   var audits = state.audits.filter(function (a) { return a.orgId === org.id; });
   var trace = regulatoryTraceById(profile.traceId);
 
-  var findings = fs.length ? fs.map(findingRow).join('') : '<div class="empty">No findings for this organization.</div>';
-  var auditRows = audits.map(function (a) {
-    return '<div class="row-between small v2-rowlink" data-act="nav" data-view="audit-detail" data-id="' + a.id + '">' +
-      '<span><b>' + esc(a.id) + '</b> · ' + esc(a.type) + '</span><span class="muted">' + esc(fmtDate(a.date)) + ' · ' + esc(a.status) + '</span></div>';
-  }).join('');
+  var findings = renderOpsTable(fs.map(function (finding) {
+    return workItemFromFinding(finding, { allEvidenceVersions: true });
+  }), { includeChildren: true, empty: 'No findings for this organization.' });
+  var auditRows = renderOpsTable(audits.map(workItemFromAudit), { empty: 'No audits for this organization.' });
 
   return pageHead('Organization Risk Profile — ' + org.name, 'Understand why this organization needs oversight attention before planning or opening an inspection.',
     '<button class="btn" data-act="nav" data-view="safety-intelligence">Back to safety intelligence</button>') +
@@ -764,7 +862,7 @@ function viewOrganizationRiskProfile() {
           '<div class="divider"></div><div class="chip-list">' + profile.drivers.map(function (d) { return '<span class="tag-pill">' + esc(d) + '</span>'; }).join('') + '</div>' +
           '<div class="divider"></div>' + regulatoryTraceHtml(trace, true) +
         '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Findings</h3></div><div class="list">' + findings + '</div></div>' +
+        dossierPanel('Findings', findings, 'Finding -> CAP -> Evidence rows') +
       '</div>' +
       '<div style="display:flex;flex-direction:column;gap:16px">' +
         '<div class="v2-panel"><h3>Operating Context</h3>' +
@@ -772,7 +870,7 @@ function viewOrganizationRiskProfile() {
           compactMetric('Fleet/management change', profile.fleetChange, 'info') +
           compactMetric('Occurrence trend placeholder', profile.occurrenceTrend, 'neutral') +
         '</div>' +
-        '<div class="card"><div class="card__head"><h3>Audit History</h3></div><div class="card__body">' + auditRows + '</div></div>' +
+        dossierPanel('Audit History', auditRows) +
       '</div>' +
     '</div>';
 }
@@ -791,19 +889,19 @@ function viewRegulatoryLibrary() {
 
   var rows = docs.map(function (d) {
     var clauses = d.clauses.map(function (c) {
-      return '<div class="clause-row"><div><b>' + esc(c.reference) + '</b> · ' + esc(c.title) + '</div>' +
-        '<div class="muted small">' + esc(c.applicability) + ' · Expected evidence: ' + esc(c.expectedEvidence.join(', ')) + '</div></div>';
-    }).join('');
+      return '<div><b>' + esc(c.reference) + '</b> · ' + esc(c.title) + '<div class="ops-cell-sub">' +
+        esc(c.applicability) + ' · Expected evidence: ' + esc(c.expectedEvidence.join(', ')) + '</div></div>';
+    }).join('<div class="divider"></div>');
     var changes = d.changeHistory.map(function (c) {
-      return '<div class="timeline mini"><div class="tl-item"><div class="tl-item__time">' + esc(fmtDate(c.date)) + '</div><div class="tl-item__txt">' + esc(c.summary) + '</div></div></div>';
-    }).join('');
-    return '<div class="card mb-16"><div class="card__head"><h3>' + esc(d.family + ' · ' + d.title) + '</h3><div class="spacer"></div>' +
-      v2Badge(d.status) + '</div><div class="card__body">' +
-      '<div class="metaline mb-16">' + metaItem('Document ID', d.id) + metaItem('Version', d.version) + metaItem('Effective date', fmtDate(d.effectiveDate)) +
-        metaItem('Supersedes', d.supersedes || '—') + metaItem('Superseded by', d.supersededBy || '—') + '</div>' +
-      '<div class="reg-section-title">Clauses / configured rules</div>' + clauses +
-      '<div class="reg-section-title mt-16">Mock change history</div>' + changes +
-      '</div></div>';
+      return esc(fmtDate(c.date)) + ': ' + esc(c.summary);
+    }).join(' | ');
+    return '<tr>' +
+      '<td><div class="ops-cell-title">' + esc(d.family + ' · ' + d.title) + '</div><div class="ops-cell-sub">' + esc(d.id) + '</div></td>' +
+      '<td>' + esc(d.version) + '<div class="ops-cell-sub">Effective ' + esc(fmtDate(d.effectiveDate)) + '</div></td>' +
+      '<td>' + v2Badge(d.status) + '</td>' +
+      '<td>' + clauses + '</td>' +
+      '<td class="ops-cell-muted">' + changes + '</td>' +
+    '</tr>';
   }).join('');
 
   return pageHead('Regulatory Library', 'Inspect current references, versions, effective dates, configured rules and change status.', chips) +
@@ -813,7 +911,9 @@ function viewRegulatoryLibrary() {
       { label: 'Not a legal decision', tone: 'warn' },
       { label: 'No real regulatory ingestion', tone: 'neutral' }
     ]) +
-    (rows || '<div class="empty">No regulatory documents match this filter.</div>');
+    (rows ? '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
+      '<th>Reference</th><th>Version / effective</th><th>Status</th><th>Configured rules</th><th>Mock change history</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<div class="empty">No regulatory documents match this filter.</div>');
 }
 
 function viewInspectionPackageBuilder() {
@@ -856,10 +956,13 @@ function viewOfflineFieldInspection() {
   var waiting = waitingOutboxItems().length;
   var statusBadge = demoBadge('Evidence capture demo', 'neutral');
   var outboxRows = outbox.length ? outbox.map(function (item) {
-    return '<div class="outbox-item"><div><b>' + esc(item.id) + '</b> · ' + esc(item.payloadSummary) +
-      '<div class="muted small">Demo evidence note captured for this inspection.</div><div class="muted small">Created ' + esc(item.createdAt) +
-      '</div></div>' + demoBadge('Saved note', 'ok') + '</div>';
-  }).join('') : '<div class="empty">No evidence notes yet.</div>';
+    return '<tr><td><div class="ops-cell-title">' + esc(item.id) + '</div><div class="ops-cell-sub">' + esc(item.payloadSummary) + '</div></td>' +
+      '<td>' + esc(pkg.auditId) + '</td><td>' + esc(item.createdAt) + '</td><td>' + demoBadge(item.status || 'Saved note', 'ok') + '</td>' +
+      '<td class="ops-cell-muted">Demo evidence note; no real upload/storage.</td></tr>';
+  }).join('') : '';
+  var outboxTable = outboxRows
+    ? '<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Evidence note</th><th>Audit</th><th>Created</th><th>Status</th><th>Boundary</th></tr></thead><tbody>' + outboxRows + '</tbody></table></div>'
+    : '<div class="empty">No evidence notes yet.</div>';
 
   return pageHead('Inspection Evidence', 'Review mock field evidence captured during an inspection.',
     '<button class="btn btn--primary" data-act="offline-field-action">Save mock evidence note</button>') +
@@ -879,7 +982,7 @@ function viewOfflineFieldInspection() {
           '<div class="chip-list">' + pkg.localItems.map(function (i) { return '<span class="tag-pill">' + esc(i) + '</span>'; }).join('') + '</div>' +
           '<div class="divider"></div><button class="btn btn--primary" data-act="offline-field-action">Save mock evidence note</button>' +
         '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Evidence Notes</h3><span class="sub">' + outbox.length + ' saved in demo</span></div><div class="card__body">' + outboxRows + '</div></div>' +
+        dossierPanel('Evidence Notes', outboxTable, outbox.length + ' saved in demo') +
       '</div>' +
       '<div class="v2-panel"><h3>Field Capture Placeholders</h3>' +
         compactMetric('Photos/videos/audio', 'Filename placeholders only', 'neutral') +
@@ -892,13 +995,17 @@ function viewOfflineFieldInspection() {
 
 function viewUsoapReadiness() {
   var rows = state.usoapReadiness.map(function (r) {
-    return '<div class="card mb-16"><div class="card__head"><h3>' + esc(r.pqId) + '</h3><div class="spacer"></div>' + v2Badge(r.readinessStatus) + '</div>' +
-      '<div class="card__body"><div class="metaline mb-16">' + metaItem('Critical Element', r.criticalElement) + metaItem('Audit area', r.auditArea) +
-      metaItem('Applicability', r.applicability) + metaItem('Linked CAP/Finding', r.linkedCapIds.join(', ') || '—') + '</div>' +
-      '<div class="callout mb-16">' + esc(r.note) + '</div>' + regulatoryTraceHtml(regulatoryTraceById(r.traceId), true) +
-      '<div class="reg-section-title mt-16">Verification history</div>' + r.verificationHistory.map(function (v) {
-        return '<div class="row-between small"><span>' + esc(fmtDate(v.date)) + '</span><b>' + esc(v.result) + '</b></div>';
-      }).join('') + '</div></div>';
+    var history = r.verificationHistory.map(function (v) {
+      return fmtDate(v.date) + ': ' + v.result;
+    }).join(' | ');
+    return '<tr>' +
+      '<td><div class="ops-cell-title">' + esc(r.pqId) + '</div><div class="ops-cell-sub">' + esc(r.note) + '</div></td>' +
+      '<td>' + esc(r.criticalElement) + '</td>' +
+      '<td>' + esc(r.auditArea) + '</td>' +
+      '<td>' + esc(r.linkedCapIds.join(', ') || '-') + '</td>' +
+      '<td>' + v2Badge(r.readinessStatus) + '</td>' +
+      '<td class="ops-cell-muted">' + esc(history) + '</td>' +
+    '</tr>';
   }).join('');
   return pageHead('USOAP Readiness Workspace', 'See PQ/CE gaps, missing evidence and readiness history without claiming official EI outcome.') +
     guardrailStrip([
@@ -906,48 +1013,54 @@ function viewUsoapReadiness() {
       { label: 'Mock PQ readiness' },
       { label: 'No official EI score', tone: 'warn' },
       { label: 'Not a legal decision', tone: 'warn' }
-    ]) + rows;
+    ]) +
+    '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
+      '<th>PQ readiness item</th><th>Critical Element</th><th>Audit area</th><th>Linked CAP/Finding</th><th>Status</th><th>Verification history</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 function viewCapEffectiveness() {
   var rows = state.capEffectiveness.map(function (c) {
     var f = findingById(c.findingId);
     var revs = c.revisionHistory.map(function (r) {
-      return '<div class="row-between small"><span><b>' + esc(r.id) + '</b> · ' + esc(fmtDate(r.submittedDate)) + '</span>' + v2Badge(r.status) + '</div>';
-    }).join('');
-    return '<div class="card mb-16"><div class="card__head"><h3>' + esc(c.findingId) + '</h3><div class="spacer"></div>' +
-      (f ? statusBadge(f) : demoBadge('Historical CAP', 'neutral')) + '</div><div class="card__body">' +
-      '<div class="metaline mb-16">' + metaItem('Organization', orgName(c.orgId)) + metaItem('Root cause quality', c.rootCauseQuality) +
-      metaItem('Effectiveness verification', humanStatus(c.verificationStatus)) + metaItem('Post-closure review', c.postClosureReview) + '</div>' +
-      '<div class="callout mb-16">CAP acceptance is not finding closure. Effectiveness review is separate from evidence acceptance and closure.</div>' +
-      '<div class="reg-section-title">Revision history</div>' + revs +
-      '<div class="reg-section-title mt-16">Recurrence / reopen path</div><p class="small">' + esc(c.recurrenceIndicator) + ' ' + esc(c.reopenPath) + '</p>' +
-      '</div></div>';
+      return r.id + ' · ' + fmtDate(r.submittedDate) + ' · ' + humanStatus(r.status);
+    }).join(' | ');
+    return '<tr class="ops-row" data-act="nav" data-view="finding" data-id="' + esc(c.findingId) + '">' +
+      '<td><div class="ops-cell-title">' + esc(c.findingId) + '</div><div class="ops-cell-sub">' + esc(f ? f.title : 'Historical CAP') + '</div></td>' +
+      '<td>' + esc(orgName(c.orgId)) + '</td>' +
+      '<td>' + esc(c.rootCauseQuality) + '</td>' +
+      '<td>' + esc(humanStatus(c.verificationStatus)) + '</td>' +
+      '<td>' + esc(c.recurrenceIndicator) + '<div class="ops-cell-sub">' + esc(c.reopenPath) + '</div></td>' +
+      '<td class="ops-cell-muted">' + esc(revs) + '</td>' +
+    '</tr>';
   }).join('');
   return pageHead('CAP Effectiveness', 'Decide whether accepted CAP actions worked after closure and whether recurrence needs attention.') +
     guardrailStrip([
       { label: 'Demo data' },
       { label: 'CAP accepted is not finding closed', tone: 'warn' },
       { label: 'Not a legal decision', tone: 'warn' }
-    ]) + rows;
+    ]) +
+    '<div class="callout mb-16">CAP acceptance is not finding closure. Effectiveness review is separate from evidence acceptance and closure.</div>' +
+    '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
+      '<th>Finding / CAP</th><th>Organization</th><th>Root cause quality</th><th>Effectiveness verification</th><th>Recurrence / reopen path</th><th>Revision history</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 function viewAiAssistant() {
-  var cards = state.aiSuggestions.map(function (s) {
+  var rows = state.aiSuggestions.map(function (s) {
     var decision = s.decision ? '<div class="callout mt-12"><b>Recorded decision:</b> ' + humanStatus(s.decision.status) +
       ' by ' + esc(s.decision.reviewer) + ' · saved in this browser for demo only.</div>' : '';
-    return '<div class="card mb-16"><div class="card__head"><h3>' + esc(s.title) + '</h3><div class="spacer"></div>' +
-      demoBadge('AI-generated draft - requires authorized review', 'warn') + v2Badge(s.status) + '</div><div class="card__body">' +
-      '<div class="small muted mb-8">Sources: ' + esc(s.sourceRefs.join(' · ')) + '</div>' +
-      '<textarea class="ai-draft" id="ai-edit-' + esc(s.id) + '">' + esc(s.decision && s.decision.finalText ? s.decision.finalText : s.draft) + '</textarea>' +
-      '<div class="callout mt-12">' + esc(s.limitation) + ' Not a legal decision.</div>' +
-      regulatoryTraceHtml(regulatoryTraceById(s.traceId), true) +
-      decision +
-      '<div class="row-actions mt-16">' +
+    return '<tr>' +
+      '<td><div class="ops-cell-title">' + esc(s.title) + '</div><div class="ops-cell-sub">Sources: ' + esc(s.sourceRefs.join(' · ')) + '</div></td>' +
+      '<td>' + v2Badge(s.status) + '</td>' +
+      '<td><textarea class="ai-draft" id="ai-edit-' + esc(s.id) + '">' + esc(s.decision && s.decision.finalText ? s.decision.finalText : s.draft) + '</textarea>' +
+        '<div class="ops-cell-sub">' + esc(s.limitation) + ' Not a legal decision.</div>' + decision + '</td>' +
+      '<td><div class="ops-actions">' +
         '<button class="btn btn--ok btn--sm" data-act="ai-decision" data-id="' + s.id + '" data-decision="' + V2_STATUS.accepted + '">Accept draft</button>' +
         '<button class="btn btn--primary btn--sm" data-act="ai-decision" data-id="' + s.id + '" data-decision="' + V2_STATUS.edited + '">Record edit</button>' +
         '<button class="btn btn--danger btn--sm" data-act="ai-decision" data-id="' + s.id + '" data-decision="' + V2_STATUS.rejected + '">Reject</button>' +
-      '</div></div></div>';
+      '</div></td>' +
+    '</tr>';
   }).join('');
   return pageHead('AI Inspector Assistant Panel', 'Review source-referenced draft assistance with accept, edit and reject controls.') +
     guardrailStrip([
@@ -955,21 +1068,26 @@ function viewAiAssistant() {
       { label: 'Demo data' },
       { label: 'Not a legal decision', tone: 'warn' },
       { label: 'No real AI service', tone: 'neutral' }
-    ]) + cards;
+    ]) +
+    '<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Draft suggestion</th><th>Status</th><th>Review text</th><th style="width:220px;text-align:right">Authorized review</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 function viewSspNaspDashboard() {
   var objectives = state.sspNasp.objectives.map(function (o) {
     var spiRows = o.spis.map(function (s) {
-      return '<div class="spi-row"><div><b>' + esc(s.label) + '</b><div class="muted small">Target: ' + esc(s.target) + '</div></div><div><b>' + esc(s.current) + '</b><div class="muted small">' + esc(s.trend) + '</div></div></div>';
+      return '<tr><td><div class="ops-cell-title">' + esc(s.label) + '</div><div class="ops-cell-sub">Target: ' + esc(s.target) + '</div></td>' +
+        '<td>' + esc(s.current) + '</td><td>' + esc(s.trend) + '</td></tr>';
     }).join('');
     var actionRows = o.naspActions.map(function (a) {
-      return '<div class="row-between small v2-rowlink"><span><b>' + esc(a.id) + '</b> · ' + esc(a.owner) + '</span><span>' + esc(fmtDate(a.targetDate)) + ' · ' + humanStatus(a.status) + '</span></div>' +
-        '<div class="small muted">Linked oversight findings: ' + esc(a.linkedFindingIds.join(', ')) + '</div>';
+      return '<tr><td><div class="ops-cell-title">' + esc(a.id) + '</div><div class="ops-cell-sub">Linked oversight findings: ' + esc(a.linkedFindingIds.join(', ')) + '</div></td>' +
+        '<td>' + esc(a.owner) + '</td><td>' + esc(fmtDate(a.targetDate)) + '</td><td>' + v2Badge(a.status) + '</td></tr>';
     }).join('');
-    return '<div class="card mb-16"><div class="card__head"><h3>' + esc(o.title) + '</h3><div class="spacer"></div>' + v2Badge(o.status) + '</div>' +
-      '<div class="card__body"><div class="reg-section-title">Safety Performance Indicators</div>' + spiRows +
-      '<div class="reg-section-title mt-16">NASP actions</div>' + actionRows + '</div></div>';
+    return dossierPanel(o.title,
+      '<div class="reg-section-title">Safety Performance Indicators</div>' +
+      '<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>SPI</th><th>Current</th><th>Trend</th></tr></thead><tbody>' + spiRows + '</tbody></table></div>' +
+      '<div class="reg-section-title mt-16">NASP actions</div>' +
+      '<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Action</th><th>Owner</th><th>Target</th><th>Status</th></tr></thead><tbody>' + actionRows + '</tbody></table></div>',
+      humanStatus(o.status));
   }).join('');
   return pageHead('SSP/NASP Management Dashboard', 'Track safety objectives, SPI trends, NASP actions and responsible sections.') +
     guardrailStrip([
@@ -1052,73 +1170,27 @@ function viewManagerDashboard() {
     return f.status !== 'CLOSED' && (f.severity === 1 || dueInfo(f).overdue);
   });
   var notStarted = state.audits.filter(function (a) { return a.status === 'Planned'; });
-
-  var ohiComponents = ohi.components.map(function (c) {
-    return '<div class="row-between small" style="padding:3px 0">' +
-      '<span class="muted">' + esc(c.label) + ' <span class="tag-pill">' + c.weight + '%</span></span>' +
-      '<b>' + c.value + '</b></div>';
-  }).join('');
-
-  var attentionRows = needsAttention.length ? needsAttention.map(function (f) {
-    var d = dueInfo(f);
-    return '<div class="list__row" data-act="nav" data-view="finding" data-id="' + f.id + '">' +
-      '<div class="list__main"><div class="list__title"><span class="tag-pill">' + esc(f.id) + '</span> ' + esc(f.title) + '</div>' +
-      '<div class="list__meta"><span>' + severityHtml(f) + '</span><span><b>Org:</b> ' + esc(orgName(f.orgId)) + '</span>' +
-      '<span><b>Owner:</b> ' + esc(ownerLabel(f)) + '</span></div></div>' +
-      '<div class="list__side">' + statusBadge(f) + (d.overdue ? '' : '') + '</div></div>';
-  }).join('') : '<div class="empty">No critical or overdue findings right now.</div>';
+  var attentionItems = needsAttention.map(function (finding) {
+    return workItemFromFinding(finding, { allEvidenceVersions: true });
+  }).concat(notStarted.map(workItemFromAudit)).sort(workItemSort);
 
   return '' +
     pageHead('Supervisor / Manager Dashboard', 'Performance, risk, workload, SSP and CAP oversight.') +
-    '<div class="grid grid--kpi mb-16">' +
-      kpiCard('Open Findings', k.openFindings, 'Across all organizations', { view: 'findings', filter: 'open' }) +
-      kpiCard('Overdue Findings', k.overdueFindings, 'Past due date', { tone: k.overdueFindings ? 'danger' : 'ok', view: 'findings', filter: 'overdue' }) +
-      kpiCard('Critical Findings', k.criticalFindings, 'Level 1 Critical, open', { tone: k.criticalFindings ? 'danger' : 'ok', view: 'findings', filter: 'critical' }) +
+    renderAttentionStrip([
+      { label: 'Open Findings', value: String(k.openFindings), tone: k.openFindings ? 'warn' : 'ok' },
+      { label: 'Overdue Findings', value: String(k.overdueFindings), tone: k.overdueFindings ? 'danger' : 'ok' },
+      { label: 'Critical Findings', value: String(k.criticalFindings), tone: k.criticalFindings ? 'danger' : 'ok' },
+      { label: 'Plan Completion', value: k.planCompletion + '%', tone: 'info' },
+      { label: 'OHI', value: ohi.score + ' · ' + ohi.band, tone: ohi.score < 60 ? 'danger' : (ohi.score < 75 ? 'warn' : 'ok') }
+    ]) +
+    '<div class="callout mb-16"><b>Oversight Health Index:</b> Management indicator only. It does not trigger automatic enforcement, suspension or closure.</div>' +
+    '<div class="row-actions mb-16">' +
+      '<button class="btn btn--primary" data-act="nav" data-view="findings" data-filter="overdue">Open overdue findings</button>' +
+      '<button class="btn" data-act="nav" data-view="calendar">Open audit work queue</button>' +
+      '<button class="btn" data-act="nav" data-view="planning">Open planning</button>' +
     '</div>' +
-    '<div class="grid grid--main">' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card">' +
-          '<div class="card__head"><h3>Needs Attention</h3><span class="sub">Critical or overdue findings, management view</span></div>' +
-          '<div class="list">' + attentionRows + '</div>' +
-        '</div>' +
-        '<div class="card">' +
-          '<div class="card__head"><h3>2026 Surveillance Plan</h3><div class="spacer"></div>' +
-            '<button class="btn btn--sm" data-act="nav" data-view="calendar">Open work queue</button></div>' +
-          '<div class="card__body">' +
-            '<div class="row-between mb-8"><span class="muted small">Plan completion</span><b>' + k.completedAudits + ' of ' + k.plannedAudits + ' audits</b></div>' +
-            '<div class="progress"><div class="progress__bar" style="width:' + k.planCompletion + '%"></div></div>' +
-            '<div class="grid grid--3 mt-16">' +
-              kpiCard('Plan Completion', k.planCompletion + '%', 'Completed / planned') +
-              kpiCard('Avg Closure Time', k.avgClosure + ' days', 'Across closed findings') +
-              kpiCard('Closed Findings', k.closedFindings, 'Resolved this cycle') +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card">' +
-          '<div class="card__head"><h3>Oversight Health Index</h3></div>' +
-          '<div class="card__body">' +
-            '<div class="ohi">' +
-              '<div class="ohi__ring" style="--val:' + ohi.score + ';--col:' + ohi.color + '"><span class="ohi__num">' + ohi.score + '</span></div>' +
-              '<div class="ohi__meta"><div class="ohi__band" style="color:' + ohi.color + '">' + esc(ohi.band) + '</div>' +
-              '<div class="ohi__note">Management indicator only. It does not trigger automatic enforcement, suspension or closure.</div></div>' +
-            '</div>' +
-            '<div class="divider"></div>' + ohiComponents +
-          '</div>' +
-        '</div>' +
-        '<div class="card">' +
-          '<div class="card__head"><h3>Audits Not Started</h3></div>' +
-          '<div class="card__body">' +
-            (notStarted.length ? notStarted.map(function (a) {
-              return '<div class="row-between small" style="padding:5px 0;cursor:pointer" data-act="nav" data-view="audit-detail" data-id="' + a.id + '">' +
-                '<span><b>' + esc(orgName(a.orgId)) + '</b> · ' + esc(a.type) + '</span>' +
-                '<span class="muted">' + esc(fmtDate(a.date)) + '</span></div>';
-            }).join('') : '<div class="muted small">All planned audits have started.</div>') +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
+    '<h2 class="section-heading">Management Attention</h2>' +
+    renderOpsTable(attentionItems, { includeChildren: true, empty: 'No critical, overdue, or not-started management items right now.' });
 }
 
 function workbenchItem(tone, title, meta, actionLabel, view, id, filter) {
@@ -1132,7 +1204,7 @@ function workbenchItem(tone, title, meta, actionLabel, view, id, filter) {
 }
 
 function quickAction(label, view, id, filter, primary) {
-  return '<button class="btn ' + (primary ? 'btn--primary' : '') + ' btn--block" data-act="nav" data-view="' + esc(view) + '"' +
+  return '<button class="btn ' + (primary ? 'btn--primary' : '') + '" data-act="nav" data-view="' + esc(view) + '"' +
     (id ? ' data-id="' + esc(id) + '"' : '') + (filter ? ' data-filter="' + esc(filter) + '"' : '') + '>' + esc(label) + '</button>';
 }
 
@@ -1145,24 +1217,13 @@ function viewInspectorDashboard() {
   var capReview = actionableFindings.filter(function (f) { return f.status === 'CAP_SUBMITTED'; });
   var evReview = actionableFindings.filter(function (f) { return f.status === 'EVIDENCE_SUBMITTED'; });
   var highRisk = state.riskProfiles.slice().sort(function (a, b) { return b.score - a.score; })[0];
-  var reportAudits = state.audits.filter(function (a) { return a.status === 'Report Issued' || a.status === 'Closed'; });
-
-  var attention = [
-    workbenchItem(highRisk && highRisk.score > 75 ? 'warn' : 'info', 'High-risk operator', highRisk ? orgName(highRisk.orgId) + ' · mock risk score ' + highRisk.score : 'No high-risk operator', 'Open risk profile', 'org-risk', highRisk ? highRisk.orgId : 'ORG-XYZ'),
-    workbenchItem(todays.length ? 'info' : 'neutral', 'Audit work queue', todays.length + ' scheduled today; ' + upcomingWeek.length + ' this week', 'Open queue', 'calendar'),
-    workbenchItem(evReview.length ? 'warn' : 'ok', 'Evidence waiting review', evReview.length + ' file(s) waiting for CAA decision', 'Review evidence', 'findings', null, 'evreview')
-  ].join('');
-
-  var upcoming = [
-    workbenchItem(upcomingWeek.length ? 'info' : 'neutral', 'This week’s inspections', upcomingWeek.length + ' inspection(s) scheduled through ' + fmtDate(weekEnd), 'Open queue', 'calendar'),
-    workbenchItem(reportAudits.length ? 'neutral' : 'ok', 'Reports to write / review', reportAudits.length + ' report preview(s) available', 'Open reports', 'reports'),
-    workbenchItem(capReview.length ? 'warn' : 'ok', 'CAP review queue', capReview.length + ' submitted CAP(s) waiting review', 'Review CAPs', 'findings', null, 'capreview')
-  ].join('');
-
-  var riskSignals = [
-    workbenchItem('warn', 'Risk score rising operators', highRisk ? orgName(highRisk.orgId) + ' is the top mock risk profile' : 'No rising operator signal', 'Inspect signal', 'safety-intelligence'),
-    workbenchItem('info', 'Operational change alert', 'Airline XYZ fleet/management change placeholder in risk dossier', 'Open dossier', 'org-risk', 'ORG-XYZ')
-  ].join('');
+  var reportItems = state.auditReports.map(workItemFromReport);
+  var auditItems = sortedAuditsForQueue(auditsForQueueScope().filter(function (a) { return !isClosedAudit(a); })).map(workItemFromAudit);
+  var findingItems = capReview.concat(evReview).map(function (finding) {
+    return workItemFromFinding(finding, { allEvidenceVersions: true });
+  });
+  var riskItems = highRisk ? [workItemFromRiskProfile(highRisk)] : [];
+  var items = riskItems.concat(findingItems, auditItems, reportItems).sort(workItemSort);
 
   return '' +
     pageHead('Today’s Workbench', 'Inspector Workspace for daily operations: attention, upcoming work, risk signals and fast actions.') +
@@ -1181,18 +1242,22 @@ function viewInspectorDashboard() {
         compactMetric('Evidence reviews', String(evReview.length), evReview.length ? 'warn' : 'ok') +
       '</div>' +
     '</div>' +
-    '<div class="grid grid--2 mb-16">' +
-      '<div class="card"><div class="card__head"><h3>A. Attention Needed</h3><span class="sub">high-risk, evidence</span></div><div class="card__body workbench-list">' + attention + '</div></div>' +
-      '<div class="card"><div class="card__head"><h3>B. My Upcoming Work</h3><span class="sub">this week, prep, reports, CAP review</span></div><div class="card__body workbench-list">' + upcoming + '</div></div>' +
+    renderAttentionStrip([
+      { label: 'Today’s inspections', value: String(todays.length), tone: todays.length ? 'info' : 'neutral' },
+      { label: 'This week', value: String(upcomingWeek.length), tone: upcomingWeek.length ? 'info' : 'neutral' },
+      { label: 'CAP reviews', value: String(capReview.length), tone: capReview.length ? 'warn' : 'ok' },
+      { label: 'Evidence reviews', value: String(evReview.length), tone: evReview.length ? 'warn' : 'ok' },
+      { label: 'High-risk signals', value: highRisk ? orgName(highRisk.orgId) : '0', tone: highRisk ? 'warn' : 'ok' }
+    ]) +
+    '<div class="row-actions mb-16">' +
+      '<button class="btn btn--primary" data-act="new-audit">New inspection</button>' +
+      quickAction('Open audit queue', 'calendar') +
+      quickAction('Review CAP', 'findings', null, 'capreview') +
+      quickAction('Review evidence', 'findings', null, 'evreview') +
+      quickAction('Generate report', 'reports') +
     '</div>' +
-    '<div class="grid grid--main">' +
-      '<div class="card"><div class="card__head"><h3>C. Risk Signals</h3><span class="sub">operator score, CAP trend, operational change</span></div><div class="card__body workbench-list">' + riskSignals + '</div></div>' +
-      '<div class="card"><div class="card__head"><h3>D. Quick Actions</h3></div><div class="card__body quick-actions">' +
-        '<button class="btn btn--primary btn--block" data-act="new-audit">New inspection</button>' +
-        quickAction('Review CAP', 'findings', null, 'capreview') +
-        quickAction('Generate report', 'reports') +
-      '</div></div>' +
-    '</div>';
+    '<h2 class="section-heading">My Work Today</h2>' +
+    renderOpsTable(items, { includeChildren: true, empty: 'No work is assigned today.' });
 }
 
 /* =========================== Auditee — My Findings =========================== */
@@ -1205,23 +1270,27 @@ function viewAuditeeMyFindings() {
   var overdue = open.filter(function (f) { return dueInfo(f).overdue; });
   var closed = mine.filter(function (f) { return f.status === 'CLOSED'; });
 
-  var rows = mine.length ? mine.map(findingRow).join('') : '<div class="empty">Your organization has no open findings. Nothing is required right now.</div>';
+  var items = mine.map(function (finding) {
+    return workItemFromFinding(finding, { allEvidenceVersions: true });
+  }).sort(workItemSort);
 
   return '' +
     pageHead('Service Provider Portal — ' + ROLES.auditee.orgName, 'Findings, CAP uploads, CAA responses and shared documents for your organization.') +
     '<div class="scope-note">🔒 You are viewing only ' + esc(ROLES.auditee.orgName) + ' portal data. CAA-only working information is outside this portal.</div>' +
-    '<div class="grid grid--kpi mb-16">' +
-      kpiCard('My Open Findings', open.length, 'Need a response or are in review') +
-      kpiCard('CAP Required', capReq.length, 'Submit a corrective action plan', { tone: capReq.length ? 'warn' : 'ok' }) +
-      kpiCard('Evidence Required', evReq.length, 'Upload proof of completion', { tone: evReq.length ? 'warn' : 'ok' }) +
-    '</div>' +
-    '<div class="grid grid--kpi mb-16">' +
-      kpiCard('Due Soon', dueSoon.length, 'Within 7 days', { tone: dueSoon.length ? 'warn' : 'ok' }) +
-      kpiCard('Overdue', overdue.length, 'Past target date', { tone: overdue.length ? 'danger' : 'ok' }) +
-      kpiCard('Closed', closed.length, 'Resolved findings') +
-    '</div>' +
-    '<div class="card"><div class="card__head"><h3>All My Findings</h3><span class="sub">Each shows owner, due date, status and next action</span></div>' +
-      '<div class="list">' + rows + '</div></div>';
+    renderAttentionStrip([
+      { label: 'Open requests', value: String(open.length), tone: open.length ? 'warn' : 'ok' },
+      { label: 'CAP required', value: String(capReq.length), tone: capReq.length ? 'warn' : 'ok' },
+      { label: 'Evidence required', value: String(evReq.length), tone: evReq.length ? 'warn' : 'ok' },
+      { label: 'Due Soon', value: String(dueSoon.length), tone: dueSoon.length ? 'warn' : 'ok' },
+      { label: 'Overdue', value: String(overdue.length), tone: overdue.length ? 'danger' : 'ok' },
+      { label: 'Closed', value: String(closed.length), tone: 'neutral' }
+    ]) +
+    '<h2 class="section-heading">My CAA Requests</h2>' +
+    renderOpsTable(items, {
+      includeChildren: true,
+      hideOrganization: true,
+      empty: 'Your organization has no open findings. Nothing is required right now.'
+    });
 }
 
 /* =========================== Audit Work Queue =========================== */
@@ -1324,15 +1393,14 @@ function viewCalendar() {
   if (state.role === 'manager') {
     actions += ' <button class="btn btn--primary btn--sm" data-act="new-audit">+ New Audit</button>';
   }
-  var rows = list.length ? list.map(auditRow).join('') : '<div class="empty">No assigned audits match this filter.</div>';
+  var items = list.map(workItemFromAudit);
   return pageHead('Audit Work Queue', 'Assigned audits in a simple queue. Use Active for open work and Completed for finished audits.', actions) +
-    '<div class="queue-summary mb-16">' +
-      compactMetric('Active audits', String(active.length), active.length ? 'info' : 'neutral') +
-      compactMetric('Completed', String(completed.length), 'ok') +
-    '</div>' +
-    '<div class="card"><div class="card__head"><h3>' + esc(AUDIT_FILTER_LABELS[filter]) + '</h3>' +
-    '<span class="sub">' + list.length + ' audit' + (list.length === 1 ? '' : 's') + ' sorted by Due Date</span></div>' +
-    '<div class="list">' + rows + '</div></div>';
+    renderAttentionStrip([
+      { label: 'Active audits', value: String(active.length), tone: active.length ? 'info' : 'neutral' },
+      { label: 'Completed', value: String(completed.length), tone: 'ok' },
+      { label: 'Sorted by Due Date', value: list.length + ' row' + (list.length === 1 ? '' : 's'), tone: 'neutral' }
+    ]) +
+    renderOpsTable(items, { empty: 'No assigned audits match this filter.' });
 }
 
 /* =========================== Audit Detail =========================== */
@@ -1349,18 +1417,19 @@ function viewAuditDetail() {
       (a.checklistStarted ? ' data-view="checklist"' : '') + ' data-id="' + a.id + '">' + esc(runLabel) + '</button>';
   }
 
-  var findingsHtml = auditFindings.length
-    ? '<div class="list">' + auditFindings.map(findingRow).join('') + '</div>'
-    : '<div class="empty">No findings raised from this audit yet.</div>';
+  var findingsHtml = renderOpsTable(auditFindings.map(function (finding) {
+    return workItemFromFinding(finding, { allEvidenceVersions: true });
+  }), {
+    includeChildren: true,
+    empty: 'No findings raised from this audit yet.'
+  });
 
   return '' +
     pageHead(a.ref + ' — ' + orgName(a.orgId), 'Operator Audit overview and checklist entry point.', actions) +
     auditNextActionBar(a) +
-    '<div class="grid grid--main">' +
-      '<div class="card">' +
-        '<div class="card__head"><h3>Audit Details</h3><div class="spacer"></div>' +
-          auditStatusBadge(a) + '</div>' +
-        '<div class="card__body">' +
+    '<div class="dossier-sections">' +
+      '<div class="dossier-stack">' +
+        dossierPanel('Audit Details',
           '<div class="metaline">' +
             metaItem('Next action', auditStatusMeta(a).next) +
             metaItem('Current owner', auditOwnerLabel(a)) +
@@ -1372,16 +1441,21 @@ function viewAuditDetail() {
             metaItem('Location', a.location) +
             metaItem('Lead inspector', a.lead) +
             metaItem('Team', a.team.join(', ')) +
+          '</div>', 'Selected row dossier') +
+        dossierPanel('Findings from this audit', findingsHtml, 'Related Finding -> CAP -> Evidence rows') +
+      '</div>' +
+      '<div class="dossier-stack">' +
+        dossierPanel('Checklist Entry',
+          '<div class="metaline">' +
+            metaItem('Checklist template', state.checklist.name) +
+            metaItem('Template version', state.checklist.version) +
+            metaItem('Audit status', a.status) +
           '</div>' +
           '<div class="divider"></div>' +
-          '<div class="row-between"><div><div class="metaline__k">Checklist template</div>' +
-          '<div class="metaline__v">' + esc(state.checklist.name) + ' · ' + esc(state.checklist.version) + '</div></div>' +
-          (canRun ? '<button class="btn btn--primary" data-act="' + (a.checklistStarted ? 'nav' : 'start-checklist') + '"' +
-            (a.checklistStarted ? ' data-view="checklist"' : '') + ' data-id="' + a.id + '">' + esc(runLabel) + '</button>' : '') +
-          '</div>' +
-        '</div>' +
+          (canRun ? '<button class="btn btn--primary btn--block" data-act="' + (a.checklistStarted ? 'nav' : 'start-checklist') + '"' +
+            (a.checklistStarted ? ' data-view="checklist"' : '') + ' data-id="' + a.id + '">' + esc(runLabel) + '</button>' : '<div class="muted small">Checklist is not editable in this state.</div>')) +
+        dossierPanel('Status', auditStatusBadge(a), 'Audit lifecycle') +
       '</div>' +
-      '<div class="card"><div class="card__head"><h3>Findings from this audit</h3></div>' + findingsHtml + '</div>' +
     '</div>';
 }
 
@@ -1398,62 +1472,86 @@ function viewChecklistRunner() {
   var answered = Object.keys(answers).filter(function (q) { return answers[q] && answers[q].answer; }).length;
   var pct = Math.round((answered / tpl.items.length) * 100);
 
-  var itemsHtml = tpl.items.map(function (it, idx) {
+  var activeQuestionId = state.params.questionId;
+  if (!activeQuestionId) {
+    var flaggedItem = tpl.items.filter(function (item) {
+      var ans = answers[item.id] || {};
+      return ans.answer === 'noncompliant' || ans.answer === 'observation' || ans.potentialFindingId || ans.findingId;
+    })[0];
+    var unanswered = tpl.items.filter(function (item) { return !(answers[item.id] && answers[item.id].answer); })[0];
+    activeQuestionId = (flaggedItem || unanswered || tpl.items[0]).id;
+  }
+  var activeItem = tpl.items.filter(function (item) { return item.id === activeQuestionId; })[0] || tpl.items[0];
+  var activeAnswer = answers[activeItem.id] || {};
+  var selected = activeAnswer.answer || '';
+  var activeFlagged = selected === 'noncompliant' || selected === 'observation';
+
+  function answerBadge(ans) {
+    if (!ans || !ans.answer) return demoBadge('Not answered', 'neutral');
+    var tone = ans.answer === 'compliant' ? 'ok' : (ans.answer === 'noncompliant' ? 'danger' : (ans.answer === 'observation' ? 'warn' : 'neutral'));
+    return demoBadge(CHECKLIST_RESULTS[ans.answer] || ans.answer, tone);
+  }
+
+  var rows = tpl.items.map(function (it, idx) {
     var ans = answers[it.id] || {};
-    var sel = ans.answer || '';
-    function aBtn(val, label, selCls) {
-      return '<button class="answer ' + (sel === val ? selCls : '') + '" data-act="answer" data-q="' + it.id + '" data-val="' + val + '">' + esc(label) + '</button>';
-    }
-    var flagged = sel === 'noncompliant' || sel === 'observation';
-    var commentRequired = checklistResultRequiresComment(sel);
-    var commentHtml = '<div class="form-row mt-12">' +
-      '<label>Inspector comment' + (commentRequired ? ' <span class="req">*</span>' : '') + '</label>' +
-      '<textarea data-field="checklist-comment" data-q="' + esc(it.id) + '" placeholder="' +
-        (commentRequired ? 'Required for Non-Compliant or Observation.' : 'Optional note for the audit report.') + '">' +
-        esc(ans.comment || '') + '</textarea></div>';
-    var noteHtml = '';
-    if (flagged) {
-      if (ans.findingId) {
-        noteHtml = '<div class="cl-finding-note"><span>⚑</span><div>Finding <b>' + esc(ans.findingId) + '</b> created from this item. ' +
-          '<a data-act="nav" data-view="finding" data-id="' + ans.findingId + '" style="cursor:pointer">Open finding →</a></div></div>';
-      } else if (ans.potentialFindingId) {
-        var pf = potentialFindingById(ans.potentialFindingId);
-        noteHtml = '<div class="cl-finding-note"><span>⚑</span><div>Potential Finding <b>' + esc(ans.potentialFindingId) + '</b> ' +
-          (pf ? esc(approvalMetaForStatus(pf.status).label || humanStatus(pf.status)) : 'created') +
-          '. Lead Inspector review is required before a real Finding is issued.</div></div>';
-      } else {
-        var fileList = ans.evidenceFiles && ans.evidenceFiles.length
-          ? '<div class="filechip"><div class="filechip__icon">PDF</div><div style="flex:1"><div class="filechip__name">' + esc(ans.evidenceFiles.join(', ')) + '</div><div class="filechip__meta">selected (mock filename only)</div></div></div>'
-          : '<div class="small muted mt-12">No mock evidence filename selected.</div>';
-        var evidenceFormatHelp = '<div class="small muted mt-12"><b>Accepted evidence examples:</b> report/document (PDF, DOCX), image/photo (JPG, PNG), audio recording (MP3, M4A), spreadsheet/data (XLSX, CSV). Demo only: select a filename; no real upload occurs.</div>';
-        noteHtml = '<div class="cl-finding-note"><span>⚑</span><div style="flex:1">Marked <b>' + esc(CHECKLIST_RESULTS[sel]) + '</b>. Add the required comment above before creating a Potential Finding.' +
-          evidenceFormatHelp + fileList + '<div class="row-actions mt-12">' +
-          '<button class="btn btn--sm" data-act="mock-checklist-evidence" data-q="' + esc(it.id) + '">Select mock evidence filename</button>' +
-          '<button class="btn btn--danger btn--sm" data-act="create-potential" data-q="' + esc(it.id) + '" data-id="' + a.id + '">Create Potential Finding</button></div>' +
-          '</div></div>';
-      }
-    }
-    return '<div class="cl-item' + (flagged ? ' flagged' : '') + '">' +
-      '<div class="cl-item__head">' +
-        '<div class="cl-item__num">' + (idx + 1) + '</div>' +
-        '<div style="flex:1"><div class="cl-item__q">' + esc(it.text) + '</div>' +
-          '<div class="cl-item__refs">' +
-            '<span><b>Regulatory reference:</b> ' + esc(it.ref) + '</span>' +
-            '<span><b>Expected evidence:</b> ' + esc(it.evidence) + '</span>' +
-          '</div>' +
-          regulatoryTraceHtml(regulatoryTraceForQuestion(it.id), true) +
-        '</div>' +
-      '</div>' +
-      '<div class="cl-item__body">' +
-        '<div class="answers">' +
-          aBtn('compliant', 'Compliant', 'sel-compliant') +
-          aBtn('noncompliant', 'Non-Compliant', 'sel-noncompliant') +
-          aBtn('observation', 'Observation', 'sel-observation') +
-          aBtn('na', 'Not Applicable', 'sel-na') +
-        '</div>' + commentHtml + noteHtml +
-      '</div>' +
-    '</div>';
+    var findingState = ans.findingId
+      ? '<button class="btn btn--sm" data-act="nav" data-view="finding" data-id="' + esc(ans.findingId) + '">Open finding</button>'
+      : (ans.potentialFindingId ? demoBadge('Potential Finding', 'warn') : '<span class="muted small">No finding</span>');
+    return '<tr class="ops-row' + (it.id === activeItem.id ? ' is-selected' : '') + '" data-act="select-checklist-question" data-q="' + esc(it.id) + '">' +
+      '<td><span class="ops-priority is-' + (ans.answer === 'noncompliant' ? 'danger' : (ans.answer === 'observation' ? 'warn' : 'neutral')) + '">Q' + (idx + 1) + '</span></td>' +
+      '<td><div class="ops-cell-title">' + esc(it.text) + '</div><div class="ops-cell-sub">' + esc(it.ref) + '</div></td>' +
+      '<td>' + answerBadge(ans) + '</td>' +
+      '<td>' + esc(it.evidence) + '</td>' +
+      '<td>' + findingState + '</td>' +
+      '<td><button class="btn btn--sm" data-act="select-checklist-question" data-q="' + esc(it.id) + '">Review row</button></td>' +
+    '</tr>';
   }).join('');
+
+  function aBtn(val, label, selCls) {
+    return '<button class="answer ' + (selected === val ? selCls : '') + '" data-act="answer" data-q="' + activeItem.id + '" data-val="' + val + '">' + esc(label) + '</button>';
+  }
+  var commentRequired = checklistResultRequiresComment(selected);
+  var commentHtml = '<div class="form-row mt-12">' +
+    '<label>Inspector comment' + (commentRequired ? ' <span class="req">*</span>' : '') + '</label>' +
+    '<textarea data-field="checklist-comment" data-q="' + esc(activeItem.id) + '" placeholder="' +
+      (commentRequired ? 'Required for Non-Compliant or Observation.' : 'Optional note for the audit report.') + '">' +
+      esc(activeAnswer.comment || '') + '</textarea></div>';
+  var noteHtml = '';
+  if (activeFlagged) {
+    if (activeAnswer.findingId) {
+      noteHtml = '<div class="cl-finding-note"><span>Flag</span><div>Finding <b>' + esc(activeAnswer.findingId) + '</b> created from this item. ' +
+        '<a data-act="nav" data-view="finding" data-id="' + activeAnswer.findingId + '" style="cursor:pointer">Open finding</a></div></div>';
+    } else if (activeAnswer.potentialFindingId) {
+      var pf = potentialFindingById(activeAnswer.potentialFindingId);
+      noteHtml = '<div class="cl-finding-note"><span>Flag</span><div>Potential Finding <b>' + esc(activeAnswer.potentialFindingId) + '</b> ' +
+        (pf ? esc(approvalMetaForStatus(pf.status).label || humanStatus(pf.status)) : 'created') +
+        '. Lead Inspector review is required before a real Finding is issued.</div></div>';
+    } else {
+      var fileList = activeAnswer.evidenceFiles && activeAnswer.evidenceFiles.length
+        ? '<div class="filechip"><div class="filechip__icon">PDF</div><div style="flex:1"><div class="filechip__name">' + esc(activeAnswer.evidenceFiles.join(', ')) + '</div><div class="filechip__meta">selected (mock filename only)</div></div></div>'
+        : '<div class="small muted mt-12">No mock evidence filename selected.</div>';
+      var evidenceFormatHelp = '<div class="small muted mt-12"><b>Accepted evidence examples:</b> report/document (PDF, DOCX), image/photo (JPG, PNG), audio recording (MP3, M4A), spreadsheet/data (XLSX, CSV). Demo only: select a filename; no real upload occurs.</div>';
+      noteHtml = '<div class="cl-finding-note"><span>Flag</span><div style="flex:1">Marked <b>' + esc(CHECKLIST_RESULTS[selected]) + '</b>. Add the required comment above before creating a Potential Finding.' +
+        evidenceFormatHelp + fileList + '<div class="row-actions mt-12">' +
+        '<button class="btn btn--sm" data-act="mock-checklist-evidence" data-q="' + esc(activeItem.id) + '">Select mock evidence filename</button>' +
+        '<button class="btn btn--danger btn--sm" data-act="create-potential" data-q="' + esc(activeItem.id) + '" data-id="' + a.id + '">Create Potential Finding</button></div>' +
+        '</div></div>';
+    }
+  }
+  var checklistTable = '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
+    '<th style="width:82px">Row</th><th>Checklist question</th><th>Answer</th><th>Expected evidence</th><th>Finding status</th><th style="width:110px"></th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+  var activePanel = '<div class="active-row-panel">' +
+    '<div class="active-row-panel__title">' + esc(activeItem.text) + '</div>' +
+    '<div class="active-row-panel__meta">' + esc(activeItem.ref) + ' · Expected evidence: ' + esc(activeItem.evidence) + '</div>' +
+    regulatoryTraceHtml(regulatoryTraceForQuestion(activeItem.id), true) +
+    '<div class="answers">' +
+      aBtn('compliant', 'Compliant', 'sel-compliant') +
+      aBtn('noncompliant', 'Non-Compliant', 'sel-noncompliant') +
+      aBtn('observation', 'Observation', 'sel-observation') +
+      aBtn('na', 'Not Applicable', 'sel-na') +
+    '</div>' + commentHtml + noteHtml +
+  '</div>';
 
   return '' +
     pageHead('Checklist Runner — ' + tpl.name, orgName(a.orgId) + ' · ' + a.ref + ' · ' + tpl.version,
@@ -1463,7 +1561,10 @@ function viewChecklistRunner() {
       '<div class="progress"><div class="progress__bar" style="width:' + pct + '%"></div></div>' +
       '<div class="callout mt-12">Mark <b>Are crew training records complete and up to date?</b> as <b>Non-Compliant</b> to raise a finding, as in the demo scenario.</div>' +
     '</div></div>' +
-    itemsHtml;
+    '<div class="active-row-layout">' +
+      '<div>' + checklistTable + '</div>' +
+      activePanel +
+    '</div>';
 }
 
 function leadAuditReviewForAudit(auditId) {
@@ -1696,6 +1797,10 @@ function viewAuditReportsApproval() {
     ? '<div class="report__stamp">' + esc(report.mockDigitalSignature.label) + '</div><div class="small muted mt-12">Signed by ' + esc(report.mockDigitalSignature.signer) + ' · ' + esc(fmtDate(report.mockDigitalSignature.date)) + '</div>'
     : '<div class="muted small">Mock signature appears only after ED approval.</div>';
   var findings = state.findings.filter(function (finding) { return finding.auditId === report.auditId; });
+  var reportQueue = (state.auditReports || []).map(workItemFromReport).sort(workItemSort);
+  var findingsTable = renderOpsTable(findings.map(function (finding) {
+    return workItemFromFinding(finding, { allEvidenceVersions: true });
+  }), { includeChildren: true, empty: 'No converted findings for this audit yet.' });
 
   return pageHead(report.title || ('Preliminary / Final Report — ' + report.id), 'Mock report approval chain: Lead Inspector -> Department Manager -> GM -> Executive Director.',
     '<button class="btn" data-act="mock-export">Preview PDF (mock)</button><button class="btn" data-act="mock-export">Preview Word (mock)</button>') +
@@ -1704,6 +1809,8 @@ function viewAuditReportsApproval() {
       { label: 'Mock digital signature only', tone: 'warn' },
       { label: 'Enforcement recommendation only', tone: 'warn' }
     ]) +
+    '<h2 class="section-heading">Report Approval Queue</h2>' +
+    renderOpsTable(reportQueue, { selectedId: report.id, empty: 'No audit report approvals are seeded.' }) +
     '<div class="grid grid--kpi mb-16">' +
       kpiCard('Report Status', esc(status.label), report.finalLocked ? 'Locked final report' : 'Editable demo draft', { tone: status.tone }) +
       kpiCard('Current Owner', esc(summary.ownerLabel), summary.nextAction, { tone: summary.statusTone }) +
@@ -1727,7 +1834,7 @@ function viewAuditReportsApproval() {
         (leadReview ? '<div class="card"><div class="card__head"><h3>Audit team checklist summary</h3><span class="sub">Inspectors assigned</span></div><div class="card__body">' + leadAssignmentsHtml(leadReview) + '</div></div>' : '') +
         '<div class="card"><div class="card__head"><h3>Findings / Observations / Recommendations</h3></div><div class="card__body">' +
           '<div class="reg-section-title">Findings from audit</div>' +
-          (findings.length ? findings.map(function (finding) { return '<div class="package-question"><div><b>' + esc(finding.id) + '</b><p>' + esc(finding.title) + '</p></div>' + statusBadge(finding) + '</div>'; }).join('') : '<div class="muted small">No converted findings for this audit yet.</div>') +
+          findingsTable +
           (leadReview ? '<div class="reg-section-title mt-16">Submitted findings and comments</div>' + leadSubmittedFindingsHtml(leadReview) : '') +
           '<div class="reg-section-title mt-16">Observations</div>' + report.observations.map(function (item) { return '<div class="small muted mb-8">' + esc(item) + '</div>'; }).join('') +
           '<div class="reg-section-title mt-16">Recommendations</div>' + report.recommendations.map(function (item) { return '<div class="small muted mb-8">' + esc(item) + '</div>'; }).join('') +
@@ -1767,13 +1874,16 @@ function viewFinding() {
   /* Evidence block (version history preserved) */
   var evHtml;
   if (f.evidence && f.evidence.length) {
-    evHtml = f.evidence.map(function (e) {
+    evHtml = '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
+      '<th>Version</th><th>Filename</th><th>Uploaded</th><th>Status</th><th>Demo boundary</th></tr></thead><tbody>' +
+      f.evidence.map(function (e) {
       var bcls = e.status === 'Accepted' ? 'ok' : e.status === 'Rejected' ? 'danger' : 'info';
-      return '<div class="filechip"><div class="filechip__icon">PDF</div>' +
-        '<div style="flex:1"><div class="filechip__name">' + esc(e.fileName) + '</div>' +
-        '<div class="filechip__meta">Version ' + e.version + ' · ' + esc(e.size) + ' · uploaded ' + esc(fmtDate(e.uploadedDate)) + '</div></div>' +
-        '<span class="badge badge--' + bcls + '"><span class="dot"></span>' + esc(e.status) + '</span></div>';
-    }).join('');
+      return '<tr><td><b>v' + esc(e.version) + '</b></td>' +
+        '<td><div class="ops-cell-title">' + esc(e.fileName) + '</div><div class="ops-cell-sub">' + esc(e.size) + ' · mock filename only</div></td>' +
+        '<td>' + esc(fmtDate(e.uploadedDate)) + '</td>' +
+        '<td><span class="badge badge--' + bcls + '"><span class="dot"></span>' + esc(e.status) + '</span></td>' +
+        '<td class="ops-cell-muted">Version history preserved; no real file storage.</td></tr>';
+    }).join('') + '</tbody></table></div>';
   } else {
     evHtml = '<div class="empty">No evidence uploaded yet.</div>';
   }
@@ -1803,11 +1913,10 @@ function viewFinding() {
   /* Related audit-log entries */
   var logEntries = state.auditLog.filter(function (l) { return l.target === f.id; });
   var logHtml = logEntries.length
-    ? '<div class="timeline">' + logEntries.map(function (l) {
-        return '<div class="tl-item"><div class="tl-item__time">' + esc(l.time) + '</div>' +
-          '<div class="tl-item__txt"><b>' + esc(l.action) + '</b></div>' +
-          '<div class="tl-item__actor">' + esc(l.actor) + '</div></div>';
-      }).join('') + '</div>'
+    ? '<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Time</th><th>Action</th><th>Actor</th><th>Target</th></tr></thead><tbody>' +
+      logEntries.map(function (l) {
+        return '<tr><td class="ops-cell-muted">' + esc(l.time) + '</td><td><b>' + esc(l.action) + '</b></td><td>' + esc(l.actor) + '</td><td>' + esc(l.target) + '</td></tr>';
+      }).join('') + '</tbody></table></div>'
     : '<div class="muted small">No audit-log entries yet.</div>';
 
   var d = dueInfo(f);
@@ -1827,17 +1936,35 @@ function viewFinding() {
       '<button class="btn btn--danger btn--sm" data-act="authclose" data-id="' + f.id + '">Authorized closure…</button></span></div>';
   }
 
+  var capActions = (isAuditee && (f.status === 'WAITING_CAP' || f.status === 'CAP_MORE_INFO')
+    ? '<div class="mt-12"><button class="btn btn--primary btn--sm" data-act="cap" data-id="' + f.id + '">Submit CAP</button></div>' : '') +
+    ((!isAuditee && f.status === 'CAP_SUBMITTED')
+      ? '<div class="mt-12"><button class="btn btn--primary btn--sm" data-act="reviewcap" data-id="' + f.id + '">Review CAP</button></div>' : '');
+  var evidenceActions = (isAuditee && (f.status === 'EVIDENCE_REQUIRED' || f.status === 'EVIDENCE_MORE_INFO')
+    ? '<div class="mt-12"><button class="btn btn--primary btn--sm" data-act="evidence" data-id="' + f.id + '">Upload evidence</button></div>' : '') +
+    ((!isAuditee && f.status === 'EVIDENCE_SUBMITTED')
+      ? '<div class="mt-12"><button class="btn btn--primary btn--sm" data-act="reviewev" data-id="' + f.id + '">Review evidence</button></div>' : '');
+  var internalPanel = '';
+  if (!isAuditee) {
+    internalPanel = dossierPanel('Internal CAA Notes',
+      ((f.internalNotes && f.internalNotes.length)
+        ? f.internalNotes.map(function (n) {
+            return '<div class="note-internal mb-8"><div class="tag">Internal CAA Note</div>' + esc(n.text) +
+              '<div class="muted small mt-12">' + esc(n.author) + ' · ' + esc(fmtDate(n.date)) + '</div></div>';
+          }).join('')
+        : '<div class="muted small">No internal notes recorded.</div>'),
+      'Not visible to the auditee');
+  }
+
   return '' +
     pageHead('Finding ' + f.id, esc(f.title),
       '<button class="btn" data-act="nav" data-view="' + (isAuditee ? 'my-findings' : 'findings') + '">Back to findings</button>') +
     nextActionBar(f) +
     authClose +
-    '<div class="card mb-16"><div class="card__head"><h3>Lifecycle</h3>' +
-      '<span class="sub">CAP accepted is not closure — a finding closes only after evidence is accepted</span></div>' +
-      '<div class="card__body">' + lifecycleStepper(f) + '</div></div>' +
-    '<div class="grid grid--main">' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card"><div class="card__head"><h3>Finding Details</h3></div><div class="card__body">' +
+    dossierPanel('Lifecycle', lifecycleStepper(f), 'CAP accepted is not closure - a finding closes only after evidence is accepted') +
+    '<div class="dossier-sections mt-16">' +
+      '<div class="dossier-stack">' +
+        dossierPanel('Finding Details',
           '<div class="metaline">' +
             metaItem('Status', statusMeta(f).label) +
             metaItem('Severity', SEVERITY[f.severity].label) +
@@ -1852,26 +1979,14 @@ function viewFinding() {
           '<div class="metaline__k">Description</div><div class="mt-12">' + esc(f.description) + '</div>' +
           '<div class="metaline__k mt-16">Finding basis / regulatory reference</div>' +
           '<div class="mt-12 small muted">' + esc(f.reference) + ' · ' + esc(f.basis) + '</div>' +
-          regulatoryTraceHtml(regulatoryTraceForFinding(f), true) +
-        '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Corrective Action Plan (CAP)</h3><div class="spacer"></div>' +
-          (isAuditee && (f.status === 'WAITING_CAP' || f.status === 'CAP_MORE_INFO')
-            ? '<button class="btn btn--primary btn--sm" data-act="cap" data-id="' + f.id + '">Submit CAP</button>' : '') +
-          ((!isAuditee && f.status === 'CAP_SUBMITTED')
-            ? '<button class="btn btn--primary btn--sm" data-act="reviewcap" data-id="' + f.id + '">Review CAP</button>' : '') +
-          '</div><div class="card__body">' + capHtml + '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Evidence</h3>' +
-          '<span class="sub">Version history is preserved</span><div class="spacer"></div>' +
-          (isAuditee && (f.status === 'EVIDENCE_REQUIRED' || f.status === 'EVIDENCE_MORE_INFO')
-            ? '<button class="btn btn--primary btn--sm" data-act="evidence" data-id="' + f.id + '">Upload evidence</button>' : '') +
-          ((!isAuditee && f.status === 'EVIDENCE_SUBMITTED')
-            ? '<button class="btn btn--primary btn--sm" data-act="reviewev" data-id="' + f.id + '">Review evidence</button>' : '') +
-          '</div><div class="card__body">' + evHtml + '</div></div>' +
-        internalHtml +
+          regulatoryTraceHtml(regulatoryTraceForFinding(f), true)) +
+        dossierPanel('Corrective Action Plan (CAP)', capHtml + capActions, 'CAP acceptance does not close the finding') +
+        dossierPanel('Evidence', evHtml + evidenceActions, 'Version history is preserved') +
+        internalPanel +
       '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card"><div class="card__head"><h3>Comments to Auditee</h3></div><div class="card__body">' + commentsHtml + '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Audit Trail</h3></div><div class="card__body">' + logHtml + '</div></div>' +
+      '<div class="dossier-stack">' +
+        dossierPanel('Comments to Auditee', commentsHtml) +
+        dossierPanel('Audit Trail', logHtml) +
       '</div>' +
     '</div>';
 }
@@ -1889,7 +2004,6 @@ function inspectorActionableFindings() {
 }
 
 function findingsForCurrentRoleList() {
-  if (state.role === 'inspector') return inspectorActionableFindings();
   return visibleFindings();
 }
 
@@ -1910,33 +2024,40 @@ function filterFindings(filter) {
 function viewFindings() {
   var filter = state.params.filter || 'all';
   var chipKeys = state.role === 'inspector'
-    ? ['all', 'open', 'critical', 'closed']
-    : ['all', 'open', 'overdue', 'critical', 'closed'];
+    ? ['all', 'open', 'capreview', 'evreview', 'duesoon', 'critical', 'closed']
+    : ['all', 'open', 'overdue', 'capreview', 'evreview', 'duesoon', 'critical', 'closed'];
   if (chipKeys.indexOf(filter) === -1) filter = 'open';
   var list = filterFindings(filter);
   var chips = chipKeys.map(function (key) {
     return '<button class="btn btn--sm' + (filter === key ? ' btn--primary' : '') + '" data-act="nav" data-view="findings" data-filter="' + key + '">' +
       esc(FILTER_LABELS[key]) + '</button>';
   }).join(' ');
-  var rows = list.length ? list.map(findingRow).join('') : '<div class="empty">No findings match this filter.</div>';
+  var items = list.map(function (finding) {
+    return workItemFromFinding(finding, { allEvidenceVersions: filter === 'evreview' });
+  }).sort(workItemSort);
   return pageHead('Findings', 'Every finding shows owner, due date, status and next action.', chips) +
-    '<div class="card"><div class="card__head"><h3>' + esc(FILTER_LABELS[filter]) + '</h3>' +
-    '<span class="sub">' + list.length + ' finding' + (list.length === 1 ? '' : 's') + '</span></div>' +
-    '<div class="list">' + rows + '</div></div>';
+    renderAttentionStrip([
+      { label: FILTER_LABELS[filter], value: list.length + ' finding' + (list.length === 1 ? '' : 's'), tone: list.length ? 'info' : 'neutral' },
+      { label: 'CAP review rows', value: String(list.filter(function (f) { return f.status === 'CAP_SUBMITTED'; }).length), tone: 'warn' },
+      { label: 'Evidence review rows', value: String(list.filter(function (f) { return f.status === 'EVIDENCE_SUBMITTED'; }).length), tone: 'warn' }
+    ]) +
+    renderOpsTable(items, { includeChildren: filter === 'capreview' || filter === 'evreview', empty: 'No findings match this filter.' });
 }
 
 /* =========================== Reports list =========================== */
 function viewReports() {
   var closed = visibleFindings().filter(function (f) { return f.status === 'CLOSED'; });
-  var rows = closed.length ? closed.map(function (f) {
-    return '<div class="list__row" data-act="nav" data-view="report" data-id="' + f.id + '">' +
-      '<div class="list__main"><div class="list__title"><span class="tag-pill">' + esc(f.id) + '</span> ' + esc(f.title) + '</div>' +
-      '<div class="list__meta"><span><b>Org:</b> ' + esc(orgName(f.orgId)) + '</span><span><b>Closed:</b> ' + esc(fmtDate(f.closedDate)) + '</span></div></div>' +
-      '<div class="list__side"><span class="badge badge--ok"><span class="dot"></span>Closed</span>' +
-      '<button class="btn btn--sm" data-act="nav" data-view="report" data-id="' + f.id + '">Open report</button></div></div>';
-  }).join('') : '<div class="empty">No closed findings to report yet.</div>';
-  return pageHead('Reports', 'Generated closure reports (preview only).') +
-    '<div class="card"><div class="card__head"><h3>Closure Reports</h3></div><div class="list">' + rows + '</div></div>';
+  var items = closed.map(function (finding) {
+    return workItemFromFinding(finding, { allEvidenceVersions: true });
+  }).sort(workItemSort);
+  return pageHead(state.role === 'auditee' ? 'Documents Shared / Reports' : 'Reports', 'Generated closure reports (preview only).') +
+    (state.role === 'auditee' ? '<div class="scope-note">🔒 Shared documents are limited to ' + esc(ROLES.auditee.orgName) + '.</div>' : '') +
+    '<h2 class="section-heading">Closure Reports</h2>' +
+    renderOpsTable(items, {
+      includeChildren: true,
+      hideOrganization: state.role === 'auditee',
+      empty: 'No closed findings to report yet.'
+    });
 }
 
 /* =========================== Closed Finding / Report Preview =========================== */
@@ -1997,12 +2118,16 @@ function viewReport() {
 function viewMessages() {
   var msgs = state.notifications.filter(function (n) { return n.role === 'auditee'; });
   var rows = msgs.length ? msgs.map(function (n) {
-    return '<div class="notif-item ' + (n.unread ? 'unread' : '') + '"><div class="notif-item__icon">' + n.icon + '</div>' +
-      '<div><div class="notif-item__txt">' + esc(n.text) + '</div><div class="notif-item__time">' + esc(n.time) + '</div></div></div>';
-  }).join('') : '<div class="empty">No messages.</div>';
+    return '<tr>' +
+      '<td><div class="ops-cell-title">' + esc(n.text) + '</div><div class="ops-cell-sub">' + esc(n.id) + ' · related CAA request where applicable</div></td>' +
+      '<td>' + esc(ROLES.auditee.orgName) + '</td>' +
+      '<td>' + esc(n.time) + '</td>' +
+      '<td>' + demoBadge(n.unread ? 'Unread' : 'Read', n.unread ? 'info' : 'neutral') + '</td>' +
+    '</tr>';
+  }).join('') : '';
   return pageHead('Messages from the CAA', 'In-app notifications (mock — no real email or SMS is sent).') +
     '<div class="scope-note">🔒 Messages are limited to ' + esc(ROLES.auditee.orgName) + '.</div>' +
-    '<div class="card">' + rows + '</div>';
+    (rows ? '<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Message</th><th>Organization</th><th>Date</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<div class="empty">No messages.</div>');
 }
 
 /* =========================== Admin — Templates =========================== */
@@ -2018,7 +2143,7 @@ function viewTemplates() {
   }).join('');
   return pageHead('Checklist Templates', 'Which template or rule must be configured? (Preview only.)') +
     '<div class="callout mb-16">Admin can configure templates and rules. In this demo only the <b>Flight Operations Audit</b> template is openable for preview.</div>' +
-    '<div class="card card__body--flush"><table class="table"><thead><tr>' +
+    '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
     '<th>Template</th><th>Domain</th><th>Version</th><th>Items</th><th>Status</th><th></th></tr></thead><tbody>' +
     rows + '</tbody></table></div>';
 }
@@ -2026,34 +2151,37 @@ function viewTemplates() {
 function viewTemplatePreview() {
   var tpl = state.checklist;
   var items = tpl.items.map(function (it, i) {
-    return '<div class="cl-item"><div class="cl-item__head"><div class="cl-item__num">' + (i + 1) + '</div>' +
-      '<div style="flex:1"><div class="cl-item__q">' + esc(it.text) + '</div>' +
-      '<div class="cl-item__refs"><span><b>Regulatory reference:</b> ' + esc(it.ref) + '</span>' +
-      '<span><b>Expected evidence:</b> ' + esc(it.evidence) + '</span></div>' +
-      regulatoryTraceHtml(regulatoryTraceForQuestion(it.id), true) +
-      '<div class="answers" style="opacity:.55;pointer-events:none">' +
-        '<span class="answer">Compliant</span><span class="answer">Non-Compliant</span>' +
-        '<span class="answer">Observation</span><span class="answer">Not Applicable</span></div>' +
-      '</div></div></div>';
+    var trace = regulatoryTraceForQuestion(it.id);
+    return '<tr class="ops-row">' +
+      '<td><span class="ops-priority is-neutral">' + esc(i + 1) + '</span></td>' +
+      '<td><div class="ops-cell-title">' + esc(it.text) + '</div><div class="ops-cell-sub">' + esc(it.id) + '</div></td>' +
+      '<td>' + esc(it.ref) + '</td>' +
+      '<td>' + esc(it.evidence) + '</td>' +
+      '<td>' + (trace ? demoBadge(trace.approvalState, statusTone(trace.approvalState)) : demoBadge('No trace', 'neutral')) + '</td>' +
+    '</tr>';
   }).join('');
+  var table = '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
+    '<th style="width:82px">Row</th><th>Question</th><th>Regulatory reference</th><th>Expected evidence</th><th>Trace</th>' +
+    '</tr></thead><tbody>' + items + '</tbody></table></div>';
   return pageHead('Template Preview — ' + tpl.name, 'Read-only preview of the published checklist template.',
     '<button class="btn" data-act="nav" data-view="templates">Back to templates</button>') +
     '<div class="card mb-16"><div class="card__body"><div class="metaline">' +
       metaItem('Template ID', tpl.id) + metaItem('Domain', tpl.domain) +
       metaItem('Version', tpl.version) + metaItem('Owner', tpl.owner) +
       metaItem('Items', String(tpl.items.length)) + metaItem('Status', 'Published') +
-    '</div></div></div>' + items;
+    '</div></div></div>' + table;
 }
 
 /* =========================== Admin — Audit Log =========================== */
 function viewAuditLog() {
   var rows = state.auditLog.map(function (l) {
     return '<tr><td class="muted">' + esc(l.time) + '</td><td><b>' + esc(l.action) + '</b></td>' +
-      '<td><span class="tag-pill">' + esc(l.target) + '</span></td><td>' + esc(l.actor) + '</td></tr>';
+      '<td><span class="tag-pill">' + esc(l.target) + '</span></td><td>' + esc(l.actor) + '</td>' +
+      '<td>' + demoBadge(l.system ? 'System' : 'Manual', l.system ? 'info' : 'neutral') + '</td></tr>';
   }).join('');
   return pageHead('Audit Log', 'Critical actions are recorded for traceability (mock).') +
-    '<div class="card card__body--flush"><table class="table"><thead><tr>' +
-    '<th>Time</th><th>Action</th><th>Target</th><th>Actor</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
+    '<th>Time</th><th>Action</th><th>Target</th><th>Actor</th><th>System / Manual</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 /* =========================== Organizations (registry) =========================== */
@@ -2078,7 +2206,7 @@ function viewOrganizations() {
       '<td style="text-align:right"><button class="btn btn--sm" data-act="nav" data-view="org-detail" data-id="' + o.id + '">Open</button></td></tr>';
   }).join('');
   return pageHead('Organizations', 'Regulated organizations under surveillance.') +
-    '<div class="card card__body--flush"><table class="table"><thead><tr>' +
+    '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
     '<th>Organization</th><th>Type</th><th>Open findings</th><th>Overdue</th><th>Repeat findings</th><th>Last audit</th><th></th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
@@ -2090,15 +2218,10 @@ function viewOrgDetail() {
   var audits = state.audits.filter(function (a) { return a.orgId === o.id; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
   var findings = state.findings.filter(function (f) { return f.orgId === o.id; });
 
-  var auditRows = audits.length ? audits.map(function (a) {
-    var cls = isClosedAudit(a) ? 'ok' : (a.status === 'In Progress' ? 'warn' : 'info');
-    return '<div class="list__row" data-act="nav" data-view="audit-detail" data-id="' + a.id + '">' +
-      '<div class="list__main"><div class="list__title">' + esc(a.ref) + ' <span class="tag-pill">' + esc(a.id) + '</span></div>' +
-      '<div class="list__meta"><span><b>Domain:</b> ' + esc(a.domain) + '</span><span><b>Date:</b> ' + esc(fmtDate(a.date)) + '</span></div></div>' +
-      '<div class="list__side"><span class="badge badge--' + cls + '"><span class="dot"></span>' + esc(a.status) + '</span></div></div>';
-  }).join('') : '<div class="empty">No audits for this organization.</div>';
-
-  var findingRows = findings.length ? findings.map(findingRow).join('') : '<div class="empty">No findings for this organization.</div>';
+  var auditRows = renderOpsTable(audits.map(workItemFromAudit), { empty: 'No audits for this organization.' });
+  var findingRows = renderOpsTable(findings.map(function (finding) {
+    return workItemFromFinding(finding, { allEvidenceVersions: true });
+  }), { includeChildren: true, empty: 'No findings for this organization.' });
 
   return pageHead(o.name, esc(o.type),
     '<button class="btn" data-act="nav" data-view="organizations">Back to organizations</button>') +
@@ -2114,8 +2237,8 @@ function viewOrgDetail() {
       metaItem('Last completed audit', s.lastAudit ? fmtDate(s.lastAudit) : '—') +
     '</div></div></div>' +
     '<div class="grid grid--main">' +
-      '<div class="card"><div class="card__head"><h3>Findings</h3></div><div class="list">' + findingRows + '</div></div>' +
-      '<div class="card"><div class="card__head"><h3>Audits</h3></div><div class="list">' + auditRows + '</div></div>' +
+      dossierPanel('Findings', findingRows, 'Open and closed findings') +
+      dossierPanel('Audits', auditRows, 'Surveillance history') +
     '</div>';
 }
 
@@ -2129,7 +2252,7 @@ function viewUsers() {
   }).join('');
   return pageHead('Users', 'Who can access AviaSurveil360, and in which role.') +
     '<div class="callout mb-16">Preview only — user management, invitations and MFA are not editable in this demo. Internal users are expected to use MFA.</div>' +
-    '<div class="card card__body--flush"><table class="table"><thead><tr>' +
+    '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
     '<th>Name</th><th>Role</th><th>Organization</th><th>MFA</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 

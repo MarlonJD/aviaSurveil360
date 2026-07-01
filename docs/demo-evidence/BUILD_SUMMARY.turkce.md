@@ -37,10 +37,12 @@ başlangıç verisine döndürür.
 | `css/styles.css` | Rol bazlı çalışma alanları, Today’s Workbench, Regulatory Trace, offline outbox, AI taslak kontrolleri ve 390px mobil düzeni. |
 | `js/data.js` | Backend'e yakın sahte kayıtlar, V2 seed verileri, açık status değerleri ve izole `localStorage` demo saklama yardımcıları. |
 | `js/helpers.js` | Seçiciler, status yardımcıları, regulatory trace lookup, outbox yardımcıları ve demo badge yardımcıları. |
-| `js/views.js` | Mevcut ekranlar, Today’s Workbench, dokuz V2 ekranı, Service Provider Portal çerçevesi ve yeniden kullanılabilir Regulatory Trace görünümü. |
-| `js/app.js` | Rol bazlı deneyim navigasyonu, merkezi kalıcılık çağrıları, simüle offline geçişleri, AI karar geçişleri ve yeni kayıtlar için stabil ID üretimi. |
+| `js/work-items.js` | Audit, finding, CAP/evidence alt satırları, approval, planning ve admin kuyrukları için ortak table-first iş öğesi hazırlama katmanı. |
+| `js/views.js` | Mevcut ekranlar, Today’s Workbench, dokuz V2 ekranı, Service Provider Portal çerçevesi, yeniden kullanılabilir Regulatory Trace görünümü ve table-first iş kuyrukları. |
+| `js/app.js` | Rol bazlı deneyim navigasyonu, merkezi kalıcılık çağrıları, simüle offline geçişleri, AI karar geçişleri, stabil ID üretimi ve checklist satır seçimi. |
 | `docs/demo-evidence/BUILD_SUMMARY.md` | İngilizce kanonik özet. |
 | `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Bu Türkçe paydaş özeti. |
+| `tests/table-first-workbench-smoke.test.js` | Table-first satırlar, row-click navigasyon ve auditee gizlilik sınırları için odaklı smoke testi. |
 
 Backend, veritabanı, API, framework geçişi, gerçek dosya saklama, gerçek AI
 servisi, gerçek regülasyon içe aktarma veya gerçek bildirim servisi eklenmedi.
@@ -74,16 +76,17 @@ Deneyim detayları:
 4. **Admin Preview** — şablonlar, kullanıcılar, ayarlar, audit log ve
    regulatory preview.
 
-Inspector ana ekranı artık **Today’s Workbench** olarak düzenlenmiştir:
+Inspector ana ekranı artık **Today’s Workbench** içinde table-first **My Work
+Today** kuyruğu olarak düzenlenmiştir. Kompakt attention strip karar
+sinyallerini görünür tutar; kuyruk satırları priority, organization, lifecycle,
+owner, next action, due date/target, status ve row action bilgilerini taşır.
+Eski A/B/C/D kart bölgeleri ana inspector yüzeyinden kaldırılmıştır.
 
-- `A. Attention Needed` — overdue CAPs, yüksek riskli operatörler, yaklaşan
-  auditler, repeat findings ve review bekleyen evidence.
-- `B. My Upcoming Work` — planlı inspection’lar, hazırlık bekleyen paketler,
-  yazılacak raporlar ve CAP review işleri.
-- `C. Risk Signals` — yükselen operator risk skoru, tekrar eden regulatory
-  references, geciken CAP trendleri ve operational change alert’leri.
-- `D. Quick Actions` — New inspection, assigned package açma, CAP review,
-  regulation search ve report generation.
+Table-first desen; audit work queue, bulgu ve CAP/evidence review kuyrukları,
+auditee talepleri, yönetici attention listeleri, planning, checklist approvals,
+report approvals, organization/admin kuyrukları ve checklist runner içinde de
+kullanılır. Checklist execution artık bir seçili soru ve bir aktif detay paneli
+olan inspector tablosu gibi çalışır.
 
 Sol navigasyon artık role göre görünen gruplu bilgi mimarisini kullanır:
 Dashboard, Oversight, Organisations, Findings & CAPs, Regulations, USOAP / SSP,
@@ -195,6 +198,12 @@ Durum: **verified locally** (frontend-only demo).
 ```bash
 node --check js/data.js
 node --check js/helpers.js
+node --check js/approval.js
+node --check js/planning.js
+node --check js/checklists.js
+node --check js/inspection.js
+node --check js/reports.js
+node --check js/work-items.js
 node --check js/views.js
 node --check js/app.js
 ```
@@ -203,8 +212,8 @@ Playwright ile `index.html` üzerinde tarayıcı smoke testi yapıldı; konsol h
 Doğrulananlar:
 
 - Inspector Workspace'in `Today’s Workbench` ile açılması
-- `Today’s Workbench` içinde `A. Attention Needed`, `B. My Upcoming Work`,
-  `C. Risk Signals` ve `D. Quick Actions` bölümlerinin görünmesi
+- `Today’s Workbench` içinde table-first `My Work Today` kuyruğu ve kompakt
+  attention strip görünmesi
 - `New inspection` hızlı aksiyonunun New Audit Wizard ekranını açması
 - Supervisor / Manager Dashboard ve SSP/NASP dashboard ekranlarının erişilebilir kalması
 - Service Provider Portal çerçevesinin auditee rolünde görünmesi
@@ -349,6 +358,52 @@ Rendered browser smoke geçici local static server ile
 `http://127.0.0.1:8765/` üzerinde çalıştırıldı; console warning/error listesi
 boştu ve Planning workspace ile Audit Work Queue kanıt ekranlarında desktop
 scrollWidth/clientWidth `1280/1280` kaldı.
+
+### Table-first surveillance workbench UX - 2026-07-01
+
+Durum: frontend-only table-first workbench güncellemesi için **verified
+locally**.
+
+Demo, değişen queue yüzeylerinde kart yığınları yerine operasyonel tabloları
+öne alır. Satırlar mevcut detail sayfalarına navigasyonu korur; owner, next
+action, due date/target, status, severity/priority, izin verilen yerlerde
+audit/organization bağlamı ve satır aksiyonlarını gösterir. CAP/evidence alt
+satırları, lifecycle kurallarını değiştirmeden görünür hale getirilmiştir.
+
+Doğrulanan ürün guardrail'leri:
+
+- CAP accepted hâlâ closure değildir; accepted CAP satırları closure öncesi
+  evidence gerektiğini açıkça söyler.
+- Evidence version history korunur; eski evidence kayıtları konsept olarak
+  overwrite edilmez.
+- Auditee kullanıcıları yalnızca Airline XYZ portal verisini görür; Internal
+  CAA Note, başka kuruluşlar, inspector workload veya internal risk scoring
+  görmez.
+- Oversight Health Index yalnızca yönetim göstergesidir; otomatik enforcement,
+  suspension veya closure tetiklemez.
+- Backend, veritabanı, API, gerçek authentication, gerçek file upload/storage,
+  gerçek AI servisi, gerçek regulatory ingestion, gerçek notification service,
+  framework migration, branch, commit veya push eklenmedi.
+
+Ek local kontroller geçti:
+
+```bash
+node tests/table-first-workbench-smoke.test.js
+node tests/checklist-comment-render-smoke.test.js
+node tests/inspector-nav-smoke.test.js
+node tests/lead-inspector-nav-smoke.test.js
+node tests/lead-inspector-workspace-smoke.test.js
+```
+
+Browser QA, geçici static server ile `http://127.0.0.1:8765/` üzerinde in-app
+Browser kullanılarak yapıldı. Doğrudan `file://` navigasyonu browser policy
+tarafından engellendiği için daha güvenli static preview yolu olarak local HTTP
+server kullanıldı. `Audit Work Queue` -> `AUD-2026-001` row-click navigasyonu,
+checklist Q2 non-compliant -> `PF-2026-001`, auditee portal izolasyonu,
+manager OHI guardrail metni ve desktop/390px mobile viewport için page-level
+yatay taşma olmaması doğrulandı. Güncel table-first screenshot kanıtı
+`qa/screenshots/table-first-2026-07-01/` altındadır (git tarafından ignore
+edilir).
 
 ---
 

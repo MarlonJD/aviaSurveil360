@@ -29,6 +29,9 @@ framework migration is included.
 - `js/checklists.js` — checklist management demo logic.
 - `js/inspection.js` — inspection execution and Potential Finding demo logic.
 - `js/reports.js` — preliminary/final report approval demo logic.
+- `js/work-items.js` — shared table-first work-item shaping for audits,
+  findings, CAP/evidence child rows, approvals, planning items, and admin
+  queues.
 - `js/views.js` — static demo screen rendering.
 - `js/app.js` — role routing, UI action handling, mock interactions, and demo
   bootstrapping.
@@ -40,15 +43,20 @@ There is no `package.json`; do not assume `npm test`.
 - `tests/approval-smoke.test.js`
 - `tests/audit-work-queue-smoke.test.js`
 - `tests/checklist-approval-smoke.test.js`
+- `tests/checklist-comment-render-smoke.test.js`
 - `tests/checklist-management-smoke.test.js`
 - `tests/demo-boundary-smoke.test.js`
 - `tests/governance-render-smoke.test.js`
 - `tests/harness-docs-smoke.test.js`
 - `tests/inspection-execution-smoke.test.js`
+- `tests/inspector-nav-smoke.test.js`
+- `tests/lead-inspector-nav-smoke.test.js`
+- `tests/lead-inspector-workspace-smoke.test.js`
 - `tests/planning-release-smoke.test.js`
 - `tests/planning-render-smoke.test.js`
 - `tests/planning-workspace-smoke.test.js`
 - `tests/report-approval-smoke.test.js`
+- `tests/table-first-workbench-smoke.test.js`
 
 ## Agent Harness
 
@@ -111,6 +119,7 @@ files in the same folder.
 - `docs/exec-plans/active/2026-06-29-agent-harness-readiness-completion-plan.md`
 - `docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`
 - `docs/exec-plans/active/2026-06-30-planning-panel-simplification-plan.md`
+- `docs/exec-plans/active/2026-07-01-table-first-surveillance-workbench-ux-plan.md`
 
 ## Execution Plan Archive And Tracker
 

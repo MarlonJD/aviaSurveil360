@@ -471,6 +471,7 @@ function handleAction(act, el) {
       break;
 
     case 'start-checklist': startChecklist(id); break;
+    case 'select-checklist-question': state.params.questionId = q; render(); break;
     case 'answer': answerItem(q, el.getAttribute('data-val')); break;
     case 'mock-checklist-evidence': handleMockChecklistEvidence(q); break;
     case 'create-potential': handleCreatePotentialFinding(id, q); break;

@@ -35,11 +35,13 @@ and return to seed data.
 | `css/styles.css` | V2 responsive UI for role-based workspaces, Today’s Workbench, regulatory trace ribbons, governance panels, offline outbox, AI draft controls, and 390px mobile behavior. |
 | `js/data.js` | Backend-ready mock records, seed V2 datasets, status values, and isolated `localStorage` demo storage helpers. |
 | `js/helpers.js` | Selectors, status helpers, regulatory trace lookups, outbox helpers, and demo badge helpers. |
-| `js/views.js` | Existing screens plus Today’s Workbench, the nine Frontend V2 screens, Service Provider Portal framing, and reusable Regulatory Trace display. |
-| `js/app.js` | Role-based experience navigation, centralized persistence calls, simulated offline transitions, AI decision transitions, and stable ID generation for new records. |
+| `js/work-items.js` | Shared table-first work-item shaping for audits, findings, CAP/evidence child rows, approvals, planning items, and admin queues. |
+| `js/views.js` | Existing screens plus Today’s Workbench, the nine Frontend V2 screens, Service Provider Portal framing, reusable Regulatory Trace display, and table-first work queues. |
+| `js/app.js` | Role-based experience navigation, centralized persistence calls, simulated offline transitions, AI decision transitions, stable ID generation, and checklist row selection. |
 | `docs/demo-evidence/BUILD_SUMMARY.md` | This English canonical build summary. |
 | `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Turkish companion summary for stakeholder handoff. |
 | `docs/exec-plans/index.md` | Updated only if the active plan status / next todo changes. |
+| `tests/table-first-workbench-smoke.test.js` | Focused smoke coverage for table-first rows, row-click routing, and auditee privacy boundaries. |
 
 No backend, database, API, framework migration, real file storage, real AI
 service, real regulatory ingestion, or real notification service was added.
@@ -75,16 +77,17 @@ Experience details:
 4. **Admin Preview** — templates, users, settings, audit log, and regulatory
    preview.
 
-The Inspector home screen is now **Today’s Workbench**, organized into:
+The Inspector home screen is now **Today’s Workbench**, organized around a
+table-first **My Work Today** queue. A compact attention strip keeps the
+decision signals visible, while the queue rows carry priority, organization,
+lifecycle, owner, next action, due date/target, status, and row action. The old
+A/B/C/D card zones have been removed from the primary inspector surface.
 
-- `A. Attention Needed` — overdue CAPs, high-risk operators, upcoming audits,
-  repeat findings, and evidence waiting for review.
-- `B. My Upcoming Work` — planned inspections, package preparation, reports to
-  write, and CAP reviews.
-- `C. Risk Signals` — rising operator risk, recurring regulatory references,
-  delayed CAP trends, and operational change alerts.
-- `D. Quick Actions` — New inspection, open assigned package, review CAP, search
-  regulation, and generate report.
+The table-first pattern is also used for the audit work queue, findings and
+CAP/evidence review queues, auditee requests, manager attention lists,
+planning, checklist approvals, report approvals, organization and admin queues,
+and the checklist runner. Checklist execution now behaves like an inspector
+table with one selected question and one active detail panel.
 
 The left navigation now uses grouped information architecture for Dashboard,
 Oversight, Organisations, Findings & CAPs, Regulations, USOAP / SSP, Evidence &
@@ -200,6 +203,12 @@ Automated syntax checks:
 ```bash
 node --check js/data.js
 node --check js/helpers.js
+node --check js/approval.js
+node --check js/planning.js
+node --check js/checklists.js
+node --check js/inspection.js
+node --check js/reports.js
+node --check js/work-items.js
 node --check js/views.js
 node --check js/app.js
 ```
@@ -208,8 +217,8 @@ Browser smoke verification used Playwright against `index.html` with no console
 errors. Verified:
 
 - Inspector Workspace opens on `Today’s Workbench`
-- `Today’s Workbench` shows `A. Attention Needed`, `B. My Upcoming Work`,
-  `C. Risk Signals`, and `D. Quick Actions`
+- `Today’s Workbench` shows a table-first `My Work Today` queue with a compact
+  attention strip
 - `New inspection` quick action opens the New Audit Wizard
 - Supervisor / Manager Dashboard and SSP/NASP dashboard remain reachable
 - Service Provider Portal framing is visible to the auditee role
@@ -353,6 +362,50 @@ Rendered browser smoke used a temporary local static server at
 `http://127.0.0.1:8765/`; console warnings/errors were empty and desktop
 scrollWidth/clientWidth stayed `1280/1280` on the Planning workspace and Audit
 Work Queue evidence screens.
+
+### Table-first surveillance workbench UX - 2026-07-01
+
+Status: **verified locally** for the frontend-only table-first workbench
+update.
+
+The demo now prioritizes operational tables over card stacks on changed queue
+surfaces. Rows preserve existing navigation to detail pages and carry the
+current owner, next action, due date/target, status, severity/priority, related
+audit/organization context where allowed, and row-level actions. CAP/evidence
+child rows are shown without changing the underlying lifecycle rules.
+
+Product guardrails verified:
+
+- CAP accepted is still not closure; accepted CAP rows say evidence is still
+  required before closure.
+- Evidence version history remains visible as preserved versions, not
+  overwritten records.
+- Auditee users see only Airline XYZ portal data and do not see internal CAA
+  notes, other organizations, inspector workload, or internal risk scoring.
+- Oversight Health Index remains a management indicator only and does not
+  trigger automatic enforcement, suspension, or closure.
+- No backend, database, API, real authentication, real file upload/storage,
+  real AI service, real regulatory ingestion, real notification service,
+  framework migration, branch, commit, or push was added.
+
+Additional local checks passed:
+
+```bash
+node tests/table-first-workbench-smoke.test.js
+node tests/checklist-comment-render-smoke.test.js
+node tests/inspector-nav-smoke.test.js
+node tests/lead-inspector-nav-smoke.test.js
+node tests/lead-inspector-workspace-smoke.test.js
+```
+
+Browser QA used the in-app Browser against a temporary static server at
+`http://127.0.0.1:8765/`. Direct `file://` navigation was blocked by browser
+policy, so the local HTTP server was used as the safer static preview path.
+Verified row-click navigation from `Audit Work Queue` to `AUD-2026-001`,
+checklist Q2 non-compliant -> `PF-2026-001`, auditee portal isolation,
+manager OHI guardrail text, and no page-level horizontal overflow at desktop
+or 390px mobile viewport. Current table-first screenshot evidence is under
+`qa/screenshots/table-first-2026-07-01/` (ignored by git).
 
 ---
 

@@ -13,7 +13,7 @@ const context = {
 };
 vm.createContext(context);
 
-['js/data.js', 'js/helpers.js', 'js/approval.js', 'js/planning.js', 'js/views.js'].forEach((file) => {
+['js/data.js', 'js/helpers.js', 'js/approval.js', 'js/planning.js', 'js/work-items.js', 'js/views.js'].forEach((file) => {
   const code = fs.readFileSync(path.join(root, file), 'utf8');
   vm.runInContext(code, context, { filename: file });
 });

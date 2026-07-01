@@ -15,6 +15,7 @@ vm.createContext(context);
   'js/inspection.js',
   'js/planning.js',
   'js/reports.js',
+  'js/work-items.js',
   'js/views.js'
 ].forEach((file) => {
   vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });

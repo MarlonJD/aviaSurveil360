@@ -61,6 +61,7 @@ vm.createContext(context);
   'js/inspection.js',
   'js/planning.js',
   'js/reports.js',
+  'js/work-items.js',
   'js/views.js',
   'js/app.js'
 ].forEach((file) => {

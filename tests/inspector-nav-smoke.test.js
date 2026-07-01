@@ -41,6 +41,7 @@ vm.createContext(context);
   'js/inspection.js',
   'js/planning.js',
   'js/reports.js',
+  'js/work-items.js',
   'js/views.js',
   'js/app.js'
 ].forEach((file) => {
@@ -126,8 +127,8 @@ const findingsHtml = elements.get('app-root').innerHTML;
 assert.match(findingsHtml, /Open Findings/);
 assert.match(findingsHtml, /SEC-2026-002/);
 assert.match(findingsHtml, /RAMP-2026-005/);
-assert.doesNotMatch(findingsHtml, /AWO-2026-003/);
-assert.doesNotMatch(findingsHtml, /Maintenance task sign-off overdue/);
+assert.match(findingsHtml, /AWO-2026-003/);
+assert.match(findingsHtml, /Maintenance task sign-off overdue/);
 assert.doesNotMatch(findingsHtml, /Overdue Findings/);
 assert.doesNotMatch(findingsHtml, /data-filter="overdue"/);
 

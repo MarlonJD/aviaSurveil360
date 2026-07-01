@@ -15,6 +15,7 @@ vm.createContext(context);
   'js/inspection.js',
   'js/planning.js',
   'js/reports.js',
+  'js/work-items.js',
   'js/views.js'
 ].forEach((file) => {
   vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
@@ -63,6 +64,7 @@ assert.match(html, /Inspectors assigned/);
 assert.match(html, /Submitted findings and comments/);
 assert.match(html, /Access control log gaps at cargo gate/);
 assert.match(html, /Submit Preliminary Report/);
-assert.doesNotMatch(html, /Airline XYZ Operator Audit Report/);
+assert.match(html, /Report Approval Queue/);
+assert.match(html, /Airline XYZ Operator Audit Report/);
 
 console.log('lead-inspector-workspace-smoke: ok');
