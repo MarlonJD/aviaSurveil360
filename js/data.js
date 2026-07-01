@@ -245,7 +245,7 @@ var SEED_AUDITS = [
     lead: 'Caner Yildiz', team: ['Caner Yildiz'], status: 'Closed', checklistStarted: true },
   { id: 'AUD-2026-005', ref: 'Security Audit', orgId: 'ORG-SKY', type: 'Aviation Security', domain: 'Security',
     templateId: 'TPL-SEC-2026', date: '2026-05-22', mode: 'On-site', location: 'SkyCargo Terminal',
-    lead: 'Aylin Sezer', team: ['Aylin Sezer'], status: 'In Progress', checklistStarted: true },
+    lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer', 'Mehmet Aydin'], status: 'In Progress', checklistStarted: true },
   { id: 'AUD-2026-006', ref: 'Operator Audit', orgId: 'ORG-BLU', type: 'Operator Audit', domain: 'Flight Operations',
     templateId: 'TPL-FOPS-2026', date: '2026-09-10', mode: 'On-site', location: 'BlueWing HQ',
     lead: 'Caner Yildiz', team: ['Caner Yildiz'], status: 'Planned', checklistStarted: false },
@@ -376,6 +376,95 @@ var SEED_AUDIT_REPORTS = [
         { actor: 'Caner Yildiz', role: 'leadInspector', action: 'draft_created', date: '2026-06-15 13:00', comment: 'Preliminary report draft created for approval workflow.' }
       ]
     }
+  },
+  {
+    id: 'RPT-AUD-2026-005',
+    auditId: 'AUD-2026-005',
+    title: 'SkyCargo Air Security Audit Preliminary Report',
+    reportType: 'Preliminary Inspection Report',
+    status: 'draft',
+    approvalType: 'report',
+    finalLocked: false,
+    reportNumber: null,
+    approvalDate: null,
+    approvedBy: null,
+    mockDigitalSignature: null,
+    enforcementRecommendation: null,
+    executiveSummaryDraft: 'Draft preliminary inspection report based on submitted inspector checklist responses. The report summarizes access control log gaps, checklist completion status, inspector comments, and required CAP follow-up after Department Manager approval.',
+    observations: [
+      'Cargo gate access control logs have gaps around shift-change periods.',
+      'Badge sample review is still waiting for one inspector response.'
+    ],
+    recommendations: [
+      'Submit the preliminary report to the Department Manager for approval and signature.',
+      'After approval, share the report with the Service Provider and request corrective action for accepted findings.'
+    ],
+    attachments: ['Security_Checklist_Response_Summary.pdf (mock)', 'Cargo_Gate_Log_Sample.pdf (mock filename only)'],
+    approval: {
+      chain: [
+        { role: 'leadInspector', label: 'Lead Inspector', returnToRole: null },
+        { role: 'manager', label: 'Department Manager', returnToRole: 'leadInspector' },
+        { role: 'gm', label: 'GM Review', returnToRole: 'manager' },
+        { role: 'executiveDirector', label: 'Executive Director Approval', returnToRole: 'gm' }
+      ],
+      currentIndex: 0,
+      outcome: null,
+      returnPolicy: 'configured_role',
+      history: [
+        { actor: 'Caner Yildiz', role: 'leadInspector', action: 'draft_created', date: '2026-06-15 14:10', comment: 'Preliminary inspection report draft assembled from inspector checklist reports.' }
+      ]
+    }
+  }
+];
+
+var SEED_LEAD_AUDIT_REVIEWS = [
+  {
+    auditId: 'AUD-2026-005',
+    reportId: 'RPT-AUD-2026-005',
+    title: 'SkyCargo Air Security Audit',
+    stage: 'Preliminary Inspection Report draft',
+    reportStatus: 'Lead draft',
+    serviceProviderStep: 'After Department Manager approval/signature, share with Service Provider and request corrective actions.',
+    assignments: [
+      {
+        inspector: 'Aylin Sezer',
+        role: 'CAA Inspector',
+        checklist: 'Cargo gate access control logs',
+        questions: 'SEC 2.1-2.4',
+        status: 'Completed',
+        resultSummary: '1 Non-Compliant, 3 Compliant',
+        comment: 'Gaps found in access logs during shift change; supporting log sample attached.'
+      },
+      {
+        inspector: 'Mehmet Aydin',
+        role: 'CAA Inspector',
+        checklist: 'Security training and badge sample',
+        questions: 'SEC 3.1-3.3',
+        status: 'In Progress',
+        resultSummary: '2 answered, 1 waiting',
+        comment: 'Badge sample review is still in progress; training file sample reviewed.'
+      },
+      {
+        inspector: 'Caner Yildiz',
+        role: 'Lead Inspector',
+        checklist: 'Security manager interview and closing review',
+        questions: 'SEC 1.1-1.2',
+        status: 'Waiting',
+        resultSummary: 'Awaiting inspector inputs',
+        comment: 'Lead review will finalize the preliminary report after checklist consolidation.'
+      }
+    ],
+    submittedFindings: [
+      {
+        findingId: 'SEC-2026-002',
+        inspector: 'Aylin Sezer',
+        question: 'Cargo gate access control logs complete?',
+        title: 'Access control log gaps at cargo gate',
+        severity: 'Level 1 Critical',
+        comment: 'Inspector noted missing access log entries at cargo gate for restricted-area access.',
+        leadAssessment: 'Include in Preliminary Inspection Report and request corrective action after approval.'
+      }
+    ]
   }
 ];
 
@@ -794,6 +883,7 @@ function freshState() {
     findings: deepClone(SEED_FINDINGS),
     potentialFindings: deepClone(SEED_POTENTIAL_FINDINGS),
     auditReports: deepClone(SEED_AUDIT_REPORTS),
+    leadAuditReviews: deepClone(SEED_LEAD_AUDIT_REVIEWS),
     regulatoryDocuments: deepClone(SEED_REGULATORY_DOCUMENTS),
     regulatoryTraces: deepClone(SEED_REGULATORY_TRACES),
     questionTraces: deepClone(SEED_QUESTION_TRACES),
@@ -848,6 +938,7 @@ function mergeDemoState(saved) {
   if (!Array.isArray(base.offlineOutbox)) base.offlineOutbox = [];
   if (!Array.isArray(base.potentialFindings)) base.potentialFindings = deepClone(SEED_POTENTIAL_FINDINGS);
   if (!Array.isArray(base.auditReports)) base.auditReports = deepClone(SEED_AUDIT_REPORTS);
+  if (!Array.isArray(base.leadAuditReviews) || base.leadAuditReviews.length === 0) base.leadAuditReviews = deepClone(SEED_LEAD_AUDIT_REVIEWS);
   if (!Array.isArray(base.aiSuggestions)) base.aiSuggestions = deepClone(SEED_AI_SUGGESTIONS);
   if (!Array.isArray(base.regulatoryDocuments)) base.regulatoryDocuments = deepClone(SEED_REGULATORY_DOCUMENTS);
   if (!Array.isArray(base.regulatoryTraces)) base.regulatoryTraces = deepClone(SEED_REGULATORY_TRACES);

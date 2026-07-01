@@ -79,12 +79,8 @@ var NAV = {
      docs/plans/2026-06-28-caa-governance-workflow-and-roles-plan.md. */
   leadInspector: [
     { section: 'Workspace' },
-    { view: 'lead-review', label: 'Lead Review Queue', icon: '▦' },
-    { view: 'planning', label: 'Planning', icon: '▤' },
-    { view: 'audit-reports', label: 'Audit Reports', icon: '📄' },
-    { section: 'Oversight' },
-    { view: 'calendar', label: 'Audits', icon: '▤' },
-    { view: 'reports', label: 'Reports', icon: '📄' }
+    { view: 'lead-review', label: 'Inspection Reports', icon: '▦' },
+    { view: 'audit-reports', label: 'Audit Reports', icon: '📄' }
   ],
   gm: [
     { section: 'Approvals' },
@@ -119,7 +115,7 @@ var VIEW_TITLES = {
   'ssp-nasp': 'SSP/NASP Management', 'role-home': 'Home', planning: 'Planning', 'planning-approvals': 'Planning',
   'checklist-approvals': 'Checklist Approvals', 'question-bank': 'Question Bank',
   'checklist-builder': 'Checklist Builder', 'checklist-versions': 'Version History',
-  'lead-review': 'Lead Review Queue', 'planning-board': 'Planning',
+  'lead-review': 'Inspection Reports', 'planning-board': 'Planning',
   'audit-reports': 'Audit Reports'
 };
 
@@ -174,8 +170,20 @@ var INSPECTOR_RESTRICTED_VIEWS = {
   templates: true
 };
 
+var LEAD_INSPECTOR_RESTRICTED_VIEWS = {
+  calendar: true,
+  planning: true,
+  'planning-approvals': true,
+  'planning-board': true,
+  reports: true
+};
+
 function normalizeViewForRole() {
   if (state.role === 'inspector' && INSPECTOR_RESTRICTED_VIEWS[state.view]) {
+    state.view = homeView(state.role);
+    state.params = {};
+  }
+  if (state.role === 'leadInspector' && LEAD_INSPECTOR_RESTRICTED_VIEWS[state.view]) {
     state.view = homeView(state.role);
     state.params = {};
   }

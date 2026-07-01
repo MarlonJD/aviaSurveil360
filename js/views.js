@@ -1466,58 +1466,168 @@ function viewChecklistRunner() {
     itemsHtml;
 }
 
+function leadAuditReviewForAudit(auditId) {
+  var reviews = state.leadAuditReviews || [];
+  for (var i = 0; i < reviews.length; i++) {
+    if (reviews[i].auditId === auditId) return reviews[i];
+  }
+  return null;
+}
+
+function leadChecklistStatusBadge(status) {
+  var tone = 'neutral';
+  if (status === 'Completed') tone = 'ok';
+  else if (status === 'In Progress') tone = 'warn';
+  else if (status === 'Waiting') tone = 'neutral';
+  return demoBadge(status, tone);
+}
+
+function leadReviewAuditListHtml(reviews, selectedAuditId) {
+  if (!reviews.length) return '<div class="empty">No completed checklist reports are ready for lead review.</div>';
+  return reviews.map(function (review) {
+    var audit = auditById(review.auditId);
+    var active = review.auditId === selectedAuditId ? ' is-static' : '';
+    return '<div class="list__row' + active + '" data-act="nav" data-view="lead-review" data-id="' + esc(review.auditId) + '">' +
+      '<div><b>' + esc(review.title) + '</b>' +
+        '<p>' + esc(review.auditId + ' · ' + (audit ? audit.status : '—') + ' · ' + review.stage) + '</p></div>' +
+      '<div class="list__side">' + demoBadge(review.reportStatus, review.auditId === selectedAuditId ? 'info' : 'neutral') + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function leadAssignmentsHtml(review) {
+  if (!review || !review.assignments || !review.assignments.length) {
+    return '<div class="empty">No checklist assignments are available for this audit.</div>';
+  }
+  return '<table class="table"><thead><tr>' +
+    '<th>Inspector</th><th>Checklist assignments</th><th>Questions</th><th>Status</th><th>Inspector comment</th>' +
+    '</tr></thead><tbody>' +
+    review.assignments.map(function (row) {
+      return '<tr>' +
+        '<td><b>' + esc(row.inspector) + '</b><div class="small muted">' + esc(row.role) + '</div></td>' +
+        '<td>' + esc(row.checklist) + '<div class="small muted">' + esc(row.resultSummary) + '</div></td>' +
+        '<td>' + esc(row.questions) + '</td>' +
+        '<td>' + leadChecklistStatusBadge(row.status) + '</td>' +
+        '<td class="small muted">' + esc(row.comment) + '</td>' +
+      '</tr>';
+    }).join('') +
+    '</tbody></table>';
+}
+
+function leadSubmittedFindingsHtml(review) {
+  var submitted = review && review.submittedFindings ? review.submittedFindings : [];
+  if (!submitted.length) return '<div class="empty">No submitted findings or inspector comments are recorded for this audit yet.</div>';
+  return submitted.map(function (item) {
+    return '<div class="package-question">' +
+      '<div class="package-question__head"><div><b>' + esc(item.title) + '</b>' +
+        '<p>' + esc(item.question) + ' · ' + esc(item.inspector) + '</p></div>' +
+        demoBadge(item.severity, item.severity.indexOf('Critical') > -1 ? 'danger' : 'warn') +
+      '</div>' +
+      '<div class="metaline mt-12">' +
+        metaItem('Finding', item.findingId) +
+        metaItem('Inspector comment', item.comment) +
+        metaItem('Lead assessment', item.leadAssessment) +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function leadPotentialDecisionRowsHtml(potentials) {
+  if (!potentials.length) return '';
+  return '<div class="card mt-16"><div class="card__head"><h3>Pending Inspector Finding Decisions</h3><span class="sub">Lead only</span></div><div class="card__body">' +
+    potentials.map(function (pf) {
+      var audit = auditById(pf.auditId);
+      var status = approvalMetaForStatus(pf.status);
+      var canDecide = state.role === 'leadInspector' && pf.status === 'pending_lead_review';
+      var decision = canDecide
+        ? '<div class="divider"></div><div class="form-row"><label>Finding title</label><input id="pf-title-' + esc(pf.id) + '" type="text" value="Crew training records incomplete"></div>' +
+          '<div class="form-row"><label>Lead severity <span class="req">*</span></label><select id="pf-severity-' + esc(pf.id) + '">' +
+            '<option value="">Select severity</option><option value="3">Level 3 Minor</option><option value="2">Level 2 Major</option><option value="1">Level 1 Critical</option><option value="0">Observation</option>' +
+          '</select></div>' +
+          '<div class="form-row"><label>Reason for return/dismissal</label><textarea id="pf-reason-' + esc(pf.id) + '" placeholder="Required only for Return or Dismiss."></textarea></div>' +
+          '<div class="row-actions">' +
+            '<button class="btn btn--primary" data-act="convert-potential" data-id="' + esc(pf.id) + '">Convert to Finding</button>' +
+            '<button class="btn" data-act="return-potential" data-id="' + esc(pf.id) + '">Return to Inspector</button>' +
+            '<button class="btn btn--danger" data-act="dismiss-potential" data-id="' + esc(pf.id) + '">Dismiss</button>' +
+          '</div>'
+        : (pf.findingId ? '<div class="mt-12"><button class="btn btn--sm" data-act="nav" data-view="finding" data-id="' + esc(pf.findingId) + '">Open Finding</button></div>' : '');
+      return '<div class="package-question"><div class="package-question__head"><div><b>' + esc(pf.id) + ' · ' + esc(CHECKLIST_RESULTS[pf.result] || humanStatus(pf.result)) + '</b>' +
+        '<p>' + esc((audit ? audit.ref : pf.auditId) + ' · ' + pf.checklistText) + '</p></div>' +
+        demoBadge(status.label || humanStatus(pf.status), status.tone || statusTone(pf.status)) + '</div>' +
+        '<div class="small muted mt-12">' + esc(pf.comment) + '</div>' + decision + '</div>';
+    }).join('') +
+  '</div></div>';
+}
+
 function viewLeadReviewQueue() {
+  var reviews = (state.leadAuditReviews || []).slice();
+  var selectedAuditId = (state.params && state.params.auditId) || (reviews[0] && reviews[0].auditId);
+  var review = leadAuditReviewForAudit(selectedAuditId) || reviews[0];
+  var audit = review ? auditById(review.auditId) : null;
+  var report = review ? (auditReportById(review.reportId) || reportForAudit(review.auditId)) : null;
   var potentials = (state.potentialFindings || []).slice().sort(function (a, b) {
     return (b.createdDate || '').localeCompare(a.createdDate || '');
   });
-  var pending = potentials.filter(function (pf) { return pf.status === 'pending_lead_review'; });
-  var converted = potentials.filter(function (pf) { return pf.status === 'converted'; });
-  var returned = potentials.filter(function (pf) { return pf.status === 'returned_to_inspector'; });
 
-  var rows = potentials.length ? potentials.map(function (pf) {
-    var audit = auditById(pf.auditId);
-    var status = approvalMetaForStatus(pf.status);
-    var canDecide = state.role === 'leadInspector' && pf.status === 'pending_lead_review';
-    var decision = canDecide
-      ? '<div class="divider"></div><div class="form-row"><label>Finding title</label><input id="pf-title-' + esc(pf.id) + '" type="text" value="Crew training records incomplete"></div>' +
-        '<div class="form-row"><label>Lead severity <span class="req">*</span></label><select id="pf-severity-' + esc(pf.id) + '">' +
-          '<option value="">Select severity</option><option value="3">Level 3 Minor</option><option value="2">Level 2 Major</option><option value="1">Level 1 Critical</option><option value="0">Observation</option>' +
-        '</select></div>' +
-        '<div class="form-row"><label>Reason for return/dismissal</label><textarea id="pf-reason-' + esc(pf.id) + '" placeholder="Required only for Return or Dismiss."></textarea></div>' +
-        '<div class="row-actions">' +
-          '<button class="btn btn--primary" data-act="convert-potential" data-id="' + esc(pf.id) + '">Convert to Finding</button>' +
-          '<button class="btn" data-act="return-potential" data-id="' + esc(pf.id) + '">Return to Inspector</button>' +
-          '<button class="btn btn--danger" data-act="dismiss-potential" data-id="' + esc(pf.id) + '">Dismiss</button>' +
-        '</div>'
-      : (pf.findingId ? '<div class="mt-12"><button class="btn btn--sm" data-act="nav" data-view="finding" data-id="' + esc(pf.findingId) + '">Open Finding</button></div>' : '');
-    return '<div class="card mb-16"><div class="card__head"><h3>' + esc(pf.id) + ' · ' + esc(CHECKLIST_RESULTS[pf.result] || humanStatus(pf.result)) + '</h3><div class="spacer"></div>' +
-      demoBadge(status.label || humanStatus(pf.status), status.tone || statusTone(pf.status)) + '</div><div class="card__body">' +
-      '<div class="metaline">' +
-        metaItem('Audit', pf.auditId) +
-        metaItem('Organization', orgName(pf.orgId)) +
-        metaItem('Lead audit', audit ? audit.lead : '—') +
-        metaItem('Created by', pf.createdBy) +
-        metaItem('Question', pf.questionId) +
-        metaItem('Mock evidence files', pf.evidenceFiles.length ? pf.evidenceFiles.join(', ') : 'None') +
-      '</div>' +
-      '<div class="divider"></div><div class="metaline__k">Checklist item</div><div class="mt-12">' + esc(pf.checklistText) + '</div>' +
-      '<div class="metaline__k mt-16">Inspector comment</div><div class="mt-12 small muted">' + esc(pf.comment) + '</div>' +
-      decision +
-    '</div></div>';
-  }).join('') : '<div class="empty">No Potential Findings have been created yet.</div>';
+  if (!review) {
+    return pageHead('Lead Inspector Workspace', 'Completed checklist reports and preliminary inspection reports owned by the Lead Inspector.') +
+      '<div class="empty">No completed checklist reports are ready for lead review.</div>';
+  }
 
-  return pageHead('Lead Review Queue', 'Review Potential Findings before they become real Findings in the CAP/Evidence/Closure flow.') +
+  var completed = review.assignments.filter(function (item) { return item.status === 'Completed'; }).length;
+  var inProgress = review.assignments.filter(function (item) { return item.status === 'In Progress'; }).length;
+  var waiting = review.assignments.filter(function (item) { return item.status === 'Waiting'; }).length;
+
+  return pageHead('Lead Inspector Workspace', 'Completed checklist reports, inspector findings, and preliminary inspection report preparation for assigned audits.',
+    '<button class="btn" data-act="nav" data-view="audit-detail" data-id="' + esc(review.auditId) + '">Open audit</button>' +
+    '<button class="btn btn--primary" data-act="nav" data-view="audit-reports" data-id="' + esc(review.auditId) + '">Open Preliminary Report</button>') +
     guardrailStrip([
-      { label: 'Lead Inspector split' },
-      { label: 'Severity set by Lead only', tone: 'info' },
-      { label: 'Auditee sees only real Findings', tone: 'warn' }
+      { label: 'Lead Inspector orchestration' },
+      { label: 'Inspector checklist outputs consolidated', tone: 'info' },
+      { label: 'Service Provider sees approved report only', tone: 'warn' }
     ]) +
     '<div class="grid grid--kpi mb-16">' +
-      kpiCard('Pending Review', pending.length, 'Potential Findings waiting', { tone: pending.length ? 'warn' : 'ok' }) +
-      kpiCard('Converted', converted.length, 'Entered Finding lifecycle', { tone: converted.length ? 'info' : 'neutral' }) +
-      kpiCard('Returned', returned.length, 'Back to Inspector', { tone: returned.length ? 'warn' : 'neutral' }) +
+      kpiCard('Completed checklist reports', String(completed), inProgress + ' in progress · ' + waiting + ' waiting', { tone: completed ? 'ok' : 'neutral' }) +
+      kpiCard('Inspectors assigned', String(review.assignments.length), audit ? audit.team.join(', ') : review.auditId, { tone: 'info' }) +
+      kpiCard('Submitted findings', String(review.submittedFindings.length), 'Inspector findings and comments', { tone: review.submittedFindings.length ? 'warn' : 'ok' }) +
+      kpiCard('Preliminary report', review.reportStatus, 'Next: Submit to Department Manager', { tone: 'info' }) +
     '</div>' +
-    rows;
+    '<div class="grid grid--main">' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="card"><div class="card__head"><h3>' + esc(review.title) + '</h3><div class="spacer"></div>' +
+          demoBadge(audit ? audit.status : review.stage, 'info') + '</div><div class="card__body">' +
+          '<div class="metaline">' +
+            metaItem('Audit', review.auditId) +
+            metaItem('Service Provider', audit ? orgName(audit.orgId) : '—') +
+            metaItem('Lead Inspector', audit ? audit.lead : '—') +
+            metaItem('Date', audit ? fmtDate(audit.date) : '—') +
+            metaItem('Location', audit ? audit.location : '—') +
+            metaItem('Stage', review.stage) +
+          '</div>' +
+        '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Checklist assignments</h3><span class="sub">by inspector</span></div><div class="card__body">' + leadAssignmentsHtml(review) + '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Submitted findings and comments</h3><span class="sub">from inspectors</span></div><div class="card__body">' + leadSubmittedFindingsHtml(review) + '</div></div>' +
+        leadPotentialDecisionRowsHtml(potentials) +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="card"><div class="card__head"><h3>Audit report packages</h3><span class="sub">completed checklist reports</span></div><div class="card__body">' +
+          leadReviewAuditListHtml(reviews, review.auditId) +
+        '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>Preliminary Inspection Report</h3><div class="spacer"></div>' +
+          demoBadge(report ? humanStatus(report.status) : 'Draft', 'info') + '</div><div class="card__body">' +
+          '<p class="small muted">Lead Inspector prepares the preliminary report from completed inspector checklist reports, submitted findings, and comments.</p>' +
+          '<div class="metaline mt-12">' +
+            metaItem('Report', report ? report.id : '—') +
+            metaItem('Current owner', 'Lead Inspector') +
+            metaItem('Next action', 'Submit to Department Manager') +
+            metaItem('After approval', review.serviceProviderStep) +
+          '</div>' +
+          '<div class="row-actions mt-16">' +
+            '<button class="btn btn--primary" data-act="nav" data-view="audit-reports" data-id="' + esc(review.auditId) + '">Submit to Department Manager</button>' +
+          '</div>' +
+        '</div></div>' +
+      '</div>' +
+    '</div>';
 }
 
 function reportDecisionButton(report, decision, label, tone, primary) {
@@ -1570,9 +1680,12 @@ function reportDecisionPanelHtml(report) {
 }
 
 function viewAuditReportsApproval() {
-  var report = state.auditReports && state.auditReports.length ? state.auditReports[0] : null;
+  var requestedAuditId = state.params && state.params.auditId;
+  var report = requestedAuditId ? reportForAudit(requestedAuditId) : null;
+  if (!report) report = state.auditReports && state.auditReports.length ? state.auditReports[0] : null;
   if (!report) return pageHead('Audit Reports', '') + '<div class="empty">No audit report is seeded.</div>';
   var audit = auditById(report.auditId);
+  var leadReview = leadAuditReviewForAudit(report.auditId);
   var summary = approvalSummary(report);
   var status = approvalMetaForStatus(report.status);
   var recommendation = report.enforcementRecommendation
@@ -1583,7 +1696,7 @@ function viewAuditReportsApproval() {
     : '<div class="muted small">Mock signature appears only after ED approval.</div>';
   var findings = state.findings.filter(function (finding) { return finding.auditId === report.auditId; });
 
-  return pageHead('Preliminary / Final Report — ' + report.id, 'Mock report approval chain: Lead Inspector -> Department Manager -> GM -> Executive Director.',
+  return pageHead(report.title || ('Preliminary / Final Report — ' + report.id), 'Mock report approval chain: Lead Inspector -> Department Manager -> GM -> Executive Director.',
     '<button class="btn" data-act="mock-export">Preview PDF (mock)</button><button class="btn" data-act="mock-export">Preview Word (mock)</button>') +
     guardrailStrip([
       { label: 'Mock report module' },
@@ -1610,9 +1723,11 @@ function viewAuditReportsApproval() {
         '<div class="card"><div class="card__head"><h3>Executive Summary</h3><span class="sub">AI-generated draft requires authorized review</span></div><div class="card__body">' +
           '<div class="callout">' + esc(report.executiveSummaryDraft) + '</div>' +
         '</div></div>' +
+        (leadReview ? '<div class="card"><div class="card__head"><h3>Audit team checklist summary</h3><span class="sub">Inspectors assigned</span></div><div class="card__body">' + leadAssignmentsHtml(leadReview) + '</div></div>' : '') +
         '<div class="card"><div class="card__head"><h3>Findings / Observations / Recommendations</h3></div><div class="card__body">' +
           '<div class="reg-section-title">Findings from audit</div>' +
           (findings.length ? findings.map(function (finding) { return '<div class="package-question"><div><b>' + esc(finding.id) + '</b><p>' + esc(finding.title) + '</p></div>' + statusBadge(finding) + '</div>'; }).join('') : '<div class="muted small">No converted findings for this audit yet.</div>') +
+          (leadReview ? '<div class="reg-section-title mt-16">Submitted findings and comments</div>' + leadSubmittedFindingsHtml(leadReview) : '') +
           '<div class="reg-section-title mt-16">Observations</div>' + report.observations.map(function (item) { return '<div class="small muted mb-8">' + esc(item) + '</div>'; }).join('') +
           '<div class="reg-section-title mt-16">Recommendations</div>' + report.recommendations.map(function (item) { return '<div class="small muted mb-8">' + esc(item) + '</div>'; }).join('') +
         '</div></div>' +
