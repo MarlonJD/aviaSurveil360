@@ -14,7 +14,7 @@
 - **Status:** ready-for-verification
 - **Owner:** Product architecture planning
 - **Type:** Platform V2 demo and production MVP planning
-- **Authority:** Root `AGENTS.md`; `docs/plans/` is the active plan folder.
+- **Authority:** Root `AGENTS.md`; `docs/exec-plans/` is the active plan folder.
 
 ## Objective
 
@@ -31,7 +31,7 @@ Create an execution-ready plan for the next AviaSurveil360 scope after the NCAA 
 This plan is grounded in:
 
 - The existing AviaSurveil360 source-of-truth docs under `docs/`.
-- The current demo-only prototype plan at `docs/plans/2026-06-14-aviasurveil-demo-only-prototype-plan.md`.
+- The current demo-only prototype plan at `docs/exec-plans/active/2026-06-14-aviasurveil-demo-only-prototype-plan.md`.
 - The NCAA feedback summarized by the user on 2026-06-23.
 - The observed current package mismatch: `README.md` and `MANIFEST.md` still describe a Markdown-only package, while the repo now contains `index.html`, `css/`, and `js/` prototype files.
 
@@ -121,8 +121,8 @@ Avoid generic chart walls, decorative risk meters, untraceable AI chat, and broa
 **Files:**
 - Read: `README.md`
 - Read: `MANIFEST.md`
-- Read: `docs/plans/index.md`
-- Read: `docs/plans/2026-06-14-aviasurveil-demo-only-prototype-plan.md`
+- Read: `docs/exec-plans/index.md`
+- Read: `docs/exec-plans/active/2026-06-14-aviasurveil-demo-only-prototype-plan.md`
 - Read: `docs/DEMO_BUILD_SUMMARY.md`
 - Potentially modify in later execution: `README.md`
 - Potentially modify in later execution: `MANIFEST.md`
@@ -761,8 +761,8 @@ Before production:
 
 ### Plan Verification
 
-- `docs/plans/2026-06-23-ncaa-platform-v2-and-mvp-plan.md` exists.
-- `docs/plans/index.md` has one active row for this plan.
+- `docs/exec-plans/active/2026-06-23-ncaa-platform-v2-and-mvp-plan.md` exists.
+- `docs/exec-plans/index.md` has one active row for this plan.
 - The existing demo-only plan remains `ready-for-verification` until stakeholder sign-off.
 - This plan includes objective, scope, assumptions, phases, verification, risks, dependencies, ownership boundaries, explicit out-of-scope items, and Execution Prompt.
 
@@ -813,9 +813,9 @@ The next concrete todo for this plan is:
 ## Execution Prompt
 
 ```text
-Execute docs/plans/2026-06-23-ncaa-platform-v2-and-mvp-plan.md for AviaSurveil360.
+Execute docs/exec-plans/active/2026-06-23-ncaa-platform-v2-and-mvp-plan.md for AviaSurveil360.
 
-Respect AGENTS.md. Use docs/plans/ as the source of truth for plan tracking. Do not create, switch, rename, delete, or otherwise perform branch operations. Do not treat the current Vanilla JavaScript demo as production architecture.
+Respect AGENTS.md. Use docs/exec-plans/ as the source of truth for plan tracking. Do not create, switch, rename, delete, or otherwise perform branch operations. Do not treat the current Vanilla JavaScript demo as production architecture.
 
 Start with Phase 0:
 1. Verify the current repo/package reality with rg --files.
@@ -833,5 +833,5 @@ Then implement only the chosen next phase:
 
 Verification must keep demo-only claims separate from production readiness. Do not claim legal validity, USOAP EI improvement, enforcement readiness, production security, evidence repository completeness, offline reliability, or AI correctness without matching implementation and evidence.
 
-When work changes plan status, update docs/plans/index.md with the actual status and the single next concrete todo.
+When work changes plan status, update docs/exec-plans/index.md with the actual status and the single next concrete todo.
 ```

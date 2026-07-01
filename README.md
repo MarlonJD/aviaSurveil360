@@ -38,7 +38,7 @@ Do not build an EMPIC-like complex enterprise screen first. Build a simple, role
 6. `05_SCREEN_SPECS/SCREEN_INVENTORY_AND_FORMS.md`
 7. `08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.md`
 8. `DEMO_BUILD_SUMMARY.md`
-9. `plans/index.md`
+9. `exec-plans/index.md`
 
 For the clickable demo, open `index.html` directly in a browser or serve this
 folder with a local static server. See `docs/DEMO_BUILD_SUMMARY.md` for current

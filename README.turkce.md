@@ -38,7 +38,7 @@ eden task-based oversight platformudur.
 6. `05_SCREEN_SPECS/SCREEN_INVENTORY_AND_FORMS.md`
 7. `08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.md`
 8. `DEMO_BUILD_SUMMARY.md`
-9. `plans/index.md`
+9. `exec-plans/index.md`
 
 Clickable demo için `index.html` dosyasını doğrudan browser'da açın veya bu
 klasörü local static server ile servis edin. Güncel verification status ve demo

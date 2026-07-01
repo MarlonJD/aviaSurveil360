@@ -215,10 +215,9 @@ entrypoint.
 
 - For implementation plans, roadmaps, production-readiness plans, stakeholder
   follow-up plans, prototype execution plans, or `<proposed_plan>` requests,
-  create or update a Markdown artifact under `11_PLANS/` unless the repository
-  already has an established plan folder.
-- If a repository already contains `docs/plans/`, use that existing path instead
-  of creating `11_PLANS/`.
+  create or update a Markdown artifact under `docs/exec-plans/active/`.
+- `docs/exec-plans/` is the canonical execution-plan surface for this repo.
+  Do not create new plan artifacts under legacy plan folders.
 - Do not leave requested plans only in chat unless the user explicitly asks for
   a conversational answer only.
 - Name plan files in English kebab-case as
@@ -248,14 +247,11 @@ entrypoint.
 ### Plan And Todo Tracking
 
 - This `AGENTS.md` is authoritative for this folder's plan tracking lifecycle.
-- If `11_PLANS/` is used, the active tracking files are:
-  - `11_PLANS/index.md`
-  - `11_PLANS/completed/index.md`
-  - `11_PLANS/notes/index.md`
-- If `docs/plans/` already exists, use:
-  - `docs/plans/index.md`
-  - `docs/plans/completed/index.md`
-  - `docs/plans/notes/index.md`
+- The active tracking files are:
+  - `docs/exec-plans/index.md`
+  - `docs/exec-plans/active/`
+  - `docs/exec-plans/completed/index.md`
+  - `docs/exec-plans/tech-debt-tracker.md`
 - Use these index status terms consistently: `active`, `paused`, `blocked`,
   `ready-for-verification`, `completed`, `archived`, `superseded`,
   `note-open`, and `note-closed`.
@@ -263,17 +259,18 @@ entrypoint.
   blocked, resumed, verified, completed, superseded, or archived.
 - Keep only the next concrete todo per active plan in the active index; detailed
   task lists stay inside the plan artifact.
-- Move a plan to `completed/` only after its objective is met, required
+- Move a plan to `docs/exec-plans/completed/` only after its objective is met, required
   verification has passed or the coverage gap is documented, and remaining work
   is captured in a note or follow-up plan. Preserve the original filename when
   moving a completed plan.
-- Record completed plans in `completed/index.md` with completion date, original
-  location, owner, verification, commit or evidence pointer, and follow-up note
-  link when applicable.
+- Record completed plans in `docs/exec-plans/completed/index.md` with
+  completion date, original location, owner, verification, commit or evidence
+  pointer, and follow-up tracker link when applicable.
 - Store durable post-plan facts, blockers, accepted risks, missing evidence,
   regulatory assumptions, stakeholder handoffs, and owner handoffs in
-  `notes/`.
-- Track notes in `notes/index.md` using `note-open` or `note-closed`.
+  `docs/exec-plans/tech-debt-tracker.md`.
+- Track durable items in `docs/exec-plans/tech-debt-tracker.md` using
+  `note-open` or `note-closed`.
 - Superseded plans may move to `completed/` only when the supersession is
   explicit and the replacement plan is linked. If completion evidence is not
   verified, leave the old plan in place and mark it `superseded` in the active
@@ -282,8 +279,8 @@ entrypoint.
   unverified historical plans in place; add an index row only when a human or
   agent has inspected and classified the plan.
 - Before finishing a task that touches plan artifacts, verify that the active
-  index row, next todo, verification status, completed archive row, and note
-  entries match the work actually performed.
+  index row, next todo, verification status, completed archive row, and
+  tech-debt tracker entries match the work actually performed.
 - A plan execution task is not complete until its active index row and todo
   match the actual final state.
 

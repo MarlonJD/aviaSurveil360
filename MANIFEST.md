@@ -99,21 +99,23 @@ There is no `package.json`; do not assume `npm test`.
 Most stakeholder-facing canonical docs have matching `.turkce.md` companion
 files in the same folder.
 
-## Active Plans
+## Execution Plans
 
-- `docs/plans/index.md` — active plan tracking index.
-- `docs/plans/2026-06-14-aviasurveil-demo-only-prototype-plan.md`
-- `docs/plans/2026-06-23-ncaa-platform-v2-and-mvp-plan.md`
-- `docs/plans/2026-06-28-caa-governance-workflow-and-roles-plan.md`
-- `docs/plans/2026-06-29-agent-harness-readiness-completion-plan.md`
-- `docs/plans/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`
-- `docs/plans/2026-06-30-planning-panel-simplification-plan.md`
+- `docs/exec-plans/index.md` — active execution-plan tracking index.
+- `docs/exec-plans/active/2026-06-14-aviasurveil-demo-only-prototype-plan.md`
+- `docs/exec-plans/active/2026-06-23-ncaa-platform-v2-and-mvp-plan.md`
+- `docs/exec-plans/active/2026-06-28-caa-governance-workflow-and-roles-plan.md`
+- `docs/exec-plans/active/2026-06-29-agent-harness-readiness-completion-plan.md`
+- `docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`
+- `docs/exec-plans/active/2026-06-30-planning-panel-simplification-plan.md`
 
-## Plan Notes
+## Execution Plan Archive And Tracker
 
-- `docs/plans/notes/index.md` — durable blocker/handoff/accepted-risk note
-  tracking.
-- `docs/plans/notes/2026-06-29-governance-browser-qa-mobile-blocker.md`
+- `docs/exec-plans/completed/index.md` — completed and archived execution-plan
+  records.
+- `docs/exec-plans/completed/2026-06-29-governance-browser-qa-mobile-blocker.md`
+- `docs/exec-plans/tech-debt-tracker.md` — durable blocker, handoff,
+  accepted-risk, missing-evidence, and technical-debt tracker.
 
 ## Production Boundary
 

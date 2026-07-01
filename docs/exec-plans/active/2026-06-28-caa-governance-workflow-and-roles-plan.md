@@ -20,7 +20,7 @@
 frontend-only demo and are `verified locally` with syntax checks, deterministic
 Node smoke checks, desktop browser QA, and mobile Planning Approval content
 visual QA. The former mobile Planning Approval blocker is closed in
-`docs/plans/notes/2026-06-29-governance-browser-qa-mobile-blocker.md`.
+`docs/exec-plans/completed/2026-06-29-governance-browser-qa-mobile-blocker.md`.
 Production-readiness is not claimed. Next step: stakeholder review/sign-off
 before moving this plan to `completed/`.
 
@@ -567,18 +567,18 @@ Task: perform stakeholder review/sign-off for the CAA Governance Workflow And Mu
 
 Read first:
 - AGENTS.md
-- docs/plans/index.md
-- docs/plans/2026-06-28-caa-governance-workflow-and-roles-plan.md
+- docs/exec-plans/index.md
+- docs/exec-plans/active/2026-06-28-caa-governance-workflow-and-roles-plan.md
 - docs/DEMO_BUILD_SUMMARY.md
-- docs/plans/notes/2026-06-29-governance-browser-qa-mobile-blocker.md
+- docs/exec-plans/completed/2026-06-29-governance-browser-qa-mobile-blocker.md
 - docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md
 
 Do:
 1. Review the verified-local evidence for syntax, Node smoke checks, desktop browser QA, and mobile Planning Approval visual QA.
 2. Prepare a compact stakeholder sign-off readout covering the implemented governance flows: Planning Approval, Checklist Approval, Report Approval, Inspector Work Queue/Offline Field, Auditee isolation, and Admin Question Bank.
 3. Keep the demo-only boundary explicit: no backend, database, API, real auth, real upload, real AI, real regulatory ingestion, real notification service, production audit-log readiness, or production readiness.
-4. If stakeholder/user sign-off is explicitly given, move this plan to `docs/plans/completed/` and update the completed index per AGENTS.md.
-5. If new gaps are found, record them in `docs/plans/notes/` and keep the plan `ready-for-verification` or mark it `blocked` as appropriate.
+4. If stakeholder/user sign-off is explicitly given, move this plan to `docs/exec-plans/completed/` and update the completed index per AGENTS.md.
+5. If new gaps are found, record them in `docs/exec-plans/` and keep the plan `ready-for-verification` or mark it `blocked` as appropriate.
 
 Verification:
 - Active plan index and notes index match the final status.

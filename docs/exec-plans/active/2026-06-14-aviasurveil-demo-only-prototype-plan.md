@@ -72,7 +72,7 @@ and triggers no automatic enforcement, suspension, or closure.
 
 ## Stages / Phases
 
-1. **Plan + index** (this file) and create `docs/plans/index.md`.
+1. **Plan + index** (this file) and create `docs/exec-plans/index.md`.
 2. **Shell + mock data**: `index.html`, `css/styles.css`, `js/data.js`
    (organizations, audits, checklist template, findings, CAP, evidence,
    notifications, audit log) and the client-side `state` + reset.

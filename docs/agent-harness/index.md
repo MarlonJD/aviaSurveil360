@@ -14,7 +14,7 @@ approves a different build direction.
    planning, verification, and git boundaries.
 2. Numbered product docs under `../00_RESEARCH_AND_POSITIONING/` through
    `../10_REFERENCES/` define the AviaSurveil360 domain.
-3. `../plans/index.md` is the active plan router and next-todo tracker.
+3. `../exec-plans/index.md` is the active plan router and next-todo tracker.
 4. This harness package defines agent-facing output, registry, verification,
    and cleanup rules.
 5. `../DEMO_BUILD_SUMMARY.md` records local demo evidence and known production
@@ -31,15 +31,16 @@ approves a different build direction.
 | `verification-matrix.md` | Local command ladder by risk level. |
 | `entropy-cleanup-checklist.md` | Drift, stale-claim, plan-index, and evidence-label cleanup. |
 | `../08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md` | Applied examples, browser QA paths, and older runbook context. |
-| `../plans/index.md` | Active plan state and one concrete next todo per active plan. |
+| `../exec-plans/index.md` | Active plan state and one concrete next todo per active plan. |
+| `../exec-plans/tech-debt-tracker.md` | Durable blockers, accepted risks, missing evidence, and technical debt. |
 | `../DEMO_BUILD_SUMMARY.md` | Current demo evidence, local verification status, and limitations. |
 
 ## Task Routing Summary
 
 | Task | First source | Harness rule |
 |---|---|---|
-| Status or readiness readout | `../plans/index.md`, `../DEMO_BUILD_SUMMARY.md` | Use `output-contract.md`; separate local proof from production scope. |
-| Plan creation or execution | `../../AGENTS.md`, `../plans/index.md`, nearest plan | Keep the index row and next todo synchronized with the actual result. |
+| Status or readiness readout | `../exec-plans/index.md`, `../DEMO_BUILD_SUMMARY.md` | Use `output-contract.md`; separate local proof from production scope. |
+| Plan creation or execution | `../../AGENTS.md`, `../exec-plans/index.md`, nearest plan | Keep the index row and next todo synchronized with the actual result. |
 | Docs-only product update | Relevant numbered product docs and glossary | Preserve careful regulatory wording and bilingual companions when applicable. |
 | Static demo behavior | Relevant workflow/module docs, `../DEMO_BUILD_SUMMARY.md`, targeted tests | Use the smallest local verification level that covers the changed path. |
 | Role, visibility, CAP, evidence, upload, AI, or regulatory copy | `../06_DATA_AND_RULES/STATUS_PERMISSION_SECURITY.md` plus workflow/module docs | Treat as boundary-sensitive and review demo-only labels. |

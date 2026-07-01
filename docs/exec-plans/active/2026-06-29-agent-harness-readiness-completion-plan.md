@@ -8,7 +8,7 @@
 - **Status:** ready-for-verification
 - **Owner:** Product engineering workflow
 - **Type:** Agent harness documentation, output contract, verification guardrails
-- **Authority:** Root `AGENTS.md`; `docs/plans/` is the active plan folder.
+- **Authority:** Root `AGENTS.md`; `docs/exec-plans/` is the active plan folder.
 - **Source boundary:** This plan is based on the local OpenAI Harness
   Engineering working note at
   `/Users/marlonjd/Downloads/openai-harness-engineering-tam-kapsamli.md`, the
@@ -43,7 +43,7 @@ working harness detail into a dedicated `docs/agent-harness/` package. The
 package must expose one entrypoint index, one output contract, one surface
 registry, one verification matrix, and one entropy cleanup checklist, with a
 small Node smoke gate that prevents the package from drifting out of sync with
-`docs/plans/index.md`.
+`docs/exec-plans/index.md`.
 
 **Tech Stack:** Markdown, existing static demo files, existing Vanilla
 JavaScript smoke-test style, Node.js built-ins only. No package manager,
@@ -98,10 +98,10 @@ behavior or claim production readiness.
 - Update `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md` so it points
   to the canonical harness package instead of being the only harness surface.
 - Update `MANIFEST.md` so the harness package is visible in the repo inventory.
-- Update `docs/plans/index.md` so this plan is the active next harness todo.
+- Update `docs/exec-plans/index.md` so this plan is the active next harness todo.
 - Add a Node smoke test that checks:
   - all required harness files exist
-  - `docs/plans/index.md` links this plan and the harness adaptation plan
+  - `docs/exec-plans/index.md` links this plan and the harness adaptation plan
   - `docs/agent-harness/index.md` links the output contract, registry,
     verification matrix, entropy cleanup checklist, runbook, plan index, and
     demo summary
@@ -130,7 +130,7 @@ behavior or claim production readiness.
 
 ## Assumptions
 
-- `docs/plans/` remains the active plan folder per `AGENTS.md`.
+- `docs/exec-plans/` remains the active plan folder per `AGENTS.md`.
 - The current worktree may contain prior user/agent changes; execution must not
   revert unrelated README, MANIFEST, CSS, JS, demo summary, plan, note, or test
   changes.
@@ -194,12 +194,12 @@ behavior or claim production readiness.
     navigation to `docs/agent-harness/index.md`.
   - Remove or shorten duplicated sections only if the new harness package fully
     owns them.
-- `docs/plans/index.md`
+- `docs/exec-plans/index.md`
   - Add this plan as `active`.
   - Keep exactly one next concrete todo for the active row.
   - Leave older ready-for-verification plans in place unless explicitly
     superseded or signed off.
-- `docs/plans/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`
+- `docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`
   - Add a short continuation note pointing to this readiness completion plan.
   - Do not mark it completed without stakeholder/user sign-off.
 
@@ -218,9 +218,9 @@ behavior or claim production readiness.
 
 - [ ] Read `AGENTS.md`.
 - [ ] Read `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`.
-- [ ] Read `docs/plans/index.md`.
+- [ ] Read `docs/exec-plans/index.md`.
 - [ ] Read
-  `docs/plans/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`.
+  `docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`.
 - [ ] Read `docs/DEMO_BUILD_SUMMARY.md`.
 - [ ] Read the local OpenAI working note sections around:
   - short `AGENTS.md` as table of contents
@@ -303,11 +303,11 @@ behavior or claim production readiness.
   opening section says the canonical harness entrypoint is
   `docs/agent-harness/index.md`.
 - [ ] Update
-  `docs/plans/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`
+  `docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`
   with a continuation note:
   `Canonical harness package completion is tracked in
-  docs/plans/2026-06-29-agent-harness-readiness-completion-plan.md`.
-- [ ] Update `docs/plans/index.md`:
+  docs/exec-plans/active/2026-06-29-agent-harness-readiness-completion-plan.md`.
+- [ ] Update `docs/exec-plans/index.md`:
   - add this plan as `active`
   - set Next Todo to Phase 1 canonical package creation and smoke gate
   - leave older harness adaptation plan `ready-for-verification` unless a human
@@ -317,7 +317,7 @@ behavior or claim production readiness.
 
 - Every new harness file is reachable from either `AGENTS.md`, `MANIFEST.md`, or
   `docs/agent-harness/index.md`.
-- `docs/plans/index.md` has one concrete next todo for this plan.
+- `docs/exec-plans/index.md` has one concrete next todo for this plan.
 
 ### Phase 3 - Mechanical Harness Docs Smoke Gate
 
@@ -332,7 +332,7 @@ behavior or claim production readiness.
   - `registry.md`
   - `verification-matrix.md`
   - `entropy-cleanup-checklist.md`
-  - `../plans/index.md`
+  - `../exec-plans/index.md`
   - `../DEMO_BUILD_SUMMARY.md`
   - `../08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`
 - [ ] The test must check that `output-contract.md` contains:
@@ -416,15 +416,15 @@ rg -n "docs/agent-harness|agent-harness/index|output-contract|verification-matri
   - verification commands
   - status `verified locally` or `blocked`
   - any coverage gaps
-- [ ] Update `docs/plans/index.md`:
+- [ ] Update `docs/exec-plans/index.md`:
   - if all verification passes, status becomes `ready-for-verification`
   - next todo becomes stakeholder/user sign-off before moving to `completed/`
   - if verification fails and cannot be fixed in the execution turn, status
-    becomes `blocked` with a note in `docs/plans/notes/`
+    becomes `blocked` with a note in `docs/exec-plans/`
 
 **Verification:**
 
-- The final status in this plan and `docs/plans/index.md` match.
+- The final status in this plan and `docs/exec-plans/index.md` match.
 - Any blocker has a durable note.
 - No product behavior or production scope changed.
 - No GitHub Actions, hosted runner, remote CI, or paid automation was added.
@@ -455,8 +455,8 @@ creating process noise.
 
 This plan is verified when:
 
-- The plan file exists under `docs/plans/`.
-- `docs/plans/index.md` has an active row for this plan.
+- The plan file exists under `docs/exec-plans/`.
+- `docs/exec-plans/index.md` has an active row for this plan.
 - The plan includes objective, scope, assumptions, phases, verification, risks,
   dependencies, ownership boundaries, explicit out-of-scope items, and this
   `Execution Prompt`.
@@ -470,7 +470,7 @@ Execution of the plan is verified when:
 - `tests/harness-docs-smoke.test.js` passes.
 - `node tests/demo-boundary-smoke.test.js` passes.
 - `git diff --check` passes.
-- `docs/plans/index.md` and this plan agree on final status.
+- `docs/exec-plans/index.md` and this plan agree on final status.
 - No backend, database, API, auth, upload, AI, regulatory ingestion,
   notification service, production audit-log, or framework migration is added
   or claimed.
@@ -502,7 +502,7 @@ Execution of the plan is verified when:
 ## Dependencies
 
 - Root `AGENTS.md`.
-- Existing active plans in `docs/plans/`.
+- Existing active plans in `docs/exec-plans/`.
 - Existing runbook:
   `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`.
 - Existing evidence file: `docs/DEMO_BUILD_SUMMARY.md`.
@@ -545,13 +545,13 @@ Execution of the plan is verified when:
 ```text
 You are working in /Users/marlonjd/Developer/web/aviaSurveil360.
 
-Task: execute docs/plans/2026-06-29-agent-harness-readiness-completion-plan.md and make the AviaSurveil360 agent harness fully ready as a canonical repo package.
+Task: execute docs/exec-plans/active/2026-06-29-agent-harness-readiness-completion-plan.md and make the AviaSurveil360 agent harness fully ready as a canonical repo package.
 
 Read first:
 - AGENTS.md
-- docs/plans/index.md
-- docs/plans/2026-06-29-agent-harness-readiness-completion-plan.md
-- docs/plans/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md
+- docs/exec-plans/index.md
+- docs/exec-plans/active/2026-06-29-agent-harness-readiness-completion-plan.md
+- docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md
 - docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md
 - docs/DEMO_BUILD_SUMMARY.md
 - /Users/marlonjd/Downloads/openai-harness-engineering-tam-kapsamli.md
@@ -571,8 +571,8 @@ Do:
 6. Create tests/harness-docs-smoke.test.js using Node built-ins only.
 7. Add a concise AGENTS.md pointer to docs/agent-harness/index.md.
 8. Update MANIFEST.md and the existing harness runbook so the new package is discoverable.
-9. Add a continuation note to docs/plans/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md.
-10. Keep docs/plans/index.md synchronized with actual status and one next todo.
+9. Add a continuation note to docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md.
+10. Keep docs/exec-plans/index.md synchronized with actual status and one next todo.
 
 Do not:
 - Add backend, database, API, real auth, real upload, real AI, real regulatory ingestion, notification service, production audit-log readiness, CI service, framework migration, branch changes, commits, pushes, or GitHub comments.
@@ -591,8 +591,8 @@ Verification:
 - find .github -maxdepth 3 -type f 2>/dev/null || true
 
 Expected final status:
-- If all checks pass: mark this plan ready-for-verification in docs/plans/index.md with next todo "stakeholder/user sign-off before moving to completed".
-- If checks cannot pass: mark blocked, create/update a note under docs/plans/notes/, and keep the gap explicit.
+- If all checks pass: mark this plan ready-for-verification in docs/exec-plans/index.md with next todo "stakeholder/user sign-off before moving to completed".
+- If checks cannot pass: mark blocked, create/update a note under docs/exec-plans/, and keep the gap explicit.
 
 Final response:
 - Use Done / Remaining / Blocked / Verification / Next.

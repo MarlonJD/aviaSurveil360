@@ -39,7 +39,7 @@ and return to seed data.
 | `js/app.js` | Role-based experience navigation, centralized persistence calls, simulated offline transitions, AI decision transitions, and stable ID generation for new records. |
 | `docs/DEMO_BUILD_SUMMARY.md` | This English canonical build summary. |
 | `docs/DEMO_BUILD_SUMMARY.turkce.md` | Turkish companion summary for stakeholder handoff. |
-| `docs/plans/index.md` | Updated only if the active plan status / next todo changes. |
+| `docs/exec-plans/index.md` | Updated only if the active plan status / next todo changes. |
 
 No backend, database, API, framework migration, real file storage, real AI
 service, real regulatory ingestion, or real notification service was added.
@@ -316,7 +316,7 @@ Mobile Planning Approval rerun:
   `Q3 Flight Operations Surveillance Plan` dossier was visible, console
   warnings/errors were empty, and mobile scrollWidth/clientWidth was `390/390`.
 - The former blocker note is closed in
-  `docs/plans/notes/2026-06-29-governance-browser-qa-mobile-blocker.md`.
+  `docs/exec-plans/completed/2026-06-29-governance-browser-qa-mobile-blocker.md`.
 
 Visual QA polish follow-up completed: the report approval progress card now uses
 the compact approval rail variant in the sidebar, so longer governance labels

@@ -34,10 +34,10 @@ evidence afterward. It is an inventory, not a new product specification.
 
 | Surface | Use |
 |---|---|
-| `../plans/index.md` | Active plan status and one next concrete todo per active plan. |
-| `../plans/2026-06-29-agent-harness-readiness-completion-plan.md` | Current harness completion plan and execution prompt. |
-| `../plans/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md` | Historical partial-adaptation record superseded by the readiness completion plan. |
-| `../plans/notes/index.md` | Durable note tracker. |
+| `../exec-plans/index.md` | Active plan status and one next concrete todo per active plan. |
+| `../exec-plans/active/2026-06-29-agent-harness-readiness-completion-plan.md` | Current harness completion plan and execution prompt. |
+| `../exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md` | Historical partial-adaptation record superseded by the readiness completion plan. |
+| `../exec-plans/tech-debt-tracker.md` | Durable blocker, accepted-risk, missing-evidence, and technical-debt tracker. |
 | `../DEMO_BUILD_SUMMARY.md` | Current demo evidence, local verification status, and production gaps. |
 | `../DEMO_BUILD_SUMMARY.turkce.md` | Turkish stakeholder companion summary when demo evidence changes. |
 
@@ -79,14 +79,14 @@ There is no `package.json`; run tests directly with `node`.
 
 | Task type | Read first | Record result in |
 |---|---|---|
-| Harness readiness | `index.md`, completion plan, `../plans/index.md` | Completion plan, plan index, this package. |
-| Status readout | `../plans/index.md`, relevant plan, `../DEMO_BUILD_SUMMARY.md` | Chat only unless repo status is stale. |
+| Harness readiness | `index.md`, completion plan, `../exec-plans/index.md` | Completion plan, plan index, this package. |
+| Status readout | `../exec-plans/index.md`, relevant plan, `../DEMO_BUILD_SUMMARY.md` | Chat only unless repo status is stale. |
 | Product docs | Relevant numbered docs and `../10_REFERENCES/` | Matching English doc and Turkish companion when required. |
 | Prototype behavior | Active plan, relevant workflow/module docs, static demo files | Targeted tests, demo summary when evidence changes. |
 | Role visibility | `../06_DATA_AND_RULES/STATUS_PERMISSION_SECURITY.md`, auditee portal docs | Targeted tests and demo summary if behavior changes. |
 | Finding/CAP/Evidence | Workflow docs and module docs for findings, CAP, evidence | Targeted tests and plan/evidence summary. |
 | UI/visual QA | UX docs, screen specs, active plan | Screenshot/browser evidence and demo summary when accepted. |
-| Plan lifecycle | `../../AGENTS.md`, `../plans/index.md`, target plan | Plan file, index row, note if durable gap exists. |
+| Plan lifecycle | `../../AGENTS.md`, `../exec-plans/index.md`, target plan | Plan file, index row, and tech-debt tracker entry if a durable gap exists. |
 
 ## Forbidden Production Surfaces
 

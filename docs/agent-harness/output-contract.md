@@ -53,15 +53,15 @@ say `blocked` and record the durable note required by `../../AGENTS.md`.
 
 ## Plan Lifecycle Output Rules
 
-When a task touches `../plans/`:
+When a task touches `../exec-plans/`:
 
-- Update `../plans/index.md` only when status or next todo actually changes.
+- Update `../exec-plans/index.md` only when status or next todo actually changes.
 - Keep one concrete next todo per active row.
-- Do not move a plan to `completed/` without inspected objective completion,
-  required verification, and explicit stakeholder/user sign-off.
-- Use `../plans/notes/` for durable blockers, accepted risks, missing evidence,
-  regulatory assumptions, or owner handoffs that need to survive the current
-  plan.
+- Do not move a plan to `../exec-plans/completed/` without inspected objective
+  completion, required verification, and explicit stakeholder/user sign-off.
+- Use `../exec-plans/tech-debt-tracker.md` for durable blockers, accepted
+  risks, missing evidence, regulatory assumptions, or owner handoffs that need
+  to survive the current plan.
 - Keep the plan file and index row consistent before reporting completion.
 
 ## Browser And GUI Cleanup Reporting

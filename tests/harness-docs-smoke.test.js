@@ -27,15 +27,16 @@ const requiredFiles = [
 
 requiredFiles.forEach(assertFile);
 
-const planIndex = read('docs/plans/index.md');
+const planIndex = read('docs/exec-plans/index.md');
 [
-  '2026-06-29-agent-harness-readiness-completion-plan.md',
-  '2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md'
+  'active/2026-06-29-agent-harness-readiness-completion-plan.md',
+  'active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md',
+  'tech-debt-tracker.md'
 ].forEach((target) => {
   assert.match(
     planIndex,
     new RegExp(target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
-    `docs/plans/index.md must link ${target}`
+    `docs/exec-plans/index.md must link ${target}`
   );
 });
 
@@ -45,7 +46,8 @@ const harnessIndex = read('docs/agent-harness/index.md');
   'registry.md',
   'verification-matrix.md',
   'entropy-cleanup-checklist.md',
-  '../plans/index.md',
+  '../exec-plans/index.md',
+  '../exec-plans/tech-debt-tracker.md',
   '../DEMO_BUILD_SUMMARY.md',
   '../08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md'
 ].forEach((target) => {

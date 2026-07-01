@@ -539,7 +539,7 @@ Manual/browser verification is required for visible navigation clarity. If brows
 Use this exact prompt to execute the plan:
 
 ```text
-Implement docs/plans/2026-06-30-planning-panel-simplification-plan.md in /Users/marlonjd/Developer/web/aviaSurveil360.
+Implement docs/exec-plans/active/2026-06-30-planning-panel-simplification-plan.md in /Users/marlonjd/Developer/web/aviaSurveil360.
 
 Hard constraints:
 - Read AGENTS.md first and obey the demo-first/static frontend rules.

@@ -311,7 +311,7 @@ Mobil Planning Approval yeniden koşumu:
   `Q3 Flight Operations Surveillance Plan` dossier görünür, console
   warning/error listesi boştur ve mobile scrollWidth/clientWidth `390/390`dır.
 - Eski blocker note,
-  `docs/plans/notes/2026-06-29-governance-browser-qa-mobile-blocker.md`
+  `docs/exec-plans/completed/2026-06-29-governance-browser-qa-mobile-blocker.md`
   içinde kapatıldı.
 
 Görsel QA polish takibi tamamlandı: rapor approval progress kartı sidebar içinde

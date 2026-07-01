@@ -60,8 +60,8 @@ index.html + css/ + js/ + mock data + browser-only demo persistence
 | Surface | Purpose | Agent rule |
 |---|---|---|
 | `AGENTS.md` | Highest local authority for product, planning, demo, verification, and git rules. | Read before any material task. Do not duplicate it here. |
-| `docs/plans/index.md` | Active plan routing and next concrete todo per plan. | Check before creating or materially changing a plan. |
-| `docs/plans/*.md` | Execution plans, status, verification, and prompt artifacts. | Update when a plan state or next todo changes. |
+| `docs/exec-plans/index.md` | Active plan routing and next concrete todo per plan. | Check before creating or materially changing a plan. |
+| `docs/exec-plans/active/*.md` | Execution plans, status, verification, and prompt artifacts. | Update when a plan state or next todo changes. |
 | `docs/00_RESEARCH_AND_POSITIONING/` | Market and positioning context. | Use for product positioning and competitor framing. |
 | `docs/01_PRODUCT_PLAN/` | Product vision, MVP, and module architecture. | Use for scope, object model, and roadmap decisions. |
 | `docs/02_UX_PLAN/` | Role-based UX and IA. | Use for UI/navigation decisions. |
@@ -81,7 +81,7 @@ index.html + css/ + js/ + mock data + browser-only demo persistence
 | Article principle | AviaSurveil360 rule |
 |---|---|
 | `AGENTS.md` should be a map, not an encyclopedia. | Keep global/local rules in `AGENTS.md`; put working detail in docs, plans, this runbook, and evidence files. |
-| The repo should be the agent's main knowledge base. | Durable decisions go into `docs/`, `docs/plans/`, `docs/DEMO_BUILD_SUMMARY.md`, or `docs/plans/notes/`, not only chat. |
+| The repo should be the agent's main knowledge base. | Durable decisions go into `docs/`, `docs/exec-plans/`, `docs/DEMO_BUILD_SUMMARY.md`, or `docs/exec-plans/tech-debt-tracker.md`, not only chat. |
 | Agents need to see the application. | Use local static browser verification, console review, screenshots, and role-flow click-throughs for UI work. |
 | Architecture rules should become mechanical checks. | Prefer targeted smoke tests and future structural checks for lifecycle, visibility, and demo-boundary rules. |
 | Human taste should be encoded in the system. | Put repeated review preferences into UX docs, this runbook, tests, or visual QA checklists. |
@@ -94,13 +94,13 @@ index.html + css/ + js/ + mock data + browser-only demo persistence
 | Task type | Read first | Likely edit surface | Verification |
 |---|---|---|---|
 | Docs-only product wording | `AGENTS.md`, relevant `docs/0*`, `docs/10_REFERENCES/GLOSSARY_AND_SOURCE_NOTES.md` | Matching English doc and `.turkce.md` companion if one exists | Markdown/path review, terminology consistency |
-| New or updated plan | `AGENTS.md`, `docs/plans/index.md`, nearest active plan | `docs/plans/YYYY-MM-DD-<topic>-plan.md`, `docs/plans/index.md` | Plan includes required sections and exact `Execution Prompt`; index row matches status/next todo |
+| New or updated plan | `AGENTS.md`, `docs/exec-plans/index.md`, nearest active plan | `docs/exec-plans/active/YYYY-MM-DD-<topic>-plan.md`, `docs/exec-plans/index.md` | Plan includes required sections and exact `Execution Prompt`; index row matches status/next todo |
 | Static prototype behavior | `AGENTS.md`, active plan, `docs/DEMO_BUILD_SUMMARY.md`, relevant workflow/module docs | `index.html`, `css/styles.css`, `js/*.js`, targeted tests | JS syntax, targeted Node smoke, browser click-through |
 | Role/permission/visibility | `AGENTS.md`, `docs/06_DATA_AND_RULES/STATUS_PERMISSION_SECURITY.md`, `docs/04_MODULES/AUDITEE_PORTAL.md` | `js/helpers.js`, `js/views.js`, `js/app.js`, relevant tests | Auditee isolation check, internal note visibility check, targeted smoke |
 | Finding/CAP/Evidence lifecycle | `docs/03_WORKFLOWS/FINDING_CAP_EVIDENCE_WORKFLOW.md`, `docs/04_MODULES/{FINDINGS_MANAGEMENT,CAP_MANAGEMENT,EVIDENCE_REPOSITORY}.md` | `js/data.js`, `js/helpers.js`, `js/app.js`, tests | CAP acceptance does not close finding; evidence acceptance or authorized closure closes |
 | Checklist/governance approval | Active governance plan, `docs/04_MODULES/CHECKLIST_BUILDER_AND_RUNNER.md`, `docs/03_WORKFLOWS/AUDIT_CHECKLIST_WORKFLOW.md` | `js/approval.js`, `js/checklists.js`, `js/planning.js`, `js/views.js`, tests | Approval smoke, checklist smoke, browser role path |
 | UI/visual polish | `AGENTS.md`, `docs/02_UX_PLAN/*`, relevant active plan | CSS/views only unless behavior is required | Desktop/mobile visual QA, no overlap, no generic template drift |
-| Status/readiness answer | `docs/plans/index.md`, `docs/DEMO_BUILD_SUMMARY.md`, relevant plan/evidence | Usually no edit unless status is stale | Answer with `done / remaining / blocked` and local-vs-production split |
+| Status/readiness answer | `docs/exec-plans/index.md`, `docs/DEMO_BUILD_SUMMARY.md`, relevant plan/evidence | Usually no edit unless status is stale | Answer with `done / remaining / blocked` and local-vs-production split |
 | Stakeholder handoff prompt | Active plan, `docs/08_DEMO_AND_BUILD_HANDOFF/*`, source docs | Plan `Execution Prompt` or handoff doc | Prompt is self-contained and preserves demo-only constraints |
 
 ## Decision Manifest
@@ -216,7 +216,7 @@ support.
 | Level | Agent can do | Required support |
 |---|---|---|
 | 0. Readout | Summarize current status and next todo. | Current plan index and evidence file are readable. |
-| 1. Docs edit | Update docs/plans/prompts. | Source docs and plan lifecycle are clear. |
+| 1. Docs edit | Update docs/exec-plans/prompts. | Source docs and plan lifecycle are clear. |
 | 2. Logic edit | Change demo data/helper/state transitions. | Targeted smoke test exists or is added. |
 | 3. UI workflow edit | Change visible role paths. | Browser QA path and visual checklist are run. |
 | 4. Evidence update | Update build summary or plan status after verification. | Local evidence exists and coverage gaps are named. |
@@ -264,7 +264,7 @@ Run cleanup as small, reviewable tasks:
 - reconcile stale README/MANIFEST/package-truth claims
 - remove duplicated or obsolete plan instructions after replacement plans exist
 - archive completed plans only after objective and verification are inspected
-- keep `docs/plans/index.md` to one next concrete todo per active plan
+- keep `docs/exec-plans/index.md` to one next concrete todo per active plan
 - fold repeated review comments into this runbook, a UX doc, or a smoke test
 - preserve demo-only labels when adding attractive advanced features
 
@@ -294,10 +294,10 @@ Next:
 
 When a plan is created or materially changed:
 
-- update `docs/plans/index.md`
+- update `docs/exec-plans/index.md`
 - keep exactly one next concrete todo in the active index row
 - do not move plans to `completed/` without inspected completion and verification
-- record durable blockers or handoffs in `docs/plans/notes/` only when they need to survive beyond the plan
+- record durable blockers or handoffs in `docs/exec-plans/tech-debt-tracker.md` only when they need to survive beyond the plan
 - keep detailed task lists inside the plan, not the active index
 
 ## Git And Workspace Hygiene
@@ -320,8 +320,8 @@ For that task, read:
 
 - `AGENTS.md`
 - this runbook
-- `docs/plans/index.md`
-- `docs/plans/2026-06-28-caa-governance-workflow-and-roles-plan.md`
+- `docs/exec-plans/index.md`
+- `docs/exec-plans/active/2026-06-28-caa-governance-workflow-and-roles-plan.md`
 - `docs/DEMO_BUILD_SUMMARY.md`
 
 Then run the relevant Node smoke checks, perform browser QA, update durable
