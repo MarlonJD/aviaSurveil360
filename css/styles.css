@@ -286,7 +286,7 @@ button { font-family: inherit; }
 .card__head .sub { color: var(--muted); font-size: 12px; }
 .card__head .spacer { flex: 1; }
 .card__body { padding: 16px; }
-.card__body--flush { padding: 0; }
+.card__body--flush { padding: 0; overflow-x: auto; }
 
 /* KPI card */
 .kpi {
@@ -360,6 +360,10 @@ button { font-family: inherit; }
 .table th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; background: var(--surface-alt); }
 .table tr:hover td { background: var(--surface-alt); }
 .table .row-click { cursor: pointer; }
+.table tr.is-selected td { background: var(--blue-50); }
+.table--report-tracking { min-width: 900px; }
+.table--report-tracking th:last-child,
+.table--report-tracking td:last-child { width: 1%; white-space: nowrap; }
 
 .empty { padding: 26px; text-align: center; color: var(--muted); font-size: 13.5px; }
 
@@ -789,6 +793,7 @@ button { font-family: inherit; }
   flex-wrap: wrap;
   gap: 8px;
 }
+.row-actions--nowrap { flex-wrap: nowrap; }
 
 .ai-draft {
   width: 100%;

@@ -1482,17 +1482,34 @@ function leadChecklistStatusBadge(status) {
   return demoBadge(status, tone);
 }
 
-function leadReviewAuditListHtml(reviews, selectedAuditId) {
-  if (!reviews.length) return '<div class="empty">No completed checklist reports are ready for lead review.</div>';
-  return reviews.map(function (review) {
-    var audit = auditById(review.auditId);
-    var active = review.auditId === selectedAuditId ? ' is-static' : '';
-    return '<div class="list__row' + active + '" data-act="nav" data-view="lead-review" data-id="' + esc(review.auditId) + '">' +
-      '<div><b>' + esc(review.title) + '</b>' +
-        '<p>' + esc(review.auditId + ' · ' + (audit ? audit.status : '—') + ' · ' + review.stage) + '</p></div>' +
-      '<div class="list__side">' + demoBadge(review.reportStatus, review.auditId === selectedAuditId ? 'info' : 'neutral') + '</div>' +
-    '</div>';
-  }).join('');
+function leadReportTrackingHtml(reviews, selectedAuditId) {
+  if (!reviews.length) return '<div class="empty">No report packages are ready for Lead Inspector tracking.</div>';
+  return '<table class="table table--report-tracking"><thead><tr>' +
+    '<th>Audit / report</th><th>Checklist reports</th><th>Findings</th><th>Status</th><th>Owner</th><th>Next action</th><th>Approval outcome</th><th></th>' +
+    '</tr></thead><tbody>' +
+    reviews.map(function (item) {
+      var audit = auditById(item.auditId);
+      var report = auditReportById(item.reportId) || reportForAudit(item.auditId);
+      var completed = item.assignments.filter(function (assignment) { return assignment.status === 'Completed'; }).length;
+      var total = item.assignments.length;
+      var findings = item.submittedFindings ? item.submittedFindings.length : 0;
+      var rowClass = item.auditId === selectedAuditId ? ' class="is-selected"' : '';
+      return '<tr' + rowClass + '>' +
+        '<td><b>' + esc(item.title) + '</b><div class="small muted">' + esc(item.auditId + ' · ' + (audit ? orgName(audit.orgId) : '—')) + '</div>' +
+          '<div class="small muted">' + esc(report ? report.id : 'No report record') + '</div></td>' +
+        '<td><b>' + esc(String(completed) + '/' + String(total)) + '</b><div class="small muted">' + esc(item.stage) + '</div></td>' +
+        '<td><b>' + esc(String(findings)) + '</b><div class="small muted">Inspector findings and comments</div></td>' +
+        '<td>' + demoBadge(item.reportStatus, item.auditId === selectedAuditId ? 'info' : 'neutral') + '</td>' +
+        '<td><b>Lead Inspector</b><div class="small muted">' + esc(audit ? audit.lead : '—') + '</div></td>' +
+        '<td><b>Submit to Department Manager</b><div class="small muted">Prepare preliminary report package</div></td>' +
+        '<td class="small muted">' + esc(item.serviceProviderStep) + '</td>' +
+        '<td><div class="row-actions row-actions--nowrap">' +
+          '<button class="btn btn--sm" data-act="nav" data-view="lead-review" data-id="' + esc(item.auditId) + '">Track</button>' +
+          '<button class="btn btn--sm btn--primary" data-act="nav" data-view="audit-reports" data-id="' + esc(item.auditId) + '">Open report</button>' +
+        '</div></td>' +
+      '</tr>';
+    }).join('') +
+    '</tbody></table>';
 }
 
 function leadAssignmentsHtml(review) {
@@ -1592,8 +1609,11 @@ function viewLeadReviewQueue() {
       kpiCard('Submitted findings', String(review.submittedFindings.length), 'Inspector findings and comments', { tone: review.submittedFindings.length ? 'warn' : 'ok' }) +
       kpiCard('Preliminary report', review.reportStatus, 'Next: Submit to Department Manager', { tone: 'info' }) +
     '</div>' +
-    '<div class="grid grid--main">' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
+    '<div class="card mb-16"><div class="card__head"><h3>Report tracking</h3><span class="sub">one table for Lead Inspector follow-up</span><div class="spacer"></div>' +
+      demoBadge(report ? humanStatus(report.status) : 'Draft', 'info') + '</div><div class="card__body card__body--flush">' +
+      leadReportTrackingHtml(reviews, review.auditId) +
+    '</div></div>' +
+    '<div style="display:flex;flex-direction:column;gap:16px">' +
         '<div class="card"><div class="card__head"><h3>' + esc(review.title) + '</h3><div class="spacer"></div>' +
           demoBadge(audit ? audit.status : review.stage, 'info') + '</div><div class="card__body">' +
           '<div class="metaline">' +
@@ -1608,26 +1628,7 @@ function viewLeadReviewQueue() {
         '<div class="card"><div class="card__head"><h3>Checklist assignments</h3><span class="sub">by inspector</span></div><div class="card__body">' + leadAssignmentsHtml(review) + '</div></div>' +
         '<div class="card"><div class="card__head"><h3>Submitted findings and comments</h3><span class="sub">from inspectors</span></div><div class="card__body">' + leadSubmittedFindingsHtml(review) + '</div></div>' +
         leadPotentialDecisionRowsHtml(potentials) +
-      '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card"><div class="card__head"><h3>Audit report packages</h3><span class="sub">completed checklist reports</span></div><div class="card__body">' +
-          leadReviewAuditListHtml(reviews, review.auditId) +
-        '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Preliminary Inspection Report</h3><div class="spacer"></div>' +
-          demoBadge(report ? humanStatus(report.status) : 'Draft', 'info') + '</div><div class="card__body">' +
-          '<p class="small muted">Lead Inspector prepares the preliminary report from completed inspector checklist reports, submitted findings, and comments.</p>' +
-          '<div class="metaline mt-12">' +
-            metaItem('Report', report ? report.id : '—') +
-            metaItem('Current owner', 'Lead Inspector') +
-            metaItem('Next action', 'Submit to Department Manager') +
-            metaItem('After approval', review.serviceProviderStep) +
-          '</div>' +
-          '<div class="row-actions mt-16">' +
-            '<button class="btn btn--primary" data-act="nav" data-view="audit-reports" data-id="' + esc(review.auditId) + '">Submit to Department Manager</button>' +
-          '</div>' +
-        '</div></div>' +
-      '</div>' +
-    '</div>';
+      '</div>';
 }
 
 function reportDecisionButton(report, decision, label, tone, primary) {

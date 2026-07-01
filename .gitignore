@@ -4,6 +4,7 @@ Thumbs.db
 
 # Local tooling / preview config
 .claude/
+qa/
 
 # Vercel
 .vercel
