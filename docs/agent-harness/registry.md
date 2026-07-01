@@ -18,17 +18,17 @@ evidence afterward. It is an inventory, not a new product specification.
 
 | Folder | Use when |
 |---|---|
-| `../00_RESEARCH_AND_POSITIONING/` | Market context, positioning, and product decisions. |
-| `../01_PRODUCT_PLAN/` | Product vision, MVP scope, roadmap, and module architecture. |
-| `../02_UX_PLAN/` | UX principles, navigation, and role information architecture. |
-| `../03_WORKFLOWS/` | Surveillance, checklist, Finding, CAP, evidence, reminders, and escalation workflows. |
-| `../04_MODULES/` | Module-level fields, states, actions, rules, and acceptance criteria. |
-| `../05_SCREEN_SPECS/` | Screen inventory and form-level expectations. |
-| `../06_DATA_AND_RULES/` | Conceptual data model, statuses, permissions, visibility, and security rules. |
-| `../07_ANALYTICS/` | Oversight Health Index, KPI, and report rules. |
-| `../08_DEMO_AND_BUILD_HANDOFF/` | Demo prompt, acceptance criteria, full-MVP prompt, and applied runbook. |
-| `../09_SCENARIOS/` | Demo scenario and edge-case replay paths. |
-| `../10_REFERENCES/` | Glossary, terminology, and source notes. |
+| `../product-specs/research-and-positioning/` | Market context, positioning, and product decisions. |
+| `../product-specs/product-plan/` | Product vision, MVP scope, roadmap, and module architecture. |
+| `../product-specs/ux-plan/` | UX principles, navigation, and role information architecture. |
+| `../product-specs/workflows/` | Surveillance, checklist, Finding, CAP, evidence, reminders, and escalation workflows. |
+| `../product-specs/modules/` | Module-level fields, states, actions, rules, and acceptance criteria. |
+| `../product-specs/screen-specs/` | Screen inventory and form-level expectations. |
+| `../product-specs/data-and-rules/` | Conceptual data model, statuses, permissions, visibility, and security rules. |
+| `../product-specs/analytics/` | Oversight Health Index, KPI, and report rules. |
+| `../demo-handoff/` | Demo prompt, acceptance criteria, full-MVP prompt, and applied runbook. |
+| `../product-specs/scenarios/` | Demo scenario and edge-case replay paths. |
+| `../product-specs/references/` | Glossary, terminology, and source notes. |
 
 ## Plans, Evidence, And Notes
 
@@ -38,8 +38,8 @@ evidence afterward. It is an inventory, not a new product specification.
 | `../exec-plans/active/2026-06-29-agent-harness-readiness-completion-plan.md` | Current harness completion plan and execution prompt. |
 | `../exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md` | Historical partial-adaptation record superseded by the readiness completion plan. |
 | `../exec-plans/tech-debt-tracker.md` | Durable blocker, accepted-risk, missing-evidence, and technical-debt tracker. |
-| `../DEMO_BUILD_SUMMARY.md` | Current demo evidence, local verification status, and production gaps. |
-| `../DEMO_BUILD_SUMMARY.turkce.md` | Turkish stakeholder companion summary when demo evidence changes. |
+| `../demo-evidence/BUILD_SUMMARY.md` | Current demo evidence, local verification status, and production gaps. |
+| `../demo-evidence/BUILD_SUMMARY.turkce.md` | Turkish stakeholder companion summary when demo evidence changes. |
 
 ## Static Demo Surfaces
 
@@ -80,10 +80,10 @@ There is no `package.json`; run tests directly with `node`.
 | Task type | Read first | Record result in |
 |---|---|---|
 | Harness readiness | `index.md`, completion plan, `../exec-plans/index.md` | Completion plan, plan index, this package. |
-| Status readout | `../exec-plans/index.md`, relevant plan, `../DEMO_BUILD_SUMMARY.md` | Chat only unless repo status is stale. |
-| Product docs | Relevant numbered docs and `../10_REFERENCES/` | Matching English doc and Turkish companion when required. |
+| Status readout | `../exec-plans/index.md`, relevant plan, `../demo-evidence/BUILD_SUMMARY.md` | Chat only unless repo status is stale. |
+| Product docs | Relevant product spec folder and `../product-specs/references/` | Matching English doc and Turkish companion when required. |
 | Prototype behavior | Active plan, relevant workflow/module docs, static demo files | Targeted tests, demo summary when evidence changes. |
-| Role visibility | `../06_DATA_AND_RULES/STATUS_PERMISSION_SECURITY.md`, auditee portal docs | Targeted tests and demo summary if behavior changes. |
+| Role visibility | `../product-specs/data-and-rules/STATUS_PERMISSION_SECURITY.md`, auditee portal docs | Targeted tests and demo summary if behavior changes. |
 | Finding/CAP/Evidence | Workflow docs and module docs for findings, CAP, evidence | Targeted tests and plan/evidence summary. |
 | UI/visual QA | UX docs, screen specs, active plan | Screenshot/browser evidence and demo summary when accepted. |
 | Plan lifecycle | `../../AGENTS.md`, `../exec-plans/index.md`, target plan | Plan file, index row, and tech-debt tracker entry if a durable gap exists. |

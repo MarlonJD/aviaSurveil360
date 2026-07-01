@@ -96,10 +96,10 @@ Create one canonical **Planning** workspace in the demo:
 - `tests/planning-release-smoke.test.js`
   - Keep the existing semantic flow test. Add a post-approval UI-facing assertion only if the shared helper is moved into testable logic.
 
-- `docs/DEMO_BUILD_SUMMARY.md`
+- `docs/demo-evidence/BUILD_SUMMARY.md`
   - Update the planning/navigation summary after implementation.
 
-- `docs/DEMO_BUILD_SUMMARY.turkce.md`
+- `docs/demo-evidence/BUILD_SUMMARY.turkce.md`
   - Update the Turkish companion summary with the same demo boundary and visible planning change.
 
 - `MANIFEST.md`
@@ -407,7 +407,7 @@ Keep semantic tests and update render tests.
 
 Reflect the visible product simplification.
 
-- [ ] **Step 1: Update `docs/DEMO_BUILD_SUMMARY.md`.**
+- [ ] **Step 1: Update `docs/demo-evidence/BUILD_SUMMARY.md`.**
 
   Required content:
 
@@ -416,7 +416,7 @@ Reflect the visible product simplification.
   - `Audit Work Queue` remains an execution queue, not a separate planning governance module.
   - Behavior is still frontend-only and mock/demo only.
 
-- [ ] **Step 2: Update `docs/DEMO_BUILD_SUMMARY.turkce.md`.**
+- [ ] **Step 2: Update `docs/demo-evidence/BUILD_SUMMARY.turkce.md`.**
 
   Required content in Turkish:
 
@@ -557,7 +557,7 @@ Implementation target:
 5. Make ED approval visibly continue to GM Release to Department and preparation next actions.
 6. Remove stakeholder-visible implementation-phase copy such as Phase 0B / thin planning approval slice.
 7. Add tests/planning-workspace-smoke.test.js and update planning/governance render tests.
-8. Update docs/DEMO_BUILD_SUMMARY.md, docs/DEMO_BUILD_SUMMARY.turkce.md, and MANIFEST.md only if package inventory changes.
+8. Update docs/demo-evidence/BUILD_SUMMARY.md, docs/demo-evidence/BUILD_SUMMARY.turkce.md, and MANIFEST.md only if package inventory changes.
 
 Required verification:
 node --check js/data.js

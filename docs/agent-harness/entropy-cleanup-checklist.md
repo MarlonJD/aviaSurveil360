@@ -9,18 +9,18 @@ from becoming the next agent's default context.
 | Item | Status | Owner | Evidence / next action |
 |---|---|---|---|
 | Canonical harness package exists under `docs/agent-harness/`. | verified locally | Agent executing readiness plan | Verified with `node tests/harness-docs-smoke.test.js`. |
-| Old runbook points to the canonical entrypoint. | verified locally | Agent executing readiness plan | `../08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md` opening section points to `../agent-harness/index.md`. |
+| Old runbook points to the canonical entrypoint. | verified locally | Agent executing readiness plan | `../demo-handoff/AGENT_HARNESS_RUNBOOK.md` opening section points to `../agent-harness/index.md`. |
 | `AGENTS.md` stays short and map-like. | recurring check | Future agents | Add pointers only; move working detail into this package. |
 | `MANIFEST.md` lists new harness docs and smoke test. | verified locally | Agent executing readiness plan | Manifest Agent Harness and Smoke Tests sections. |
 | Active plan index matches actual harness status. | ready-for-verification | Plan owner / future agents | `../exec-plans/index.md` row for harness readiness. |
 | Superseded partial adaptation remains historical, not completed by inference. | accepted current risk | Future agents | Keep continuation note linked to readiness plan. |
-| Demo summary keeps local evidence separate from production gaps. | recurring check | Future agents | `../DEMO_BUILD_SUMMARY.md` after visible demo verification. |
+| Demo summary keeps local evidence separate from production gaps. | recurring check | Future agents | `../demo-evidence/BUILD_SUMMARY.md` after visible demo verification. |
 
 ## Recurring Drift Symptoms
 
 - `AGENTS.md` grows into a long encyclopedia instead of routing agents to
   focused docs.
-- `../08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md` and this package
+- `../demo-handoff/AGENT_HARNESS_RUNBOOK.md` and this package
   repeat the same rule with different wording.
 - `../exec-plans/index.md` keeps an old next todo after implementation evidence
   changes.

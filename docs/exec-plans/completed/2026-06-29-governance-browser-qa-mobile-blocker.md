@@ -6,7 +6,7 @@
 - **Related plans:**
   - `docs/exec-plans/active/2026-06-28-caa-governance-workflow-and-roles-plan.md`
   - `docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`
-- **Evidence file:** `docs/DEMO_BUILD_SUMMARY.md`
+- **Evidence file:** `docs/demo-evidence/BUILD_SUMMARY.md`
 
 ## Summary
 

@@ -23,7 +23,7 @@ not copied as product scope. For AviaSurveil360, harness engineering means:
   browser paths
 - turn repeated product rules into mechanical checks where practical
 - preserve demo-only and production-readiness boundaries
-- record blockers and verification gaps in durable plan notes
+- record blockers and verification gaps in `docs/exec-plans/tech-debt-tracker.md`
 
 It does not mean adding cloud CI, backend services, autonomous merge bots,
 production observability, or broader agent permissions unless the user asks for
@@ -62,18 +62,18 @@ index.html + css/ + js/ + mock data + browser-only demo persistence
 | `AGENTS.md` | Highest local authority for product, planning, demo, verification, and git rules. | Read before any material task. Do not duplicate it here. |
 | `docs/exec-plans/index.md` | Active plan routing and next concrete todo per plan. | Check before creating or materially changing a plan. |
 | `docs/exec-plans/active/*.md` | Execution plans, status, verification, and prompt artifacts. | Update when a plan state or next todo changes. |
-| `docs/00_RESEARCH_AND_POSITIONING/` | Market and positioning context. | Use for product positioning and competitor framing. |
-| `docs/01_PRODUCT_PLAN/` | Product vision, MVP, and module architecture. | Use for scope, object model, and roadmap decisions. |
-| `docs/02_UX_PLAN/` | Role-based UX and IA. | Use for UI/navigation decisions. |
-| `docs/03_WORKFLOWS/` | Lifecycle workflow rules. | Use for audit, checklist, finding, CAP, evidence, reminders. |
-| `docs/04_MODULES/` | Module-level fields, actions, rules, and acceptance criteria. | Use before changing a module surface. |
-| `docs/05_SCREEN_SPECS/` | Screen inventory and forms. | Use before adding/removing visible screens or fields. |
-| `docs/06_DATA_AND_RULES/` | Conceptual data model, status, permission, security rules. | Use before changing statuses, owners, visibility, or role behavior. |
-| `docs/07_ANALYTICS/` | Oversight Health Index and reports. | Use before changing dashboard/KPI behavior. |
-| `docs/08_DEMO_AND_BUILD_HANDOFF/` | Demo prompts, acceptance criteria, and this runbook. | Use for agent handoff and build instructions. |
-| `docs/09_SCENARIOS/` | Demo and edge-case scenarios. | Use for smoke paths and stakeholder replay. |
-| `docs/10_REFERENCES/` | Glossary and source notes. | Use for terminology and regulatory wording. |
-| `docs/DEMO_BUILD_SUMMARY.md` | Current demo evidence and known production gaps. | Update when demo behavior or verification status changes. |
+| `docs/product-specs/research-and-positioning/` | Market and positioning context. | Use for product positioning and competitor framing. |
+| `docs/product-specs/product-plan/` | Product vision, MVP, and module architecture. | Use for scope, object model, and roadmap decisions. |
+| `docs/product-specs/ux-plan/` | Role-based UX and IA. | Use for UI/navigation decisions. |
+| `docs/product-specs/workflows/` | Lifecycle workflow rules. | Use for audit, checklist, finding, CAP, evidence, reminders. |
+| `docs/product-specs/modules/` | Module-level fields, actions, rules, and acceptance criteria. | Use before changing a module surface. |
+| `docs/product-specs/screen-specs/` | Screen inventory and forms. | Use before adding/removing visible screens or fields. |
+| `docs/product-specs/data-and-rules/` | Conceptual data model, status, permission, security rules. | Use before changing statuses, owners, visibility, or role behavior. |
+| `docs/product-specs/analytics/` | Oversight Health Index and reports. | Use before changing dashboard/KPI behavior. |
+| `docs/demo-handoff/` | Demo prompts, acceptance criteria, and this runbook. | Use for agent handoff and build instructions. |
+| `docs/product-specs/scenarios/` | Demo and edge-case scenarios. | Use for smoke paths and stakeholder replay. |
+| `docs/product-specs/references/` | Glossary and source notes. | Use for terminology and regulatory wording. |
+| `docs/demo-evidence/BUILD_SUMMARY.md` | Current demo evidence and known production gaps. | Update when demo behavior or verification status changes. |
 | `tests/*.test.js` | Deterministic smoke checks for demo logic and rendering. | Run the smallest relevant subset before claiming local verification. |
 
 ## Article Principles Applied Here
@@ -81,7 +81,7 @@ index.html + css/ + js/ + mock data + browser-only demo persistence
 | Article principle | AviaSurveil360 rule |
 |---|---|
 | `AGENTS.md` should be a map, not an encyclopedia. | Keep global/local rules in `AGENTS.md`; put working detail in docs, plans, this runbook, and evidence files. |
-| The repo should be the agent's main knowledge base. | Durable decisions go into `docs/`, `docs/exec-plans/`, `docs/DEMO_BUILD_SUMMARY.md`, or `docs/exec-plans/tech-debt-tracker.md`, not only chat. |
+| The repo should be the agent's main knowledge base. | Durable decisions go into `docs/`, `docs/exec-plans/`, `docs/demo-evidence/BUILD_SUMMARY.md`, or `docs/exec-plans/tech-debt-tracker.md`, not only chat. |
 | Agents need to see the application. | Use local static browser verification, console review, screenshots, and role-flow click-throughs for UI work. |
 | Architecture rules should become mechanical checks. | Prefer targeted smoke tests and future structural checks for lifecycle, visibility, and demo-boundary rules. |
 | Human taste should be encoded in the system. | Put repeated review preferences into UX docs, this runbook, tests, or visual QA checklists. |
@@ -93,20 +93,21 @@ index.html + css/ + js/ + mock data + browser-only demo persistence
 
 | Task type | Read first | Likely edit surface | Verification |
 |---|---|---|---|
-| Docs-only product wording | `AGENTS.md`, relevant `docs/0*`, `docs/10_REFERENCES/GLOSSARY_AND_SOURCE_NOTES.md` | Matching English doc and `.turkce.md` companion if one exists | Markdown/path review, terminology consistency |
+| Docs-only product wording | `AGENTS.md`, relevant `docs/product-specs/` folder, `docs/product-specs/references/GLOSSARY_AND_SOURCE_NOTES.md` | Matching English doc and `.turkce.md` companion if one exists | Markdown/path review, terminology consistency |
 | New or updated plan | `AGENTS.md`, `docs/exec-plans/index.md`, nearest active plan | `docs/exec-plans/active/YYYY-MM-DD-<topic>-plan.md`, `docs/exec-plans/index.md` | Plan includes required sections and exact `Execution Prompt`; index row matches status/next todo |
-| Static prototype behavior | `AGENTS.md`, active plan, `docs/DEMO_BUILD_SUMMARY.md`, relevant workflow/module docs | `index.html`, `css/styles.css`, `js/*.js`, targeted tests | JS syntax, targeted Node smoke, browser click-through |
-| Role/permission/visibility | `AGENTS.md`, `docs/06_DATA_AND_RULES/STATUS_PERMISSION_SECURITY.md`, `docs/04_MODULES/AUDITEE_PORTAL.md` | `js/helpers.js`, `js/views.js`, `js/app.js`, relevant tests | Auditee isolation check, internal note visibility check, targeted smoke |
-| Finding/CAP/Evidence lifecycle | `docs/03_WORKFLOWS/FINDING_CAP_EVIDENCE_WORKFLOW.md`, `docs/04_MODULES/{FINDINGS_MANAGEMENT,CAP_MANAGEMENT,EVIDENCE_REPOSITORY}.md` | `js/data.js`, `js/helpers.js`, `js/app.js`, tests | CAP acceptance does not close finding; evidence acceptance or authorized closure closes |
-| Checklist/governance approval | Active governance plan, `docs/04_MODULES/CHECKLIST_BUILDER_AND_RUNNER.md`, `docs/03_WORKFLOWS/AUDIT_CHECKLIST_WORKFLOW.md` | `js/approval.js`, `js/checklists.js`, `js/planning.js`, `js/views.js`, tests | Approval smoke, checklist smoke, browser role path |
-| UI/visual polish | `AGENTS.md`, `docs/02_UX_PLAN/*`, relevant active plan | CSS/views only unless behavior is required | Desktop/mobile visual QA, no overlap, no generic template drift |
-| Status/readiness answer | `docs/exec-plans/index.md`, `docs/DEMO_BUILD_SUMMARY.md`, relevant plan/evidence | Usually no edit unless status is stale | Answer with `done / remaining / blocked` and local-vs-production split |
-| Stakeholder handoff prompt | Active plan, `docs/08_DEMO_AND_BUILD_HANDOFF/*`, source docs | Plan `Execution Prompt` or handoff doc | Prompt is self-contained and preserves demo-only constraints |
+| Static prototype behavior | `AGENTS.md`, active plan, `docs/demo-evidence/BUILD_SUMMARY.md`, relevant workflow/module docs | `index.html`, `css/styles.css`, `js/*.js`, targeted tests | JS syntax, targeted Node smoke, browser click-through |
+| Role/permission/visibility | `AGENTS.md`, `docs/product-specs/data-and-rules/STATUS_PERMISSION_SECURITY.md`, `docs/product-specs/modules/AUDITEE_PORTAL.md` | `js/helpers.js`, `js/views.js`, `js/app.js`, relevant tests | Auditee isolation check, internal note visibility check, targeted smoke |
+| Finding/CAP/Evidence lifecycle | `docs/product-specs/workflows/FINDING_CAP_EVIDENCE_WORKFLOW.md`, `docs/product-specs/modules/{FINDINGS_MANAGEMENT,CAP_MANAGEMENT,EVIDENCE_REPOSITORY}.md` | `js/data.js`, `js/helpers.js`, `js/app.js`, tests | CAP acceptance does not close finding; evidence acceptance or authorized closure closes |
+| Checklist/governance approval | Active governance plan, `docs/product-specs/modules/CHECKLIST_BUILDER_AND_RUNNER.md`, `docs/product-specs/workflows/AUDIT_CHECKLIST_WORKFLOW.md` | `js/approval.js`, `js/checklists.js`, `js/planning.js`, `js/views.js`, tests | Approval smoke, checklist smoke, browser role path |
+| UI/visual polish | `AGENTS.md`, `docs/product-specs/ux-plan/*`, relevant active plan | CSS/views only unless behavior is required | Desktop/mobile visual QA, no overlap, no generic template drift |
+| Status/readiness answer | `docs/exec-plans/index.md`, `docs/demo-evidence/BUILD_SUMMARY.md`, relevant plan/evidence | Usually no edit unless status is stale | Answer with `done / remaining / blocked` and local-vs-production split |
+| Stakeholder handoff prompt | Active plan, `docs/demo-handoff/*`, source docs | Plan `Execution Prompt` or handoff doc | Prompt is self-contained and preserves demo-only constraints |
 
 ## Decision Manifest
 
 Use this for any material change beyond a typo or narrow mechanical correction.
-Put it in the plan, a plan note, or the final evidence summary.
+Put it in the plan, `docs/exec-plans/tech-debt-tracker.md`, or the final
+evidence summary.
 
 ```markdown
 ## Decision Manifest Entry
@@ -322,7 +323,7 @@ For that task, read:
 - this runbook
 - `docs/exec-plans/index.md`
 - `docs/exec-plans/active/2026-06-28-caa-governance-workflow-and-roles-plan.md`
-- `docs/DEMO_BUILD_SUMMARY.md`
+- `docs/demo-evidence/BUILD_SUMMARY.md`
 
 Then run the relevant Node smoke checks, perform browser QA, update durable
 evidence, and only change the active index row if the status or next todo really

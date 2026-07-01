@@ -123,10 +123,10 @@ Avoid generic chart walls, decorative risk meters, untraceable AI chat, and broa
 - Read: `MANIFEST.md`
 - Read: `docs/exec-plans/index.md`
 - Read: `docs/exec-plans/active/2026-06-14-aviasurveil-demo-only-prototype-plan.md`
-- Read: `docs/DEMO_BUILD_SUMMARY.md`
+- Read: `docs/demo-evidence/BUILD_SUMMARY.md`
 - Potentially modify in later execution: `README.md`
 - Potentially modify in later execution: `MANIFEST.md`
-- Potentially modify in later execution: `docs/DEMO_BUILD_SUMMARY.md`
+- Potentially modify in later execution: `docs/demo-evidence/BUILD_SUMMARY.md`
 
 - [ ] **Step 0.1: Verify package reality**
 
@@ -200,7 +200,7 @@ Use the NCAA feedback as the acceptance list and record these demo-vs-production
 - Modify: `js/helpers.js`
 - Modify: `js/views.js`
 - Modify: `js/app.js`
-- Modify: `docs/DEMO_BUILD_SUMMARY.md`
+- Modify: `docs/demo-evidence/BUILD_SUMMARY.md`
 - Modify if package docs are part of this execution: `README.md`
 - Modify if package docs are part of this execution: `MANIFEST.md`
 

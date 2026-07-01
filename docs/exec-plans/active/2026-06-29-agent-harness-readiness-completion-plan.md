@@ -26,7 +26,7 @@ a complete, canonical, repo-discoverable agent harness package.
 `output-contract.md`, `registry.md`, `verification-matrix.md`, and
 `entropy-cleanup-checklist.md`. `tests/harness-docs-smoke.test.js` was added as
 a direct local Node built-ins smoke gate. `AGENTS.md`, `MANIFEST.md`, and
-`docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md` now point future
+`docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md` now point future
 agents to the canonical harness entrypoint. The older harness engineering
 adaptation plan already carries a continuation note to this readiness plan and
 remains `superseded`. Local checks passed for `git diff --check`,
@@ -83,7 +83,7 @@ behavior or claim production readiness.
 ### In Scope
 
 - Create a dedicated `docs/agent-harness/` package even though the earlier
-  adaptation used `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`.
+  adaptation used `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`.
   This exception is intentional: the user explicitly identified the missing
   harness index/output surfaces, and a canonical package is the clearest fix.
 - Keep `AGENTS.md` short and map-like by adding only a pointer to the new
@@ -94,8 +94,8 @@ behavior or claim production readiness.
   - source and artifact inventory in `registry.md`
   - command ladder in `verification-matrix.md`
   - cleanup/drift rules in `entropy-cleanup-checklist.md`
-- Preserve the existing numbered product docs and planning lifecycle.
-- Update `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md` so it points
+- Preserve the product specs and execution-plan lifecycle.
+- Update `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md` so it points
   to the canonical harness package instead of being the only harness surface.
 - Update `MANIFEST.md` so the harness package is visible in the repo inventory.
 - Update `docs/exec-plans/index.md` so this plan is the active next harness todo.
@@ -189,7 +189,7 @@ behavior or claim production readiness.
 - `MANIFEST.md`
   - Add the new `docs/agent-harness/` package and
     `tests/harness-docs-smoke.test.js`.
-- `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`
+- `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`
   - Mark it as the applied runbook and redirect future canonical harness
     navigation to `docs/agent-harness/index.md`.
   - Remove or shorten duplicated sections only if the new harness package fully
@@ -217,11 +217,11 @@ behavior or claim production readiness.
 **Goal:** freeze the current truth before adding the canonical harness package.
 
 - [ ] Read `AGENTS.md`.
-- [ ] Read `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`.
+- [ ] Read `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`.
 - [ ] Read `docs/exec-plans/index.md`.
 - [ ] Read
   `docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`.
-- [ ] Read `docs/DEMO_BUILD_SUMMARY.md`.
+- [ ] Read `docs/demo-evidence/BUILD_SUMMARY.md`.
 - [ ] Read the local OpenAI working note sections around:
   - short `AGENTS.md` as table of contents
   - repo-versioned docs structure
@@ -259,7 +259,7 @@ behavior or claim production readiness.
 - [ ] Create `docs/agent-harness/registry.md` with:
   - instruction surfaces
   - product source docs
-  - plan/evidence/notes indexes
+  - plan index, evidence summary, and tech-debt tracker
   - static demo files
   - smoke tests
   - browser QA paths
@@ -299,7 +299,7 @@ behavior or claim production readiness.
   - `docs/agent-harness/verification-matrix.md`
   - `docs/agent-harness/entropy-cleanup-checklist.md`
   - `tests/harness-docs-smoke.test.js`
-- [ ] Update `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md` so its
+- [ ] Update `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md` so its
   opening section says the canonical harness entrypoint is
   `docs/agent-harness/index.md`.
 - [ ] Update
@@ -333,8 +333,8 @@ behavior or claim production readiness.
   - `verification-matrix.md`
   - `entropy-cleanup-checklist.md`
   - `../exec-plans/index.md`
-  - `../DEMO_BUILD_SUMMARY.md`
-  - `../08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`
+  - `../demo-evidence/BUILD_SUMMARY.md`
+  - `../demo-handoff/AGENT_HARNESS_RUNBOOK.md`
 - [ ] The test must check that `output-contract.md` contains:
   - `verified locally`
   - `blocked`
@@ -504,8 +504,8 @@ Execution of the plan is verified when:
 - Root `AGENTS.md`.
 - Existing active plans in `docs/exec-plans/`.
 - Existing runbook:
-  `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`.
-- Existing evidence file: `docs/DEMO_BUILD_SUMMARY.md`.
+  `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`.
+- Existing evidence file: `docs/demo-evidence/BUILD_SUMMARY.md`.
 - Existing smoke-test pattern under `tests/`.
 - Node.js available for direct `node` commands.
 - Local shell access for direct commands. No remote CI, GitHub Actions, or hosted
@@ -537,7 +537,7 @@ Execution of the plan is verified when:
   checks, or any automation that can create private-repo cost.
 - Completing, archiving, or superseding existing plans without inspected local
   verification and explicit user/stakeholder sign-off.
-- Rewriting all numbered product docs.
+- Rewriting all product specs.
 - Modifying original source/reference/stakeholder materials.
 
 ## Execution Prompt
@@ -552,8 +552,8 @@ Read first:
 - docs/exec-plans/index.md
 - docs/exec-plans/active/2026-06-29-agent-harness-readiness-completion-plan.md
 - docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md
-- docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md
-- docs/DEMO_BUILD_SUMMARY.md
+- docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md
+- docs/demo-evidence/BUILD_SUMMARY.md
 - /Users/marlonjd/Downloads/openai-harness-engineering-tam-kapsamli.md
 
 Goal:
@@ -592,7 +592,7 @@ Verification:
 
 Expected final status:
 - If all checks pass: mark this plan ready-for-verification in docs/exec-plans/index.md with next todo "stakeholder/user sign-off before moving to completed".
-- If checks cannot pass: mark blocked, create/update a note under docs/exec-plans/, and keep the gap explicit.
+- If checks cannot pass: mark blocked, create/update `docs/exec-plans/tech-debt-tracker.md`, and keep the gap explicit.
 
 Final response:
 - Use Done / Remaining / Blocked / Verification / Next.

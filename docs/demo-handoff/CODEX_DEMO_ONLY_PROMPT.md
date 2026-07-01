@@ -1,6 +1,6 @@
-# Codex Demo-Only Prompt — Türkçe Notlu
+# Codex Demo-Only Prompt
 
-Bu prompt sadece front-end clickable demo için kullanılmalıdır. Full sistem yaptırmak için değildir.
+Use this prompt when the goal is only a front-end clickable demo.
 
 ```text
 You are working on AVIASURVEIL 360, a Civil Aviation Authority surveillance and findings management product.
@@ -67,5 +67,5 @@ Locked UX rules:
 After finishing:
 - Run the demo locally if possible.
 - Fix console errors.
-- Add docs/DEMO_BUILD_SUMMARY.md describing changed files, mocked items and feedback questions.
+- Add docs/demo-evidence/BUILD_SUMMARY.md describing changed files, mocked items and feedback questions.
 ```

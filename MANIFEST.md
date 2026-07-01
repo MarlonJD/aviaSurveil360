@@ -52,6 +52,8 @@ There is no `package.json`; do not assume `npm test`.
 
 ## Agent Harness
 
+- `docs/index.md` — canonical docs map for agent, plan, product, demo handoff,
+  and demo evidence surfaces.
 - `docs/agent-harness/index.md` — canonical harness entrypoint for future
   agents.
 - `docs/agent-harness/output-contract.md` — required status, evidence, and
@@ -66,35 +68,36 @@ There is no `package.json`; do not assume `npm test`.
 
 ## Build Evidence And Handoff
 
-- `docs/DEMO_BUILD_SUMMARY.md` — English canonical demo evidence, verification
+- `docs/demo-evidence/BUILD_SUMMARY.md` — English canonical demo evidence, verification
   status, and known limitations.
-- `docs/DEMO_BUILD_SUMMARY.turkce.md` — Turkish stakeholder companion summary.
-- `docs/08_DEMO_AND_BUILD_HANDOFF/ACCEPTANCE_CRITERIA_AND_FEEDBACK.md`
-- `docs/08_DEMO_AND_BUILD_HANDOFF/ACCEPTANCE_CRITERIA_AND_FEEDBACK.turkce.md`
-- `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`
-- `docs/08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.md`
-- `docs/08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.turkce.md`
-- `docs/08_DEMO_AND_BUILD_HANDOFF/FULL_MVP_BUILD_PROMPT_LATER.md`
-- `docs/08_DEMO_AND_BUILD_HANDOFF/FULL_MVP_BUILD_PROMPT_LATER.turkce.md`
+- `docs/demo-evidence/BUILD_SUMMARY.turkce.md` — Turkish stakeholder companion summary.
+- `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.md`
+- `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.turkce.md`
+- `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`
+- `docs/demo-handoff/CODEX_DEMO_ONLY_PROMPT.md`
+- `docs/demo-handoff/CODEX_DEMO_ONLY_PROMPT.turkce.md`
+- `docs/demo-handoff/FULL_MVP_BUILD_PROMPT_LATER.md`
+- `docs/demo-handoff/FULL_MVP_BUILD_PROMPT_LATER.turkce.md`
 
 ## Product Source Documents
 
-- `docs/00_RESEARCH_AND_POSITIONING/` — market research and product
+- `docs/product-specs/index.md` — product specs map and reading order.
+- `docs/product-specs/research-and-positioning/` — market research and product
   positioning.
-- `docs/01_PRODUCT_PLAN/` — product vision, MVP scope, roadmap, and module
+- `docs/product-specs/product-plan/` — product vision, MVP scope, roadmap, and module
   architecture.
-- `docs/02_UX_PLAN/` — UX principles and navigation/information architecture.
-- `docs/03_WORKFLOWS/` — surveillance, checklist, Finding/CAP/Evidence, and
+- `docs/product-specs/ux-plan/` — UX principles and navigation/information architecture.
+- `docs/product-specs/workflows/` — surveillance, checklist, Finding/CAP/Evidence, and
   reminder workflows.
-- `docs/04_MODULES/` — module-level planning for audit planning, checklist
+- `docs/product-specs/modules/` — module-level planning for audit planning, checklist
   builder, findings, CAP, evidence, auditee portal, dashboards, notifications,
   organization registry, and admin configuration.
-- `docs/05_SCREEN_SPECS/` — screen inventory and form specs.
-- `docs/06_DATA_AND_RULES/` — conceptual data model, status, permission,
+- `docs/product-specs/screen-specs/` — screen inventory and form specs.
+- `docs/product-specs/data-and-rules/` — conceptual data model, status, permission,
   security, and audit rules.
-- `docs/07_ANALYTICS/` — Oversight Health Index, KPIs, and report catalog.
-- `docs/09_SCENARIOS/` — demo scenario and other domain scenarios.
-- `docs/10_REFERENCES/` — glossary and source notes.
+- `docs/product-specs/analytics/` — Oversight Health Index, KPIs, and report catalog.
+- `docs/product-specs/scenarios/` — demo scenario and other domain scenarios.
+- `docs/product-specs/references/` — glossary and source notes.
 
 Most stakeholder-facing canonical docs have matching `.turkce.md` companion
 files in the same folder.

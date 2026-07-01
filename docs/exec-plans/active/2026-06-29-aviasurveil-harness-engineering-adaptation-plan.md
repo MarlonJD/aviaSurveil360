@@ -7,7 +7,7 @@
 - **Authority:** Root `AGENTS.md`; `docs/exec-plans/` is the active plan folder.
 - **Source boundary:** The user supplied `https://openai.com/tr-TR/index/harness-engineering/` and the local Turkish Markdown working note at `/Users/marlonjd/Downloads/openai-harness-engineering-tam-kapsamli.md`. Direct fetches of the OpenAI Turkish and English article URLs returned a JavaScript/Cloudflare challenge during this run, so this plan treats the URL as the official source identity and adapts the user-provided Markdown summary plus current repo evidence. It does not claim official full-text extraction from the OpenAI page.
 
-**Current implementation note (2026-06-29):** Phases 0-6 are executed locally. `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md` now includes the task routing, decision manifest, verification matrix, and `tests/demo-boundary-smoke.test.js` gate. README/MANIFEST package-truth cleanup is complete. The runbook was applied to the CAA Governance browser QA lane; desktop governance paths and the mobile Planning Approval content screenshot are `verified locally`. The former mobile blocker is closed in `docs/exec-plans/completed/2026-06-29-governance-browser-qa-mobile-blocker.md`. Production-readiness is not claimed.
+**Current implementation note (2026-06-29):** Phases 0-6 are executed locally. `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md` now includes the task routing, decision manifest, verification matrix, and `tests/demo-boundary-smoke.test.js` gate. README/MANIFEST package-truth cleanup is complete. The runbook was applied to the CAA Governance browser QA lane; desktop governance paths and the mobile Planning Approval content screenshot are `verified locally`. The former mobile blocker is closed in `docs/exec-plans/completed/2026-06-29-governance-browser-qa-mobile-blocker.md`. Production-readiness is not claimed.
 
 **Continuation note (2026-06-29):** This plan is superseded for final readiness
 tracking because the user identified that the repo still lacks a canonical
@@ -21,13 +21,13 @@ The completion work is now tracked in
 - OpenAI page requested by the user: `https://openai.com/tr-TR/index/harness-engineering/`
 - OpenAI English article URL attempted during this run: `https://openai.com/index/harness-engineering/`
 - User-provided local Turkish Markdown working note: `/Users/marlonjd/Downloads/openai-harness-engineering-tam-kapsamli.md`
-- Repo source-of-truth docs listed in `AGENTS.md`, especially `README.md`, `README.turkce.md`, `MANIFEST.md`, `docs/01_PRODUCT_PLAN/MVP_SCOPE_AND_ROADMAP.md`, `docs/03_WORKFLOWS/FINDING_CAP_EVIDENCE_WORKFLOW.md`, `docs/06_DATA_AND_RULES/STATUS_PERMISSION_SECURITY.md`, `docs/08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.md`, and `docs/DEMO_BUILD_SUMMARY.md`.
+- Repo source-of-truth docs listed in `AGENTS.md`, especially `README.md`, `README.turkce.md`, `MANIFEST.md`, `docs/product-specs/product-plan/MVP_SCOPE_AND_ROADMAP.md`, `docs/product-specs/workflows/FINDING_CAP_EVIDENCE_WORKFLOW.md`, `docs/product-specs/data-and-rules/STATUS_PERMISSION_SECURITY.md`, `docs/demo-handoff/CODEX_DEMO_ONLY_PROMPT.md`, and `docs/demo-evidence/BUILD_SUMMARY.md`.
 
 ## Adapted Repository Output
 
 This adaptation is now represented in repo-backed artifacts instead of chat-only guidance:
 
-- `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md` is the compact operating runbook for future agents.
+- `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md` is the compact operating runbook for future agents.
 - `docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md` is the implementation plan and decision record.
 - `docs/exec-plans/index.md` routes the active harness plan and keeps one concrete next todo.
 - `docs/exec-plans/completed/2026-06-29-governance-browser-qa-mobile-blocker.md` records the current durable browser-QA blocker.
@@ -66,8 +66,8 @@ The outcome should be an AviaSurveil360-specific agent harness that makes the ne
 
 ### In Scope
 
-- Define an AviaSurveil360 harness map across `AGENTS.md`, `docs/`, `docs/exec-plans/`, `docs/DEMO_BUILD_SUMMARY.md`, `tests/`, and the static demo files.
-- Create a practical runbook for future agents in `docs/08_DEMO_AND_BUILD_HANDOFF/` or another existing numbered doc area instead of adding a broad new top-level folder.
+- Define an AviaSurveil360 harness map across `AGENTS.md`, `docs/`, `docs/exec-plans/`, `docs/demo-evidence/BUILD_SUMMARY.md`, `tests/`, and the static demo files.
+- Create a practical runbook for future agents in `docs/demo-handoff/` instead of adding a broad new top-level folder.
 - Add a decision-manifest pattern for material plan/prototype changes:
   - evidence observed
   - root cause or opportunity
@@ -107,9 +107,9 @@ The outcome should be an AviaSurveil360-specific agent harness that makes the ne
 - The repo currently contains a runnable static prototype and the package metadata now describes it as a planning pack plus frontend-only static clickable demo.
 - The current source-of-truth hierarchy remains:
   - root `AGENTS.md`
-  - numbered product docs under `docs/00_...` through `docs/10_...`
+  - product specs under `docs/product-specs/`
   - active plan index at `docs/exec-plans/index.md`
-  - build evidence at `docs/DEMO_BUILD_SUMMARY.md`
+  - build evidence at `docs/demo-evidence/BUILD_SUMMARY.md`
   - executable smoke checks under `tests/`
 - The first executable artifact remains a frontend-only clickable demo unless the user explicitly changes scope.
 - Existing dirty worktree changes in CSS/JS/tests may belong to ongoing work and must not be reverted by this harness pass.
@@ -119,8 +119,8 @@ The outcome should be an AviaSurveil360-specific agent harness that makes the ne
 
 | Harness engineering idea | AviaSurveil360 adaptation | First durable artifact |
 |---|---|---|
-| `AGENTS.md` as map, not encyclopedia | Keep `AGENTS.md` authoritative and route deeper details into `docs/`, plans, evidence summaries, and this runbook. | `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md` |
-| Repo as record system | Move durable product, architecture, verification, blockers, and handoff decisions into repo artifacts instead of chat memory. | `docs/exec-plans/`, `docs/DEMO_BUILD_SUMMARY.md`, future `docs/exec-plans/` |
+| `AGENTS.md` as map, not encyclopedia | Keep `AGENTS.md` authoritative and route deeper details into `docs/`, plans, evidence summaries, and this runbook. | `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md` |
+| Repo as record system | Move durable product, architecture, verification, blockers, and handoff decisions into repo artifacts instead of chat memory. | `docs/exec-plans/`, `docs/demo-evidence/BUILD_SUMMARY.md`, future `docs/exec-plans/` |
 | Agent-readable application | Make the static demo bootable and inspectable through local browser paths, screenshots, console checks, and role-flow smoke tests. | Browser QA paths in the runbook |
 | Agent-readable codebase | Prefer stable, explicit data/state/helpers/tests that Codex can read in context; avoid hidden decisions in chat or external docs. | Harness map + task routing |
 | Mechanical architecture and taste | Convert product rules and UI quality expectations into tests, smoke checks, checklists, and future lint/structural gates. | Verification matrix + future quality gates |
@@ -140,12 +140,12 @@ The outcome should be an AviaSurveil360-specific agent harness that makes the ne
 
 ### Product Source Of Truth
 
-- Product core: `docs/01_PRODUCT_PLAN/*`
-- Workflows: `docs/03_WORKFLOWS/*`
-- Modules: `docs/04_MODULES/*`
-- Data/security: `docs/06_DATA_AND_RULES/*`
-- Demo/build handoff: `docs/08_DEMO_AND_BUILD_HANDOFF/*`
-- Scenarios: `docs/09_SCENARIOS/*`
+- Product core: `docs/product-specs/product-plan/*`
+- Workflows: `docs/product-specs/workflows/*`
+- Modules: `docs/product-specs/modules/*`
+- Data/security: `docs/product-specs/data-and-rules/*`
+- Demo/build handoff: `docs/demo-handoff/*`
+- Scenarios: `docs/product-specs/scenarios/*`
 
 Harness implication: agents should not invent a new lifecycle. The operative lifecycle is:
 
@@ -181,7 +181,7 @@ Harness implication: a future runbook should list these as targeted gates and av
 
 ### Evidence Surface
 
-`docs/DEMO_BUILD_SUMMARY.md` is the best current evidence artifact. It already separates:
+`docs/demo-evidence/BUILD_SUMMARY.md` is the best current evidence artifact. It already separates:
 
 - frontend-only demo status
 - mock persistence
@@ -214,11 +214,11 @@ Harness implication: do not treat chat summaries as the durable evidence layer w
 
 **Goal:** create a compact, repo-local runbook for future agents.
 
-**Status:** implemented in `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`.
+**Status:** implemented in `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`.
 
 **Preferred file:**
 
-- `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`
+- `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`
 
 **Runbook content:**
 
@@ -253,7 +253,7 @@ Harness implication: do not treat chat summaries as the durable evidence layer w
 
 **Goal:** make future harness/product changes falsifiable.
 
-**Status:** implemented in `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`.
+**Status:** implemented in `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`.
 
 Add a reusable section template to the runbook:
 
@@ -281,7 +281,7 @@ Use it when a change is more than a typo or narrow mechanical correction.
 
 **Goal:** give agents a concrete test ladder instead of a vague "check it" instruction.
 
-**Status:** implemented in `docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`.
+**Status:** implemented in `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`.
 
 Create a matrix with these levels:
 
@@ -325,7 +325,7 @@ node tests/audit-work-queue-smoke.test.js
 **Goal:** convert repeated review preferences into mechanical checks and cleanup tasks.
 
 **Status:** implemented with `tests/demo-boundary-smoke.test.js` and recorded in
-`docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md`.
+`docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`.
 
 The article emphasizes that documentation alone does not keep an agent-produced
 codebase coherent. For this repo, the first mechanical gates should stay small:
@@ -378,7 +378,7 @@ Use the runbook to:
 - identify the role path
 - pick exact tests
 - run browser click-through
-- record evidence in `docs/DEMO_BUILD_SUMMARY.md` or a plan note
+- record evidence in `docs/demo-evidence/BUILD_SUMMARY.md` or `docs/exec-plans/tech-debt-tracker.md`
 - update `docs/exec-plans/index.md` only if status/next todo changes
 
 **Application result (2026-06-29):**
@@ -387,7 +387,7 @@ Use the runbook to:
 - Desktop browser click-through/visual QA is `verified locally` for planning approval, checklist approval, report final lock, inspector work queue/offline field, auditee isolation, and admin question bank.
 - Mobile Planning Approval visual QA is `verified locally`: accepted screenshot evidence is `/private/tmp/aviasurveil360-governance-qa/10-mobile-planning-approval-verified.png`, captured through `http://127.0.0.1:4360/` at a 390px viewport.
 - The accepted assertion used visible page content: `Planning Approval — PLAN-2026-Q3-OPS` was visible in the viewport and the `Q3 Flight Operations Surveillance Plan` dossier was visible. Console warnings/errors were empty and scrollWidth/clientWidth was `390/390`.
-- Durable evidence was recorded in `docs/DEMO_BUILD_SUMMARY.md`; the former blocker was closed in `docs/exec-plans/completed/2026-06-29-governance-browser-qa-mobile-blocker.md`.
+- Durable evidence was recorded in `docs/demo-evidence/BUILD_SUMMARY.md`; the former blocker was closed in `docs/exec-plans/completed/2026-06-29-governance-browser-qa-mobile-blocker.md`.
 
 **Verification:**
 
@@ -440,12 +440,12 @@ Task: perform the next stakeholder verification/sign-off pass for the AviaSurvei
 
 Read first:
 - AGENTS.md
-- docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md
+- docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md
 - docs/exec-plans/index.md
 - docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md
 - docs/exec-plans/active/2026-06-28-caa-governance-workflow-and-roles-plan.md
-- docs/DEMO_BUILD_SUMMARY.md
-- docs/06_DATA_AND_RULES/STATUS_PERMISSION_SECURITY.md
+- docs/demo-evidence/BUILD_SUMMARY.md
+- docs/product-specs/data-and-rules/STATUS_PERMISSION_SECURITY.md
 - docs/exec-plans/completed/2026-06-29-governance-browser-qa-mobile-blocker.md
 
 Do:
@@ -463,7 +463,7 @@ Do not:
 
 Verification:
 - Changed Markdown paths are internally consistent.
-- Active plan index, notes index, and demo summary agree on status.
+- Active plan index, tech-debt tracker, and demo summary agree on status.
 - Demo-only boundaries remain intact.
 
 Final response:

@@ -1,6 +1,6 @@
 # AviaSurveil360 — Demo Yapı Özeti (Türkçe)
 
-> İngilizce kanonik sürüm: [`DEMO_BUILD_SUMMARY.md`](DEMO_BUILD_SUMMARY.md).
+> İngilizce kanonik sürüm: [`BUILD_SUMMARY.md`](BUILD_SUMMARY.md).
 > Bu dosya paydaş aktarımı içindir; çakışma olursa İngilizce sürüm esastır.
 
 **Yapı türü:** Paydaş geri bildirimi için yalnızca ön yüz (frontend) V2 tıklanabilir demo.
@@ -39,8 +39,8 @@ başlangıç verisine döndürür.
 | `js/helpers.js` | Seçiciler, status yardımcıları, regulatory trace lookup, outbox yardımcıları ve demo badge yardımcıları. |
 | `js/views.js` | Mevcut ekranlar, Today’s Workbench, dokuz V2 ekranı, Service Provider Portal çerçevesi ve yeniden kullanılabilir Regulatory Trace görünümü. |
 | `js/app.js` | Rol bazlı deneyim navigasyonu, merkezi kalıcılık çağrıları, simüle offline geçişleri, AI karar geçişleri ve yeni kayıtlar için stabil ID üretimi. |
-| `docs/DEMO_BUILD_SUMMARY.md` | İngilizce kanonik özet. |
-| `docs/DEMO_BUILD_SUMMARY.turkce.md` | Bu Türkçe paydaş özeti. |
+| `docs/demo-evidence/BUILD_SUMMARY.md` | İngilizce kanonik özet. |
+| `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Bu Türkçe paydaş özeti. |
 
 Backend, veritabanı, API, framework geçişi, gerçek dosya saklama, gerçek AI
 servisi, gerçek regülasyon içe aktarma veya gerçek bildirim servisi eklenmedi.

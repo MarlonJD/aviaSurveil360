@@ -37,8 +37,8 @@ and return to seed data.
 | `js/helpers.js` | Selectors, status helpers, regulatory trace lookups, outbox helpers, and demo badge helpers. |
 | `js/views.js` | Existing screens plus Today’s Workbench, the nine Frontend V2 screens, Service Provider Portal framing, and reusable Regulatory Trace display. |
 | `js/app.js` | Role-based experience navigation, centralized persistence calls, simulated offline transitions, AI decision transitions, and stable ID generation for new records. |
-| `docs/DEMO_BUILD_SUMMARY.md` | This English canonical build summary. |
-| `docs/DEMO_BUILD_SUMMARY.turkce.md` | Turkish companion summary for stakeholder handoff. |
+| `docs/demo-evidence/BUILD_SUMMARY.md` | This English canonical build summary. |
+| `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Turkish companion summary for stakeholder handoff. |
 | `docs/exec-plans/index.md` | Updated only if the active plan status / next todo changes. |
 
 No backend, database, API, framework migration, real file storage, real AI

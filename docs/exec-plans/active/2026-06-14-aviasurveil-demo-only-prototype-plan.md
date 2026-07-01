@@ -84,7 +84,7 @@ and triggers no automatic enforcement, suspension, or closure.
    Review (Accept / Reject / Request More Information), Closed Finding / Report
    Preview, Admin Checklist Template Preview.
 5. **Verify + document**: run locally, clear console errors, walk the full
-   scenario, write `docs/DEMO_BUILD_SUMMARY.md`, update the plan index.
+   scenario, write `docs/demo-evidence/BUILD_SUMMARY.md`, update the plan index.
 
 ## Verification
 
@@ -125,7 +125,7 @@ and triggers no automatic enforcement, suspension, or closure.
 ## Ownership Boundaries
 
 - This plan owns only the demo prototype (`index.html`, `css/`, `js/`) and the
-  two demo docs (`docs/DEMO_BUILD_SUMMARY.md`, this plan + index).
+  two demo docs (`docs/demo-evidence/BUILD_SUMMARY.md`, this plan + index).
 - It must not modify numbered source/reference docs under `docs/0X_*`.
 - It must not initialize git, branch, commit, or push.
 
@@ -169,7 +169,7 @@ language (no heavy SLA); mock uploads show file name only; mock notifications
 are in-UI; report generation is a preview screen; a client-side audit log
 records critical actions.
 
-Then run locally, fix console errors, and write docs/DEMO_BUILD_SUMMARY.md
+Then run locally, fix console errors, and write docs/demo-evidence/BUILD_SUMMARY.md
 (changed files, mocked items, screens implemented, known limitations,
 stakeholder feedback questions). Do not claim production readiness.
 ```

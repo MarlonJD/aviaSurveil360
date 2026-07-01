@@ -569,9 +569,9 @@ Read first:
 - AGENTS.md
 - docs/exec-plans/index.md
 - docs/exec-plans/active/2026-06-28-caa-governance-workflow-and-roles-plan.md
-- docs/DEMO_BUILD_SUMMARY.md
+- docs/demo-evidence/BUILD_SUMMARY.md
 - docs/exec-plans/completed/2026-06-29-governance-browser-qa-mobile-blocker.md
-- docs/08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md
+- docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md
 
 Do:
 1. Review the verified-local evidence for syntax, Node smoke checks, desktop browser QA, and mobile Planning Approval visual QA.
@@ -581,8 +581,8 @@ Do:
 5. If new gaps are found, record them in `docs/exec-plans/` and keep the plan `ready-for-verification` or mark it `blocked` as appropriate.
 
 Verification:
-- Active plan index and notes index match the final status.
-- `docs/DEMO_BUILD_SUMMARY.md` remains the canonical evidence file.
+- Active plan index and tech-debt tracker match the final status.
+- `docs/demo-evidence/BUILD_SUMMARY.md` remains the canonical evidence file.
 - Any new blocker is recorded durably instead of only in chat.
 
 Final response:

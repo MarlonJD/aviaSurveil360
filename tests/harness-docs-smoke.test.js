@@ -17,15 +17,57 @@ function assertFile(relativePath) {
 }
 
 const requiredFiles = [
+  'docs/index.md',
   'docs/agent-harness/index.md',
   'docs/agent-harness/output-contract.md',
   'docs/agent-harness/registry.md',
   'docs/agent-harness/verification-matrix.md',
   'docs/agent-harness/entropy-cleanup-checklist.md',
+  'docs/product-specs/index.md',
+  'docs/demo-evidence/BUILD_SUMMARY.md',
+  'docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md',
   'tests/harness-docs-smoke.test.js'
 ];
 
 requiredFiles.forEach(assertFile);
+
+const docsIndex = read('docs/index.md');
+[
+  'agent-harness/index.md',
+  'exec-plans/index.md',
+  'exec-plans/tech-debt-tracker.md',
+  'product-specs/index.md',
+  'demo-handoff/',
+  'demo-evidence/BUILD_SUMMARY.md'
+].forEach((target) => {
+  assert.match(
+    docsIndex,
+    new RegExp(target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    `docs/index.md must link ${target}`
+  );
+});
+
+[
+  'docs/00_RESEARCH_AND_POSITIONING',
+  'docs/01_PRODUCT_PLAN',
+  'docs/02_UX_PLAN',
+  'docs/03_WORKFLOWS',
+  'docs/04_MODULES',
+  'docs/05_SCREEN_SPECS',
+  'docs/06_DATA_AND_RULES',
+  'docs/07_ANALYTICS',
+  'docs/08_DEMO_AND_BUILD_HANDOFF',
+  'docs/09_SCENARIOS',
+  'docs/10_REFERENCES',
+  'docs/DEMO_BUILD_SUMMARY.md',
+  'docs/DEMO_BUILD_SUMMARY.turkce.md'
+].forEach((relativePath) => {
+  assert.equal(
+    fs.existsSync(path.join(root, relativePath)),
+    false,
+    `Legacy docs path should not exist: ${relativePath}`
+  );
+});
 
 const planIndex = read('docs/exec-plans/index.md');
 [
@@ -48,8 +90,8 @@ const harnessIndex = read('docs/agent-harness/index.md');
   'entropy-cleanup-checklist.md',
   '../exec-plans/index.md',
   '../exec-plans/tech-debt-tracker.md',
-  '../DEMO_BUILD_SUMMARY.md',
-  '../08_DEMO_AND_BUILD_HANDOFF/AGENT_HARNESS_RUNBOOK.md'
+  '../demo-evidence/BUILD_SUMMARY.md',
+  '../demo-handoff/AGENT_HARNESS_RUNBOOK.md'
 ].forEach((target) => {
   assert.match(
     harnessIndex,

@@ -30,18 +30,14 @@ Do not build an EMPIC-like complex enterprise screen first. Build a simple, role
 
 ## Recommended reading order
 
-1. `00_RESEARCH_AND_POSITIONING/MARKET_RESEARCH_SUMMARY.md`
-2. `01_PRODUCT_PLAN/PRODUCT_VISION.md`
-3. `01_PRODUCT_PLAN/MVP_SCOPE_AND_ROADMAP.md`
-4. `02_UX_PLAN/UX_PRINCIPLES.md`
-5. `03_WORKFLOWS/MASTER_WORKFLOW.md`
-6. `05_SCREEN_SPECS/SCREEN_INVENTORY_AND_FORMS.md`
-7. `08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.md`
-8. `DEMO_BUILD_SUMMARY.md`
-9. `exec-plans/index.md`
+1. `docs/index.md`
+2. `docs/product-specs/index.md`
+3. `docs/demo-handoff/CODEX_DEMO_ONLY_PROMPT.md`
+4. `docs/demo-evidence/BUILD_SUMMARY.md`
+5. `docs/exec-plans/index.md`
 
 For the clickable demo, open `index.html` directly in a browser or serve this
-folder with a local static server. See `docs/DEMO_BUILD_SUMMARY.md` for current
+folder with a local static server. See `docs/demo-evidence/BUILD_SUMMARY.md` for current
 verification status and known demo limitations.
 
 

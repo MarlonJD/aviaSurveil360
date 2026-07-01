@@ -23,42 +23,19 @@ Start with these files before product, implementation, or prototype work:
 1. `README.md`
 2. `README.turkce.md`
 3. `MANIFEST.md`
-4. `00_RESEARCH_AND_POSITIONING/MARKET_RESEARCH_SUMMARY.md`
-5. `00_RESEARCH_AND_POSITIONING/PRODUCT_POSITIONING_AND_DECISIONS.md`
-6. `01_PRODUCT_PLAN/PRODUCT_VISION.md`
-7. `01_PRODUCT_PLAN/MVP_SCOPE_AND_ROADMAP.md`
-8. `01_PRODUCT_PLAN/MODULE_ARCHITECTURE.md`
-9. `02_UX_PLAN/UX_PRINCIPLES.md`
-10. `02_UX_PLAN/NAVIGATION_AND_INFORMATION_ARCHITECTURE.md`
-11. `03_WORKFLOWS/MASTER_WORKFLOW.md`
-12. `03_WORKFLOWS/SURVEILLANCE_PLANNING_WORKFLOW.md`
-13. `03_WORKFLOWS/AUDIT_CHECKLIST_WORKFLOW.md`
-14. `03_WORKFLOWS/FINDING_CAP_EVIDENCE_WORKFLOW.md`
-15. `03_WORKFLOWS/REMINDERS_AND_ESCALATION_WORKFLOW.md`
-16. `04_MODULES/AUDIT_PLANNING.md`
-17. `04_MODULES/CHECKLIST_BUILDER_AND_RUNNER.md`
-18. `04_MODULES/FINDINGS_MANAGEMENT.md`
-19. `04_MODULES/CAP_MANAGEMENT.md`
-20. `04_MODULES/EVIDENCE_REPOSITORY.md`
-21. `04_MODULES/AUDITEE_PORTAL.md`
-22. `04_MODULES/DASHBOARDS_AND_REPORTS.md`
-23. `04_MODULES/ORGANIZATION_REGISTRY.md`
-24. `05_SCREEN_SPECS/SCREEN_INVENTORY_AND_FORMS.md`
-25. `06_DATA_AND_RULES/CONCEPTUAL_DATA_MODEL.md`
-26. `06_DATA_AND_RULES/STATUS_PERMISSION_SECURITY.md`
-27. `07_ANALYTICS/OVERSIGHT_HEALTH_INDEX_AND_KPIS.md`
-28. `08_DEMO_AND_BUILD_HANDOFF/CODEX_DEMO_ONLY_PROMPT.md`
-29. `08_DEMO_AND_BUILD_HANDOFF/FULL_MVP_BUILD_PROMPT_LATER.md`
-30. `09_SCENARIOS/DEMO_SCENARIO_OPERATOR_AUDIT.md`
-31. `09_SCENARIOS/OTHER_DOMAIN_SCENARIOS_AND_EDGE_CASES.md`
-32. `10_REFERENCES/GLOSSARY_AND_SOURCE_NOTES.md`
+4. `docs/index.md`
+5. `docs/product-specs/index.md`
+6. `docs/agent-harness/index.md`
+7. `docs/exec-plans/index.md`
+8. `docs/demo-evidence/BUILD_SUMMARY.md`
 
 For Turkish phrasing, stakeholder summaries, or local-language handoffs, also
 read the matching `.turkce.md` files.
 
 For agent harness routing, output contracts, registry, verification matrix, and
 entropy cleanup, use `docs/agent-harness/index.md` as the canonical harness
-entrypoint.
+entrypoint. For product-domain detail, follow `docs/product-specs/index.md`
+instead of expanding this file into a long source list.
 
 ## Product Rules
 
@@ -152,7 +129,7 @@ entrypoint.
   - `css/`
   - `js/`
   - `data/` for mock data if useful
-  - `docs/DEMO_BUILD_SUMMARY.md` or equivalent if the repository structure uses
+  - `docs/demo-evidence/BUILD_SUMMARY.md` or equivalent if the repository structure uses
     a different docs location.
 - Required demo roles:
   - `CAA Manager`
@@ -194,8 +171,9 @@ entrypoint.
 
 ## Documentation Guidance
 
-- Preserve the existing numbered folder structure unless a task explicitly asks
-  for a new structure.
+- Preserve the current `docs/product-specs/`, `docs/demo-handoff/`,
+  `docs/demo-evidence/`, `docs/agent-harness/`, and `docs/exec-plans/`
+  structure unless a task explicitly asks for a new structure.
 - Do not modify original source/reference materials unless the user explicitly
   asks to add, replace, or correct source material.
 - When a canonical English stakeholder/product doc changes, update the matching
