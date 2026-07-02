@@ -405,6 +405,77 @@ yatay taşma olmaması doğrulandı. Güncel table-first screenshot kanıtı
 `qa/screenshots/table-first-2026-07-01/` altındadır (git tarafından ignore
 edilir).
 
+### Daha derin table-first workbench sadeleştirmesi - 2026-07-02
+
+Durum: frontend-only daha derin table-first geçişi için **lokal olarak
+doğrulandı**.
+
+Bu geçiş, paylaşılan work-item satırı etrafında kalan kart/dashboard
+tekrarlarını kaldırdı ve 2026-07-02 screenshot QA setindeki bilinen iki layout
+hatasını düzeltti. Değişen dosyalar: `css/styles.css`, `js/views.js`,
+`js/work-items.js`. Yeni izlenen dosya eklenmediği için `MANIFEST.md`
+değişmedi.
+
+Ekran değişiklikleri:
+
+- **Inspector Today's Workbench** — attention-strip metriklerini tekrarlayan
+  hero kartı kaldırıldı; sayfa artık başlık, guardrail'ler, attention strip,
+  hızlı aksiyonlar ve önceliklendirilmiş `My Work Today` tablosundan oluşuyor.
+- **Audit Work Queue** — gereksiz attention strip kaldırıldı; Active/Completed
+  filtre chip'leri satır sayılarını doğrudan taşıyor.
+- **Checklist Runner** — progress kartı tek satırlık progress bandına
+  dönüştürüldü (demo senaryo ipucu küçük metin olarak korundu). Mobilde aktif
+  soru paneli artık soru tablosunun üstünde.
+- **Finding dosyası** — next-action bandı artık Due Date gösteriyor; lifecycle
+  stepper kutu olmadan, closure kuralı notuyla birlikte; ölü (kullanılmayan)
+  Internal CAA Notes render bloğu silindi (gating'li panel tek render yolu
+  olarak kaldı).
+- **Auditee My CAA Requests** — attention pill'leri auditee'nin aksiyon
+  alabileceği dörde indirildi (CAP required, Evidence required, Due Soon,
+  Overdue); sayfa amacı artık "CAA'nın kuruluşunuzdan ne istediği ve ne
+  zamana kadar" diyor.
+- **Manager Dashboard** — OHI guardrail callout kutusu, aynı ifadeyle tek
+  satırlık guardrail notuna dönüştürüldü.
+- **Organization Risk Profile** — tek bir risk header bandı (skor, band,
+  driver'lar, regulatory trace, operating-context bilgileri) ve tam genişlik
+  Findings / Audit History tablolarıyla yeniden yapılandırıldı. 2026-07-02 QA
+  setindeki tek desktop 1920px yatay taşma böylece düzeltildi.
+- **Paylaşılan work item satırı** — neredeyse her kuyrukta `Status` sütununu
+  tekrarlayan `Lifecycle` sütunu kaldırıldı; benzersiz olan risk band
+  değerleri satır alt başlıklarına taşındı. Status badge'leri ve priority
+  pill'leri artık hücre dışına taşmak yerine hücre içinde sarıyor.
+
+Mobil desen: 640px altında paylaşılan work-queue tabloları, tablo kavramını
+koruyan yığılmış satırlar olarak render ediliyor — priority rayı, priority
+pill ve status badge, başlık, kalın next action, due metni ve satır aksiyon
+butonu. Owner yalnızca doluysa gösterilir; organizasyon ve diğer ikincil
+alanlar satırın detay sayfasında bir dokunuş uzaklıkta kalır. Satır tıklaması
+aynı detay rotalarını açmaya devam ediyor.
+
+Doğrulama (lokal olarak doğrulandı):
+
+- Tüm `js/*.js` dosyaları için `node --check` geçti.
+- `tests/` altındaki 17 Node smoke testinin tamamı geçti
+  (`table-first-workbench-smoke`, `demo-boundary-smoke` ve
+  `checklist-comment-render-smoke` dahil).
+- Gerçek browser'da tam yaşam döngüsü tıklaması: checklist Q2 Non-Compliant
+  -> `PF-2026-001` -> Lead dönüşümü `OPS-2026-001` -> auditee CAP -> CAP
+  kabulü bulguyu `EVIDENCE_REQUIRED` durumunda bırakır (kapatmaz) -> auditee
+  kanıtı -> kanıt kabulü bulguyu `closureType: evidence-accepted` ile kapatır
+  ve kanıt versiyonları korunur.
+- Auditee gizliliği yeniden doğrulandı: portal render'ında `Internal CAA
+  Note`, başka kuruluş, inspector workload veya internal risk scoring yok.
+- Değişikliklerden sonra taze Playwright screenshot seti alındı:
+  `qa/screenshots/playwright-2026-07-02/` (git tarafından ignore edilir) —
+  70 rota x desktop 1920x1080 ve mobile 390x844, 140 capture, 0 capture
+  hatası, 0 console uyarı/hata, 0 desktop taşma (önceden 1), 0 mobile taşma.
+
+Bilinen kalan UX notları (blocker değil): özel admin/config tabloları
+(question bank, regulatory library, audit log, users) mobilde yığılmış satır
+yerine hâlâ yatay kaydırma kullanıyor; kapalı satırlarda hem `Closed`
+priority pill hem `Closed` status badge görünüyor — bilinçli ama hafif
+tekrarlı.
+
 ---
 
 ## Sahte öğeler ve kısıtlar

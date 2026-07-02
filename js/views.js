@@ -93,17 +93,16 @@ function workItemRowHtml(item, options) {
   else if (priority.tone === 'ok') rowClasses.push('ops-row--ok');
   if (options.selectedId && (options.selectedId === item.id || (item.route && options.selectedId === item.route.id))) rowClasses.push('is-selected');
 
-  var orgCell = options.hideOrganization ? '' : '<td>' + esc(item.organization || '-') + '</td>';
+  var orgCell = options.hideOrganization ? '' : '<td data-col="org">' + esc(item.organization || '-') + '</td>';
   return '<tr class="' + rowClasses.join(' ') + '"' + workItemRowAttrs(item) + '>' +
-    '<td><span class="ops-priority is-' + esc(priority.tone || 'neutral') + '">' + esc(priority.label || 'Normal') + '</span></td>' +
-    '<td><div class="ops-cell-title">' + esc(item.title) + '</div><div class="ops-cell-sub">' + esc(item.subtitle || item.type || item.id) + '</div></td>' +
+    '<td data-col="priority"><span class="ops-priority is-' + esc(priority.tone || 'neutral') + '">' + esc(priority.label || 'Normal') + '</span></td>' +
+    '<td data-col="item"><div class="ops-cell-title">' + esc(item.title) + '</div><div class="ops-cell-sub">' + esc(item.subtitle || item.type || item.id) + '</div></td>' +
     orgCell +
-    '<td>' + esc(item.lifecycle || '-') + '</td>' +
-    '<td>' + esc(item.owner || '-') + '</td>' +
-    '<td><b>' + esc(item.nextAction || '-') + '</b></td>' +
-    '<td>' + esc(item.dueText || '-') + '</td>' +
-    '<td>' + (item.statusHtml || '') + '</td>' +
-    '<td><div class="ops-actions">' + workItemActionButton(item) + '</div></td>' +
+    '<td data-col="owner" data-label="Owner:"' + (!item.owner || item.owner === '-' || item.owner === '—' ? ' data-empty="1"' : '') + '>' + esc(item.owner || '-') + '</td>' +
+    '<td data-col="next" data-label="Next:"><b>' + esc(item.nextAction || '-') + '</b></td>' +
+    '<td data-col="due">' + esc(item.dueText || '-') + '</td>' +
+    '<td data-col="status">' + (item.statusHtml || '') + '</td>' +
+    '<td data-col="actions"><div class="ops-actions">' + workItemActionButton(item) + '</div></td>' +
   '</tr>';
 }
 
@@ -125,9 +124,9 @@ function renderOpsTable(items, options) {
     return workItemRowHtml(item, options);
   }).join('');
   var orgHead = options.hideOrganization ? '' : '<th>Organization</th>';
-  return '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
+  return '<div class="ops-table-wrap ops-table-wrap--stack"><table class="ops-table"><thead><tr>' +
     '<th style="width:96px">Priority</th><th>Item</th>' + orgHead +
-    '<th>Lifecycle</th><th>Owner</th><th>Next Action</th><th>Due Date / Target</th><th>Status</th><th style="width:124px;text-align:right">Open</th>' +
+    '<th>Owner</th><th>Next Action</th><th>Due Date / Target</th><th>Status</th><th style="width:124px;text-align:right">Open</th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
@@ -855,24 +854,24 @@ function viewOrganizationRiskProfile() {
       { label: 'mock risk indicator', tone: 'info' },
       { label: 'Not a legal decision', tone: 'warn' }
     ]) +
-    '<div class="grid grid--main">' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="card"><div class="card__head"><h3>Risk Dossier</h3><span class="sub">Why this organization appears in a risk alert</span></div><div class="card__body">' +
-          '<div class="risk-score"><div class="risk-score__num">' + profile.score + '</div><div><b>' + esc(profile.band) + '</b><p>' + esc(profile.recommendedAction) + '</p></div></div>' +
-          '<div class="divider"></div><div class="chip-list">' + profile.drivers.map(function (d) { return '<span class="tag-pill">' + esc(d) + '</span>'; }).join('') + '</div>' +
-          '<div class="divider"></div>' + regulatoryTraceHtml(trace, true) +
-        '</div></div>' +
-        dossierPanel('Findings', findings, 'Finding -> CAP -> Evidence rows') +
+    '<div class="risk-header">' +
+      '<div class="risk-score__num">' + profile.score + '</div>' +
+      '<div class="risk-header__main">' +
+        '<b>' + esc(profile.band) + '</b>' +
+        '<p>' + esc(profile.recommendedAction) + '</p>' +
+        '<div class="chip-list">' + profile.drivers.map(function (d) { return '<span class="tag-pill">' + esc(d) + '</span>'; }).join('') + '</div>' +
+        regulatoryTraceHtml(trace, true) +
       '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div class="v2-panel"><h3>Operating Context</h3>' +
-          compactMetric('CAP performance', profile.capPerformance, 'warn') +
-          compactMetric('Fleet/management change', profile.fleetChange, 'info') +
-          compactMetric('Occurrence trend placeholder', profile.occurrenceTrend, 'neutral') +
-        '</div>' +
-        dossierPanel('Audit History', auditRows) +
+      '<div class="risk-header__facts">' +
+        compactMetric('CAP performance', profile.capPerformance, 'warn') +
+        compactMetric('Fleet/management change', profile.fleetChange, 'info') +
+        compactMetric('Occurrence trend placeholder', profile.occurrenceTrend, 'neutral') +
       '</div>' +
-    '</div>';
+    '</div>' +
+    '<h2 class="section-heading">Findings</h2>' +
+    findings +
+    '<h2 class="section-heading mt-16">Audit History</h2>' +
+    auditRows;
 }
 
 function viewRegulatoryLibrary() {
@@ -1154,10 +1153,14 @@ function nextActionBar(f) {
     '</div>';
   }
   var pa = primaryActionFor(f);
+  var d = dueInfo(f);
+  var dueTxt = f.dueDate
+    ? ' &nbsp;·&nbsp; <b>Due Date:</b> ' + esc(fmtDate(f.dueDate) + (d.label !== '—' ? ' (' + d.label + ')' : ''))
+    : '';
   return '<div class="nextbar">' +
     '<div class="nextbar__icon">➡️</div>' +
     '<div class="nextbar__txt"><b>Next action:</b> ' + esc(nextActionLabel(f)) +
-    ' &nbsp;·&nbsp; <b>Owner:</b> ' + esc(ownerLabel(f)) + '</div>' +
+    ' &nbsp;·&nbsp; <b>Owner:</b> ' + esc(ownerLabel(f)) + dueTxt + '</div>' +
     '<button class="' + pa.cls + '" data-act="' + pa.action + '" data-id="' + f.id + '">' + esc(pa.label) + '</button>' +
   '</div>';
 }
@@ -1183,7 +1186,7 @@ function viewManagerDashboard() {
       { label: 'Plan Completion', value: k.planCompletion + '%', tone: 'info' },
       { label: 'OHI', value: ohi.score + ' · ' + ohi.band, tone: ohi.score < 60 ? 'danger' : (ohi.score < 75 ? 'warn' : 'ok') }
     ]) +
-    '<div class="callout mb-16"><b>Oversight Health Index:</b> Management indicator only. It does not trigger automatic enforcement, suspension or closure.</div>' +
+    '<div class="guardrail-note"><b>Oversight Health Index:</b> Management indicator only. It does not trigger automatic enforcement, suspension or closure.</div>' +
     '<div class="row-actions mb-16">' +
       '<button class="btn btn--primary" data-act="nav" data-view="findings" data-filter="overdue">Open overdue findings</button>' +
       '<button class="btn" data-act="nav" data-view="calendar">Open audit work queue</button>' +
@@ -1226,22 +1229,12 @@ function viewInspectorDashboard() {
   var items = riskItems.concat(findingItems, auditItems, reportItems).sort(workItemSort);
 
   return '' +
-    pageHead('Today’s Workbench', 'Inspector Workspace for daily operations: attention, upcoming work, risk signals and fast actions.') +
+    pageHead('Today’s Workbench', 'Today · ' + fmtDate(DEMO_TODAY) + ' — what needs inspection or review first.') +
     guardrailStrip([
       { label: 'Inspector Workspace' },
       { label: 'Demo data' },
       { label: 'Frontend-only demo - saved in this browser' }
     ]) +
-    '<div class="workbench-hero mb-16">' +
-      '<div><div class="workbench-hero__eyebrow">Today · ' + esc(fmtDate(DEMO_TODAY)) + '</div>' +
-      '<h2>What needs inspection or review now?</h2>' +
-      '<p>Designed around the inspector’s daily operating question, not a generic dashboard.</p></div>' +
-      '<div class="workbench-hero__metrics">' +
-        compactMetric('Today’s inspections', String(todays.length), todays.length ? 'info' : 'neutral') +
-        compactMetric('CAP reviews', String(capReview.length), capReview.length ? 'warn' : 'ok') +
-        compactMetric('Evidence reviews', String(evReview.length), evReview.length ? 'warn' : 'ok') +
-      '</div>' +
-    '</div>' +
     renderAttentionStrip([
       { label: 'Today’s inspections', value: String(todays.length), tone: todays.length ? 'info' : 'neutral' },
       { label: 'This week', value: String(upcomingWeek.length), tone: upcomingWeek.length ? 'info' : 'neutral' },
@@ -1268,22 +1261,19 @@ function viewAuditeeMyFindings() {
   var evReq = mine.filter(function (f) { return f.status === 'EVIDENCE_REQUIRED' || f.status === 'EVIDENCE_MORE_INFO'; });
   var dueSoon = open.filter(function (f) { return dueInfo(f).dueSoon; });
   var overdue = open.filter(function (f) { return dueInfo(f).overdue; });
-  var closed = mine.filter(function (f) { return f.status === 'CLOSED'; });
 
   var items = mine.map(function (finding) {
     return workItemFromFinding(finding, { allEvidenceVersions: true });
   }).sort(workItemSort);
 
   return '' +
-    pageHead('Service Provider Portal — ' + ROLES.auditee.orgName, 'Findings, CAP uploads, CAA responses and shared documents for your organization.') +
+    pageHead('Service Provider Portal — ' + ROLES.auditee.orgName, 'What the CAA needs from your organization, and by when.') +
     '<div class="scope-note">🔒 You are viewing only ' + esc(ROLES.auditee.orgName) + ' portal data. CAA-only working information is outside this portal.</div>' +
     renderAttentionStrip([
-      { label: 'Open requests', value: String(open.length), tone: open.length ? 'warn' : 'ok' },
       { label: 'CAP required', value: String(capReq.length), tone: capReq.length ? 'warn' : 'ok' },
       { label: 'Evidence required', value: String(evReq.length), tone: evReq.length ? 'warn' : 'ok' },
       { label: 'Due Soon', value: String(dueSoon.length), tone: dueSoon.length ? 'warn' : 'ok' },
-      { label: 'Overdue', value: String(overdue.length), tone: overdue.length ? 'danger' : 'ok' },
-      { label: 'Closed', value: String(closed.length), tone: 'neutral' }
+      { label: 'Overdue', value: String(overdue.length), tone: overdue.length ? 'danger' : 'ok' }
     ]) +
     '<h2 class="section-heading">My CAA Requests</h2>' +
     renderOpsTable(items, {
@@ -1295,7 +1285,7 @@ function viewAuditeeMyFindings() {
 
 /* =========================== Audit Work Queue =========================== */
 var AUDIT_FILTER_LABELS = {
-  active: 'Active',
+  active: 'Active audits',
   completed: 'Completed'
 };
 var AUDIT_QUEUE_FILTERS = ['active', 'completed'];
@@ -1383,23 +1373,20 @@ function viewCalendar() {
   if (state.selectedFilters) state.selectedFilters.calendar = filter;
   var scopedAudits = auditsForQueueScope();
   var list = sortedAuditsForQueue(filterAudits(filter));
-  var active = scopedAudits.filter(function (a) { return !isClosedAudit(a); });
-  var completed = scopedAudits.filter(isClosedAudit);
+  var counts = {
+    active: scopedAudits.filter(function (a) { return !isClosedAudit(a); }).length,
+    completed: scopedAudits.filter(isClosedAudit).length
+  };
   var chips = AUDIT_QUEUE_FILTERS.map(function (key) {
     return '<button class="btn btn--sm' + (filter === key ? ' btn--primary' : '') + '" data-act="nav" data-view="calendar" data-filter="' + key + '">' +
-      esc(AUDIT_FILTER_LABELS[key]) + '</button>';
+      esc(AUDIT_FILTER_LABELS[key]) + ' (' + counts[key] + ')</button>';
   }).join(' ');
   var actions = chips;
   if (state.role === 'manager') {
     actions += ' <button class="btn btn--primary btn--sm" data-act="new-audit">+ New Audit</button>';
   }
   var items = list.map(workItemFromAudit);
-  return pageHead('Audit Work Queue', 'Assigned audits in a simple queue. Use Active for open work and Completed for finished audits.', actions) +
-    renderAttentionStrip([
-      { label: 'Active audits', value: String(active.length), tone: active.length ? 'info' : 'neutral' },
-      { label: 'Completed', value: String(completed.length), tone: 'ok' },
-      { label: 'Sorted by Due Date', value: list.length + ' row' + (list.length === 1 ? '' : 's'), tone: 'neutral' }
-    ]) +
+  return pageHead('Audit Work Queue', 'Assigned audits in a simple queue, sorted by Due Date. Use Active for open work and Completed for finished audits.', actions) +
     renderOpsTable(items, { empty: 'No assigned audits match this filter.' });
 }
 
@@ -1498,12 +1485,12 @@ function viewChecklistRunner() {
       ? '<button class="btn btn--sm" data-act="nav" data-view="finding" data-id="' + esc(ans.findingId) + '">Open finding</button>'
       : (ans.potentialFindingId ? demoBadge('Potential Finding', 'warn') : '<span class="muted small">No finding</span>');
     return '<tr class="ops-row' + (it.id === activeItem.id ? ' is-selected' : '') + '" data-act="select-checklist-question" data-q="' + esc(it.id) + '">' +
-      '<td><span class="ops-priority is-' + (ans.answer === 'noncompliant' ? 'danger' : (ans.answer === 'observation' ? 'warn' : 'neutral')) + '">Q' + (idx + 1) + '</span></td>' +
-      '<td><div class="ops-cell-title">' + esc(it.text) + '</div><div class="ops-cell-sub">' + esc(it.ref) + '</div></td>' +
-      '<td>' + answerBadge(ans) + '</td>' +
-      '<td>' + esc(it.evidence) + '</td>' +
-      '<td>' + findingState + '</td>' +
-      '<td><button class="btn btn--sm" data-act="select-checklist-question" data-q="' + esc(it.id) + '">Review row</button></td>' +
+      '<td data-col="priority"><span class="ops-priority is-' + (ans.answer === 'noncompliant' ? 'danger' : (ans.answer === 'observation' ? 'warn' : 'neutral')) + '">Q' + (idx + 1) + '</span></td>' +
+      '<td data-col="item"><div class="ops-cell-title">' + esc(it.text) + '</div><div class="ops-cell-sub">' + esc(it.ref) + '</div></td>' +
+      '<td data-col="status">' + answerBadge(ans) + '</td>' +
+      '<td data-col="lifecycle">' + esc(it.evidence) + '</td>' +
+      '<td data-col="next" data-label="Finding:">' + findingState + '</td>' +
+      '<td data-col="actions"><button class="btn btn--sm" data-act="select-checklist-question" data-q="' + esc(it.id) + '">Open question</button></td>' +
     '</tr>';
   }).join('');
 
@@ -1538,7 +1525,7 @@ function viewChecklistRunner() {
         '</div></div>';
     }
   }
-  var checklistTable = '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
+  var checklistTable = '<div class="ops-table-wrap ops-table-wrap--stack"><table class="ops-table"><thead><tr>' +
     '<th style="width:82px">Row</th><th>Checklist question</th><th>Answer</th><th>Expected evidence</th><th>Finding status</th><th style="width:110px"></th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table></div>';
   var activePanel = '<div class="active-row-panel">' +
@@ -1556,11 +1543,11 @@ function viewChecklistRunner() {
   return '' +
     pageHead('Checklist Runner — ' + tpl.name, orgName(a.orgId) + ' · ' + a.ref + ' · ' + tpl.version,
       '<button class="btn" data-act="nav" data-view="audit-detail" data-id="' + a.id + '">Back to audit</button>') +
-    '<div class="card mb-16"><div class="card__body">' +
-      '<div class="row-between mb-8"><span class="muted small">Progress</span><b>' + answered + ' of ' + tpl.items.length + ' answered</b></div>' +
+    '<div class="progress-band">' +
+      '<span class="progress-band__count">' + answered + ' of ' + tpl.items.length + ' answered</span>' +
       '<div class="progress"><div class="progress__bar" style="width:' + pct + '%"></div></div>' +
-      '<div class="callout mt-12">Mark <b>Are crew training records complete and up to date?</b> as <b>Non-Compliant</b> to raise a finding, as in the demo scenario.</div>' +
-    '</div></div>' +
+      '<div class="progress-band__hint">Demo scenario: mark <b>Are crew training records complete and up to date?</b> as <b>Non-Compliant</b> to raise a finding.</div>' +
+    '</div>' +
     '<div class="active-row-layout">' +
       '<div>' + checklistTable + '</div>' +
       activePanel +
@@ -1896,20 +1883,6 @@ function viewFinding() {
       }).join('')
     : '<div class="muted small">No comments to auditee yet.</div>';
 
-  /* Internal CAA notes — NEVER shown to auditee */
-  var internalHtml = '';
-  if (!isAuditee) {
-    internalHtml = '<div class="card mt-16"><div class="card__head"><h3>Internal CAA Notes</h3>' +
-      '<span class="sub">Not visible to the auditee</span></div><div class="card__body">' +
-      ((f.internalNotes && f.internalNotes.length)
-        ? f.internalNotes.map(function (n) {
-            return '<div class="note-internal mb-8"><div class="tag">Internal CAA Note</div>' + esc(n.text) +
-              '<div class="muted small mt-12">' + esc(n.author) + ' · ' + esc(fmtDate(n.date)) + '</div></div>';
-          }).join('')
-        : '<div class="muted small">No internal notes recorded.</div>') +
-      '</div></div>';
-  }
-
   /* Related audit-log entries */
   var logEntries = state.auditLog.filter(function (l) { return l.target === f.id; });
   var logHtml = logEntries.length
@@ -1961,8 +1934,10 @@ function viewFinding() {
       '<button class="btn" data-act="nav" data-view="' + (isAuditee ? 'my-findings' : 'findings') + '">Back to findings</button>') +
     nextActionBar(f) +
     authClose +
-    dossierPanel('Lifecycle', lifecycleStepper(f), 'CAP accepted is not closure - a finding closes only after evidence is accepted') +
-    '<div class="dossier-sections mt-16">' +
+    '<div class="lifecycle-strip">' + lifecycleStepper(f) +
+      '<div class="lifecycle-strip__note">CAP accepted is not closure - a finding closes only after evidence is accepted, verification is completed, or an authorized closure is recorded.</div>' +
+    '</div>' +
+    '<div class="dossier-sections">' +
       '<div class="dossier-stack">' +
         dossierPanel('Finding Details',
           '<div class="metaline">' +

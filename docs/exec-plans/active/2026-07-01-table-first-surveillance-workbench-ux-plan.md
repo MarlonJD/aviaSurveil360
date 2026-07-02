@@ -16,6 +16,25 @@ auditee-privacy, CAP/evidence lifecycle, OHI guardrail, desktop/mobile viewport
 checks, and representative changed-route screenshots under
 `qa/screenshots/table-first-2026-07-01/`.
 
+**Implementation note (2026-07-02, deeper pass):** A second, deeper
+simplification pass was executed against this plan's objective using the
+2026-07-02 Playwright QA set as evidence. It removed the Inspector Workbench
+hero card, the Audit Work Queue attention strip (counts moved into filter
+chips), the Checklist Runner progress card (now a one-line progress band with
+the active question panel first on mobile), the redundant shared-table
+`Lifecycle` column, a dead Internal CAA Notes render block in `viewFinding()`,
+and the boxed OHI callout (now a one-line guardrail note with unchanged
+wording). The Organization Risk Profile was restructured into a single risk
+header band with full-width Findings/Audit History tables, fixing the only
+desktop 1920px overflow. Shared work-queue tables now stack into
+priority-first rows below 640px while keeping row-click routes. Verified
+locally: all `node --check` passes, all 17 Node smoke tests, full CAP/evidence
+lifecycle click-through (CAP accepted != closure; closure only on evidence
+acceptance), auditee privacy render checks, and a fresh 140-capture
+Playwright set under `qa/screenshots/playwright-2026-07-02/` with 0 errors,
+0 console issues, and 0 horizontal overflow on both viewports. Build summary
+docs updated in English and Turkish.
+
 ---
 
 ## Context

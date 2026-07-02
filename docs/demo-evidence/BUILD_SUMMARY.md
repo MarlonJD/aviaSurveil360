@@ -407,6 +407,75 @@ manager OHI guardrail text, and no page-level horizontal overflow at desktop
 or 390px mobile viewport. Current table-first screenshot evidence is under
 `qa/screenshots/table-first-2026-07-01/` (ignored by git).
 
+### Deeper table-first workbench simplification - 2026-07-02
+
+Status: **verified locally** for the frontend-only deeper table-first pass.
+
+This pass removed remaining card/dashboard duplication around the shared work
+item row and fixed the two known layout defects from the 2026-07-02 screenshot
+QA set. Changed files: `css/styles.css`, `js/views.js`, `js/work-items.js`.
+No new tracked files were added, so `MANIFEST.md` did not change.
+
+Screen changes:
+
+- **Inspector Today's Workbench** — removed the hero card that duplicated the
+  attention-strip metrics; the page is now title, guardrails, attention strip,
+  quick actions, and the prioritized `My Work Today` table.
+- **Audit Work Queue** — removed the redundant attention strip; the
+  Active/Completed filter chips now carry the row counts directly.
+- **Checklist Runner** — replaced the progress card with a one-line progress
+  band (demo-scenario hint kept as small text). On mobile the active question
+  panel now renders above the question table.
+- **Finding dossier** — the next-action band now shows the Due Date; the
+  lifecycle stepper is an unboxed strip with the closure-rule note; removed a
+  dead duplicate Internal CAA Notes render block (the gated panel remains the
+  single render path).
+- **Auditee My CAA Requests** — attention pills reduced to the four the
+  auditee can act on (CAP required, Evidence required, Due Soon, Overdue); the
+  page purpose now states "What the CAA needs from your organization, and by
+  when."
+- **Manager Dashboard** — the OHI guardrail callout box is now a one-line
+  guardrail note with unchanged wording.
+- **Organization Risk Profile** — restructured to a single risk header band
+  (score, band, drivers, regulatory trace, operating-context facts) with
+  full-width Findings and Audit History tables. This fixed the only desktop
+  1920px horizontal overflow in the 2026-07-02 QA set.
+- **Shared work item row** — removed the `Lifecycle` column, which duplicated
+  the `Status` column on nearly every queue; risk-band values that were unique
+  moved into row subtitles. Status badges and priority pills now wrap inside
+  their cells instead of overflowing.
+
+Mobile pattern: below 640px, shared work-queue tables render as stacked rows
+that keep the table concept — priority rail, priority pill and status badge,
+item title, bold next action, due text, and the row action button. Owner shows
+only when present; organization and other secondary fields stay one tap away
+in the row's detail page. Row click still opens the same detail routes.
+
+Verification (verified locally):
+
+- `node --check` passed for all `js/*.js` files.
+- All 17 Node smoke tests under `tests/` passed, including
+  `table-first-workbench-smoke`, `demo-boundary-smoke`, and
+  `checklist-comment-render-smoke`.
+- Full lifecycle click-through in a real browser: checklist Q2 Non-Compliant
+  -> `PF-2026-001` -> Lead conversion to `OPS-2026-001` -> auditee CAP ->
+  CAP accepted leaves the finding at `EVIDENCE_REQUIRED` (not closed) ->
+  auditee evidence -> evidence accepted closes the finding with
+  `closureType: evidence-accepted` and preserved evidence versions.
+- Auditee privacy re-verified: no `Internal CAA Note`, no other organizations,
+  no inspector workload, no internal risk scoring in the portal render.
+- Fresh Playwright screenshot set captured after the changes:
+  `qa/screenshots/playwright-2026-07-02/` (ignored by git) — 70 routes x
+  desktop 1920x1080 and mobile 390x844, 140 captures, 0 capture errors,
+  0 console warnings/errors, 0 desktop overflow (previously 1), 0 mobile
+  overflow.
+
+Known remaining UX notes (not blockers): bespoke admin/config tables
+(question bank, regulatory library, audit log, users) still use horizontal
+scrolling on mobile rather than stacked rows; closed rows show a `Closed`
+priority pill and a `Closed` status badge, which is intentional but slightly
+repetitive.
+
 ---
 
 ## Mocked items and limitations
