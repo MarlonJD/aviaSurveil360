@@ -1212,45 +1212,120 @@ function quickAction(label, view, id, filter, primary) {
 }
 
 /* =========================== Inspector dashboard =========================== */
+function inspectorInspectionId(audit) {
+  return audit && audit.id ? audit.id.replace('AUD-', 'INS-') : '-';
+}
+
+function inspectorCapId(finding) {
+  if (!finding || !finding.id) return 'CAP-';
+  var parts = finding.id.split('-');
+  return 'CAP-' + parts.slice(1).join('-');
+}
+
+function inspectorProgressForAudit(audit) {
+  if (isClosedAudit(audit)) return 100;
+  if (audit.status === 'In Progress') return 65;
+  if (audit.status === 'Scheduled' && audit.checklistStarted) return 30;
+  return 0;
+}
+
+function inspectorProgressHtml(value) {
+  var safe = Math.max(0, Math.min(100, Number(value) || 0));
+  return '<div class="mini-progress"><span style="width:' + safe + '%"></span></div><span class="mini-progress__value">' + safe + '%</span>';
+}
+
+function reportLastUpdated(report) {
+  var history = report && report.approval && report.approval.history ? report.approval.history : [];
+  var last = history.length ? history[history.length - 1].date : '';
+  return last ? fmtDate(last.slice(0, 10)) : '-';
+}
+
+function inspectorTable(headers, rows, empty) {
+  if (!rows.length) return '<div class="empty">' + esc(empty || 'No rows to show.') + '</div>';
+  return '<div class="ops-table-wrap inspector-table-wrap"><table class="ops-table inspector-table"><thead><tr>' +
+    headers.map(function (header) { return '<th>' + esc(header) + '</th>'; }).join('') +
+    '</tr></thead><tbody>' + rows.map(function (cells) {
+      return '<tr>' + cells.map(function (cell) { return '<td>' + cell + '</td>'; }).join('') + '</tr>';
+    }).join('') + '</tbody></table></div>';
+}
+
 function viewInspectorDashboard() {
-  var todays = state.audits.filter(function (a) { return a.date === DEMO_TODAY; });
-  var weekEnd = '2026-06-22';
-  var upcomingWeek = state.audits.filter(function (a) { return a.date >= DEMO_TODAY && a.date <= weekEnd; });
+  var assignedAudits = sortedAuditsForQueue(state.audits.filter(function (audit) {
+    return auditAssignedToCurrentUser(audit) && !isClosedAudit(audit);
+  }));
   var actionableFindings = inspectorActionableFindings();
   var capReview = actionableFindings.filter(function (f) { return f.status === 'CAP_SUBMITTED'; });
-  var evReview = actionableFindings.filter(function (f) { return f.status === 'EVIDENCE_SUBMITTED'; });
-  var highRisk = state.riskProfiles.slice().sort(function (a, b) { return b.score - a.score; })[0];
-  var reportItems = state.auditReports.map(workItemFromReport);
-  var auditItems = sortedAuditsForQueue(auditsForQueueScope().filter(function (a) { return !isClosedAudit(a); })).map(workItemFromAudit);
-  var findingItems = capReview.concat(evReview).map(function (finding) {
-    return workItemFromFinding(finding, { allEvidenceVersions: true });
+  var activeAudits = assignedAudits.filter(function (audit) {
+    return audit.status === 'Scheduled' || audit.status === 'In Progress';
   });
-  var riskItems = highRisk ? [workItemFromRiskProfile(highRisk)] : [];
-  var items = riskItems.concat(findingItems, auditItems, reportItems).sort(workItemSort);
+  var draftReports = (state.auditReports || []).filter(function (report) {
+    var audit = auditById(report.auditId);
+    return report.status === 'draft' && audit && auditAssignedToCurrentUser(audit) && audit.status === 'In Progress';
+  });
+
+  var assignedRows = assignedAudits.map(function (audit) {
+    return [
+      esc(inspectorInspectionId(audit)),
+      esc(orgName(audit.orgId)),
+      esc(audit.type),
+      auditStatusBadge(audit),
+      esc(fmtDate(audit.date)),
+      inspectorProgressHtml(inspectorProgressForAudit(audit)),
+      '<button class="btn btn--sm" data-act="nav" data-view="audit-detail" data-id="' + esc(audit.id) + '">Open</button>'
+    ];
+  });
+
+  var capRows = capReview.map(function (finding) {
+    return [
+      esc(inspectorCapId(finding)),
+      esc(inspectorInspectionId(auditById(finding.auditId))),
+      esc(orgName(finding.orgId)),
+      esc(finding.responsiblePerson || 'Service provider'),
+      esc(fmtDate(finding.cap && finding.cap.targetDate ? finding.cap.targetDate : finding.dueDate)),
+      demoBadge('Pending Review', 'warn'),
+      '<button class="btn btn--sm" data-act="reviewcap" data-id="' + esc(finding.id) + '">Review</button>'
+    ];
+  });
+
+  var reportRows = draftReports.map(function (report) {
+    var audit = auditById(report.auditId);
+    return [
+      esc(report.id.replace('RPT-AUD-', 'RPT-')),
+      esc(inspectorInspectionId(audit)),
+      esc(audit ? orgName(audit.orgId) : '-'),
+      esc(reportLastUpdated(report)),
+      demoBadge('Ready to Submit', 'ok'),
+      '<button class="btn btn--primary btn--sm" data-act="nav" data-view="audit-reports" data-id="' + esc(report.auditId) + '">Submit to Lead Inspector</button>'
+    ];
+  });
 
   return '' +
-    pageHead('Today’s Workbench', 'Today · ' + fmtDate(DEMO_TODAY) + ' — what needs inspection or review first.') +
-    guardrailStrip([
-      { label: 'Inspector Workspace' },
-      { label: 'Demo data' },
-      { label: 'Frontend-only demo - saved in this browser' }
-    ]) +
-    renderAttentionStrip([
-      { label: 'Today’s inspections', value: String(todays.length), tone: todays.length ? 'info' : 'neutral' },
-      { label: 'This week', value: String(upcomingWeek.length), tone: upcomingWeek.length ? 'info' : 'neutral' },
-      { label: 'CAP reviews', value: String(capReview.length), tone: capReview.length ? 'warn' : 'ok' },
-      { label: 'Evidence reviews', value: String(evReview.length), tone: evReview.length ? 'warn' : 'ok' },
-      { label: 'High-risk signals', value: highRisk ? orgName(highRisk.orgId) : '0', tone: highRisk ? 'warn' : 'ok' }
-    ]) +
-    '<div class="row-actions mb-16">' +
-      '<button class="btn btn--primary" data-act="new-audit">New inspection</button>' +
-      quickAction('Open audit queue', 'calendar') +
-      quickAction('Review CAP', 'findings', null, 'capreview') +
-      quickAction('Review evidence', 'findings', null, 'evreview') +
-      quickAction('Generate report', 'reports') +
+    pageHead('My Inspections', '') +
+    '<div class="grid grid--kpi grid--kpi-4 mb-24">' +
+      kpiCard('My Inspections', String(assignedAudits.length), 'Assigned to me', { view: 'calendar', tone: 'info' }) +
+      kpiCard('In Progress', String(activeAudits.length), 'Inspections', { view: 'calendar', tone: 'warn' }) +
+      kpiCard('CAP Reviews', String(capReview.length), 'Pending review', { view: 'findings', filter: 'capreview', tone: capReview.length ? 'ok' : 'neutral' }) +
+      kpiCard('Draft Reports', String(draftReports.length), 'Ready to submit', { view: 'reports', tone: draftReports.length ? 'info' : 'neutral' }) +
     '</div>' +
-    '<h2 class="section-heading">My Work Today</h2>' +
-    renderOpsTable(items, { includeChildren: true, empty: 'No work is assigned today.' });
+    '<h2 class="section-heading">Assigned Inspections</h2>' +
+    inspectorTable(['Inspection ID', 'Organization', 'Type', 'Status', 'Due Date', 'Progress', 'Action'], assignedRows, 'No inspections assigned to you.') +
+    '<h2 class="section-heading mt-24">CAP Reviews</h2>' +
+    inspectorTable(['CAP ID', 'Inspection ID', 'Organization', 'Submitted By', 'Due Date', 'Status', 'Action'], capRows, 'No CAP reviews are pending.') +
+    '<h2 class="section-heading mt-24">Draft Reports</h2>' +
+    inspectorTable(['Report ID', 'Inspection ID', 'Organization', 'Last Updated', 'Status', 'Action'], reportRows, 'No draft reports are ready to submit.');
+}
+
+function viewProfile() {
+  var r = ROLES[state.role] || ROLES.inspector;
+  return pageHead('Profile', '') +
+    '<div class="card"><div class="card__body">' +
+      '<div class="metaline">' +
+        metaItem('Name', r.user) +
+        metaItem('Role', EXPERIENCE_LABEL[state.role] || r.name) +
+        metaItem('Workspace', state.role === 'inspector' ? 'My Inspections' : homeView(state.role)) +
+        metaItem('Demo scope', 'Frontend-only mock data') +
+      '</div>' +
+    '</div></div>';
 }
 
 /* =========================== Auditee — My Findings =========================== */

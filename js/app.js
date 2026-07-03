@@ -33,22 +33,10 @@ var NAV = {
     { view: 'dashboard', label: 'Inspector Workload', icon: '▥' }
   ],
   inspector: [
-    { section: 'Dashboard' },
-    { view: 'dashboard', label: "Today’s Workbench", icon: '▦' },
-    { section: 'Oversight' },
-    { view: 'calendar', label: 'Audit Work Queue', icon: '▤' },
-    { section: 'Organisations' },
-    { view: 'organizations', label: 'Operators / Providers', icon: '🏢' },
-    { view: 'org-risk', label: 'Risk Profiles', icon: '◇', id: 'ORG-XYZ' },
-    { section: 'Findings & CAPs' },
-    { view: 'findings', label: 'Open Findings', icon: '⚑', filter: 'open' },
-    { view: 'findings', label: 'CAP Review Queue', icon: '✓', filter: 'capreview' },
-    { section: 'Evidence & Documents' },
-    { view: 'offline-field', label: 'Inspection Evidence', icon: '⇄' },
-    { view: 'reports', label: 'Reports', icon: '📄' },
-    { section: 'Knowledge Hub' },
-    { view: 'reports', label: 'Previous Findings', icon: '◷' },
-    { view: 'ai-assistant', label: 'AI Safety Assistant', icon: '✦' }
+    { view: 'dashboard', label: 'My Inspections', icon: '▣' },
+    { view: 'findings', label: 'CAP Reviews', icon: '✓', filter: 'capreview' },
+    { view: 'reports', label: 'Draft Reports', icon: '□' },
+    { view: 'profile', label: 'Profile', icon: '○' }
   ],
   auditee: [
     { section: 'Service Provider Portal' },
@@ -294,6 +282,7 @@ function navBadge(view) {
 
 function crumbs() {
   var homeLabel = VIEW_TITLES[homeView(state.role)] || 'Home';
+  if (state.role === 'inspector' && homeView(state.role) === 'dashboard') homeLabel = 'My Inspections';
   var cur = VIEW_TITLES[state.view] || '';
   var extra = '';
   if (state.view === 'audit-detail' || state.view === 'checklist') {
@@ -334,6 +323,7 @@ function renderContent() {
     case 'findings': return viewFindings();
     case 'my-findings': return viewAuditeeMyFindings();
     case 'reports': return viewReports();
+    case 'profile': return viewProfile();
     case 'report': return viewReport();
     case 'messages': return viewMessages();
     case 'templates': return viewTemplates();

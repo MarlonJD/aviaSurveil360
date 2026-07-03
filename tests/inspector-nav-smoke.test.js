@@ -60,10 +60,15 @@ const inspectorNavLabels = context.NAV.inspector
   .map((item) => item.label)
   .join(' ');
 
-assert.match(html, /Today’s Workbench/);
-assert.match(html, /Audit Work Queue/);
-assert.match(html, /Inspection Evidence/);
-assert.match(html, /Operators \/ Providers/);
+assert.match(html, /My Inspections/);
+assert.match(html, /Assigned Inspections/);
+assert.match(html, /CAP Reviews/);
+assert.match(html, /Draft Reports/);
+assert.match(html, /Profile/);
+assert.doesNotMatch(html, /Today’s Workbench/);
+assert.doesNotMatch(html, /Audit Work Queue/);
+assert.doesNotMatch(html, /Inspection Evidence/);
+assert.doesNotMatch(html, /Operators \/ Providers/);
 assert.doesNotMatch(html, /Offline Field/);
 assert.doesNotMatch(html, /Inspection Packages/);
 assert.doesNotMatch(html, /NAMCARS Library/);
@@ -88,6 +93,10 @@ assert.doesNotMatch(html, /Review repeats/);
 assert.doesNotMatch(html, /Repeated regulation references/);
 assert.doesNotMatch(html, /repeat oversight signals/i);
 assert.doesNotMatch(html, /data-view="cap-effectiveness"/);
+assert.doesNotMatch(inspectorNavLabels, /Today’s Workbench/);
+assert.doesNotMatch(inspectorNavLabels, /Audit Work Queue/);
+assert.doesNotMatch(inspectorNavLabels, /Inspection Evidence/);
+assert.doesNotMatch(inspectorNavLabels, /Operators \/ Providers/);
 assert.doesNotMatch(inspectorNavLabels, /Inspection Packages/);
 assert.doesNotMatch(inspectorNavLabels, /NAMCARS Library/);
 assert.doesNotMatch(inspectorNavLabels, /Cross-Reference/);
@@ -108,7 +117,7 @@ context.state.view = 'regulatory-library';
 context.state.params = {};
 context.render();
 const restrictedRegulatoryHtml = elements.get('app-root').innerHTML;
-assert.match(restrictedRegulatoryHtml, /Today’s Workbench/);
+assert.match(restrictedRegulatoryHtml, /My Inspections/);
 assert.doesNotMatch(restrictedRegulatoryHtml, /Regulatory Library/);
 assert.doesNotMatch(restrictedRegulatoryHtml, /NAMCARS Library/);
 assert.doesNotMatch(restrictedRegulatoryHtml, /Cross-Reference/);
@@ -117,7 +126,7 @@ context.state.view = 'checklist-builder';
 context.state.params = {};
 context.render();
 const restrictedBuilderHtml = elements.get('app-root').innerHTML;
-assert.match(restrictedBuilderHtml, /Today’s Workbench/);
+assert.match(restrictedBuilderHtml, /My Inspections/);
 assert.doesNotMatch(restrictedBuilderHtml, /Checklist Builder/);
 
 context.state.view = 'findings';

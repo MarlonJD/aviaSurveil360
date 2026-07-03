@@ -271,6 +271,7 @@ button { font-family: inherit; }
 .grid { display: grid; gap: 16px; }
 .grid > * { min-width: 0; }
 .grid--kpi { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid--kpi-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .grid--main { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
@@ -301,6 +302,7 @@ button { font-family: inherit; }
 .kpi__value.is-danger { color: var(--danger); }
 .kpi__value.is-warn { color: var(--warn); }
 .kpi__value.is-ok { color: var(--ok); }
+.kpi__value.is-info { color: var(--info); }
 
 /* Oversight Health Index gauge */
 .ohi {
@@ -443,9 +445,9 @@ button { font-family: inherit; }
   text-transform: uppercase;
   letter-spacing: .04em;
 }
-.ops-row--attention td { box-shadow: inset 3px 0 0 var(--warn); }
-.ops-row--danger td { box-shadow: inset 3px 0 0 var(--danger); }
-.ops-row--ok td { box-shadow: inset 3px 0 0 var(--ok); }
+.ops-row--attention > td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+.ops-row--danger > td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+.ops-row--ok > td:first-child { box-shadow: inset 3px 0 0 var(--ok); }
 .ops-cell-title { font-weight: 650; overflow-wrap: anywhere; }
 .ops-cell-sub { color: var(--muted); font-size: 12px; margin-top: 3px; overflow-wrap: anywhere; }
 .ops-cell-muted { color: var(--muted); font-size: 12px; }
@@ -468,6 +470,42 @@ button { font-family: inherit; }
 .ops-priority.is-warn { background: var(--warn-bg); border-color: #edd39d; color: var(--warn); }
 .ops-priority.is-info { background: var(--info-bg); border-color: #cfe0fb; color: var(--info); }
 .ops-priority.is-ok { background: var(--ok-bg); border-color: #bfe6d0; color: var(--ok); }
+
+.inspector-table-wrap { margin-bottom: 26px; }
+.inspector-table {
+  min-width: 780px;
+  table-layout: auto;
+}
+.inspector-table th,
+.inspector-table td {
+  padding: 13px 16px;
+  vertical-align: middle;
+}
+.inspector-table td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+.mini-progress {
+  display: inline-flex;
+  width: 118px;
+  height: 8px;
+  background: var(--line-soft);
+  border-radius: 999px;
+  overflow: hidden;
+  vertical-align: middle;
+  margin-right: 9px;
+}
+.mini-progress span {
+  display: block;
+  height: 100%;
+  background: var(--blue-500);
+  border-radius: inherit;
+}
+.mini-progress__value {
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  font-weight: 600;
+}
 
 .dossier-sections {
   display: grid;
@@ -824,8 +862,10 @@ button { font-family: inherit; }
 .mt-12 { margin-top: 12px; }
 .mt-16 { margin-top: 16px; }
 .mt-20 { margin-top: 20px; }
+.mt-24 { margin-top: 24px; }
 .mb-8 { margin-bottom: 8px; }
 .mb-16 { margin-bottom: 16px; }
+.mb-24 { margin-bottom: 24px; }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .tag-pill { display: inline-block; background: var(--neutral-bg); color: var(--ink-soft); border-radius: 6px; padding: 2px 8px; font-size: 11.5px; font-weight: 600; }
 .divider { height: 1px; background: var(--line-soft); margin: 16px 0; }

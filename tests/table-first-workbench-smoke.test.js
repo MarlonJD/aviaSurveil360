@@ -41,8 +41,14 @@ context.state.role = 'inspector';
 context.state.view = 'dashboard';
 context.state.params = {};
 let html = context.viewInspectorDashboard();
-assert.match(html, /My Work Today/);
-assert.match(html, /class="ops-table"/);
+assert.match(html, /My Inspections/);
+assert.match(html, /Assigned Inspections/);
+assert.match(html, /CAP Reviews/);
+assert.match(html, /Draft Reports/);
+assert.match(html, /class="ops-table inspector-table"/);
+assert.doesNotMatch(html, /Frontend-only demo - saved in this browser/);
+assert.doesNotMatch(html, /New inspection/);
+assert.doesNotMatch(html, /Generate report/);
 assert.doesNotMatch(html, /A\. Attention Needed/);
 assert.doesNotMatch(html, /B\. My Upcoming Work/);
 

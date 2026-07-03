@@ -32,12 +32,12 @@ and return to seed data.
 | File | Purpose |
 |---|---|
 | `index.html` | Demo ribbon now states frontend-only browser persistence and no real backend/AI/regulatory integrations. |
-| `css/styles.css` | V2 responsive UI for role-based workspaces, Today’s Workbench, regulatory trace ribbons, governance panels, offline outbox, AI draft controls, and 390px mobile behavior. |
+| `css/styles.css` | V2 responsive UI for role-based workspaces, simplified Inspector My Inspections home, regulatory trace ribbons, governance panels, offline outbox, AI draft controls, and 390px mobile behavior. |
 | `js/data.js` | Backend-ready mock records, seed V2 datasets, status values, and isolated `localStorage` demo storage helpers. |
 | `js/helpers.js` | Selectors, status helpers, regulatory trace lookups, outbox helpers, and demo badge helpers. |
 | `js/work-items.js` | Shared table-first work-item shaping for audits, findings, CAP/evidence child rows, approvals, planning items, and admin queues. |
-| `js/views.js` | Existing screens plus Today’s Workbench, the nine Frontend V2 screens, Service Provider Portal framing, reusable Regulatory Trace display, and table-first work queues. |
-| `js/app.js` | Role-based experience navigation, centralized persistence calls, simulated offline transitions, AI decision transitions, stable ID generation, and checklist row selection. |
+| `js/views.js` | Existing screens plus simplified Inspector My Inspections home, the nine Frontend V2 screens, Service Provider Portal framing, reusable Regulatory Trace display, and table-first work queues. |
+| `js/app.js` | Role-based experience navigation including simplified Inspector nav, centralized persistence calls, simulated offline transitions, AI decision transitions, stable ID generation, and checklist row selection. |
 | `docs/demo-evidence/BUILD_SUMMARY.md` | This English canonical build summary. |
 | `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Turkish companion summary for stakeholder handoff. |
 | `docs/exec-plans/index.md` | Updated only if the active plan status / next todo changes. |
@@ -52,9 +52,8 @@ service, real regulatory ingestion, or real notification service was added.
 
 The demo now frames the front end around three main role-based experiences:
 
-1. **Inspector Workspace** — daily operational workbench for assigned audits,
-   evidence review, CAP review, regulatory lookup, risk signals, and quick
-   actions.
+1. **Inspector Workspace** — simple daily operations surface for assigned
+   inspections, CAP reviews, and draft reports.
 2. **Supervisor / Manager Dashboard** — performance, risk, workload, SSP, CAP
    oversight, surveillance planning, and executive visibility.
 3. **Service Provider Portal** — the auditee-facing experience for findings,
@@ -68,20 +67,19 @@ Experience details:
 1. **CAA Manager** — Supervisor / Manager Dashboard, management oversight,
    surveillance plan, findings, organizations, reports, SSP/NASP, and CAP
    effectiveness.
-2. **CAA Inspector** — Inspector Workspace, Today’s Workbench, audit execution,
-   checklist runner, findings, CAP/evidence review, regulatory lookup, AI draft
-   assistant, and offline field inspection simulation.
+2. **CAA Inspector** — Inspector Workspace, My Inspections home, audit
+   execution, checklist runner, findings, CAP/evidence review, and draft report
+   follow-up.
 3. **Auditee (Airline XYZ)** — Service Provider Portal for own findings, CAP
    submission, evidence filename submission, CAA-visible comments, and closure
    status.
 4. **Admin Preview** — templates, users, settings, audit log, and regulatory
    preview.
 
-The Inspector home screen is now **Today’s Workbench**, organized around a
-table-first **My Work Today** queue. A compact attention strip keeps the
-decision signals visible, while the queue rows carry priority, organization,
-lifecycle, owner, next action, due date/target, status, and row action. The old
-A/B/C/D card zones have been removed from the primary inspector surface.
+The Inspector home screen is now a simplified **My Inspections** workspace.
+It removes the guardrail pill row, attention strip, and quick-action button row
+from the primary surface. The first viewport now focuses on four KPI cards and
+three plain tables: Assigned Inspections, CAP Reviews, and Draft Reports.
 
 The table-first pattern is also used for the audit work queue, findings and
 CAP/evidence review queues, auditee requests, manager attention lists,
@@ -216,10 +214,11 @@ node --check js/app.js
 Browser smoke verification used Playwright against `index.html` with no console
 errors. Verified:
 
-- Inspector Workspace opens on `Today’s Workbench`
-- `Today’s Workbench` shows a table-first `My Work Today` queue with a compact
-  attention strip
-- `New inspection` quick action opens the New Audit Wizard
+- Inspector Workspace opens on simplified `My Inspections`
+- `My Inspections` shows four KPI cards and three focused tables: Assigned
+  Inspections, CAP Reviews, and Draft Reports
+- the old guardrail pill row, attention strip, and quick-action button row are
+  hidden from the Inspector home screen
 - Supervisor / Manager Dashboard and SSP/NASP dashboard remain reachable
 - Service Provider Portal framing is visible to the auditee role
 - all nine V2 screens are reachable by role-appropriate navigation
@@ -247,7 +246,7 @@ outboxStatus after refresh: synced_to_demo_state
 reset storage: null
 console errors: []
 mobile scrollWidth/clientWidth: 390/390 on all V2 screens
-Today’s Workbench mobile scrollWidth/clientWidth: 390/390
+My Inspections mobile scrollWidth/clientWidth: 390/390
 Service Provider Portal mobile scrollWidth/clientWidth: 390/390
 ```
 
@@ -418,9 +417,10 @@ No new tracked files were added, so `MANIFEST.md` did not change.
 
 Screen changes:
 
-- **Inspector Today's Workbench** — removed the hero card that duplicated the
-  attention-strip metrics; the page is now title, guardrails, attention strip,
-  quick actions, and the prioritized `My Work Today` table.
+- **Inspector My Inspections** — simplified the primary inspector surface to
+  four KPI cards plus Assigned Inspections, CAP Reviews, and Draft Reports
+  tables. The guardrail pills, attention strip, and quick-action row are hidden
+  on this home screen.
 - **Audit Work Queue** — removed the redundant attention strip; the
   Active/Completed filter chips now carry the row counts directly.
 - **Checklist Runner** — replaced the progress card with a one-line progress

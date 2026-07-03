@@ -34,12 +34,12 @@ başlangıç verisine döndürür.
 | Dosya | Amaç |
 |---|---|
 | `index.html` | Demo şeridi artık tarayıcıya kayıtlı frontend-only demo olduğunu ve gerçek backend/AI/regülasyon entegrasyonu olmadığını belirtir. |
-| `css/styles.css` | Rol bazlı çalışma alanları, Today’s Workbench, Regulatory Trace, offline outbox, AI taslak kontrolleri ve 390px mobil düzeni. |
+| `css/styles.css` | Rol bazlı çalışma alanları, sadeleştirilmiş Inspector My Inspections ana ekranı, Regulatory Trace, offline outbox, AI taslak kontrolleri ve 390px mobil düzeni. |
 | `js/data.js` | Backend'e yakın sahte kayıtlar, V2 seed verileri, açık status değerleri ve izole `localStorage` demo saklama yardımcıları. |
 | `js/helpers.js` | Seçiciler, status yardımcıları, regulatory trace lookup, outbox yardımcıları ve demo badge yardımcıları. |
 | `js/work-items.js` | Audit, finding, CAP/evidence alt satırları, approval, planning ve admin kuyrukları için ortak table-first iş öğesi hazırlama katmanı. |
-| `js/views.js` | Mevcut ekranlar, Today’s Workbench, dokuz V2 ekranı, Service Provider Portal çerçevesi, yeniden kullanılabilir Regulatory Trace görünümü ve table-first iş kuyrukları. |
-| `js/app.js` | Rol bazlı deneyim navigasyonu, merkezi kalıcılık çağrıları, simüle offline geçişleri, AI karar geçişleri, stabil ID üretimi ve checklist satır seçimi. |
+| `js/views.js` | Mevcut ekranlar, sadeleştirilmiş Inspector My Inspections ana ekranı, dokuz V2 ekranı, Service Provider Portal çerçevesi, yeniden kullanılabilir Regulatory Trace görünümü ve table-first iş kuyrukları. |
+| `js/app.js` | Sadeleştirilmiş Inspector navigasyonu dahil rol bazlı deneyim navigasyonu, merkezi kalıcılık çağrıları, simüle offline geçişleri, AI karar geçişleri, stabil ID üretimi ve checklist satır seçimi. |
 | `docs/demo-evidence/BUILD_SUMMARY.md` | İngilizce kanonik özet. |
 | `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Bu Türkçe paydaş özeti. |
 | `tests/table-first-workbench-smoke.test.js` | Table-first satırlar, row-click navigasyon ve auditee gizlilik sınırları için odaklı smoke testi. |
@@ -53,9 +53,8 @@ servisi, gerçek regülasyon içe aktarma veya gerçek bildirim servisi eklenmed
 
 Demo artık front-end’i üç ana rol bazlı deneyim etrafında sunar:
 
-1. **Inspector Workspace** — günlük operasyon ekranı; atanmış denetimler,
-   kanıt inceleme, CAP review, regülasyon arama, risk sinyalleri ve hızlı
-   aksiyonlar.
+1. **Inspector Workspace** — atanmış denetimler, CAP review ve draft report
+   takibi için sade günlük operasyon yüzeyi.
 2. **Supervisor / Manager Dashboard** — performans, risk, workload, SSP, CAP
    oversight, surveillance planning ve yönetici görünürlüğü.
 3. **Service Provider Portal** — auditee tarafı; bulgular, CAP yükleme,
@@ -67,20 +66,19 @@ Deneyim detayları:
 
 1. **CAA Manager** — Supervisor / Manager Dashboard, yönetim gözetimi, denetim
    planı, bulgular, kuruluşlar, raporlar, SSP/NASP ve CAP effectiveness.
-2. **CAA Inspector** — Inspector Workspace, Today’s Workbench,
-   denetim/checklist yürütme, bulgu açma, CAP/kanıt inceleme, regülasyon arama,
-   AI taslak asistanı ve simüle offline saha ekranı.
+2. **CAA Inspector** — Inspector Workspace, My Inspections ana ekranı,
+   denetim/checklist yürütme, bulgu açma, CAP/kanıt inceleme ve draft report
+   takibi.
 3. **Auditee (Airline XYZ)** — Service Provider Portal; kendi bulguları, CAP
    gönderimi, kanıt dosya adı gönderimi, CAA’ye görünür yorumlar ve closure
    status.
 4. **Admin Preview** — şablonlar, kullanıcılar, ayarlar, audit log ve
    regulatory preview.
 
-Inspector ana ekranı artık **Today’s Workbench** içinde table-first **My Work
-Today** kuyruğu olarak düzenlenmiştir. Kompakt attention strip karar
-sinyallerini görünür tutar; kuyruk satırları priority, organization, lifecycle,
-owner, next action, due date/target, status ve row action bilgilerini taşır.
-Eski A/B/C/D kart bölgeleri ana inspector yüzeyinden kaldırılmıştır.
+Inspector ana ekranı artık sadeleştirilmiş **My Inspections** çalışma alanıdır.
+Bu ana yüzeyde guardrail pill satırı, attention strip ve hızlı aksiyon buton
+satırı saklanır. İlk görünüm dört KPI kartına ve üç sade tabloya odaklanır:
+Assigned Inspections, CAP Reviews ve Draft Reports.
 
 Table-first desen; audit work queue, bulgu ve CAP/evidence review kuyrukları,
 auditee talepleri, yönetici attention listeleri, planning, checklist approvals,
@@ -211,10 +209,11 @@ node --check js/app.js
 Playwright ile `index.html` üzerinde tarayıcı smoke testi yapıldı; konsol hatası yok.
 Doğrulananlar:
 
-- Inspector Workspace'in `Today’s Workbench` ile açılması
-- `Today’s Workbench` içinde table-first `My Work Today` kuyruğu ve kompakt
-  attention strip görünmesi
-- `New inspection` hızlı aksiyonunun New Audit Wizard ekranını açması
+- Inspector Workspace'in sadeleştirilmiş `My Inspections` ile açılması
+- `My Inspections` içinde dört KPI kartı ve üç odaklı tablo görünmesi:
+  Assigned Inspections, CAP Reviews ve Draft Reports
+- eski guardrail pill satırı, attention strip ve hızlı aksiyon buton satırının
+  Inspector ana ekranından saklanması
 - Supervisor / Manager Dashboard ve SSP/NASP dashboard ekranlarının erişilebilir kalması
 - Service Provider Portal çerçevesinin auditee rolünde görünmesi
 - dokuz V2 ekranının role uygun navigasyonla erişilebilir olması
@@ -242,7 +241,7 @@ outboxStatus after refresh: synced_to_demo_state
 reset storage: null
 console errors: []
 mobile scrollWidth/clientWidth: 390/390 on all V2 screens
-Today’s Workbench mobile scrollWidth/clientWidth: 390/390
+My Inspections mobile scrollWidth/clientWidth: 390/390
 Service Provider Portal mobile scrollWidth/clientWidth: 390/390
 ```
 
@@ -418,9 +417,10 @@ değişmedi.
 
 Ekran değişiklikleri:
 
-- **Inspector Today's Workbench** — attention-strip metriklerini tekrarlayan
-  hero kartı kaldırıldı; sayfa artık başlık, guardrail'ler, attention strip,
-  hızlı aksiyonlar ve önceliklendirilmiş `My Work Today` tablosundan oluşuyor.
+- **Inspector My Inspections** — ana inspector yüzeyi dört KPI kartı ile
+  Assigned Inspections, CAP Reviews ve Draft Reports tablolarına sadeleştirildi.
+  Guardrail pill'leri, attention strip ve hızlı aksiyon satırı bu ana ekranda
+  saklandı.
 - **Audit Work Queue** — gereksiz attention strip kaldırıldı; Active/Completed
   filtre chip'leri satır sayılarını doğrudan taşıyor.
 - **Checklist Runner** — progress kartı tek satırlık progress bandına
