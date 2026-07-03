@@ -249,8 +249,12 @@ button { font-family: inherit; }
   width: 230px;
   background: linear-gradient(180deg, #081d35 0%, #09223e 100%);
 }
+.shell--inspector .sidebar__brand {
+  padding: 16px 14px 15px;
+  border-bottom-color: rgba(255,255,255,.12);
+}
 .shell--inspector .sidebar__nav {
-  padding: 92px 14px 16px;
+  padding: 16px 14px;
   gap: 13px;
 }
 .shell--inspector .experience-label { display: none; }
@@ -1866,7 +1870,7 @@ button { font-family: inherit; }
     top: 0;
     height: 100%;
   }
-  .shell--inspector .sidebar__nav { padding-top: 74px; }
+  .shell--inspector .sidebar__nav { padding-top: 16px; }
   .content--inspector {
     padding-top: 18px;
   }

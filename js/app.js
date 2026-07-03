@@ -213,8 +213,8 @@ function render() {
     '<div class="shell' + (state.ui.menuOpen ? ' menu-open' : '') + (inspectorChrome ? ' shell--inspector' : '') + '">' +
       '<div class="sidebar-backdrop" data-act="toggle-menu"></div>' +
       '<aside class="sidebar">' +
-        (inspectorChrome ? '' : '<div class="sidebar__brand"><div class="sidebar__logo">A360</div>' +
-          '<div class="sidebar__brandtext"><b>AviaSurveil360</b><span>OVERSIGHT WORKBENCH</span></div></div>') +
+        '<div class="sidebar__brand"><div class="sidebar__logo">A360</div>' +
+          '<div class="sidebar__brandtext"><b>AviaSurveil360</b><span>OVERSIGHT WORKBENCH</span></div></div>' +
         '<nav class="sidebar__nav"><div class="experience-label">' + esc(EXPERIENCE_LABEL[state.role] || r.name) + '</div>' + navHtml + '</nav>' +
         '<div class="sidebar__foot"><button class="nav-item" data-act="logout">' +
           '<span class="nav-item__icon">⤺</span><span>' + (inspectorChrome ? 'Logout' : 'Role select') + '</span></button>' +
@@ -377,7 +377,7 @@ function inspectorUserBar() {
   var r = ROLES.inspector;
   return '<div class="inspector-userbar">' +
     '<button class="topbar__menu inspector-userbar__menu" data-act="toggle-menu" aria-label="Open menu">☰</button>' +
-    '<button class="inspector-user" data-act="inspector-user-menu">' +
+    '<button class="inspector-user" data-act="nav" data-view="profile">' +
       '<span class="who__avatar" style="background:' + r.color + '">' + esc(r.initials) + '</span>' +
       '<span class="inspector-user__name">' + esc(r.user) + '</span>' +
       '<span class="inspector-user__chev">&#8964;</span>' +
@@ -459,6 +459,7 @@ function handleAction(act, el) {
   var filter = el.getAttribute('data-filter');
   var tab = el.getAttribute('data-tab');
   var q = el.getAttribute('data-q');
+  var status = el.getAttribute('data-status');
 
   switch (act) {
     case 'role': setRole(el.getAttribute('data-role')); break;
@@ -531,8 +532,8 @@ function handleAction(act, el) {
     case 'inspection-save-draft': handleInspectionSaveDraft(id); break;
     case 'inspection-submit-lead': handleInspectionSubmitLead(id); break;
     case 'inspection-section-preview': handleInspectionSectionPreview(id); break;
-    case 'inspection-row-menu': toast('Row actions', 'Mock row actions would open attachment, comment, and finding options here.', 'info'); break;
-    case 'inspector-user-menu': toast('Inspector profile', 'Profile menu is intentionally minimal in this demo workspace.', 'info'); break;
+    case 'inspection-row-menu': handleInspectionRowMenu(id); break;
+    case 'inspection-set-status': handleInspectionSetStatus(id, status); break;
 
     case 'mock-pick': mockPick(el.getAttribute('data-target')); break;
     case 'mock-export': toast('Export simulated', 'A PDF would be generated here. This demo only previews the report.', 'ok'); break;
@@ -583,6 +584,16 @@ function handleInspectionStatusCycle(rowId) {
   render();
 }
 
+function setInspectionStatus(rowId, next) {
+  var row = inspectionWorkspaceRow(rowId);
+  if (!row || !INSPECTOR_EXECUTION_STATUS_META[next]) return false;
+  if (!state.inspectionWorkspaceAnswers) state.inspectionWorkspaceAnswers = {};
+  if (!state.inspectionWorkspaceAnswers[rowId]) state.inspectionWorkspaceAnswers[rowId] = {};
+  state.inspectionWorkspaceAnswers[rowId].status = next;
+  persistAfterAction();
+  return true;
+}
+
 function setInspectionComment(rowId, comment) {
   var row = inspectionWorkspaceRow(rowId);
   if (!row) return;
@@ -590,6 +601,31 @@ function setInspectionComment(rowId, comment) {
   if (!state.inspectionWorkspaceAnswers[rowId]) state.inspectionWorkspaceAnswers[rowId] = {};
   state.inspectionWorkspaceAnswers[rowId].comment = comment || '';
   persistAfterAction();
+}
+
+function handleInspectionRowMenu(rowId) {
+  var row = inspectionWorkspaceRow(rowId);
+  if (!row) return;
+  var statusKey = inspectionExecutionStatus(row);
+  var meta = INSPECTOR_EXECUTION_STATUS_META[statusKey] || INSPECTOR_EXECUTION_STATUS_META.na;
+  var comment = inspectionExecutionComment(row) || 'No comment yet.';
+  var file = row.file || 'No file attached';
+  var body = '<div class="modal__intro"><b>' + esc(row.no) + '</b> ' + esc(row.item) + '</div>' +
+    '<div class="metaline">' +
+      metaItem('Compliance', meta.label) +
+      metaItem('Attached file', file) +
+      metaItem('Comment', comment) +
+    '</div>';
+  var foot = '<button class="btn" data-act="close-modal">Close</button>' +
+    '<button class="btn" data-act="inspection-set-status" data-id="' + esc(row.id) + '" data-status="observed">Mark Observed</button>' +
+    '<button class="btn btn--danger" data-act="inspection-set-status" data-id="' + esc(row.id) + '" data-status="noncompliant">Mark Non-Compliant</button>';
+  openModal(modalShell('Checklist row actions', body, foot));
+}
+
+function handleInspectionSetStatus(rowId, next) {
+  if (!setInspectionStatus(rowId, next)) return;
+  closeModal();
+  render();
 }
 
 function handleInspectionDownload(auditId) {
