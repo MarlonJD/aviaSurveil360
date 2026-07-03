@@ -1465,10 +1465,197 @@ function viewCalendar() {
     renderOpsTable(items, { empty: 'No assigned audits match this filter.' });
 }
 
+/* =========================== Inspector audit execution =========================== */
+var INSPECTOR_EXECUTION_SECTIONS = [
+  { no: '1.', title: 'Safety Policy and Objectives', done: 5, total: 6, active: true },
+  { no: '2.', title: 'Safety Risk Management', done: 4, total: 7 },
+  { no: '3.', title: 'Safety Assurance', done: 6, total: 8 },
+  { no: '4.', title: 'Safety Promotion', done: 3, total: 6 },
+  { no: '5.', title: 'Safety Management Processes', done: 7, total: 9 },
+  { no: '6.', title: 'Emergency Preparedness', done: 4, total: 6 },
+  { no: '7.', title: 'Management of Change', done: 2, total: 4 },
+  { no: '8.', title: 'Continuous Improvement', done: 2, total: 4 }
+];
+
+var INSPECTOR_EXECUTION_ITEMS = [
+  {
+    id: 'sms-1-1',
+    no: '1.1',
+    item: 'Is there an established safety policy?',
+    status: 'compliant',
+    comment: 'Safety policy is established and approved by the accountable manager.',
+    file: 'safety_policy.pdf'
+  },
+  {
+    id: 'sms-1-2',
+    no: '1.2',
+    item: 'Is the safety policy communicated?',
+    status: 'compliant',
+    comment: 'Communicated via email and intranet to all staff.',
+    file: 'email_communication.pdf'
+  },
+  {
+    id: 'sms-1-3',
+    no: '1.3',
+    item: 'Are safety objectives defined?',
+    status: 'observed',
+    comment: 'Objectives are defined, but KPIs are not clearly measurable.',
+    file: 'objectives_snapshot.png'
+  },
+  {
+    id: 'sms-1-4',
+    no: '1.4',
+    item: 'Are safety objectives reviewed?',
+    status: 'noncompliant',
+    comment: 'No evidence of regular review of safety objectives.',
+    file: ''
+  },
+  {
+    id: 'sms-1-5',
+    no: '1.5',
+    item: 'Is accountability for safety assigned?',
+    status: 'compliant',
+    comment: 'Accountabilities are clearly assigned in the organization.',
+    file: 'org_structure.pdf'
+  },
+  {
+    id: 'sms-1-6',
+    no: '1.6',
+    item: 'Is there management commitment to safety?',
+    status: 'na',
+    comment: '',
+    file: ''
+  }
+];
+
+var INSPECTOR_EXECUTION_STATUS_META = {
+  compliant: { label: 'Compliant', cls: 'ok', icon: '&#10003;' },
+  noncompliant: { label: 'Non-Compliant', cls: 'danger', icon: '&#10005;' },
+  observed: { label: 'Observed', cls: 'warn', icon: '&#9678;' },
+  na: { label: 'Not Applicable', cls: 'neutral', icon: '&#8722;' }
+};
+var INSPECTOR_EXECUTION_STATUS_FLOW = ['compliant', 'observed', 'noncompliant', 'na'];
+
+function inspectionExecutionAnswer(row) {
+  var answers = state.inspectionWorkspaceAnswers || {};
+  return answers[row.id] || {};
+}
+
+function inspectionExecutionStatus(row) {
+  return inspectionExecutionAnswer(row).status || row.status;
+}
+
+function inspectionExecutionComment(row) {
+  var answer = inspectionExecutionAnswer(row);
+  return answer.comment !== undefined ? answer.comment : row.comment;
+}
+
+function inspectionExecutionStatusButton(row) {
+  var status = inspectionExecutionStatus(row);
+  var meta = INSPECTOR_EXECUTION_STATUS_META[status] || INSPECTOR_EXECUTION_STATUS_META.na;
+  return '<button class="inspection-status inspection-status--' + esc(meta.cls) + '" data-act="inspection-status-cycle" data-id="' + esc(row.id) + '">' +
+    '<span class="inspection-status__icon">' + meta.icon + '</span>' +
+    '<span>' + esc(meta.label) + '</span>' +
+    '<span class="inspection-status__chev">&#8964;</span>' +
+  '</button>';
+}
+
+function inspectionExecutionFile(row) {
+  if (!row.file) {
+    return '<span class="inspection-file inspection-file--empty"><span class="inspection-file__icon">&#128206;</span>No file attached</span>';
+  }
+  return '<span class="inspection-file"><span class="inspection-file__icon">&#128206;</span>' + esc(row.file) + '</span>';
+}
+
+function inspectionExecutionLegendItem(status) {
+  var meta = INSPECTOR_EXECUTION_STATUS_META[status];
+  return '<div class="inspection-legend__item">' +
+    '<span class="inspection-legend__mark inspection-status--' + esc(meta.cls) + '">' + meta.icon + '</span>' +
+    '<span>' + esc(meta.label) + '</span>' +
+  '</div>';
+}
+
+function viewInspectorAuditExecution(audit) {
+  var org = orgName(audit.orgId);
+  var sectionRows = INSPECTOR_EXECUTION_SECTIONS.map(function (section) {
+    return '<button class="inspection-section' + (section.active ? ' is-active' : '') + '" data-act="inspection-section-preview" data-id="' + esc(section.no) + '">' +
+      '<span>' + esc(section.no + ' ' + section.title) + '</span>' +
+      '<b>' + esc(section.done + ' / ' + section.total) + '</b>' +
+    '</button>';
+  }).join('');
+
+  var checklistRows = INSPECTOR_EXECUTION_ITEMS.map(function (row) {
+    return '<tr>' +
+      '<td>' + esc(row.no) + '</td>' +
+      '<td><div class="inspection-question">' + esc(row.item) + '</div></td>' +
+      '<td>' + inspectionExecutionStatusButton(row) + '</td>' +
+      '<td><textarea class="inspection-comment" data-field="inspection-comment" data-id="' + esc(row.id) +
+        '" placeholder="Add comments (optional)...">' + esc(inspectionExecutionComment(row)) + '</textarea></td>' +
+      '<td>' + inspectionExecutionFile(row) + '</td>' +
+      '<td class="inspection-row-menu"><button class="iconbtn iconbtn--small" data-act="inspection-row-menu" data-id="' + esc(row.id) + '" aria-label="Row actions">&#8942;</button></td>' +
+    '</tr>';
+  }).join('');
+
+  return '' +
+    '<div class="inspection-exec">' +
+      '<button class="inspection-back" data-act="nav" data-view="dashboard">&larr; Back to Inspections</button>' +
+      '<div class="inspection-exec__head">' +
+        '<div>' +
+          '<h1>SMS Oversight Audit</h1>' +
+          '<div class="inspection-title-meta"><span>' + esc(org) + '</span><span>Routine Inspection</span></div>' +
+          '<div class="inspection-status-line">' + demoBadge('In Progress', 'info') + '</div>' +
+        '</div>' +
+        '<div class="inspection-exec__actions">' +
+          '<button class="btn" data-act="inspection-download-checklist" data-id="' + esc(audit.id) + '"><span>&#8681;</span>Download Checklist</button>' +
+          '<button class="btn" data-act="inspection-save-draft" data-id="' + esc(audit.id) + '"><span>&#128190;</span>Save Draft</button>' +
+          '<button class="btn btn--primary" data-act="inspection-submit-lead" data-id="' + esc(audit.id) + '"><span>&#10148;</span>Submit to Lead Inspector</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="inspection-summary-card">' +
+        '<div class="inspection-summary-item"><span class="inspection-summary-icon">&#128197;</span><div><span>Inspection ID</span><b>INS-2026-015</b></div></div>' +
+        '<div class="inspection-summary-item"><span class="inspection-summary-icon">&#128197;</span><div><span>Start Date</span><b>15 Jun 2026</b></div></div>' +
+        '<div class="inspection-summary-item"><span class="inspection-summary-icon">&#128197;</span><div><span>End Date</span><b>18 Jun 2026</b></div></div>' +
+        '<div class="inspection-summary-item inspection-summary-item--wide"><div><span>Checklist Progress</span><b>45 / 60 (75%)</b></div><div class="inspection-progress"><span style="width:75%"></span></div></div>' +
+      '</div>' +
+      '<div class="inspection-workspace">' +
+        '<aside class="inspection-side">' +
+          '<div class="inspection-panel">' +
+            '<h2>Checklist Sections</h2>' +
+            '<div class="inspection-sections">' + sectionRows + '</div>' +
+          '</div>' +
+          '<div class="inspection-panel inspection-legend">' +
+            '<h2>Legend</h2>' +
+            inspectionExecutionLegendItem('compliant') +
+            inspectionExecutionLegendItem('noncompliant') +
+            inspectionExecutionLegendItem('observed') +
+            inspectionExecutionLegendItem('na') +
+          '</div>' +
+        '</aside>' +
+        '<section class="inspection-card">' +
+          '<div class="inspection-card__head">' +
+            '<h2>1. Safety Policy and Objectives</h2>' +
+            '<div class="inspection-card__meta">5 / 6 Completed <span>&#8963;</span></div>' +
+          '</div>' +
+          '<div class="inspection-table-wrap">' +
+            '<table class="inspection-table"><thead><tr>' +
+              '<th style="width:58px">No.</th><th>Checklist Item</th><th style="width:190px">Compliance</th><th>Comments</th><th style="width:180px">Attached File</th><th style="width:44px"></th>' +
+            '</tr></thead><tbody>' + checklistRows + '</tbody></table>' +
+          '</div>' +
+          '<div class="inspection-bottom-nav">' +
+            '<button class="btn" data-act="inspection-section-preview" data-id="previous">&larr; Previous Section</button>' +
+            '<span>Next Section</span>' +
+            '<button class="btn btn--primary" data-act="inspection-section-preview" data-id="next">2. Safety Risk Management &rarr;</button>' +
+          '</div>' +
+        '</section>' +
+      '</div>' +
+    '</div>';
+}
+
 /* =========================== Audit Detail =========================== */
 function viewAuditDetail() {
   var a = auditById(state.params.auditId);
   if (!a) return pageHead('Audit not found', '') + '<div class="empty">This audit could not be found.</div>';
+  if (state.role === 'inspector') return viewInspectorAuditExecution(a);
   var auditFindings = state.findings.filter(function (f) { return f.auditId === a.id; });
   var canRun = (state.role === 'inspector') && (a.status === 'Scheduled' || a.status === 'In Progress' || a.status === 'Planned');
   var runLabel = a.checklistStarted ? 'Continue checklist' : 'Start checklist';

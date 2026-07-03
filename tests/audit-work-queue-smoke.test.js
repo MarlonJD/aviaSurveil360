@@ -42,8 +42,14 @@ assert.match(html, /Start checklist/);
 
 context.state.params = { auditId: 'AUD-2026-001' };
 html = context.viewAuditDetail();
-assert.match(html, /Next action:/);
-assert.match(html, /Start checklist/);
-assert.match(html, /Current owner/);
+assert.match(html, /SMS Oversight Audit/);
+assert.match(html, /Back to Inspections/);
+assert.match(html, /Checklist Sections/);
+assert.match(html, /Safety Policy and Objectives/);
+assert.match(html, /Download Checklist/);
+assert.match(html, /Submit to Lead Inspector/);
+assert.match(html, /45 \/ 60 \(75%\)/);
+assert.match(html, /safety_policy\.pdf/);
+assert.doesNotMatch(html, /Next action:/);
 
 console.log('audit-work-queue-smoke: ok');

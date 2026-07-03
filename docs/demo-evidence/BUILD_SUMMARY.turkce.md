@@ -34,12 +34,12 @@ başlangıç verisine döndürür.
 | Dosya | Amaç |
 |---|---|
 | `index.html` | Demo şeridi artık tarayıcıya kayıtlı frontend-only demo olduğunu ve gerçek backend/AI/regülasyon entegrasyonu olmadığını belirtir. |
-| `css/styles.css` | Rol bazlı çalışma alanları, sadeleştirilmiş Inspector My Inspections ana ekranı, Regulatory Trace, offline outbox, AI taslak kontrolleri ve 390px mobil düzeni. |
+| `css/styles.css` | Rol bazlı çalışma alanları, sadeleştirilmiş Inspector My Inspections ana ekranı, sade Inspector chrome, SMS checklist çalışma alanı, Regulatory Trace, offline outbox, AI taslak kontrolleri ve 390px mobil düzeni. |
 | `js/data.js` | Backend'e yakın sahte kayıtlar, V2 seed verileri, açık status değerleri ve izole `localStorage` demo saklama yardımcıları. |
 | `js/helpers.js` | Seçiciler, status yardımcıları, regulatory trace lookup, outbox yardımcıları ve demo badge yardımcıları. |
 | `js/work-items.js` | Audit, finding, CAP/evidence alt satırları, approval, planning ve admin kuyrukları için ortak table-first iş öğesi hazırlama katmanı. |
-| `js/views.js` | Mevcut ekranlar, sadeleştirilmiş Inspector My Inspections ana ekranı, dokuz V2 ekranı, Service Provider Portal çerçevesi, yeniden kullanılabilir Regulatory Trace görünümü ve table-first iş kuyrukları. |
-| `js/app.js` | Sadeleştirilmiş Inspector navigasyonu dahil rol bazlı deneyim navigasyonu, merkezi kalıcılık çağrıları, simüle offline geçişleri, AI karar geçişleri, stabil ID üretimi ve checklist satır seçimi. |
+| `js/views.js` | Mevcut ekranlar, sadeleştirilmiş Inspector My Inspections ana ekranı, SMS Oversight Audit checklist çalışma alanı, dokuz V2 ekranı, Service Provider Portal çerçevesi, yeniden kullanılabilir Regulatory Trace görünümü ve table-first iş kuyrukları. |
+| `js/app.js` | Sadeleştirilmiş Inspector navigasyonu/chrome'u dahil rol bazlı deneyim navigasyonu, merkezi kalıcılık çağrıları, simüle inspection draft aksiyonları, simüle offline geçişleri, AI karar geçişleri, stabil ID üretimi ve checklist satır seçimi. |
 | `docs/demo-evidence/BUILD_SUMMARY.md` | İngilizce kanonik özet. |
 | `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Bu Türkçe paydaş özeti. |
 | `tests/table-first-workbench-smoke.test.js` | Table-first satırlar, row-click navigasyon ve auditee gizlilik sınırları için odaklı smoke testi. |
@@ -79,6 +79,13 @@ Inspector ana ekranı artık sadeleştirilmiş **My Inspections** çalışma ala
 Bu ana yüzeyde guardrail pill satırı, attention strip ve hızlı aksiyon buton
 satırı saklanır. İlk görünüm dört KPI kartına ve üç sade tabloya odaklanır:
 Assigned Inspections, CAP Reviews ve Draft Reports.
+
+**My Inspections** içindeki **Open** aksiyonu artık Inspector'a özel sade
+**SMS Oversight Audit** çalışma alanına gider. Bu ekran audit başlığını,
+SkyCargo tarzı SMS checklist özetini, checklist bölümlerini, compliance
+kontrollerini, yorum kutularını, sahte attached-file adlarını ve checklist
+indirme, draft kaydetme, Lead Inspector'a gönderme demo aksiyonlarını gösterir.
+Bu aksiyonlar frontend-only kalır; yalnızca demo state / ekran içi mesaj üretir.
 
 Table-first desen; audit work queue, bulgu ve CAP/evidence review kuyrukları,
 auditee talepleri, yönetici attention listeleri, planning, checklist approvals,
@@ -212,6 +219,9 @@ Doğrulananlar:
 - Inspector Workspace'in sadeleştirilmiş `My Inspections` ile açılması
 - `My Inspections` içinde dört KPI kartı ve üç odaklı tablo görünmesi:
   Assigned Inspections, CAP Reviews ve Draft Reports
+- `Open` aksiyonunun Inspector'a özel `SMS Oversight Audit` checklist çalışma
+  alanını göstermesi; checklist sections, compliance kontrolleri, yorumlar,
+  sahte attached-file adları, draft save ve Lead Inspector submit aksiyonları
 - eski guardrail pill satırı, attention strip ve hızlı aksiyon buton satırının
   Inspector ana ekranından saklanması
 - Supervisor / Manager Dashboard ve SSP/NASP dashboard ekranlarının erişilebilir kalması

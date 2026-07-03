@@ -32,12 +32,12 @@ and return to seed data.
 | File | Purpose |
 |---|---|
 | `index.html` | Demo ribbon now states frontend-only browser persistence and no real backend/AI/regulatory integrations. |
-| `css/styles.css` | V2 responsive UI for role-based workspaces, simplified Inspector My Inspections home, regulatory trace ribbons, governance panels, offline outbox, AI draft controls, and 390px mobile behavior. |
+| `css/styles.css` | V2 responsive UI for role-based workspaces, simplified Inspector My Inspections home, simplified Inspector chrome, SMS checklist workspace, regulatory trace ribbons, governance panels, offline outbox, AI draft controls, and 390px mobile behavior. |
 | `js/data.js` | Backend-ready mock records, seed V2 datasets, status values, and isolated `localStorage` demo storage helpers. |
 | `js/helpers.js` | Selectors, status helpers, regulatory trace lookups, outbox helpers, and demo badge helpers. |
 | `js/work-items.js` | Shared table-first work-item shaping for audits, findings, CAP/evidence child rows, approvals, planning items, and admin queues. |
-| `js/views.js` | Existing screens plus simplified Inspector My Inspections home, the nine Frontend V2 screens, Service Provider Portal framing, reusable Regulatory Trace display, and table-first work queues. |
-| `js/app.js` | Role-based experience navigation including simplified Inspector nav, centralized persistence calls, simulated offline transitions, AI decision transitions, stable ID generation, and checklist row selection. |
+| `js/views.js` | Existing screens plus simplified Inspector My Inspections home, the SMS Oversight Audit checklist workspace, the nine Frontend V2 screens, Service Provider Portal framing, reusable Regulatory Trace display, and table-first work queues. |
+| `js/app.js` | Role-based experience navigation including simplified Inspector nav/chrome, centralized persistence calls, simulated inspection draft actions, simulated offline transitions, AI decision transitions, stable ID generation, and checklist row selection. |
 | `docs/demo-evidence/BUILD_SUMMARY.md` | This English canonical build summary. |
 | `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Turkish companion summary for stakeholder handoff. |
 | `docs/exec-plans/index.md` | Updated only if the active plan status / next todo changes. |
@@ -80,6 +80,13 @@ The Inspector home screen is now a simplified **My Inspections** workspace.
 It removes the guardrail pill row, attention strip, and quick-action button row
 from the primary surface. The first viewport now focuses on four KPI cards and
 three plain tables: Assigned Inspections, CAP Reviews, and Draft Reports.
+
+From **My Inspections**, the **Open** action now leads to a simplified
+Inspector-only **SMS Oversight Audit** workspace. It shows the audit title,
+SkyCargo-style SMS checklist summary, checklist sections, compliance controls,
+comment boxes, attached-file names, and demo-only actions for downloading the
+checklist, saving a draft, and submitting to the Lead Inspector. These actions
+remain frontend-only and record only demo state / in-UI messages.
 
 The table-first pattern is also used for the audit work queue, findings and
 CAP/evidence review queues, auditee requests, manager attention lists,
@@ -217,6 +224,9 @@ errors. Verified:
 - Inspector Workspace opens on simplified `My Inspections`
 - `My Inspections` shows four KPI cards and three focused tables: Assigned
   Inspections, CAP Reviews, and Draft Reports
+- the `Open` action renders the Inspector-only `SMS Oversight Audit` checklist
+  workspace with checklist sections, compliance controls, comments, attached
+  mock file names, draft save, and Lead Inspector submit actions
 - the old guardrail pill row, attention strip, and quick-action button row are
   hidden from the Inspector home screen
 - Supervisor / Manager Dashboard and SSP/NASP dashboard remain reachable

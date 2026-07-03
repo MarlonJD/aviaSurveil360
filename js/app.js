@@ -180,6 +180,9 @@ function normalizeViewForRole() {
 /* ----------------------------- Render ----------------------------- */
 function render() {
   var root = document.getElementById('app-root');
+  if (document.body && document.body.classList) {
+    document.body.classList.toggle('is-inspector-experience', state.role === 'inspector');
+  }
   if (!state.role) { root.innerHTML = renderLogin(); return; }
   normalizeViewForRole();
 
@@ -197,6 +200,7 @@ function render() {
 
   var r = ROLES[state.role];
   var unread = unreadCount(state.role);
+  var inspectorChrome = state.role === 'inspector';
 
   var roleOptions = ROLE_ORDER.map(function (k) {
     return '<option value="' + k + '"' + (k === state.role ? ' selected' : '') + '>' + esc(EXPERIENCE_LABEL[k] || ROLES[k].name) +
@@ -206,18 +210,18 @@ function render() {
   var notifPanel = state.ui.notifOpen ? renderNotifPanel() : '';
 
   root.innerHTML =
-    '<div class="shell' + (state.ui.menuOpen ? ' menu-open' : '') + '">' +
+    '<div class="shell' + (state.ui.menuOpen ? ' menu-open' : '') + (inspectorChrome ? ' shell--inspector' : '') + '">' +
       '<div class="sidebar-backdrop" data-act="toggle-menu"></div>' +
       '<aside class="sidebar">' +
-        '<div class="sidebar__brand"><div class="sidebar__logo">A360</div>' +
-          '<div class="sidebar__brandtext"><b>AviaSurveil360</b><span>OVERSIGHT WORKBENCH</span></div></div>' +
+        (inspectorChrome ? '' : '<div class="sidebar__brand"><div class="sidebar__logo">A360</div>' +
+          '<div class="sidebar__brandtext"><b>AviaSurveil360</b><span>OVERSIGHT WORKBENCH</span></div></div>') +
         '<nav class="sidebar__nav"><div class="experience-label">' + esc(EXPERIENCE_LABEL[state.role] || r.name) + '</div>' + navHtml + '</nav>' +
         '<div class="sidebar__foot"><button class="nav-item" data-act="logout">' +
-          '<span class="nav-item__icon">⤺</span><span>Role select</span></button>' +
-          '<div style="padding:8px 11px">Demo data · frontend-only · saved in this browser</div></div>' +
+          '<span class="nav-item__icon">⤺</span><span>' + (inspectorChrome ? 'Logout' : 'Role select') + '</span></button>' +
+          (inspectorChrome ? '' : '<div style="padding:8px 11px">Demo data · frontend-only · saved in this browser</div>') + '</div>' +
       '</aside>' +
       '<div class="main">' +
-        '<header class="topbar">' +
+        (inspectorChrome ? '' : '<header class="topbar">' +
           '<button class="topbar__menu" data-act="toggle-menu" aria-label="Open menu">☰</button>' +
           '<div class="topbar__crumbs">' + crumbs() + '</div>' +
           '<div class="topbar__spacer"></div>' +
@@ -231,8 +235,8 @@ function render() {
           '<div class="who"><div class="who__avatar" style="background:' + r.color + '">' + esc(r.initials) + '</div>' +
             '<div><div class="who__name">' + esc(r.user) + '</div><div class="who__role">' + esc(EXPERIENCE_LABEL[state.role] || r.name) +
             (state.role === 'auditee' ? ' · Airline XYZ' : '') + '</div></div></div>' +
-        '</header>' +
-        '<main class="content">' + renderContent() + '</main>' +
+        '</header>') +
+        '<main class="content' + (inspectorChrome ? ' content--inspector' : '') + '">' + (inspectorChrome ? inspectorUserBar() : '') + renderContent() + '</main>' +
       '</div>' +
     '</div>';
 
@@ -367,6 +371,18 @@ function renderNotifPanel() {
       '<div><div class="notif-item__txt">' + esc(n.text) + '</div><div class="notif-item__time">' + esc(n.time) + '</div></div></div>';
   }).join('') : '<div class="empty">No notifications.</div>';
   return '<div class="notif-panel"><div class="notif-panel__head">Notifications</div>' + rows + '</div>';
+}
+
+function inspectorUserBar() {
+  var r = ROLES.inspector;
+  return '<div class="inspector-userbar">' +
+    '<button class="topbar__menu inspector-userbar__menu" data-act="toggle-menu" aria-label="Open menu">☰</button>' +
+    '<button class="inspector-user" data-act="inspector-user-menu">' +
+      '<span class="who__avatar" style="background:' + r.color + '">' + esc(r.initials) + '</span>' +
+      '<span class="inspector-user__name">' + esc(r.user) + '</span>' +
+      '<span class="inspector-user__chev">&#8964;</span>' +
+    '</button>' +
+  '</div>';
 }
 
 /* ----------------------------- Navigation ----------------------------- */
@@ -510,6 +526,13 @@ function handleAction(act, el) {
     case 'planning-propose-team': handlePlanningProposeTeam(id); break;
     case 'planning-confirm-prep': handlePlanningConfirmPrep(id); break;
     case 'report-approval': handleReportApproval(id, el.getAttribute('data-decision')); break;
+    case 'inspection-status-cycle': handleInspectionStatusCycle(id); break;
+    case 'inspection-download-checklist': handleInspectionDownload(id); break;
+    case 'inspection-save-draft': handleInspectionSaveDraft(id); break;
+    case 'inspection-submit-lead': handleInspectionSubmitLead(id); break;
+    case 'inspection-section-preview': handleInspectionSectionPreview(id); break;
+    case 'inspection-row-menu': toast('Row actions', 'Mock row actions would open attachment, comment, and finding options here.', 'info'); break;
+    case 'inspector-user-menu': toast('Inspector profile', 'Profile menu is intentionally minimal in this demo workspace.', 'info'); break;
 
     case 'mock-pick': mockPick(el.getAttribute('data-target')); break;
     case 'mock-export': toast('Export simulated', 'A PDF would be generated here. This demo only previews the report.', 'ok'); break;
@@ -540,6 +563,57 @@ function setChecklistComment(q, comment) {
   if (!state.checklistAnswers[q]) state.checklistAnswers[q] = {};
   state.checklistAnswers[q].comment = comment || '';
   persistAfterAction();
+}
+
+function inspectionWorkspaceRow(rowId) {
+  if (typeof INSPECTOR_EXECUTION_ITEMS === 'undefined') return null;
+  return INSPECTOR_EXECUTION_ITEMS.filter(function (row) { return row.id === rowId; })[0] || null;
+}
+
+function handleInspectionStatusCycle(rowId) {
+  var row = inspectionWorkspaceRow(rowId);
+  if (!row) return;
+  if (!state.inspectionWorkspaceAnswers) state.inspectionWorkspaceAnswers = {};
+  var current = (state.inspectionWorkspaceAnswers[rowId] && state.inspectionWorkspaceAnswers[rowId].status) || row.status;
+  var idx = INSPECTOR_EXECUTION_STATUS_FLOW.indexOf(current);
+  var next = INSPECTOR_EXECUTION_STATUS_FLOW[(idx + 1) % INSPECTOR_EXECUTION_STATUS_FLOW.length];
+  if (!state.inspectionWorkspaceAnswers[rowId]) state.inspectionWorkspaceAnswers[rowId] = {};
+  state.inspectionWorkspaceAnswers[rowId].status = next;
+  persistAfterAction();
+  render();
+}
+
+function setInspectionComment(rowId, comment) {
+  var row = inspectionWorkspaceRow(rowId);
+  if (!row) return;
+  if (!state.inspectionWorkspaceAnswers) state.inspectionWorkspaceAnswers = {};
+  if (!state.inspectionWorkspaceAnswers[rowId]) state.inspectionWorkspaceAnswers[rowId] = {};
+  state.inspectionWorkspaceAnswers[rowId].comment = comment || '';
+  persistAfterAction();
+}
+
+function handleInspectionDownload(auditId) {
+  addLog('Checklist download simulated', auditId || 'SMS Oversight Audit');
+  persistAfterAction();
+  toast('Checklist ready', 'A checklist PDF download would start here. Demo only - no file is generated.', 'ok');
+}
+
+function handleInspectionSaveDraft(auditId) {
+  addLog('Inspection draft saved', auditId || 'SMS Oversight Audit');
+  persistAfterAction();
+  toast('Draft saved', 'Checklist answers and comments were saved in this browser for the demo.', 'ok');
+}
+
+function handleInspectionSubmitLead(auditId) {
+  addLog('Inspection submitted to Lead Inspector', auditId || 'SMS Oversight Audit');
+  pushNotification('leadInspector', '▦', 'SMS Oversight Audit submitted by John Inspector for lead review.');
+  persistAfterAction();
+  toast('Submitted', 'SMS Oversight Audit was sent to the Lead Inspector review queue (demo).', 'ok');
+}
+
+function handleInspectionSectionPreview(sectionId) {
+  var label = sectionId === 'next' ? 'Safety Risk Management' : (sectionId === 'previous' ? 'Previous section' : 'Checklist section');
+  toast('Section preview', label + ' navigation is staged for this demo screen.', 'info');
 }
 
 function handleMockChecklistEvidence(q) {
@@ -1278,11 +1352,17 @@ document.addEventListener('change', function (e) {
   if (e.target && e.target.getAttribute && e.target.getAttribute('data-field') === 'checklist-comment') {
     setChecklistComment(e.target.getAttribute('data-q'), e.target.value);
   }
+  if (e.target && e.target.getAttribute && e.target.getAttribute('data-field') === 'inspection-comment') {
+    setInspectionComment(e.target.getAttribute('data-id'), e.target.value);
+  }
 });
 
 document.addEventListener('input', function (e) {
   if (e.target && e.target.getAttribute && e.target.getAttribute('data-field') === 'checklist-comment') {
     setChecklistComment(e.target.getAttribute('data-q'), e.target.value);
+  }
+  if (e.target && e.target.getAttribute && e.target.getAttribute('data-field') === 'inspection-comment') {
+    setInspectionComment(e.target.getAttribute('data-id'), e.target.value);
   }
 });
 

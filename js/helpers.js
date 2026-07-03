@@ -240,8 +240,10 @@ function auditOwnerLabel(audit) {
 function auditAssignedToCurrentUser(audit) {
   var r = ROLES[state.role];
   if (!r || !audit) return false;
-  if (audit.lead === r.user) return true;
-  return Array.isArray(audit.team) && audit.team.indexOf(r.user) > -1;
+  var names = [r.user].concat(r.assignmentAliases || []);
+  if (names.indexOf(audit.lead) > -1) return true;
+  if (!Array.isArray(audit.team)) return false;
+  return names.some(function (name) { return audit.team.indexOf(name) > -1; });
 }
 
 function auditTurnInfo(audit) {
