@@ -13,11 +13,24 @@ function stubElement(id) {
       value: '',
       innerHTML: '',
       hidden: false,
+      style: {},
+      parentNode: null,
       addEventListener() {},
+      appendChild(child) { child.parentNode = this; this.child = child; },
+      removeChild(child) { if (this.child === child) this.child = null; child.parentNode = null; },
       closest() { return null; }
     });
   }
   return elements.get(id);
+}
+
+function stubCreatedElement() {
+  return {
+    className: '',
+    innerHTML: '',
+    style: {},
+    parentNode: null
+  };
 }
 
 const context = {
@@ -25,6 +38,7 @@ const context = {
   window: { scrollTo() {} },
   document: {
     addEventListener() {},
+    createElement: stubCreatedElement,
     getElementById: stubElement,
     querySelectorAll() { return []; }
   },
@@ -140,6 +154,38 @@ assert.match(findingsHtml, /AWO-2026-003/);
 assert.match(findingsHtml, /Maintenance task sign-off overdue/);
 assert.doesNotMatch(findingsHtml, /Overdue Findings/);
 assert.doesNotMatch(findingsHtml, /data-filter="overdue"/);
+
+context.state.view = 'findings';
+context.state.params = { filter: 'capreview' };
+context.state.capReviewUi = {
+  expandedId: 'SEC-2026-002',
+  tab: 'details',
+  status: 'all',
+  due: 'all',
+  query: '',
+  decision: '',
+  comment: ''
+};
+context.render();
+const capReviewHtml = elements.get('app-root').innerHTML;
+assert.match(capReviewHtml, /CAP Reviews/);
+assert.match(capReviewHtml, /Search CAP ID, Inspection ID, Organization/);
+assert.match(capReviewHtml, /data-act="cap-review-row"/);
+assert.match(capReviewHtml, /data-field="cap-review-decision"/);
+assert.match(capReviewHtml, /CAP Details/);
+assert.match(capReviewHtml, /Evidence/);
+assert.match(capReviewHtml, /History/);
+assert.match(capReviewHtml, /Finding: F-2026-001/);
+assert.match(capReviewHtml, /Submit Decision/);
+assert.doesNotMatch(capReviewHtml, /Every finding shows owner/);
+
+context.state.capReviewUi.decision = 'accept';
+context.state.capReviewUi.comment = 'CAP is acceptable; evidence remains required.';
+context.handleCapReviewSubmitDecision('SEC-2026-002');
+const acceptedCap = context.findingById('SEC-2026-002');
+assert.equal(acceptedCap.cap.status, 'Accepted');
+assert.equal(acceptedCap.status, 'EVIDENCE_REQUIRED');
+assert.equal(acceptedCap.status === 'CLOSED', false);
 
 context.state.view = 'offline-field';
 context.render();

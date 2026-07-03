@@ -21,6 +21,7 @@ var DEMO_PERSISTENCE_CONFIG = {
     'mock planning approvals',
     'mock checklist approvals',
     'mock potential findings',
+    'lead inspector review decisions and report workflow state',
     'AI accept/edit/reject decisions',
     'selected filters',
     'simulated offline outbox items'
@@ -38,7 +39,7 @@ var ROLES = {
   inspector:        { key: 'inspector',        name: 'Inspector',          user: 'John Inspector', initials: 'JI', color: '#2f6fd6',
                       assignmentAliases: ['Aylin Sezer'],
                       question: 'What do I need to inspect or review today?' },
-  leadInspector:    { key: 'leadInspector',    name: 'Lead Inspector',     user: 'Caner Yildiz', initials: 'CY', color: '#1d4f99',
+  leadInspector:    { key: 'leadInspector',    name: 'Lead Inspector',     user: 'John Lead Inspector', initials: 'JL', color: '#1d4f99',
                       question: 'What needs review, conversion to finding, or report sign-off?' },
   manager:          { key: 'manager',          name: 'Department Manager', user: 'Selin Demir',  initials: 'SD', color: '#6b4fb0',
                       question: 'Where are we exposed, delayed or overloaded?' },
@@ -914,6 +915,57 @@ function freshState() {
     inspectionWorkspaceDownloadedAt: '',
     inspectionWorkspaceDraftSavedAt: '',
     inspectionWorkspaceSubmittedAt: '',
+    capReviewUi: {
+      expandedId: 'SEC-2026-002',
+      tab: 'details',
+      status: 'all',
+      due: 'all',
+      query: '',
+      decision: '',
+      comment: ''
+    },
+    capTrackingUi: {
+      tab: 'overview',
+      reminderSentAt: '',
+      exportedAt: '',
+      selectedFindingId: '',
+      detailTab: 'details',
+      reviewStatus: 'not_effective',
+      reviewComments: 'The submitted CAP does not address all required actions. Training records are still incomplete for some staff. Additional corrective actions are required.',
+      reviewOutcome: 'needs_action',
+      enforcementLevel: 'level2',
+      enforcementJustification: '',
+      internalComment: '',
+      inspectorReviewSentAt: '',
+      leadInspectorRecommendationAt: '',
+      unitEffectiveness: 'partially_effective',
+      unitRecommendationType: 'administrative_penalty',
+      unitRecommendationLevel: 'level2',
+      unitComplianceDueDate: '2026-09-20',
+      unitJustification: 'The CAP has initiated corrective actions; however, updated training records are still incomplete for multiple staff members. Therefore, an administrative penalty is recommended to ensure timely compliance.',
+      unitAttachmentName: '',
+      unitManagerRecommendationAt: '',
+      secondReportPreparedAt: '',
+      submittedToUnitManagerAt: '',
+      submittedToGeneralManagerAt: ''
+    },
+    leadReviewUi: {
+      tab: 'report',
+      section: '1.',
+      downloadedAt: '',
+      finalizedAt: '',
+      reportGeneratedAt: '',
+      reportDraftSavedAt: '',
+      reportSection: 'executive',
+      reportRating: 'Acceptable with CAP',
+      reportRisk: 'Medium',
+      sentToUnitManagerAt: '',
+      workflowComment: '',
+      actionsOpen: false,
+      workflowVersion: 7,
+      overallComment: '',
+      rowReviews: {}
+    },
     findingSeq: 1,              // OPS-2026-00X live counter
     potentialSeq: 1,            // PF-2026-00X live counter
     auditSeq: 9,                // AUD-2026-00X counter for the New Audit Wizard
@@ -964,6 +1016,83 @@ function mergeDemoState(saved) {
   if (!base.inspectionWorkspaceDownloadedAt) base.inspectionWorkspaceDownloadedAt = '';
   if (!base.inspectionWorkspaceDraftSavedAt) base.inspectionWorkspaceDraftSavedAt = '';
   if (!base.inspectionWorkspaceSubmittedAt) base.inspectionWorkspaceSubmittedAt = '';
+  base.capReviewUi = Object.assign({
+    expandedId: 'SEC-2026-002',
+    tab: 'details',
+    status: 'all',
+    due: 'all',
+    query: '',
+    decision: '',
+    comment: ''
+  }, saved.capReviewUi || {});
+  base.capTrackingUi = Object.assign({
+    tab: 'overview',
+    reminderSentAt: '',
+    exportedAt: '',
+    selectedFindingId: '',
+    detailTab: 'details',
+    reviewStatus: 'not_effective',
+    reviewComments: 'The submitted CAP does not address all required actions. Training records are still incomplete for some staff. Additional corrective actions are required.',
+    reviewOutcome: 'needs_action',
+    enforcementLevel: 'level2',
+    enforcementJustification: '',
+    internalComment: '',
+    inspectorReviewSentAt: '',
+    leadInspectorRecommendationAt: '',
+    unitEffectiveness: 'partially_effective',
+    unitRecommendationType: 'administrative_penalty',
+    unitRecommendationLevel: 'level2',
+    unitComplianceDueDate: '2026-09-20',
+    unitJustification: 'The CAP has initiated corrective actions; however, updated training records are still incomplete for multiple staff members. Therefore, an administrative penalty is recommended to ensure timely compliance.',
+    unitAttachmentName: '',
+    unitManagerRecommendationAt: '',
+    secondReportPreparedAt: '',
+    submittedToUnitManagerAt: '',
+    submittedToGeneralManagerAt: ''
+  }, saved.capTrackingUi || {});
+  if (['overview', 'timeline', 'communications', 'documents'].indexOf(base.capTrackingUi.tab) === -1) base.capTrackingUi.tab = 'overview';
+  if (['details', 'history', 'communications', 'documents', 'enforcement'].indexOf(base.capTrackingUi.detailTab) === -1) base.capTrackingUi.detailTab = 'details';
+  base.leadReviewUi = Object.assign({
+    tab: 'report',
+    section: '1.',
+    downloadedAt: '',
+    finalizedAt: '',
+    reportGeneratedAt: '',
+    reportDraftSavedAt: '',
+    reportSection: 'executive',
+    reportRating: 'Acceptable with CAP',
+    reportRisk: 'Medium',
+    sentToUnitManagerAt: '',
+    workflowComment: '',
+    actionsOpen: false,
+    workflowVersion: 7,
+    overallComment: '',
+    rowReviews: {}
+  }, saved.leadReviewUi || {});
+  if (!base.leadReviewUi.rowReviews || typeof base.leadReviewUi.rowReviews !== 'object') base.leadReviewUi.rowReviews = {};
+  if (!base.leadReviewUi.workflowVersion || base.leadReviewUi.workflowVersion < 7) {
+    base.leadReviewUi.tab = 'report';
+    base.leadReviewUi.reportSection = 'executive';
+    base.leadReviewUi.downloadedAt = '';
+    base.leadReviewUi.finalizedAt = '';
+    base.leadReviewUi.reportGeneratedAt = '';
+    base.leadReviewUi.reportDraftSavedAt = '';
+    base.leadReviewUi.sentToUnitManagerAt = '';
+    var seedLeadReport = SEED_AUDIT_REPORTS.filter(function (report) { return report.auditId === 'AUD-2026-005'; })[0];
+    if (seedLeadReport && Array.isArray(base.auditReports)) {
+      for (var reportIndex = 0; reportIndex < base.auditReports.length; reportIndex++) {
+        if (base.auditReports[reportIndex].auditId === 'AUD-2026-005') base.auditReports[reportIndex] = deepClone(seedLeadReport);
+      }
+    }
+  }
+  base.leadReviewUi.workflowVersion = 7;
+  if (!base.leadReviewUi.tab || base.leadReviewUi.tab === 'workflow') base.leadReviewUi.tab = 'report';
+  if (!base.leadReviewUi.section) base.leadReviewUi.section = '1.';
+  if (!base.leadReviewUi.reportSection) base.leadReviewUi.reportSection = 'executive';
+  if (!base.leadReviewUi.reportRating) base.leadReviewUi.reportRating = 'Acceptable with CAP';
+  if (!base.leadReviewUi.reportRisk) base.leadReviewUi.reportRisk = 'Medium';
+  if (!base.leadReviewUi.reportDraftSavedAt) base.leadReviewUi.reportDraftSavedAt = '';
+  if (base.leadReviewUi.actionsOpen === undefined || base.leadReviewUi.actionsOpen === null) base.leadReviewUi.actionsOpen = false;
   if (!base.questionSeq) base.questionSeq = 7;
   if (!base.potentialSeq) base.potentialSeq = 1;
   if (!base.questionTraces) base.questionTraces = deepClone(SEED_QUESTION_TRACES);
