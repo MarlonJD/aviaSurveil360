@@ -1536,6 +1536,122 @@ var INSPECTOR_EXECUTION_STATUS_META = {
 };
 var INSPECTOR_EXECUTION_STATUS_FLOW = ['compliant', 'observed', 'noncompliant', 'na'];
 
+var INSPECTOR_EXECUTION_SECTION_ITEMS = {
+  '2.': [
+    'Are operational hazards formally identified?',
+    'Is the risk assessment method documented?',
+    'Are risk controls assigned to accountable owners?',
+    'Are cargo gate risks reviewed after incidents?',
+    'Are mitigations tracked to completion?',
+    'Is residual risk accepted by authorized staff?',
+    'Are risk records available for CAA review?'
+  ],
+  '3.': [
+    'Are internal audit results reviewed by management?',
+    'Are SMS performance indicators monitored?',
+    'Are corrective actions verified after closure?',
+    'Are trend reviews performed for repeated findings?',
+    'Are contracted activities included in assurance?',
+    'Are audit records retained and traceable?',
+    'Are safety meetings minuted with actions?',
+    'Are assurance outcomes fed back into planning?'
+  ],
+  '4.': [
+    'Is safety communication issued to operational staff?',
+    'Are SMS training needs identified?',
+    'Are safety lessons shared after events?',
+    'Is reporting culture promoted by management?',
+    'Are promotion materials current and controlled?',
+    'Are staff briefings recorded?'
+  ],
+  '5.': [
+    'Is the SMS manual controlled and current?',
+    'Are SMS roles documented in job descriptions?',
+    'Are safety accountabilities reviewed annually?',
+    'Are interfaces with operations documented?',
+    'Are management reviews scheduled?',
+    'Are SMS records indexed and retrievable?',
+    'Are changes to SMS procedures approved?',
+    'Are outsourced process controls documented?',
+    'Are internal CAA observations tracked?'
+  ],
+  '6.': [
+    'Is the emergency response plan current?',
+    'Are emergency contact lists verified?',
+    'Are exercises scheduled and documented?',
+    'Are exercise findings tracked to closure?',
+    'Are emergency roles assigned to named staff?',
+    'Are coordination records available for review?'
+  ],
+  '7.': [
+    'Are operational changes risk assessed before release?',
+    'Are change approvals documented?',
+    'Are affected staff briefed before implementation?',
+    'Are post-implementation reviews completed?'
+  ],
+  '8.': [
+    'Are SMS improvement actions prioritized?',
+    'Are lessons learned recorded after audits?',
+    'Are improvement owners and target dates assigned?',
+    'Are completed improvements verified?'
+  ]
+};
+
+function inspectionExecutionSectionByNo(sectionNo) {
+  return INSPECTOR_EXECUTION_SECTIONS.filter(function (section) { return section.no === sectionNo; })[0] || null;
+}
+
+function inspectionExecutionSectionIndex(sectionNo) {
+  for (var i = 0; i < INSPECTOR_EXECUTION_SECTIONS.length; i++) {
+    if (INSPECTOR_EXECUTION_SECTIONS[i].no === sectionNo) return i;
+  }
+  return 0;
+}
+
+function inspectionExecutionSelectedSection() {
+  var sectionNo = state.inspectionWorkspaceSection || INSPECTOR_EXECUTION_SECTIONS[0].no;
+  return inspectionExecutionSectionByNo(sectionNo) || INSPECTOR_EXECUTION_SECTIONS[0];
+}
+
+function inspectionExecutionResolveSection(sectionId) {
+  var current = inspectionExecutionSelectedSection();
+  var index = inspectionExecutionSectionIndex(current.no);
+  if (sectionId === 'previous') return INSPECTOR_EXECUTION_SECTIONS[Math.max(index - 1, 0)];
+  if (sectionId === 'next') return INSPECTOR_EXECUTION_SECTIONS[Math.min(index + 1, INSPECTOR_EXECUTION_SECTIONS.length - 1)];
+  return inspectionExecutionSectionByNo(sectionId);
+}
+
+function inspectionExecutionGeneratedItems(section) {
+  var titles = INSPECTOR_EXECUTION_SECTION_ITEMS[section.no] || [];
+  var sectionNumber = section.no.replace('.', '');
+  var statusCycle = ['compliant', 'observed', 'compliant', 'noncompliant', 'compliant', 'na', 'observed', 'compliant', 'compliant'];
+  return titles.map(function (title, index) {
+    var itemNo = sectionNumber + '.' + (index + 1);
+    return {
+      id: 'sms-' + sectionNumber + '-' + (index + 1),
+      no: itemNo,
+      item: title,
+      status: statusCycle[index % statusCycle.length],
+      comment: index < section.done ? 'Reviewed during this inspection section.' : '',
+      file: index % 3 === 0 ? 'section_' + sectionNumber + '_evidence_' + (index + 1) + '.pdf' : ''
+    };
+  });
+}
+
+function inspectionExecutionItemsForSection(sectionNo) {
+  if (sectionNo === '1.') return INSPECTOR_EXECUTION_ITEMS;
+  var section = inspectionExecutionSectionByNo(sectionNo) || INSPECTOR_EXECUTION_SECTIONS[0];
+  return inspectionExecutionGeneratedItems(section);
+}
+
+function inspectionExecutionAllItems() {
+  var rows = INSPECTOR_EXECUTION_ITEMS.slice();
+  INSPECTOR_EXECUTION_SECTIONS.forEach(function (section) {
+    if (section.no !== '1.') rows = rows.concat(inspectionExecutionGeneratedItems(section));
+  });
+  return rows;
+}
+
 function inspectionExecutionAnswer(row) {
   var answers = state.inspectionWorkspaceAnswers || {};
   return answers[row.id] || {};
@@ -1553,11 +1669,14 @@ function inspectionExecutionComment(row) {
 function inspectionExecutionStatusButton(row) {
   var status = inspectionExecutionStatus(row);
   var meta = INSPECTOR_EXECUTION_STATUS_META[status] || INSPECTOR_EXECUTION_STATUS_META.na;
-  return '<button class="inspection-status inspection-status--' + esc(meta.cls) + '" data-act="inspection-status-cycle" data-id="' + esc(row.id) + '">' +
-    '<span class="inspection-status__icon">' + meta.icon + '</span>' +
-    '<span>' + esc(meta.label) + '</span>' +
-    '<span class="inspection-status__chev">&#8964;</span>' +
-  '</button>';
+  var options = INSPECTOR_EXECUTION_STATUS_FLOW.map(function (key) {
+    var optionMeta = INSPECTOR_EXECUTION_STATUS_META[key];
+    return '<option value="' + esc(key) + '"' + (key === status ? ' selected' : '') + '>' + esc(optionMeta.label) + '</option>';
+  }).join('');
+  return '<select class="inspection-status-select inspection-status-select--' + esc(meta.cls) +
+    '" data-field="inspection-status" data-id="' + esc(row.id) + '" aria-label="Compliance for ' + esc(row.no) + '">' +
+    options +
+  '</select>';
 }
 
 function inspectionExecutionFile(row) {
@@ -1577,14 +1696,22 @@ function inspectionExecutionLegendItem(status) {
 
 function viewInspectorAuditExecution(audit) {
   var org = orgName(audit.orgId);
+  var activeSection = inspectionExecutionSelectedSection();
+  var activeIndex = inspectionExecutionSectionIndex(activeSection.no);
+  var previousSection = activeIndex > 0 ? INSPECTOR_EXECUTION_SECTIONS[activeIndex - 1] : null;
+  var nextSection = activeIndex < INSPECTOR_EXECUTION_SECTIONS.length - 1 ? INSPECTOR_EXECUTION_SECTIONS[activeIndex + 1] : null;
+  var submitted = !!state.inspectionWorkspaceSubmittedAt;
+  var downloadNote = state.inspectionWorkspaceDownloadedAt ? '<span class="inspection-save-state">Checklist downloaded</span>' : '';
+  var draftNote = state.inspectionWorkspaceDraftSavedAt ? '<span class="inspection-save-state">Draft saved</span>' : '';
+  var submitNote = submitted ? '<span class="inspection-save-state inspection-save-state--submitted">Submitted to Lead Inspector</span>' : '';
   var sectionRows = INSPECTOR_EXECUTION_SECTIONS.map(function (section) {
-    return '<button class="inspection-section' + (section.active ? ' is-active' : '') + '" data-act="inspection-section-preview" data-id="' + esc(section.no) + '">' +
+    return '<button class="inspection-section' + (section.no === activeSection.no ? ' is-active' : '') + '" data-act="inspection-section-preview" data-id="' + esc(section.no) + '">' +
       '<span>' + esc(section.no + ' ' + section.title) + '</span>' +
       '<b>' + esc(section.done + ' / ' + section.total) + '</b>' +
     '</button>';
   }).join('');
 
-  var checklistRows = INSPECTOR_EXECUTION_ITEMS.map(function (row) {
+  var checklistRows = inspectionExecutionItemsForSection(activeSection.no).map(function (row) {
     return '<tr>' +
       '<td>' + esc(row.no) + '</td>' +
       '<td><div class="inspection-question">' + esc(row.item) + '</div></td>' +
@@ -1603,12 +1730,12 @@ function viewInspectorAuditExecution(audit) {
         '<div>' +
           '<h1>SMS Oversight Audit</h1>' +
           '<div class="inspection-title-meta"><span>' + esc(org) + '</span><span>Routine Inspection</span></div>' +
-          '<div class="inspection-status-line">' + demoBadge('In Progress', 'info') + '</div>' +
+          '<div class="inspection-status-line">' + demoBadge(submitted ? 'Submitted' : 'In Progress', submitted ? 'ok' : 'info') + downloadNote + draftNote + submitNote + '</div>' +
         '</div>' +
         '<div class="inspection-exec__actions">' +
           '<button class="btn" data-act="inspection-download-checklist" data-id="' + esc(audit.id) + '"><span>&#8681;</span>Download Checklist</button>' +
           '<button class="btn" data-act="inspection-save-draft" data-id="' + esc(audit.id) + '"><span>&#128190;</span>Save Draft</button>' +
-          '<button class="btn btn--primary" data-act="inspection-submit-lead" data-id="' + esc(audit.id) + '"><span>&#10148;</span>Submit to Lead Inspector</button>' +
+          '<button class="btn btn--primary" data-act="inspection-submit-lead" data-id="' + esc(audit.id) + '"' + (submitted ? ' disabled' : '') + '><span>&#10148;</span>' + (submitted ? 'Submitted' : 'Submit to Lead Inspector') + '</button>' +
         '</div>' +
       '</div>' +
       '<div class="inspection-summary-card">' +
@@ -1633,8 +1760,8 @@ function viewInspectorAuditExecution(audit) {
         '</aside>' +
         '<section class="inspection-card">' +
           '<div class="inspection-card__head">' +
-            '<h2>1. Safety Policy and Objectives</h2>' +
-            '<div class="inspection-card__meta">5 / 6 Completed <span>&#8963;</span></div>' +
+            '<h2>' + esc(activeSection.no + ' ' + activeSection.title) + '</h2>' +
+            '<div class="inspection-card__meta">' + esc(activeSection.done + ' / ' + activeSection.total) + ' Completed <span>&#8963;</span></div>' +
           '</div>' +
           '<div class="inspection-table-wrap">' +
             '<table class="inspection-table"><thead><tr>' +
@@ -1642,9 +1769,9 @@ function viewInspectorAuditExecution(audit) {
             '</tr></thead><tbody>' + checklistRows + '</tbody></table>' +
           '</div>' +
           '<div class="inspection-bottom-nav">' +
-            '<button class="btn" data-act="inspection-section-preview" data-id="previous">&larr; Previous Section</button>' +
-            '<span>Next Section</span>' +
-            '<button class="btn btn--primary" data-act="inspection-section-preview" data-id="next">2. Safety Risk Management &rarr;</button>' +
+            '<button class="btn" data-act="inspection-section-preview" data-id="previous"' + (previousSection ? '' : ' disabled') + '>&larr; ' + esc(previousSection ? previousSection.title : 'Previous Section') + '</button>' +
+            '<span>' + esc(nextSection ? 'Next Section' : 'Final Section') + '</span>' +
+            '<button class="btn btn--primary" data-act="inspection-section-preview" data-id="next"' + (nextSection ? '' : ' disabled') + '>' + esc(nextSection ? nextSection.no + ' ' + nextSection.title : 'All Sections Complete') + ' &rarr;</button>' +
           '</div>' +
         '</section>' +
       '</div>' +

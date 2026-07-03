@@ -161,6 +161,19 @@ instead of expanding this file into a long source list.
 - Prefer task-based navigation over broad enterprise menus.
 - Keep UI suitable for a civil aviation authority: restrained, readable,
   audit-friendly, accessible, and low-clutter.
+- Minimal or simplified UI must never mean removing working behavior,
+  replacing expected controls with inert demo placeholders, or shipping controls
+  that only look interactive. Preserve the user's working flow first; reduce
+  clutter only after verifying that visible buttons, dropdowns, navigation,
+  profile actions, downloads, save/submit actions, and row/section actions still
+  do what their labels and affordances imply.
+- Dropdown-looking controls must open/select like dropdowns, not silently cycle
+  values on click. If a control is staged or unavailable, make it clearly
+  disabled or remove it from the visible flow instead of showing a fake working
+  control.
+- Avoid stacking demo toasts as a substitute for real screen behavior. Important
+  user actions should update visible state, navigation, modal content, generated
+  files, or persisted client-side demo data as appropriate.
 - For mock uploads, display a selected file name only. Do not implement real
   storage.
 - For mock notifications, use in-UI messages or notification cards only. Do not

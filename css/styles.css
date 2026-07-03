@@ -893,6 +893,38 @@ button { font-family: inherit; }
   border-color: #dde3ec;
   background: var(--neutral-bg);
 }
+.inspection-status-select {
+  width: 160px;
+  min-height: 36px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  padding: 0 10px;
+  font: inherit;
+  font-size: 12.8px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--surface);
+}
+.inspection-status-select--ok {
+  color: var(--ok);
+  border-color: #bfe6d0;
+  background: var(--ok-bg);
+}
+.inspection-status-select--danger {
+  color: #cf1f2f;
+  border-color: #f1c5ca;
+  background: #fff0f2;
+}
+.inspection-status-select--warn {
+  color: #c77700;
+  border-color: #efd39a;
+  background: var(--warn-bg);
+}
+.inspection-status-select--neutral {
+  color: var(--neutral-2);
+  border-color: #dde3ec;
+  background: var(--neutral-bg);
+}
 .inspection-comment {
   width: 100%;
   height: 92px;
@@ -948,6 +980,21 @@ button { font-family: inherit; }
   text-align: right;
   color: var(--ink-soft);
   font-size: 13px;
+}
+.inspection-save-state {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 650;
+}
+.inspection-save-state--submitted {
+  background: var(--ok-bg);
+  color: var(--ok);
 }
 
 .dossier-sections {

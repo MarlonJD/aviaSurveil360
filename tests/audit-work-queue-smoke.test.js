@@ -50,6 +50,15 @@ assert.match(html, /Download Checklist/);
 assert.match(html, /Submit to Lead Inspector/);
 assert.match(html, /45 \/ 60 \(75%\)/);
 assert.match(html, /safety_policy\.pdf/);
+assert.match(html, /data-field="inspection-status"/);
+assert.doesNotMatch(html, /inspection-status-cycle/);
 assert.doesNotMatch(html, /Next action:/);
+
+context.state.inspectionWorkspaceSection = '2.';
+html = context.viewAuditDetail();
+assert.match(html, /2\. Safety Risk Management/);
+assert.match(html, /2\.1/);
+assert.match(html, /Are operational hazards formally identified\?/);
+assert.doesNotMatch(html, /1\.1[\s\S]*Is there an established safety policy\?/);
 
 console.log('audit-work-queue-smoke: ok');

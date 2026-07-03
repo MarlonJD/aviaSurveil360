@@ -407,6 +407,7 @@ function unreadCount(role) {
 function toast(title, msg, type) {
   var host = document.getElementById('toast-host');
   if (!host) return;
+  host.innerHTML = '';
   var el = document.createElement('div');
   el.className = 'toast' + (type === 'ok' ? ' is-ok' : type === 'warn' ? ' is-warn' : '');
   var icon = type === 'ok' ? '✅' : type === 'warn' ? '⚠️' : 'ℹ️';

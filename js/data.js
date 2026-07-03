@@ -910,6 +910,10 @@ function freshState() {
     auditLog: deepClone(SEED_AUDIT_LOG),
     checklistAnswers: {},       // { itemId: { answer, comment, findingId } } for the live audit
     inspectionWorkspaceAnswers: {}, // { rowId: { status, comment } } for the simplified inspector workspace
+    inspectionWorkspaceSection: '1.',
+    inspectionWorkspaceDownloadedAt: '',
+    inspectionWorkspaceDraftSavedAt: '',
+    inspectionWorkspaceSubmittedAt: '',
     findingSeq: 1,              // OPS-2026-00X live counter
     potentialSeq: 1,            // PF-2026-00X live counter
     auditSeq: 9,                // AUD-2026-00X counter for the New Audit Wizard
@@ -956,6 +960,10 @@ function mergeDemoState(saved) {
   if (!Array.isArray(base.managedChecklists)) base.managedChecklists = deepClone(SEED_MANAGED_CHECKLISTS);
   if (!Array.isArray(base.questionBank)) base.questionBank = deepClone(SEED_QUESTION_BANK);
   if (!base.inspectionWorkspaceAnswers || typeof base.inspectionWorkspaceAnswers !== 'object') base.inspectionWorkspaceAnswers = {};
+  if (!base.inspectionWorkspaceSection) base.inspectionWorkspaceSection = '1.';
+  if (!base.inspectionWorkspaceDownloadedAt) base.inspectionWorkspaceDownloadedAt = '';
+  if (!base.inspectionWorkspaceDraftSavedAt) base.inspectionWorkspaceDraftSavedAt = '';
+  if (!base.inspectionWorkspaceSubmittedAt) base.inspectionWorkspaceSubmittedAt = '';
   if (!base.questionSeq) base.questionSeq = 7;
   if (!base.potentialSeq) base.potentialSeq = 1;
   if (!base.questionTraces) base.questionTraces = deepClone(SEED_QUESTION_TRACES);

@@ -567,8 +567,8 @@ function setChecklistComment(q, comment) {
 }
 
 function inspectionWorkspaceRow(rowId) {
-  if (typeof INSPECTOR_EXECUTION_ITEMS === 'undefined') return null;
-  return INSPECTOR_EXECUTION_ITEMS.filter(function (row) { return row.id === rowId; })[0] || null;
+  var rows = typeof inspectionExecutionAllItems === 'function' ? inspectionExecutionAllItems() : (typeof INSPECTOR_EXECUTION_ITEMS === 'undefined' ? [] : INSPECTOR_EXECUTION_ITEMS);
+  return rows.filter(function (row) { return row.id === rowId; })[0] || null;
 }
 
 function handleInspectionStatusCycle(rowId) {
@@ -624,32 +624,87 @@ function handleInspectionRowMenu(rowId) {
 
 function handleInspectionSetStatus(rowId, next) {
   if (!setInspectionStatus(rowId, next)) return;
+  if (state.ui) state.ui.inspectionStatusMenu = null;
+  persistAfterAction();
   closeModal();
   render();
 }
 
 function handleInspectionDownload(auditId) {
+  state.inspectionWorkspaceDownloadedAt = new Date().toISOString();
   addLog('Checklist download simulated', auditId || 'SMS Oversight Audit');
   persistAfterAction();
-  toast('Checklist ready', 'A checklist PDF download would start here. Demo only - no file is generated.', 'ok');
+  downloadInspectionChecklist(auditId || 'AUD-2026-005');
+  render();
+  toast('Checklist downloaded', 'Checklist file generated in this browser.', 'ok');
 }
 
 function handleInspectionSaveDraft(auditId) {
+  state.inspectionWorkspaceDraftSavedAt = new Date().toISOString();
   addLog('Inspection draft saved', auditId || 'SMS Oversight Audit');
   persistAfterAction();
-  toast('Draft saved', 'Checklist answers and comments were saved in this browser for the demo.', 'ok');
+  render();
+  toast('Draft saved', 'Checklist answers and comments are saved in this browser.', 'ok');
 }
 
 function handleInspectionSubmitLead(auditId) {
+  if (state.inspectionWorkspaceSubmittedAt) {
+    toast('Already submitted', 'This inspection is already marked submitted to the Lead Inspector.', 'info');
+    return;
+  }
+  state.inspectionWorkspaceSubmittedAt = new Date().toISOString();
   addLog('Inspection submitted to Lead Inspector', auditId || 'SMS Oversight Audit');
   pushNotification('leadInspector', '▦', 'SMS Oversight Audit submitted by John Inspector for lead review.');
   persistAfterAction();
-  toast('Submitted', 'SMS Oversight Audit was sent to the Lead Inspector review queue (demo).', 'ok');
+  render();
+  toast('Submitted', 'SMS Oversight Audit is marked submitted to the Lead Inspector.', 'ok');
 }
 
 function handleInspectionSectionPreview(sectionId) {
-  var label = sectionId === 'next' ? 'Safety Risk Management' : (sectionId === 'previous' ? 'Previous section' : 'Checklist section');
-  toast('Section preview', label + ' navigation is staged for this demo screen.', 'info');
+  var section = typeof inspectionExecutionResolveSection === 'function' ? inspectionExecutionResolveSection(sectionId) : null;
+  if (!section) return;
+  state.inspectionWorkspaceSection = section.no;
+  if (state.ui) state.ui.inspectionStatusMenu = null;
+  persistAfterAction();
+  render();
+}
+
+function inspectionChecklistDownloadText(auditId) {
+  var lines = [
+    'AviaSurveil360 - SMS Oversight Audit Checklist',
+    'Inspection: ' + auditId,
+    'Organization: SkyCargo Air',
+    'Type: Routine Inspection',
+    ''
+  ];
+  var sections = typeof INSPECTOR_EXECUTION_SECTIONS !== 'undefined' ? INSPECTOR_EXECUTION_SECTIONS : [];
+  sections.forEach(function (section) {
+    lines.push(section.no + ' ' + section.title + ' (' + section.done + ' / ' + section.total + ' completed)');
+    var rows = typeof inspectionExecutionItemsForSection === 'function' ? inspectionExecutionItemsForSection(section.no) : [];
+    rows.forEach(function (row) {
+      var meta = INSPECTOR_EXECUTION_STATUS_META[inspectionExecutionStatus(row)] || INSPECTOR_EXECUTION_STATUS_META.na;
+      lines.push('  ' + row.no + ' [' + meta.label + '] ' + row.item);
+      var comment = inspectionExecutionComment(row);
+      if (comment) lines.push('      Comment: ' + comment);
+      if (row.file) lines.push('      File: ' + row.file);
+    });
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+function downloadInspectionChecklist(auditId) {
+  if (typeof document === 'undefined' || typeof Blob === 'undefined' || typeof URL === 'undefined') return;
+  var text = inspectionChecklistDownloadText(auditId);
+  var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = 'SMS_Oversight_Audit_Checklist.txt';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 0);
 }
 
 function handleMockChecklistEvidence(q) {
@@ -1390,6 +1445,9 @@ document.addEventListener('change', function (e) {
   }
   if (e.target && e.target.getAttribute && e.target.getAttribute('data-field') === 'inspection-comment') {
     setInspectionComment(e.target.getAttribute('data-id'), e.target.value);
+  }
+  if (e.target && e.target.getAttribute && e.target.getAttribute('data-field') === 'inspection-status') {
+    handleInspectionSetStatus(e.target.getAttribute('data-id'), e.target.value);
   }
 });
 
