@@ -249,13 +249,13 @@ var SEED_AUDITS = [
   { id: 'AUD-2026-005', ref: 'Security Audit', orgId: 'ORG-SKY', type: 'Aviation Security', domain: 'Security',
     templateId: 'TPL-SEC-2026', date: '2026-05-22', mode: 'On-site', location: 'SkyCargo Terminal',
     lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer', 'Mehmet Aydin'], status: 'In Progress', checklistStarted: true },
-  { id: 'AUD-2026-006', ref: 'Operator Audit', orgId: 'ORG-BLU', type: 'Operator Audit', domain: 'Flight Operations',
+  { id: 'AUD-2026-006', ref: 'License Renewal Review', orgId: 'ORG-BLU', type: 'License Renewal', domain: 'Licensing',
     templateId: 'TPL-FOPS-2026', date: '2026-09-10', mode: 'On-site', location: 'BlueWing HQ',
-    lead: 'Caner Yildiz', team: ['Caner Yildiz'], status: 'Planned', checklistStarted: false },
-  { id: 'AUD-2026-007', ref: 'Dangerous Goods Audit', orgId: 'ORG-XYZ', type: 'Dangerous Goods', domain: 'Dangerous Goods',
+    lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer'], status: 'Planned', checklistStarted: false },
+  { id: 'AUD-2026-007', ref: 'First Application Review', orgId: 'ORG-XYZ', type: 'First Application', domain: 'Certification',
     templateId: 'TPL-FOPS-2026', date: '2026-10-05', mode: 'Remote', location: 'Document review',
     lead: 'Aylin Sezer', team: ['Aylin Sezer'], status: 'Planned', checklistStarted: false },
-  { id: 'AUD-2026-008', ref: 'Q4 Ramp Inspection', orgId: 'ORG-XYZ', type: 'Ramp Inspection', domain: 'Ramp',
+  { id: 'AUD-2026-008', ref: 'Variation / Limitation Review', orgId: 'ORG-XYZ', type: 'Variation / Limitation', domain: 'Licensing',
     templateId: 'TPL-RAMP-2026', date: '2026-11-18', mode: 'On-site', location: 'Apron 1',
     lead: 'Caner Yildiz', team: ['Caner Yildiz'], status: 'Planned', checklistStarted: false }
 ];
@@ -1134,6 +1134,6 @@ function initializeState() {
 }
 
 /* Option lists for the New Audit Wizard. */
-var AUDIT_TYPES = ['Operator Audit', 'Ramp Inspection', 'Continuing Airworthiness', 'Cabin Safety', 'Aviation Security', 'Dangerous Goods'];
-var AUDIT_DOMAINS = ['Flight Operations', 'Ramp', 'Airworthiness', 'Cabin Safety', 'Security', 'Dangerous Goods'];
+var AUDIT_TYPES = ['Operator Audit', 'Ramp Inspection', 'Continuing Airworthiness', 'Cabin Safety', 'Aviation Security', 'Dangerous Goods', 'License Renewal', 'First Application', 'Variation / Limitation', 'License Suspension Review', 'Certificate Amendment'];
+var AUDIT_DOMAINS = ['Flight Operations', 'Ramp', 'Airworthiness', 'Cabin Safety', 'Security', 'Dangerous Goods', 'Licensing', 'Certification'];
 var INSPECTORS = ['Caner Yildiz', 'Aylin Sezer', 'Mehmet Aydin'];

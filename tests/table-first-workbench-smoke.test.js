@@ -45,6 +45,8 @@ assert.match(html, /My Inspections/);
 assert.match(html, /Assigned Inspections/);
 assert.match(html, /CAP Reviews/);
 assert.match(html, /Draft Reports/);
+assert.match(html, /License Renewal/);
+assert.match(html, /First Application/);
 assert.match(html, /class="ops-table inspector-table"/);
 assert.doesNotMatch(html, /Frontend-only demo - saved in this browser/);
 assert.doesNotMatch(html, /New inspection/);
@@ -75,5 +77,17 @@ html = context.viewCalendar();
 assert.match(html, /Audit Work Queue/);
 assert.match(html, /data-act="nav" data-view="audit-detail" data-id="AUD-2026-001"/);
 assert.match(html, /class="ops-table"/);
+
+context.state.role = 'manager';
+context.state.wizard = {
+  step: 1,
+  orgId: context.state.orgs[0].id,
+  type: context.AUDIT_TYPES[0],
+  domain: context.AUDIT_DOMAINS[0]
+};
+html = context.viewAuditWizard();
+assert.match(html, /License Renewal/);
+assert.match(html, /First Application/);
+assert.match(html, /Certificate Amendment/);
 
 console.log('table-first-workbench-smoke: ok');
