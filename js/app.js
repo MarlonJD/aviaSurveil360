@@ -1497,14 +1497,14 @@ function ensureCapTrackingUi() {
       reviewStatus: 'not_effective',
       reviewComments: 'The submitted CAP does not address all required actions. Training records are still incomplete for some staff. Additional corrective actions are required.',
       reviewOutcome: 'needs_action',
-      enforcementLevel: 'level2',
+      enforcementLevel: 'administrative_penalty',
       enforcementJustification: '',
       internalComment: '',
       inspectorReviewSentAt: '',
       leadInspectorRecommendationAt: '',
       unitEffectiveness: 'partially_effective',
       unitRecommendationType: 'administrative_penalty',
-      unitRecommendationLevel: 'level2',
+      unitRecommendationLevel: 'administrative_penalty',
       unitComplianceDueDate: '2026-09-20',
       unitJustification: 'The CAP has initiated corrective actions; however, updated training records are still incomplete for multiple staff members. Therefore, an administrative penalty is recommended to ensure timely compliance.',
       unitAttachmentName: '',
@@ -1526,14 +1526,14 @@ function ensureCapTrackingUi() {
   if (!state.capTrackingUi.reviewStatus) state.capTrackingUi.reviewStatus = 'not_effective';
   if (state.capTrackingUi.reviewComments === undefined || state.capTrackingUi.reviewComments === null) state.capTrackingUi.reviewComments = '';
   if (!state.capTrackingUi.reviewOutcome) state.capTrackingUi.reviewOutcome = 'needs_action';
-  if (!state.capTrackingUi.enforcementLevel) state.capTrackingUi.enforcementLevel = 'level2';
+  if (!state.capTrackingUi.enforcementLevel || state.capTrackingUi.enforcementLevel === 'level2') state.capTrackingUi.enforcementLevel = 'administrative_penalty';
   if (state.capTrackingUi.enforcementJustification === undefined || state.capTrackingUi.enforcementJustification === null) state.capTrackingUi.enforcementJustification = '';
   if (state.capTrackingUi.internalComment === undefined || state.capTrackingUi.internalComment === null) state.capTrackingUi.internalComment = '';
   if (state.capTrackingUi.inspectorReviewSentAt === undefined || state.capTrackingUi.inspectorReviewSentAt === null) state.capTrackingUi.inspectorReviewSentAt = '';
   if (state.capTrackingUi.leadInspectorRecommendationAt === undefined || state.capTrackingUi.leadInspectorRecommendationAt === null) state.capTrackingUi.leadInspectorRecommendationAt = '';
   if (!state.capTrackingUi.unitEffectiveness) state.capTrackingUi.unitEffectiveness = 'partially_effective';
   if (!state.capTrackingUi.unitRecommendationType) state.capTrackingUi.unitRecommendationType = 'administrative_penalty';
-  if (!state.capTrackingUi.unitRecommendationLevel) state.capTrackingUi.unitRecommendationLevel = 'level2';
+  if (!state.capTrackingUi.unitRecommendationLevel || state.capTrackingUi.unitRecommendationLevel === 'level2') state.capTrackingUi.unitRecommendationLevel = 'administrative_penalty';
   if (!state.capTrackingUi.unitComplianceDueDate) state.capTrackingUi.unitComplianceDueDate = '2026-09-20';
   if (state.capTrackingUi.unitJustification === undefined || state.capTrackingUi.unitJustification === null) state.capTrackingUi.unitJustification = '';
   if (state.capTrackingUi.unitAttachmentName === undefined || state.capTrackingUi.unitAttachmentName === null) state.capTrackingUi.unitAttachmentName = '';
@@ -1630,12 +1630,12 @@ function handleCapDetailFieldChange(field, target) {
   if (field === 'cap-detail-review-status') ui.reviewStatus = value || 'not_effective';
   if (field === 'cap-detail-review-comments') ui.reviewComments = value;
   if (field === 'cap-detail-review-outcome') ui.reviewOutcome = value || 'needs_action';
-  if (field === 'cap-detail-enforcement-level') ui.enforcementLevel = value || 'level2';
+  if (field === 'cap-detail-enforcement-level') ui.enforcementLevel = value || 'administrative_penalty';
   if (field === 'cap-detail-enforcement-justification') ui.enforcementJustification = value;
   if (field === 'cap-detail-internal-comment') ui.internalComment = value;
   if (field === 'cap-unit-effectiveness') ui.unitEffectiveness = value || 'partially_effective';
   if (field === 'cap-unit-recommendation-type') ui.unitRecommendationType = value || 'administrative_penalty';
-  if (field === 'cap-unit-recommendation-level') ui.unitRecommendationLevel = value || 'level2';
+  if (field === 'cap-unit-recommendation-level') ui.unitRecommendationLevel = value || 'administrative_penalty';
   if (field === 'cap-unit-compliance-due-date') ui.unitComplianceDueDate = value || '2026-09-20';
   if (field === 'cap-unit-justification') ui.unitJustification = value;
   persistAfterAction();

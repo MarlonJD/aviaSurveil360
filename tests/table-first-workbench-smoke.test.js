@@ -45,8 +45,8 @@ assert.match(html, /My Inspections/);
 assert.match(html, /Assigned Inspections/);
 assert.match(html, /CAP Reviews/);
 assert.match(html, /Draft Reports/);
-assert.match(html, /License Renewal/);
-assert.match(html, /First Application/);
+assert.match(html, /Certificate Renewal/);
+assert.match(html, /Initial Application/);
 assert.match(html, /class="ops-table inspector-table"/);
 assert.doesNotMatch(html, /Frontend-only demo - saved in this browser/);
 assert.doesNotMatch(html, /New inspection/);
@@ -86,8 +86,8 @@ context.state.wizard = {
   domain: context.AUDIT_DOMAINS[0]
 };
 html = context.viewAuditWizard();
-assert.match(html, /License Renewal/);
-assert.match(html, /First Application/);
-assert.match(html, /Certificate Amendment/);
+assert.match(html, /Initial Certification/);
+assert.match(html, /Variation \/ Amendment/);
+assert.match(html, /Remote Inspection/);
 
 console.log('table-first-workbench-smoke: ok');

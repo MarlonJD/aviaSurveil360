@@ -169,11 +169,11 @@ context.render();
 const unitManagerHtml = elements.get('app-root').innerHTML;
 assert.match(unitManagerHtml, /Unit Manager Review - Finding F-2026-002/);
 assert.match(unitManagerHtml, /Review by Inspectors \(2nd Review\)/);
-assert.match(unitManagerHtml, /Recommended Action \/ Enforcement Type/);
-assert.match(unitManagerHtml, /Operational Decisions/);
-assert.match(unitManagerHtml, /Application Decisions/);
-assert.match(unitManagerHtml, /License Renewal/);
-assert.match(unitManagerHtml, /Accept Initial Application/);
+assert.match(unitManagerHtml, /Enforcement Decision/);
+assert.match(unitManagerHtml, /Additional CAP Required/);
+assert.match(unitManagerHtml, /Suspend Specific Privilege/);
+assert.match(unitManagerHtml, /Refuse Renewal/);
+assert.match(unitManagerHtml, /Other Regulatory Action/);
 assert.match(unitManagerHtml, /Submit Recommendation to General Manager/);
 
 context.handleAction('cap-unit-choose-file', dataEl({ 'data-id': 'F-2026-002' }));

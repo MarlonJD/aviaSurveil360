@@ -939,7 +939,7 @@ function viewInspectionPackageBuilder() {
     '<div class="grid grid--main">' +
       '<div class="card"><div class="card__head"><h3>Package Draft</h3><span class="sub">Backend-ready API-shaped mock record</span></div><div class="card__body">' +
         '<div class="metaline mb-16">' + metaItem('Package ID', pkg.id) + metaItem('Organization', org ? org.name : pkg.organizationId) +
-        metaItem('Audit type', pkg.auditType) + metaItem('Domain', pkg.domain) + metaItem('Status', humanStatus(pkg.status)) + '</div>' +
+        metaItem('Application type', pkg.auditType) + metaItem('Domain', pkg.domain) + metaItem('Status', humanStatus(pkg.status)) + '</div>' +
         '<div class="reg-section-title">Proposed checklist questions</div>' + questionRows +
       '</div></div>' +
       '<div class="v2-panel"><h3>Risk Focus</h3><div class="chip-list">' + pkg.riskFocus.map(function (f) { return '<span class="tag-pill">' + esc(f) + '</span>'; }).join('') + '</div>' +
@@ -1316,7 +1316,7 @@ function viewInspectorDashboard() {
       kpiCard('Draft Reports', String(draftReports.length), 'Ready to submit', { view: 'reports', tone: draftReports.length ? 'info' : 'neutral' }) +
     '</div>' +
     '<h2 class="section-heading">Assigned Inspections</h2>' +
-    inspectorTable(['Inspection ID', 'Organization', 'Type', 'Status', 'Due Date', 'Progress', 'Action'], assignedRows, 'No inspections assigned to you.') +
+    inspectorTable(['Inspection ID', 'Organization', 'Application Type', 'Status', 'Due Date', 'Progress', 'Action'], assignedRows, 'No inspections assigned to you.') +
     '<h2 class="section-heading mt-24">CAP Reviews</h2>' +
     inspectorTable(['CAP ID', 'Inspection ID', 'Organization', 'Submitted By', 'Due Date', 'Status', 'Action'], capRows, 'No CAP reviews are pending.') +
     '<h2 class="section-heading mt-24">Draft Reports</h2>' +
@@ -1694,14 +1694,14 @@ function capTrackingUiState() {
     reviewStatus: 'not_effective',
     reviewComments: 'The submitted CAP does not address all required actions. Training records are still incomplete for some staff. Additional corrective actions are required.',
     reviewOutcome: 'needs_action',
-    enforcementLevel: 'level2',
+    enforcementLevel: 'administrative_penalty',
     enforcementJustification: '',
     internalComment: '',
     inspectorReviewSentAt: '',
     leadInspectorRecommendationAt: '',
     unitEffectiveness: 'partially_effective',
     unitRecommendationType: 'administrative_penalty',
-    unitRecommendationLevel: 'level2',
+    unitRecommendationLevel: 'administrative_penalty',
     unitComplianceDueDate: '2026-09-20',
     unitJustification: 'The CAP has initiated corrective actions; however, updated training records are still incomplete for multiple staff members. Therefore, an administrative penalty is recommended to ensure timely compliance.',
     unitAttachmentName: '',
@@ -2110,24 +2110,41 @@ function capDetailWorkflow(ui) {
 }
 
 function capDetailEnforcement(ui, data) {
+  var selectedDecision = ui.enforcementLevel === 'level2' ? 'administrative_penalty' : (ui.enforcementLevel || 'administrative_penalty');
   var options = capReviewSelectOptions([
-    { value: 'level1', label: 'Level 1 - Warning Letter' },
-    { value: 'level2', label: 'Level 2 - Administrative Penalty' },
-    { value: 'level3', label: 'Level 3 - Operational Restrictions' },
-    { value: 'level4', label: 'Level 4 - Certificate Action' }
-  ], ui.enforcementLevel);
+    { value: 'warning_letter', label: 'Warning Letter' },
+    { value: 'administrative_penalty', label: 'Administrative Penalty' },
+    { value: 'additional_cap_required', label: 'Additional CAP Required' },
+    { value: 'increased_surveillance', label: 'Increased Surveillance' },
+    { value: 'follow_up_inspection', label: 'Follow-up Inspection' },
+    { value: 'operational_restriction', label: 'Operational Restriction' },
+    { value: 'suspend_specific_privilege', label: 'Suspend Specific Privilege' },
+    { value: 'suspend_certificate', label: 'Suspend Certificate' },
+    { value: 'revoke_certificate', label: 'Revoke Certificate' },
+    { value: 'reject_application', label: 'Reject Application' },
+    { value: 'refuse_renewal', label: 'Refuse Renewal' },
+    { value: 'other_regulatory_action', label: 'Other Regulatory Action' }
+  ], selectedDecision);
   var cards = [
-    ['level1', 'Level 1 - Warning Letter', 'Written warning and CAP extension.'],
-    ['level2', 'Level 2 - Administrative Penalty', 'Financial penalty according to regulation.'],
-    ['level3', 'Level 3 - Operational Restrictions', 'Limit operations until compliance achieved.'],
-    ['level4', 'Level 4 - Certificate Action', 'Recommend suspension or revocation.']
+    ['warning_letter', 'Warning Letter', 'Written warning and continued CAP tracking.'],
+    ['administrative_penalty', 'Administrative Penalty', 'Penalty recommendation according to configured regulation.'],
+    ['additional_cap_required', 'Additional CAP Required', 'Require revised corrective and preventive action before closure.'],
+    ['increased_surveillance', 'Increased Surveillance', 'Increase oversight frequency until risk is reduced.'],
+    ['follow_up_inspection', 'Follow-up Inspection', 'Schedule verification inspection for finding closure evidence.'],
+    ['operational_restriction', 'Operational Restriction', 'Limit the affected operation until compliance is restored.'],
+    ['suspend_specific_privilege', 'Suspend Specific Privilege', 'Suspend a defined privilege rather than the full certificate.'],
+    ['suspend_certificate', 'Suspend Certificate', 'Recommend certificate suspension through authorized approval.'],
+    ['revoke_certificate', 'Revoke Certificate', 'Recommend revocation through authorized approval.'],
+    ['reject_application', 'Reject Application', 'Reject the related application where requirements are not met.'],
+    ['refuse_renewal', 'Refuse Renewal', 'Refuse renewal where renewal criteria are not satisfied.'],
+    ['other_regulatory_action', 'Other Regulatory Action', 'Escalate to a configured regulatory action outside the standard list.']
   ];
   return '<section class="cap-detail-panel">' +
-    '<h2>Enforcement Options (if CAP not effective)</h2>' +
-    '<div class="form-row"><label>Select Recommended Enforcement</label><select data-field="cap-detail-enforcement-level">' + options + '</select></div>' +
+    '<h2>Enforcement Decision Options (if CAP not effective)</h2>' +
+    '<div class="form-row"><label>Select Recommended Enforcement Decision</label><select data-field="cap-detail-enforcement-level">' + options + '</select></div>' +
     '<div class="cap-detail-enforcement-options">' + cards.map(function (card) {
-      return '<label class="cap-detail-enforcement-option' + (ui.enforcementLevel === card[0] ? ' is-selected' : '') + '">' +
-        '<input type="radio" name="cap-enforcement-level" value="' + esc(card[0]) + '" data-field="cap-detail-enforcement-level"' + (ui.enforcementLevel === card[0] ? ' checked' : '') + '>' +
+      return '<label class="cap-detail-enforcement-option' + (selectedDecision === card[0] ? ' is-selected' : '') + '">' +
+        '<input type="radio" name="cap-enforcement-level" value="' + esc(card[0]) + '" data-field="cap-detail-enforcement-level"' + (selectedDecision === card[0] ? ' checked' : '') + '>' +
         '<span><b>' + esc(card[1]) + '</b><small>' + esc(card[2]) + '</small></span>' +
       '</label>';
     }).join('') + '</div>' +
@@ -2309,18 +2326,37 @@ function capUnitInspectorReviewPanel(data) {
 
 function capUnitRecommendationForm(ui, data) {
   var effectiveness = ui.unitEffectiveness || 'partially_effective';
-  var recommendation = ui.unitRecommendationType || 'administrative_penalty';
-  var levelOptions = capReviewSelectOptions([
-    { value: 'level1', label: 'Level 1 - Warning Letter' },
-    { value: 'level2', label: 'Level 2 - Administrative Penalty' },
-    { value: 'level3', label: 'Level 3 - Operational Restrictions' },
-    { value: 'level4', label: 'Level 4 - Certificate Action' },
-    { value: 'license_renewal', label: 'License Renewal' },
-    { value: 'license_suspension', label: 'License Suspension' },
-    { value: 'accept_initial_application', label: 'Accept Initial Application' },
-    { value: 'accept_with_conditions', label: 'Accept with Conditions' },
-    { value: 'reject_application', label: 'Reject Application' }
-  ], ui.unitRecommendationLevel || 'level2');
+  var legacyDecisionMap = {
+    level1: 'warning_letter',
+    level2: 'administrative_penalty',
+    level3: 'operational_restriction',
+    level4: 'suspend_certificate',
+    operational_restrictions: 'operational_restriction',
+    certificate_action: 'suspend_certificate',
+    license_suspension: 'suspend_certificate',
+    revocation: 'revoke_certificate',
+    accept_initial_application: 'other_regulatory_action',
+    accept_with_conditions: 'additional_cap_required',
+    license_renewal: 'refuse_renewal',
+    variation_limitation: 'operational_restriction'
+  };
+  var recommendation = legacyDecisionMap[ui.unitRecommendationType] || ui.unitRecommendationType || 'administrative_penalty';
+  var selectedDecision = legacyDecisionMap[ui.unitRecommendationLevel] || ui.unitRecommendationLevel || recommendation;
+  var enforcementDecisionOptions = [
+    { value: 'warning_letter', label: 'Warning Letter' },
+    { value: 'administrative_penalty', label: 'Administrative Penalty' },
+    { value: 'additional_cap_required', label: 'Additional CAP Required' },
+    { value: 'increased_surveillance', label: 'Increased Surveillance' },
+    { value: 'follow_up_inspection', label: 'Follow-up Inspection' },
+    { value: 'operational_restriction', label: 'Operational Restriction' },
+    { value: 'suspend_specific_privilege', label: 'Suspend Specific Privilege' },
+    { value: 'suspend_certificate', label: 'Suspend Certificate' },
+    { value: 'revoke_certificate', label: 'Revoke Certificate' },
+    { value: 'reject_application', label: 'Reject Application' },
+    { value: 'refuse_renewal', label: 'Refuse Renewal' },
+    { value: 'other_regulatory_action', label: 'Other Regulatory Action' }
+  ];
+  var levelOptions = capReviewSelectOptions(enforcementDecisionOptions, selectedDecision);
   return '<section class="cap-detail-panel cap-unit-evaluation">' +
     '<h2>Unit Manager Evaluation &amp; Recommendation</h2>' +
     '<p class="muted">Based on the inspectors review and CAP submitted, provide your evaluation and recommendation.</p>' +
@@ -2330,28 +2366,29 @@ function capUnitRecommendationForm(ui, data) {
       capUnitRadio('cap-unit-effectiveness', 'cap-unit-effectiveness', 'partially_effective', effectiveness, 'Partially Effective', 'CAP addresses some issues but additional actions are required.') +
       capUnitRadio('cap-unit-effectiveness', 'cap-unit-effectiveness', 'not_effective', effectiveness, 'Not Effective', 'CAP does not adequately address the finding.') +
     '</div>' +
-    '<h3>Recommended Action / Enforcement Type</h3>' +
+    '<h3>Enforcement Decision</h3>' +
     '<div class="cap-unit-choice-grid">' +
-      '<div><h4>Enforcement / Penalty Options</h4>' +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'warning_letter', recommendation, 'Warning Letter (Level 1)', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'administrative_penalty', recommendation, 'Administrative Penalty (Level 2)', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'operational_restrictions', recommendation, 'Operational Restrictions (Level 3)', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'certificate_action', recommendation, 'Certificate Action (Level 4)', '') +
+      '<div><h4>CAP / Surveillance</h4>' +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'warning_letter', recommendation, 'Warning Letter', '') +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'administrative_penalty', recommendation, 'Administrative Penalty', '') +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'additional_cap_required', recommendation, 'Additional CAP Required', '') +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'increased_surveillance', recommendation, 'Increased Surveillance', '') +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'follow_up_inspection', recommendation, 'Follow-up Inspection', '') +
       '</div>' +
-      '<div><h4>Operational Decisions</h4>' +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'license_renewal', recommendation, 'License Renewal', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'license_suspension', recommendation, 'License Suspension', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'variation_limitation', recommendation, 'Variation / Limitation', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'revocation', recommendation, 'Revocation', '') +
+      '<div><h4>Operational / Certificate</h4>' +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'operational_restriction', recommendation, 'Operational Restriction', '') +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'suspend_specific_privilege', recommendation, 'Suspend Specific Privilege', '') +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'suspend_certificate', recommendation, 'Suspend Certificate', '') +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'revoke_certificate', recommendation, 'Revoke Certificate', '') +
       '</div>' +
-      '<div><h4>Application Decisions</h4>' +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'accept_initial_application', recommendation, 'Accept Initial Application', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'accept_with_conditions', recommendation, 'Accept with Conditions', '') +
+      '<div><h4>Application / Other</h4>' +
         capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'reject_application', recommendation, 'Reject Application', '') +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'refuse_renewal', recommendation, 'Refuse Renewal', '') +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'other_regulatory_action', recommendation, 'Other Regulatory Action', '') +
       '</div>' +
     '</div>' +
     '<div class="cap-unit-form-grid">' +
-      '<div class="form-row"><label>Recommended Enforcement Level</label><select data-field="cap-unit-recommendation-level">' + levelOptions + '</select></div>' +
+      '<div class="form-row"><label>Recommended Enforcement Decision</label><select data-field="cap-unit-recommendation-level">' + levelOptions + '</select></div>' +
       '<div class="form-row"><label>Recommended Due Date for Compliance</label><input type="date" data-field="cap-unit-compliance-due-date" value="' + esc(ui.unitComplianceDueDate || '2026-09-20') + '"></div>' +
       '<div class="form-row cap-unit-justification"><label>Justification / Recommendation Details</label><textarea data-field="cap-unit-justification" rows="5">' + esc(ui.unitJustification || '') + '</textarea></div>' +
       '<div class="form-row"><label>Attachments (Optional)</label><div class="cap-unit-file-row"><span>' + esc(ui.unitAttachmentName || 'No file chosen') + '</span><button class="btn btn--sm" data-act="cap-unit-choose-file" data-id="' + esc(data.id) + '">Choose File</button></div></div>' +
@@ -2949,7 +2986,7 @@ function viewAuditDetail() {
             metaItem('Next action', auditStatusMeta(a).next) +
             metaItem('Current owner', auditOwnerLabel(a)) +
             metaItem('Organization', orgName(a.orgId)) +
-            metaItem('Audit type', a.type) +
+            metaItem('Application type', a.type) +
             metaItem('Domain', a.domain) +
             metaItem('Date', fmtDate(a.date)) +
             metaItem('Mode', a.mode) +
@@ -3760,9 +3797,9 @@ function leadReportSummaryHtml() {
 
 function leadEnforcementMechanismHtml() {
   var rows = [
-    ['High', 'Operational limitations; Increased oversight; Monetary penalty; Suspension of approvals/certificates', 'danger'],
-    ['Medium', 'Corrective Action Plan (CAP); Follow-up audit; Monetary penalty (if repeated)', 'warn'],
-    ['Low', 'Recommendation; Monitoring', 'ok']
+    ['High', 'Operational Restriction; Suspend Specific Privilege; Suspend Certificate; Revoke Certificate', 'danger'],
+    ['Medium', 'Administrative Penalty; Additional CAP Required; Increased Surveillance; Follow-up Inspection', 'warn'],
+    ['Low', 'Warning Letter; Other Regulatory Action', 'ok']
   ];
   return '<div class="lead-side-card"><h2>Enforcement Mechanism</h2>' +
     '<p class="lead-review-muted">If corrective actions are not implemented by the due date, enforcement actions may be applied based on severity and risk.</p>' +
@@ -3911,7 +3948,7 @@ function reportDecisionPanelHtml(report) {
   }
   var enforcement = state.role === 'manager'
     ? '<div class="divider"></div><div class="form-row"><label>Enforcement recommendation only</label><select id="report-enforcement-type-' + esc(report.id) + '">' +
-      '<option value="">No recommendation</option><option>Administrative</option><option>Warning</option><option>Suspension</option><option>Other</option></select></div>' +
+      '<option value="">No recommendation</option><option>Warning Letter</option><option>Administrative Penalty</option><option>Additional CAP Required</option><option>Increased Surveillance</option><option>Follow-up Inspection</option><option>Operational Restriction</option><option>Suspend Specific Privilege</option><option>Suspend Certificate</option><option>Revoke Certificate</option><option>Reject Application</option><option>Refuse Renewal</option><option>Other Regulatory Action</option></select></div>' +
       '<div class="form-row"><label>Recommendation reason</label><textarea id="report-enforcement-reason-' + esc(report.id) + '" placeholder="Recommendation only; never automatic."></textarea></div>'
     : '';
   return '<div class="decision-panel"><div class="decision-panel__title">' + esc(summary.ownerLabel) + ' Decision</div>' +
@@ -4588,7 +4625,7 @@ function viewAuditWizard() {
         state.orgs.map(function (o) { return '<option value="' + o.id + '"' + (w.orgId === o.id ? ' selected' : '') + '>' + esc(o.name) + ' — ' + esc(o.type) + '</option>'; }).join('') +
       '</select></div>' +
       '<div class="form-2col">' +
-        '<div class="form-row"><label>Audit type <span class="req">*</span></label><select id="wz-type">' +
+        '<div class="form-row"><label>Application type <span class="req">*</span></label><select id="wz-type">' +
           AUDIT_TYPES.map(function (t) { return '<option' + (w.type === t ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select></div>' +
         '<div class="form-row"><label>Domain <span class="req">*</span></label><select id="wz-domain">' +
           AUDIT_DOMAINS.map(function (t) { return '<option' + (w.domain === t ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select></div>' +
@@ -4625,7 +4662,7 @@ function viewAuditWizard() {
     bodyHtml =
       '<div class="callout mb-16">Review the audit before scheduling it into the 2026 plan.</div>' +
       '<div class="card"><div class="card__body"><div class="metaline">' +
-        metaItem('Organization', orgN) + metaItem('Audit type', w.type) + metaItem('Domain', w.domain) +
+        metaItem('Organization', orgN) + metaItem('Application type', w.type) + metaItem('Domain', w.domain) +
         metaItem('Date', fmtDate(w.date)) + metaItem('Mode', w.mode || 'On-site') + metaItem('Location', w.location || '—') +
         metaItem('Lead inspector', w.lead) + metaItem('Team', (w.team && w.team.length ? w.team.join(', ') : w.lead)) +
         metaItem('Checklist', tpl ? tpl.name + ' · ' + tpl.version : '—') +

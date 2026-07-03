@@ -234,28 +234,28 @@ var SEED_MANAGED_CHECKLISTS = [
 
 /* ----------------------------- Audits (2026 surveillance plan) ----------------------------- */
 var SEED_AUDITS = [
-  { id: 'AUD-2026-001', ref: '2026 Operator Audit', orgId: 'ORG-XYZ', type: 'Operator Audit', domain: 'Flight Operations',
+  { id: 'AUD-2026-001', ref: '2026 Operator Audit', orgId: 'ORG-XYZ', type: 'Continued Surveillance', domain: 'Flight Operations',
     templateId: 'TPL-FOPS-2026', date: DEMO_TODAY, mode: 'On-site', location: 'Airline XYZ HQ',
     lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer'], status: 'Scheduled', checklistStarted: false },
   { id: 'AUD-2026-002', ref: 'Q1 Ramp Inspection', orgId: 'ORG-SKY', type: 'Ramp Inspection', domain: 'Ramp',
     templateId: 'TPL-RAMP-2026', date: '2026-02-12', mode: 'On-site', location: 'Apron 4',
     lead: 'Caner Yildiz', team: ['Caner Yildiz'], status: 'Report Issued', checklistStarted: true },
-  { id: 'AUD-2026-003', ref: 'Airworthiness Audit', orgId: 'ORG-BLU', type: 'Continuing Airworthiness', domain: 'Airworthiness',
+  { id: 'AUD-2026-003', ref: 'Airworthiness Audit', orgId: 'ORG-BLU', type: 'Periodic Surveillance', domain: 'Airworthiness',
     templateId: 'TPL-AWO-2026', date: '2026-03-20', mode: 'On-site', location: 'BlueWing Hangar 2',
     lead: 'Aylin Sezer', team: ['Aylin Sezer'], status: 'Report Issued', checklistStarted: true },
-  { id: 'AUD-2026-004', ref: 'Cabin Safety Audit', orgId: 'ORG-XYZ', type: 'Cabin Safety', domain: 'Cabin Safety',
+  { id: 'AUD-2026-004', ref: 'Cabin Safety Audit', orgId: 'ORG-XYZ', type: 'Follow-up Inspection', domain: 'Cabin Safety',
     templateId: 'TPL-CAB-2026', date: '2026-04-15', mode: 'On-site', location: 'Airline XYZ Training Centre',
     lead: 'Caner Yildiz', team: ['Caner Yildiz'], status: 'Closed', checklistStarted: true },
-  { id: 'AUD-2026-005', ref: 'Security Audit', orgId: 'ORG-SKY', type: 'Aviation Security', domain: 'Security',
+  { id: 'AUD-2026-005', ref: 'Security Audit', orgId: 'ORG-SKY', type: 'Special Inspection', domain: 'Security',
     templateId: 'TPL-SEC-2026', date: '2026-05-22', mode: 'On-site', location: 'SkyCargo Terminal',
     lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer', 'Mehmet Aydin'], status: 'In Progress', checklistStarted: true },
-  { id: 'AUD-2026-006', ref: 'License Renewal Review', orgId: 'ORG-BLU', type: 'License Renewal', domain: 'Licensing',
+  { id: 'AUD-2026-006', ref: 'Certificate Renewal Review', orgId: 'ORG-BLU', type: 'Certificate Renewal', domain: 'Licensing',
     templateId: 'TPL-FOPS-2026', date: '2026-09-10', mode: 'On-site', location: 'BlueWing HQ',
     lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer'], status: 'Planned', checklistStarted: false },
-  { id: 'AUD-2026-007', ref: 'First Application Review', orgId: 'ORG-XYZ', type: 'First Application', domain: 'Certification',
+  { id: 'AUD-2026-007', ref: 'Initial Application Review', orgId: 'ORG-XYZ', type: 'Initial Application', domain: 'Certification',
     templateId: 'TPL-FOPS-2026', date: '2026-10-05', mode: 'Remote', location: 'Document review',
     lead: 'Aylin Sezer', team: ['Aylin Sezer'], status: 'Planned', checklistStarted: false },
-  { id: 'AUD-2026-008', ref: 'Variation / Limitation Review', orgId: 'ORG-XYZ', type: 'Variation / Limitation', domain: 'Licensing',
+  { id: 'AUD-2026-008', ref: 'Variation / Amendment Review', orgId: 'ORG-XYZ', type: 'Variation / Amendment', domain: 'Licensing',
     templateId: 'TPL-RAMP-2026', date: '2026-11-18', mode: 'On-site', location: 'Apron 1',
     lead: 'Caner Yildiz', team: ['Caner Yildiz'], status: 'Planned', checklistStarted: false }
 ];
@@ -933,14 +933,14 @@ function freshState() {
       reviewStatus: 'not_effective',
       reviewComments: 'The submitted CAP does not address all required actions. Training records are still incomplete for some staff. Additional corrective actions are required.',
       reviewOutcome: 'needs_action',
-      enforcementLevel: 'level2',
+      enforcementLevel: 'administrative_penalty',
       enforcementJustification: '',
       internalComment: '',
       inspectorReviewSentAt: '',
       leadInspectorRecommendationAt: '',
       unitEffectiveness: 'partially_effective',
       unitRecommendationType: 'administrative_penalty',
-      unitRecommendationLevel: 'level2',
+      unitRecommendationLevel: 'administrative_penalty',
       unitComplianceDueDate: '2026-09-20',
       unitJustification: 'The CAP has initiated corrective actions; however, updated training records are still incomplete for multiple staff members. Therefore, an administrative penalty is recommended to ensure timely compliance.',
       unitAttachmentName: '',
@@ -1034,14 +1034,14 @@ function mergeDemoState(saved) {
     reviewStatus: 'not_effective',
     reviewComments: 'The submitted CAP does not address all required actions. Training records are still incomplete for some staff. Additional corrective actions are required.',
     reviewOutcome: 'needs_action',
-    enforcementLevel: 'level2',
+    enforcementLevel: 'administrative_penalty',
     enforcementJustification: '',
     internalComment: '',
     inspectorReviewSentAt: '',
     leadInspectorRecommendationAt: '',
     unitEffectiveness: 'partially_effective',
     unitRecommendationType: 'administrative_penalty',
-    unitRecommendationLevel: 'level2',
+    unitRecommendationLevel: 'administrative_penalty',
     unitComplianceDueDate: '2026-09-20',
     unitJustification: 'The CAP has initiated corrective actions; however, updated training records are still incomplete for multiple staff members. Therefore, an administrative penalty is recommended to ensure timely compliance.',
     unitAttachmentName: '',
@@ -1134,6 +1134,24 @@ function initializeState() {
 }
 
 /* Option lists for the New Audit Wizard. */
-var AUDIT_TYPES = ['Operator Audit', 'Ramp Inspection', 'Continuing Airworthiness', 'Cabin Safety', 'Aviation Security', 'Dangerous Goods', 'License Renewal', 'First Application', 'Variation / Limitation', 'License Suspension Review', 'Certificate Amendment'];
-var AUDIT_DOMAINS = ['Flight Operations', 'Ramp', 'Airworthiness', 'Cabin Safety', 'Security', 'Dangerous Goods', 'Licensing', 'Certification'];
+var AUDIT_TYPES = [
+  'Initial Application',
+  'Initial Certification',
+  'Certificate Renewal',
+  'Variation / Amendment',
+  'Extension of Scope',
+  'Additional Base / Station Approval',
+  'Additional Aircraft Type Approval',
+  'Additional Operation Approval',
+  'Continued Surveillance',
+  'Periodic Surveillance',
+  'Follow-up Inspection',
+  'Special Inspection',
+  'Complaint Investigation',
+  'Occurrence Investigation Support',
+  'Ramp Inspection',
+  'Document Review',
+  'Remote Inspection'
+];
+var AUDIT_DOMAINS = ['Flight Operations', 'Ramp', 'Airworthiness', 'Cabin Safety', 'Security', 'Dangerous Goods', 'Licensing', 'Certification', 'Surveillance', 'Investigation', 'Document Review'];
 var INSPECTORS = ['Caner Yildiz', 'Aylin Sezer', 'Mehmet Aydin'];
