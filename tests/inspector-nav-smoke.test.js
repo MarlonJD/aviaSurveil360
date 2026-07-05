@@ -33,6 +33,12 @@ function stubCreatedElement() {
   };
 }
 
+function dataEl(attrs) {
+  return {
+    getAttribute(name) { return attrs[name] || ''; }
+  };
+}
+
 const context = {
   console,
   window: { scrollTo() {} },
@@ -173,19 +179,112 @@ context.state.capReviewUi = {
 };
 context.render();
 const capReviewHtml = elements.get('app-root').innerHTML;
-assert.match(capReviewHtml, /CAP Reviews/);
-assert.match(capReviewHtml, /Search CAP ID, Inspection ID, Organization/);
-assert.match(capReviewHtml, /data-act="cap-review-row"/);
-assert.match(capReviewHtml, /data-field="cap-review-decision"/);
-assert.match(capReviewHtml, /CAP Details/);
-assert.match(capReviewHtml, /Evidence/);
-assert.match(capReviewHtml, /History/);
-assert.match(capReviewHtml, /Finding: F-2026-001/);
-assert.match(capReviewHtml, /aria-label="Selected CAP review details"/);
+assert.match(capReviewHtml, /CAP Review/);
+assert.match(capReviewHtml, /Select an organization to review its CAPs/);
+assert.match(capReviewHtml, /INS-2026-014/);
+assert.match(capReviewHtml, /2\.0 \(CAP Submitted\)/);
+assert.match(capReviewHtml, /CAP Submitted On/);
+assert.match(capReviewHtml, /27 Jun 2026 09:15/);
+assert.match(capReviewHtml, /SkyCargo Air/);
+assert.match(capReviewHtml, /Service Provider/);
+assert.match(capReviewHtml, /SkyCargo Ground Handling Ltd\./);
+assert.match(capReviewHtml, /SkyFuel Services/);
+assert.match(capReviewHtml, /SkySecurity Services/);
+assert.match(capReviewHtml, /SkyCatering Ltd\./);
+assert.match(capReviewHtml, /data-act="cap-review-provider"/);
+assert.match(capReviewHtml, /CAPs for SkyCargo Air \(Service Provider\)/);
+assert.match(capReviewHtml, /All CAPs \(9\)/);
+assert.match(capReviewHtml, /Pending Review \(9\)/);
+assert.match(capReviewHtml, /Access control to restricted areas/);
+assert.match(capReviewHtml, /Screening procedure compliance/);
+assert.match(capReviewHtml, /Emergency exit signage/);
+assert.match(capReviewHtml, /Housekeeping in operational areas/);
+assert.match(capReviewHtml, /Level Due Date Guide/);
+assert.match(capReviewHtml, /Review Timeline/);
+assert.match(capReviewHtml, /Please review each CAP and take appropriate action/);
+assert.match(capReviewHtml, /data-view="cap-review-detail"/);
 assert.doesNotMatch(capReviewHtml, /cap-review-expanded-row/);
-assert.match(capReviewHtml, /Submit Decision/);
+assert.doesNotMatch(capReviewHtml, /data-field="cap-review-decision"/);
+assert.doesNotMatch(capReviewHtml, /Submit Decision/);
 assert.doesNotMatch(capReviewHtml, /Every finding shows owner/);
 
+context.handleCapReviewProvider('skyfuel');
+const skyFuelHtml = elements.get('app-root').innerHTML;
+assert.match(skyFuelHtml, /CAPs for SkyFuel Services \(Fuel Services\)/);
+assert.match(skyFuelHtml, /All CAPs \(3\)/);
+assert.match(skyFuelHtml, /Fuel quality sampling records incomplete/);
+
+context.state.role = 'inspector';
+context.state.view = 'cap-review-detail';
+context.state.params = { findingId: 'F-014-01' };
+context.state.capTrackingUi = {
+  tab: 'overview',
+  detailTab: 'details',
+  selectedFindingId: 'F-014-01',
+  inspectorPackageEvaluation: 'acceptable',
+  inspectorPackageComment: ''
+};
+context.render();
+const inspectorSubmittedCapDetailHtml = elements.get('app-root').innerHTML;
+assert.match(inspectorSubmittedCapDetailHtml, /CAP Review - Access control to restricted areas \(F-014-01\)/);
+assert.match(inspectorSubmittedCapDetailHtml, /Level 1 \(Critical\)/);
+assert.match(inspectorSubmittedCapDetailHtml, /Pending Review/);
+assert.match(inspectorSubmittedCapDetailHtml, /Finding Information/);
+assert.match(inspectorSubmittedCapDetailHtml, /Service Provider Corrective Action Plan \(CAP\)/);
+assert.match(inspectorSubmittedCapDetailHtml, /Inspector Evaluation/);
+assert.match(inspectorSubmittedCapDetailHtml, /Finding Snapshot/);
+assert.match(inspectorSubmittedCapDetailHtml, /Attachments \(2\)/);
+assert.match(inspectorSubmittedCapDetailHtml, /Review Timeline/);
+assert.match(inspectorSubmittedCapDetailHtml, /Request Revision/);
+assert.match(inspectorSubmittedCapDetailHtml, /Reject CAP/);
+assert.match(inspectorSubmittedCapDetailHtml, /Accept CAP/);
+assert.match(inspectorSubmittedCapDetailHtml, /data-act="inspector-cap-package-accept"/);
+
+context.handleAction('inspector-cap-package-accept', dataEl({ 'data-id': 'F-014-01' }));
+const leadFinalReadyHtml = elements.get('app-root').innerHTML;
+assert.equal(context.state.role, 'leadInspector');
+assert.equal(context.state.view, 'audit-reports');
+assert.equal(context.state.params.filter, 'final');
+assert.equal(context.state.capTrackingUi.finalReportReadyAt, '30 Jun 2026 16:20');
+assert.match(leadFinalReadyHtml, /Final Reports - Ready for Preparation/);
+assert.match(leadFinalReadyHtml, /All CAPs Approved/);
+assert.match(leadFinalReadyHtml, /All CAPs have been reviewed and approved by all authorities/);
+assert.match(leadFinalReadyHtml, /CAP Summary \(All Organizations\)/);
+assert.match(leadFinalReadyHtml, /Organizations Included in this Inspection/);
+assert.match(leadFinalReadyHtml, /Final Report Preparation/);
+assert.match(leadFinalReadyHtml, /Prepare \/ Edit Final Report/);
+assert.match(leadFinalReadyHtml, /Approval Status/);
+
+context.handleAction('final-report-ready-action', dataEl({ 'data-final-action': 'prepare' }));
+const leadFinalPrepareHtml = elements.get('app-root').innerHTML;
+assert.ok(context.state.capTrackingUi.finalReportPreparedAt);
+assert.equal(context.state.view, 'final-report-prepare');
+assert.match(leadFinalPrepareHtml, /Report Content/);
+assert.match(leadFinalPrepareHtml, /All CAPs Approved/);
+assert.match(leadFinalPrepareHtml, /1\. Executive Summary/);
+assert.match(leadFinalPrepareHtml, /Back to Final Report Submission/);
+assert.match(leadFinalPrepareHtml, /Save & Continue to Review/);
+assert.match(leadFinalPrepareHtml, /Provide a high-level overview/);
+assert.match(leadFinalPrepareHtml, /data-field="final-report-content"/);
+assert.match(leadFinalPrepareHtml, /Report Progress/);
+assert.match(leadFinalPrepareHtml, /Report Summary/);
+assert.match(leadFinalPrepareHtml, /CAPs Approved/);
+assert.match(leadFinalPrepareHtml, /Attachments \(5\)/);
+assert.match(leadFinalPrepareHtml, /Next Section/);
+
+context.handleAction('final-report-prepare-next', dataEl({}));
+const leadFinalPrepareNextHtml = elements.get('app-root').innerHTML;
+assert.equal(context.state.capTrackingUi.finalReportPrepareStep, 'overview');
+assert.match(leadFinalPrepareNextHtml, /2\. Inspection Overview/);
+assert.match(leadFinalPrepareNextHtml, /Next Section/);
+
+context.handleAction('final-report-prepare-review', dataEl({}));
+const leadFinalPrepareReviewHtml = elements.get('app-root').innerHTML;
+assert.equal(context.state.capTrackingUi.finalReportPrepareStep, 'review');
+assert.ok(context.state.capTrackingUi.finalReportSavedAt);
+assert.match(leadFinalPrepareReviewHtml, /Review &amp; Submit/);
+
+context.state.role = 'inspector';
 context.state.view = 'cap-review-detail';
 context.state.params = { findingId: 'F-2026-002' };
 context.state.capTrackingUi = {

@@ -104,4 +104,24 @@ assert.match(html, /View CAP/);
 assert.equal(context.state.notifications[0].role, 'inspector');
 assert.match(context.state.notifications[0].text, /SkyCargo Air submitted a CAP/);
 
+context.state.role = 'inspector';
+context.state.view = 'findings';
+context.state.params = { filter: 'capreview' };
+context.state.selectedFilters.findings = 'capreview';
+context.render();
+html = elements.get('app-root').innerHTML;
+assert.match(html, /CAP Review/);
+assert.match(html, /Select Organization/);
+assert.match(html, /SkyCargo Air/);
+assert.match(html, /Service Provider/);
+assert.match(html, /CAPs for SkyCargo Air \(Service Provider\)/);
+assert.match(html, /All CAPs \(9\)/);
+assert.match(html, /Pending Review \(9\)/);
+assert.match(html, /Access control to restricted areas/);
+assert.match(html, /CAP Submitted On/);
+assert.match(html, /27 Jun 2026 09:15/);
+assert.match(html, /Level Due Date Guide/);
+assert.match(html, /Review Timeline/);
+assert.match(html, /data-view="cap-review-detail"/);
+
 console.log('service-provider-final-report-smoke: ok');

@@ -117,7 +117,7 @@ var VIEW_TITLES = {
   'checklist-approvals': 'Checklist Approvals', 'question-bank': 'Question Bank',
   'checklist-builder': 'Checklist Builder', 'checklist-versions': 'Version History',
   'lead-review': 'Lead Inspector Review', 'planning-board': 'Planning',
-  'audit-reports': 'Audit Reports', 'cap-review-detail': 'CAP Review',
+  'audit-reports': 'Audit Reports', 'cap-review-detail': 'CAP Review', 'final-report-prepare': 'Prepare Final Report',
   'unit-manager-review': 'Department Manager Approval'
 };
 
@@ -445,6 +445,7 @@ function renderContent() {
     case 'unit-manager-review': return viewUnitManagerCapReview();
     case 'planning-board': return viewPlanningBoard();
     case 'audit-reports': return viewAuditReportsApproval();
+    case 'final-report-prepare': return viewLeadFinalReportPrepare();
     case 'calendar': return viewCalendar();
     case 'audit-detail': return viewAuditDetail();
     case 'checklist': return viewChecklistRunner();
@@ -725,6 +726,7 @@ function handleAction(act, el) {
     case 'service-report-confirm-cap': handleServiceProviderConfirmCap(id); break;
     case 'service-report-view-finding': handleServiceProviderViewFinding(id); break;
     case 'service-report-document': handleServiceProviderDocument(id); break;
+    case 'cap-review-provider': handleCapReviewProvider(id); break;
     case 'cap-review-row': handleCapReviewRow(id); break;
     case 'cap-review-tab': handleCapReviewTab(id, tab); break;
     case 'cap-review-filter': handleCapReviewQuickFilter(status); break;
@@ -743,6 +745,16 @@ function handleAction(act, el) {
     case 'cap-detail-request-revision': handleCapDetailRequestRevision(id); break;
     case 'cap-detail-request-more-evidence': handleCapDetailRequestMoreEvidence(id); break;
     case 'cap-detail-prepare-second-report': handleCapDetailPrepareSecondReport(id); break;
+    case 'inspector-cap-package-accept': handleInspectorCapPackageDecision(id, 'accept'); break;
+    case 'inspector-cap-package-revision': handleInspectorCapPackageDecision(id, 'revision'); break;
+    case 'inspector-cap-package-reject': handleInspectorCapPackageDecision(id, 'reject'); break;
+    case 'final-report-ready-action': handleFinalReportReadyAction(el.getAttribute('data-final-action')); break;
+    case 'final-report-prepare-step': handleFinalReportPrepareStep(el.getAttribute('data-step')); break;
+    case 'final-report-prepare-next': handleFinalReportPrepareNext(); break;
+    case 'final-report-prepare-back': handleFinalReportPrepareBack(); break;
+    case 'final-report-prepare-save': handleFinalReportPrepareSave(); break;
+    case 'final-report-prepare-review': handleFinalReportPrepareReview(); break;
+    case 'final-report-prepare-submit': handleFinalReportPrepareSubmit(); break;
     case 'cap-detail-submit-general-manager': handleCapDetailSubmitGeneralManager(id); break;
     case 'cap-lead-save': handleCapLeadSave(id); break;
     case 'cap-lead-return': handleCapLeadReturn(id); break;
@@ -1991,6 +2003,7 @@ function ensureCapReviewUi() {
       status: 'all',
       due: 'all',
       query: '',
+      selectedProviderId: 'skycargo-air',
       decision: '',
       comment: ''
     };
@@ -1999,9 +2012,22 @@ function ensureCapReviewUi() {
   if (!state.capReviewUi.status) state.capReviewUi.status = 'all';
   if (!state.capReviewUi.due) state.capReviewUi.due = 'all';
   if (state.capReviewUi.query === undefined || state.capReviewUi.query === null) state.capReviewUi.query = '';
+  if (!state.capReviewUi.selectedProviderId) state.capReviewUi.selectedProviderId = 'skycargo-air';
   if (state.capReviewUi.decision === undefined || state.capReviewUi.decision === null) state.capReviewUi.decision = '';
   if (state.capReviewUi.comment === undefined || state.capReviewUi.comment === null) state.capReviewUi.comment = '';
   return state.capReviewUi;
+}
+
+function handleCapReviewProvider(id) {
+  var ui = ensureCapReviewUi();
+  ui.selectedProviderId = id || 'skycargo-air';
+  ui.status = 'all';
+  ui.due = 'all';
+  ui.query = '';
+  ui.expandedId = '';
+  ui.tab = 'details';
+  persistAfterAction();
+  render();
 }
 
 function handleCapReviewRow(id) {
@@ -2183,6 +2209,17 @@ function ensureCapTrackingUi() {
       unitManagerRecommendationAt: '',
       departmentManagerApprovedAt: '',
       findingClosedAt: '',
+      inspectorPackageDecision: '',
+      inspectorPackageEvaluation: 'acceptable',
+      inspectorPackageComment: '',
+      inspectorPackageAcceptedAt: '',
+      allCapsApprovedAt: '',
+      finalReportReadyAt: '',
+      finalReportPreparedAt: '',
+      finalReportPrepareStep: 'executive',
+      finalReportContent: '',
+      finalReportSavedAt: '',
+      finalReportSubmittedAt: '',
       secondReportPreparedAt: '',
       submittedToUnitManagerAt: '',
       submittedToGeneralManagerAt: ''
@@ -2191,7 +2228,7 @@ function ensureCapTrackingUi() {
   if (['overview', 'timeline', 'communications', 'documents'].indexOf(state.capTrackingUi.tab) === -1) {
     state.capTrackingUi.tab = 'overview';
   }
-  if (['details', 'evidence', 'assessment', 'history', 'communications', 'documents', 'enforcement'].indexOf(state.capTrackingUi.detailTab) === -1) {
+  if (['details', 'cap', 'evaluation', 'attachments', 'evidence', 'assessment', 'history', 'communications', 'documents', 'enforcement'].indexOf(state.capTrackingUi.detailTab) === -1) {
     state.capTrackingUi.detailTab = 'details';
   }
   if (state.capTrackingUi.reminderSentAt === undefined || state.capTrackingUi.reminderSentAt === null) state.capTrackingUi.reminderSentAt = '';
@@ -2224,6 +2261,17 @@ function ensureCapTrackingUi() {
   if (state.capTrackingUi.unitManagerRecommendationAt === undefined || state.capTrackingUi.unitManagerRecommendationAt === null) state.capTrackingUi.unitManagerRecommendationAt = '';
   if (state.capTrackingUi.departmentManagerApprovedAt === undefined || state.capTrackingUi.departmentManagerApprovedAt === null) state.capTrackingUi.departmentManagerApprovedAt = '';
   if (state.capTrackingUi.findingClosedAt === undefined || state.capTrackingUi.findingClosedAt === null) state.capTrackingUi.findingClosedAt = '';
+  if (state.capTrackingUi.inspectorPackageDecision === undefined || state.capTrackingUi.inspectorPackageDecision === null) state.capTrackingUi.inspectorPackageDecision = '';
+  if (!state.capTrackingUi.inspectorPackageEvaluation) state.capTrackingUi.inspectorPackageEvaluation = 'acceptable';
+  if (state.capTrackingUi.inspectorPackageComment === undefined || state.capTrackingUi.inspectorPackageComment === null) state.capTrackingUi.inspectorPackageComment = '';
+  if (state.capTrackingUi.inspectorPackageAcceptedAt === undefined || state.capTrackingUi.inspectorPackageAcceptedAt === null) state.capTrackingUi.inspectorPackageAcceptedAt = '';
+  if (state.capTrackingUi.allCapsApprovedAt === undefined || state.capTrackingUi.allCapsApprovedAt === null) state.capTrackingUi.allCapsApprovedAt = '';
+  if (state.capTrackingUi.finalReportReadyAt === undefined || state.capTrackingUi.finalReportReadyAt === null) state.capTrackingUi.finalReportReadyAt = '';
+  if (state.capTrackingUi.finalReportPreparedAt === undefined || state.capTrackingUi.finalReportPreparedAt === null) state.capTrackingUi.finalReportPreparedAt = '';
+  if (!state.capTrackingUi.finalReportPrepareStep) state.capTrackingUi.finalReportPrepareStep = 'executive';
+  if (state.capTrackingUi.finalReportContent === undefined || state.capTrackingUi.finalReportContent === null) state.capTrackingUi.finalReportContent = '';
+  if (state.capTrackingUi.finalReportSavedAt === undefined || state.capTrackingUi.finalReportSavedAt === null) state.capTrackingUi.finalReportSavedAt = '';
+  if (state.capTrackingUi.finalReportSubmittedAt === undefined || state.capTrackingUi.finalReportSubmittedAt === null) state.capTrackingUi.finalReportSubmittedAt = '';
   if (state.capTrackingUi.secondReportPreparedAt === undefined || state.capTrackingUi.secondReportPreparedAt === null) state.capTrackingUi.secondReportPreparedAt = '';
   if (state.capTrackingUi.submittedToUnitManagerAt === undefined || state.capTrackingUi.submittedToUnitManagerAt === null) state.capTrackingUi.submittedToUnitManagerAt = '';
   if (state.capTrackingUi.submittedToGeneralManagerAt === undefined || state.capTrackingUi.submittedToGeneralManagerAt === null) state.capTrackingUi.submittedToGeneralManagerAt = '';
@@ -2385,6 +2433,52 @@ function handleCapDetailRequestMoreEvidence(id) {
   toast('More evidence requested', 'The service provider would receive an evidence request in this demo.', 'warn');
 }
 
+function handleInspectorCapPackageDecision(id, decision) {
+  var ui = ensureCapTrackingUi();
+  var findingId = id || ui.selectedFindingId || state.params.findingId || 'F-014-01';
+  var comment = val('inspector-cap-package-comment');
+  var evaluation = val('inspector-cap-package-evaluation') || 'acceptable';
+  ui.selectedFindingId = findingId;
+  ui.inspectorPackageDecision = decision;
+  ui.inspectorPackageEvaluation = evaluation;
+  ui.inspectorPackageComment = comment;
+  ui.inspectorReviewSentAt = logTimestamp();
+  if (decision === 'accept') {
+    ui.inspectorPackageAcceptedAt = '30 Jun 2026 10:15';
+    ui.leadInspectorRecommendationAt = '30 Jun 2026 11:40';
+    ui.submittedToUnitManagerAt = '30 Jun 2026 11:40';
+    ui.departmentManagerApprovedAt = '30 Jun 2026 13:05';
+    ui.submittedToGeneralManagerAt = '30 Jun 2026 14:30';
+    ui.finalReportReadyAt = '30 Jun 2026 16:20';
+    ui.allCapsApprovedAt = '30 Jun 2026 16:20';
+    ui.finalReportPreparedAt = '';
+    pushNotification('leadInspector', 'OK', 'All CAPs for INS-2026-014 are approved. Final Report is ready for preparation.');
+    addLog('Inspector accepted CAP and final report became ready', findingId);
+    state.role = 'leadInspector';
+    persistAfterAction();
+    go('audit-reports', { filter: 'final', auditId: '' });
+    toast('CAP accepted', 'Lead Inspector Final Reports now shows the package ready for preparation.', 'ok');
+    return;
+  }
+  ui.finalReportReadyAt = '';
+  ui.allCapsApprovedAt = '';
+  if (decision === 'revision') {
+    ui.inspectorAssessment = 'request_revision';
+    pushNotification('auditee', 'CAP', 'Inspector requested a CAP revision for ' + findingId + '.');
+    addLog('Inspector requested CAP package revision', findingId);
+    persistAfterAction();
+    render();
+    toast('Revision requested', 'The service provider would receive a CAP revision request in this demo.', 'warn');
+    return;
+  }
+  ui.inspectorAssessment = 'request_more_evidence';
+  pushNotification('leadInspector', 'CAP', 'Inspector rejected CAP ' + findingId + ' and marked it for follow-up.');
+  addLog('Inspector rejected CAP package', findingId);
+  persistAfterAction();
+  render();
+  toast('CAP rejected', 'The CAP was marked rejected for follow-up in this demo.', 'warn');
+}
+
 function handleCapDetailSubmitGeneralManager(id) {
   var ui = ensureCapTrackingUi();
   var findingId = id || ui.selectedFindingId || state.params.findingId || 'F-2026-002';
@@ -2399,6 +2493,101 @@ function handleCapDetailSubmitGeneralManager(id) {
   persistAfterAction();
   render();
   toast('Finding closure approved', 'The Department Manager closure approval moved this CAP to Finding Closed in the demo.', 'ok');
+}
+
+function handleFinalReportReadyAction(action) {
+  var ui = ensureCapTrackingUi();
+  if (action === 'prepare') {
+    ui.finalReportPreparedAt = logTimestamp();
+    ui.finalReportPrepareStep = ui.finalReportPrepareStep || 'executive';
+    pushNotification('manager', 'RPT', 'Lead Inspector prepared the final report for INS-2026-014.');
+    addLog('Lead Inspector prepared final report', 'INS-2026-014');
+    persistAfterAction();
+    go('final-report-prepare', { filter: 'final' });
+    toast('Final report opened', 'Lead Inspector can now write the Final Report sections.', 'ok');
+    return;
+  }
+  if (action === 'preview') {
+    handleLeadReportPreview('INS-2026-014');
+    return;
+  }
+  if (action === 'record') {
+    toast('Inspection record opened', 'The inspection record is represented by this final report readiness page in the demo.', 'info');
+    return;
+  }
+  if (action === 'attachments') {
+    toast('Attachments opened', 'Final report attachments are staged in this demo. No real files are stored.', 'info');
+  }
+}
+
+function finalReportPrepareSteps() {
+  return ['executive', 'overview', 'findings', 'cap', 'conclusions', 'recommendations', 'appendices', 'review'];
+}
+
+function handleFinalReportPrepareStep(step) {
+  var steps = finalReportPrepareSteps();
+  var ui = ensureCapTrackingUi();
+  ui.finalReportPrepareStep = steps.indexOf(step) > -1 ? step : 'executive';
+  persistAfterAction();
+  render();
+}
+
+function handleFinalReportPrepareNext() {
+  var steps = finalReportPrepareSteps();
+  var ui = ensureCapTrackingUi();
+  var current = steps.indexOf(ui.finalReportPrepareStep || 'executive');
+  if (current < 0) current = 0;
+  ui.finalReportPrepareStep = steps[Math.min(current + 1, steps.length - 1)];
+  ui.finalReportSavedAt = logTimestamp();
+  persistAfterAction();
+  render();
+}
+
+function handleFinalReportPrepareBack() {
+  var ui = ensureCapTrackingUi();
+  ui.finalReportPreparedAt = ui.finalReportPreparedAt || logTimestamp();
+  persistAfterAction();
+  go('audit-reports', { filter: 'final' });
+}
+
+function handleFinalReportPrepareSave() {
+  var ui = ensureCapTrackingUi();
+  ui.finalReportSavedAt = logTimestamp();
+  addLog('Lead Inspector final report draft saved', 'INS-2026-014');
+  persistAfterAction();
+  render();
+  toast('Draft saved', 'Final Report draft was saved in this browser for the demo.', 'ok');
+}
+
+function handleFinalReportPrepareReview() {
+  var ui = ensureCapTrackingUi();
+  ui.finalReportSavedAt = logTimestamp();
+  ui.finalReportPrepareStep = 'review';
+  addLog('Lead Inspector continued Final Report to review', 'INS-2026-014');
+  persistAfterAction();
+  render();
+  toast('Ready for review', 'Final Report content was saved and moved to the review step in this demo.', 'ok');
+}
+
+function handleFinalReportPrepareSubmit() {
+  var ui = ensureCapTrackingUi();
+  ui.finalReportSavedAt = logTimestamp();
+  ui.finalReportSubmittedAt = ui.finalReportSavedAt;
+  pushNotification('manager', 'RPT', 'Final Report INS-2026-014 was submitted for Department Manager approval.');
+  addLog('Lead Inspector submitted Final Report for Department Manager approval', 'INS-2026-014');
+  persistAfterAction();
+  render();
+  toast('Submitted', 'Final Report was submitted to Department Manager approval in this demo.', 'ok');
+}
+
+function handleFinalReportPrepareFieldChange(field, target) {
+  if (field !== 'final-report-content') return;
+  var ui = ensureCapTrackingUi();
+  ui.finalReportContent = target && target.value !== undefined ? target.value : '';
+  persistAfterAction();
+  var counter = target && target.parentElement && target.parentElement.querySelector ? target.parentElement.querySelector('.final-prepare-char-count') : null;
+  if (!counter && typeof document !== 'undefined') counter = document.querySelector('.final-prepare-char-count');
+  if (counter) counter.textContent = 'Characters: ' + String(ui.finalReportContent.length);
 }
 
 function handleCapLeadSave(id) {
@@ -3077,6 +3266,9 @@ document.addEventListener('change', function (e) {
   if (field && field.indexOf('preliminary-report-') === 0) {
     handleLeadPreliminaryReportFieldChange(field, e.target);
   }
+  if (field && field.indexOf('final-report-') === 0) {
+    handleFinalReportPrepareFieldChange(field, e.target);
+  }
   if (field && field.indexOf('cap-review-') === 0) {
     handleCapReviewFieldChange(field, e.target);
   }
@@ -3110,6 +3302,9 @@ document.addEventListener('input', function (e) {
   }
   if (field === 'preliminary-report-content') {
     handleLeadPreliminaryReportFieldChange(field, e.target);
+  }
+  if (field === 'final-report-content') {
+    handleFinalReportPrepareFieldChange(field, e.target);
   }
   if (field === 'cap-review-search') {
     ensureCapReviewUi().query = e.target.value || '';

@@ -1333,11 +1333,13 @@ function capReviewUiState() {
     status: 'all',
     due: 'all',
     query: '',
+    selectedProviderId: 'skycargo-air',
     decision: '',
     comment: ''
   };
   state.capReviewUi = Object.assign(fallback, state.capReviewUi || {});
   if (['details', 'evidence', 'history'].indexOf(state.capReviewUi.tab) === -1) state.capReviewUi.tab = 'details';
+  if (!state.capReviewUi.selectedProviderId) state.capReviewUi.selectedProviderId = 'skycargo-air';
   return state.capReviewUi;
 }
 
@@ -1636,52 +1638,229 @@ function capReviewTableRows(items, ui) {
   }).join('');
 }
 
+function inspectorCapReviewProviders() {
+  return [
+    { id: 'skycargo-air', icon: 'AIR', name: 'SkyCargo Air', role: 'Service Provider', status: 'submitted', findings: 9, caps: 9, submittedOn: '27 Jun 2026 09:15' },
+    { id: 'skycargo-ground', icon: 'GND', name: 'SkyCargo Ground Handling Ltd.', role: 'Ground Handler', status: 'submitted', findings: 5, caps: 5, submittedOn: '27 Jun 2026 09:15' },
+    { id: 'skyfuel', icon: 'FUEL', name: 'SkyFuel Services', role: 'Fuel Services', status: 'submitted', findings: 3, caps: 3, submittedOn: '27 Jun 2026 09:15' },
+    { id: 'skysecurity', icon: 'SEC', name: 'SkySecurity Services', role: 'Security Services', status: 'submitted', findings: 4, caps: 4, submittedOn: '27 Jun 2026 09:15' },
+    { id: 'skycatering', icon: 'CAT', name: 'SkyCatering Ltd.', role: 'Catering Provider', status: 'pending', findings: 2, caps: 0, submittedOn: '-' }
+  ];
+}
+
+function inspectorCapReviewProviderById(id) {
+  var providers = inspectorCapReviewProviders();
+  for (var i = 0; i < providers.length; i++) {
+    if (providers[i].id === id) return providers[i];
+  }
+  return providers[0];
+}
+
+function inspectorCapReviewRowsForProvider(providerId) {
+  var skyCargoRows = [
+    { id: 'F-014-01', detailId: 'F-014-01', title: 'Access control to restricted areas', checklist: 'Access Control', level: 'Level 1', levelKey: 'l1', levelLabel: 'Level 1 (Critical)', due: '2026-06-30', dueDateText: '30 Jun 2026', dueRule: '14 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+    { id: 'F-014-04', detailId: 'F-014-04', title: 'Screening procedure compliance', checklist: 'Screening', level: 'Level 1', levelKey: 'l1', levelLabel: 'Level 1 (Critical)', due: '2026-06-30', dueDateText: '30 Jun 2026', dueRule: '14 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+    { id: 'F-014-02', detailId: 'F-014-02', title: 'Staff training records', checklist: 'Training', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+    { id: 'F-014-03', detailId: 'F-014-03', title: 'Vehicle security inspection', checklist: 'Ground Handling', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+    { id: 'F-014-07', detailId: 'F-014-07', title: 'Emergency exit signage', checklist: 'Safety Signage', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+    { id: 'F-014-05', detailId: 'F-014-05', title: 'Signage and awareness', checklist: 'Security Awareness', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+    { id: 'F-014-06', detailId: 'F-014-06', title: 'Tarmac safety cones availability', checklist: 'Ramp Safety', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+    { id: 'F-014-08', detailId: 'F-014-08', title: 'Wildlife control program', checklist: 'Wildlife Hazard', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+    { id: 'F-014-09', detailId: 'F-014-09', title: 'Housekeeping in operational areas', checklist: 'Operations', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' }
+  ];
+  var providerRows = {
+    'skycargo-air': skyCargoRows,
+    'skycargo-ground': [
+      { id: 'F-GND-01', detailId: 'F-GND-01', title: 'Ground handling training records incomplete', checklist: 'Ground Handling', level: 'Level 1', levelKey: 'l1', levelLabel: 'Level 1 (Critical)', due: '2026-06-30', dueDateText: '30 Jun 2026', dueRule: '14 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+      { id: 'F-GND-02', detailId: 'F-GND-02', title: 'Baggage reconciliation evidence missing', checklist: 'Security', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+      { id: 'F-GND-03', detailId: 'F-GND-03', title: 'Vehicle access logs not retained', checklist: 'Access Control', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+      { id: 'F-GND-04', detailId: 'F-GND-04', title: 'Ramp escort process not consistently documented', checklist: 'Ramp Safety', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+      { id: 'F-GND-05', detailId: 'F-GND-05', title: 'Shift briefing records need standardization', checklist: 'Operations', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' }
+    ],
+    skyfuel: [
+      { id: 'F-FUEL-01', detailId: 'F-FUEL-01', title: 'Fuel quality sampling records incomplete', checklist: 'Fuel Quality', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+      { id: 'F-FUEL-02', detailId: 'F-FUEL-02', title: 'Spill response drill evidence missing', checklist: 'Emergency Response', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+      { id: 'F-FUEL-03', detailId: 'F-FUEL-03', title: 'Fuel truck inspection labels unclear', checklist: 'Equipment', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' }
+    ],
+    skysecurity: [
+      { id: 'F-SEC-01', detailId: 'F-SEC-01', title: 'Security patrol records incomplete', checklist: 'Security Patrol', level: 'Level 1', levelKey: 'l1', levelLabel: 'Level 1 (Critical)', due: '2026-06-30', dueDateText: '30 Jun 2026', dueRule: '14 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+      { id: 'F-SEC-02', detailId: 'F-SEC-02', title: 'CCTV retention validation not evidenced', checklist: 'Surveillance', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+      { id: 'F-SEC-03', detailId: 'F-SEC-03', title: 'Access control badge reconciliation delayed', checklist: 'Access Control', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
+      { id: 'F-SEC-04', detailId: 'F-SEC-04', title: 'Visitor log countersignature missing', checklist: 'Visitor Control', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' }
+    ],
+    skycatering: []
+  };
+  return providerRows[providerId] || skyCargoRows;
+}
+
+function inspectorCapReviewRowById(id) {
+  var providers = inspectorCapReviewProviders();
+  for (var i = 0; i < providers.length; i++) {
+    var rows = inspectorCapReviewRowsForProvider(providers[i].id);
+    for (var j = 0; j < rows.length; j++) {
+      if (rows[j].id === id || rows[j].detailId === id) return rows[j];
+    }
+  }
+  return null;
+}
+
+function inspectorCapReviewFilteredRows(rows, ui) {
+  var query = (ui.query || '').toLowerCase().trim();
+  var status = ui.status || 'all';
+  if (status === 'pending') status = 'pending_review';
+  return rows.filter(function (row) {
+    if (status !== 'all' && row.statusKey !== status) return false;
+    if (!query) return true;
+    return [row.id, row.title, row.checklist, row.levelLabel, row.statusLabel].join(' ').toLowerCase().indexOf(query) !== -1;
+  });
+}
+
+function inspectorCapReviewProviderCards(ui) {
+  var selectedId = ui.selectedProviderId || 'skycargo-air';
+  return inspectorCapReviewProviders().map(function (provider) {
+    var active = provider.id === selectedId;
+    var submitted = provider.status === 'submitted';
+    return '<button class="cap-provider-card' + (active ? ' is-active' : '') + (submitted ? '' : ' is-pending') + '" data-act="cap-review-provider" data-id="' + esc(provider.id) + '">' +
+      '<span class="cap-provider-card__icon">' + esc(provider.icon) + '</span>' +
+      '<span class="cap-provider-card__body"><b>' + esc(provider.name) + '</b><small>' + esc(provider.role) + '</small>' +
+        demoBadge(submitted ? 'CAP Submitted' : 'Pending CAP', submitted ? 'ok' : 'warn') + '</span>' +
+      (active ? '<span class="cap-provider-card__check">✓</span>' : '') +
+      '<span class="cap-provider-card__foot"><em>' + esc(String(provider.findings)) + ' Findings</em><em>' + esc(String(provider.caps)) + ' CAPs</em></span>' +
+    '</button>';
+  }).join('');
+}
+
+function inspectorCapReviewStatusTabs(ui, rows) {
+  var counts = { all: rows.length, pending_review: 0, accepted: 0, revision_requested: 0, rejected: 0 };
+  rows.forEach(function (row) {
+    counts[row.statusKey] = (counts[row.statusKey] || 0) + 1;
+  });
+  var tabs = [
+    ['all', 'All CAPs'],
+    ['pending_review', 'Pending Review'],
+    ['accepted', 'Accepted'],
+    ['revision_requested', 'Revision Requested'],
+    ['rejected', 'Rejected']
+  ];
+  return '<div class="cap-submission-tabs">' + tabs.map(function (tab) {
+    return '<button class="' + ((ui.status || 'all') === tab[0] ? 'is-active' : '') + '" data-act="cap-review-filter" data-status="' + esc(tab[0]) + '">' +
+      esc(tab[1]) + ' (' + esc(String(counts[tab[0]] || 0)) + ')' +
+    '</button>';
+  }).join('') + '</div>';
+}
+
+function inspectorCapReviewRowsHtml(rows) {
+  if (!rows.length) {
+    return '<tr><td colspan="7"><div class="empty">No CAPs match this organization or filter.</div></td></tr>';
+  }
+  return rows.map(function (row) {
+    var due = row.dueDateText === 'Observation'
+      ? '<b>Observation</b>'
+      : '<b>' + esc(row.dueDateText) + '</b><small>(' + esc(row.dueRule) + ')</small>';
+    return '<tr>' +
+      '<td><button class="cap-review-expand" data-act="nav" data-view="cap-review-detail" data-id="' + esc(row.detailId) + '">›</button><b>' + esc(row.id) + '</b></td>' +
+      '<td>' + esc(row.title) + '<small>' + esc(row.checklist) + '</small></td>' +
+      '<td><span class="sp-level is-' + esc(row.levelKey) + '">' + esc(row.levelLabel) + '</span></td>' +
+      '<td class="cap-review-due">' + due + '</td>' +
+      '<td>' + esc(row.submittedOn) + '</td>' +
+      '<td>' + demoBadge(row.statusLabel, row.statusTone) + '</td>' +
+      '<td><button class="btn btn--sm" data-act="nav" data-view="cap-review-detail" data-id="' + esc(row.detailId) + '">Review</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function inspectorCapReviewSummary(provider, rows) {
+  var pending = rows.filter(function (row) { return row.statusKey === 'pending_review'; }).length;
+  var accepted = rows.filter(function (row) { return row.statusKey === 'accepted'; }).length;
+  var revision = rows.filter(function (row) { return row.statusKey === 'revision_requested'; }).length;
+  var rejected = rows.filter(function (row) { return row.statusKey === 'rejected'; }).length;
+  return '<section class="cap-review-side-card">' +
+    '<h2>Organization Summary</h2>' +
+    '<div class="cap-review-org-name"><span>⌂</span><b>' + esc(provider.name) + '</b><small>(' + esc(provider.role) + ')</small></div>' +
+    '<dl class="cap-review-summary-list">' +
+      '<dt>Total Findings</dt><dd>' + esc(String(provider.findings)) + '</dd>' +
+      '<dt>CAPs Submitted</dt><dd>' + esc(String(provider.caps)) + '</dd>' +
+      '<dt class="is-info">Pending Review</dt><dd class="is-info">' + esc(String(pending)) + '</dd>' +
+      '<dt class="is-ok">Accepted</dt><dd class="is-ok">' + esc(String(accepted)) + '</dd>' +
+      '<dt class="is-warn">Revision Requested</dt><dd class="is-warn">' + esc(String(revision)) + '</dd>' +
+      '<dt class="is-danger">Rejected</dt><dd class="is-danger">' + esc(String(rejected)) + '</dd>' +
+    '</dl>' +
+  '</section>';
+}
+
+function inspectorCapReviewDueGuide() {
+  return '<section class="cap-review-side-card is-guide">' +
+    '<h2>Level Due Date Guide</h2>' +
+    '<dl class="cap-review-due-guide">' +
+      '<dt><span class="is-l1"></span>Level 1 (Critical)</dt><dd>14 days</dd>' +
+      '<dt><span class="is-l2"></span>Level 2 (Major)</dt><dd>90 days</dd>' +
+      '<dt><span class="is-l3"></span>Level 3 (Observation)</dt><dd>Observation / No due date</dd>' +
+    '</dl>' +
+  '</section>';
+}
+
+function inspectorCapReviewTimeline() {
+  var steps = [
+    ['done', 'CAP Submitted by Service Provider', '27 Jun 2026 09:15'],
+    ['current', 'Inspector Review', 'Pending'],
+    ['waiting', 'Lead Inspector Review', 'Pending'],
+    ['waiting', 'Department Manager Approval', 'Pending'],
+    ['waiting', 'General Manager Approval', 'Pending'],
+    ['waiting', 'ED Final Approval', 'Pending']
+  ];
+  return '<section class="cap-review-side-card"><h2>Review Timeline</h2><div class="cap-review-mini-timeline">' +
+    steps.map(function (step, index) {
+      return '<div class="cap-review-mini-step is-' + esc(step[0]) + '">' +
+        '<span>' + (step[0] === 'done' ? '✓' : esc(String(index + 1))) + '</span>' +
+        '<p><b>' + esc(step[1]) + '</b><small>' + esc(step[2]) + '</small></p>' +
+      '</div>';
+    }).join('') +
+  '</div></section>';
+}
+
 function viewInspectorCapReviews() {
   var ui = capReviewUiState();
-  var allItems = capReviewSourceFindings();
-  if (allItems.length && !findingById(ui.expandedId)) ui.expandedId = allItems[0].id;
-  var kpis = capReviewKpis(allItems);
-  var rows = allItems.filter(function (finding) { return capReviewMatchesFilters(finding, ui); });
-  if (rows.length && ui.expandedId && !rows.some(function (finding) { return finding.id === ui.expandedId; })) {
-    ui.expandedId = rows[0].id;
-  }
-  var expandedFinding = rows.filter(function (finding) { return finding.id === ui.expandedId; })[0] || null;
-  var statusOptions = capReviewSelectOptions([
-    { value: 'all', label: 'All' },
-    { value: 'pending', label: 'Pending Review' },
-    { value: 'in_review', label: 'In Review' },
-    { value: 'accepted', label: 'Accepted' },
-    { value: 'returned', label: 'Returned' },
-    { value: 'overdue', label: 'Overdue' }
-  ], ui.status || 'all');
-  var dueOptions = capReviewSelectOptions([
-    { value: 'all', label: 'All' },
-    { value: 'due_soon', label: 'Due Soon' },
-    { value: 'overdue', label: 'Overdue' },
-    { value: 'later', label: 'Later' }
-  ], ui.due || 'all');
-  return '<div class="cap-review-page">' +
-    pageHead('CAP Reviews', '') +
-    '<div class="cap-review-stats">' +
-      capReviewStatCard('Pending Review', kpis.pending, 'pending', 'warn', '○') +
-      capReviewStatCard('In Review', kpis.in_review, 'in_review', 'info', '⌂') +
-      capReviewStatCard('Accepted', kpis.accepted, 'accepted', 'ok', '✓') +
-      capReviewStatCard('Returned', kpis.returned, 'returned', 'danger', '↩') +
-      capReviewStatCard('Overdue', kpis.overdue, 'overdue', 'neutral', '↗') +
+  var selectedProvider = inspectorCapReviewProviderById(ui.selectedProviderId);
+  ui.selectedProviderId = selectedProvider.id;
+  var providerRows = inspectorCapReviewRowsForProvider(selectedProvider.id);
+  var visibleRows = inspectorCapReviewFilteredRows(providerRows, ui);
+  var actions = '<button class="btn" data-act="nav" data-view="cap-review-detail" data-id="F-014-01">View Final Report Progress</button>';
+  return '<div class="cap-review-page cap-submission-page">' +
+    '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><b>INS-2026-014</b><span>›</span><b>CAP Review</b></div>' +
+    pageHead('CAP Review', 'Select an organization to review its CAPs', actions) +
+    '<div class="cap-review-inspection-meta">' +
+      '<div><span>Inspection ID</span><b>INS-2026-014</b></div>' +
+      '<div><span>Inspection Type</span><b>Routine (Announced)</b></div>' +
+      '<div><span>Inspection Dates</span><b>12 - 14 Jun 2026</b></div>' +
+      '<div><span>Lead Inspector</span><b>Aylin Sezer</b></div>' +
+      '<div><span>Report Version</span><b>2.0 (CAP Submitted)</b></div>' +
+      '<div><span>CAP Submitted On</span><b>' + esc(selectedProvider.submittedOn) + '</b><small>by ' + esc(selectedProvider.name) + '</small></div>' +
     '</div>' +
-    '<div class="cap-review-filters">' +
-      '<div class="cap-review-search"><input id="cap-review-search" type="search" data-field="cap-review-search" value="' + esc(ui.query || '') + '" placeholder="Search CAP ID, Inspection ID, Organization...">' +
-        '<button class="icon-btn" data-act="cap-review-apply-filters" aria-label="Search">⌕</button></div>' +
-      '<label>Status<select data-field="cap-review-status">' + statusOptions + '</select></label>' +
-      '<label>Due Date<select data-field="cap-review-due">' + dueOptions + '</select></label>' +
-      '<button class="btn btn--sm" data-act="cap-review-clear">↻ Clear Filters</button>' +
-    '</div>' +
-    '<div class="cap-review-table-wrap"><table class="cap-review-table"><thead><tr>' +
-      '<th>CAP ID</th><th>Inspection ID</th><th>Organization</th><th>Finding ID</th><th>Submitted By</th><th>Due Date</th><th>Status</th><th>Action</th>' +
-    '</tr></thead><tbody>' + capReviewTableRows(rows, ui) + '</tbody></table></div>' +
-    (expandedFinding ? capReviewExpandedPanel(expandedFinding, ui) : '') +
-    '<div class="cap-review-footer"><span>Showing ' + esc(rows.length ? '1 to ' + rows.length + ' of ' + rows.length : '0') + ' results</span>' +
-      '<div><button class="icon-btn" disabled>‹</button><button class="cap-review-page-btn is-active">1</button><button class="icon-btn" disabled>›</button><select aria-label="Rows per page"><option>10 / page</option></select></div>' +
+    '<div class="cap-submission-layout">' +
+      '<main class="cap-submission-main">' +
+        '<section class="cap-submission-panel">' +
+          '<h2>1. Select Organization</h2>' +
+          '<p>This inspection includes CAPs from multiple organizations. Please select an organization to review.</p>' +
+          '<div class="cap-provider-strip">' + inspectorCapReviewProviderCards(ui) + '</div>' +
+        '</section>' +
+        '<section class="cap-submission-panel">' +
+          '<div class="cap-submission-panel__head">' +
+            '<div><h2>2. CAPs for ' + esc(selectedProvider.name) + ' (' + esc(selectedProvider.role) + ')</h2>' + demoBadge(selectedProvider.status === 'submitted' ? 'CAP Submitted' : 'Pending CAP', selectedProvider.status === 'submitted' ? 'ok' : 'warn') + '</div>' +
+            '<div class="cap-submission-search"><input id="cap-review-search" type="search" data-field="cap-review-search" value="' + esc(ui.query || '') + '" placeholder="Search CAPs..."><button class="icon-btn" data-act="cap-review-apply-filters" aria-label="Search CAPs">⌕</button><button class="btn btn--sm" data-act="cap-review-clear">Filter</button></div>' +
+          '</div>' +
+          inspectorCapReviewStatusTabs(ui, providerRows) +
+          '<div class="cap-submission-table-wrap"><table class="cap-submission-table"><thead><tr>' +
+            '<th>Finding ID</th><th>Finding Title</th><th>Level</th><th>Due Date (From Report)</th><th>CAP Submitted On</th><th>Status</th><th>Action</th>' +
+          '</tr></thead><tbody>' + inspectorCapReviewRowsHtml(visibleRows) + '</tbody></table></div>' +
+          '<div class="cap-review-footer"><span>Showing ' + esc(visibleRows.length ? '1 to ' + visibleRows.length + ' of ' + providerRows.length + ' CAPs' : '0 of ' + providerRows.length + ' CAPs') + '</span></div>' +
+        '</section>' +
+        '<div class="cap-review-next-step"><b>Next Step</b><span>Please review each CAP and take appropriate action: Accept, Request Revision, or Reject.</span></div>' +
+      '</main>' +
+      '<aside class="cap-submission-side">' +
+        inspectorCapReviewSummary(selectedProvider, providerRows) +
+        inspectorCapReviewDueGuide() +
+        inspectorCapReviewTimeline() +
+      '</aside>' +
     '</div>' +
   '</div>';
 }
@@ -1716,13 +1895,24 @@ function capTrackingUiState() {
     unitJustification: 'The CAP has initiated corrective actions; however, updated training records are still incomplete for multiple staff members. Therefore, an administrative penalty is recommended to ensure timely compliance.',
     unitAttachmentName: '',
     unitManagerRecommendationAt: '',
+    inspectorPackageDecision: '',
+    inspectorPackageEvaluation: 'acceptable',
+    inspectorPackageComment: '',
+    inspectorPackageAcceptedAt: '',
+    allCapsApprovedAt: '',
+    finalReportReadyAt: '',
+    finalReportPreparedAt: '',
+    finalReportPrepareStep: 'executive',
+    finalReportContent: '',
+    finalReportSavedAt: '',
+    finalReportSubmittedAt: '',
     secondReportPreparedAt: '',
     submittedToUnitManagerAt: '',
     submittedToGeneralManagerAt: ''
   };
   state.capTrackingUi = Object.assign(fallback, state.capTrackingUi || {});
   if (['overview', 'timeline', 'communications', 'documents'].indexOf(state.capTrackingUi.tab) === -1) state.capTrackingUi.tab = 'overview';
-  if (['details', 'evidence', 'assessment', 'history', 'communications', 'documents', 'enforcement'].indexOf(state.capTrackingUi.detailTab) === -1) state.capTrackingUi.detailTab = 'details';
+  if (['details', 'cap', 'evaluation', 'attachments', 'evidence', 'assessment', 'history', 'communications', 'documents', 'enforcement'].indexOf(state.capTrackingUi.detailTab) === -1) state.capTrackingUi.detailTab = 'details';
   if (!state.capTrackingUi.inspectorRootCause) state.capTrackingUi.inspectorRootCause = 'yes';
   if (!state.capTrackingUi.inspectorActions) state.capTrackingUi.inspectorActions = 'yes';
   if (!state.capTrackingUi.inspectorEvidence) state.capTrackingUi.inspectorEvidence = 'yes';
@@ -1731,6 +1921,12 @@ function capTrackingUiState() {
   if (!state.capTrackingUi.inspectorAssessment) state.capTrackingUi.inspectorAssessment = 'acceptable';
   if (state.capTrackingUi.inspectorComments === undefined || state.capTrackingUi.inspectorComments === null) state.capTrackingUi.inspectorComments = 'The CAP adequately addresses the root cause. Evidence provided is sufficient and implementation has been verified through records. No on-site verification is required.';
   if (!state.capTrackingUi.inspectorReviewDate) state.capTrackingUi.inspectorReviewDate = '2025-05-19';
+  if (!state.capTrackingUi.inspectorPackageEvaluation) state.capTrackingUi.inspectorPackageEvaluation = 'acceptable';
+  if (state.capTrackingUi.inspectorPackageComment === undefined || state.capTrackingUi.inspectorPackageComment === null) state.capTrackingUi.inspectorPackageComment = '';
+  if (!state.capTrackingUi.finalReportPrepareStep) state.capTrackingUi.finalReportPrepareStep = 'executive';
+  if (state.capTrackingUi.finalReportContent === undefined || state.capTrackingUi.finalReportContent === null) state.capTrackingUi.finalReportContent = '';
+  if (state.capTrackingUi.finalReportSavedAt === undefined || state.capTrackingUi.finalReportSavedAt === null) state.capTrackingUi.finalReportSavedAt = '';
+  if (state.capTrackingUi.finalReportSubmittedAt === undefined || state.capTrackingUi.finalReportSubmittedAt === null) state.capTrackingUi.finalReportSubmittedAt = '';
   return state.capTrackingUi;
 }
 
@@ -1941,6 +2137,24 @@ function viewLeadCapTracking() {
 }
 
 function capDetailRowById(id) {
+  var submittedCap = inspectorCapReviewRowById(id);
+  if (submittedCap) {
+    return {
+      id: submittedCap.id,
+      title: submittedCap.title,
+      level: submittedCap.level,
+      levelLabel: submittedCap.levelLabel,
+      department: submittedCap.checklist,
+      cap: 'Yes',
+      owner: 'SkyCargo Air',
+      due: submittedCap.due || '',
+      status: submittedCap.statusLabel,
+      days: submittedCap.dueRule,
+      action: 'Review CAP',
+      actionKey: 'review',
+      tone: 'info'
+    };
+  }
   var rows = capTrackingRows();
   for (var i = 0; i < rows.length; i++) {
     if (rows[i].id === id) return rows[i];
@@ -1954,6 +2168,7 @@ function capDetailData(id) {
     id: row.id,
     title: row.title,
     level: row.level,
+    levelLabel: row.levelLabel || row.level,
     owner: row.owner,
     status: row.status,
     due: row.due,
@@ -1962,6 +2177,7 @@ function capDetailData(id) {
     description: 'Training records for ground handling staff are incomplete. Some records do not include training dates, instructor names, and training content.',
     capDeadline: row.level === 'Level 1' ? '14 days' : (row.level === 'Level 2' ? '90 days' : 'No CAP'),
     originalDue: row.due || '2026-09-20',
+    department: row.department || 'Flight Operations (OPS)',
     capSubmittedDate: row.id === 'F-2026-001' ? '2026-06-28' : '2026-06-28',
     rootCause: 'Lack of structured record-keeping process and insufficient oversight by training coordinator.',
     correctiveActions: [
@@ -2337,16 +2553,19 @@ function inspectorCapEvidenceFiles() {
 }
 
 function inspectorCapFindingSummary(data) {
+  var submittedPackageRow = /^F-(014|GND|FUEL|SEC)-/.test(data.id || '');
+  var displayLevel = submittedPackageRow ? data.level : 'High';
+  var riskTone = displayLevel === 'Level 1' ? 'danger' : (displayLevel === 'Level 2' ? 'warn' : (displayLevel === 'High' ? 'danger' : 'info'));
   return '<section class="cap-detail-panel inspector-cap-summary">' +
     '<div class="cap-detail-panel-head"><h2>Finding Information</h2><button class="cap-file-link" data-act="open" data-id="' + esc(data.id) + '">View Finding Details ↗</button></div>' +
     '<div class="inspector-cap-summary-grid">' +
       '<div><span>Audit No.</span><b>AUD-2025-045</b></div>' +
-      '<div><span>Department</span><b>Flight Operations (OPS)</b></div>' +
-      '<div><span>Finding ID</span><b>OPS-001</b></div>' +
-      '<div><span>Finding Title</span><b>Inadequate Flight Duty Time Monitoring</b></div>' +
-      '<div><span>Risk Level</span>' + demoBadge('High', 'danger') + '</div>' +
+      '<div><span>Department</span><b>' + esc(submittedPackageRow ? (data.department || '-') : 'Flight Operations (OPS)') + '</b></div>' +
+      '<div><span>Finding ID</span><b>' + esc(submittedPackageRow ? data.id : 'OPS-001') + '</b></div>' +
+      '<div><span>Finding Title</span><b>' + esc(submittedPackageRow ? data.title : 'Inadequate Flight Duty Time Monitoring') + '</b></div>' +
+      '<div><span>Risk Level</span>' + demoBadge(displayLevel, riskTone) + '</div>' +
       '<div><span>Regulation</span><b>NAMCAR OPS 1.1005(a)</b></div>' +
-      '<div><span>Original Due Date</span><b>20 May 2025</b></div>' +
+      '<div><span>Original Due Date</span><b>' + esc(submittedPackageRow ? fmtDate(data.originalDue || '') : '20 May 2025') + '</b></div>' +
       '<div><span>Finding Raised On</span><b>14 May 2025</b></div>' +
       '<div><span>Lead Inspector</span><b>John Smith</b></div>' +
     '</div>' +
@@ -2486,7 +2705,181 @@ function inspectorCapReviewPanel(ui, data) {
   '</section>';
 }
 
+function isInspectorSubmittedCapPackage(data) {
+  return /^F-(014|GND|FUEL|SEC)-/.test(data && data.id ? data.id : '');
+}
+
+function inspectorCapPackageLevelTone(data) {
+  if (data.level === 'Level 1') return 'danger';
+  if (data.level === 'Level 2') return 'warn';
+  return 'info';
+}
+
+function inspectorCapPackageMeta(data) {
+  return '<div class="inspector-package-meta">' +
+    '<div><span>Inspection ID</span><b>INS-2026-014</b></div>' +
+    '<div><span>Organization</span><b>SkyCargo Air</b></div>' +
+    '<div><span>Inspection Type</span><b>Routine (Announced)</b></div>' +
+    '<div><span>Inspection Dates</span><b>12 - 14 Jun 2026</b></div>' +
+    '<div><span>Report Version</span><b>2.0 (CAP Submitted)</b></div>' +
+    '<div><span>CAP Submitted On</span><b>27 Jun 2026 09:15</b><small>by SkyCargo Air</small></div>' +
+  '</div>';
+}
+
+function inspectorCapPackageTabs(active) {
+  var tabs = [
+    ['details', 'Finding Details'],
+    ['cap', 'Service Provider CAP'],
+    ['evaluation', 'Inspector Evaluation'],
+    ['history', 'Comments & History'],
+    ['attachments', 'Attachments (2)']
+  ];
+  return '<div class="inspector-package-tabs">' + tabs.map(function (tab) {
+    return '<button class="' + (active === tab[0] ? 'is-active' : '') + '" data-act="cap-detail-tab" data-tab="' + esc(tab[0]) + '">' + esc(tab[1]) + '</button>';
+  }).join('') + '</div>';
+}
+
+function inspectorCapPackageFindingCard(data) {
+  return '<section class="inspector-package-card inspector-package-finding">' +
+    '<h2>Finding Information</h2>' +
+    '<div class="inspector-package-info-grid">' +
+      '<div><span>Finding ID</span><b>' + esc(data.id) + '</b></div>' +
+      '<div><span>Finding Title</span><b>' + esc(data.title) + '</b></div>' +
+      '<div><span>Level</span>' + demoBadge(data.levelLabel || data.level, inspectorCapPackageLevelTone(data)) + '</div>' +
+      '<div><span>Due Date</span><b>' + esc(fmtDate(data.originalDue || data.due)) + '</b><small>(14 days left)</small></div>' +
+      '<div><span>Status</span>' + demoBadge('Pending Review', 'info') + '</div>' +
+    '</div>' +
+    '<h3>Finding Description</h3>' +
+    '<p>During the inspection, it was observed that access control procedures for restricted areas are not consistently enforced. Several individuals were able to enter restricted zones without proper identification or authorization.</p>' +
+    '<h3>Evidence</h3>' +
+    '<ul><li>Access doors were left open at the time of inspection.</li><li>Visitor logs were incomplete.</li></ul>' +
+    '<h3>Initial Recommendation</h3>' +
+    '<p>Ensure strict implementation of access control procedures and maintain complete visitor records.</p>' +
+    '<h3>Related Checklist</h3>' +
+    '<div class="inspector-package-table-wrap"><table class="inspector-package-table"><thead><tr><th>Checklist Section</th><th>Question</th><th>Your Finding</th><th>Status</th></tr></thead><tbody>' +
+      '<tr><td>Physical Security</td><td>Are access control procedures implemented for restricted areas?</td><td>' + demoBadge('Non-Compliant', 'danger') + '</td><td>' + demoBadge('CAP Required', 'warn') + '</td></tr>' +
+      '<tr><td>Physical Security</td><td>Are access points monitored and recorded?</td><td>' + demoBadge('Non-Compliant', 'danger') + '</td><td>' + demoBadge('CAP Required', 'warn') + '</td></tr>' +
+      '<tr><td>Physical Security</td><td>Are visitors properly identified and authorized?</td><td>' + demoBadge('Non-Compliant', 'danger') + '</td><td>' + demoBadge('CAP Required', 'warn') + '</td></tr>' +
+    '</tbody></table></div>' +
+    '<div class="inspector-package-due-note"><b>Level Due Date Guide</b><span>Level 1 (Critical) findings must be closed within 14 days.</span><em>Due Date: 30 Jun 2026 (14 days left)</em></div>' +
+  '</section>';
+}
+
+function inspectorCapPackagePlanCard(data) {
+  return '<section class="inspector-package-card inspector-package-cap-plan">' +
+    '<h2>Service Provider Corrective Action Plan (CAP)</h2>' +
+    demoBadge('CAP Submitted', 'ok') +
+    '<h3>Root Cause</h3>' +
+    '<p>Inadequate supervision of access points during peak hours and insufficient security personnel.</p>' +
+    '<h3>Corrective Action</h3>' +
+    '<p>Additional security personnel have been assigned to all access points during peak hours. Access control procedures have been reinforced.</p>' +
+    '<h3>Preventive Action</h3>' +
+    '<p>Regular training will be provided to security staff. Periodic internal audits will be conducted to ensure compliance.</p>' +
+    '<dl class="inspector-package-cap-dl">' +
+      '<dt>CAP Submitted On</dt><dd>27 Jun 2026 09:15</dd>' +
+      '<dt>Submitted By</dt><dd>SkyCargo Air</dd>' +
+      '<dt>Target Completion Date</dt><dd>30 Jun 2026</dd>' +
+      '<dt>Attachments</dt><dd>2 files</dd>' +
+    '</dl>' +
+    '<button class="btn btn--sm" data-act="cap-detail-tab" data-tab="attachments">View Attachments</button>' +
+  '</section>';
+}
+
+function inspectorCapPackageSnapshot(data) {
+  return '<aside class="inspector-package-side">' +
+    '<section class="inspector-package-card">' +
+      '<h2>Finding Snapshot</h2>' +
+      '<dl class="inspector-package-snapshot">' +
+        '<dt>Department</dt><dd>Security</dd>' +
+        '<dt>Checklist Section</dt><dd>Physical Security</dd>' +
+        '<dt>Question</dt><dd>Are access control procedures implemented for restricted areas?</dd>' +
+        '<dt>Your Finding</dt><dd>Non-Compliant</dd>' +
+        '<dt>Evidence Provided</dt><dd>Yes (2 files)</dd>' +
+        '<dt>CAP Required</dt><dd>Yes</dd>' +
+        '<dt>CAP Submitted On</dt><dd>27 Jun 2026 09:15</dd>' +
+        '<dt>Submitted By</dt><dd>SkyCargo Air</dd>' +
+        '<dt>Due Date</dt><dd class="is-danger">30 Jun 2026 (14 days left)</dd>' +
+      '</dl>' +
+    '</section>' +
+    '<section class="inspector-package-card">' +
+      '<h2>Attachments (2)</h2>' +
+      '<button class="inspector-package-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="CAP_AccessControl_F-014-01.pdf"><b>CAP_AccessControl_F-014-01.pdf</b><small>1.2 MB</small><span>↓</span></button>' +
+      '<button class="inspector-package-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="Evidence_Photos.zip"><b>Evidence_Photos.zip</b><small>14.7 MB</small><span>↓</span></button>' +
+      '<button class="cap-file-link mt-12" data-act="cap-detail-tab" data-tab="attachments">View all attachments</button>' +
+    '</section>' +
+    '<section class="inspector-package-card">' +
+      '<h2>Review Timeline</h2>' +
+      '<div class="cap-review-mini-timeline">' +
+        '<div class="cap-review-mini-step is-done"><span>✓</span><p><b>CAP Submitted by Service Provider</b><small>27 Jun 2026 09:15</small></p></div>' +
+        '<div class="cap-review-mini-step is-current"><span>2</span><p><b>Inspector Review</b><small>In Progress</small></p></div>' +
+        '<div class="cap-review-mini-step is-waiting"><span>3</span><p><b>Lead Inspector Review</b><small>Pending</small></p></div>' +
+        '<div class="cap-review-mini-step is-waiting"><span>4</span><p><b>Department Manager Approval</b><small>Pending</small></p></div>' +
+        '<div class="cap-review-mini-step is-waiting"><span>5</span><p><b>General Manager Approval</b><small>Pending</small></p></div>' +
+        '<div class="cap-review-mini-step is-waiting"><span>6</span><p><b>ED Final Approval</b><small>Pending</small></p></div>' +
+      '</div>' +
+    '</section>' +
+  '</aside>';
+}
+
+function inspectorCapPackageEvaluation(ui, data) {
+  var selected = ui.inspectorPackageEvaluation || 'acceptable';
+  var options = capReviewSelectOptions([
+    { value: 'acceptable', label: 'Accept CAP' },
+    { value: 'revision', label: 'Request Revision' },
+    { value: 'reject', label: 'Reject CAP' }
+  ], selected);
+  return '<section class="inspector-package-card inspector-package-evaluation">' +
+    '<h2>Inspector Evaluation</h2>' +
+    '<p>Evaluate the CAP submitted by the Service Provider.</p>' +
+    '<div class="inspector-package-form">' +
+      '<label>Evaluation <span>*</span><select id="inspector-cap-package-evaluation">' + options + '</select></label>' +
+      '<label>Comments <span>*</span><textarea id="inspector-cap-package-comment" rows="4" placeholder="Enter your comments and justification...">' + esc(ui.inspectorPackageComment || '') + '</textarea></label>' +
+    '</div>' +
+    '<div class="inspector-package-actions">' +
+      '<button class="btn" data-act="inspector-cap-package-revision" data-id="' + esc(data.id) + '">Request Revision</button>' +
+      '<button class="btn btn--danger" data-act="inspector-cap-package-reject" data-id="' + esc(data.id) + '">Reject CAP</button>' +
+      '<button class="btn btn--primary" data-act="inspector-cap-package-accept" data-id="' + esc(data.id) + '">Accept CAP</button>' +
+    '</div>' +
+  '</section>';
+}
+
+function viewInspectorSubmittedCapPackageDetail(ui, data) {
+  var activeTab = ['details', 'cap', 'evaluation', 'history', 'attachments'].indexOf(ui.detailTab) > -1 ? ui.detailTab : 'details';
+  var mainContent = '';
+  if (activeTab === 'cap') {
+    mainContent = inspectorCapPackagePlanCard(data) + inspectorCapPackageEvaluation(ui, data);
+  } else if (activeTab === 'evaluation') {
+    mainContent = inspectorCapPackageEvaluation(ui, data);
+  } else if (activeTab === 'history') {
+    mainContent = '<section class="inspector-package-card"><h2>Comments & History</h2><div class="cap-review-mini-timeline">' +
+      '<div class="cap-review-mini-step is-done"><span>✓</span><p><b>CAP submitted by Service Provider</b><small>27 Jun 2026 09:15</small></p></div>' +
+      '<div class="cap-review-mini-step is-current"><span>2</span><p><b>Inspector opened CAP review</b><small>Pending decision</small></p></div>' +
+    '</div></section>';
+  } else if (activeTab === 'attachments') {
+    mainContent = '<section class="inspector-package-card"><h2>Attachments (2)</h2>' +
+      '<button class="inspector-package-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="CAP_AccessControl_F-014-01.pdf"><b>CAP_AccessControl_F-014-01.pdf</b><small>1.2 MB</small><span>↓</span></button>' +
+      '<button class="inspector-package-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="Evidence_Photos.zip"><b>Evidence_Photos.zip</b><small>14.7 MB</small><span>↓</span></button>' +
+    '</section>' + inspectorCapPackageEvaluation(ui, data);
+  } else {
+    mainContent = '<div class="inspector-package-top-grid">' + inspectorCapPackageFindingCard(data) + inspectorCapPackagePlanCard(data) + '</div>' + inspectorCapPackageEvaluation(ui, data);
+  }
+  return '<div class="inspector-package-page">' +
+    '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><span>INS-2026-014</span><span>›</span><span>CAP Review</span><span>›</span><b>' + esc(data.id) + '</b></div>' +
+    '<div class="inspector-package-head">' +
+      '<div><h1>CAP Review - ' + esc(data.title) + ' (' + esc(data.id) + ') ' + demoBadge(data.levelLabel || data.level, inspectorCapPackageLevelTone(data)) + demoBadge('Pending Review', 'info') + '</h1></div>' +
+      '<div class="cap-track-head-actions"><button class="btn" data-act="nav" data-view="findings" data-filter="capreview">← Back to List</button><button class="btn btn--primary" data-act="nav" data-view="cap-review-detail" data-id="' + esc(data.id) + '">View Final Report Progress</button></div>' +
+    '</div>' +
+    inspectorCapPackageMeta(data) +
+    inspectorCapPackageTabs(activeTab) +
+    '<div class="inspector-package-layout">' +
+      '<main class="inspector-package-main">' + mainContent + '</main>' +
+      inspectorCapPackageSnapshot(data) +
+    '</div>' +
+  '</div>';
+}
+
 function viewInspectorCapReviewDetail(ui, data) {
+  if (isInspectorSubmittedCapPackage(data)) return viewInspectorSubmittedCapPackageDetail(ui, data);
   return '<div class="cap-detail-page inspector-cap-page">' +
     '<div class="cap-detail-head inspector-cap-head">' +
       '<div>' +
@@ -5203,6 +5596,245 @@ function viewDepartmentPreliminaryReview() {
   '</div>';
 }
 
+function finalReadyStatusStep(label, actor, time) {
+  return '<div class="final-ready-status-step"><span>✓</span><p><b>' + esc(label) + '</b><small>Approved</small></p><em>' + esc(time) + '<br>' + esc(actor) + '</em></div>';
+}
+
+function finalReadySummaryCard(label, value, detail, tone) {
+  return '<article class="final-ready-card is-' + esc(tone || 'neutral') + '"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong><small>' + esc(detail || '') + '</small></article>';
+}
+
+function viewLeadFinalReportReady() {
+  var ui = capTrackingUiState();
+  var readyAt = ui.finalReportReadyAt || ui.allCapsApprovedAt || '30 Jun 2026 16:20';
+  var prepared = !!ui.finalReportPreparedAt;
+  var orgRows = [
+    ['SkyCargo Air (Service Provider)', 'Approved', '9 / 9', '30 Jun 2026 16:20'],
+    ['SkyCargo Ground Handling Ltd.', 'Approved', '5 / 5', '30 Jun 2026 14:45'],
+    ['SkyFuel Services', 'Approved', '3 / 3', '30 Jun 2026 13:50'],
+    ['SkySecurity Services', 'Approved', '4 / 4', '30 Jun 2026 13:10'],
+    ['SkyCatering Ltd.', 'Approved', '2 / 2', '30 Jun 2026 12:30']
+  ];
+  var sections = [
+    ['Executive Summary', 'Completed'],
+    ['Inspection Overview', 'Completed'],
+    ['Findings Summary', 'Completed'],
+    ['CAP Implementation Summary', 'Completed'],
+    ['Conclusions', prepared ? 'Completed' : 'In Progress'],
+    ['Recommendations', prepared ? 'In Progress' : 'Not Started'],
+    ['Appendices & Attachments', 'Not Started']
+  ];
+  return '<div class="final-ready-page">' +
+    '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><span>INS-2026-014</span><span>›</span><b>Final Reports</b></div>' +
+    '<div class="final-ready-head">' +
+      '<div><h1>Final Reports - Ready for Preparation ' + demoBadge('All CAPs Approved', 'ok') + '</h1></div>' +
+      '<button class="btn btn--primary" data-act="final-report-ready-action" data-final-action="record">View Inspection Record</button>' +
+    '</div>' +
+    '<div class="final-ready-meta">' +
+      '<div><span>Inspection ID</span><b>INS-2026-014</b></div>' +
+      '<div><span>Organization</span><b>SkyCargo Air</b></div>' +
+      '<div><span>Inspection Type</span><b>Routine (Announced)</b></div>' +
+      '<div><span>Inspection Dates</span><b>12 - 14 Jun 2026</b></div>' +
+      '<div><span>Report Version</span><b>2.0 (Final Report)</b></div>' +
+      '<div><span>All Approvals Completed On</span><b>' + esc(readyAt) + '</b></div>' +
+    '</div>' +
+    '<div class="final-ready-layout">' +
+      '<main class="final-ready-main">' +
+        '<section class="final-ready-banner"><div><b>All CAPs have been reviewed and approved by all authorities.</b><p>You can now prepare the Final Report.</p></div><button class="btn" data-act="nav" data-view="findings" data-filter="capreview">View CAPs & Approvals</button></section>' +
+        '<section class="final-ready-panel"><h2>CAP Summary (All Organizations)</h2><div class="final-ready-cards">' +
+          finalReadySummaryCard('Total Findings', '9', '100% addressed') +
+          finalReadySummaryCard('Level 1 (Critical)', '2', 'Due in 14 days', 'l1') +
+          finalReadySummaryCard('Level 2 (Major)', '3', 'Due in 90 days', 'l2') +
+          finalReadySummaryCard('Level 3 (Observation)', '4', 'Observation / No Due Date', 'l3') +
+          finalReadySummaryCard('CAP Status', 'Approved', 'On 30 Jun 2026', 'ok') +
+        '</div></section>' +
+        '<section class="final-ready-panel"><h2>Organizations Included in this Inspection</h2><div class="final-ready-table-wrap"><table class="final-ready-table"><thead><tr><th>Organization</th><th>CAP Status</th><th>CAPs Submitted</th><th>All Approvals Completed On</th><th></th></tr></thead><tbody>' +
+          orgRows.map(function (row) {
+            return '<tr><td>' + esc(row[0]) + '</td><td class="is-ok">' + esc(row[1]) + '</td><td>' + esc(row[2]) + '</td><td>' + esc(row[3]) + '</td><td><button class="btn btn--sm" data-act="nav" data-view="findings" data-filter="capreview">View Details</button></td></tr>';
+          }).join('') +
+        '</tbody></table></div></section>' +
+        '<section class="final-ready-panel"><h2>Final Report Preparation</h2><p>All CAPs are approved. You can now prepare the Final Report. Once submitted, it will go through the approval workflow.</p>' +
+          '<div class="final-ready-prep-grid">' +
+            '<div class="final-ready-prep-card"><h3>Report Information</h3><dl><dt>Report Version</dt><dd>2.0 (Final)</dd><dt>Report Title (Draft)</dt><dd>INS-2026-014 Final Report - SkyCargo Air</dd><dt>Report Language</dt><dd>English</dd><dt>Last Updated</dt><dd>' + esc(prepared ? ui.finalReportPreparedAt : '30 Jun 2026 16:25') + '</dd></dl><button class="btn btn--sm">Edit Report Information</button></div>' +
+            '<div class="final-ready-prep-card"><h3>Report Sections</h3><ol>' + sections.map(function (section) { return '<li><span>' + esc(section[0]) + '</span>' + demoBadge(section[1], section[1] === 'Completed' ? 'ok' : (section[1] === 'In Progress' ? 'info' : 'neutral')) + '</li>'; }).join('') + '</ol></div>' +
+            '<div class="final-ready-prep-card final-ready-actions"><h3>Actions</h3><button class="btn btn--primary" data-act="final-report-ready-action" data-final-action="prepare">' + esc(prepared ? 'Continue Final Report' : 'Prepare / Edit Final Report') + '</button><button class="btn" data-act="final-report-ready-action" data-final-action="preview">Preview Final Report</button><button class="btn" data-act="final-report-ready-action" data-final-action="attachments">Manage Attachments</button></div>' +
+          '</div></section>' +
+      '</main>' +
+      '<aside class="final-ready-side">' +
+        '<section class="final-ready-panel"><h2>Approval Status</h2>' +
+          finalReadyStatusStep('Inspector Review', 'Aylin Sezer', '30 Jun 2026 10:15') +
+          finalReadyStatusStep('Lead Inspector Review', 'Aylin Sezer', '30 Jun 2026 11:40') +
+          finalReadyStatusStep('Department Manager Approval', 'Mehmet Kaya', '30 Jun 2026 13:05') +
+          finalReadyStatusStep('General Manager Approval', 'Selin Yildiz', '30 Jun 2026 14:30') +
+          finalReadyStatusStep('ED Final Approval', 'Elif Demir', '30 Jun 2026 16:20') +
+        '</section>' +
+        '<section class="final-ready-panel"><h2>Inspection Summary</h2><dl class="final-ready-dl"><dt>Department</dt><dd>Security</dd><dt>Checklist Section</dt><dd>Physical Security</dd><dt>Inspection Dates</dt><dd>12 - 14 Jun 2026</dd><dt>CAP Submitted On</dt><dd>27 Jun 2026 09:15</dd><dt>All Approvals Completed On</dt><dd>30 Jun 2026 16:20</dd><dt>Total Attachments</dt><dd>6 files</dd></dl></section>' +
+        '<section class="final-ready-panel"><h2>Next Steps</h2><div class="cap-review-mini-timeline">' +
+          '<div class="cap-review-mini-step is-current"><span>1</span><p><b>Lead Inspector Review (You)</b><small>Current Step</small></p></div>' +
+          '<div class="cap-review-mini-step is-waiting"><span>2</span><p><b>Department Manager Approval</b><small>Pending</small></p></div>' +
+          '<div class="cap-review-mini-step is-waiting"><span>3</span><p><b>General Manager Approval</b><small>Pending</small></p></div>' +
+          '<div class="cap-review-mini-step is-waiting"><span>4</span><p><b>ED Final Approval</b><small>Pending</small></p></div>' +
+          '<div class="cap-review-mini-step is-waiting"><span>5</span><p><b>Report Release to Service Provider</b><small>Pending</small></p></div>' +
+        '</div></section>' +
+      '</aside>' +
+    '</div>' +
+  '</div>';
+}
+
+function finalReportPrepareStepsData() {
+  return [
+    ['executive', 'Executive Summary'],
+    ['overview', 'Inspection Overview'],
+    ['findings', 'Findings Summary'],
+    ['cap', 'CAP Implementation Summary'],
+    ['conclusions', 'Conclusions'],
+    ['recommendations', 'Recommendations'],
+    ['appendices', 'Appendices & Attachments'],
+    ['review', 'Review & Submit']
+  ];
+}
+
+function finalReportPrepareStepMeta(step) {
+  var steps = finalReportPrepareStepsData();
+  for (var i = 0; i < steps.length; i++) {
+    if (steps[i][0] === step) return { id: steps[i][0], label: steps[i][1], index: i + 1 };
+  }
+  return { id: 'executive', label: 'Executive Summary', index: 1 };
+}
+
+function finalReportPrepareStepper(activeStep) {
+  var active = finalReportPrepareStepMeta(activeStep);
+  return '<div class="final-prepare-stepper">' + finalReportPrepareStepsData().map(function (step, index) {
+    var stepIndex = index + 1;
+    var cls = stepIndex < active.index ? ' is-done' : (stepIndex === active.index ? ' is-active' : '');
+    var marker = stepIndex < active.index ? '✓' : String(stepIndex);
+    return '<button class="final-prepare-step' + cls + '" data-act="final-report-prepare-step" data-step="' + esc(step[0]) + '"><span>' + esc(marker) + '</span><b>' + esc(step[1]) + '</b></button>';
+  }).join('') + '</div>';
+}
+
+function finalReportPrepareSectionRail(activeStep) {
+  var active = finalReportPrepareStepMeta(activeStep);
+  return '<aside class="final-content-rail">' + finalReportPrepareStepsData().filter(function (step) { return step[0] !== 'review'; }).map(function (step, index) {
+    var cls = step[0] === active.id ? ' is-active' : '';
+    return '<button class="final-content-rail__item' + cls + '" data-act="final-report-prepare-step" data-step="' + esc(step[0]) + '">' +
+      '<b>' + esc(String(index + 1) + '. ' + step[1]) + '</b>' +
+    '</button>';
+  }).join('') + '</aside>';
+}
+
+function finalReportPrepareDefaultContent(step) {
+  var content = {
+    executive: 'This inspection was conducted between 12 - 14 Jun 2026 at SkyCargo Air (Service Provider) and included a review of physical security controls and procedures.\n\nA total of 9 findings were identified across all organizations.\n\nOverall, the security system is effective; however, certain areas require improvement to ensure full compliance with applicable regulations and standards.',
+    overview: 'The inspection covered SkyCargo Air and associated service providers involved in cargo security, screening, ground handling, fuel services and catering support.\n\nThe review focused on configured AVSEC checklist requirements, supporting evidence, CAP implementation status and approval records.',
+    findings: 'The inspection resulted in 9 findings: 2 Level 1 Critical, 3 Level 2 Major and 4 Level 3 Observation items.\n\nAll required CAPs have been submitted, reviewed and approved before final report preparation.',
+    cap: 'CAP implementation was reviewed against the final report CAP requirements. Service providers submitted corrective action plans, target completion dates and supporting evidence for each applicable finding.\n\nAll CAPs are approved and ready for final report consolidation.',
+    conclusions: 'The inspection concludes that controls are generally effective with documented improvements required in access control, screening procedure evidence and security awareness records.',
+    recommendations: 'Continue monitoring Level 1 and Level 2 corrective actions within the configured due windows. Maintain evidence version history and conduct targeted follow-up where implementation risk remains.',
+    appendices: 'Appendices include the final report PDF, inspection plan, findings evidence package, CAP submission references, approval records and supporting documents.',
+    review: 'Review the final report sections, confirm the CAP summary and submit the Final Report for Department Manager approval.'
+  };
+  return content[step] || content.executive;
+}
+
+function finalReportPrepareEditor(ui, meta) {
+  var body = ui.finalReportContent || finalReportPrepareDefaultContent(meta.id);
+  return '<section class="final-prepare-panel final-content-editor-card">' +
+    '<div class="final-content-editor-head"><div><h2>' + esc(meta.index + '. ' + meta.label) + '</h2>' +
+    '<p>' + esc(meta.id === 'executive' ? 'Provide a high-level overview of the inspection, key findings and overall conclusion.' : 'Write and refine this Final Report section before submission.') + '</p></div>' +
+    '<span class="final-prepare-char-count">Characters: ' + esc(String(body.length)) + '</span></div>' +
+    '<div class="final-prepare-toolbar">' +
+      '<select aria-label="Text style"><option>Paragraph</option><option>Heading 1</option><option>Heading 2</option></select>' +
+      '<button type="button" disabled>B</button><button type="button" disabled>I</button><button type="button" disabled>U</button><button type="button" disabled>≡</button><button type="button" disabled>•</button><button type="button" disabled>1.</button><button type="button" disabled>↗</button><button type="button" disabled>▦</button><button type="button" disabled>↶</button><button type="button" disabled>↷</button>' +
+    '</div>' +
+    '<div class="final-prepare-editor">' +
+      '<label class="sr-only" for="final-report-content">Final report content</label>' +
+      '<textarea id="final-report-content" data-field="final-report-content" aria-label="Final report content">' + esc(body) + '</textarea>' +
+    '</div>' +
+    '<div class="final-content-editor-actions"><button class="btn" data-act="final-report-prepare-save">Save as Draft</button><button class="btn btn--primary" data-act="final-report-prepare-next">Next Section -></button></div>' +
+  '</section>';
+}
+
+function finalReportPrepareSectionRows(activeStep) {
+  var active = finalReportPrepareStepMeta(activeStep);
+  return '<div class="final-content-section-list">' + finalReportPrepareStepsData().filter(function (step) { return step[0] !== 'review' && step[0] !== active.id; }).map(function (step, index) {
+    var meta = finalReportPrepareStepMeta(step[0]);
+    return '<button class="final-content-section-row" data-act="final-report-prepare-step" data-step="' + esc(step[0]) + '">' +
+      '<b>' + esc(meta.index + '. ' + step[1]) + '</b>' + demoBadge('Completed', 'ok') + '<span>⌄</span>' +
+    '</button>';
+  }).join('') + '</div>';
+}
+
+function finalReportPrepareProgress() {
+  return '<section class="final-prepare-panel final-content-progress"><h2>Report Progress</h2>' +
+    '<div class="final-content-progress-steps">' +
+      '<div class="is-done"><span>✓</span><b>Content</b></div>' +
+      '<div class="is-done"><span>✓</span><b>Review</b></div>' +
+      '<div class="is-current"><span>3</span><b>Final Report</b></div>' +
+    '</div></section>';
+}
+
+function finalReportPrepareSummaryPanel() {
+  return '<section class="final-prepare-panel final-content-summary"><h2>Report Summary</h2>' +
+    '<dl class="final-prepare-info-list"><dt>Total Organizations</dt><dd>5</dd><dt>Total Findings</dt><dd>9</dd></dl>' +
+    '<div class="final-content-levels">' +
+      '<div><span class="is-l1"></span><b>Level 1 (Critical)</b><em>2</em></div>' +
+      '<div><span class="is-l2"></span><b>Level 2 (Major)</b><em>3</em></div>' +
+      '<div><span class="is-l3"></span><b>Level 3 (Observation)</b><em>4</em></div>' +
+    '</div>' +
+    '<dl class="final-prepare-info-list is-separated"><dt>CAPs Approved</dt><dd class="is-ok">9 / 9</dd><dt>CAP Approval Completed On</dt><dd>30 Jun 2026 16:20</dd></dl>' +
+  '</section>';
+}
+
+function finalReportPrepareAttachmentsPanel() {
+  var files = [
+    ['Inspection Plan.pdf', '245 KB', 'pdf'],
+    ['Organization List.xlsx', '18 KB', 'xls'],
+    ['Evidence Photos.zip', '12.4 MB', 'zip'],
+    ['CAP Summary.pdf', '320 KB', 'pdf'],
+    ['Additional Documents.pdf', '1.1 MB', 'pdf']
+  ];
+  return '<section class="final-prepare-panel final-content-attachments"><div class="final-content-panel-head"><h2>Attachments (5)</h2><button class="btn btn--sm" data-act="final-report-ready-action" data-final-action="attachments">View All</button></div>' +
+    '<div class="final-content-file-list">' + files.map(function (file) {
+      return '<button class="final-content-file" data-act="final-report-ready-action" data-final-action="attachments"><span class="is-' + esc(file[2]) + '"></span><b>' + esc(file[0]) + '</b><em>' + esc(file[1]) + '</em></button>';
+    }).join('') + '</div></section>';
+}
+
+function finalReportPrepareSide(ui) {
+  var savedAt = ui.finalReportSavedAt || ui.finalReportPreparedAt || '30 Jun 2026 16:25';
+  return '<aside class="final-prepare-side">' +
+    finalReportPrepareProgress() +
+    finalReportPrepareSummaryPanel() +
+    '<section class="final-prepare-panel"><h2>Report Information</h2><dl class="final-prepare-info-list"><dt>Report Title</dt><dd>INS-2026-014 Final Report - SkyCargo Air</dd><dt>Report Version</dt><dd>2.0 (Final Report)</dd><dt>Report Language</dt><dd>English</dd><dt>Last Saved</dt><dd>' + esc(savedAt) + '<br>by Aylin Sezer</dd></dl></section>' +
+    finalReportPrepareAttachmentsPanel() +
+  '</aside>';
+}
+
+function viewLeadFinalReportPrepare() {
+  var ui = capTrackingUiState();
+  var meta = finalReportPrepareStepMeta(ui.finalReportPrepareStep || 'executive');
+  return '<div class="final-prepare-page">' +
+    '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><span>INS-2026-014</span><span>›</span><span>Final Reports</span><span>›</span><span>Prepare Final Report</span><span>›</span><b>Report Content</b></div>' +
+    '<div class="final-ready-head">' +
+      '<div><h1>Report Content ' + demoBadge('All CAPs Approved', 'ok') + '</h1></div>' +
+      '<div class="cap-track-head-actions"><button class="btn" data-act="final-report-prepare-back">Back to Final Report Submission</button><button class="btn btn--primary" data-act="final-report-prepare-review">Save & Continue to Review -></button></div>' +
+    '</div>' +
+    '<div class="final-ready-meta">' +
+      '<div><span>Inspection ID</span><b>INS-2026-014</b></div>' +
+      '<div><span>Organization</span><b>SkyCargo Air</b></div>' +
+      '<div><span>Inspection Type</span><b>Routine (Announced)</b></div>' +
+      '<div><span>Inspection Dates</span><b>12 - 14 Jun 2026</b></div>' +
+      '<div><span>Report Version</span><b>2.0 (Final Report)</b></div>' +
+      '<div><span>All CAPs Approved On</span><b>' + esc(ui.allCapsApprovedAt || ui.finalReportReadyAt || '30 Jun 2026 16:20') + '</b></div>' +
+    '</div>' +
+    '<div class="final-content-layout">' +
+      finalReportPrepareSectionRail(meta.id) +
+      '<main class="final-prepare-main">' + finalReportPrepareEditor(ui, meta) + finalReportPrepareSectionRows(meta.id) + '</main>' +
+      finalReportPrepareSide(ui) +
+    '</div>' +
+    '<div class="final-content-foot">Last saved: ' + esc(ui.finalReportSavedAt || ui.finalReportPreparedAt || '30 Jun 2026 16:25') + '</div>' +
+  '</div>';
+}
+
 function viewAuditReportsApproval() {
   var requestedAuditId = state.params && state.params.auditId;
   var requestedFilter = state.params && state.params.filter ? state.params.filter : selectedFilter('audit-reports', 'all');
@@ -5213,6 +5845,9 @@ function viewAuditReportsApproval() {
     var preliminaryUi = leadPreliminaryReportsUiState();
     if (preliminaryUi.mode === 'workflow') return viewLeadPreliminaryWorkflow();
     return viewLeadPreliminaryReports();
+  }
+  if (!requestedAuditId && state.role === 'leadInspector' && requestedFilter === 'final') {
+    return viewLeadFinalReportReady();
   }
   var report = requestedAuditId ? reportForAudit(requestedAuditId) : null;
   if (!report) report = state.auditReports && state.auditReports.length ? state.auditReports[0] : null;
