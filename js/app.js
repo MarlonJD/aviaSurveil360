@@ -12,7 +12,8 @@ var NAV = {
     { view: 'question-bank', label: 'Question Bank', icon: '□' },
     { view: 'checklist-builder', label: 'Checklist Builder', icon: '▧' },
     { view: 'checklist-versions', label: 'Version History', icon: '◷' },
-    { view: 'audit-reports', label: 'Audit Reports', icon: '📄' },
+    { view: 'audit-reports', label: 'Audit Reports', icon: '📄', filter: 'all' },
+    { view: 'audit-reports', label: 'Preliminary Reports', icon: '□', filter: 'preliminary', badge: '1' },
     { view: 'safety-intelligence', label: 'Team Dashboard', icon: '⌁' },
     { view: 'ssp-nasp', label: 'Executive Dashboard', icon: '▣' },
     { section: 'Oversight' },
@@ -35,17 +36,20 @@ var NAV = {
   inspector: [
     { view: 'dashboard', label: 'My Inspections', icon: '▣' },
     { view: 'findings', label: 'CAP Reviews', icon: '✓', filter: 'capreview' },
+    { view: 'findings', label: 'Findings Review', icon: '⚑', filter: 'open' },
     { view: 'reports', label: 'Reports', icon: '□' },
     { view: 'offline-field', label: 'Evidence', icon: '△' },
-    { view: 'findings', label: 'Findings', icon: '◇', filter: 'open' },
     { view: 'profile', label: 'Profile', icon: '○' }
   ],
   auditee: [
     { section: 'Service Provider Portal' },
-    { view: 'my-findings', label: 'Findings & CAPs', icon: '⚑' },
-    { view: 'my-findings', label: 'CAP Uploads', icon: '⇧' },
-    { view: 'messages', label: 'CAA Responses', icon: '📨' },
-    { view: 'reports', label: 'Documents Shared', icon: '📄' }
+    { view: 'reports', label: 'Received Reports', icon: '□', filter: 'received', badge: '1' },
+    { view: 'my-findings', label: 'My CAPs', icon: '✓', badge: '5' },
+    { view: 'messages', label: 'Communications', icon: '✉', badge: '1' },
+    { section: 'Workspace' },
+    { view: 'my-findings', label: 'CAP Management', icon: '▤' },
+    { view: 'reports', label: 'Documents', icon: '□', filter: 'documents' },
+    { view: 'settings', label: 'Settings', icon: '⚙' }
   ],
   admin: [
     { section: 'Regulations' },
@@ -70,7 +74,6 @@ var NAV = {
   leadInspector: [
     { view: 'dashboard', label: 'Dashboard', icon: '▦' },
     { view: 'lead-review', label: 'Assigned Audits', icon: '▣' },
-    { view: 'findings', label: 'Findings Review', icon: '⚑', filter: 'open', badge: '12' },
     { view: 'audit-reports', label: 'Preliminary Reports', icon: '□', filter: 'preliminary', badge: '6' },
     { view: 'audit-reports', label: 'Final Reports', icon: '□', filter: 'final', badge: '4' },
     { view: 'findings', label: 'CAP Verification', icon: '✓', filter: 'capreview', badge: '7' },
@@ -119,8 +122,8 @@ var VIEW_TITLES = {
 };
 
 var ROLE_DESC = {
-  inspector: 'Inspector Workspace — daily operations, assigned packages, CAP review and field work.',
-  leadInspector: 'Lead Inspector — assigned audits, findings review, preliminary/final reports and CAP verification.',
+  inspector: 'Inspector Workspace — daily operations, findings review, CAP review and field work.',
+  leadInspector: 'Lead Inspector — assigned audits, preliminary/final reports and CAP verification.',
   manager: 'Department Manager — planning items, approvals, scheduling and department oversight.',
   gm: 'General Manager — planning and report approvals, budget routing and audit release.',
   finance: 'Finance Review — budget and resource review for planned audits.',
@@ -151,7 +154,7 @@ var ROLE_ORDER = ['inspector', 'leadInspector', 'manager', 'gm', 'finance', 'exe
 var pickedFiles = {};
 
 function homeView(role) {
-  if (role === 'auditee') return 'my-findings';
+  if (role === 'auditee') return 'reports';
   if (role === 'admin') return 'templates';
   if (role === 'gm' || role === 'finance' || role === 'executiveDirector') return 'planning';
   if (role === 'leadInspector') return 'lead-review';
@@ -302,10 +305,16 @@ function render() {
 
   var r = ROLES[state.role];
   var unread = unreadCount(state.role);
+  var serviceProviderReportActive = state.role === 'auditee' && state.view === 'reports' &&
+    ((state.params && state.params.filter) || selectedFilter('reports', 'received')) === 'received';
+  var whoName = serviceProviderReportActive ? 'SkyCargo Air' : r.user;
+  var whoInitials = serviceProviderReportActive ? 'SP' : r.initials;
+  var whoRole = serviceProviderReportActive ? 'Service Provider' : (EXPERIENCE_LABEL[state.role] || r.name);
+  var auditeeSuffix = state.role === 'auditee' ? ' · ' + (serviceProviderReportActive ? 'SkyCargo Air' : ROLES.auditee.orgName) : '';
 
   var roleOptions = ROLE_ORDER.map(function (k) {
     return '<option value="' + k + '"' + (k === state.role ? ' selected' : '') + '>' + esc(EXPERIENCE_LABEL[k] || ROLES[k].name) +
-      (k === 'auditee' ? ' — Airline XYZ' : '') + '</option>';
+      (k === 'auditee' ? ' - Service Provider' : '') + '</option>';
   }).join('');
 
   var notifPanel = state.ui.notifOpen ? renderNotifPanel() : '';
@@ -334,9 +343,9 @@ function render() {
               (unread ? '<span class="dot">' + unread + '</span>' : '') + '</button>' +
             notifPanel +
           '</div>' +
-          '<div class="who"><div class="who__avatar" style="background:' + r.color + '">' + esc(r.initials) + '</div>' +
-            '<div><div class="who__name">' + esc(r.user) + '</div><div class="who__role">' + esc(EXPERIENCE_LABEL[state.role] || r.name) +
-            (state.role === 'auditee' ? ' · Airline XYZ' : '') + '</div></div></div>' +
+          '<div class="who"><div class="who__avatar" style="background:' + r.color + '">' + esc(whoInitials) + '</div>' +
+            '<div><div class="who__name">' + esc(whoName) + '</div><div class="who__role">' + esc(whoRole) +
+            esc(auditeeSuffix) + '</div></div></div>' +
         '</header>') +
         '<main class="content' + (inspectorChrome ? ' content--inspector' : '') + '">' + (inspectorChrome ? inspectorUserBar() : '') + renderContent() + '</main>' +
       '</div>' +
@@ -506,6 +515,7 @@ function go(view, opts) {
   opts = opts || {};
   state.view = view;
   if (view === 'lead-review' && !opts.auditId) delete state.params.auditId;
+  if (view === 'audit-reports' && !opts.auditId) delete state.params.auditId;
   if (opts.auditId !== undefined && opts.auditId !== null && opts.auditId !== '') state.params.auditId = opts.auditId;
   if (opts.findingId !== undefined && opts.findingId !== null && opts.findingId !== '') state.params.findingId = opts.findingId;
   if (opts.orgId !== undefined && opts.orgId !== null && opts.orgId !== '') state.params.orgId = opts.orgId;
@@ -516,6 +526,9 @@ function go(view, opts) {
     if (!state.selectedFilters) state.selectedFilters = {};
     state.selectedFilters[view] = opts.filter;
     if (view === 'findings') state.selectedFilters.findings = opts.filter;
+  }
+  if (view === 'audit-reports' && opts.filter === 'preliminary' && !opts.auditId) {
+    ensureLeadPreliminaryReportsUi().mode = 'list';
   }
   if (view === 'findings' && opts.filter === 'capreview') {
     var capUi = ensureCapReviewUi();
@@ -547,6 +560,11 @@ function setRole(roleKey) {
     ensureLeadAssignedAuditsUi();
     leadUi.tab = 'report';
     leadUi.actionsOpen = false;
+  }
+  if (roleKey === 'auditee') {
+    ensureServiceProviderReportUi();
+    state.selectedFilters.reports = 'received';
+    state.params.filter = 'received';
   }
   closeModal();
   persistAfterAction();
@@ -682,6 +700,31 @@ function handleAction(act, el) {
     case 'lead-assigned-more-filters': handleLeadAssignedMoreFilters(); break;
     case 'lead-assigned-new': handleLeadAssignedNew(); break;
     case 'lead-assigned-row-menu': handleLeadAssignedRowMenu(id); break;
+    case 'preliminary-report-new': handlePreliminaryReportNew(); break;
+    case 'preliminary-report-open': handlePreliminaryReportOpen(id); break;
+    case 'preliminary-report-actions': handlePreliminaryReportActions(id); break;
+    case 'preliminary-report-step': handlePreliminaryReportStep(el.getAttribute('data-step')); break;
+    case 'preliminary-report-next': handlePreliminaryReportNext(); break;
+    case 'preliminary-report-back': handlePreliminaryReportBack(); break;
+    case 'preliminary-report-save': handlePreliminaryReportSave(); break;
+    case 'preliminary-report-submit': handlePreliminaryReportSubmit(); break;
+    case 'preliminary-report-preview': handlePreliminaryReportPreview(); break;
+    case 'preliminary-report-browse-file': handlePreliminaryReportBrowseFile(); break;
+    case 'preliminary-report-new-folder': handlePreliminaryReportNewFolder(); break;
+    case 'preliminary-report-attachment-action': handlePreliminaryReportAttachmentAction(id); break;
+    case 'preliminary-report-view-finding': handlePreliminaryReportViewFinding(id); break;
+    case 'department-prelim-tab': handleDepartmentPreliminaryTab(tab); break;
+    case 'department-prelim-toggle-menu': handleDepartmentPreliminaryToggleMenu(); break;
+    case 'department-prelim-approve': handleDepartmentPreliminaryApprove(el.getAttribute('data-path')); break;
+    case 'department-prelim-request-changes': handleDepartmentPreliminaryRequestChanges(); break;
+    case 'department-prelim-download': handleDepartmentPreliminaryDownload(); break;
+    case 'department-prelim-back': go('audit-reports', { filter: 'all' }); break;
+    case 'service-report-tab': handleServiceProviderReportTab(tab); break;
+    case 'service-report-download': handleServiceProviderReportDownload(); break;
+    case 'service-report-submit-cap': handleServiceProviderSubmitCap(id); break;
+    case 'service-report-confirm-cap': handleServiceProviderConfirmCap(id); break;
+    case 'service-report-view-finding': handleServiceProviderViewFinding(id); break;
+    case 'service-report-document': handleServiceProviderDocument(id); break;
     case 'cap-review-row': handleCapReviewRow(id); break;
     case 'cap-review-tab': handleCapReviewTab(id, tab); break;
     case 'cap-review-filter': handleCapReviewQuickFilter(status); break;
@@ -945,6 +988,83 @@ function ensureLeadAssignedAuditsUi() {
   return state.leadAssignedAuditsUi;
 }
 
+function ensureLeadPreliminaryReportsUi() {
+  if (!state.leadPreliminaryReportsUi) state.leadPreliminaryReportsUi = {};
+  state.leadPreliminaryReportsUi = Object.assign({
+    query: '',
+    status: 'all',
+    organization: 'all',
+    period: 'all',
+    mode: 'list',
+    selectedReportId: 'PR-2026-018',
+    step: 'inspection',
+    draftSavedAt: '',
+    submittedAt: '',
+    mockUploadName: '',
+    includedFindings: {},
+    declarations: {
+      accurate: true,
+      evidenceBased: true,
+      readyForReview: true
+    },
+    reportContent: ''
+  }, state.leadPreliminaryReportsUi || {});
+  state.leadPreliminaryReportsUi.declarations = Object.assign({
+    accurate: true,
+    evidenceBased: true,
+    readyForReview: true
+  }, state.leadPreliminaryReportsUi.declarations || {});
+  if (!state.leadPreliminaryReportsUi.includedFindings || typeof state.leadPreliminaryReportsUi.includedFindings !== 'object') state.leadPreliminaryReportsUi.includedFindings = {};
+  if (!state.leadPreliminaryReportsUi.query) state.leadPreliminaryReportsUi.query = '';
+  if (!state.leadPreliminaryReportsUi.status) state.leadPreliminaryReportsUi.status = 'all';
+  if (!state.leadPreliminaryReportsUi.organization) state.leadPreliminaryReportsUi.organization = 'all';
+  if (!state.leadPreliminaryReportsUi.period) state.leadPreliminaryReportsUi.period = 'all';
+  if (!state.leadPreliminaryReportsUi.mode) state.leadPreliminaryReportsUi.mode = 'list';
+  if (!state.leadPreliminaryReportsUi.selectedReportId) state.leadPreliminaryReportsUi.selectedReportId = 'PR-2026-018';
+  if (!state.leadPreliminaryReportsUi.step) state.leadPreliminaryReportsUi.step = 'inspection';
+  if (!state.leadPreliminaryReportsUi.draftSavedAt) state.leadPreliminaryReportsUi.draftSavedAt = '';
+  if (!state.leadPreliminaryReportsUi.submittedAt) state.leadPreliminaryReportsUi.submittedAt = '';
+  if (!state.leadPreliminaryReportsUi.mockUploadName) state.leadPreliminaryReportsUi.mockUploadName = '';
+  if (!state.leadPreliminaryReportsUi.reportContent) state.leadPreliminaryReportsUi.reportContent = '';
+  return state.leadPreliminaryReportsUi;
+}
+
+function ensureDepartmentPreliminaryReviewUi() {
+  if (!state.departmentPreliminaryReviewUi) state.departmentPreliminaryReviewUi = {};
+  state.departmentPreliminaryReviewUi = Object.assign({
+    tab: 'summary',
+    selectedReportId: 'PR-2026-018',
+    capRequired: true,
+    approveMenuOpen: true,
+    approvedAt: '',
+    approvedPath: '',
+    returnedAt: ''
+  }, state.departmentPreliminaryReviewUi || {});
+  if (!state.departmentPreliminaryReviewUi.tab) state.departmentPreliminaryReviewUi.tab = 'summary';
+  if (!state.departmentPreliminaryReviewUi.selectedReportId) state.departmentPreliminaryReviewUi.selectedReportId = 'PR-2026-018';
+  state.departmentPreliminaryReviewUi.capRequired = state.departmentPreliminaryReviewUi.capRequired !== false;
+  state.departmentPreliminaryReviewUi.approveMenuOpen = state.departmentPreliminaryReviewUi.approveMenuOpen !== false;
+  if (!state.departmentPreliminaryReviewUi.approvedAt) state.departmentPreliminaryReviewUi.approvedAt = '';
+  if (!state.departmentPreliminaryReviewUi.approvedPath) state.departmentPreliminaryReviewUi.approvedPath = '';
+  if (!state.departmentPreliminaryReviewUi.returnedAt) state.departmentPreliminaryReviewUi.returnedAt = '';
+  return state.departmentPreliminaryReviewUi;
+}
+
+function ensureServiceProviderReportUi() {
+  if (!state.serviceProviderReportUi) state.serviceProviderReportUi = {};
+  state.serviceProviderReportUi = Object.assign({
+    tab: 'cap',
+    submittedCaps: {},
+    downloadedAt: ''
+  }, state.serviceProviderReportUi || {});
+  if (!state.serviceProviderReportUi.tab) state.serviceProviderReportUi.tab = 'cap';
+  if (!state.serviceProviderReportUi.submittedCaps || typeof state.serviceProviderReportUi.submittedCaps !== 'object') {
+    state.serviceProviderReportUi.submittedCaps = {};
+  }
+  if (!state.serviceProviderReportUi.downloadedAt) state.serviceProviderReportUi.downloadedAt = '';
+  return state.serviceProviderReportUi;
+}
+
 function leadReviewSectionIndex(sectionNo) {
   var sections = typeof INSPECTOR_EXECUTION_SECTIONS !== 'undefined' ? INSPECTOR_EXECUTION_SECTIONS : [];
   for (var i = 0; i < sections.length; i++) {
@@ -1132,6 +1252,349 @@ function handleLeadAssignedRowMenu(auditId) {
     '</div>',
     '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="nav" data-view="lead-review" data-id="' + esc(row.detailAuditId) + '">Open Audit Workspace</button>',
     false));
+}
+
+function handleLeadPreliminaryReportFieldChange(field, target) {
+  var ui = ensureLeadPreliminaryReportsUi();
+  var value = target && target.value !== undefined ? target.value : '';
+  if (field === 'preliminary-report-query') ui.query = value;
+  if (field === 'preliminary-report-status') ui.status = value || 'all';
+  if (field === 'preliminary-report-organization') ui.organization = value || 'all';
+  if (field === 'preliminary-report-period') ui.period = value || 'all';
+  if (field === 'preliminary-report-content') ui.reportContent = value;
+  if (field === 'preliminary-report-finding') {
+    var findingId = target && target.getAttribute ? target.getAttribute('data-id') : '';
+    if (findingId) ui.includedFindings[findingId] = !!target.checked;
+  }
+  if (field === 'preliminary-report-declaration') {
+    var declaration = target && target.getAttribute ? target.getAttribute('data-id') : '';
+    if (declaration) ui.declarations[declaration] = !!target.checked;
+  }
+  persistAfterAction();
+  if (field !== 'preliminary-report-content') render();
+}
+
+function handlePreliminaryReportNew() {
+  openModal(modalShell('New preliminary report',
+    '<div class="lead-assigned-modal">' +
+      '<p><b>Draft preliminary report package</b></p>' +
+      '<div class="metaline">' +
+        metaItem('Inspection', 'AVSEC Inspection') +
+        metaItem('Organization', 'SkyCargo Air') +
+        metaItem('Lead Inspector', ROLES.leadInspector.user) +
+        metaItem('Status', 'Draft') +
+      '</div>' +
+      '<p class="small muted mt-12">Demo only: this creates a mock report shell in the browser. No backend, real report engine, storage, or notification is used.</p>' +
+    '</div>',
+    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="preliminary-report-open" data-id="PR-2026-018">Open Existing Report</button>',
+    false));
+}
+
+function handlePreliminaryReportOpen(reportId) {
+  var row = typeof leadPreliminaryReportById === 'function' ? leadPreliminaryReportById(reportId) : null;
+  if (!row || !row.auditId) {
+    toast('Report unavailable', 'This mock report does not have a detail package in the demo.', 'warn');
+    return;
+  }
+  closeModal();
+  go('audit-reports', { auditId: row.auditId, filter: 'preliminary' });
+}
+
+function handlePreliminaryReportActions(reportId) {
+  var row = typeof leadPreliminaryReportById === 'function' ? leadPreliminaryReportById(reportId) : null;
+  if (!row) return;
+  var ui = ensureLeadPreliminaryReportsUi();
+  ui.mode = 'workflow';
+  ui.selectedReportId = row.id;
+  ui.step = 'inspection';
+  state.view = 'audit-reports';
+  state.params = { filter: 'preliminary' };
+  if (state.selectedFilters) state.selectedFilters['audit-reports'] = 'preliminary';
+  closeModal();
+  persistAfterAction();
+  render();
+}
+
+function preliminaryReportStepOrder() {
+  return ['inspection', 'content', 'attachments', 'review'];
+}
+
+function handlePreliminaryReportStep(step) {
+  var order = preliminaryReportStepOrder();
+  if (order.indexOf(step) === -1) return;
+  var ui = ensureLeadPreliminaryReportsUi();
+  ui.mode = 'workflow';
+  ui.step = step;
+  persistAfterAction();
+  render();
+}
+
+function handlePreliminaryReportNext() {
+  var ui = ensureLeadPreliminaryReportsUi();
+  var order = preliminaryReportStepOrder();
+  var index = order.indexOf(ui.step || 'inspection');
+  ui.mode = 'workflow';
+  ui.step = order[Math.min(order.length - 1, index + 1)] || 'inspection';
+  persistAfterAction();
+  render();
+}
+
+function handlePreliminaryReportBack() {
+  var ui = ensureLeadPreliminaryReportsUi();
+  var order = preliminaryReportStepOrder();
+  var index = order.indexOf(ui.step || 'inspection');
+  if (index <= 0) {
+    ui.mode = 'list';
+    ui.step = 'inspection';
+  } else {
+    ui.mode = 'workflow';
+    ui.step = order[index - 1];
+  }
+  persistAfterAction();
+  render();
+}
+
+function handlePreliminaryReportSave() {
+  var ui = ensureLeadPreliminaryReportsUi();
+  ui.draftSavedAt = logTimestamp();
+  persistAfterAction();
+  render();
+  toast('Draft saved', 'Preliminary report draft was saved in this browser.', 'ok');
+}
+
+function handlePreliminaryReportSubmit() {
+  var ui = ensureLeadPreliminaryReportsUi();
+  ui.submittedAt = logTimestamp();
+  ui.step = 'review';
+  pushNotification('manager', 'RPT', 'Preliminary report ' + (ui.selectedReportId || 'PR-2026-018') + ' is ready for Department Manager review.');
+  addLog('Preliminary report submitted to Department Manager', ui.selectedReportId || 'PR-2026-018');
+  persistAfterAction();
+  render();
+  toast('Submitted to Department Manager', 'The Department Manager will release it to the Service Provider only if CAP is required.', 'ok');
+}
+
+function handlePreliminaryReportPreview() {
+  var ui = ensureLeadPreliminaryReportsUi();
+  var row = typeof leadPreliminaryReportById === 'function' ? leadPreliminaryReportById(ui.selectedReportId) : null;
+  openModal(modalShell('Preview PDF',
+    '<div class="lead-assigned-modal">' +
+      '<p><b>' + esc(row ? row.id : 'PR-2026-018') + '</b> preview is generated from selected findings, report content, and attachments.</p>' +
+      '<p class="small muted mt-12">Demo only: no real PDF engine, document storage, or e-signature is used.</p>' +
+    '</div>',
+    '<button class="btn btn--primary" data-act="close-modal">Close</button>',
+    false));
+}
+
+function handlePreliminaryReportBrowseFile() {
+  var ui = ensureLeadPreliminaryReportsUi();
+  ui.mockUploadName = 'Additional_CAP_Evidence_Summary.pdf';
+  persistAfterAction();
+  render();
+  toast('File selected', 'Additional_CAP_Evidence_Summary.pdf was added as a mock attachment name.', 'ok');
+}
+
+function handlePreliminaryReportNewFolder() {
+  openModal(modalShell('New folder',
+    '<div class="lead-assigned-modal">' +
+      '<p><b>Evidence Folder</b></p>' +
+      '<p class="small muted">Demo only: this shows where Lead Inspector could organize supporting files. No real folder is created.</p>' +
+    '</div>',
+    '<button class="btn btn--primary" data-act="close-modal">Close</button>',
+    false));
+}
+
+function handlePreliminaryReportAttachmentAction(fileId) {
+  toast('Attachment action', (fileId || 'Attachment') + ' action is simulated in this frontend demo.', 'info');
+}
+
+function handlePreliminaryReportViewFinding(findingId) {
+  openModal(modalShell('Finding included in report',
+    '<div class="lead-assigned-modal">' +
+      '<p><b>' + esc(findingId || 'SEC-2026-002') + '</b></p>' +
+      '<p class="small muted">This finding remains selected for the preliminary report package.</p>' +
+    '</div>',
+    '<button class="btn btn--primary" data-act="close-modal">Close</button>',
+    false));
+}
+
+function handleDepartmentPreliminaryTab(tab) {
+  var allowed = ['summary', 'findings', 'content', 'attachments', 'audit'];
+  if (allowed.indexOf(tab) === -1) return;
+  var ui = ensureDepartmentPreliminaryReviewUi();
+  ui.tab = tab;
+  persistAfterAction();
+  render();
+}
+
+function handleDepartmentPreliminaryToggleMenu() {
+  var ui = ensureDepartmentPreliminaryReviewUi();
+  ui.approveMenuOpen = !ui.approveMenuOpen;
+  persistAfterAction();
+  render();
+}
+
+function departmentPreliminaryReportRecord() {
+  var row = typeof leadPreliminaryReportById === 'function'
+    ? leadPreliminaryReportById(ensureDepartmentPreliminaryReviewUi().selectedReportId)
+    : null;
+  return row && row.auditId && typeof reportForAudit === 'function' ? reportForAudit(row.auditId) : null;
+}
+
+function handleDepartmentPreliminaryApprove(path) {
+  var ui = ensureDepartmentPreliminaryReviewUi();
+  var approvalPath = path === 'gm' ? 'gm' : (path === 'service_provider' ? 'service_provider' : (ui.capRequired ? 'service_provider' : 'gm'));
+  ui.capRequired = approvalPath === 'service_provider';
+  ui.approvedPath = approvalPath;
+  ui.approvedAt = logTimestamp();
+  ui.returnedAt = '';
+  ui.approveMenuOpen = false;
+
+  var report = departmentPreliminaryReportRecord();
+  if (report) {
+    if (!report.preliminaryNotice) report.preliminaryNotice = {};
+    report.preliminaryNotice.capRequired = approvalPath === 'service_provider';
+    report.status = approvalPath === 'service_provider' ? 'released_to_service_provider' : 'submitted_to_gm';
+    if (report.approval && Array.isArray(report.approval.history)) {
+      report.approval.history.push({
+        actor: ROLES.manager.user,
+        role: 'manager',
+        action: approvalPath === 'service_provider' ? 'sent_to_service_provider' : 'sent_to_general_manager',
+        date: ui.approvedAt,
+        comment: approvalPath === 'service_provider'
+          ? 'Department Manager approved the preliminary report and sent it to the Service Provider because CAP is required.'
+          : 'Department Manager approved the preliminary report and sent it to the General Manager for approval because no CAP is required.'
+      });
+    }
+  }
+
+  if (approvalPath === 'service_provider') {
+    pushNotification('auditee', 'RPT', 'Preliminary report PR-2026-018 was released to your Service Provider portal for CAP response.');
+    addLog('Department Manager sent preliminary report to Service Provider', 'PR-2026-018');
+    toast('Sent to Service Provider', 'CAP is required, so the Department Manager sent the preliminary report to the Service Provider.', 'ok');
+  } else {
+    pushNotification('gm', 'RPT', 'Preliminary report PR-2026-018 is ready for General Manager approval.');
+    addLog('Department Manager sent preliminary report to General Manager', 'PR-2026-018');
+    toast('Sent to General Manager', 'No CAP is required, so the report moved to General Manager approval.', 'ok');
+  }
+  persistAfterAction();
+  render();
+}
+
+function handleDepartmentPreliminaryRequestChanges() {
+  var ui = ensureDepartmentPreliminaryReviewUi();
+  ui.returnedAt = logTimestamp();
+  ui.approvedAt = '';
+  ui.approvedPath = '';
+  ui.approveMenuOpen = true;
+  var report = departmentPreliminaryReportRecord();
+  if (report) {
+    report.status = 'returned_to_lead';
+    if (report.approval && Array.isArray(report.approval.history)) {
+      report.approval.history.push({
+        actor: ROLES.manager.user,
+        role: 'manager',
+        action: 'returned',
+        date: ui.returnedAt,
+        comment: 'Department Manager requested changes before approving the preliminary report.'
+      });
+    }
+  }
+  pushNotification('leadInspector', 'RPT', 'Department Manager requested changes for preliminary report PR-2026-018.');
+  addLog('Department Manager requested changes on preliminary report', 'PR-2026-018');
+  persistAfterAction();
+  render();
+  toast('Changes requested', 'The preliminary report was returned to the Lead Inspector in this demo.', 'warn');
+}
+
+function handleDepartmentPreliminaryDownload() {
+  openModal(modalShell('Download PDF',
+    '<div class="lead-assigned-modal">' +
+      '<p><b>PR-2026-018 Department Manager review PDF</b></p>' +
+      '<p class="small muted mt-12">Demo only: the PDF download is represented as a preview action. No real reporting engine or document storage is used.</p>' +
+    '</div>',
+    '<button class="btn btn--primary" data-act="close-modal">Close</button>',
+    false));
+}
+
+function handleServiceProviderReportTab(tab) {
+  var allowed = ['overview', 'findings', 'cap', 'communications', 'attachments', 'history'];
+  if (allowed.indexOf(tab) === -1) tab = 'cap';
+  var ui = ensureServiceProviderReportUi();
+  ui.tab = tab;
+  persistAfterAction();
+  render();
+}
+
+function handleServiceProviderReportDownload() {
+  var ui = ensureServiceProviderReportUi();
+  ui.downloadedAt = logTimestamp();
+  persistAfterAction();
+  openModal(modalShell('Final Report PDF',
+    '<div class="lead-assigned-modal">' +
+      '<p><b>FR-2026-014 Final Report</b></p>' +
+      '<p class="small muted mt-12">Demo only: this represents viewing or downloading the final report PDF. No real file is generated, stored, or downloaded.</p>' +
+    '</div>',
+    '<button class="btn btn--primary" data-act="close-modal">Close</button>',
+    false));
+}
+
+function handleServiceProviderSubmitCap(findingId) {
+  var row = typeof serviceProviderCapRequirementById === 'function' ? serviceProviderCapRequirementById(findingId) : null;
+  if (!row || !row.capRequired) return;
+  var ui = ensureServiceProviderReportUi();
+  var alreadySubmitted = !!ui.submittedCaps[row.id];
+  openModal(modalShell((alreadySubmitted ? 'CAP submitted - ' : 'Submit CAP - ') + row.id,
+    '<div class="sp-report-cap-modal">' +
+      '<p><b>' + esc(row.title) + '</b></p>' +
+      '<div class="metaline">' +
+        metaItem('Checklist item', row.checklist) +
+        metaItem('Level', row.levelLabel) +
+        metaItem('Due Date', row.dueDateText) +
+        metaItem('Status', alreadySubmitted ? 'CAP Submitted' : 'Pending CAP') +
+      '</div>' +
+      '<label>Root cause<textarea placeholder="Describe root cause" rows="3"' + (alreadySubmitted ? ' readonly' : '') + '>' + (alreadySubmitted ? 'Mock CAP submitted for review.' : '') + '</textarea></label>' +
+      '<label>Corrective action<textarea placeholder="Describe corrective action" rows="3"' + (alreadySubmitted ? ' readonly' : '') + '>' + (alreadySubmitted ? 'Corrective action package is waiting for CAA review.' : '') + '</textarea></label>' +
+      '<p class="small muted mt-12">Frontend demo only: the CAP entry is saved in this browser state. No backend, notification service, or document storage is used.</p>' +
+    '</div>',
+    '<button class="btn" data-act="close-modal">Close</button>' +
+      (alreadySubmitted ? '' : '<button class="btn btn--primary" data-act="service-report-confirm-cap" data-id="' + esc(row.id) + '">Submit Mock CAP</button>'),
+    false));
+}
+
+function handleServiceProviderConfirmCap(findingId) {
+  var row = typeof serviceProviderCapRequirementById === 'function' ? serviceProviderCapRequirementById(findingId) : null;
+  if (!row || !row.capRequired) return;
+  var ui = ensureServiceProviderReportUi();
+  ui.submittedCaps[row.id] = logTimestamp();
+  ui.tab = 'cap';
+  pushNotification('inspector', 'CAP', 'SkyCargo Air submitted a CAP for ' + row.id + ' from final report FR-2026-014.');
+  addLog('Service Provider submitted CAP', row.id);
+  closeModal();
+  persistAfterAction();
+  render();
+  toast('CAP submitted', row.id + ' was sent to the CAA review queue in this demo.', 'ok');
+}
+
+function handleServiceProviderViewFinding(findingId) {
+  var row = typeof serviceProviderCapRequirementById === 'function' ? serviceProviderCapRequirementById(findingId) : null;
+  if (!row) return;
+  openModal(modalShell('Finding detail - ' + row.id,
+    '<div class="lead-assigned-modal">' +
+      '<p><b>' + esc(row.title) + '</b></p>' +
+      '<div class="metaline">' +
+        metaItem('Checklist item', row.checklist) +
+        metaItem('Finding level', row.levelLabel) +
+        metaItem('CAP requirement', row.capRequired ? 'Required' : 'Not applicable') +
+        metaItem('Due Date', row.dueDateText) +
+      '</div>' +
+      '<p class="small muted mt-12">Only Service Provider-visible finding information is shown here. Internal CAA notes are not part of this portal view.</p>' +
+    '</div>',
+    '<button class="btn btn--primary" data-act="close-modal">Close</button>',
+    false));
+}
+
+function handleServiceProviderDocument(documentId) {
+  toast('Document action', (documentId || 'Document') + ' is available as a mock item in this frontend demo. No real file was downloaded.', 'info');
 }
 
 function leadReviewChecklistDownloadText(auditId) {
@@ -2611,6 +3074,9 @@ document.addEventListener('change', function (e) {
   if (field && field.indexOf('lead-assigned-') === 0) {
     handleLeadAssignedFieldChange(field, e.target);
   }
+  if (field && field.indexOf('preliminary-report-') === 0) {
+    handleLeadPreliminaryReportFieldChange(field, e.target);
+  }
   if (field && field.indexOf('cap-review-') === 0) {
     handleCapReviewFieldChange(field, e.target);
   }
@@ -2638,6 +3104,12 @@ document.addEventListener('input', function (e) {
   }
   if (field === 'lead-assigned-query') {
     handleLeadAssignedFieldChange(field, e.target);
+  }
+  if (field === 'preliminary-report-query') {
+    handleLeadPreliminaryReportFieldChange(field, e.target);
+  }
+  if (field === 'preliminary-report-content') {
+    handleLeadPreliminaryReportFieldChange(field, e.target);
   }
   if (field === 'cap-review-search') {
     ensureCapReviewUi().query = e.target.value || '';

@@ -77,6 +77,7 @@ const inspectorNavLabels = context.NAV.inspector
 assert.match(html, /My Inspections/);
 assert.match(html, /Assigned Inspections/);
 assert.match(html, /CAP Reviews/);
+assert.match(html, /Findings Review/);
 assert.match(html, /Reports/);
 assert.doesNotMatch(html, /Draft Reports/);
 assert.match(html, /Profile/);
@@ -119,6 +120,9 @@ assert.doesNotMatch(inspectorNavLabels, /Checklist Builder/);
 assert.doesNotMatch(inspectorNavLabels, /Offline Field/);
 assert.doesNotMatch(inspectorNavLabels, /Overdue Actions/);
 assert.doesNotMatch(inspectorNavLabels, /Repeat Findings/);
+assert.match(inspectorNavLabels, /Findings Review/);
+assert.equal(context.NAV.inspector.some((item) => item.label === 'Findings Review' && item.filter === 'open'), true);
+assert.equal(context.NAV.inspector.some((item) => item.label === 'Findings'), false);
 assert.equal(context.NAV.inspector.some((item) => item.view === 'package-builder'), false);
 assert.equal(context.NAV.inspector.some((item) => item.view === 'regulatory-library'), false);
 assert.equal(context.NAV.inspector.some((item) => item.view === 'checklist-builder'), false);
@@ -177,6 +181,8 @@ assert.match(capReviewHtml, /CAP Details/);
 assert.match(capReviewHtml, /Evidence/);
 assert.match(capReviewHtml, /History/);
 assert.match(capReviewHtml, /Finding: F-2026-001/);
+assert.match(capReviewHtml, /aria-label="Selected CAP review details"/);
+assert.doesNotMatch(capReviewHtml, /cap-review-expanded-row/);
 assert.match(capReviewHtml, /Submit Decision/);
 assert.doesNotMatch(capReviewHtml, /Every finding shows owner/);
 

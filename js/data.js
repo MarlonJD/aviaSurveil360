@@ -22,6 +22,7 @@ var DEMO_PERSISTENCE_CONFIG = {
     'mock checklist approvals',
     'mock potential findings',
     'lead inspector review decisions and report workflow state',
+    'service provider final report CAP actions',
     'AI accept/edit/reject decisions',
     'selected filters',
     'simulated offline outbox items'
@@ -41,7 +42,7 @@ var ROLES = {
                       question: 'What do I need to inspect or review today?' },
   leadInspector:    { key: 'leadInspector',    name: 'Lead Inspector',     user: 'John Lead Inspector', initials: 'JL', color: '#1d4f99',
                       question: 'What needs review, conversion to finding, or report sign-off?' },
-  manager:          { key: 'manager',          name: 'Department Manager', user: 'Selin Demir',  initials: 'SD', color: '#6b4fb0',
+  manager:          { key: 'manager',          name: 'Department Manager', user: 'Mehmet Kaya',  initials: 'MK', color: '#2f6fd6',
                       question: 'Where are we exposed, delayed or overloaded?' },
   gm:               { key: 'gm',               name: 'General Manager',    user: 'Okan Demir',   initials: 'OD', color: '#0f766e',
                       question: 'Which audits and budgets should I approve or release?' },
@@ -883,7 +884,7 @@ var SEED_AUDIT_LOG = [
 
 /* ----------------------------- Users (Admin preview, read-only) ----------------------------- */
 var SEED_USERS = [
-  { name: 'Selin Demir',  role: 'Department Manager', org: '—',            mfa: 'On',  status: 'Active' },
+  { name: 'Mehmet Kaya',  role: 'Department Manager', org: '—',            mfa: 'On',  status: 'Active' },
   { name: 'Okan Demir',   role: 'General Manager',    org: '—',            mfa: 'On',  status: 'Active' },
   { name: 'Derya Acar',   role: 'Finance Review',     org: '—',            mfa: 'On',  status: 'Active' },
   { name: 'Ufuk Aslan',   role: 'Executive Director', org: '—',            mfa: 'On',  status: 'Active' },
@@ -1009,6 +1010,39 @@ function freshState() {
       stage: 'all',
       advanced: false,
       appliedAt: ''
+    },
+    leadPreliminaryReportsUi: {
+      query: '',
+      status: 'all',
+      organization: 'all',
+      period: 'all',
+      mode: 'list',
+      selectedReportId: 'PR-2026-018',
+      step: 'inspection',
+      draftSavedAt: '',
+      submittedAt: '',
+      mockUploadName: '',
+      includedFindings: {},
+      declarations: {
+        accurate: true,
+        evidenceBased: true,
+        readyForReview: true
+      },
+      reportContent: ''
+    },
+    departmentPreliminaryReviewUi: {
+      tab: 'summary',
+      selectedReportId: 'PR-2026-018',
+      capRequired: true,
+      approveMenuOpen: true,
+      approvedAt: '',
+      approvedPath: '',
+      returnedAt: ''
+    },
+    serviceProviderReportUi: {
+      tab: 'cap',
+      submittedCaps: {},
+      downloadedAt: ''
     },
     findingSeq: 1,              // OPS-2026-00X live counter
     potentialSeq: 1,            // PF-2026-00X live counter
@@ -1158,6 +1192,66 @@ function mergeDemoState(saved) {
   if (!base.leadAssignedAuditsUi.due) base.leadAssignedAuditsUi.due = 'all';
   if (!base.leadAssignedAuditsUi.stage) base.leadAssignedAuditsUi.stage = 'all';
   base.leadAssignedAuditsUi.advanced = !!base.leadAssignedAuditsUi.advanced;
+  base.leadPreliminaryReportsUi = Object.assign({
+    query: '',
+    status: 'all',
+    organization: 'all',
+    period: 'all',
+    mode: 'list',
+    selectedReportId: 'PR-2026-018',
+    step: 'inspection',
+    draftSavedAt: '',
+    submittedAt: '',
+    mockUploadName: '',
+    includedFindings: {},
+    declarations: {
+      accurate: true,
+      evidenceBased: true,
+      readyForReview: true
+    },
+    reportContent: ''
+  }, saved.leadPreliminaryReportsUi || {});
+  base.leadPreliminaryReportsUi.declarations = Object.assign({
+    accurate: true,
+    evidenceBased: true,
+    readyForReview: true
+  }, base.leadPreliminaryReportsUi.declarations || {});
+  if (!base.leadPreliminaryReportsUi.includedFindings || typeof base.leadPreliminaryReportsUi.includedFindings !== 'object') base.leadPreliminaryReportsUi.includedFindings = {};
+  if (!base.leadPreliminaryReportsUi.query) base.leadPreliminaryReportsUi.query = '';
+  if (!base.leadPreliminaryReportsUi.status) base.leadPreliminaryReportsUi.status = 'all';
+  if (!base.leadPreliminaryReportsUi.organization) base.leadPreliminaryReportsUi.organization = 'all';
+  if (!base.leadPreliminaryReportsUi.period) base.leadPreliminaryReportsUi.period = 'all';
+  if (!base.leadPreliminaryReportsUi.mode) base.leadPreliminaryReportsUi.mode = 'list';
+  if (!base.leadPreliminaryReportsUi.selectedReportId) base.leadPreliminaryReportsUi.selectedReportId = 'PR-2026-018';
+  if (!base.leadPreliminaryReportsUi.step) base.leadPreliminaryReportsUi.step = 'inspection';
+  if (!base.leadPreliminaryReportsUi.draftSavedAt) base.leadPreliminaryReportsUi.draftSavedAt = '';
+  if (!base.leadPreliminaryReportsUi.submittedAt) base.leadPreliminaryReportsUi.submittedAt = '';
+  if (!base.leadPreliminaryReportsUi.mockUploadName) base.leadPreliminaryReportsUi.mockUploadName = '';
+  if (!base.leadPreliminaryReportsUi.reportContent) base.leadPreliminaryReportsUi.reportContent = '';
+  base.departmentPreliminaryReviewUi = Object.assign({
+    tab: 'summary',
+    selectedReportId: 'PR-2026-018',
+    capRequired: true,
+    approveMenuOpen: true,
+    approvedAt: '',
+    approvedPath: '',
+    returnedAt: ''
+  }, saved.departmentPreliminaryReviewUi || {});
+  if (!base.departmentPreliminaryReviewUi.tab) base.departmentPreliminaryReviewUi.tab = 'summary';
+  if (!base.departmentPreliminaryReviewUi.selectedReportId) base.departmentPreliminaryReviewUi.selectedReportId = 'PR-2026-018';
+  base.departmentPreliminaryReviewUi.capRequired = base.departmentPreliminaryReviewUi.capRequired !== false;
+  base.departmentPreliminaryReviewUi.approveMenuOpen = base.departmentPreliminaryReviewUi.approveMenuOpen !== false;
+  if (!base.departmentPreliminaryReviewUi.approvedAt) base.departmentPreliminaryReviewUi.approvedAt = '';
+  if (!base.departmentPreliminaryReviewUi.approvedPath) base.departmentPreliminaryReviewUi.approvedPath = '';
+  if (!base.departmentPreliminaryReviewUi.returnedAt) base.departmentPreliminaryReviewUi.returnedAt = '';
+  base.serviceProviderReportUi = Object.assign({
+    tab: 'cap',
+    submittedCaps: {},
+    downloadedAt: ''
+  }, saved.serviceProviderReportUi || {});
+  if (!base.serviceProviderReportUi.tab) base.serviceProviderReportUi.tab = 'cap';
+  if (!base.serviceProviderReportUi.submittedCaps || typeof base.serviceProviderReportUi.submittedCaps !== 'object') base.serviceProviderReportUi.submittedCaps = {};
+  if (!base.serviceProviderReportUi.downloadedAt) base.serviceProviderReportUi.downloadedAt = '';
   if (!base.questionSeq) base.questionSeq = 7;
   if (!base.potentialSeq) base.potentialSeq = 1;
   if (!base.questionTraces) base.questionTraces = deepClone(SEED_QUESTION_TRACES);

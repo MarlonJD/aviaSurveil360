@@ -83,7 +83,6 @@ const leadNavItems = context.NAV.leadInspector.filter((item) => item.label);
 
 assert.match(html, /Dashboard/);
 assert.match(html, /Assigned Audits/);
-assert.match(html, /Findings Review/);
 assert.match(html, /Preliminary Reports/);
 assert.match(html, /Final Reports/);
 assert.match(html, /CAP Verification/);
@@ -106,10 +105,88 @@ assert.doesNotMatch(html, /data-view="reports"/);
 assert.doesNotMatch(leadNavLabels, /Planning/);
 assert.doesNotMatch(leadNavLabels, /Users/);
 assert.doesNotMatch(leadNavLabels, /Draft Reports/);
+assert.doesNotMatch(leadNavLabels, /Findings Review/);
 assert.equal(leadNavItems.some((item) => item.label === 'Assigned Audits'), true);
 assert.equal(leadNavItems.some((item) => item.label === 'Final Reports'), true);
+assert.equal(leadNavItems.some((item) => item.label === 'Findings Review'), false);
 assert.equal(context.NAV.leadInspector.some((item) => item.view === 'planning'), false);
 assert.equal(context.NAV.leadInspector.some((item) => item.view === 'reports'), false);
+
+context.handleAction('nav', dataEl({ 'data-view': 'audit-reports', 'data-filter': 'preliminary' }));
+assert.equal(context.state.view, 'audit-reports');
+assert.equal(context.state.params.filter, 'preliminary');
+let preliminaryHtml = elements.get('app-root').innerHTML;
+assert.match(preliminaryHtml, /Preliminary Reports/);
+assert.match(preliminaryHtml, /View and manage all preliminary inspection reports/);
+assert.match(preliminaryHtml, /New Preliminary Report/);
+assert.match(preliminaryHtml, /PR-2026-018/);
+assert.match(preliminaryHtml, /AVSEC Inspection/);
+assert.match(preliminaryHtml, /SkyCargo Air/);
+assert.match(preliminaryHtml, /Submitted/);
+assert.match(preliminaryHtml, /Showing 1 to 8 of 18 reports/);
+assert.doesNotMatch(preliminaryHtml, /Report Approval Queue/);
+
+context.state.leadPreliminaryReportsUi.query = 'SkyCargo';
+context.render();
+preliminaryHtml = elements.get('app-root').innerHTML;
+assert.match(preliminaryHtml, /Showing 1 to 2 of 2 reports/);
+assert.match(preliminaryHtml, /PR-2026-018/);
+assert.match(preliminaryHtml, /PR-2026-007/);
+assert.doesNotMatch(preliminaryHtml, /Ramp Safety Inspection/);
+
+context.state.leadPreliminaryReportsUi = { query: '', status: 'all', organization: 'all', period: 'all' };
+context.render();
+context.handleAction('preliminary-report-actions', dataEl({ 'data-id': 'PR-2026-018' }));
+assert.equal(elements.get('modal-host').hidden, true);
+assert.equal(context.state.leadPreliminaryReportsUi.mode, 'workflow');
+assert.equal(context.state.leadPreliminaryReportsUi.step, 'inspection');
+preliminaryHtml = elements.get('app-root').innerHTML;
+assert.match(preliminaryHtml, /Inspection &amp; Findings/);
+assert.match(preliminaryHtml, /Findings from Inspection \(9\)/);
+assert.match(preliminaryHtml, /SEC-2026-002/);
+assert.match(preliminaryHtml, /Next: Report Content/);
+
+context.handleAction('preliminary-report-next', dataEl({}));
+assert.equal(context.state.leadPreliminaryReportsUi.step, 'content');
+preliminaryHtml = elements.get('app-root').innerHTML;
+assert.match(preliminaryHtml, /Report Content/);
+assert.match(preliminaryHtml, /PRELIMINARY INSPECTION REPORT/);
+assert.match(preliminaryHtml, /data-field="preliminary-report-content"/);
+assert.match(preliminaryHtml, /Next: Attachments/);
+
+context.handleAction('preliminary-report-next', dataEl({}));
+assert.equal(context.state.leadPreliminaryReportsUi.step, 'attachments');
+preliminaryHtml = elements.get('app-root').innerHTML;
+assert.match(preliminaryHtml, /Attachments/);
+assert.match(preliminaryHtml, /Browse Files/);
+assert.match(preliminaryHtml, /Attachment Summary/);
+assert.match(preliminaryHtml, /Next: Review &amp; Submit/);
+
+context.handleAction('preliminary-report-browse-file', dataEl({}));
+preliminaryHtml = elements.get('app-root').innerHTML;
+assert.match(preliminaryHtml, /Additional_CAP_Evidence_Summary\.pdf/);
+
+context.handleAction('preliminary-report-next', dataEl({}));
+assert.equal(context.state.leadPreliminaryReportsUi.step, 'review');
+preliminaryHtml = elements.get('app-root').innerHTML;
+assert.match(preliminaryHtml, /Review Before Submit/);
+assert.match(preliminaryHtml, /Submit for Department Manager Review/);
+assert.match(preliminaryHtml, /always forwarded to Department Manager Review/);
+assert.match(preliminaryHtml, /Department Manager releases it to the Service Provider/);
+assert.match(preliminaryHtml, /If CAP Required/);
+
+context.handleAction('preliminary-report-submit', dataEl({}));
+assert.ok(context.state.leadPreliminaryReportsUi.submittedAt);
+assert.equal(context.state.notifications[0].role, 'manager');
+assert.match(context.state.notifications[0].text, /Department Manager review/);
+preliminaryHtml = elements.get('app-root').innerHTML;
+assert.match(preliminaryHtml, /Pending Department Manager Review/);
+
+context.handleAction('nav', dataEl({ 'data-view': 'audit-reports', 'data-filter': 'preliminary' }));
+assert.equal(context.state.params.auditId, undefined);
+assert.equal(context.state.leadPreliminaryReportsUi.mode, 'list');
+assert.match(elements.get('app-root').innerHTML, /Showing 1 to 8 of 18 reports/);
+assert.doesNotMatch(elements.get('app-root').innerHTML, /Report Approval Queue/);
 
 context.handleAction('nav', dataEl({ 'data-view': 'lead-review', 'data-id': 'AUD-2026-005' }));
 assert.equal(context.state.params.auditId, 'AUD-2026-005');
@@ -142,6 +219,8 @@ assert.match(capTrackingHtml, /data-act="cap-track-row-action"/);
 assert.match(capTrackingHtml, /Review CAP/);
 assert.match(capTrackingHtml, /F-2026-004/);
 assert.match(capTrackingHtml, /Overdue/);
+assert.doesNotMatch(capTrackingHtml, /Quick Actions/);
+assert.doesNotMatch(capTrackingHtml, /Download CAP Status Report/);
 assert.doesNotMatch(capTrackingHtml, /data-field="cap-review-decision"/);
 
 context.handleAction('cap-track-reminder', dataEl({}));
