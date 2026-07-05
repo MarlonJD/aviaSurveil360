@@ -5604,6 +5604,140 @@ function finalReadySummaryCard(label, value, detail, tone) {
   return '<article class="final-ready-card is-' + esc(tone || 'neutral') + '"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong><small>' + esc(detail || '') + '</small></article>';
 }
 
+function finalReportPdfLines() {
+  return [
+    'Final Report - Approved',
+    'Inspection ID: INS-2026-014',
+    'Organization: SkyCargo Air',
+    'Inspection Type: Routine (Announced)',
+    'Inspection Dates: 12 - 14 Jun 2026',
+    'Report Version: 2.0 (Final Report)',
+    'Final Report Date: 30 Jun 2026',
+    '',
+    '1. Executive Summary',
+    'This inspection was conducted between 12 - 14 Jun 2026 at SkyCargo Air (Service Provider) in accordance with applicable regulations and standards. A total of 9 findings were identified across 5 organizations.',
+    'Overall, the security system is effective; however, certain areas require improvement to ensure full compliance with applicable regulations.',
+    '',
+    '2. Inspection Overview',
+    'Scope: Physical Security',
+    'Organizations Included: 5',
+    'Inspection Team: Aylin Sezer (Lead Inspector) and 3 Inspectors',
+    'Inspection Method: Interviews, Document Review, Observation',
+    'Regulatory Basis: ICAO Annex 17, National Regulations',
+    'Inspection Plan: INS-2026-014 / Rev. 1',
+    'Inspection Duration: 3 Days',
+    'Inspection Locations: Head Office, Cargo Terminal, Ramp Area, Warehouse, Access Control Points',
+    '',
+    '3. Findings Summary',
+    'Level 1 Critical: 2 findings, 22 percent',
+    'Level 2 Major: 3 findings, 33 percent',
+    'Level 3 Observation: 4 findings, 45 percent',
+    'Total Findings: 9',
+    '',
+    '4. CAP Implementation Summary',
+    'Total CAPs: 9',
+    'Closed: 2 (22 percent)',
+    'In Progress: 5 (56 percent)',
+    'Not Started: 2 (22 percent)',
+    'Overdue: 0',
+    'All corrective actions must be completed by the due dates defined in the CAP plan. The organization is responsible for providing evidence of implementation and closure.',
+    '',
+    '5. Conclusions',
+    'SkyCargo Air has an effective security management system. Implementation of the outstanding corrective actions will further enhance compliance and overall security performance.',
+    '',
+    '6. Recommendations',
+    'Ensure all Level 1 and Level 2 findings are addressed within the defined due dates.',
+    'Strengthen training and awareness programs for access control procedures.',
+    'Improve documentation and record keeping for security equipment maintenance.',
+    '',
+    '7. Appendices & Attachments',
+    'Appendix A - Inspection Plan - PDF - 12 pages',
+    'Appendix B - Inspection Team - PDF - 3 pages',
+    'Appendix C - Evidence Photos - ZIP',
+    'Appendix D - CAP Plan - PDF - 7 pages',
+    '',
+    'Report Prepared By: Aylin Sezer, Lead Inspector, 30 Jun 2026',
+    'Reviewed By: Department Manager, 30 Jun 2026',
+    'Approved By: General Manager, 30 Jun 2026'
+  ];
+}
+
+function finalReportIcon(name) {
+  if (typeof navIconSvg !== 'function') return '';
+  return '<svg viewBox="0 0 24 24" focusable="false">' + navIconSvg(name || 'file-text') + '</svg>';
+}
+
+function finalReportOverviewItem(icon, label, value) {
+  return '<div class="final-report-overview-item"><span>' + finalReportIcon(icon) + '</span><p><b>' + esc(label) + '</b><strong>' + esc(value) + '</strong></p></div>';
+}
+
+function finalReportFindingRows() {
+  var rows = [
+    ['Level 1 (Critical)', 'Non-compliance with critical requirements', '2', '22%', 'l1'],
+    ['Level 2 (Major)', 'Non-compliance with important requirements', '3', '33%', 'l2'],
+    ['Level 3 (Observation)', 'Opportunities for improvement', '4', '45%', 'l3'],
+    ['Total', '', '9', '100%', 'total']
+  ];
+  return rows.map(function (row) {
+    return '<tr><td><span class="final-report-level-dot is-' + esc(row[4]) + '"></span>' + esc(row[0]) + '</td><td>' + esc(row[1]) + '</td><td>' + esc(row[2]) + '</td><td>' + esc(row[3]) + '</td></tr>';
+  }).join('');
+}
+
+function finalReportAttachmentRows() {
+  var rows = [
+    ['Appendix A - Inspection Plan', 'Inspection plan and schedule', 'PDF', '12'],
+    ['Appendix B - Inspection Team', 'Team members and roles', 'PDF', '3'],
+    ['Appendix C - Evidence Photos', 'Photos collected during inspection', 'ZIP', '-'],
+    ['Appendix D - CAP Plan', 'Corrective Action Plan', 'PDF', '7']
+  ];
+  return rows.map(function (row) {
+    return '<tr><td>' + esc(row[0]) + '</td><td>' + esc(row[1]) + '</td><td>' + esc(row[2]) + '</td><td>' + esc(row[3]) + '</td></tr>';
+  }).join('');
+}
+
+function viewLeadFinalReportDocument() {
+  return '<div class="final-report-view-page">' +
+    '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><span>INS-2026-014</span><span>›</span><span>Final Reports</span><span>›</span><b>Final Report</b></div>' +
+    '<div class="final-report-view-head">' +
+      '<div><h1>Final Report ' + demoBadge('Approved', 'ok') + '</h1></div>' +
+      '<div class="final-report-actions"><button class="btn" data-act="final-report-export-pdf"><span>↓</span>Export PDF</button><button class="btn btn--primary" data-act="final-report-print"><span>▦</span>Print Report</button></div>' +
+    '</div>' +
+    '<article class="final-report-doc">' +
+      '<section class="final-report-hero">' +
+        '<div class="final-report-brand"><span>' + finalReportIcon('send') + '</span><b>SkyCargo Air</b></div>' +
+        '<div class="final-report-meta-grid">' +
+          '<div><span>Inspection ID</span><b>INS-2026-014</b></div>' +
+          '<div><span>Organization</span><b>SkyCargo Air</b></div>' +
+          '<div><span>Inspection Type</span><b>Routine (Announced)</b></div>' +
+          '<div><span>Inspection Dates</span><b>12 - 14 Jun 2026</b></div>' +
+          '<div><span>Report Version</span><b>2.0 (Final Report)</b></div>' +
+          '<div><span>Final Report Date</span><b>30 Jun 2026</b></div>' +
+        '</div>' +
+      '</section>' +
+      '<section class="final-report-section"><h2>1. Executive Summary</h2><p>This inspection was conducted between 12 - 14 Jun 2026 at SkyCargo Air (Service Provider) in accordance with applicable regulations and standards. A total of 9 findings were identified across 5 organizations.</p><p>Overall, the security system is effective; however, certain areas require improvement to ensure full compliance with applicable regulations.</p></section>' +
+      '<section class="final-report-section"><h2>2. Inspection Overview</h2><div class="final-report-overview-grid">' +
+        finalReportOverviewItem('file-text', 'Scope', 'Physical Security') +
+        finalReportOverviewItem('shield-alert', 'Regulatory Basis', 'ICAO Annex 17, National Regulations') +
+        finalReportOverviewItem('building', 'Organizations Included', '5') +
+        finalReportOverviewItem('clipboard-list', 'Inspection Plan', 'INS-2026-014 / Rev. 1') +
+        finalReportOverviewItem('users', 'Inspection Team', 'Aylin Sezer (Lead Inspector) and 3 Inspectors') +
+        finalReportOverviewItem('history', 'Inspection Duration', '3 Days') +
+        finalReportOverviewItem('circle-help', 'Inspection Method', 'Interviews, Document Review, Observation') +
+        finalReportOverviewItem('target', 'Inspection Locations', 'Head Office, Cargo Terminal, Ramp Area, Warehouse, Access Control Points') +
+      '</div></section>' +
+      '<section class="final-report-section"><h2>3. Findings Summary</h2><div class="final-report-findings">' +
+        '<aside class="final-report-severity-list"><div><span class="is-l1">×</span><b>Level 1 (Critical)</b><strong>2</strong></div><div><span class="is-l2">!</span><b>Level 2 (Major)</b><strong>3</strong></div><div><span class="is-l3">i</span><b>Level 3 (Observation)</b><strong>4</strong></div><div><b>Total Findings</b><strong>9</strong></div></aside>' +
+        '<div class="final-ready-table-wrap"><table class="final-ready-table final-report-table"><thead><tr><th>Level</th><th>Description</th><th>Count</th><th>Percentage</th></tr></thead><tbody>' + finalReportFindingRows() + '</tbody></table></div>' +
+      '</div></section>' +
+      '<section class="final-report-section"><h2>4. CAP Implementation Summary</h2><div class="final-report-cap-grid"><div><span>Total CAPs</span><b>9</b></div><div><span>Closed</span><b class="is-ok">2 (22%)</b></div><div><span>In Progress</span><b class="is-warn">5 (56%)</b></div><div><span>Not Started</span><b>2 (22%)</b></div><div><span>Overdue</span><b class="is-danger">0</b></div></div><p>All corrective actions must be completed by the due dates defined in the CAP plan. The organization is responsible for providing evidence of implementation and closure.</p></section>' +
+      '<section class="final-report-section"><h2>5. Conclusions</h2><p>SkyCargo Air has an effective security management system. Implementation of the outstanding corrective actions will further enhance compliance and overall security performance.</p></section>' +
+      '<section class="final-report-section"><h2>6. Recommendations</h2><ul><li>Ensure all Level 1 and Level 2 findings are addressed within the defined due dates.</li><li>Strengthen training and awareness programs for access control procedures.</li><li>Improve documentation and record keeping for security equipment maintenance.</li></ul></section>' +
+      '<section class="final-report-section"><h2>7. Appendices & Attachments</h2><div class="final-ready-table-wrap"><table class="final-ready-table final-report-table"><thead><tr><th>File Name</th><th>Description</th><th>File Type</th><th>Pages</th></tr></thead><tbody>' + finalReportAttachmentRows() + '</tbody></table></div><small>Total Attachments: 4</small></section>' +
+      '<section class="final-report-signatures"><div><span class="final-report-signature-mark">Aylin</span><b>Report Prepared By</b><p>Aylin Sezer<br>Lead Inspector<br>30 Jun 2026</p></div><div><span class="final-report-signature-mark">Selin</span><b>Reviewed By</b><p>Department Manager<br>30 Jun 2026</p></div><div><span class="final-report-signature-mark">Baran</span><b>Approved By</b><p>General Manager<br>30 Jun 2026</p></div><div class="final-report-stamp"><strong>APPROVED</strong><span>30 JUN 2026</span></div></section>' +
+    '</article>' +
+  '</div>';
+}
+
 function viewLeadFinalReportReady() {
   var ui = capTrackingUiState();
   var readyAt = ui.finalReportReadyAt || ui.allCapsApprovedAt || '30 Jun 2026 16:20';
@@ -5689,7 +5823,7 @@ function finalReportPrepareStepsData() {
     ['cap', 'CAP Implementation Summary'],
     ['conclusions', 'Conclusions'],
     ['recommendations', 'Recommendations'],
-    ['appendices', 'Appendices & Attachments'],
+    ['appendices', 'Appendices'],
     ['review', 'Review & Submit']
   ];
 }
@@ -5709,6 +5843,30 @@ function finalReportPrepareStepper(activeStep) {
     var cls = stepIndex < active.index ? ' is-done' : (stepIndex === active.index ? ' is-active' : '');
     var marker = stepIndex < active.index ? '✓' : String(stepIndex);
     return '<button class="final-prepare-step' + cls + '" data-act="final-report-prepare-step" data-step="' + esc(step[0]) + '"><span>' + esc(marker) + '</span><b>' + esc(step[1]) + '</b></button>';
+  }).join('') + '</div>';
+}
+
+function finalReportOverviewStepper() {
+  var steps = [
+    ['executive', 'Executive Summary', '✓', 'is-done'],
+    ['overview', 'Inspection Overview', '2', 'is-active'],
+    ['review', 'Review & Submit', '3', '']
+  ];
+  return '<div class="final-prepare-stepper final-overview-stepper">' + steps.map(function (step) {
+    var cls = step[3] ? ' ' + step[3] : '';
+    return '<button class="final-prepare-step' + cls + '" data-act="final-report-prepare-step" data-step="' + esc(step[0]) + '"><span>' + esc(step[2]) + '</span><b>' + esc(step[1]) + '</b></button>';
+  }).join('') + '</div>';
+}
+
+function finalReportReviewStepper() {
+  var steps = [
+    ['executive', 'Executive Summary', '✓', 'is-done'],
+    ['overview', 'Inspection Overview', '✓', 'is-done'],
+    ['review', 'Review & Submit', '3', 'is-active']
+  ];
+  return '<div class="final-prepare-stepper final-review-stepper">' + steps.map(function (step) {
+    var cls = step[3] ? ' ' + step[3] : '';
+    return '<button class="final-prepare-step' + cls + '" data-act="final-report-prepare-step" data-step="' + esc(step[0]) + '"><span>' + esc(step[2]) + '</span><b>' + esc(step[1]) + '</b></button>';
   }).join('') + '</div>';
 }
 
@@ -5809,9 +5967,182 @@ function finalReportPrepareSide(ui) {
   '</aside>';
 }
 
+function finalReportReviewChecklistRows() {
+  var rows = [
+    ['executive', '1. Executive Summary', '30 Jun 2026 14:25'],
+    ['overview', '2. Inspection Overview', '30 Jun 2026 14:20'],
+    ['findings', '3. Findings Summary', '30 Jun 2026 14:22'],
+    ['cap', '4. CAP Implementation Summary', '30 Jun 2026 14:23'],
+    ['conclusions', '5. Conclusions', '30 Jun 2026 14:24'],
+    ['recommendations', '6. Recommendations', '30 Jun 2026 14:24'],
+    ['appendices', '7. Appendices & Attachments', '30 Jun 2026 14:24']
+  ];
+  return rows.map(function (row) {
+    return '<tr><td>' + esc(row[1]) + '</td><td>' + demoBadge('Completed', 'ok') + '</td><td>' + esc(row[2]) + '</td><td>Aylin Sezer</td><td><button class="btn btn--sm" data-act="final-report-prepare-step" data-step="' + esc(row[0]) + '">Review</button></td></tr>';
+  }).join('');
+}
+
+function finalReportReviewAttachmentRows() {
+  var files = [
+    ['INS-2026-014_Final_Report.pdf', 'PDF', '1.2 MB', '30 Jun 2026 14:24', 'Aylin Sezer'],
+    ['Inspection_Plan.pdf', 'PDF', '245 KB', '28 Jun 2026 10:15', 'Aylin Sezer'],
+    ['Evidence_Photos.zip', 'ZIP', '12.4 MB', '28 Jun 2026 10:20', 'Aylin Sezer'],
+    ['CAP_Summary.pdf', 'PDF', '320 KB', '30 Jun 2026 14:22', 'Aylin Sezer']
+  ];
+  return files.map(function (file) {
+    return '<tr><td>' + esc(file[0]) + '</td><td>' + esc(file[1]) + '</td><td>' + esc(file[2]) + '</td><td>' + esc(file[3]) + '</td><td>' + esc(file[4]) + '</td><td><button class="btn btn--icon" data-act="final-report-ready-action" data-final-action="attachments" aria-label="Download ' + esc(file[0]) + '">↓</button></td></tr>';
+  }).join('');
+}
+
+function finalReportReviewWorkflowPanel() {
+  return '<section class="final-ready-panel"><h2>Approval Workflow</h2><div class="final-overview-workflow">' +
+    finalReportOverviewWorkflowStep(1, 'Inspector Review', 'Approved', '30 Jun 2026 10:15', 'approved') +
+    finalReportOverviewWorkflowStep(2, 'Lead Inspector Review', 'Approved', '30 Jun 2026 11:40', 'approved') +
+    finalReportOverviewWorkflowStep(3, 'Department Manager Approval', 'Pending', '-', 'current') +
+    finalReportOverviewWorkflowStep(4, 'General Manager Approval', 'Pending', '-', 'pending') +
+    finalReportOverviewWorkflowStep(5, 'ED Final Approval', 'Pending', '-', 'pending') +
+  '</div></section>';
+}
+
+function modalFinalReportSubmitApproval() {
+  var icon = typeof navIconSvg === 'function'
+    ? '<svg viewBox="0 0 24 24" focusable="false">' + navIconSvg('send') + '</svg>'
+    : '->';
+  return '<div class="modal modal--final-submit">' +
+    '<div class="modal__head"><h3>Submit Final Report for Approval</h3><button class="modal__close" data-act="close-modal" aria-label="Close">×</button></div>' +
+    '<div class="modal__body">' +
+      '<div class="final-submit-modal">' +
+        '<div class="final-submit-modal__icon">' + icon + '</div>' +
+        '<p>You are about to submit the final report for approval.</p>' +
+        '<p>Once submitted, the report will move to the next stage of the approval workflow.</p>' +
+        '<div class="final-submit-modal__summary"><h4>Summary</h4><dl>' +
+          '<dt>Inspection ID</dt><dd>INS-2026-014</dd>' +
+          '<dt>Organization</dt><dd>SkyCargo Air</dd>' +
+          '<dt>Total Findings</dt><dd>9</dd>' +
+          '<dt>CAPs Approved</dt><dd>9 / 9</dd>' +
+          '<dt>Next Approver</dt><dd>Department Manager</dd>' +
+        '</dl></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="modal__foot final-submit-modal__foot"><button class="btn" data-act="close-modal">Cancel</button><button class="btn btn--primary" data-act="final-report-prepare-confirm-submit">Confirm Submit</button></div>' +
+  '</div>';
+}
+
+function viewLeadFinalReportReviewSubmit(ui) {
+  return '<div class="final-prepare-page final-review-page">' +
+    '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><span>INS-2026-014</span><span>›</span><span>Final Reports</span><span>›</span><b>Review & Submit</b></div>' +
+    '<div class="final-ready-head">' +
+      '<div><h1>Review & Submit ' + demoBadge('All CAPs Approved', 'ok') + '</h1></div>' +
+      '<div class="cap-track-head-actions"><button class="btn" data-act="final-report-prepare-step" data-step="executive">Back to Report Content</button><button class="btn btn--primary" data-act="final-report-prepare-submit">Submit for Approval</button></div>' +
+    '</div>' +
+    '<div class="final-ready-meta">' +
+      '<div><span>Inspection ID</span><b>INS-2026-014</b></div>' +
+      '<div><span>Organization</span><b>SkyCargo Air</b></div>' +
+      '<div><span>Inspection Type</span><b>Routine (Announced)</b></div>' +
+      '<div><span>Inspection Dates</span><b>12 - 14 Jun 2026</b></div>' +
+      '<div><span>Report Version</span><b>2.0 (Final Report)</b></div>' +
+      '<div><span>All CAPs Approved On</span><b>' + esc(ui.allCapsApprovedAt || ui.finalReportReadyAt || '30 Jun 2026 16:20') + '</b></div>' +
+    '</div>' +
+    finalReportReviewStepper() +
+    '<div class="final-review-layout">' +
+      '<main class="final-review-main">' +
+        '<section class="final-ready-panel"><h2>Review Checklist</h2><p>Please review all sections before submitting the final report.</p><div class="final-ready-table-wrap"><table class="final-ready-table final-review-table"><thead><tr><th>Section</th><th>Status</th><th>Last Updated</th><th>Updated By</th><th>Action</th></tr></thead><tbody>' + finalReportReviewChecklistRows() + '</tbody></table></div><div class="final-review-ok-note"><span>✓</span><b>All sections are completed and ready for submission.</b></div></section>' +
+        '<section class="final-ready-panel final-review-attachments"><div class="final-content-panel-head"><div><h2>Attachments</h2><p>All required attachments have been added.</p></div><button class="btn btn--sm" data-act="final-report-ready-action" data-final-action="attachments">Manage Attachments</button></div><div class="final-ready-table-wrap"><table class="final-ready-table"><thead><tr><th>File Name</th><th>File Type</th><th>Size</th><th>Uploaded On</th><th>Uploaded By</th><th>Action</th></tr></thead><tbody>' + finalReportReviewAttachmentRows() + '</tbody></table></div></section>' +
+        '<section class="final-ready-panel final-review-comments"><h2>Lead Inspector Comments <span>(Optional)</span></h2><label class="sr-only" for="final-review-comments">Lead Inspector Comments</label><textarea id="final-review-comments" maxlength="1000" placeholder="Add any additional comments for the approvers (optional)..."></textarea><em>0 / 1000</em></section>' +
+      '</main>' +
+      '<aside class="final-review-side">' +
+        finalReportPrepareSummaryPanel() +
+        finalReportReviewWorkflowPanel() +
+        '<section class="final-ready-panel final-review-note"><h2>Submission Note</h2><p>By submitting this report, you confirm that all information is accurate and complete to the best of your knowledge.</p></section>' +
+      '</aside>' +
+    '</div>' +
+    '<div class="final-review-bottom"><button class="btn" data-act="final-report-prepare-save">Save as Draft</button><button class="btn btn--primary" data-act="final-report-prepare-submit">Submit for Approval</button></div>' +
+  '</div>';
+}
+
+function finalReportOverviewOrgs() {
+  return [
+    ['SkyCargo Air (Service Provider)', '9 / 9', '9 / 9', '2', '3', '4'],
+    ['SkyCargo Ground Handling Ltd.', '5 / 5', '5 / 5', '1', '2', '2'],
+    ['SkyFuel Services', '3 / 3', '3 / 3', '1', '1', '1'],
+    ['SkySecurity Services', '4 / 4', '4 / 4', '1', '2', '1'],
+    ['SkyCatering Ltd.', '2 / 2', '2 / 2', '0', '1', '1']
+  ];
+}
+
+function finalReportOverviewWorkflowStep(index, label, status, time, tone) {
+  return '<div class="final-overview-workflow-step is-' + esc(tone || 'pending') + '">' +
+    '<span>' + esc(tone === 'approved' ? '✓' : String(index)) + '</span>' +
+    '<b>' + esc(label) + '</b>' +
+    '<em>' + esc(status) + '</em>' +
+    '<small>' + esc(time || '-') + '</small>' +
+  '</div>';
+}
+
+function finalReportOverviewMetric(label, value, detail, tone, actionLabel) {
+  return '<article class="final-overview-finding-card is-' + esc(tone || 'neutral') + '">' +
+    '<span></span><p><b>' + esc(label) + '</b><strong>' + esc(value) + '</strong><small>' + esc(detail) + '</small></p>' +
+    '<button class="btn btn--sm" data-act="nav" data-view="findings" data-filter="capreview">' + esc(actionLabel || 'View Findings') + '</button>' +
+  '</article>';
+}
+
+function viewLeadFinalReportInspectionOverview(ui) {
+  var savedAt = ui.finalReportSavedAt || ui.finalReportPreparedAt || '30 Jun 2026 16:25';
+  return '<div class="final-prepare-page final-overview-page">' +
+    '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><span>INS-2026-014</span><span>›</span><span>Final Reports</span><span>›</span><b>Inspection Overview</b></div>' +
+    '<div class="final-ready-head">' +
+      '<div><h1>Inspection Overview ' + demoBadge('All CAPs Approved', 'ok') + '</h1></div>' +
+      '<div class="cap-track-head-actions"><button class="btn" data-act="final-report-prepare-back">Back to Final Reports</button><button class="btn btn--primary" data-act="final-report-prepare-step" data-step="executive">Prepare Final Report -></button></div>' +
+    '</div>' +
+    '<div class="final-ready-meta">' +
+      '<div><span>Inspection ID</span><b>INS-2026-014</b></div>' +
+      '<div><span>Organization</span><b>SkyCargo Air</b></div>' +
+      '<div><span>Inspection Type</span><b>Routine (Announced)</b></div>' +
+      '<div><span>Inspection Dates</span><b>12 - 14 Jun 2026</b></div>' +
+      '<div><span>Report Version</span><b>2.0 (Final Report)</b></div>' +
+      '<div><span>All Approvals Completed On</span><b>' + esc(ui.allCapsApprovedAt || ui.finalReportReadyAt || '30 Jun 2026 16:20') + '</b></div>' +
+    '</div>' +
+    finalReportOverviewStepper() +
+    '<div class="final-overview-layout">' +
+      '<main class="final-overview-main">' +
+        '<section class="final-ready-panel final-overview-org-panel"><h2>Organizations & CAPs Overview</h2><div class="final-ready-table-wrap"><table class="final-ready-table final-overview-table"><thead><tr><th>Organization</th><th>CAPs Submitted</th><th>CAPs Approved</th><th>Level 1 (Critical)</th><th>Level 2 (Major)</th><th>Level 3 (Observation)</th><th>Action</th></tr></thead><tbody>' +
+          finalReportOverviewOrgs().map(function (row) {
+            return '<tr><td>' + esc(row[0]) + '</td><td>' + esc(row[1]) + '</td><td>' + esc(row[2]) + '</td><td>' + esc(row[3]) + '</td><td>' + esc(row[4]) + '</td><td>' + esc(row[5]) + '</td><td><button class="btn btn--sm" data-act="nav" data-view="findings" data-filter="capreview">View Details</button></td></tr>';
+          }).join('') +
+        '</tbody></table></div><div class="final-overview-org-summary">' +
+          '<div><span class="is-total"></span><p><b>Total Organizations</b><strong>5</strong></p></div>' +
+          '<div><span class="is-submitted"></span><p><b>Total CAPs Submitted</b><strong>23 / 23</strong></p></div>' +
+          '<div><span class="is-approved"></span><p><b>Total CAPs Approved</b><strong>23 / 23</strong></p></div>' +
+          '<div><span class="is-status"></span><p><b>Overall CAP Status</b><strong>All Approved</strong></p></div>' +
+        '</div></section>' +
+        '<section class="final-ready-panel"><h2>Key Findings by Level (Across All Organizations)</h2><div class="final-overview-finding-grid">' +
+          finalReportOverviewMetric('Level 1 (Critical)', '2', 'Due in 14 days', 'l1') +
+          finalReportOverviewMetric('Level 2 (Major)', '3', 'Due in 90 days', 'l2') +
+          finalReportOverviewMetric('Level 3 (Observation)', '4', 'Observation / No Due Date', 'l3') +
+          finalReportOverviewMetric('Total Findings', '9', '100% addressed', 'total', 'View All Findings') +
+        '</div></section>' +
+      '</main>' +
+      '<aside class="final-overview-side">' +
+        '<section class="final-ready-panel"><h2>Approval Workflow Status</h2><div class="final-overview-workflow">' +
+          finalReportOverviewWorkflowStep(1, 'Inspector Review', 'Approved', '30 Jun 2026 10:15', 'approved') +
+          finalReportOverviewWorkflowStep(2, 'Lead Inspector Review', 'Approved', '30 Jun 2026 11:40', 'approved') +
+          finalReportOverviewWorkflowStep(3, 'Department Manager Approval', 'Pending', '-', 'current') +
+          finalReportOverviewWorkflowStep(4, 'General Manager Approval', 'Pending', '-', 'pending') +
+          finalReportOverviewWorkflowStep(5, 'ED Final Approval', 'Pending', '-', 'pending') +
+        '</div></section>' +
+        '<section class="final-ready-panel"><h2>Report Information</h2><dl class="final-ready-dl"><dt>Report Title</dt><dd>INS-2026-014 Final Report<br>- SkyCargo Air</dd><dt>Report Version</dt><dd>2.0 (Final Report)</dd><dt>Report Language</dt><dd>English</dd><dt>Last Saved</dt><dd>' + esc(savedAt) + '<br>by Aylin Sezer</dd></dl></section>' +
+        '<section class="final-ready-panel"><h2>Next Steps</h2><p>All CAPs have been approved. Please proceed to prepare the final report.</p><ol class="final-overview-next-list"><li>Prepare Final Report</li><li>Submit for ED Approval</li><li>Report will be issued to the service provider</li><li>Track CAP closure in the CAP module</li></ol></section>' +
+      '</aside>' +
+    '</div>' +
+    '<div class="final-overview-bottom"><button class="btn" data-act="final-report-prepare-save">Save Draft</button><button class="btn btn--primary" data-act="final-report-prepare-next">Next: Review & Submit -></button></div>' +
+  '</div>';
+}
+
 function viewLeadFinalReportPrepare() {
   var ui = capTrackingUiState();
   var meta = finalReportPrepareStepMeta(ui.finalReportPrepareStep || 'executive');
+  if (meta.id === 'overview') return viewLeadFinalReportInspectionOverview(ui);
+  if (meta.id === 'review') return viewLeadFinalReportReviewSubmit(ui);
   return '<div class="final-prepare-page">' +
     '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><span>INS-2026-014</span><span>›</span><span>Final Reports</span><span>›</span><span>Prepare Final Report</span><span>›</span><b>Report Content</b></div>' +
     '<div class="final-ready-head">' +
@@ -6461,12 +6792,40 @@ function viewServiceProviderFinalReport() {
   '</div>';
 }
 
+function inspectorPastReportItemFromFinding(finding) {
+  return {
+    id: finding.id + '-closure-report',
+    type: 'Report',
+    title: finding.title,
+    subtitle: finding.id + ' · ' + SEVERITY[finding.severity].label,
+    organization: orgName(finding.orgId),
+    priority: workItemPriority('Closed', 'ok', 80),
+    lifecycle: 'Past closure report',
+    owner: '—',
+    nextAction: 'View only — historical report',
+    dueText: finding.closedDate ? 'Closed ' + fmtDate(finding.closedDate) : 'Closed',
+    statusHtml: demoBadge('Closed', 'ok'),
+    primaryAction: { label: 'View report', action: 'nav', view: 'report', cls: 'btn' },
+    route: { view: 'report', id: finding.id },
+    children: []
+  };
+}
+
 function viewReports() {
   if (state.role === 'auditee') {
     var reportFilter = state.params && state.params.filter ? state.params.filter : selectedFilter('reports', 'received');
     if (reportFilter === 'received') return viewServiceProviderFinalReport();
   }
   var closed = visibleFindings().filter(function (f) { return f.status === 'CLOSED'; });
+  if (state.role === 'inspector') {
+    var pastReports = closed.map(inspectorPastReportItemFromFinding).sort(workItemSort);
+    return pageHead('Reports', 'Past closure reports (view only).') +
+      '<h2 class="section-heading">Past Reports</h2>' +
+      renderOpsTable(pastReports, {
+        includeChildren: false,
+        empty: 'No past reports are available yet.'
+      });
+  }
   var items = closed.map(function (finding) {
     return workItemFromFinding(finding, { allEvidenceVersions: true });
   }).sort(workItemSort);

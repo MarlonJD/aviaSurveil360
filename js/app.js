@@ -38,7 +38,6 @@ var NAV = {
     { view: 'findings', label: 'CAP Reviews', icon: '✓', filter: 'capreview' },
     { view: 'findings', label: 'Findings Review', icon: '⚑', filter: 'open' },
     { view: 'reports', label: 'Reports', icon: '□' },
-    { view: 'offline-field', label: 'Evidence', icon: '△' },
     { view: 'profile', label: 'Profile', icon: '○' }
   ],
   auditee: [
@@ -118,6 +117,7 @@ var VIEW_TITLES = {
   'checklist-builder': 'Checklist Builder', 'checklist-versions': 'Version History',
   'lead-review': 'Lead Inspector Review', 'planning-board': 'Planning',
   'audit-reports': 'Audit Reports', 'cap-review-detail': 'CAP Review', 'final-report-prepare': 'Prepare Final Report',
+  'final-report-view': 'Final Report',
   'unit-manager-review': 'Department Manager Approval'
 };
 
@@ -168,6 +168,7 @@ var INSPECTOR_RESTRICTED_VIEWS = {
   'package-builder': true,
   'question-bank': true,
   'regulatory-library': true,
+  'offline-field': true,
   'template-preview': true,
   templates: true
 };
@@ -239,6 +240,8 @@ function navIconSvg(name) {
       return '<path d="M6 3h8l4 4v5"></path><path d="M14 3v5h5"></path><path d="M6 3v18h7"></path><path d="M9 11h4"></path><path d="M9 15h2"></path><path d="m17.5 19.5 3 3"></path><path d="M16 19a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>';
     case 'file-text':
       return '<path d="M14 3H7v18h10V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h4"></path>';
+    case 'send':
+      return '<path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4z"></path>';
     case 'paperclip':
       return '<path d="m21 11-9 9a6 6 0 0 1-8.5-8.5l9.5-9.5a4 4 0 0 1 5.7 5.7l-9.5 9.5a2 2 0 0 1-2.8-2.8l8.7-8.7"></path>';
     case 'mail':
@@ -446,6 +449,7 @@ function renderContent() {
     case 'planning-board': return viewPlanningBoard();
     case 'audit-reports': return viewAuditReportsApproval();
     case 'final-report-prepare': return viewLeadFinalReportPrepare();
+    case 'final-report-view': return viewLeadFinalReportDocument();
     case 'calendar': return viewCalendar();
     case 'audit-detail': return viewAuditDetail();
     case 'checklist': return viewChecklistRunner();
@@ -755,6 +759,9 @@ function handleAction(act, el) {
     case 'final-report-prepare-save': handleFinalReportPrepareSave(); break;
     case 'final-report-prepare-review': handleFinalReportPrepareReview(); break;
     case 'final-report-prepare-submit': handleFinalReportPrepareSubmit(); break;
+    case 'final-report-prepare-confirm-submit': handleFinalReportPrepareConfirmSubmit(); break;
+    case 'final-report-export-pdf': handleFinalReportExportPdf(); break;
+    case 'final-report-print': handleFinalReportPrint(); break;
     case 'cap-detail-submit-general-manager': handleCapDetailSubmitGeneralManager(id); break;
     case 'cap-lead-save': handleCapLeadSave(id); break;
     case 'cap-lead-return': handleCapLeadReturn(id); break;
@@ -2508,7 +2515,7 @@ function handleFinalReportReadyAction(action) {
     return;
   }
   if (action === 'preview') {
-    handleLeadReportPreview('INS-2026-014');
+    go('final-report-view', { filter: 'final' });
     return;
   }
   if (action === 'record') {
@@ -2537,7 +2544,11 @@ function handleFinalReportPrepareNext() {
   var ui = ensureCapTrackingUi();
   var current = steps.indexOf(ui.finalReportPrepareStep || 'executive');
   if (current < 0) current = 0;
-  ui.finalReportPrepareStep = steps[Math.min(current + 1, steps.length - 1)];
+  if (ui.finalReportPrepareStep === 'overview') {
+    ui.finalReportPrepareStep = 'review';
+  } else {
+    ui.finalReportPrepareStep = steps[Math.min(current + 1, steps.length - 1)];
+  }
   ui.finalReportSavedAt = logTimestamp();
   persistAfterAction();
   render();
@@ -2570,14 +2581,156 @@ function handleFinalReportPrepareReview() {
 }
 
 function handleFinalReportPrepareSubmit() {
+  openModal(modalFinalReportSubmitApproval());
+}
+
+function handleFinalReportPrepareConfirmSubmit() {
   var ui = ensureCapTrackingUi();
   ui.finalReportSavedAt = logTimestamp();
   ui.finalReportSubmittedAt = ui.finalReportSavedAt;
   pushNotification('manager', 'RPT', 'Final Report INS-2026-014 was submitted for Department Manager approval.');
   addLog('Lead Inspector submitted Final Report for Department Manager approval', 'INS-2026-014');
   persistAfterAction();
+  closeModal();
   render();
   toast('Submitted', 'Final Report was submitted to Department Manager approval in this demo.', 'ok');
+}
+
+function handleFinalReportExportPdf() {
+  var ui = ensureCapTrackingUi();
+  ui.finalReportPdfExportedAt = logTimestamp();
+  addLog('Lead Inspector exported Final Report PDF', 'INS-2026-014');
+  persistAfterAction();
+  var downloaded = downloadFinalReportPdf();
+  toast(downloaded ? 'PDF downloaded' : 'PDF export unavailable',
+    downloaded ? 'INS-2026-014 Final Report PDF was downloaded from this browser.' : 'This browser does not support client-side PDF download.',
+    downloaded ? 'ok' : 'warn');
+}
+
+function handleFinalReportPrint() {
+  if (typeof window !== 'undefined' && window.print) {
+    window.print();
+    toast('Print opened', 'Use the browser print dialog to save or print the Final Report.', 'info');
+    return;
+  }
+  toast('Print unavailable', 'This browser does not expose a print dialog in the demo environment.', 'warn');
+}
+
+function finalReportPdfSafeText(text) {
+  return String(text || '')
+    .replace(/[–—]/g, '-')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[^\x20-\x7E]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function finalReportPdfEscape(text) {
+  return finalReportPdfSafeText(text)
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+}
+
+function finalReportPdfWrap(text, maxChars) {
+  var clean = finalReportPdfSafeText(text);
+  if (!clean) return [''];
+  var words = clean.split(' ');
+  var lines = [];
+  var current = '';
+  words.forEach(function (word) {
+    var test = current ? current + ' ' + word : word;
+    if (test.length > maxChars && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = test;
+    }
+  });
+  if (current) lines.push(current);
+  return lines;
+}
+
+function buildFinalReportPdfDocument() {
+  var sourceLines = typeof finalReportPdfLines === 'function' ? finalReportPdfLines() : ['AviaSurveil360 Final Report'];
+  var printableLines = [];
+  sourceLines.forEach(function (line) {
+    finalReportPdfWrap(line, 96).forEach(function (wrapped) { printableLines.push(wrapped); });
+  });
+
+  var pages = [];
+  var current = [];
+  printableLines.forEach(function (line) {
+    if (current.length >= 43) {
+      pages.push(current);
+      current = [];
+    }
+    current.push(line);
+  });
+  if (current.length) pages.push(current);
+
+  var objects = [];
+  function addObject(body) {
+    objects.push(body);
+    return objects.length;
+  }
+
+  addObject('<< /Type /Catalog /Pages 2 0 R >>');
+  objects.push('');
+  var fontObj = addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  var pageRefs = [];
+
+  pages.forEach(function (pageLines) {
+    var content = '';
+    var y = 792;
+    pageLines.forEach(function (line, index) {
+      var isTitle = index === 0 && pageRefs.length === 0;
+      var isHeading = /^\d+\./.test(line) || line === 'Final Report' || line === 'Report Signatures';
+      var size = isTitle ? 18 : (isHeading ? 13 : 9.5);
+      var leading = isTitle ? 24 : (isHeading ? 20 : 14);
+      if (!line) {
+        y -= 8;
+        return;
+      }
+      content += 'BT /F1 ' + size + ' Tf 54 ' + y + ' Td (' + finalReportPdfEscape(line) + ') Tj ET\n';
+      y -= leading;
+    });
+    var contentObj = addObject('<< /Length ' + content.length + ' >>\nstream\n' + content + 'endstream');
+    var pageObj = addObject('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 ' + fontObj + ' 0 R >> >> /Contents ' + contentObj + ' 0 R >>');
+    pageRefs.push(pageObj + ' 0 R');
+  });
+
+  objects[1] = '<< /Type /Pages /Kids [' + pageRefs.join(' ') + '] /Count ' + pageRefs.length + ' >>';
+
+  var pdf = '%PDF-1.4\n';
+  var offsets = [0];
+  objects.forEach(function (body, index) {
+    offsets[index + 1] = pdf.length;
+    pdf += (index + 1) + ' 0 obj\n' + body + '\nendobj\n';
+  });
+  var xref = pdf.length;
+  pdf += 'xref\n0 ' + (objects.length + 1) + '\n0000000000 65535 f \n';
+  for (var i = 1; i <= objects.length; i++) {
+    pdf += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
+  }
+  pdf += 'trailer\n<< /Size ' + (objects.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF';
+  return pdf;
+}
+
+function downloadFinalReportPdf() {
+  if (typeof document === 'undefined' || typeof Blob === 'undefined' || typeof URL === 'undefined') return false;
+  var pdf = buildFinalReportPdfDocument();
+  var blob = new Blob([pdf], { type: 'application/pdf' });
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = 'INS-2026-014_Final_Report_SkyCargo_Air.pdf';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  return true;
 }
 
 function handleFinalReportPrepareFieldChange(field, target) {

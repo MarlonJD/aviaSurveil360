@@ -90,4 +90,31 @@
 - Process evidence: Inspector verifies CAP evidence, sends the review to Lead Inspector, and the Lead Inspector recommendation goes to Department Manager closure approval. Report issuance already requires Executive Director / GM Approval before the CAP process starts.
 - Result: passed; no console errors or warnings; no page-level horizontal overflow on desktop or mobile.
 
+**Lead Inspector Final Review & Submit QA**
+- Source visual truth: `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-7d6651f2-0c8f-4e99-957d-5628cb94af6c.png`
+- Desktop screenshot: `/private/tmp/avia-final-review-submit-desktop.png`
+- Mobile screenshot: `/private/tmp/avia-final-review-submit-mobile.png`
+- Viewports: 1280 x 720 and 390 x 844.
+- Flow tested: app loads -> Lead Inspector role -> Final Reports -> Prepare / Edit Final Report -> Next Section -> Inspection Overview -> Next: Review & Submit.
+- Interaction evidence: the second next action routes directly to Review & Submit; the page shows the review checklist, attachments, optional Lead Inspector comments, submission note, report summary, approval workflow, and Submit for Approval actions without showing the report content editor.
+- Result: passed; Submit for Approval triggers the demo Department Manager approval submission toast; no page-level horizontal overflow on desktop or mobile.
+
+**Lead Inspector Final Submit Modal QA**
+- Source visual truth: `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-a995719c-cd81-4b05-bc15-52d421e752c4.png`
+- Desktop screenshot: `/private/tmp/avia-final-submit-modal-desktop.png`
+- Mobile screenshot: `/private/tmp/avia-final-submit-modal-mobile.png`
+- Viewports: 1280 x 720 and 390 x 844.
+- Flow tested: Review & Submit -> Submit for Approval -> confirmation modal -> Confirm Submit.
+- Interaction evidence: Submit for Approval opens a centered confirmation modal with summary, Cancel, close, and Confirm Submit actions. Confirm Submit closes the modal and triggers the Department Manager approval submission toast.
+- Result: passed; no page-level horizontal overflow on desktop or mobile.
+
+**Lead Inspector Final Report PDF QA**
+- Source visual truth: `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-7b860a27-f8c1-4737-8822-69eea44c2485.png`
+- Desktop screenshot: `/private/tmp/avia-final-report-view-desktop.png`
+- Mobile screenshot: `/private/tmp/avia-final-report-view-mobile.png`
+- Viewports: 1280 x 720 and 390 x 844.
+- Flow tested: Lead Inspector role -> Final Reports -> Preview Final Report -> Final Report.
+- Interaction evidence: the page shows the Approved final report document, SkyCargo Air metadata, sections 1-7, signature/stamp block, Export PDF, and Print Report actions. Export PDF triggers the client-side PDF generation path and the visible `PDF downloaded` success toast.
+- Result: passed; no console errors or warnings; no page-level horizontal overflow on desktop or mobile.
+
 **final result: passed**
