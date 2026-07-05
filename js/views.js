@@ -2257,7 +2257,7 @@ function leadCapSubmittedPlan(data) {
       '<div><span>CAP Submitted On</span><b>18 May 2025</b></div>' +
     '</div>' +
     '<h3>Evidence Submitted</h3><div class="lead-cap-evidence-grid">' + files.map(function (file) {
-      return '<button class="cap-detail-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="' + esc(file[1]) + '">' +
+      return '<button class="cap-detail-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="' + esc(file[1]) + '" title="' + esc(file[1]) + '">' +
         '<span class="cap-detail-file__icon is-' + esc(file[3]) + '">' + esc(file[0]) + '</span><span><b>' + esc(file[1]) + '</b><small>' + esc(file[2]) + '</small></span>' +
       '</button>';
     }).join('') + '<button class="lead-cap-more-files" data-act="cap-track-quick-action" data-track-action="documents"><b>+2</b><small>More Files</small></button></div>' +
@@ -2361,7 +2361,7 @@ function inspectorCapFindingSummary(data) {
 
 function inspectorCapEvidenceGrid(data) {
   return '<div class="inspector-cap-evidence-grid">' + inspectorCapEvidenceFiles().map(function (file) {
-    return '<button class="inspector-cap-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="' + esc(file[1]) + '">' +
+    return '<button class="inspector-cap-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="' + esc(file[1]) + '" title="' + esc(file[1]) + '">' +
       '<span class="cap-detail-file__icon is-' + esc(file[3]) + '">' + esc(file[0]) + '</span>' +
       '<span><b>' + esc(file[1]) + '</b><small>' + esc(file[2]) + '</small></span>' +
       '<em>↓</em>' +
@@ -4822,7 +4822,7 @@ function viewReport() {
       '<button class="btn" data-act="nav" data-view="' + (state.role === 'auditee' ? 'my-findings' : 'reports') + '">Back</button>' +
       '<button class="btn btn--primary" data-act="mock-export" data-id="' + f.id + '">Export PDF (mock)</button>') +
     '<div class="report"><div class="report__sheet">' +
-      '<div class="report__head"><div class="report__seal">A360</div>' +
+      '<div class="report__head">' + renderBrandMark('brand-mark--report') +
         '<div style="flex:1"><div class="report__org">Civil Aviation Authority · AviaSurveil360</div>' +
         '<h2 class="report__title">Finding Closure Report</h2>' +
         '<div class="small muted">Generated ' + esc(fmtDate(DEMO_TODAY)) + ' · Reference ' + esc(f.id) + '</div></div>' +

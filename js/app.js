@@ -189,6 +189,96 @@ function normalizeViewForRole() {
 }
 
 /* ----------------------------- Render ----------------------------- */
+function renderBrandMark(extraClass) {
+  return '<div class="brand-mark' + (extraClass ? ' ' + extraClass : '') + '" aria-hidden="true">' +
+    '<span class="brand-mark__wing brand-mark__wing--primary"></span>' +
+    '<span class="brand-mark__wing brand-mark__wing--secondary"></span>' +
+    '<span class="brand-mark__code">AS</span>' +
+  '</div>';
+}
+
+function navIconName(item) {
+  var label = ((item && item.label) || '').toLowerCase();
+  var view = (item && item.view) || '';
+  var filter = (item && item.filter) || '';
+
+  if (view === 'logout') return 'log-out';
+  if (label.indexOf('assigned audit') >= 0 || label.indexOf('inspection') >= 0) return 'clipboard-list';
+  if (label.indexOf('cap') >= 0 || filter === 'capreview' || view === 'unit-manager-review' || view === 'cap-effectiveness') return 'clipboard-check';
+  if (label.indexOf('finding') >= 0 || view === 'findings' || view === 'my-findings') return 'finding-review';
+  if (label.indexOf('report') >= 0 || label.indexOf('document') >= 0 || view === 'reports' || view === 'audit-reports') return 'file-text';
+  if (label.indexOf('evidence') >= 0 || view === 'offline-field') return 'paperclip';
+  if (label.indexOf('message') >= 0 || view === 'messages') return 'mail';
+  if (label.indexOf('calendar') >= 0 || label.indexOf('planning') >= 0 || view === 'calendar' || view === 'planning') return 'calendar';
+  if (label.indexOf('analytics') >= 0 || label.indexOf('risk trend') >= 0 || view === 'safety-intelligence') return 'chart';
+  if (label.indexOf('setting') >= 0 || view === 'settings') return 'settings';
+  if (label.indexOf('profile') >= 0) return 'user-circle';
+  if (label.indexOf('user') >= 0) return 'users';
+  if (label.indexOf('organisation') >= 0 || label.indexOf('operator') >= 0 || view === 'organizations') return 'building';
+  if (label.indexOf('risk') >= 0 || view === 'org-risk') return 'shield-alert';
+  if (label.indexOf('question') >= 0 || view === 'question-bank') return 'circle-help';
+  if (label.indexOf('version') >= 0) return 'history';
+  if (label.indexOf('template') >= 0 || label.indexOf('checklist') >= 0) return 'list-check';
+  if (label.indexOf('protocol') >= 0 || label.indexOf('ssp') >= 0 || view === 'ssp-nasp' || view === 'usoap-readiness') return 'target';
+  if (view === 'auditlog') return 'scroll';
+  return 'layout-dashboard';
+}
+
+function navIconSvg(name) {
+  switch (name) {
+    case 'clipboard-list':
+      return '<path d="M9 5h6"></path><path d="M9 3h6l1 2h3v16H5V5h3l1-2z"></path><path d="M9 11h6"></path><path d="M9 15h4"></path>';
+    case 'clipboard-check':
+      return '<path d="M9 5h6"></path><path d="M9 3h6l1 2h3v16H5V5h3l1-2z"></path><path d="m8.5 14.5 2 2 5-5"></path>';
+    case 'flag':
+      return '<path d="M6 21V4"></path><path d="M6 5h10l-1 4 1 4H6"></path>';
+    case 'finding-review':
+      return '<path d="M6 3h8l4 4v5"></path><path d="M14 3v5h5"></path><path d="M6 3v18h7"></path><path d="M9 11h4"></path><path d="M9 15h2"></path><path d="m17.5 19.5 3 3"></path><path d="M16 19a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>';
+    case 'file-text':
+      return '<path d="M14 3H7v18h10V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h4"></path>';
+    case 'paperclip':
+      return '<path d="m21 11-9 9a6 6 0 0 1-8.5-8.5l9.5-9.5a4 4 0 0 1 5.7 5.7l-9.5 9.5a2 2 0 0 1-2.8-2.8l8.7-8.7"></path>';
+    case 'mail':
+      return '<path d="M4 6h16v12H4z"></path><path d="m4 7 8 6 8-6"></path>';
+    case 'calendar':
+      return '<path d="M7 3v4"></path><path d="M17 3v4"></path><path d="M4 8h16"></path><path d="M5 5h14v16H5z"></path>';
+    case 'chart':
+      return '<path d="M4 19V5"></path><path d="M4 19h16"></path><path d="M8 16v-5"></path><path d="M12 16V8"></path><path d="M16 16v-8"></path>';
+    case 'settings':
+      return '<path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path><path d="M19.4 15a8 8 0 0 0 .1-1.5l2-1.5-2-3.5-2.4 1a8 8 0 0 0-1.3-.8L15.5 6h-7l-.3 2.7a8 8 0 0 0-1.3.8l-2.4-1-2 3.5 2 1.5A8 8 0 0 0 4.6 15l-2 1.5 2 3.5 2.4-1a8 8 0 0 0 1.3.8l.3 2.7h7l.3-2.7a8 8 0 0 0 1.3-.8l2.4 1 2-3.5z"></path>';
+    case 'user-circle':
+      return '<path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"></path><path d="M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path><path d="M6.8 18a6 6 0 0 1 10.4 0"></path>';
+    case 'users':
+      return '<path d="M16 11a3 3 0 1 0 0-6"></path><path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path><path d="M2 19a6 6 0 0 1 12 0"></path><path d="M14 15a5 5 0 0 1 8 4"></path>';
+    case 'building':
+      return '<path d="M5 21V3h10v18"></path><path d="M15 9h4v12"></path><path d="M8 7h3"></path><path d="M8 11h3"></path><path d="M8 15h3"></path><path d="M3 21h18"></path>';
+    case 'shield-alert':
+      return '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M12 8v5"></path><path d="M12 17h.01"></path>';
+    case 'circle-help':
+      return '<path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"></path><path d="M9.5 9a2.5 2.5 0 1 1 4.2 1.8c-.9.8-1.7 1.2-1.7 2.7"></path><path d="M12 17h.01"></path>';
+    case 'history':
+      return '<path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 5v6h6"></path><path d="M12 7v5l3 2"></path>';
+    case 'list-check':
+      return '<path d="m4 7 2 2 3-4"></path><path d="M11 7h9"></path><path d="m4 15 2 2 3-4"></path><path d="M11 15h9"></path>';
+    case 'target':
+      return '<path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"></path><path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"></path><path d="M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"></path>';
+    case 'scroll':
+      return '<path d="M8 21h10a3 3 0 0 1-3-3V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v13a3 3 0 0 0 3 3h1z"></path><path d="M8 21a3 3 0 0 1-3-3h10"></path><path d="M8 7h5"></path><path d="M8 11h5"></path>';
+    case 'log-out':
+      return '<path d="M10 17 5 12l5-5"></path><path d="M5 12h12"></path><path d="M14 4h5v16h-5"></path>';
+    case 'layout-dashboard':
+    default:
+      return '<path d="M4 5h7v6H4z"></path><path d="M13 5h7v4h-7z"></path><path d="M13 11h7v8h-7z"></path><path d="M4 13h7v6H4z"></path>';
+  }
+}
+
+function renderNavIcon(item) {
+  var name = navIconName(item);
+  return '<span class="nav-item__icon nav-item__icon--' + esc(name) + '" aria-hidden="true">' +
+    '<svg viewBox="0 0 24 24" focusable="false">' + navIconSvg(name) + '</svg>' +
+  '</span>';
+}
+
 function render() {
   var root = document.getElementById('app-root');
   var inspectorChrome = state.role === 'inspector' || state.role === 'leadInspector';
@@ -206,7 +296,7 @@ function render() {
     var navId = n.id ? ' data-id="' + esc(n.id) + '"' : '';
     var navFilter = n.filter ? ' data-filter="' + esc(n.filter) + '"' : '';
     return '<button class="nav-item' + active + '" data-act="nav" data-view="' + n.view + '"' + navId + navFilter + '>' +
-      '<span class="nav-item__icon">' + n.icon + '</span><span>' + esc(n.label) + '</span>' +
+      renderNavIcon(n) + '<span>' + esc(n.label) + '</span>' +
       (badge ? '<span class="nav-item__badge">' + badge + '</span>' : '') + '</button>';
   }).join('');
 
@@ -224,11 +314,12 @@ function render() {
     '<div class="shell' + (state.ui.menuOpen ? ' menu-open' : '') + (inspectorChrome ? ' shell--inspector' : '') + '">' +
       '<div class="sidebar-backdrop" data-act="toggle-menu"></div>' +
       '<aside class="sidebar">' +
-        '<div class="sidebar__brand"><div class="sidebar__logo">A360</div>' +
+        '<div class="sidebar__brand">' + renderBrandMark('brand-mark--sidebar') +
           '<div class="sidebar__brandtext"><b>AviaSurveil360</b><span>' + esc(inspectorChrome ? 'Aviation Audit System' : 'OVERSIGHT WORKBENCH') + '</span></div></div>' +
         '<nav class="sidebar__nav"><div class="experience-label">' + esc(EXPERIENCE_LABEL[state.role] || r.name) + '</div>' + navHtml + '</nav>' +
         '<div class="sidebar__foot"><button class="nav-item" data-act="logout">' +
-          '<span class="nav-item__icon">⤺</span><span>' + (inspectorChrome ? 'Logout' : 'Role select') + '</span></button>' +
+          renderNavIcon({ view: 'logout', label: inspectorChrome ? 'Logout' : 'Role select' }) +
+          '<span>' + (inspectorChrome ? 'Logout' : 'Role select') + '</span></button>' +
           (inspectorChrome ? '' : '<div style="padding:8px 11px">Demo data · frontend-only · saved in this browser</div>') + '</div>' +
       '</aside>' +
       '<div class="main">' +
@@ -378,7 +469,7 @@ function renderLogin() {
       '<div class="role-card__q">“' + esc(r.question) + '”</div></div></button>';
   }).join('');
   return '<div class="login"><div class="login__card">' +
-    '<div class="login__head"><div class="login__brand"><div class="login__logo">A360</div>' +
+    '<div class="login__head"><div class="login__brand">' + renderBrandMark('brand-mark--login') +
       '<div><div class="login__title">AviaSurveil360</div>' +
       '<div class="login__sub">Civil Aviation Authority surveillance &amp; oversight — clickable demo</div></div></div></div>' +
     '<div class="login__body"><div class="login__prompt">Choose a role to enter the demo. You can switch roles at any time from the top bar.</div>' +
