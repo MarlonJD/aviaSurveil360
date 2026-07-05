@@ -36,7 +36,7 @@ var DEMO_PERSISTENCE_CONFIG = {
    kept (display = Department Manager) so existing role-conditional code keeps
    working; a later phase may rename the key to `departmentManager`. */
 var ROLES = {
-  inspector:        { key: 'inspector',        name: 'Inspector',          user: 'John Inspector', initials: 'JI', color: '#2f6fd6',
+  inspector:        { key: 'inspector',        name: 'Inspector',          user: 'Mary Adams', initials: 'MA', color: '#2f6fd6',
                       assignmentAliases: ['Aylin Sezer'],
                       question: 'What do I need to inspect or review today?' },
   leadInspector:    { key: 'leadInspector',    name: 'Lead Inspector',     user: 'John Lead Inspector', initials: 'JL', color: '#1d4f99',
@@ -351,8 +351,8 @@ var SEED_AUDIT_REPORTS = [
   {
     id: 'RPT-AUD-2026-001',
     auditId: 'AUD-2026-001',
-    title: 'Airline XYZ Operator Audit Report',
-    reportType: 'Preliminary / Final',
+    title: 'Airline XYZ Operator Audit Preliminary Report',
+    reportType: 'Preliminary Report',
     status: 'draft',
     approvalType: 'report',
     finalLocked: false,
@@ -361,20 +361,37 @@ var SEED_AUDIT_REPORTS = [
     approvedBy: null,
     mockDigitalSignature: null,
     enforcementRecommendation: null,
-    executiveSummaryDraft: 'AI-generated draft - requires authorized review. The operator audit identified a repeated crew training record control weakness requiring CAP and evidence follow-up.',
+    executiveSummaryDraft: 'AI-generated preliminary draft - requires authorized review. The operator audit identified a repeated crew training record control weakness. After Department Manager review, the preliminary report is released to the Service Provider only when CAP-required findings exist, so the provider can complete the CAP response before Final Report preparation.',
     observations: ['Crew training evidence needs clearer reconciliation to sampled matrix rows.'],
-    recommendations: ['Require CAP/evidence follow-up before closure. Enforcement recommendation, if any, remains human-authorized only.'],
+    recommendations: [
+      'If CAP-required findings exist, release the preliminary report to the Service Provider after Department Manager review.',
+      'Prepare the Final Report after the Service Provider completes the CAP response within the defined window.',
+      'Require CAP/evidence follow-up before closure. Enforcement recommendation, if any, remains human-authorized only.'
+    ],
     attachments: ['Training_Record_Sample.pdf (mock filename only)', 'Checklist_Response_Summary.pdf (mock)'],
+    preliminaryNotice: {
+      recipient: 'Airline XYZ Quality Manager',
+      capRequired: true,
+      capRequiredCount: 1,
+      status: 'Pending Department Manager review',
+      releaseTrigger: 'After Department Manager review',
+      responseWindow: '4 calendar days',
+      responseDueDate: '2026-06-20',
+      requiredAction: 'Complete CAP actions and submit evidence / closure response.',
+      completionRule: 'Final Report is prepared after the CAP response is completed within this window.',
+      lateRule: 'If the CAP response is not completed by the due date, mark the item overdue and prepare the Final Report with unresolved CAP noted.'
+    },
     approval: {
       chain: [
-        { role: 'leadInspector', label: 'Lead Inspector', returnToRole: null },
-        { role: 'manager', label: 'Department Manager', returnToRole: 'leadInspector' },
-        { role: 'gm', label: 'GM Review', returnToRole: 'manager' },
-        { role: 'executiveDirector', label: 'Executive Director Approval', returnToRole: 'gm' }
+        { role: 'leadInspector', label: 'Lead Inspector Review', returnToRole: null },
+        { role: 'manager', label: 'Department Manager Review', returnToRole: null },
+        { role: 'leadInspector', label: 'Lead Inspector Finalization', returnToRole: null },
+        { role: 'manager', label: 'Department Manager Final Approval', returnToRole: null },
+        { role: 'executiveDirector', label: 'Executive Director / GM Approval', returnToRole: null }
       ],
       currentIndex: 0,
       outcome: null,
-      returnPolicy: 'configured_role',
+      returnPolicy: 'previous_stage',
       history: [
         { actor: 'Caner Yildiz', role: 'leadInspector', action: 'draft_created', date: '2026-06-15 13:00', comment: 'Preliminary report draft created for approval workflow.' }
       ]
@@ -393,26 +410,40 @@ var SEED_AUDIT_REPORTS = [
     approvedBy: null,
     mockDigitalSignature: null,
     enforcementRecommendation: null,
-    executiveSummaryDraft: 'Draft preliminary inspection report based on submitted inspector checklist responses. The report summarizes access control log gaps, checklist completion status, inspector comments, and required CAP follow-up after Department Manager approval.',
+    executiveSummaryDraft: 'Draft preliminary inspection report based on submitted inspector checklist responses. The report summarizes access control log gaps, checklist completion status, inspector comments, and the CAP completion window before final report preparation.',
     observations: [
       'Cargo gate access control logs have gaps around shift-change periods.',
       'Badge sample review is still waiting for one inspector response.'
     ],
     recommendations: [
-      'Submit the preliminary report to the Department Manager for approval and signature.',
-      'After approval, share the report with the Service Provider and request corrective action for accepted findings.'
+      'Submit the preliminary report to the Department Manager for review.',
+      'After Department Manager review, notify the Service Provider only if CAP-required findings exist and request CAP completion by the due date.',
+      'After the Service Provider completes the CAP response within the window, prepare the Final Report for approval.'
     ],
     attachments: ['Security_Checklist_Response_Summary.pdf (mock)', 'Cargo_Gate_Log_Sample.pdf (mock filename only)'],
+    preliminaryNotice: {
+      recipient: 'SkyCargo Air Security Manager',
+      capRequired: true,
+      capRequiredCount: 5,
+      status: 'Pending Department Manager review',
+      releaseTrigger: 'After Department Manager review',
+      responseWindow: '4 calendar days',
+      responseDueDate: '2026-06-24',
+      requiredAction: 'Complete CAP actions and submit evidence / closure response.',
+      completionRule: 'Final Report is prepared after the CAP response is completed within this window.',
+      lateRule: 'If the CAP response is not completed by the due date, mark the item overdue and prepare the Final Report with unresolved CAP noted.'
+    },
     approval: {
       chain: [
-        { role: 'leadInspector', label: 'Lead Inspector', returnToRole: null },
-        { role: 'manager', label: 'Department Manager', returnToRole: 'leadInspector' },
-        { role: 'gm', label: 'GM Review', returnToRole: 'manager' },
-        { role: 'executiveDirector', label: 'Executive Director Approval', returnToRole: 'gm' }
+        { role: 'leadInspector', label: 'Lead Inspector Review', returnToRole: null },
+        { role: 'manager', label: 'Department Manager Review', returnToRole: null },
+        { role: 'leadInspector', label: 'Lead Inspector Finalization', returnToRole: null },
+        { role: 'manager', label: 'Department Manager Final Approval', returnToRole: null },
+        { role: 'executiveDirector', label: 'Executive Director / GM Approval', returnToRole: null }
       ],
       currentIndex: 0,
       outcome: null,
-      returnPolicy: 'configured_role',
+      returnPolicy: 'previous_stage',
       history: [
         { actor: 'Caner Yildiz', role: 'leadInspector', action: 'draft_created', date: '2026-06-15 14:10', comment: 'Preliminary inspection report draft assembled from inspector checklist reports.' }
       ]
@@ -427,7 +458,7 @@ var SEED_LEAD_AUDIT_REVIEWS = [
     title: 'SkyCargo Air Security Audit',
     stage: 'Preliminary Inspection Report draft',
     reportStatus: 'Lead draft',
-    serviceProviderStep: 'After Department Manager approval/signature, share with Service Provider and request corrective actions.',
+    serviceProviderStep: 'After Department Manager review, send the Preliminary Report notification to the Service Provider only if CAP-required findings exist. After the CAP response is completed within the window, prepare the Final Report.',
     assignments: [
       {
         inspector: 'Aylin Sezer',
@@ -945,6 +976,8 @@ function freshState() {
       unitJustification: 'The CAP has initiated corrective actions; however, updated training records are still incomplete for multiple staff members. Therefore, an administrative penalty is recommended to ensure timely compliance.',
       unitAttachmentName: '',
       unitManagerRecommendationAt: '',
+      departmentManagerApprovedAt: '',
+      findingClosedAt: '',
       secondReportPreparedAt: '',
       submittedToUnitManagerAt: '',
       submittedToGeneralManagerAt: ''
@@ -962,9 +995,20 @@ function freshState() {
       sentToUnitManagerAt: '',
       workflowComment: '',
       actionsOpen: false,
-      workflowVersion: 7,
+      workflowVersion: 8,
       overallComment: '',
       rowReviews: {}
+    },
+    leadAssignedAuditsUi: {
+      query: '',
+      status: 'all',
+      department: 'all',
+      auditType: 'all',
+      risk: 'all',
+      due: 'all',
+      stage: 'all',
+      advanced: false,
+      appliedAt: ''
     },
     findingSeq: 1,              // OPS-2026-00X live counter
     potentialSeq: 1,            // PF-2026-00X live counter
@@ -1046,6 +1090,8 @@ function mergeDemoState(saved) {
     unitJustification: 'The CAP has initiated corrective actions; however, updated training records are still incomplete for multiple staff members. Therefore, an administrative penalty is recommended to ensure timely compliance.',
     unitAttachmentName: '',
     unitManagerRecommendationAt: '',
+    departmentManagerApprovedAt: '',
+    findingClosedAt: '',
     secondReportPreparedAt: '',
     submittedToUnitManagerAt: '',
     submittedToGeneralManagerAt: ''
@@ -1065,12 +1111,12 @@ function mergeDemoState(saved) {
     sentToUnitManagerAt: '',
     workflowComment: '',
     actionsOpen: false,
-    workflowVersion: 7,
+    workflowVersion: 8,
     overallComment: '',
     rowReviews: {}
   }, saved.leadReviewUi || {});
   if (!base.leadReviewUi.rowReviews || typeof base.leadReviewUi.rowReviews !== 'object') base.leadReviewUi.rowReviews = {};
-  if (!base.leadReviewUi.workflowVersion || base.leadReviewUi.workflowVersion < 7) {
+  if (!base.leadReviewUi.workflowVersion || base.leadReviewUi.workflowVersion < 8) {
     base.leadReviewUi.tab = 'report';
     base.leadReviewUi.reportSection = 'executive';
     base.leadReviewUi.downloadedAt = '';
@@ -1085,7 +1131,7 @@ function mergeDemoState(saved) {
       }
     }
   }
-  base.leadReviewUi.workflowVersion = 7;
+  base.leadReviewUi.workflowVersion = 8;
   if (!base.leadReviewUi.tab || base.leadReviewUi.tab === 'workflow') base.leadReviewUi.tab = 'report';
   if (!base.leadReviewUi.section) base.leadReviewUi.section = '1.';
   if (!base.leadReviewUi.reportSection) base.leadReviewUi.reportSection = 'executive';
@@ -1093,6 +1139,25 @@ function mergeDemoState(saved) {
   if (!base.leadReviewUi.reportRisk) base.leadReviewUi.reportRisk = 'Medium';
   if (!base.leadReviewUi.reportDraftSavedAt) base.leadReviewUi.reportDraftSavedAt = '';
   if (base.leadReviewUi.actionsOpen === undefined || base.leadReviewUi.actionsOpen === null) base.leadReviewUi.actionsOpen = false;
+  base.leadAssignedAuditsUi = Object.assign({
+    query: '',
+    status: 'all',
+    department: 'all',
+    auditType: 'all',
+    risk: 'all',
+    due: 'all',
+    stage: 'all',
+    advanced: false,
+    appliedAt: ''
+  }, saved.leadAssignedAuditsUi || {});
+  if (!base.leadAssignedAuditsUi.query) base.leadAssignedAuditsUi.query = '';
+  if (!base.leadAssignedAuditsUi.status) base.leadAssignedAuditsUi.status = 'all';
+  if (!base.leadAssignedAuditsUi.department) base.leadAssignedAuditsUi.department = 'all';
+  if (!base.leadAssignedAuditsUi.auditType) base.leadAssignedAuditsUi.auditType = 'all';
+  if (!base.leadAssignedAuditsUi.risk) base.leadAssignedAuditsUi.risk = 'all';
+  if (!base.leadAssignedAuditsUi.due) base.leadAssignedAuditsUi.due = 'all';
+  if (!base.leadAssignedAuditsUi.stage) base.leadAssignedAuditsUi.stage = 'all';
+  base.leadAssignedAuditsUi.advanced = !!base.leadAssignedAuditsUi.advanced;
   if (!base.questionSeq) base.questionSeq = 7;
   if (!base.potentialSeq) base.potentialSeq = 1;
   if (!base.questionTraces) base.questionTraces = deepClone(SEED_QUESTION_TRACES);

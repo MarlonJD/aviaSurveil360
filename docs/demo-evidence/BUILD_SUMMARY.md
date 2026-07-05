@@ -300,8 +300,8 @@ Desktop browser click-through verified these governance paths locally:
 - Department Manager, General Manager, Finance Review, and Executive Director
   planning approval chain through final `Approved` state.
 - General Manager checklist approval for `CL-FOPS-v2.4`.
-- Lead Inspector -> Department Manager -> General Manager -> Executive
-  Director report approval chain through `Final Report Locked`.
+- Lead Inspector -> Department Manager -> Executive Director / GM report
+  approval chain through `Final Report Issued` and `Final Report Locked`.
 - Inspector `Audit Work Queue` and `Offline Field Inspection` demo boundary.
 - Auditee portal isolation: no visible `Internal CAA Note` or `Inspector
   Workload`.

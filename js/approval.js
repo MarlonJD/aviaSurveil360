@@ -29,12 +29,14 @@ var CHECKLIST_STATUS_META = {
 var REPORT_STATUS_META = {
   draft: { label: 'Draft', tone: 'neutral' },
   submitted_to_dm: { label: 'Submitted to Department Manager', tone: 'info' },
+  released_to_service_provider: { label: 'Service Provider CAP Completion', tone: 'warn' },
+  submitted_to_dm_final: { label: 'Submitted for Final Approval', tone: 'info' },
   returned_to_lead: { label: 'Returned to Lead Inspector', tone: 'warn' },
   submitted_to_gm: { label: 'Submitted to GM', tone: 'info' },
   returned_to_dm: { label: 'Returned to Department Manager', tone: 'warn' },
-  submitted_to_ed: { label: 'Submitted to Executive Director', tone: 'info' },
+  submitted_to_ed: { label: 'Submitted to Executive Director / GM', tone: 'info' },
   returned_to_gm: { label: 'Returned to GM', tone: 'warn' },
-  final_report_generated: { label: 'Final Report Generated', tone: 'ok' },
+  final_report_generated: { label: 'Final Report Issued', tone: 'ok' },
   report_rejected: { label: 'Rejected', tone: 'danger' }
 };
 
@@ -117,6 +119,15 @@ function approvalNextAction(record, stage) {
   if (!record || !stage) return 'No action';
   if (record.approval.outcome === 'approved') return 'No action - approved';
   if (record.approval.outcome === 'rejected') return 'No action - rejected';
+  if (record.approvalType === 'report') {
+    var stageLabel = stage.label || '';
+    if (stage.role === 'leadInspector' && /Finalization/i.test(stageLabel)) return 'Prepare Final Report after Service Provider CAP completion';
+    if (stage.role === 'leadInspector') return 'Submit preliminary report to Department Manager';
+    if (stage.role === 'manager' && /Final Approval/i.test(stageLabel)) return 'Approve final report to Executive Director / GM or return to Lead Inspector';
+    if (stage.role === 'manager') return 'Release preliminary report to Service Provider if CAP is required, or return to Lead Inspector';
+    if (stage.role === 'executiveDirector') return 'Issue final report or return to Department Manager';
+    if (stage.role === 'gm') return 'Approve to Executive Director or return to Department Manager';
+  }
   if (stage.role === 'manager') return 'Revise and submit to GM';
   if (stage.role === 'gm') {
     return record.budgetRequired ? 'Send to Finance Review' : 'Forward to Executive Director';
@@ -169,7 +180,7 @@ function approvalSummary(record) {
   return {
     outcome: approval.outcome || null,
     ownerRole: stage ? stage.role : null,
-    ownerLabel: stage ? roleName(stage.role) : 'No current owner',
+    ownerLabel: stage ? (stage.label || roleName(stage.role)) : 'No current owner',
     nextAction: approvalNextAction(record, stage),
     statusLabel: meta.label || (stage ? stage.label : 'In review'),
     statusTone: meta.tone || 'neutral',
@@ -240,8 +251,14 @@ function setApprovalStatusFromChain(record, action) {
       record.status = 'report_rejected';
       return;
     }
-    if (summary.ownerRole === 'leadInspector') record.status = 'returned_to_lead';
-    else if (summary.ownerRole === 'manager') record.status = action === 'returned' ? 'returned_to_dm' : 'submitted_to_dm';
+    var reportStage = approvalStage(record);
+    var reportStageLabel = reportStage && reportStage.label ? reportStage.label : '';
+    if (summary.ownerRole === 'leadInspector') {
+      record.status = /Finalization/i.test(reportStageLabel) && action !== 'returned' ? 'released_to_service_provider' : 'returned_to_lead';
+    } else if (summary.ownerRole === 'manager') {
+      if (action === 'returned') record.status = 'returned_to_dm';
+      else record.status = /Final Approval/i.test(reportStageLabel) ? 'submitted_to_dm_final' : 'submitted_to_dm';
+    }
     else if (summary.ownerRole === 'gm') record.status = action === 'returned' ? 'returned_to_gm' : 'submitted_to_gm';
     else if (summary.ownerRole === 'executiveDirector') record.status = 'submitted_to_ed';
     return;

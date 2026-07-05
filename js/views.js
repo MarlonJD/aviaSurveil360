@@ -124,8 +124,10 @@ function renderOpsTable(items, options) {
     return workItemRowHtml(item, options);
   }).join('');
   var orgHead = options.hideOrganization ? '' : '<th>Organization</th>';
+  var priorityHead = options.priorityHead || 'Priority';
+  var priorityWidth = options.priorityWidth || '96px';
   return '<div class="ops-table-wrap ops-table-wrap--stack"><table class="ops-table"><thead><tr>' +
-    '<th style="width:96px">Priority</th><th>Item</th>' + orgHead +
+    '<th style="width:' + esc(priorityWidth) + '">' + esc(priorityHead) + '</th><th>Item</th>' + orgHead +
     '<th>Owner</th><th>Next Action</th><th>Due Date / Target</th><th>Status</th><th style="width:124px;text-align:right">Open</th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
@@ -682,20 +684,20 @@ function viewRoleHome() {
   var profiles = {
     leadInspector: {
       title: 'Lead Inspector',
-      purpose: 'Review assigned inspections, potential findings and report readiness.',
-      queueTitle: 'Lead Review Queue',
-      queueSub: 'Inspection execution and report-control work',
-      chain: 'Report approval: Lead Inspector -> Department Manager -> GM -> ED',
+      purpose: 'Review assigned audits, findings, preliminary reports and final report readiness.',
+      queueTitle: 'Assigned Audits',
+      queueSub: 'Inspection execution, report preparation and CAP verification work',
+      chain: 'Report approval: Lead Inspector -> Department Manager -> Executive Director / GM -> Final Report Issued.',
       boundary: 'Lead Inspector reviews potential findings and sets severity before conversion. Finding closure still requires accepted evidence or authorized closure.',
       kpis: [
         ['Potential Findings', '2', 'Awaiting lead review', 'warn', 'findings'],
-        ['Reports In Draft', '3', 'Preliminary or final', 'info', 'reports'],
-        ['Audit Preparation', '1', 'Released planning item', 'neutral', 'planning']
+        ['Reports In Draft', '3', 'Preliminary or final', 'info', 'audit-reports'],
+        ['CAP Verification', '7', 'After final report', 'neutral', 'findings']
       ],
       rows: [
         ['OPS-2026-001', 'Potential finding from Flight Operations checklist', 'Severity review pending', 'findings'],
         ['AUD-2026-001', 'Airline XYZ Operator Audit', 'Team and checklist execution', 'calendar'],
-        ['RPT-2026-004', 'Preliminary report package', 'Lead sign-off before DM review', 'reports']
+        ['RPT-2026-004', 'Preliminary report package', 'Lead sign-off before Department Manager review', 'audit-reports']
       ]
     },
     gm: {
@@ -739,7 +741,7 @@ function viewRoleHome() {
       purpose: 'Final approval for released plans and final report packages.',
       queueTitle: 'Executive Approval Queue',
       queueSub: 'Final governance approvals',
-      chain: 'Planning: DM -> GM -> Finance -> ED. Report: Lead -> DM -> GM -> ED.',
+      chain: 'Planning: DM -> GM -> Finance -> ED. Report: Lead -> Department Manager -> Executive Director / GM -> Final Report Issued.',
       boundary: 'ED approval is an internal governance step in this demo. Enforcement remains a separate authorized process, not an automatic outcome.',
       kpis: [
         ['Plan Approvals', '1', 'Ready for final approval', 'warn', 'planning'],
@@ -1291,7 +1293,7 @@ function viewInspectorDashboard() {
       esc(finding.responsiblePerson || 'Service provider'),
       esc(fmtDate(finding.cap && finding.cap.targetDate ? finding.cap.targetDate : finding.dueDate)),
       demoBadge('Pending Review', 'warn'),
-      '<button class="btn btn--sm" data-act="nav" data-view="findings" data-filter="capreview" data-id="' + esc(finding.id) + '">Review</button>'
+      '<button class="btn btn--sm" data-act="nav" data-view="cap-review-detail" data-id="' + esc(finding.id) + '">Review</button>'
     ];
   });
 
@@ -1313,14 +1315,14 @@ function viewInspectorDashboard() {
       kpiCard('My Inspections', String(assignedAudits.length), 'Assigned to me', { view: 'calendar', tone: 'info' }) +
       kpiCard('In Progress', String(activeAudits.length), 'Inspections', { view: 'calendar', tone: 'warn' }) +
       kpiCard('CAP Reviews', String(capReview.length), 'Pending review', { view: 'findings', filter: 'capreview', tone: capReview.length ? 'ok' : 'neutral' }) +
-      kpiCard('Draft Reports', String(draftReports.length), 'Ready to submit', { view: 'reports', tone: draftReports.length ? 'info' : 'neutral' }) +
+      kpiCard('Reports', String(draftReports.length), 'Ready to submit', { view: 'reports', tone: draftReports.length ? 'info' : 'neutral' }) +
     '</div>' +
     '<h2 class="section-heading">Assigned Inspections</h2>' +
     inspectorTable(['Inspection ID', 'Organization', 'Application Type', 'Status', 'Due Date', 'Progress', 'Action'], assignedRows, 'No inspections assigned to you.') +
     '<h2 class="section-heading mt-24">CAP Reviews</h2>' +
     inspectorTable(['CAP ID', 'Inspection ID', 'Organization', 'Submitted By', 'Due Date', 'Status', 'Action'], capRows, 'No CAP reviews are pending.') +
-    '<h2 class="section-heading mt-24">Draft Reports</h2>' +
-    inspectorTable(['Report ID', 'Inspection ID', 'Organization', 'Last Updated', 'Status', 'Action'], reportRows, 'No draft reports are ready to submit.');
+    '<h2 class="section-heading mt-24">Reports</h2>' +
+    inspectorTable(['Report ID', 'Inspection ID', 'Organization', 'Last Updated', 'Status', 'Action'], reportRows, 'No reports are ready to submit.');
 }
 
 /* =========================== Inspector CAP reviews =========================== */
@@ -1628,7 +1630,7 @@ function capReviewTableRows(items, ui) {
       '<td>' + esc(fmtDate(capReviewTargetDate(finding))) + '</td>' +
       '<td>' + demoBadge(status.label, status.tone) + '</td>' +
       '<td><div class="cap-review-actions">' +
-        '<button class="btn btn--sm" data-act="cap-review-row" data-id="' + esc(finding.id) + '">Review</button>' +
+        '<button class="btn btn--sm" data-act="nav" data-view="cap-review-detail" data-id="' + esc(finding.id) + '">Review</button>' +
         '<button class="icon-btn" data-act="cap-review-row" data-id="' + esc(finding.id) + '" aria-label="Toggle CAP details">' + esc(chevron) + '</button>' +
       '</div></td>' +
     '</tr>';
@@ -1698,6 +1700,14 @@ function capTrackingUiState() {
     enforcementJustification: '',
     internalComment: '',
     inspectorReviewSentAt: '',
+    inspectorRootCause: 'yes',
+    inspectorActions: 'yes',
+    inspectorEvidence: 'yes',
+    inspectorImplementation: 'yes',
+    inspectorOnsite: 'no',
+    inspectorAssessment: 'acceptable',
+    inspectorComments: 'The CAP adequately addresses the root cause. Evidence provided is sufficient and implementation has been verified through records. No on-site verification is required.',
+    inspectorReviewDate: '2025-05-19',
     leadInspectorRecommendationAt: '',
     unitEffectiveness: 'partially_effective',
     unitRecommendationType: 'administrative_penalty',
@@ -1712,7 +1722,15 @@ function capTrackingUiState() {
   };
   state.capTrackingUi = Object.assign(fallback, state.capTrackingUi || {});
   if (['overview', 'timeline', 'communications', 'documents'].indexOf(state.capTrackingUi.tab) === -1) state.capTrackingUi.tab = 'overview';
-  if (['details', 'history', 'communications', 'documents', 'enforcement'].indexOf(state.capTrackingUi.detailTab) === -1) state.capTrackingUi.detailTab = 'details';
+  if (['details', 'evidence', 'assessment', 'history', 'communications', 'documents', 'enforcement'].indexOf(state.capTrackingUi.detailTab) === -1) state.capTrackingUi.detailTab = 'details';
+  if (!state.capTrackingUi.inspectorRootCause) state.capTrackingUi.inspectorRootCause = 'yes';
+  if (!state.capTrackingUi.inspectorActions) state.capTrackingUi.inspectorActions = 'yes';
+  if (!state.capTrackingUi.inspectorEvidence) state.capTrackingUi.inspectorEvidence = 'yes';
+  if (!state.capTrackingUi.inspectorImplementation) state.capTrackingUi.inspectorImplementation = 'yes';
+  if (!state.capTrackingUi.inspectorOnsite) state.capTrackingUi.inspectorOnsite = 'no';
+  if (!state.capTrackingUi.inspectorAssessment) state.capTrackingUi.inspectorAssessment = 'acceptable';
+  if (state.capTrackingUi.inspectorComments === undefined || state.capTrackingUi.inspectorComments === null) state.capTrackingUi.inspectorComments = 'The CAP adequately addresses the root cause. Evidence provided is sufficient and implementation has been verified through records. No on-site verification is required.';
+  if (!state.capTrackingUi.inspectorReviewDate) state.capTrackingUi.inspectorReviewDate = '2025-05-19';
   return state.capTrackingUi;
 }
 
@@ -1777,7 +1795,7 @@ function capTrackingOverview(ui, rows) {
   var reminderLabel = ui.reminderSentAt ? 'Reminder Sent' : 'Send Reminder';
   return '<div class="cap-track-overview">' +
     '<div class="cap-track-banner">' +
-      '<div><b>The final report has been approved by the Executive Director and sent to the service provider on 22 Jun 2026.</b>' +
+      '<div><b>Final Report Issued after Executive Director / GM approval completed and sent to the service provider on 22 Jun 2026.</b>' +
       '<p>The service provider must submit corrective action plans for each applicable finding within the defined deadlines.</p></div>' +
       '<button class="btn btn--sm" data-act="cap-track-reminder">Send Reminder</button>' +
       (ui.reminderSentAt ? '<span class="cap-track-reminder-note">' + esc(reminderLabel) + ' · ' + esc(ui.reminderSentAt) + '</span>' : '') +
@@ -1788,10 +1806,11 @@ function capTrackingOverview(ui, rows) {
 
 function capTrackingTimeline() {
   var events = [
-    ['22 Jun 2026 14:30', 'Final report approved by Executive Director and sent to service provider.', 'John Lead Inspector'],
-    ['22 Jun 2026 14:25', 'Final report submitted to Executive Director for approval.', 'John Lead Inspector'],
-    ['21 Jun 2026 10:15', 'Final report approved by General Manager.', 'Michael General Manager'],
-    ['20 Jun 2026 16:40', 'Final report approved by Unit Manager.', 'Ayse Unit Manager']
+    ['22 Jun 2026 14:30', 'Final Report Issued after Executive Director / GM approval and sent to service provider.', 'Ufuk Aslan'],
+    ['22 Jun 2026 14:20', 'Department Manager approved the report for Executive Director / GM approval.', 'Selin Department Manager'],
+    ['22 Jun 2026 14:10', 'Final report finalized by Lead Inspector.', 'John Lead Inspector'],
+    ['21 Jun 2026 10:15', 'Service Provider comments reviewed.', 'John Lead Inspector'],
+    ['20 Jun 2026 16:40', 'Preliminary report released after Department Manager review.', 'Selin Department Manager']
   ];
   return '<div class="cap-track-panel"><h2>Timeline</h2><div class="cap-track-activity">' + events.map(function (event) {
     return '<div><time>' + esc(event[0]) + '</time><span class="cap-track-event-dot is-ok">✓</span><p><b>' + esc(event[1]) + '</b><small>' + esc(event[2]) + '</small></p></div>';
@@ -1801,7 +1820,7 @@ function capTrackingTimeline() {
 function capTrackingCommunications(ui) {
   var sent = ui.reminderSentAt || 'Not sent in this browser session';
   return '<div class="cap-track-panel"><h2>Communications</h2>' +
-    '<div class="cap-track-message"><b>Final report package sent</b><p>Sent to SkyCargo Air safety contact after ED approval on 22 Jun 2026.</p></div>' +
+    '<div class="cap-track-message"><b>Final report package sent</b><p>Sent to SkyCargo Air safety contact after Executive Director / GM approval and Final Report Issued on 22 Jun 2026.</p></div>' +
     '<div class="cap-track-message"><b>Latest reminder</b><p>' + esc(sent) + '</p></div>' +
     '<button class="btn btn--primary btn--sm" data-act="cap-track-reminder">Send Reminder to Service Provider</button>' +
   '</div>';
@@ -1826,12 +1845,13 @@ function capTrackingDocuments(ui) {
 
 function capTrackingSide() {
   var steps = [
-    ['done', '1. Final Report Approved', '22 Jun 2026 by Executive Director'],
-    ['done', '2. Sent to Service Provider', '22 Jun 2026'],
-    ['active', '3. CAP Submission', 'In Progress'],
-    ['', '4. CAP Review', 'Waiting'],
-    ['', '5. Implementation', 'Waiting'],
-    ['', '6. Closure', 'Waiting']
+    ['done', '1. Final Report Issued', '22 Jun 2026 after Executive Director / GM approval'],
+    ['done', '2. CAP Process Starts', 'Service provider notified'],
+    ['active', '3. CAP Submitted', 'In Progress'],
+    ['', '4. Inspector verifies CAP', 'Waiting'],
+    ['', '5. Lead Inspector recommends closure', 'Waiting'],
+    ['', '6. Department Manager approves closure', 'Waiting'],
+    ['', '7. Finding Closed', 'Waiting']
   ];
   return '<aside class="cap-track-side">' +
     '<div class="cap-track-side-card">' +
@@ -1861,10 +1881,11 @@ function capTrackingSide() {
 
 function capTrackingRecentAndQuick() {
   var events = [
-    ['22 Jun 2026 14:30', 'Final report approved by Executive Director and sent to service provider.', 'John Lead Inspector'],
-    ['22 Jun 2026 14:25', 'Final report submitted to Executive Director for approval.', 'John Lead Inspector'],
-    ['21 Jun 2026 10:15', 'Final report approved by General Manager.', 'Michael General Manager'],
-    ['20 Jun 2026 16:40', 'Final report approved by Unit Manager.', 'Ayse Unit Manager']
+    ['22 Jun 2026 14:30', 'Final Report Issued after Executive Director / GM approval and sent to service provider.', 'Ufuk Aslan'],
+    ['22 Jun 2026 14:20', 'Department Manager approved the report for Executive Director / GM approval.', 'Selin Department Manager'],
+    ['22 Jun 2026 14:10', 'Final report finalized by Lead Inspector.', 'John Lead Inspector'],
+    ['21 Jun 2026 10:15', 'Service Provider comments reviewed.', 'John Lead Inspector'],
+    ['20 Jun 2026 16:40', 'Preliminary report released after Department Manager review.', 'Selin Department Manager']
   ];
   return '<div class="cap-track-lower">' +
     '<div class="cap-track-panel"><h2>Recent Activities</h2><div class="cap-track-activity">' +
@@ -1893,9 +1914,9 @@ function viewLeadCapTracking() {
     '<div class="cap-track-head">' +
       '<div>' +
         '<div class="cap-track-breadcrumb">Inspections / INS-2026-015 / CAP Tracking</div>' +
-        '<h1>CAP Tracking - Service Provider ' + demoBadge('Report Approved by ED', 'ok') + '</h1>' +
+        '<h1>CAP Tracking - Service Provider ' + demoBadge('Final Report Issued', 'ok') + '</h1>' +
         '<div class="cap-track-meta">' +
-          '<span>Inspection ID: <b>INS-2026-015</b></span><span>Organization: <b>SkyCargo Air</b></span><span>Inspection Type: <b>Routine Inspection</b></span><span>Inspection Dates: <b>15 - 18 Jun 2026</b></span><span>Final Report Approved: <b>22 Jun 2026</b></span>' +
+          '<span>Inspection ID: <b>INS-2026-015</b></span><span>Organization: <b>SkyCargo Air</b></span><span>Inspection Type: <b>Routine Inspection</b></span><span>Inspection Dates: <b>15 - 18 Jun 2026</b></span><span>Final Report Issued: <b>22 Jun 2026</b></span><span>Executive Director / GM approval completed</span>' +
         '</div>' +
       '</div>' +
       '<div class="cap-track-head-actions">' +
@@ -1971,7 +1992,8 @@ function capDetailData(id) {
       ]
     },
     actions: [
-      ['22 Jun 2026 14:30', 'Executive Director', 'Final report approved and sent to service provider.', '-'],
+      ['22 Jun 2026 14:30', 'Executive Director / GM', 'Final Report Issued and sent to service provider.', '-'],
+      ['22 Jun 2026 14:20', 'Department Manager', 'Report approved for Executive Director / GM approval.', '-'],
       ['28 Jun 2026 09:15', 'Service Provider', 'CAP submitted.', 'Initial CAP submission.'],
       ['05 Jul 2026 11:20', 'Inspector', 'CAP reviewed (2nd review).', 'Partial improvement observed.'],
       ['05 Jul 2026 11:25', 'Inspector', 'CAP review sent to Lead Inspector.', 'Additional actions required.']
@@ -1979,7 +2001,7 @@ function capDetailData(id) {
   };
   if (row.id !== 'F-2026-002') {
     detail.requirement = row.level === 'Level 1' ? 'SMS 2.1 - Risk Management Process' : detail.requirement;
-    detail.description = row.title + ' is tracked under the ED-approved final report CAP package.';
+    detail.description = row.title + ' is tracked under the issued final report CAP package.';
     detail.previousReview.status = row.status === 'CAP Submitted' ? 'Pending 1st Review' : detail.previousReview.status;
   }
   return detail;
@@ -1998,16 +2020,16 @@ function capDetailStep(stateKey, label, date, number) {
 
 function capDetailProgress(ui) {
   var inspectorSent = !!ui.inspectorReviewSentAt;
-  var unitReady = !!ui.submittedToUnitManagerAt || !!ui.leadInspectorRecommendationAt;
+  var leadReady = !!ui.submittedToUnitManagerAt || !!ui.leadInspectorRecommendationAt;
+  var departmentApproved = !!ui.departmentManagerApprovedAt;
+  var findingClosed = !!ui.findingClosedAt;
   return '<div class="cap-detail-steps">' +
-    capDetailStep('done', 'Final Report Approved', '22 Jun 2026', 1) +
-    capDetailStep('done', 'Sent to Service Provider', '22 Jun 2026', 2) +
-    capDetailStep('done', 'CAP Submitted', '28 Jun 2026', 3) +
-    capDetailStep(inspectorSent ? 'done' : 'active', 'Inspector CAP Review', inspectorSent ? ui.inspectorReviewSentAt : 'In Progress', 4) +
-    capDetailStep(unitReady ? 'done' : 'waiting', 'Lead Inspector Validation', unitReady ? 'Ready for Unit Manager' : 'Pending', 5) +
-    capDetailStep('waiting', 'Unit Manager Review', 'Pending', 6) +
-    capDetailStep('waiting', 'General Manager Review', 'Pending', 7) +
-    capDetailStep('waiting', 'ED Decision', 'Pending', 8) +
+    capDetailStep('done', 'Final Report Issued', '22 Jun 2026', 1) +
+    capDetailStep('done', 'CAP Submitted', '28 Jun 2026', 2) +
+    capDetailStep(inspectorSent ? 'done' : 'active', 'Inspector verifies CAP', inspectorSent ? ui.inspectorReviewSentAt : 'In Progress', 3) +
+    capDetailStep(leadReady ? 'done' : 'waiting', 'Lead Inspector recommends closure', leadReady ? 'Ready for Department Manager' : 'Pending', 4) +
+    capDetailStep(departmentApproved ? 'done' : 'waiting', 'Department Manager approves closure', departmentApproved ? ui.departmentManagerApprovedAt : 'Pending', 5) +
+    capDetailStep(findingClosed ? 'done' : 'waiting', 'Finding Closed', findingClosed ? ui.findingClosedAt : 'Pending', 6) +
   '</div>';
 }
 
@@ -2097,14 +2119,14 @@ function capDetailStatusCard(data) {
 }
 
 function capDetailWorkflow(ui) {
-  var leadState = ui.inspectorReviewSentAt ? 'Ready for validation' : 'Waiting for Inspector';
-  var unitState = ui.submittedToUnitManagerAt || ui.leadInspectorRecommendationAt ? 'Ready for recommendation' : 'Pending';
+  var leadState = ui.inspectorReviewSentAt ? 'Ready for recommendation' : 'Waiting for Inspector';
+  var managerState = ui.submittedToUnitManagerAt || ui.leadInspectorRecommendationAt ? 'Ready for approval' : 'Pending';
   return '<section class="cap-detail-panel">' +
     '<h2>Inspector Review Handoff</h2>' +
     '<div class="cap-detail-workflow">' +
       '<div class="cap-detail-workflow-step is-active"><span>1</span><p><b>Inspector Review</b><small>CAP closure/effectiveness decision</small></p></div>' +
-      '<div class="cap-detail-workflow-step' + (ui.inspectorReviewSentAt ? ' is-active' : '') + '"><span>2</span><p><b>Lead Inspector</b><small>' + esc(leadState) + '</small></p></div>' +
-      '<div class="cap-detail-workflow-step' + (unitState.indexOf('Ready') === 0 ? ' is-active' : '') + '"><span>3</span><p><b>Unit Manager</b><small>' + esc(unitState) + '</small></p></div>' +
+      '<div class="cap-detail-workflow-step' + (ui.inspectorReviewSentAt ? ' is-active' : '') + '"><span>2</span><p><b>Lead Inspector Recommendation</b><small>' + esc(leadState) + '</small></p></div>' +
+      '<div class="cap-detail-workflow-step' + (managerState.indexOf('Ready') === 0 ? ' is-active' : '') + '"><span>3</span><p><b>Department Manager approves closure</b><small>' + esc(managerState) + '</small></p></div>' +
     '</div>' +
   '</section>';
 }
@@ -2140,7 +2162,7 @@ function capDetailEnforcement(ui, data) {
     ['other_regulatory_action', 'Other Regulatory Action', 'Escalate to a configured regulatory action outside the standard list.']
   ];
   return '<section class="cap-detail-panel">' +
-    '<h2>Enforcement Decision Options (if CAP not effective)</h2>' +
+    '<h2>Optional Escalation Options</h2>' +
     '<div class="form-row"><label>Select Recommended Enforcement Decision</label><select data-field="cap-detail-enforcement-level">' + options + '</select></div>' +
     '<div class="cap-detail-enforcement-options">' + cards.map(function (card) {
       return '<label class="cap-detail-enforcement-option' + (selectedDecision === card[0] ? ' is-selected' : '') + '">' +
@@ -2149,8 +2171,8 @@ function capDetailEnforcement(ui, data) {
       '</label>';
     }).join('') + '</div>' +
     '<div class="form-row"><label>Recommended Action Justification</label><textarea data-field="cap-detail-enforcement-justification" rows="3" placeholder="Provide justification for the recommended enforcement action.">' + esc(ui.enforcementJustification) + '</textarea></div>' +
-    '<button class="btn btn--primary btn--block" data-act="cap-detail-submit-general-manager" data-id="' + esc(data.id) + '">Submit to General Manager</button>' +
-    (ui.submittedToGeneralManagerAt ? '<p class="cap-detail-note is-ok">Recommendation submitted to General Manager at ' + esc(ui.submittedToGeneralManagerAt) + '.</p>' : '') +
+    '<button class="btn btn--primary btn--block" data-act="cap-detail-submit-general-manager" data-id="' + esc(data.id) + '">Send Recommendation to Department Manager</button>' +
+    (ui.departmentManagerApprovedAt ? '<p class="cap-detail-note is-ok">Department Manager approved closure decision at ' + esc(ui.departmentManagerApprovedAt) + '.</p>' : '') +
   '</section>';
 }
 
@@ -2160,7 +2182,7 @@ function capDetailQuickActions(data) {
     '<div class="cap-track-quick">' +
       '<button data-act="cap-track-view-report">View Final Report <span>›</span></button>' +
       '<button data-act="cap-detail-download-finding" data-id="' + esc(data.id) + '">Download Finding <span>›</span></button>' +
-      '<button data-act="nav" data-view="unit-manager-review" data-id="' + esc(data.id) + '">Open Unit Manager Review <span>›</span></button>' +
+      '<button data-act="nav" data-view="unit-manager-review" data-id="' + esc(data.id) + '">Open Department Manager Approval <span>›</span></button>' +
       '<button data-act="cap-track-reminder">Send Reminder to Service Provider <span>›</span></button>' +
       '<button data-act="cap-track-row-action" data-id="' + esc(data.id) + '" data-track-action="escalate">Escalate Overdue CAP <span>›</span></button>' +
     '</div>' +
@@ -2176,6 +2198,334 @@ function capDetailActionHistory(data) {
       }).join('') +
     '</tbody></table>' +
   '</section>';
+}
+
+function leadCapReviewList(selectedId) {
+  var items = [
+    { capId: 'CAP-2025-045-001', finding: 'OPS-001', dept: 'Flight Operations (OPS)', due: '20 May 2025', inspector: 'Mary Adams', tone: 'danger', risk: 'High', id: 'F-2026-002' },
+    { capId: 'CAP-2025-038-002', finding: 'OPS-004', dept: 'Flight Operations (OPS)', due: '22 May 2025', inspector: 'Ahmed Khan', tone: 'warn', risk: 'Medium', id: 'F-2026-001' },
+    { capId: 'CAP-2025-028-001', finding: 'PEL-002', dept: 'Personnel Licensing (PEL)', due: '25 May 2025', inspector: 'Peter Shikongo', tone: 'ok', risk: 'Low', id: 'F-2026-007' }
+  ];
+  return '<aside class="lead-cap-list cap-detail-panel">' +
+    '<div class="lead-cap-list__head"><h2>CAP Review List</h2><button class="icon-btn" data-act="cap-track-quick-action" data-track-action="filter" aria-label="Filter CAP review list">⌁</button></div>' +
+    '<div class="lead-cap-list__tabs"><button class="is-active">Waiting (3)</button><button>Reviewed (12)</button></div>' +
+    '<div class="lead-cap-search"><input type="search" placeholder="Search..." aria-label="Search CAP reviews"><span>⌕</span></div>' +
+    '<div class="lead-cap-list__items">' + items.map(function (item) {
+      return '<button class="lead-cap-card' + (item.id === selectedId ? ' is-active' : '') + '" data-act="nav" data-view="cap-review-detail" data-id="' + esc(item.id) + '">' +
+        '<span><b>' + esc(item.capId) + '</b>' + demoBadge(item.risk, item.tone) + '</span>' +
+        '<small>Finding: ' + esc(item.finding) + '</small>' +
+        '<small>Dept: ' + esc(item.dept) + '</small>' +
+        '<small>Due: ' + esc(item.due) + (item.capId === 'CAP-2025-045-001' ? ' <b>(Today)</b>' : '') + '</small>' +
+        '<small>Inspector: ' + esc(item.inspector) + '</small>' +
+      '</button>';
+    }).join('') + '</div>' +
+    '<div class="lead-cap-list__foot"><span>Showing 1 to 3 of 3</span><button class="icon-btn" disabled>‹</button><button class="cap-review-page-btn is-active">1</button><button class="icon-btn" disabled>›</button></div>' +
+  '</aside>';
+}
+
+function leadCapFindingInformation(data) {
+  return '<section class="cap-detail-panel lead-cap-finding-info">' +
+    '<div class="cap-detail-panel-head"><h2>Finding Information</h2><button class="cap-file-link" data-act="open" data-id="' + esc(data.id) + '">View Finding Details ↗</button></div>' +
+    '<div class="lead-cap-info-grid">' +
+      '<div><span>Audit No.</span><b>AUD-2025-045</b></div>' +
+      '<div><span>Department</span><b>Flight Operations (OPS)</b></div>' +
+      '<div><span>Finding ID</span><b>OPS-001</b></div>' +
+      '<div><span>Risk Level</span>' + demoBadge('High', 'danger') + '</div>' +
+      '<div><span>Regulation</span><b>NAMCAR OPS 1.1005(a)</b></div>' +
+      '<div><span>Original Due Date</span><b>20 May 2025</b></div>' +
+      '<div class="is-wide"><span>Finding Title</span><b>Inadequate Flight Duty Time Monitoring</b></div>' +
+      '<div><span>Finding Raised On</span><b>14 May 2025</b></div>' +
+      '<div class="is-full"><span>Finding Description</span><p>The operator did not consistently monitor and record cumulative flight duty time for flight crew members. Records for 3 out of 10 sampled pilots did not demonstrate compliance with regulatory limitations.</p></div>' +
+    '</div>' +
+  '</section>';
+}
+
+function leadCapSubmittedPlan(data) {
+  var files = [
+    ['PDF', 'FDT_Monitoring_Procedure_v2.0.pdf', '1.2 MB', 'danger'],
+    ['XLS', 'FDT_Training_Records_May2025.xlsx', '850 KB', 'ok'],
+    ['PDF', 'Internal_Audit_Report_May2025.pdf', '2.4 MB', 'danger']
+  ];
+  return '<section class="cap-detail-panel lead-cap-service-provider">' +
+    '<h2>Corrective Action Plan (CAP) by Service Provider</h2>' +
+    '<h3>Corrective Action</h3><p>We have implemented an automated flight duty time monitoring system integrated with scheduling to ensure compliance. All affected pilots have been briefed and records updated.</p>' +
+    '<h3>Preventive Action</h3><p>Introduce monthly compliance monitoring and internal audits to ensure continued adherence. Recurrent training will be conducted every 6 months.</p>' +
+    '<div class="lead-cap-meta-row">' +
+      '<div><span>Responsible Person</span><b>Operations Manager</b></div>' +
+      '<div><span>Target Completion Date</span><b>18 May 2025</b></div>' +
+      '<div><span>Actual Completion Date</span><b>17 May 2025</b></div>' +
+      '<div><span>CAP Submitted On</span><b>18 May 2025</b></div>' +
+    '</div>' +
+    '<h3>Evidence Submitted</h3><div class="lead-cap-evidence-grid">' + files.map(function (file) {
+      return '<button class="cap-detail-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="' + esc(file[1]) + '">' +
+        '<span class="cap-detail-file__icon is-' + esc(file[3]) + '">' + esc(file[0]) + '</span><span><b>' + esc(file[1]) + '</b><small>' + esc(file[2]) + '</small></span>' +
+      '</button>';
+    }).join('') + '<button class="lead-cap-more-files" data-act="cap-track-quick-action" data-track-action="documents"><b>+2</b><small>More Files</small></button></div>' +
+  '</section>';
+}
+
+function leadCapInspectorAssessment(data) {
+  return '<section class="cap-detail-panel lead-cap-assessment">' +
+    '<div class="cap-detail-panel-head"><h2>Inspector Assessment</h2><button class="cap-file-link" data-act="cap-unit-view-inspector-report" data-id="' + esc(data.id) + '">View Inspector Assessment →</button></div>' +
+    '<div class="lead-cap-assessment-grid">' +
+      '<div><span>Inspector</span><b>Mary Adams</b></div>' +
+      '<div><span>Reviewed On</span><b>18 May 2025</b></div>' +
+      '<div><span>Overall Recommendation</span>' + demoBadge('Recommend Closure', 'ok') + '</div>' +
+    '</div>' +
+    '<p class="lead-review-muted mt-12">Inspector reviewed the CAP and evidence first. The package is now waiting for Lead Inspector decision.</p>' +
+  '</section>';
+}
+
+function leadCapQualityPanel() {
+  return '<section class="cap-detail-panel lead-cap-quality">' +
+    '<h2>Lead Inspector Review</h2>' +
+    '<div class="lead-cap-quality-row"><span>CAP Quality</span><b class="lead-cap-stars">★ ★ ★ ★ ☆</b></div>' +
+    '<div class="lead-cap-quality-row"><span>Evidence Completeness</span><b>92%</b><div class="bar"><i style="width:92%"></i></div></div>' +
+    '<div class="lead-cap-quality-row"><span>Root Cause Addressed</span><b class="is-ok">● High</b></div>' +
+  '</section>';
+}
+
+function leadCapDecisionPanel(ui, data) {
+  var decision = ui.leadDecision || 'recommend_closure';
+  var comments = ui.leadComments || '';
+  var options = [
+    ['recommend_closure', 'Recommend Closure (Approve CAP)', 'The CAP is adequate and effective.'],
+    ['request_revision', 'Request Revision', 'CAP requires changes before approval.'],
+    ['request_more_evidence', 'Request More Evidence', 'Additional evidence is required.'],
+    ['schedule_verification', 'Schedule On-site Verification', 'On-site verification is required.'],
+    ['return_to_inspector', 'Return to Inspector', 'Return CAP for re-assessment.']
+  ];
+  return '<section class="cap-detail-panel lead-cap-decision">' +
+    '<h2>Lead Inspector Decision</h2>' +
+    '<div class="lead-cap-decision-options">' + options.map(function (option) {
+      return '<label class="cap-unit-radio' + (decision === option[0] ? ' is-selected' : '') + '">' +
+        '<input type="radio" name="cap-lead-decision" data-field="cap-lead-decision" value="' + esc(option[0]) + '"' + (decision === option[0] ? ' checked' : '') + '>' +
+        '<span><b>' + esc(option[1]) + '</b><small>' + esc(option[2]) + '</small></span>' +
+      '</label>';
+    }).join('') + '</div>' +
+    '<h2 class="mt-16">Lead Inspector Comments</h2>' +
+    '<textarea data-field="cap-lead-comments" rows="5">' + esc(comments) + '</textarea>' +
+    '<div class="lead-cap-signoff"><div><span>Lead Inspector</span><b>John Smith</b></div><div><span>Date</span><b>19 May 2025</b></div></div>' +
+    '<div class="lead-cap-bottom-actions"><button class="btn" data-act="cap-lead-save" data-id="' + esc(data.id) + '">Save Draft</button><button class="btn" data-act="cap-lead-return" data-id="' + esc(data.id) + '">Return to Inspector</button><button class="btn btn--primary" data-act="cap-lead-submit" data-id="' + esc(data.id) + '">Recommend Closure</button></div>' +
+    (ui.leadInspectorRecommendationAt ? '<p class="cap-detail-note is-ok">Lead Inspector recommendation sent at ' + esc(ui.leadInspectorRecommendationAt) + '.</p>' : '') +
+  '</section>';
+}
+
+function viewLeadInspectorCapReviewDetail(ui, data) {
+  return '<div class="cap-detail-page lead-cap-review-page">' +
+    '<div class="cap-detail-head">' +
+      '<div>' +
+        '<div class="cap-track-breadcrumb">Dashboard › CAP Verification › CAP Review › CAP-2025-045-001</div>' +
+        '<h1>CAP Review (Lead Inspector) ' + demoBadge('Waiting for Review', 'info') + '</h1>' +
+        '<p class="lead-review-muted">Review the corrective action plan and inspector assessment, then make your decision.</p>' +
+      '</div>' +
+      '<div class="cap-track-head-actions">' +
+        '<button class="btn" data-act="cap-track-export">Export PDF</button>' +
+        '<button class="btn btn--primary" data-act="cap-track-quick-action" data-track-action="actions">Actions ▾</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="lead-cap-review-layout">' +
+      leadCapReviewList(data.id) +
+      '<main class="lead-cap-main">' + leadCapFindingInformation(data) + leadCapSubmittedPlan(data) + leadCapInspectorAssessment(data) + '</main>' +
+      '<aside class="lead-cap-side">' + leadCapQualityPanel() + leadCapDecisionPanel(ui, data) + '</aside>' +
+    '</div>' +
+  '</div>';
+}
+
+function inspectorCapEvidenceFiles() {
+  return [
+    ['PDF', 'FDT_Monitoring_Procedure_v2.0.pdf', '1.2 MB', 'danger'],
+    ['XLS', 'FDT_Training_Records_May2025.xlsx', '850 KB', 'ok'],
+    ['PDF', 'Internal_Audit_Report_May2025.pdf', '2.4 MB', 'danger'],
+    ['JPG', 'System_Screenshot_01.jpg', '1.1 MB', 'info'],
+    ['ZIP', 'Pilot_Briefing_Photos.zip', '4.6 MB', 'ok']
+  ];
+}
+
+function inspectorCapFindingSummary(data) {
+  return '<section class="cap-detail-panel inspector-cap-summary">' +
+    '<div class="cap-detail-panel-head"><h2>Finding Information</h2><button class="cap-file-link" data-act="open" data-id="' + esc(data.id) + '">View Finding Details ↗</button></div>' +
+    '<div class="inspector-cap-summary-grid">' +
+      '<div><span>Audit No.</span><b>AUD-2025-045</b></div>' +
+      '<div><span>Department</span><b>Flight Operations (OPS)</b></div>' +
+      '<div><span>Finding ID</span><b>OPS-001</b></div>' +
+      '<div><span>Finding Title</span><b>Inadequate Flight Duty Time Monitoring</b></div>' +
+      '<div><span>Risk Level</span>' + demoBadge('High', 'danger') + '</div>' +
+      '<div><span>Regulation</span><b>NAMCAR OPS 1.1005(a)</b></div>' +
+      '<div><span>Original Due Date</span><b>20 May 2025</b></div>' +
+      '<div><span>Finding Raised On</span><b>14 May 2025</b></div>' +
+      '<div><span>Lead Inspector</span><b>John Smith</b></div>' +
+    '</div>' +
+  '</section>';
+}
+
+function inspectorCapEvidenceGrid(data) {
+  return '<div class="inspector-cap-evidence-grid">' + inspectorCapEvidenceFiles().map(function (file) {
+    return '<button class="inspector-cap-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="' + esc(file[1]) + '">' +
+      '<span class="cap-detail-file__icon is-' + esc(file[3]) + '">' + esc(file[0]) + '</span>' +
+      '<span><b>' + esc(file[1]) + '</b><small>' + esc(file[2]) + '</small></span>' +
+      '<em>↓</em>' +
+    '</button>';
+  }).join('') + '</div>';
+}
+
+function inspectorCapDetailsPanel(data) {
+  return '<section class="cap-detail-panel inspector-cap-main-card">' +
+    '<h2>Corrective Action Plan by Service Provider</h2>' +
+    '<h3>Corrective Action</h3>' +
+    '<p>We have implemented an automated flight duty time monitoring system integrated with scheduling to ensure compliance. All affected pilots have been briefed and records updated.</p>' +
+    '<h3>Preventive Action</h3>' +
+    '<p>Introduce monthly compliance monitoring and internal audits to ensure continued adherence. Recurrent training will be conducted every 6 months.</p>' +
+    '<div class="inspector-cap-meta-row">' +
+      '<div><span>Responsible Person</span><b>Operations Manager</b></div>' +
+      '<div><span>Target Completion Date</span><b>18 May 2025</b></div>' +
+      '<div><span>Actual Completion Date</span><b>17 May 2025</b></div>' +
+      '<div><span>CAP Effective Date</span><b>17 May 2025</b></div>' +
+    '</div>' +
+    '<div class="inspector-cap-divider"></div>' +
+    '<h3>Evidence Submitted (5)</h3>' +
+    inspectorCapEvidenceGrid(data) +
+    '<button class="inspector-cap-comments" data-act="cap-track-quick-action" data-track-action="comments"><span>⌕</span><b>Service Provider Comments</b><em>›</em></button>' +
+  '</section>';
+}
+
+function inspectorCapEvidencePanel(data) {
+  return '<section class="cap-detail-panel inspector-cap-main-card">' +
+    '<h2>Evidence Submitted (5)</h2>' +
+    '<p>Review each evidence item before completing the Inspector assessment.</p>' +
+    inspectorCapEvidenceGrid(data) +
+    '<div class="cap-detail-note mt-12">File buttons open evidence records only. No real file is downloaded or stored in this demo.</div>' +
+  '</section>';
+}
+
+function inspectorCapAssessmentSummary(ui) {
+  return '<section class="cap-detail-panel inspector-cap-main-card">' +
+    '<h2>Inspector Assessment Summary</h2>' +
+    '<div class="inspector-cap-assessment-summary">' +
+      '<div><span>Root Cause Addressed</span><b>' + esc(ui.inspectorRootCause === 'yes' ? 'Yes' : 'No') + '</b></div>' +
+      '<div><span>Actions Specific & Measurable</span><b>' + esc(ui.inspectorActions === 'yes' ? 'Yes' : 'No') + '</b></div>' +
+      '<div><span>Evidence Sufficient</span><b>' + esc(ui.inspectorEvidence === 'yes' ? 'Yes' : 'No') + '</b></div>' +
+      '<div><span>Implementation Completed</span><b>' + esc(ui.inspectorImplementation === 'yes' ? 'Yes' : 'No') + '</b></div>' +
+      '<div><span>On-site Verification Required</span><b>' + esc(ui.inspectorOnsite === 'yes' ? 'Yes' : 'No') + '</b></div>' +
+      '<div><span>Overall Assessment</span><b>' + esc(inspectorCapAssessmentLabel(ui.inspectorAssessment)) + '</b></div>' +
+    '</div>' +
+    '<p class="mt-12">' + esc(ui.inspectorComments || '') + '</p>' +
+  '</section>';
+}
+
+function inspectorCapHistoryPanel(data) {
+  return '<section class="cap-detail-panel inspector-cap-main-card">' +
+    '<h2>Comments & History</h2>' +
+    '<table class="cap-detail-table"><thead><tr><th>Date</th><th>Actor</th><th>Action</th><th>Comments</th></tr></thead><tbody>' +
+      data.actions.map(function (action) {
+        return '<tr><td>' + esc(action[0]) + '</td><td>' + esc(action[1]) + '</td><td>' + esc(action[2]) + '</td><td>' + esc(action[3]) + '</td></tr>';
+      }).join('') +
+    '</tbody></table>' +
+  '</section>';
+}
+
+function inspectorCapMainPanel(ui, data) {
+  if (ui.detailTab === 'evidence') return inspectorCapEvidencePanel(data);
+  if (ui.detailTab === 'assessment') return inspectorCapAssessmentSummary(ui);
+  if (ui.detailTab === 'history') return inspectorCapHistoryPanel(data);
+  return inspectorCapDetailsPanel(data);
+}
+
+function inspectorCapReviewStatus(ui) {
+  var sent = !!ui.inspectorReviewSentAt;
+  var steps = [
+    ['done', 'CAP Submitted by Service Provider', '18 May 2025'],
+    [sent ? 'done' : 'active', 'Under Inspector Review', sent ? ui.inspectorReviewSentAt : 'Current'],
+    [sent ? 'active' : 'waiting', 'Pending Lead Inspector Review', sent ? 'Waiting' : 'Pending'],
+    ['waiting', 'Department Decision', ''],
+    ['waiting', 'Closed', '']
+  ];
+  return '<section class="cap-detail-panel inspector-cap-status">' +
+    '<h2>Review Status</h2>' +
+    '<div class="inspector-cap-status-meta"><span>CAP Submitted On</span><b>18 May 2025</b>' + demoBadge(sent ? 'Submitted to Lead Inspector' : 'Under Inspector Review', sent ? 'info' : 'ok') + '</div>' +
+    '<div class="inspector-cap-status-list">' + steps.map(function (step) {
+      return '<div class="inspector-cap-status-step is-' + esc(step[0]) + '"><span>' + esc(step[0] === 'done' ? '✓' : '') + '</span><b>' + esc(step[1]) + '</b><small>' + esc(step[2]) + '</small></div>';
+    }).join('') + '</div>' +
+  '</section>';
+}
+
+function inspectorCapAssessmentLabel(value) {
+  var labels = {
+    acceptable: 'Acceptable - Recommend to Lead Inspector',
+    request_revision: 'Request Revision',
+    request_more_evidence: 'Request More Evidence',
+    onsite_required: 'On-site Verification Required'
+  };
+  return labels[value] || labels.acceptable;
+}
+
+function inspectorCapYesNo(field, selected, title, detail) {
+  function choice(value, label) {
+    return '<label class="inspector-cap-choice' + (selected === value ? ' is-selected' : '') + '">' +
+      '<input type="radio" name="' + esc(field) + '" data-field="' + esc(field) + '" value="' + esc(value) + '"' + (selected === value ? ' checked' : '') + '>' +
+      '<span>' + esc(label) + '</span>' +
+    '</label>';
+  }
+  return '<div class="inspector-cap-check-row">' +
+    '<div><b>' + esc(title) + '</b><small>' + esc(detail) + '</small></div>' +
+    '<div class="inspector-cap-choice-group">' + choice('yes', 'Yes') + choice('no', 'No') + '</div>' +
+  '</div>';
+}
+
+function inspectorCapReviewPanel(ui, data) {
+  var assessmentOptions = capReviewSelectOptions([
+    { value: 'acceptable', label: 'Acceptable - Recommend to Lead Inspector' },
+    { value: 'request_revision', label: 'Request Revision' },
+    { value: 'request_more_evidence', label: 'Request More Evidence' },
+    { value: 'onsite_required', label: 'On-site Verification Required' }
+  ], ui.inspectorAssessment || 'acceptable');
+  return '<section class="cap-detail-panel inspector-cap-review-panel">' +
+    '<h2>Inspector Review</h2>' +
+    inspectorCapYesNo('cap-inspector-root-cause', ui.inspectorRootCause, 'Root Cause Addressed', 'CAP addresses the root cause.') +
+    inspectorCapYesNo('cap-inspector-actions', ui.inspectorActions, 'Actions are Specific & Measurable', 'Actions are clear and measurable.') +
+    inspectorCapYesNo('cap-inspector-evidence', ui.inspectorEvidence, 'Evidence is Sufficient', 'Evidence supports implementation.') +
+    inspectorCapYesNo('cap-inspector-implementation', ui.inspectorImplementation, 'Implementation Completed', 'Actions have been implemented.') +
+    inspectorCapYesNo('cap-inspector-onsite', ui.inspectorOnsite, 'On-site Verification Required', 'Additional on-site verification needed.') +
+    '<div class="form-row"><label>Overall Assessment</label><select data-field="cap-inspector-assessment">' + assessmentOptions + '</select></div>' +
+    '<div class="form-row"><label>Inspector Comments</label><textarea data-field="cap-inspector-comments" rows="5">' + esc(ui.inspectorComments || '') + '</textarea></div>' +
+    '<div class="inspector-cap-signoff"><div><span>Inspector</span><b>Mary Adams</b></div><div><span>Review Date</span><input type="date" data-field="cap-inspector-review-date" value="' + esc(ui.inspectorReviewDate || '2025-05-19') + '"></div></div>' +
+  '</section>';
+}
+
+function viewInspectorCapReviewDetail(ui, data) {
+  return '<div class="cap-detail-page inspector-cap-page">' +
+    '<div class="cap-detail-head inspector-cap-head">' +
+      '<div>' +
+        '<div class="cap-track-breadcrumb">Dashboard › CAP Verification › CAP Review (Inspector) › CAP-2025-045-001</div>' +
+        '<h1>CAP Review (Inspector) ' + demoBadge('Under Inspector Review', 'ok') + '</h1>' +
+        '<p class="lead-review-muted">Review the Corrective Action Plan (CAP) submitted by the service provider and provide your assessment.</p>' +
+      '</div>' +
+      '<div class="cap-track-head-actions"><button class="btn" data-act="cap-track-export">Export PDF ▾</button></div>' +
+    '</div>' +
+    '<div class="inspector-cap-review-layout">' +
+      '<main class="inspector-cap-main">' +
+        inspectorCapFindingSummary(data) +
+        '<div class="cap-detail-tabs inspector-cap-tabs">' +
+          capDetailTabButton('details', 'CAP Details', ui.detailTab) +
+          capDetailTabButton('evidence', 'Evidence', ui.detailTab) +
+          capDetailTabButton('assessment', 'Inspector Assessment', ui.detailTab) +
+          capDetailTabButton('history', 'Comments & History', ui.detailTab) +
+        '</div>' +
+        inspectorCapMainPanel(ui, data) +
+      '</main>' +
+      '<aside class="inspector-cap-side">' +
+        inspectorCapReviewStatus(ui) +
+        inspectorCapReviewPanel(ui, data) +
+      '</aside>' +
+    '</div>' +
+    '<div class="inspector-cap-bottom-actions">' +
+      '<button class="btn" data-act="nav" data-view="findings" data-filter="capreview">Return to My CAP Reviews</button>' +
+      '<span></span>' +
+      '<button class="btn" data-act="cap-detail-request-revision" data-id="' + esc(data.id) + '">Request Revision</button>' +
+      '<button class="btn" data-act="cap-detail-request-more-evidence" data-id="' + esc(data.id) + '">Request More Evidence</button>' +
+      '<button class="btn btn--primary" data-act="cap-detail-prepare-second-report" data-id="' + esc(data.id) + '">Submit to Lead Inspector</button>' +
+    '</div>' +
+  '</div>';
 }
 
 function capDetailInternalComments(ui, data) {
@@ -2211,7 +2561,7 @@ function capDetailCommunications(ui) {
 
 function capDetailEnforcementProcess(ui) {
   return '<section class="cap-detail-panel"><h2>Enforcement Process</h2>' +
-    '<p>The Inspector reviews CAP closure/effectiveness and sends the review to the Lead Inspector. After Lead Inspector validation, the Unit Manager recommends the enforcement, operational, licence renewal, or initial application decision. The General Manager reviews and may adjust the recommendation. The Executive Director makes the final decision.</p>' +
+    '<p>After Final Report Issued, the CAP Process Starts. The Service Provider submits CAP, the Inspector verifies CAP evidence, the Lead Inspector recommends closure, and the Department Manager approves closure or requests more action.</p>' +
     '<div class="lead-preview-deadlines"><span>Level 1: 14 days</span><span>Level 2: 90 days</span><span>Observation: No CAP</span></div>' +
     '<p class="muted">Demo guardrail: enforcement is staged as an approval workflow, not an automatic legal action.</p>' +
   '</section>';
@@ -2236,6 +2586,8 @@ function viewLeadCapReviewDetail() {
   var id = state.params.findingId || ui.selectedFindingId || 'F-2026-002';
   var data = capDetailData(id);
   ui.selectedFindingId = data.id;
+  if (state.role === 'leadInspector') return viewLeadInspectorCapReviewDetail(ui, data);
+  if (state.role === 'inspector') return viewInspectorCapReviewDetail(ui, data);
   var body = capDetailMainBody(ui, data);
   return '<div class="cap-detail-page">' +
     '<div class="cap-detail-head">' +
@@ -2243,7 +2595,7 @@ function viewLeadCapReviewDetail() {
         '<div class="cap-track-breadcrumb">CAP Tracking › Finding: ' + esc(data.id) + '</div>' +
         '<h1>CAP Review - Finding ' + esc(data.id) + ' ' + capTrackLevelBadge(data.level) + '</h1>' +
         '<div class="cap-track-meta">' +
-          '<span>Inspection ID: <b>INS-2026-015</b></span><span>Organization: <b>SkyCargo Air</b></span><span>Inspection Type: <b>Routine Inspection</b></span><span>Final Report Approved: <b>22 Jun 2026</b></span>' +
+          '<span>Inspection ID: <b>INS-2026-015</b></span><span>Organization: <b>SkyCargo Air</b></span><span>Inspection Type: <b>Routine Inspection</b></span><span>Final Report Issued: <b>22 Jun 2026</b></span>' +
         '</div>' +
       '</div>' +
       '<div class="cap-track-head-actions">' +
@@ -2281,17 +2633,15 @@ function capUnitStep(stateKey, label, date, number) {
 }
 
 function capUnitProgress(ui) {
-  var submitted = !!ui.submittedToGeneralManagerAt;
+  var approved = !!ui.departmentManagerApprovedAt;
+  var closed = !!ui.findingClosedAt;
   return '<div class="cap-unit-steps">' +
-    capUnitStep('done', 'Final Report Approved', '22 Jun 2026', 1) +
-    capUnitStep('done', 'Sent to Service Provider', '22 Jun 2026', 2) +
-    capUnitStep('done', 'CAP Submitted', '28 Jun 2026', 3) +
-    capUnitStep('done', 'CAP Reviewed (1st)', '05 Jul 2026', 4) +
-    capUnitStep('done', '2nd Final Report (Inspectors)', '05 Jul 2026', 5) +
-    capUnitStep(submitted ? 'done' : 'active', 'Unit Manager Review', submitted ? ui.submittedToGeneralManagerAt : 'In Progress', 6) +
-    capUnitStep(submitted ? 'active' : 'waiting', 'General Manager Review', submitted ? 'In Review' : 'Pending', 7) +
-    capUnitStep('waiting', 'ED Decision', 'Pending', 8) +
-    capUnitStep('waiting', 'Enforcement Implemented', 'Pending', 9) +
+    capUnitStep('done', 'Final Report Issued', '22 Jun 2026', 1) +
+    capUnitStep('done', 'CAP Submitted', '28 Jun 2026', 2) +
+    capUnitStep('done', 'Inspector Review', '05 Jul 2026', 3) +
+    capUnitStep('done', 'Lead Inspector Recommendation', '05 Jul 2026', 4) +
+    capUnitStep(approved ? 'done' : 'active', 'Department Manager approves closure', approved ? ui.departmentManagerApprovedAt : 'In Progress', 5) +
+    capUnitStep(closed ? 'done' : 'waiting', 'Finding Closed', closed ? ui.findingClosedAt : 'Pending', 6) +
   '</div>';
 }
 
@@ -2313,14 +2663,15 @@ function capUnitSummaryPanel(data) {
 
 function capUnitInspectorReviewPanel(data) {
   return '<section class="cap-detail-panel">' +
-    '<h2>Review by Inspectors (2nd Review)</h2>' +
+    '<h2>Inspector Review</h2>' +
     '<dl class="cap-detail-summary-dl">' +
-      '<dt>Lead Inspector</dt><dd>John Lead Inspector</dd>' +
+      '<dt>Inspector</dt><dd>John Inspector</dd>' +
       '<dt>Review Date</dt><dd>05 Jul 2026</dd>' +
       '<dt>Review Status</dt><dd><b class="is-warn">Needs Further Action</b></dd>' +
       '<dt>Comments</dt><dd>The CAP addresses some of the issues, but updated training records are still incomplete for several employees. Additional corrective actions are required.</dd>' +
+      '<dt>Lead Inspector Recommendation</dt><dd>Recommend Department Manager closure approval for additional CAP or closure decision.</dd>' +
     '</dl>' +
-    '<button class="btn btn--sm mt-12" data-act="cap-unit-view-inspector-report" data-id="' + esc(data.id) + '">View 2nd Final Report (Inspectors)</button>' +
+    '<button class="btn btn--sm mt-12" data-act="cap-unit-view-inspector-report" data-id="' + esc(data.id) + '">View Inspector Review</button>' +
   '</section>';
 }
 
@@ -2342,70 +2693,53 @@ function capUnitRecommendationForm(ui, data) {
   };
   var recommendation = legacyDecisionMap[ui.unitRecommendationType] || ui.unitRecommendationType || 'administrative_penalty';
   var selectedDecision = legacyDecisionMap[ui.unitRecommendationLevel] || ui.unitRecommendationLevel || recommendation;
-  var enforcementDecisionOptions = [
-    { value: 'warning_letter', label: 'Warning Letter' },
-    { value: 'administrative_penalty', label: 'Administrative Penalty' },
+  var closureDecisionOptions = [
+    { value: 'close_finding', label: 'Close Finding' },
+    { value: 'more_information', label: 'Request More Information' },
     { value: 'additional_cap_required', label: 'Additional CAP Required' },
-    { value: 'increased_surveillance', label: 'Increased Surveillance' },
-    { value: 'follow_up_inspection', label: 'Follow-up Inspection' },
-    { value: 'operational_restriction', label: 'Operational Restriction' },
-    { value: 'suspend_specific_privilege', label: 'Suspend Specific Privilege' },
-    { value: 'suspend_certificate', label: 'Suspend Certificate' },
-    { value: 'revoke_certificate', label: 'Revoke Certificate' },
-    { value: 'reject_application', label: 'Reject Application' },
-    { value: 'refuse_renewal', label: 'Refuse Renewal' },
-    { value: 'other_regulatory_action', label: 'Other Regulatory Action' }
+    { value: 'escalate_high_risk', label: 'Escalate High-Risk / Enforcement' }
   ];
-  var levelOptions = capReviewSelectOptions(enforcementDecisionOptions, selectedDecision);
+  if (recommendation === 'administrative_penalty') recommendation = 'additional_cap_required';
+  if (selectedDecision === 'administrative_penalty') selectedDecision = 'additional_cap_required';
+  var levelOptions = capReviewSelectOptions(closureDecisionOptions, selectedDecision);
   return '<section class="cap-detail-panel cap-unit-evaluation">' +
-    '<h2>Unit Manager Evaluation &amp; Recommendation</h2>' +
-    '<p class="muted">Based on the inspectors review and CAP submitted, provide your evaluation and recommendation.</p>' +
+    '<h2>Department Manager Approval</h2>' +
+    '<p class="muted">Based on the Inspector review and Lead Inspector recommendation, approve closure or request additional action.</p>' +
     '<h3>CAP Effectiveness</h3>' +
     '<div class="cap-unit-radio-list">' +
       capUnitRadio('cap-unit-effectiveness', 'cap-unit-effectiveness', 'effective', effectiveness, 'Effective', 'CAP fully addresses the finding.') +
       capUnitRadio('cap-unit-effectiveness', 'cap-unit-effectiveness', 'partially_effective', effectiveness, 'Partially Effective', 'CAP addresses some issues but additional actions are required.') +
       capUnitRadio('cap-unit-effectiveness', 'cap-unit-effectiveness', 'not_effective', effectiveness, 'Not Effective', 'CAP does not adequately address the finding.') +
     '</div>' +
-    '<h3>Enforcement Decision</h3>' +
+    '<h3>Closure / Verification Decision</h3>' +
     '<div class="cap-unit-choice-grid">' +
-      '<div><h4>CAP / Surveillance</h4>' +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'warning_letter', recommendation, 'Warning Letter', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'administrative_penalty', recommendation, 'Administrative Penalty', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'additional_cap_required', recommendation, 'Additional CAP Required', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'increased_surveillance', recommendation, 'Increased Surveillance', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'follow_up_inspection', recommendation, 'Follow-up Inspection', '') +
-      '</div>' +
-      '<div><h4>Operational / Certificate</h4>' +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'operational_restriction', recommendation, 'Operational Restriction', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'suspend_specific_privilege', recommendation, 'Suspend Specific Privilege', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'suspend_certificate', recommendation, 'Suspend Certificate', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'revoke_certificate', recommendation, 'Revoke Certificate', '') +
-      '</div>' +
-      '<div><h4>Application / Other</h4>' +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'reject_application', recommendation, 'Reject Application', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'refuse_renewal', recommendation, 'Refuse Renewal', '') +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'other_regulatory_action', recommendation, 'Other Regulatory Action', '') +
+      '<div><h4>Decision</h4>' +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'close_finding', recommendation, 'Close Finding', 'Evidence is sufficient for closure.') +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'more_information', recommendation, 'Request More Information', 'Return to service provider for clarification.') +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'additional_cap_required', recommendation, 'Additional CAP Required', 'Require additional corrective action before closure.') +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'escalate_high_risk', recommendation, 'Escalate High-Risk / Enforcement', 'Use the configured enforcement governance route if required.') +
       '</div>' +
     '</div>' +
     '<div class="cap-unit-form-grid">' +
-      '<div class="form-row"><label>Recommended Enforcement Decision</label><select data-field="cap-unit-recommendation-level">' + levelOptions + '</select></div>' +
-      '<div class="form-row"><label>Recommended Due Date for Compliance</label><input type="date" data-field="cap-unit-compliance-due-date" value="' + esc(ui.unitComplianceDueDate || '2026-09-20') + '"></div>' +
-      '<div class="form-row cap-unit-justification"><label>Justification / Recommendation Details</label><textarea data-field="cap-unit-justification" rows="5">' + esc(ui.unitJustification || '') + '</textarea></div>' +
+      '<div class="form-row"><label>Closure Decision</label><select data-field="cap-unit-recommendation-level">' + levelOptions + '</select></div>' +
+      '<div class="form-row"><label>Follow-up Due Date</label><input type="date" data-field="cap-unit-compliance-due-date" value="' + esc(ui.unitComplianceDueDate || '2026-09-20') + '"></div>' +
+      '<div class="form-row cap-unit-justification"><label>Decision Note</label><textarea data-field="cap-unit-justification" rows="5">' + esc(ui.unitJustification || '') + '</textarea></div>' +
       '<div class="form-row"><label>Attachments (Optional)</label><div class="cap-unit-file-row"><span>' + esc(ui.unitAttachmentName || 'No file chosen') + '</span><button class="btn btn--sm" data-act="cap-unit-choose-file" data-id="' + esc(data.id) + '">Choose File</button></div></div>' +
     '</div>' +
-    '<button class="btn btn--primary" data-act="cap-unit-submit-general-manager" data-id="' + esc(data.id) + '">Submit Recommendation to General Manager</button>' +
-    (ui.submittedToGeneralManagerAt ? '<p class="cap-detail-note is-ok">Recommendation submitted to General Manager at ' + esc(ui.submittedToGeneralManagerAt) + '.</p>' : '') +
+    '<button class="btn btn--primary" data-act="cap-unit-submit-general-manager" data-id="' + esc(data.id) + '">Approve Closure Decision</button>' +
+    (ui.departmentManagerApprovedAt ? '<p class="cap-detail-note is-ok">Department Manager approved closure decision at ' + esc(ui.departmentManagerApprovedAt) + '.</p>' : '') +
   '</section>';
 }
 
 function capUnitWorkflow(ui) {
-  var submitted = !!ui.submittedToGeneralManagerAt;
+  var approved = !!ui.departmentManagerApprovedAt;
+  var closed = !!ui.findingClosedAt;
   var steps = [
-    ['done', 'Inspectors Review', 'Completed', '05 Jul 2026'],
-    [submitted ? 'done' : 'active', 'Unit Manager Review', submitted ? 'Submitted' : 'In Progress', submitted ? ui.submittedToGeneralManagerAt : ''],
-    [submitted ? 'active' : 'waiting', 'General Manager Review', submitted ? 'In Review' : 'Pending', ''],
-    ['waiting', 'Executive Director (ED) Decision', 'Pending', ''],
-    ['waiting', 'Enforcement Implemented', 'Pending', '']
+    ['done', 'CAP Submitted', 'Completed', '28 Jun 2026'],
+    ['done', 'Inspector Review', 'Completed', '05 Jul 2026'],
+    ['done', 'Lead Inspector Recommendation', 'Completed', '05 Jul 2026'],
+    [approved ? 'done' : 'active', 'Department Manager approves closure', approved ? 'Approved' : 'In Progress', approved ? ui.departmentManagerApprovedAt : ''],
+    [closed ? 'done' : 'waiting', 'Finding Closed', closed ? 'Closed' : 'Pending', closed ? ui.findingClosedAt : '']
   ];
   return '<section class="cap-detail-panel"><h2>Approval Workflow</h2><div class="cap-track-process">' +
     steps.map(function (step, index) {
@@ -2417,10 +2751,10 @@ function capUnitWorkflow(ui) {
 
 function capUnitHistory() {
   var events = [
-    ['22 Jun 2026', 'Final report approved by ED and sent to service provider.'],
+    ['22 Jun 2026', 'Final Report Issued after Executive Director / GM approval and sent to service provider.'],
     ['28 Jun 2026', 'CAP submitted by service provider.'],
-    ['05 Jul 2026', 'Reviewed by inspectors (2nd review).'],
-    ['Today', 'Pending Unit Manager review and recommendation.']
+    ['05 Jul 2026', 'Inspector review sent to Lead Inspector recommendation.'],
+    ['Today', 'Pending Department Manager closure approval and closure decision.']
   ];
   return '<section class="cap-detail-panel"><h2>Finding History</h2><div class="cap-track-activity cap-unit-history">' +
     events.map(function (event) {
@@ -2430,8 +2764,8 @@ function capUnitHistory() {
 
 function capUnitDocuments(data) {
   var docs = [
-    ['Final Report (1st)', '22 Jun 2026'],
-    ['2nd Final Report (Inspectors)', '05 Jul 2026'],
+    ['Final Report', '22 Jun 2026'],
+    ['Inspector Review', '05 Jul 2026'],
     ['CAP Submission', '28 Jun 2026']
   ];
   return '<section class="cap-detail-panel"><h2>Related Documents</h2><div class="cap-track-quick">' +
@@ -2455,14 +2789,14 @@ function viewUnitManagerCapReview() {
   return '<div class="cap-detail-page cap-unit-page">' +
     '<div class="cap-detail-head">' +
       '<div>' +
-        '<div class="cap-track-breadcrumb">CAP Reviews › Finding: ' + esc(data.id) + ' › Unit Manager Review</div>' +
-        '<h1>Unit Manager Review - Finding ' + esc(data.id) + ' ' + capTrackLevelBadge(data.level) + '</h1>' +
+        '<div class="cap-track-breadcrumb">CAP Reviews › Finding: ' + esc(data.id) + ' › Department Manager Approval</div>' +
+        '<h1>Department Manager Approval - Finding ' + esc(data.id) + ' ' + capTrackLevelBadge(data.level) + '</h1>' +
         '<div class="cap-track-meta">' +
-          '<span>Inspection ID: <b>INS-2026-015</b></span><span>Organization: <b>SkyCargo Air</b></span><span>Inspection Type: <b>Routine Inspection</b></span><span>Final Report Approved: <b>22 Jun 2026</b></span>' +
+          '<span>Inspection ID: <b>INS-2026-015</b></span><span>Organization: <b>SkyCargo Air</b></span><span>Inspection Type: <b>Routine Inspection</b></span><span>Final Report Issued: <b>22 Jun 2026</b></span>' +
         '</div>' +
       '</div>' +
       '<div class="cap-track-head-actions">' +
-        '<button class="btn" data-act="cap-track-view-report">View Final Report (1st)</button>' +
+        '<button class="btn" data-act="cap-track-view-report">View Final Report</button>' +
         '<button class="btn" data-act="cap-detail-download-finding" data-id="' + esc(data.id) + '">Download Finding</button>' +
         '<button class="btn" data-act="nav" data-view="findings" data-filter="capreview">Back to CAP Tracking</button>' +
       '</div>' +
@@ -3263,7 +3597,7 @@ var LEAD_REPORT_SECTION_COPY = {
     title: '2. Audit Scope',
     body: [
       'The audit covered SMS policy, operational controls, evidence records, access control arrangements, and CAP readiness for SkyCargo Air.',
-      'The final report package will be issued to the service provider after Unit Manager, General Manager, and ED approval.'
+      'After Department Manager review, the Preliminary Report is released to the Service Provider only when CAP-required findings exist. The Final Report is prepared after the CAP completion window is completed.'
     ]
   },
   team: {
@@ -3271,7 +3605,7 @@ var LEAD_REPORT_SECTION_COPY = {
     body: [
       'Lead Inspector: John Lead Inspector.',
       'Inspector: John Inspector.',
-      'Inspection team evidence and checklist inputs were consolidated into this final report draft.'
+      'Inspection team evidence and checklist inputs were consolidated into this preliminary report draft.'
     ]
   },
   methodology: {
@@ -3306,15 +3640,23 @@ var LEAD_REPORT_SECTION_COPY = {
   conclusion: {
     title: '8. Conclusion',
     body: [
-      'The inspection may proceed to final approval subject to CAP timelines and service provider notification after ED approval.',
-      'Final release to the service provider starts the applicable CAP closure clocks.'
+      'The inspection may proceed from Preliminary Report release to the Service Provider CAP completion window when CAP-required findings exist.',
+      'After the Service Provider completes CAP actions and submits evidence or closure response within the window, the Lead Inspector prepares the Final Report.',
+      'After Final Report Issued, the CAP Process Starts and the applicable CAP closure clocks are visible to the service provider.'
     ]
   },
   approval: {
     title: '9. Approval Workflow',
     body: [
-      'The Lead Inspector submits the final report draft to the Unit Manager.',
-      'The approval chain continues to General Manager and Executive Director. After ED approval, the report is released to the service provider.'
+      'Inspector prepares the preliminary report and uploads supporting evidence.',
+      'Lead Inspector Review can return the preliminary report to the Inspector for revision.',
+      'Department Manager Review can return the package to the Lead Inspector.',
+      'After Department Manager review, the Preliminary Report is released to the Service Provider if CAP-required findings exist.',
+      'Service Provider CAP completion, evidence, and closure response are captured during the CAP window.',
+      'After the Service Provider completes the CAP response within the due date, the Lead Inspector prepares the Final Report.',
+      'Department Manager Final Approval sends the report to Executive Director / GM Approval.',
+      'Executive Director / GM approval is required before Final Report Issued.',
+      'After Final Report Issued, CAP Process Starts, Inspector verifies CAP, Lead Inspector recommends closure, and Department Manager approves closure.'
     ]
   }
 };
@@ -3374,12 +3716,12 @@ function leadReviewUiState() {
       sentToUnitManagerAt: '',
       workflowComment: '',
       actionsOpen: false,
-      workflowVersion: 7,
+      workflowVersion: 8,
       overallComment: '',
       rowReviews: {}
     };
   }
-  if (!state.leadReviewUi.workflowVersion || state.leadReviewUi.workflowVersion < 7) {
+  if (!state.leadReviewUi.workflowVersion || state.leadReviewUi.workflowVersion < 8) {
     state.leadReviewUi.tab = 'report';
     state.leadReviewUi.reportSection = 'executive';
     state.leadReviewUi.downloadedAt = '';
@@ -3388,7 +3730,7 @@ function leadReviewUiState() {
     state.leadReviewUi.reportDraftSavedAt = '';
     state.leadReviewUi.sentToUnitManagerAt = '';
   }
-  state.leadReviewUi.workflowVersion = 7;
+  state.leadReviewUi.workflowVersion = 8;
   if (!state.leadReviewUi.tab || state.leadReviewUi.tab === 'workflow') state.leadReviewUi.tab = 'report';
   if (!state.leadReviewUi.section) state.leadReviewUi.section = '1.';
   if (!state.leadReviewUi.rowReviews || typeof state.leadReviewUi.rowReviews !== 'object') state.leadReviewUi.rowReviews = {};
@@ -3577,7 +3919,7 @@ function leadReviewCapPanelHtml() {
 
 function leadConclusionPanelHtml() {
   var ui = leadReviewUiState();
-  var text = 'The Lead Inspector recommends submission of the final report to Unit Manager review. After General Manager and ED approval, the final report will be released to the service provider with CAP deadlines based on finding criticality.';
+  var text = 'The Lead Inspector finalizes the report after Service Provider comments. After Executive Director / GM approval, the final report is issued to the service provider and the CAP Process Starts.';
   return '<section class="lead-review-panel lead-review-panel--padded">' +
     '<h2>Conclusion</h2>' +
     '<p class="lead-review-muted">The conclusion confirms the approval path and the service provider release condition.</p>' +
@@ -3591,7 +3933,7 @@ function leadConclusionPanelHtml() {
 function leadAppendicesPanelHtml() {
   return '<section class="lead-review-panel lead-review-panel--padded">' +
     '<h2>Appendices</h2>' +
-    '<p class="lead-review-muted">Checklist summary, findings summary, CAP summary, evidence index, and final report draft are attached to the approval package.</p>' +
+    '<p class="lead-review-muted">Checklist summary, findings summary, CAP summary, evidence index, and preliminary report draft are attached to the approval package.</p>' +
     '<div class="mt-16">' + leadReportDocumentsHtml() + '</div>' +
   '</section>';
 }
@@ -3600,6 +3942,16 @@ function leadReportSubmitted(report, ui) {
   if (ui && ui.sentToUnitManagerAt) return true;
   var summary = report ? approvalSummary(report) : null;
   return !!(summary && summary.currentIndex > 0);
+}
+
+function displayReportTypeLabel(report) {
+  if (typeof reportTypeLabel === 'function') return reportTypeLabel(report);
+  return report && report.reportType ? report.reportType : 'Report';
+}
+
+function displayReportTypeTone(report) {
+  if (typeof reportTypeTone === 'function') return reportTypeTone(report);
+  return displayReportTypeLabel(report) === 'Final Report' ? 'ok' : 'info';
 }
 
 function leadWorkflowStep(label, sub, tone, icon, active) {
@@ -3612,15 +3964,15 @@ function leadWorkflowStep(label, sub, tone, icon, active) {
 function leadReportWorkflowStepsHtml(report, ui) {
   var sent = leadReportSubmitted(report, ui);
   return '<div class="lead-workflow-steps">' +
-    leadWorkflowStep('Report Finalized', '15 Jun 2026', 'ok', '&#10003;', false) +
+    leadWorkflowStep('Inspector', 'Preliminary Report prepared', 'ok', '&#10003;', false) +
     '<span class="lead-workflow-arrow">&rarr;</span>' +
-    leadWorkflowStep('Unit Manager Review', sent ? 'In Review' : 'Pending', sent ? 'warn' : 'neutral', '&#9711;', sent) +
+    leadWorkflowStep('Lead Inspector Review', 'Revise -> Inspector if needed', 'ok', '&#10003;', false) +
     '<span class="lead-workflow-arrow">&rarr;</span>' +
-    leadWorkflowStep('General Manager Review', 'Pending', 'neutral', '&#9711;', false) +
+    leadWorkflowStep('Department Manager Review', 'Release if CAP required', sent ? 'warn' : 'neutral', '&#9711;', sent) +
     '<span class="lead-workflow-arrow">&rarr;</span>' +
-    leadWorkflowStep('Executive Director Review', 'Pending', 'neutral', '&#9711;', false) +
+    leadWorkflowStep('Service Provider CAP', 'Complete before Final Report', 'neutral', '&#9711;', false) +
     '<span class="lead-workflow-arrow">&rarr;</span>' +
-    leadWorkflowStep('ED Signature (Final)', 'Pending', 'neutral', '&#9998;', false) +
+    leadWorkflowStep('Final Report Preparation', 'After CAP completion', 'neutral', '&#9998;', false) +
   '</div>';
 }
 
@@ -3628,10 +3980,11 @@ function leadReportCurrentReviewHtml(report, ui) {
   var sent = leadReportSubmitted(report, ui);
   var comment = ui.workflowComment || '-';
   var rows = [
-    { level: '1', reviewer: 'Unit Manager', role: 'Unit Manager', status: sent ? 'In Review' : 'Pending Review', tone: sent ? 'info' : 'warn', date: sent ? fmtDate(DEMO_TODAY) : '-', comment: sent ? comment : '-' },
-    { level: '2', reviewer: 'General Manager', role: 'General Manager', status: 'Pending Review', tone: 'info', date: '-', comment: '-' },
-    { level: '3', reviewer: 'Executive Director', role: 'Executive Director', status: 'Pending Review', tone: 'neutral', date: '-', comment: '-' },
-    { level: '4', reviewer: 'ED Signature', role: 'Executive Director', status: 'Pending Signature', tone: 'neutral', date: '-', comment: '-' }
+    { level: '1', reviewer: 'Lead Inspector Review', role: 'Lead Inspector', status: sent ? 'Completed' : 'In Progress', tone: sent ? 'ok' : 'warn', date: sent ? fmtDate(DEMO_TODAY) : '-', comment: sent ? comment : '-' },
+    { level: '2', reviewer: 'Department Manager Review', role: 'Department Manager', status: sent ? 'In Review' : 'Pending', tone: sent ? 'info' : 'neutral', date: sent ? fmtDate(DEMO_TODAY) : '-', comment: sent ? 'Release to Service Provider only if CAP is required' : '-' },
+    { level: '3', reviewer: 'Service Provider CAP Completion', role: 'Service Provider', status: 'Pending', tone: 'neutral', date: '-', comment: 'Complete CAP actions and submit evidence / closure response' },
+    { level: '4', reviewer: 'Lead Inspector Finalization', role: 'Lead Inspector', status: 'Pending', tone: 'neutral', date: '-', comment: 'Prepare Final Report after CAP completion' },
+    { level: '5', reviewer: 'Executive Director / GM Approval', role: 'Executive Director / GM', status: 'Pending', tone: 'neutral', date: '-', comment: 'Required before Final Report Issued' }
   ];
   return '<div class="lead-simple-table"><table><thead><tr><th>Level</th><th>Reviewer</th><th>Role</th><th>Status</th><th>Action Date</th><th>Comments</th></tr></thead><tbody>' +
     rows.map(function (row) {
@@ -3671,25 +4024,6 @@ function leadReportEditorHtml(ui) {
   '</section>';
 }
 
-function leadReportDecisionCardsHtml(ui) {
-  return '<div class="lead-report-decision-grid">' +
-    '<label class="lead-report-decision-card"><span>Overall Compliance Rating</span>' +
-      '<select data-field="lead-report-rating">' +
-        '<option' + (ui.reportRating === 'Acceptable with CAP' ? ' selected' : '') + '>Acceptable with CAP</option>' +
-        '<option' + (ui.reportRating === 'Acceptable' ? ' selected' : '') + '>Acceptable</option>' +
-        '<option' + (ui.reportRating === 'Requires Management Review' ? ' selected' : '') + '>Requires Management Review</option>' +
-      '</select></label>' +
-    '<label class="lead-report-decision-card"><span>Overall Risk Level</span>' +
-      '<select data-field="lead-report-risk">' +
-        '<option' + (ui.reportRisk === 'Medium' ? ' selected' : '') + '>Medium</option>' +
-        '<option' + (ui.reportRisk === 'High' ? ' selected' : '') + '>High</option>' +
-        '<option' + (ui.reportRisk === 'Low' ? ' selected' : '') + '>Low</option>' +
-      '</select></label>' +
-    '<button class="lead-report-link-card" data-act="lead-review-tab" data-tab="findings"><span>Positive Practices</span><b>4</b><em>View / Edit →</em></button>' +
-    '<button class="lead-report-link-card" data-act="lead-review-tab" data-tab="findings"><span>Major Risks / Concerns</span><b>2</b><em>View / Edit →</em></button>' +
-  '</div>';
-}
-
 function leadFinalReportFindingsOverviewHtml() {
   var rows = [
     ['Level 1', '2', 'Major non-compliance with high safety impact.', 'Yes', '14 days', 'danger'],
@@ -3710,10 +4044,20 @@ function leadFinalReportFindingsOverviewHtml() {
 function leadApprovalWorkflowSideHtml(report, ui) {
   var sent = leadReportSubmitted(report, ui);
   var steps = [
-    ['Lead Inspector', 'John Lead Inspector', sent ? 'Completed' : 'In Progress', sent ? 'done' : 'active'],
-    ['Unit Manager', '', sent ? 'In Review' : 'Pending', sent ? 'active' : 'pending'],
-    ['General Manager', '', 'Pending', 'pending'],
-    ['Executive Director (ED)', '', 'Pending', 'pending']
+    ['Inspector', 'Preliminary Report + evidence', 'Completed', 'done'],
+    ['Preliminary Report', 'Submitted for lead review', 'Completed', 'done'],
+    ['Lead Inspector Review', 'Revise -> Inspector', sent ? 'Completed' : 'In Progress', sent ? 'done' : 'active'],
+    ['Department Manager Review', 'Release if CAP required', sent ? 'In Review' : 'Pending', sent ? 'active' : 'pending'],
+    ['Preliminary Report Released', 'Notify Service Provider for CAP', 'Pending', 'pending'],
+    ['Service Provider CAP Completion', 'CAP evidence / closure response due', 'Pending', 'pending'],
+    ['Lead Inspector Finalizes Report', 'Prepare after CAP completion', 'Pending', 'pending'],
+    ['Department Manager Final Approval', 'Approves to ED/GM', 'Pending', 'pending'],
+    ['Executive Director / GM Approval', 'Required before issue', 'Pending', 'pending'],
+    ['Final Report Issued', 'Released to service provider', 'Pending', 'pending'],
+    ['CAP Process Starts', 'After final issue', 'Pending', 'pending'],
+    ['Inspector verifies CAP', 'Evidence verification', 'Pending', 'pending'],
+    ['Lead Inspector recommends closure', 'Closure recommendation', 'Pending', 'pending'],
+    ['Department Manager approves closure', 'Finding closure decision', 'Pending', 'pending']
   ];
   return '<div class="lead-side-card lead-approval-side"><h2>Approval Workflow</h2>' +
     '<div class="lead-approval-steps">' + steps.map(function (step) {
@@ -3722,7 +4066,7 @@ function leadApprovalWorkflowSideHtml(report, ui) {
         (step[1] ? '<small>' + esc(step[1]) + '</small>' : '') +
         '<em>' + esc(step[2]) + '</em></div></div>';
     }).join('') + '</div>' +
-    '<p class="lead-review-muted mt-12">After ED approval, the final report is released to the service provider with CAP closure deadlines.</p>' +
+    '<p class="lead-review-muted mt-12">After Department Manager review, the Preliminary Report goes to the Service Provider only if CAP is required. When the provider completes CAP within the window, the Lead Inspector prepares the Final Report.</p>' +
   '</div>';
 }
 
@@ -3752,15 +4096,14 @@ function leadFinalReportPanelHtml(report) {
     leadReportSectionNavHtml(ui) +
     '<main class="lead-final-main">' +
       leadReportEditorHtml(ui) +
-      leadReportDecisionCardsHtml(ui) +
       leadFinalReportFindingsOverviewHtml() +
     '</main>' +
-    '<aside class="lead-final-side">' + leadApprovalWorkflowSideHtml(report, ui) + leadReportSummaryHtml() + leadCapDeadlinesCardHtml() + leadReferencesCardHtml() + '</aside>' +
+    '<aside class="lead-final-side">' + leadApprovalWorkflowSideHtml(report, ui) + leadCapDeadlinesCardHtml() + leadReferencesCardHtml() + '</aside>' +
   '</div>' +
   '<div class="lead-final-bottom">' +
     '<button class="btn" data-act="lead-report-section" data-id="executive">← Previous</button>' +
     '<div><button class="btn" data-act="lead-report-save-draft" data-id="INS-2026-015">▣ Save Draft</button>' +
-    '<button class="btn btn--primary" data-act="lead-report-send-unit-manager" data-id="INS-2026-015"' + (sent ? ' disabled' : '') + '>➤ ' + esc(sent ? 'Submitted to Unit Manager' : 'Submit to Unit Manager') + '</button></div>' +
+    '<button class="btn btn--primary" data-act="lead-report-send-unit-manager" data-id="INS-2026-015"' + (sent ? ' disabled' : '') + '>➤ ' + esc(sent ? 'Submitted to Department Manager' : 'Submit to Department Manager') + '</button></div>' +
   '</div>';
 }
 
@@ -3784,6 +4127,8 @@ function leadReportSummaryHtml() {
   var ui = leadReviewUiState();
   var saved = ui.reportDraftSavedAt ? fmtDate(DEMO_TODAY) + ' 14:30' : 'Not saved';
   var rows = [
+    ['Compliance Rating', ui.reportRating || 'Acceptable with CAP'],
+    ['Risk Level', ui.reportRisk || 'Medium'],
     ['Total Findings', '8'],
     ['CAP Required', '5'],
     ['Observations', '3'],
@@ -3808,7 +4153,7 @@ function leadEnforcementMechanismHtml() {
         var actions = row[1].split('; ').map(function (item) { return '<li>' + esc(item) + '</li>'; }).join('');
         return '<tr><td><span class="lead-risk-dot is-' + esc(row[2]) + '"></span>' + esc(row[0]) + '</td><td><ul>' + actions + '</ul></td></tr>';
       }).join('') +
-    '</tbody></table></div><p class="lead-review-muted mt-12">Final enforcement decision will be approved by the ED.</p></div>';
+    '</tbody></table></div><p class="lead-review-muted mt-12">Enforcement approval is handled through the configured high-risk governance route; it is not automatic.</p></div>';
 }
 
 function leadReportWorkflowPanelHtml(report) {
@@ -3818,7 +4163,7 @@ function leadReportWorkflowPanelHtml(report) {
   return '<div class="lead-workflow-layout">' +
     '<div class="lead-workflow-main">' +
       '<section class="lead-review-panel lead-workflow-card">' +
-        '<div class="lead-workflow-card__head"><h2>Report Approval Workflow</h2><p>The report will be reviewed and approved through the following hierarchy. Final approval and signature by the ED is required.</p></div>' +
+        '<div class="lead-workflow-card__head"><h2>Report Approval Workflow</h2><p>The Preliminary Report is reviewed by the Department Manager, released to the Service Provider only if CAP is required, and finalized after the provider completes the CAP response in the defined window.</p></div>' +
         leadReportWorkflowStepsHtml(report, ui) +
         '<div class="lead-workflow-section"><h3>Current Review Status</h3>' + leadReportCurrentReviewHtml(report, ui) + '</div>' +
       '</section>' +
@@ -3830,10 +4175,10 @@ function leadReportWorkflowPanelHtml(report) {
       '</section>' +
       '<div class="lead-workflow-bottom">' +
         '<button class="btn" data-act="lead-review-tab" data-tab="checklist">&larr; Back to Inspection</button>' +
-        '<button class="btn btn--primary" data-act="lead-report-send-unit-manager" data-id="INS-2026-015"' + (sent ? ' disabled' : '') + '>&#10148; ' + esc(sent ? 'Sent to Unit Manager' : 'Send to Unit Manager') + '</button>' +
+        '<button class="btn btn--primary" data-act="lead-report-send-unit-manager" data-id="INS-2026-015"' + (sent ? ' disabled' : '') + '>&#10148; ' + esc(sent ? 'Sent to Department Manager' : 'Send to Department Manager') + '</button>' +
       '</div>' +
     '</div>' +
-    '<aside class="lead-workflow-side">' + leadReportSummaryHtml() + leadEnforcementMechanismHtml() + '</aside>' +
+    '<aside class="lead-workflow-side">' + leadEnforcementMechanismHtml() + '</aside>' +
   '</div>';
 }
 
@@ -3861,9 +4206,203 @@ function leadReviewReturnedCount() {
   }).length;
 }
 
+var LEAD_ASSIGNED_AUDIT_TOTAL = 18;
+
+function leadAssignedAuditDefaultUi() {
+  return {
+    query: '',
+    status: 'all',
+    department: 'all',
+    auditType: 'all',
+    risk: 'all',
+    due: 'all',
+    stage: 'all',
+    advanced: false,
+    appliedAt: ''
+  };
+}
+
+function leadAssignedAuditsUiState() {
+  if (!state.leadAssignedAuditsUi) state.leadAssignedAuditsUi = {};
+  state.leadAssignedAuditsUi = Object.assign(leadAssignedAuditDefaultUi(), state.leadAssignedAuditsUi || {});
+  if (!state.leadAssignedAuditsUi.query) state.leadAssignedAuditsUi.query = '';
+  if (!state.leadAssignedAuditsUi.status) state.leadAssignedAuditsUi.status = 'all';
+  if (!state.leadAssignedAuditsUi.department) state.leadAssignedAuditsUi.department = 'all';
+  if (!state.leadAssignedAuditsUi.auditType) state.leadAssignedAuditsUi.auditType = 'all';
+  if (!state.leadAssignedAuditsUi.risk) state.leadAssignedAuditsUi.risk = 'all';
+  if (!state.leadAssignedAuditsUi.due) state.leadAssignedAuditsUi.due = 'all';
+  if (!state.leadAssignedAuditsUi.stage) state.leadAssignedAuditsUi.stage = 'all';
+  state.leadAssignedAuditsUi.advanced = !!state.leadAssignedAuditsUi.advanced;
+  return state.leadAssignedAuditsUi;
+}
+
+function leadAssignedAuditRows() {
+  return [
+    { id: 'AUD-2025-045', detailAuditId: 'AUD-2026-005', operator: 'West Air (Pty) Ltd', department: 'OPS', departmentTone: 'info', auditType: 'Regular Surveillance', auditTypeKey: 'regular-surveillance', risk: 'High', riskTone: 'high', dates: ['12 May 2025', '16 May 2025'], status: 'In Progress', statusKey: 'in-progress', statusTone: 'info', progress: 75, dueDate: '28 May 2025', dueStage: 'Findings Review', stageKey: 'findings-review', dueKey: 'due-soon' },
+    { id: 'AUD-2025-038', detailAuditId: 'AUD-2026-005', operator: 'National Airways Corp', department: 'PEL', departmentTone: 'ok', auditType: 'Certification', auditTypeKey: 'certification', risk: 'Medium', riskTone: 'medium', dates: ['05 May 2025', '09 May 2025'], status: 'Draft Report', statusKey: 'draft-report', statusTone: 'draft', progress: 60, dueDate: '25 May 2025', dueStage: 'Preliminary Report', stageKey: 'preliminary-report', dueKey: 'due-soon' },
+    { id: 'AUD-2025-031', detailAuditId: 'AUD-2026-005', operator: 'Skyline Aviation (Pty) Ltd', department: 'AIR', departmentTone: 'teal', auditType: 'Ramp Inspection', auditTypeKey: 'ramp-inspection', risk: 'High', riskTone: 'high', dates: ['28 Apr 2025', '30 Apr 2025'], status: 'Pending Approval', statusKey: 'pending-approval', statusTone: 'pending', progress: 90, dueDate: '22 May 2025', dueStage: 'Dept. Review', stageKey: 'department-review', dueKey: 'due-soon' },
+    { id: 'AUD-2025-019', detailAuditId: 'AUD-2026-005', operator: 'Desert Air Maintenance', department: 'AIR', departmentTone: 'teal', auditType: 'Continued Airworthiness', auditTypeKey: 'continued-airworthiness', risk: 'Medium', riskTone: 'medium', dates: ['14 Apr 2025', '17 Apr 2025'], status: 'In Progress', statusKey: 'in-progress', statusTone: 'info', progress: 40, dueDate: '26 May 2025', dueStage: 'Evidence Review', stageKey: 'evidence-review', dueKey: 'due-soon' },
+    { id: 'AUD-2025-012', detailAuditId: 'AUD-2026-005', operator: 'NamAir Connect', department: 'ANS', departmentTone: 'warn', auditType: 'Service Provider Audit', auditTypeKey: 'service-provider-audit', risk: 'Low', riskTone: 'low', dates: ['07 Apr 2025', '11 Apr 2025'], status: 'Draft Report', statusKey: 'draft-report', statusTone: 'draft', progress: 55, dueDate: '24 May 2025', dueStage: 'Preliminary Report', stageKey: 'preliminary-report', dueKey: 'due-soon' },
+    { id: 'AUD-2025-007', detailAuditId: 'AUD-2026-005', operator: 'FlyNamibia (Pty) Ltd', department: 'OPS', departmentTone: 'info', auditType: 'Regular Surveillance', auditTypeKey: 'regular-surveillance', risk: 'High', riskTone: 'high', dates: ['31 Mar 2025', '04 Apr 2025'], status: 'Overdue', statusKey: 'overdue', statusTone: 'overdue', progress: 80, dueDate: '15 May 2025', dueStage: 'Findings Review', stageKey: 'findings-review', dueKey: 'overdue' },
+    { id: 'AUD-2025-003', detailAuditId: 'AUD-2026-005', operator: 'Aero Taxi Services', department: 'OPS', departmentTone: 'info', auditType: 'Focused Inspection', auditTypeKey: 'focused-inspection', risk: 'Medium', riskTone: 'medium', dates: ['24 Mar 2025', '25 Mar 2025'], status: 'In Progress', statusKey: 'in-progress', statusTone: 'info', progress: 30, dueDate: '27 May 2025', dueStage: 'Evidence Review', stageKey: 'evidence-review', dueKey: 'due-soon' },
+    { id: 'AUD-2025-001', detailAuditId: 'AUD-2026-005', operator: 'Aviation Training Academy', department: 'PEL', departmentTone: 'ok', auditType: 'Certification', auditTypeKey: 'certification', risk: 'Low', riskTone: 'low', dates: ['20 Mar 2025', '21 Mar 2025'], status: 'Pending Approval', statusKey: 'pending-approval', statusTone: 'pending', progress: 95, dueDate: '21 May 2025', dueStage: 'Final Review', stageKey: 'final-review', dueKey: 'due-soon' }
+  ];
+}
+
+function leadAssignedAuditFilteredRows(ui) {
+  var query = (ui.query || '').toLowerCase().trim();
+  return leadAssignedAuditRows().filter(function (row) {
+    var text = [row.id, row.operator, row.department, row.auditType, row.risk, row.status, row.dueStage].join(' ').toLowerCase();
+    if (query && text.indexOf(query) === -1) return false;
+    if (ui.status !== 'all' && row.statusKey !== ui.status) return false;
+    if (ui.department !== 'all' && row.department !== ui.department) return false;
+    if (ui.auditType !== 'all' && row.auditTypeKey !== ui.auditType) return false;
+    if (ui.risk !== 'all' && row.riskTone !== ui.risk) return false;
+    if (ui.due !== 'all' && row.dueKey !== ui.due) return false;
+    if (ui.stage !== 'all' && row.stageKey !== ui.stage) return false;
+    return true;
+  });
+}
+
+function leadAssignedOptions(options, selected) {
+  return options.map(function (option) {
+    return '<option value="' + esc(option.value) + '"' + (option.value === selected ? ' selected' : '') + '>' + esc(option.label) + '</option>';
+  }).join('');
+}
+
+function leadAssignedKpiCard(title, value, suffix, percent, tone, icon) {
+  return '<article class="lead-assigned-card is-' + esc(tone) + '">' +
+    '<div class="lead-assigned-card__icon">' + esc(icon) + '</div>' +
+    '<div class="lead-assigned-card__body">' +
+      '<span>' + esc(title) + '</span>' +
+      '<strong>' + esc(value) + '</strong><em>' + esc(suffix) + '</em>' +
+      '<small>' + esc(String(percent)) + '% of all</small>' +
+      '<div class="lead-assigned-card__bar"><i style="width:' + esc(String(percent)) + '%"></i></div>' +
+    '</div>' +
+  '</article>';
+}
+
+function leadAssignedFiltersHtml(ui) {
+  var statusOptions = leadAssignedOptions([
+    { value: 'all', label: 'All Statuses' },
+    { value: 'in-progress', label: 'In Progress' },
+    { value: 'draft-report', label: 'Draft Report' },
+    { value: 'pending-approval', label: 'Pending Approval' },
+    { value: 'overdue', label: 'Overdue' }
+  ], ui.status);
+  var departmentOptions = leadAssignedOptions([
+    { value: 'all', label: 'All Departments' },
+    { value: 'OPS', label: 'OPS' },
+    { value: 'PEL', label: 'PEL' },
+    { value: 'AIR', label: 'AIR' },
+    { value: 'ANS', label: 'ANS' }
+  ], ui.department);
+  var auditTypeOptions = leadAssignedOptions([
+    { value: 'all', label: 'All Types' },
+    { value: 'regular-surveillance', label: 'Regular Surveillance' },
+    { value: 'certification', label: 'Certification' },
+    { value: 'ramp-inspection', label: 'Ramp Inspection' },
+    { value: 'continued-airworthiness', label: 'Continued Airworthiness' },
+    { value: 'service-provider-audit', label: 'Service Provider Audit' },
+    { value: 'focused-inspection', label: 'Focused Inspection' }
+  ], ui.auditType);
+  var riskOptions = leadAssignedOptions([
+    { value: 'all', label: 'All Levels' },
+    { value: 'high', label: 'High' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'low', label: 'Low' }
+  ], ui.risk);
+  var dueOptions = leadAssignedOptions([
+    { value: 'all', label: 'All Due Dates' },
+    { value: 'due-soon', label: 'Due Soon' },
+    { value: 'overdue', label: 'Overdue' }
+  ], ui.due);
+  var stageOptions = leadAssignedOptions([
+    { value: 'all', label: 'All Stages' },
+    { value: 'findings-review', label: 'Findings Review' },
+    { value: 'preliminary-report', label: 'Preliminary Report' },
+    { value: 'department-review', label: 'Department Review' },
+    { value: 'evidence-review', label: 'Evidence Review' },
+    { value: 'final-review', label: 'Final Review' }
+  ], ui.stage);
+  return '<div class="lead-assigned-filterbar">' +
+    '<label class="lead-assigned-filter lead-assigned-filter--search"><span>Search audits</span><input type="search" data-field="lead-assigned-query" value="' + esc(ui.query || '') + '" placeholder="Search audits..."></label>' +
+    '<label class="lead-assigned-filter"><span>Status</span><select data-field="lead-assigned-status">' + statusOptions + '</select></label>' +
+    '<label class="lead-assigned-filter"><span>Department</span><select data-field="lead-assigned-department">' + departmentOptions + '</select></label>' +
+    '<label class="lead-assigned-filter"><span>Audit Type</span><select data-field="lead-assigned-audit-type">' + auditTypeOptions + '</select></label>' +
+    '<label class="lead-assigned-filter"><span>Risk Level</span><select data-field="lead-assigned-risk">' + riskOptions + '</select></label>' +
+    '<div class="lead-assigned-filter-actions">' +
+      '<button class="btn" data-act="lead-assigned-more-filters">⌁ More Filters</button>' +
+      '<button class="btn" data-act="lead-assigned-reset">Reset</button>' +
+      '<button class="btn btn--primary" data-act="lead-assigned-apply">Apply Filters</button>' +
+    '</div>' +
+    (ui.advanced ? '<div class="lead-assigned-advanced">' +
+      '<label class="lead-assigned-filter"><span>Due Window</span><select data-field="lead-assigned-due">' + dueOptions + '</select></label>' +
+      '<label class="lead-assigned-filter"><span>Report Stage</span><select data-field="lead-assigned-stage">' + stageOptions + '</select></label>' +
+    '</div>' : '') +
+  '</div>';
+}
+
+function leadAssignedTableHtml(rows, filteredCount) {
+  var visibleRows = rows.slice(0, 8);
+  var totalLabel = filteredCount === leadAssignedAuditRows().length ? LEAD_ASSIGNED_AUDIT_TOTAL : filteredCount;
+  var body = visibleRows.length ? visibleRows.map(function (row) {
+    return '<tr>' +
+      '<td><input type="checkbox" aria-label="Select ' + esc(row.id) + '"></td>' +
+      '<td><button class="lead-audit-link" data-act="nav" data-view="lead-review" data-id="' + esc(row.detailAuditId) + '">' + esc(row.id) + '</button></td>' +
+      '<td><b>' + esc(row.operator) + '</b></td>' +
+      '<td><span class="lead-department-pill is-' + esc(row.departmentTone) + '">' + esc(row.department) + '</span></td>' +
+      '<td>' + esc(row.auditType) + '</td>' +
+      '<td><span class="lead-risk-pill is-' + esc(row.riskTone) + '">' + esc(row.risk) + '</span></td>' +
+      '<td>' + esc(row.dates[0]) + '<br><span>' + esc(row.dates[1]) + '</span></td>' +
+      '<td><span class="lead-status-pill is-' + esc(row.statusTone) + '">' + esc(row.status) + '</span></td>' +
+      '<td><div class="lead-progress-cell"><span>' + esc(String(row.progress)) + '%</span><div class="lead-progress"><i class="is-' + esc(row.riskTone) + '" style="width:' + esc(String(row.progress)) + '%"></i></div></div></td>' +
+      '<td><b>' + esc(row.dueDate) + '</b><span>' + esc(row.dueStage) + '</span></td>' +
+      '<td><div class="lead-row-actions">' +
+        '<button class="iconbtn iconbtn--small" data-act="nav" data-view="lead-review" data-id="' + esc(row.detailAuditId) + '" aria-label="View ' + esc(row.id) + '">◎</button>' +
+        '<button class="iconbtn iconbtn--small" data-act="nav" data-view="lead-review" data-id="' + esc(row.detailAuditId) + '" aria-label="Edit ' + esc(row.id) + '">✎</button>' +
+        '<button class="iconbtn iconbtn--small" data-act="lead-assigned-row-menu" data-id="' + esc(row.id) + '" aria-label="More actions for ' + esc(row.id) + '">⋮</button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('') : '<tr><td colspan="11"><div class="empty">No assigned audits match the current filters.</div></td></tr>';
+
+  return '<section class="lead-assigned-table-panel">' +
+    '<div class="lead-assigned-table-wrap"><table class="lead-assigned-table"><thead><tr>' +
+      '<th><input type="checkbox" aria-label="Select all visible audits"></th><th>Audit No. <span>↕</span></th><th>Operator / Organisation</th><th>Department <span>↕</span></th><th>Audit Type</th><th>Risk Level <span>↕</span></th><th>Audit Dates<br><small>Start - End</small></th><th>Status <span>↕</span></th><th>Progress <span>↕</span></th><th>Next Due Date</th><th>Actions</th>' +
+    '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+    '<div class="lead-assigned-table-foot">' +
+      '<span>Showing 1 to ' + esc(String(visibleRows.length)) + ' of ' + esc(String(totalLabel)) + ' audits</span>' +
+      '<div class="lead-assigned-pager"><span>Rows per page: <b>10</b></span><button disabled>‹‹</button><button disabled>‹</button><button class="is-active">1</button><button>2</button><button>›</button><button>››</button></div>' +
+    '</div>' +
+  '</section>';
+}
+
+function viewLeadAssignedAudits() {
+  var ui = leadAssignedAuditsUiState();
+  var rows = leadAssignedAuditFilteredRows(ui);
+  return '<div class="lead-assigned-page">' +
+    '<div class="lead-assigned-crumb">Dashboard <span>›</span> <b>Assigned Audits</b></div>' +
+    '<div class="lead-assigned-head">' +
+      '<div><h1>Assigned Audits</h1><p>View and manage all audits assigned to you.</p></div>' +
+      '<button class="btn btn--primary" data-act="lead-assigned-new">+ New Audit Assignment</button>' +
+    '</div>' +
+    '<div class="lead-assigned-kpis">' +
+      leadAssignedKpiCard('Total Assigned', '18', 'Audits', 100, 'total', '▣') +
+      leadAssignedKpiCard('In Progress', '9', 'Audits', 50, 'progress', '◷') +
+      leadAssignedKpiCard('Reports', '4', 'Audits', 22, 'draft', '▤') +
+      leadAssignedKpiCard('Pending Approval', '3', 'Audits', 17, 'pending', '➤') +
+      leadAssignedKpiCard('Overdue', '2', 'Audits', 11, 'overdue', '!') +
+    '</div>' +
+    leadAssignedFiltersHtml(ui) +
+    leadAssignedTableHtml(rows, rows.length) +
+    '<div class="lead-assigned-legend"><span><b class="is-high"></b>High Risk</span><span><b class="is-medium"></b>Medium Risk</span><span><b class="is-low"></b>Low Risk</span></div>' +
+  '</div>';
+}
+
 function viewLeadReviewQueue() {
   var reviews = (state.leadAuditReviews || []).slice();
-  var selectedAuditId = (state.params && state.params.auditId) || (reviews[0] && reviews[0].auditId);
+  var selectedAuditId = state.params && state.params.auditId;
+  if (!selectedAuditId) return viewLeadAssignedAudits();
   var review = leadAuditReviewForAudit(selectedAuditId) || reviews[0];
   var audit = review ? auditById(review.auditId) : null;
   var report = review ? (auditReportById(review.reportId) || reportForAudit(review.auditId)) : null;
@@ -3878,7 +4417,10 @@ function viewLeadReviewQueue() {
   var sent = leadReportSubmitted(report, ui);
   var generated = ui.reportGeneratedAt || ui.finalizedAt;
   var saved = ui.reportDraftSavedAt || generated;
-  var workflowBadge = sent ? demoBadge('Report Status: Submitted to Unit Manager', 'info') : demoBadge('Report Status: Draft', 'ok');
+  var reportKind = displayReportTypeLabel(report);
+  var reportTypeBadge = demoBadge('Report Type: ' + reportKind, displayReportTypeTone(report));
+  var workflowBadge = sent ? demoBadge('Report Status: Submitted to Department Manager', 'info') : demoBadge('Report Status: Draft', 'ok');
+  var previewLabel = reportKind === 'Final Report' ? '◎ Preview Final Report' : '◎ Preview Preliminary Report';
   var tabContent = '';
   if (activeTab === 'findings') tabContent = leadReviewFindingsPanelHtml(review);
   else if (activeTab === 'cap') tabContent = leadReviewCapPanelHtml();
@@ -3887,11 +4429,11 @@ function viewLeadReviewQueue() {
   else tabContent = leadFinalReportPanelHtml(report);
 
   return '<div class="lead-review-page">' +
-    '<div class="lead-final-breadcrumb"><button data-act="nav" data-view="dashboard">☰</button><span>Inspections</span><span>/</span><span>INS-2026-015</span><span>/</span><b>Reports</b></div>' +
+    '<div class="lead-final-breadcrumb"><button data-act="nav" data-view="lead-review">☰</button><span>Assigned Audits</span><span>/</span><span>INS-2026-015</span><span>/</span><b>Reports</b></div>' +
     '<div class="lead-review-head">' +
       '<div>' +
-        '<h1>Final Report - Routine Inspection</h1>' +
-        '<div class="lead-review-title-meta lead-final-meta"><span>Inspection ID: <b>INS-2026-015</b></span><span>Organization: <b>SkyCargo Air</b></span><span>Dates: <b>15 - 18 Jun 2026</b></span><span>Lead Inspector: <b>John Lead Inspector</b></span>' + workflowBadge + '</div>' +
+        '<h1>' + esc(reportKind) + ' - Routine Inspection</h1>' +
+        '<div class="lead-review-title-meta lead-final-meta"><span>Inspection ID: <b>INS-2026-015</b></span><span>Organization: <b>SkyCargo Air</b></span><span>Dates: <b>15 - 18 Jun 2026</b></span><span>Lead Inspector: <b>John Lead Inspector</b></span>' + reportTypeBadge + workflowBadge + '</div>' +
         '<div class="inspection-status-line">' +
           (generated ? '<span class="inspection-save-state inspection-save-state--submitted">Report draft generated</span>' : '') +
           (saved ? '<span class="inspection-save-state">Draft saved</span>' : '') +
@@ -3899,9 +4441,9 @@ function viewLeadReviewQueue() {
         '</div>' +
       '</div>' +
       '<div class="lead-review-actions">' +
-        '<button class="btn" data-act="lead-report-preview" data-id="INS-2026-015">◎ Preview Report</button>' +
+        '<button class="btn" data-act="lead-report-preview" data-id="INS-2026-015">' + esc(previewLabel) + '</button>' +
         '<button class="btn" data-act="lead-report-save-draft" data-id="INS-2026-015">▣ Save Draft</button>' +
-        '<button class="btn btn--primary" data-act="lead-report-send-unit-manager" data-id="INS-2026-015"' + (sent ? ' disabled' : '') + '>➤ ' + esc(sent ? 'Submitted to Unit Manager' : 'Submit to Unit Manager') + '</button>' +
+        '<button class="btn btn--primary" data-act="lead-report-send-unit-manager" data-id="INS-2026-015"' + (sent ? ' disabled' : '') + '>➤ ' + esc(sent ? 'Submitted to Department Manager' : 'Submit to Department Manager') + '</button>' +
       '</div>' +
     '</div>' +
     leadReviewTabsHtml(activeTab) +
@@ -3919,9 +4461,11 @@ function reportDecisionButton(report, decision, label, tone, primary) {
 
 function reportDecisionPanelHtml(report) {
   var summary = approvalSummary(report);
+  var stage = approvalStage(report);
+  var stageLabel = stage && stage.label ? stage.label : '';
   if (report.finalLocked) {
     return '<div class="decision-panel is-final"><div class="decision-panel__title">Final Report Locked</div>' +
-      '<p class="small muted">Final report is non-editable in demo state. Audit closes only after ED approval.</p></div>';
+      '<p class="small muted">Final report is non-editable in demo state. Final Report Issued happens after Executive Director / GM approval.</p></div>';
   }
   if (summary.ownerRole !== state.role) {
     return '<div class="decision-panel"><div class="decision-panel__title">Waiting for ' + esc(summary.ownerLabel) + '</div>' +
@@ -3929,12 +4473,21 @@ function reportDecisionPanelHtml(report) {
   }
   var buttons = '';
   if (state.role === 'leadInspector') {
-    buttons = reportDecisionButton(report, 'forward', 'Submit Preliminary Report', null, true);
+    buttons = /Finalization/i.test(stageLabel)
+      ? reportDecisionButton(report, 'forward', 'Proceed to Final Report', null, true)
+      : reportDecisionButton(report, 'forward', 'Submit Preliminary Report', null, true);
   } else if (state.role === 'manager') {
-    buttons =
-      reportDecisionButton(report, 'approve', 'Approve to GM', 'ok') +
-      reportDecisionButton(report, 'return', 'Return to Lead', 'danger') +
-      reportDecisionButton(report, 'reject', 'Reject', 'danger');
+    if (/Final Approval/i.test(stageLabel)) {
+      buttons =
+        reportDecisionButton(report, 'approve', 'Approve Final Report to Executive Director / GM', 'ok') +
+        reportDecisionButton(report, 'return', 'Return to Lead Inspector', 'danger') +
+        reportDecisionButton(report, 'reject', 'Reject', 'danger');
+    } else {
+      buttons =
+        reportDecisionButton(report, 'approve', 'Release Preliminary Report to Service Provider for CAP', 'ok') +
+        reportDecisionButton(report, 'return', 'Return to Lead Inspector', 'danger') +
+        reportDecisionButton(report, 'reject', 'Reject', 'danger');
+    }
   } else if (state.role === 'gm') {
     buttons =
       reportDecisionButton(report, 'approve', 'Approve to ED', 'ok') +
@@ -3942,8 +4495,8 @@ function reportDecisionPanelHtml(report) {
       reportDecisionButton(report, 'reject', 'Reject', 'danger');
   } else if (state.role === 'executiveDirector') {
     buttons =
-      reportDecisionButton(report, 'approve', 'Approve Final Report', 'ok') +
-      reportDecisionButton(report, 'return', 'Return to GM', 'danger') +
+      reportDecisionButton(report, 'approve', 'Issue Final Report', 'ok') +
+      reportDecisionButton(report, 'return', 'Return to Department Manager', 'danger') +
       reportDecisionButton(report, 'reject', 'Reject', 'danger');
   }
   var enforcement = state.role === 'manager'
@@ -3956,6 +4509,27 @@ function reportDecisionPanelHtml(report) {
     '<textarea id="report-note-' + esc(report.id) + '" class="decision-panel__note" placeholder="Required for Return or Reject. Optional for approval."></textarea>' +
     enforcement +
     '<div class="decision-panel__actions">' + buttons + '</div></div>';
+}
+
+function preliminaryNoticeCardHtml(report) {
+  var notice = report && report.preliminaryNotice;
+  if (!notice) return '';
+  return '<div class="card"><div class="card__head"><h3>Preliminary Report Notice</h3><span class="sub">Mock CAP completion window</span></div><div class="card__body">' +
+    '<div class="metaline">' +
+      metaItem('Report type', displayReportTypeLabel(report)) +
+      metaItem('CAP required?', notice.capRequired ? 'Yes' : 'No') +
+      metaItem('CAP required findings', notice.capRequiredCount !== undefined ? String(notice.capRequiredCount) : '-') +
+      metaItem('Recipient', notice.recipient || 'Service Provider') +
+      metaItem('Status', notice.status || 'Not released') +
+      metaItem('Release trigger', notice.releaseTrigger || 'After Department Manager review, if CAP is required') +
+      metaItem('CAP completion window', notice.responseWindow || '-') +
+      metaItem('CAP due date', notice.responseDueDate ? fmtDate(notice.responseDueDate) : '-') +
+      metaItem('Required action', notice.requiredAction || 'Submit factual comments and corrective response.') +
+      metaItem('Completion rule', notice.completionRule || 'Final Report is prepared after CAP completion.') +
+      metaItem('Late / no completion rule', notice.lateRule || 'Mark overdue and prepare Final Report with unresolved CAP noted.') +
+    '</div>' +
+    '<div class="callout mt-16"><b>Demo notification flow:</b> after Department Manager review, the Service Provider is notified only when CAP is required. Once the provider completes the CAP response within the window, the Lead Inspector prepares the Final Report.</div>' +
+  '</div></div>';
 }
 
 function viewAuditReportsApproval() {
@@ -3972,22 +4546,25 @@ function viewAuditReportsApproval() {
     : 'None recorded';
   var signature = report.mockDigitalSignature
     ? '<div class="report__stamp">' + esc(report.mockDigitalSignature.label) + '</div><div class="small muted mt-12">Signed by ' + esc(report.mockDigitalSignature.signer) + ' · ' + esc(fmtDate(report.mockDigitalSignature.date)) + '</div>'
-    : '<div class="muted small">Mock signature appears only after ED approval.</div>';
+    : '<div class="muted small">Mock signature appears only after Executive Director / GM approval.</div>';
   var findings = state.findings.filter(function (finding) { return finding.auditId === report.auditId; });
   var reportQueue = (state.auditReports || []).map(workItemFromReport).sort(workItemSort);
   var findingsTable = renderOpsTable(findings.map(function (finding) {
     return workItemFromFinding(finding, { allEvidenceVersions: true });
   }), { includeChildren: true, empty: 'No converted findings for this audit yet.' });
+  var reportKind = displayReportTypeLabel(report);
+  var signatureTitle = reportKind === 'Final Report' ? 'Final Report Signature' : 'Final Report Signature (later)';
 
-  return pageHead(report.title || ('Preliminary / Final Report — ' + report.id), 'Mock report approval chain: Lead Inspector -> Department Manager -> GM -> Executive Director.',
+  return pageHead(report.title || (reportKind + ' — ' + report.id), 'Mock report chain: Preliminary Report -> Department Manager review -> Service Provider CAP completion if CAP is required -> Final Report preparation.',
     '<button class="btn" data-act="mock-export">Preview PDF (mock)</button><button class="btn" data-act="mock-export">Preview Word (mock)</button>') +
     guardrailStrip([
+      { label: 'Preliminary report example', tone: 'info' },
       { label: 'Mock report module' },
       { label: 'Mock digital signature only', tone: 'warn' },
       { label: 'Enforcement recommendation only', tone: 'warn' }
     ]) +
     '<h2 class="section-heading">Report Approval Queue</h2>' +
-    renderOpsTable(reportQueue, { selectedId: report.id, empty: 'No audit report approvals are seeded.' }) +
+    renderOpsTable(reportQueue, { selectedId: report.id, priorityHead: 'Report Type', priorityWidth: '132px', empty: 'No audit report approvals are seeded.' }) +
     '<div class="grid grid--kpi mb-16">' +
       kpiCard('Report Status', esc(status.label), report.finalLocked ? 'Locked final report' : 'Editable demo draft', { tone: status.tone }) +
       kpiCard('Current Owner', esc(summary.ownerLabel), summary.nextAction, { tone: summary.statusTone }) +
@@ -3998,13 +4575,15 @@ function viewAuditReportsApproval() {
         '<div class="card"><div class="card__head"><h3>Report Overview</h3><div class="spacer"></div>' + demoBadge(status.label, status.tone) + '</div><div class="card__body">' +
           '<div class="metaline">' +
             metaItem('Audit', report.auditId) +
-            metaItem('Report number', report.reportNumber || 'Generated after ED approval') +
+            metaItem('Report type', reportKind) +
+            metaItem('Report number', report.reportNumber || 'Generated after Executive Director / GM approval') +
             metaItem('Lead Inspector', audit ? audit.lead : '—') +
             metaItem('Approved by', report.approvedBy || '—') +
             metaItem('Approval date', report.approvalDate ? fmtDate(report.approvalDate) : '—') +
             metaItem('Enforcement recommendation', recommendation) +
           '</div>' +
         '</div></div>' +
+        preliminaryNoticeCardHtml(report) +
         '<div class="card"><div class="card__head"><h3>Executive Summary</h3><span class="sub">AI-generated draft requires authorized review</span></div><div class="card__body">' +
           '<div class="callout">' + esc(report.executiveSummaryDraft) + '</div>' +
         '</div></div>' +
@@ -4016,7 +4595,7 @@ function viewAuditReportsApproval() {
           '<div class="reg-section-title mt-16">Observations</div>' + report.observations.map(function (item) { return '<div class="small muted mb-8">' + esc(item) + '</div>'; }).join('') +
           '<div class="reg-section-title mt-16">Recommendations</div>' + report.recommendations.map(function (item) { return '<div class="small muted mb-8">' + esc(item) + '</div>'; }).join('') +
         '</div></div>' +
-        '<div class="card"><div class="card__head"><h3>Final Report Signature</h3></div><div class="card__body">' + signature + '</div></div>' +
+        '<div class="card"><div class="card__head"><h3>' + esc(signatureTitle) + '</h3></div><div class="card__body">' + signature + '</div></div>' +
       '</div>' +
       '<div style="display:flex;flex-direction:column;gap:16px">' +
         '<div class="card approval-card--compact"><div class="card__head"><h3>Approval Progress</h3></div><div class="card__body">' + approvalProgressHtml(report) + '</div></div>' +

@@ -35,7 +35,7 @@ var NAV = {
   inspector: [
     { view: 'dashboard', label: 'My Inspections', icon: '▣' },
     { view: 'findings', label: 'CAP Reviews', icon: '✓', filter: 'capreview' },
-    { view: 'reports', label: 'Draft Reports', icon: '□' },
+    { view: 'reports', label: 'Reports', icon: '□' },
     { view: 'offline-field', label: 'Evidence', icon: '△' },
     { view: 'findings', label: 'Findings', icon: '◇', filter: 'open' },
     { view: 'profile', label: 'Profile', icon: '○' }
@@ -69,12 +69,15 @@ var NAV = {
      docs/plans/2026-06-28-caa-governance-workflow-and-roles-plan.md. */
   leadInspector: [
     { view: 'dashboard', label: 'Dashboard', icon: '▦' },
-    { view: 'dashboard', label: 'My Inspections', icon: '▣' },
-    { view: 'findings', label: 'CAP Reviews', icon: '✓', filter: 'capreview' },
-    { view: 'audit-reports', label: 'Draft Reports', icon: '□' },
-    { view: 'lead-review', label: 'Lead Inspector', icon: '♙' },
-    { view: 'audit-reports', label: 'Reports', icon: '□' },
-    { view: 'users', label: 'Users', icon: '○' },
+    { view: 'lead-review', label: 'Assigned Audits', icon: '▣' },
+    { view: 'findings', label: 'Findings Review', icon: '⚑', filter: 'open', badge: '12' },
+    { view: 'audit-reports', label: 'Preliminary Reports', icon: '□', filter: 'preliminary', badge: '6' },
+    { view: 'audit-reports', label: 'Final Reports', icon: '□', filter: 'final', badge: '4' },
+    { view: 'findings', label: 'CAP Verification', icon: '✓', filter: 'capreview', badge: '7' },
+    { view: 'calendar', label: 'Calendar', icon: '▤' },
+    { view: 'audit-reports', label: 'Documents', icon: '□', filter: 'documents' },
+    { view: 'messages', label: 'Messages', icon: '✉' },
+    { view: 'safety-intelligence', label: 'Analytics & Reports', icon: '⌁' },
     { view: 'settings', label: 'Settings', icon: '⚙' }
   ],
   gm: [
@@ -112,12 +115,12 @@ var VIEW_TITLES = {
   'checklist-builder': 'Checklist Builder', 'checklist-versions': 'Version History',
   'lead-review': 'Lead Inspector Review', 'planning-board': 'Planning',
   'audit-reports': 'Audit Reports', 'cap-review-detail': 'CAP Review',
-  'unit-manager-review': 'Unit Manager Review'
+  'unit-manager-review': 'Department Manager Approval'
 };
 
 var ROLE_DESC = {
   inspector: 'Inspector Workspace — daily operations, assigned packages, CAP review and field work.',
-  leadInspector: 'Lead Inspector — checklist assignment, review, convert-to-finding and report sign-off.',
+  leadInspector: 'Lead Inspector — assigned audits, findings review, preliminary/final reports and CAP verification.',
   manager: 'Department Manager — planning items, approvals, scheduling and department oversight.',
   gm: 'General Manager — planning and report approvals, budget routing and audit release.',
   finance: 'Finance Review — budget and resource review for planned audits.',
@@ -167,11 +170,11 @@ var INSPECTOR_RESTRICTED_VIEWS = {
 };
 
 var LEAD_INSPECTOR_RESTRICTED_VIEWS = {
-  calendar: true,
   planning: true,
   'planning-approvals': true,
   'planning-board': true,
-  reports: true
+  reports: true,
+  users: true
 };
 
 function normalizeViewForRole() {
@@ -273,6 +276,7 @@ function isNavActive(navItem) {
 function navBadge(navItem) {
   var view = typeof navItem === 'string' ? navItem : navItem.view;
   var navFilter = typeof navItem === 'string' ? null : navItem.filter;
+  if (navItem && navItem.badge !== undefined) return navItem.badge;
   var f = visibleFindings();
   if (view === 'calendar') {
     var queueAudits = typeof auditsForQueueScope === 'function' ? auditsForQueueScope() : state.audits;
@@ -410,6 +414,7 @@ function inspectorUserBar() {
 function go(view, opts) {
   opts = opts || {};
   state.view = view;
+  if (view === 'lead-review' && !opts.auditId) delete state.params.auditId;
   if (opts.auditId !== undefined && opts.auditId !== null && opts.auditId !== '') state.params.auditId = opts.auditId;
   if (opts.findingId !== undefined && opts.findingId !== null && opts.findingId !== '') state.params.findingId = opts.findingId;
   if (opts.orgId !== undefined && opts.orgId !== null && opts.orgId !== '') state.params.orgId = opts.orgId;
@@ -448,6 +453,7 @@ function setRole(roleKey) {
   state.view = homeView(roleKey);
   if (roleKey === 'leadInspector') {
     var leadUi = ensureLeadReviewUi();
+    ensureLeadAssignedAuditsUi();
     leadUi.tab = 'report';
     leadUi.actionsOpen = false;
   }
@@ -580,6 +586,11 @@ function handleAction(act, el) {
     case 'lead-report-preview': handleLeadReportPreview(id); break;
     case 'lead-report-save-draft': handleLeadReportSaveDraft(id); break;
     case 'lead-report-send-unit-manager': handleLeadReportSendUnitManager(id); break;
+    case 'lead-assigned-reset': handleLeadAssignedReset(); break;
+    case 'lead-assigned-apply': handleLeadAssignedApply(); break;
+    case 'lead-assigned-more-filters': handleLeadAssignedMoreFilters(); break;
+    case 'lead-assigned-new': handleLeadAssignedNew(); break;
+    case 'lead-assigned-row-menu': handleLeadAssignedRowMenu(id); break;
     case 'cap-review-row': handleCapReviewRow(id); break;
     case 'cap-review-tab': handleCapReviewTab(id, tab); break;
     case 'cap-review-filter': handleCapReviewQuickFilter(status); break;
@@ -595,8 +606,13 @@ function handleAction(act, el) {
     case 'cap-track-quick-action': handleCapTrackingQuickAction(el.getAttribute('data-track-action')); break;
     case 'cap-detail-tab': handleCapDetailTab(tab); break;
     case 'cap-detail-download-finding': handleCapDetailDownloadFinding(id); break;
+    case 'cap-detail-request-revision': handleCapDetailRequestRevision(id); break;
+    case 'cap-detail-request-more-evidence': handleCapDetailRequestMoreEvidence(id); break;
     case 'cap-detail-prepare-second-report': handleCapDetailPrepareSecondReport(id); break;
     case 'cap-detail-submit-general-manager': handleCapDetailSubmitGeneralManager(id); break;
+    case 'cap-lead-save': handleCapLeadSave(id); break;
+    case 'cap-lead-return': handleCapLeadReturn(id); break;
+    case 'cap-lead-submit': handleCapLeadSubmit(id); break;
     case 'cap-detail-add-comment': handleCapDetailAddComment(id); break;
     case 'cap-unit-submit-general-manager': handleCapDetailSubmitGeneralManager(id); break;
     case 'cap-unit-choose-file': handleCapUnitChooseFile(id); break;
@@ -789,12 +805,12 @@ function ensureLeadReviewUi() {
       sentToUnitManagerAt: '',
       workflowComment: '',
       actionsOpen: false,
-      workflowVersion: 7,
+      workflowVersion: 8,
       overallComment: '',
       rowReviews: {}
     };
   }
-  if (!state.leadReviewUi.workflowVersion || state.leadReviewUi.workflowVersion < 7) {
+  if (!state.leadReviewUi.workflowVersion || state.leadReviewUi.workflowVersion < 8) {
     state.leadReviewUi.tab = 'report';
     state.leadReviewUi.reportSection = 'executive';
     state.leadReviewUi.downloadedAt = '';
@@ -803,7 +819,7 @@ function ensureLeadReviewUi() {
     state.leadReviewUi.reportDraftSavedAt = '';
     state.leadReviewUi.sentToUnitManagerAt = '';
   }
-  state.leadReviewUi.workflowVersion = 7;
+  state.leadReviewUi.workflowVersion = 8;
   if (!state.leadReviewUi.tab || state.leadReviewUi.tab === 'workflow') state.leadReviewUi.tab = 'report';
   if (!state.leadReviewUi.section) state.leadReviewUi.section = '1.';
   if (!state.leadReviewUi.rowReviews || typeof state.leadReviewUi.rowReviews !== 'object') state.leadReviewUi.rowReviews = {};
@@ -819,6 +835,23 @@ function ensureLeadReviewUi() {
   if (state.leadReviewUi.workflowComment === undefined || state.leadReviewUi.workflowComment === null) state.leadReviewUi.workflowComment = '';
   if (state.leadReviewUi.actionsOpen === undefined || state.leadReviewUi.actionsOpen === null) state.leadReviewUi.actionsOpen = false;
   return state.leadReviewUi;
+}
+
+function ensureLeadAssignedAuditsUi() {
+  if (typeof leadAssignedAuditsUiState === 'function') return leadAssignedAuditsUiState();
+  if (!state.leadAssignedAuditsUi) state.leadAssignedAuditsUi = {};
+  state.leadAssignedAuditsUi = Object.assign({
+    query: '',
+    status: 'all',
+    department: 'all',
+    auditType: 'all',
+    risk: 'all',
+    due: 'all',
+    stage: 'all',
+    advanced: false,
+    appliedAt: ''
+  }, state.leadAssignedAuditsUi || {});
+  return state.leadAssignedAuditsUi;
 }
 
 function leadReviewSectionIndex(sectionNo) {
@@ -933,6 +966,83 @@ function handleLeadReportFieldChange(field, target) {
   persistAfterAction();
 }
 
+function handleLeadAssignedFieldChange(field, target) {
+  var ui = ensureLeadAssignedAuditsUi();
+  var value = target && target.value !== undefined ? target.value : '';
+  if (field === 'lead-assigned-query') ui.query = value;
+  if (field === 'lead-assigned-status') ui.status = value || 'all';
+  if (field === 'lead-assigned-department') ui.department = value || 'all';
+  if (field === 'lead-assigned-audit-type') ui.auditType = value || 'all';
+  if (field === 'lead-assigned-risk') ui.risk = value || 'all';
+  if (field === 'lead-assigned-due') ui.due = value || 'all';
+  if (field === 'lead-assigned-stage') ui.stage = value || 'all';
+  persistAfterAction();
+}
+
+function handleLeadAssignedReset() {
+  state.leadAssignedAuditsUi = {
+    query: '',
+    status: 'all',
+    department: 'all',
+    auditType: 'all',
+    risk: 'all',
+    due: 'all',
+    stage: 'all',
+    advanced: false,
+    appliedAt: ''
+  };
+  persistAfterAction();
+  render();
+}
+
+function handleLeadAssignedApply() {
+  var ui = ensureLeadAssignedAuditsUi();
+  ui.appliedAt = new Date().toISOString();
+  persistAfterAction();
+  render();
+  toast('Filters applied', 'Assigned audits list updated.', 'ok');
+}
+
+function handleLeadAssignedMoreFilters() {
+  var ui = ensureLeadAssignedAuditsUi();
+  ui.advanced = !ui.advanced;
+  persistAfterAction();
+  render();
+}
+
+function handleLeadAssignedNew() {
+  openModal(modalShell('New audit assignment',
+    '<div class="lead-assigned-modal">' +
+      '<p><b>Draft assignment package</b></p>' +
+      '<div class="metaline">' +
+        metaItem('Operator', 'West Air (Pty) Ltd') +
+        metaItem('Department', 'OPS') +
+        metaItem('Audit type', 'Regular Surveillance') +
+        metaItem('Lead Inspector', ROLES.leadInspector.user) +
+      '</div>' +
+      '<p class="small muted mt-12">Demo only: this prepares a mock assignment record. No real notification, file storage, or backend workflow is created.</p>' +
+    '</div>',
+    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="nav" data-view="calendar">Open Calendar</button>',
+    false));
+}
+
+function handleLeadAssignedRowMenu(auditId) {
+  var rows = typeof leadAssignedAuditRows === 'function' ? leadAssignedAuditRows() : [];
+  var row = rows.filter(function (item) { return item.id === auditId || item.detailAuditId === auditId; })[0];
+  if (!row) return;
+  openModal(modalShell('Audit actions',
+    '<div class="lead-assigned-modal">' +
+      '<p><b>' + esc(row.id) + '</b> · ' + esc(row.operator) + '</p>' +
+      '<div class="metaline">' +
+        metaItem('Status', row.status) +
+        metaItem('Risk', row.risk) +
+        metaItem('Next due', row.dueDate + ' - ' + row.dueStage) +
+      '</div>' +
+    '</div>',
+    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="nav" data-view="lead-review" data-id="' + esc(row.detailAuditId) + '">Open Audit Workspace</button>',
+    false));
+}
+
 function leadReviewChecklistDownloadText(auditId) {
   var rows = typeof leadReviewAllRows === 'function' ? leadReviewAllRows() : [];
   var lines = [
@@ -964,7 +1074,7 @@ function leadReportDownloadText(auditId) {
     'Lead Inspector: John Lead Inspector',
     'Report Version: 1.0 (Draft)',
     'Checklist Progress: 60 / 60 (100%)',
-    'Approval Chain: Lead Inspector -> Unit Manager -> General Manager -> Executive Director (ED)',
+    'Approval Chain: Inspector -> Preliminary Report -> Lead Inspector Review -> Department Manager Review -> Preliminary Report Released to Service Provider if CAP required -> Service Provider CAP Completion -> Lead Inspector Finalizes Report -> Department Manager Final Approval -> Executive Director / GM Approval -> Final Report Issued -> CAP Process Starts -> Inspector verifies CAP -> Lead Inspector recommends closure -> Department Manager approves closure',
     '',
     'Executive Summary',
     'The inspection was conducted between 15 - 18 Jun 2026 at SkyCargo Air facilities as part of the scheduled routine inspection.',
@@ -978,7 +1088,7 @@ function leadReportDownloadText(auditId) {
     'Observations: No CAP required.',
     '',
     'Service Provider Release',
-    'After ED approval, the final report is released to the service provider with the above CAP closure deadlines.',
+    'After Executive Director / GM approval, the final report is issued to the service provider and the CAP Process Starts with the above CAP closure deadlines.',
     '',
     'Workflow Comment',
     ui.workflowComment || 'No workflow comment entered.'
@@ -1025,29 +1135,28 @@ function handleLeadReviewDownload(auditId) {
 function handleLeadReportGenerate(auditId) {
   var ui = ensureLeadReviewUi();
   ui.reportGeneratedAt = new Date().toISOString();
-  ui.finalizedAt = ui.finalizedAt || ui.reportGeneratedAt;
   ui.reportDraftSavedAt = ui.reportDraftSavedAt || ui.reportGeneratedAt;
   ui.tab = 'report';
   ui.actionsOpen = false;
-  addLog('Lead final report draft generated', auditId || 'INS-2026-015');
+  addLog('Lead preliminary report draft generated', auditId || 'INS-2026-015');
   persistAfterAction();
   render();
-  toast('Report draft generated', 'System generated the final report draft for Lead Inspector review.', 'ok');
+  toast('Preliminary report draft generated', 'System generated the preliminary report draft for Lead Inspector review.', 'ok');
 }
 
 function handleLeadReportPreview(auditId) {
   var ui = ensureLeadReviewUi();
   ui.actionsOpen = false;
   persistAfterAction();
-  openModal(modalShell('Final report preview',
+  openModal(modalShell('Preliminary report preview',
     '<div class="lead-preview-modal">' +
-      '<h3>Final Report - Routine Inspection</h3>' +
+      '<h3>Preliminary Report - Routine Inspection</h3>' +
       '<p class="muted">SkyCargo Air · INS-2026-015 · Draft v1.0</p>' +
-      '<p>The report consolidates 8 findings, CAP requirements, evidence references, and Lead Inspector conclusions before Unit Manager, General Manager, and ED approval.</p>' +
+      '<p>The report consolidates 8 findings, CAP requirements, evidence references, and Lead Inspector conclusions before Department Manager review and any required Service Provider CAP completion.</p>' +
       '<div class="lead-preview-deadlines"><span>Level 1: 14 days</span><span>Level 2: 90 days</span><span>Observation: No CAP</span></div>' +
-      '<p class="small muted">After ED approval, this final report is released to the service provider with these CAP closure deadlines.</p>' +
+      '<p class="small muted">After Department Manager review, the Service Provider receives the Preliminary Report only if CAP is required. After CAP completion within the window, the Lead Inspector prepares the Final Report.</p>' +
     '</div>',
-    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="lead-report-send-unit-manager" data-id="' + esc(auditId || 'INS-2026-015') + '">Submit to Unit Manager</button>',
+    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="lead-report-send-unit-manager" data-id="' + esc(auditId || 'INS-2026-015') + '">Submit to Department Manager</button>',
     false));
 }
 
@@ -1057,10 +1166,10 @@ function handleLeadReportSaveDraft(auditId) {
   ui.reportGeneratedAt = ui.reportGeneratedAt || ui.reportDraftSavedAt;
   ui.tab = 'report';
   ui.actionsOpen = false;
-  addLog('Lead final report draft saved', auditId || 'INS-2026-015');
+  addLog('Lead preliminary report draft saved', auditId || 'INS-2026-015');
   persistAfterAction();
   render();
-  toast('Draft saved', 'Final report draft was saved in this browser for the demo.', 'ok');
+  toast('Draft saved', 'Preliminary report draft was saved in this browser for the demo.', 'ok');
 }
 
 function handleLeadReportActionsToggle() {
@@ -1080,7 +1189,7 @@ function handleLeadReportSendUnitManager(auditId) {
       persistAfterAction();
       closeModal();
       render();
-      toast('Already sent', 'This report is already in the Unit Manager review queue.', 'info');
+      toast('Already sent', 'This report is already in the Department Manager review queue.', 'info');
       return;
     }
     report.approval.currentIndex = 0;
@@ -1092,23 +1201,22 @@ function handleLeadReportSendUnitManager(auditId) {
       applyReportApprovalDecision(report, {
         decision: 'forward',
         actor: { role: 'leadInspector', name: ROLES.leadInspector.user },
-        comment: ui.workflowComment || 'Final report draft prepared and sent to Unit Manager review.'
+        comment: ui.workflowComment || 'Preliminary report draft prepared and sent to Department Manager review before any required Service Provider CAP completion.'
       });
     }
     ui.sentToUnitManagerAt = new Date().toISOString();
     ui.reportGeneratedAt = ui.reportGeneratedAt || ui.sentToUnitManagerAt;
-    ui.finalizedAt = ui.finalizedAt || ui.sentToUnitManagerAt;
     ui.reportDraftSavedAt = ui.reportDraftSavedAt || ui.sentToUnitManagerAt;
     ui.tab = 'report';
     ui.actionsOpen = false;
-    addLog('Final report sent to Unit Manager', auditId || 'INS-2026-015');
-    pushNotification('manager', 'RPT', 'SMS Oversight Audit final report draft is waiting for Unit Manager review.');
+    addLog('Preliminary report sent to Department Manager', auditId || 'INS-2026-015');
+    pushNotification('manager', 'RPT', 'SMS Oversight Audit preliminary report draft is waiting for Department Manager review.');
     persistAfterAction();
     closeModal();
     render();
-    toast('Sent to Unit Manager', 'Final report draft moved to Unit Manager review.', 'ok');
+    toast('Sent to Department Manager', 'Preliminary report draft moved to Department Manager review.', 'ok');
   } catch (err) {
-    toast('Send unavailable', err && err.message ? err.message : 'Report could not be sent to Unit Manager.', 'warn');
+    toast('Send unavailable', err && err.message ? err.message : 'Report could not be sent to Department Manager.', 'warn');
   }
 }
 
@@ -1501,7 +1609,17 @@ function ensureCapTrackingUi() {
       enforcementJustification: '',
       internalComment: '',
       inspectorReviewSentAt: '',
+      inspectorRootCause: 'yes',
+      inspectorActions: 'yes',
+      inspectorEvidence: 'yes',
+      inspectorImplementation: 'yes',
+      inspectorOnsite: 'no',
+      inspectorAssessment: 'acceptable',
+      inspectorComments: 'The CAP adequately addresses the root cause. Evidence provided is sufficient and implementation has been verified through records. No on-site verification is required.',
+      inspectorReviewDate: '2025-05-19',
       leadInspectorRecommendationAt: '',
+      leadDecision: 'recommend_closure',
+      leadComments: 'The corrective and preventive actions adequately address the root cause. Evidence provided is satisfactory. Recommend closure.',
       unitEffectiveness: 'partially_effective',
       unitRecommendationType: 'administrative_penalty',
       unitRecommendationLevel: 'administrative_penalty',
@@ -1509,6 +1627,8 @@ function ensureCapTrackingUi() {
       unitJustification: 'The CAP has initiated corrective actions; however, updated training records are still incomplete for multiple staff members. Therefore, an administrative penalty is recommended to ensure timely compliance.',
       unitAttachmentName: '',
       unitManagerRecommendationAt: '',
+      departmentManagerApprovedAt: '',
+      findingClosedAt: '',
       secondReportPreparedAt: '',
       submittedToUnitManagerAt: '',
       submittedToGeneralManagerAt: ''
@@ -1517,7 +1637,7 @@ function ensureCapTrackingUi() {
   if (['overview', 'timeline', 'communications', 'documents'].indexOf(state.capTrackingUi.tab) === -1) {
     state.capTrackingUi.tab = 'overview';
   }
-  if (['details', 'history', 'communications', 'documents', 'enforcement'].indexOf(state.capTrackingUi.detailTab) === -1) {
+  if (['details', 'evidence', 'assessment', 'history', 'communications', 'documents', 'enforcement'].indexOf(state.capTrackingUi.detailTab) === -1) {
     state.capTrackingUi.detailTab = 'details';
   }
   if (state.capTrackingUi.reminderSentAt === undefined || state.capTrackingUi.reminderSentAt === null) state.capTrackingUi.reminderSentAt = '';
@@ -1530,7 +1650,17 @@ function ensureCapTrackingUi() {
   if (state.capTrackingUi.enforcementJustification === undefined || state.capTrackingUi.enforcementJustification === null) state.capTrackingUi.enforcementJustification = '';
   if (state.capTrackingUi.internalComment === undefined || state.capTrackingUi.internalComment === null) state.capTrackingUi.internalComment = '';
   if (state.capTrackingUi.inspectorReviewSentAt === undefined || state.capTrackingUi.inspectorReviewSentAt === null) state.capTrackingUi.inspectorReviewSentAt = '';
+  if (!state.capTrackingUi.inspectorRootCause) state.capTrackingUi.inspectorRootCause = 'yes';
+  if (!state.capTrackingUi.inspectorActions) state.capTrackingUi.inspectorActions = 'yes';
+  if (!state.capTrackingUi.inspectorEvidence) state.capTrackingUi.inspectorEvidence = 'yes';
+  if (!state.capTrackingUi.inspectorImplementation) state.capTrackingUi.inspectorImplementation = 'yes';
+  if (!state.capTrackingUi.inspectorOnsite) state.capTrackingUi.inspectorOnsite = 'no';
+  if (!state.capTrackingUi.inspectorAssessment) state.capTrackingUi.inspectorAssessment = 'acceptable';
+  if (state.capTrackingUi.inspectorComments === undefined || state.capTrackingUi.inspectorComments === null) state.capTrackingUi.inspectorComments = 'The CAP adequately addresses the root cause. Evidence provided is sufficient and implementation has been verified through records. No on-site verification is required.';
+  if (!state.capTrackingUi.inspectorReviewDate) state.capTrackingUi.inspectorReviewDate = '2025-05-19';
   if (state.capTrackingUi.leadInspectorRecommendationAt === undefined || state.capTrackingUi.leadInspectorRecommendationAt === null) state.capTrackingUi.leadInspectorRecommendationAt = '';
+  if (!state.capTrackingUi.leadDecision) state.capTrackingUi.leadDecision = 'recommend_closure';
+  if (state.capTrackingUi.leadComments === undefined || state.capTrackingUi.leadComments === null) state.capTrackingUi.leadComments = 'The corrective and preventive actions adequately address the root cause. Evidence provided is satisfactory. Recommend closure.';
   if (!state.capTrackingUi.unitEffectiveness) state.capTrackingUi.unitEffectiveness = 'partially_effective';
   if (!state.capTrackingUi.unitRecommendationType) state.capTrackingUi.unitRecommendationType = 'administrative_penalty';
   if (!state.capTrackingUi.unitRecommendationLevel || state.capTrackingUi.unitRecommendationLevel === 'level2') state.capTrackingUi.unitRecommendationLevel = 'administrative_penalty';
@@ -1538,6 +1668,8 @@ function ensureCapTrackingUi() {
   if (state.capTrackingUi.unitJustification === undefined || state.capTrackingUi.unitJustification === null) state.capTrackingUi.unitJustification = '';
   if (state.capTrackingUi.unitAttachmentName === undefined || state.capTrackingUi.unitAttachmentName === null) state.capTrackingUi.unitAttachmentName = '';
   if (state.capTrackingUi.unitManagerRecommendationAt === undefined || state.capTrackingUi.unitManagerRecommendationAt === null) state.capTrackingUi.unitManagerRecommendationAt = '';
+  if (state.capTrackingUi.departmentManagerApprovedAt === undefined || state.capTrackingUi.departmentManagerApprovedAt === null) state.capTrackingUi.departmentManagerApprovedAt = '';
+  if (state.capTrackingUi.findingClosedAt === undefined || state.capTrackingUi.findingClosedAt === null) state.capTrackingUi.findingClosedAt = '';
   if (state.capTrackingUi.secondReportPreparedAt === undefined || state.capTrackingUi.secondReportPreparedAt === null) state.capTrackingUi.secondReportPreparedAt = '';
   if (state.capTrackingUi.submittedToUnitManagerAt === undefined || state.capTrackingUi.submittedToUnitManagerAt === null) state.capTrackingUi.submittedToUnitManagerAt = '';
   if (state.capTrackingUi.submittedToGeneralManagerAt === undefined || state.capTrackingUi.submittedToGeneralManagerAt === null) state.capTrackingUi.submittedToGeneralManagerAt = '';
@@ -1554,7 +1686,7 @@ function handleCapTrackingTab(tab) {
 function handleCapTrackingReminder() {
   var ui = ensureCapTrackingUi();
   ui.reminderSentAt = logTimestamp();
-  pushNotification('auditee', 'CAP', 'SkyCargo Air received a CAP reminder for the ED-approved final report package.');
+  pushNotification('auditee', 'CAP', 'SkyCargo Air received a CAP reminder for the issued final report package.');
   addLog('CAP reminder sent to service provider', 'INS-2026-015');
   persistAfterAction();
   render();
@@ -1564,8 +1696,8 @@ function handleCapTrackingReminder() {
 function handleCapTrackingViewReport() {
   openModal(modalShell('Final report distribution', '' +
     '<div class="lead-preview-modal">' +
-      '<p><b>SMS Oversight Audit Final Report</b> was approved by the Executive Director on <b>22 Jun 2026</b>.</p>' +
-      '<p>The system automatically sent the approved final report and CAP request package to <b>SkyCargo Air</b>. Inspectors now track every required corrective action from this CAP Tracking screen.</p>' +
+      '<p><b>SMS Oversight Audit Final Report</b> was issued after Executive Director / GM approval on <b>22 Jun 2026</b>.</p>' +
+      '<p>The system automatically sent the issued final report and CAP request package to <b>SkyCargo Air</b>. Inspectors now track every required corrective action from this CAP Tracking screen.</p>' +
       '<div class="lead-preview-deadlines"><span>Level 1: 14 days</span><span>Level 2: 90 days</span><span>Observation: No CAP</span></div>' +
     '</div>',
     '<button class="btn" data-act="close-modal">Close</button>' +
@@ -1612,7 +1744,7 @@ function handleCapTrackingRowAction(id, action) {
     return;
   }
   openModal(modalShell(title, '' +
-    '<p><b>' + esc(id || 'Finding') + '</b> is tracked under the ED-approved final report sent to SkyCargo Air.</p>' +
+    '<p><b>' + esc(id || 'Finding') + '</b> is tracked under the issued final report sent to SkyCargo Air after Executive Director / GM approval.</p>' +
     '<p class="muted">This demo opens a review summary only. CAP decisions and evidence closure remain in the inspector review workflow.</p>',
     '<button class="btn" data-act="close-modal">Close</button>', false));
 }
@@ -1638,6 +1770,16 @@ function handleCapDetailFieldChange(field, target) {
   if (field === 'cap-unit-recommendation-level') ui.unitRecommendationLevel = value || 'administrative_penalty';
   if (field === 'cap-unit-compliance-due-date') ui.unitComplianceDueDate = value || '2026-09-20';
   if (field === 'cap-unit-justification') ui.unitJustification = value;
+  if (field === 'cap-inspector-root-cause') ui.inspectorRootCause = value || 'yes';
+  if (field === 'cap-inspector-actions') ui.inspectorActions = value || 'yes';
+  if (field === 'cap-inspector-evidence') ui.inspectorEvidence = value || 'yes';
+  if (field === 'cap-inspector-implementation') ui.inspectorImplementation = value || 'yes';
+  if (field === 'cap-inspector-onsite') ui.inspectorOnsite = value || 'no';
+  if (field === 'cap-inspector-assessment') ui.inspectorAssessment = value || 'acceptable';
+  if (field === 'cap-inspector-comments') ui.inspectorComments = value;
+  if (field === 'cap-inspector-review-date') ui.inspectorReviewDate = value || '2025-05-19';
+  if (field === 'cap-lead-decision') ui.leadDecision = value || 'recommend_closure';
+  if (field === 'cap-lead-comments') ui.leadComments = value;
   persistAfterAction();
   if (target && (target.tagName === 'SELECT' || target.type === 'radio')) render();
 }
@@ -1653,25 +1795,91 @@ function handleCapDetailPrepareSecondReport(id) {
   var findingId = id || ui.selectedFindingId || state.params.findingId || 'F-2026-002';
   ui.selectedFindingId = findingId;
   ui.inspectorReviewSentAt = logTimestamp();
-  ui.leadInspectorRecommendationAt = ui.leadInspectorRecommendationAt || '2026-07-05 11:25';
-  pushNotification('leadInspector', 'CAP', 'Inspector CAP review for ' + findingId + ' is ready for Lead Inspector validation.');
+  ui.leadInspectorRecommendationAt = '';
+  ui.submittedToUnitManagerAt = '';
+  pushNotification('leadInspector', 'CAP', 'Inspector CAP review for ' + findingId + ' is ready for Lead Inspector recommendation.');
   addLog('Inspector CAP review sent to Lead Inspector', findingId);
   persistAfterAction();
   render();
-  toast('Sent to Lead Inspector', findingId + ' was sent to the Lead Inspector review stage in this demo.', 'ok');
+  toast('Sent to Lead Inspector', findingId + ' was sent to the Lead Inspector recommendation stage in this demo.', 'ok');
+}
+
+function handleCapDetailRequestRevision(id) {
+  var ui = ensureCapTrackingUi();
+  var findingId = id || ui.selectedFindingId || state.params.findingId || 'F-2026-002';
+  ui.selectedFindingId = findingId;
+  ui.inspectorAssessment = 'request_revision';
+  ui.reviewOutcome = 'needs_action';
+  ui.reviewStatus = 'not_effective';
+  pushNotification('auditee', 'CAP', 'Inspector requested a CAP revision for ' + findingId + '.');
+  addLog('Inspector requested CAP revision', findingId);
+  persistAfterAction();
+  render();
+  toast('Revision requested', 'The service provider would receive a CAP revision request in this demo.', 'warn');
+}
+
+function handleCapDetailRequestMoreEvidence(id) {
+  var ui = ensureCapTrackingUi();
+  var findingId = id || ui.selectedFindingId || state.params.findingId || 'F-2026-002';
+  ui.selectedFindingId = findingId;
+  ui.inspectorAssessment = 'request_more_evidence';
+  ui.reviewOutcome = 'needs_action';
+  pushNotification('auditee', 'CAP', 'Inspector requested more CAP evidence for ' + findingId + '.');
+  addLog('Inspector requested more CAP evidence', findingId);
+  persistAfterAction();
+  render();
+  toast('More evidence requested', 'The service provider would receive an evidence request in this demo.', 'warn');
 }
 
 function handleCapDetailSubmitGeneralManager(id) {
   var ui = ensureCapTrackingUi();
   var findingId = id || ui.selectedFindingId || state.params.findingId || 'F-2026-002';
   ui.selectedFindingId = findingId;
-  ui.unitManagerRecommendationAt = logTimestamp();
-  ui.submittedToGeneralManagerAt = logTimestamp();
-  pushNotification('gm', 'CAP', 'Unit Manager enforcement recommendation for ' + findingId + ' is ready for General Manager review.');
-  addLog('Unit Manager recommendation submitted to General Manager', findingId);
+  var approvedAt = logTimestamp();
+  ui.unitManagerRecommendationAt = approvedAt;
+  ui.departmentManagerApprovedAt = approvedAt;
+  ui.findingClosedAt = approvedAt;
+  ui.submittedToGeneralManagerAt = '';
+  pushNotification('leadInspector', 'CAP', 'Department Manager approved the closure decision for ' + findingId + '.');
+  addLog('Department Manager approved CAP closure decision', findingId);
   persistAfterAction();
   render();
-  toast('Submitted to General Manager', 'The Unit Manager recommendation is now staged for GM review and possible adjustment.', 'ok');
+  toast('Finding closure approved', 'The Department Manager closure approval moved this CAP to Finding Closed in the demo.', 'ok');
+}
+
+function handleCapLeadSave(id) {
+  var ui = ensureCapTrackingUi();
+  ui.selectedFindingId = id || ui.selectedFindingId || state.params.findingId || 'F-2026-002';
+  persistAfterAction();
+  render();
+  toast('Draft saved', 'Lead Inspector CAP recommendation draft was saved in this browser.', 'ok');
+}
+
+function handleCapLeadReturn(id) {
+  var ui = ensureCapTrackingUi();
+  var findingId = id || ui.selectedFindingId || state.params.findingId || 'F-2026-002';
+  ui.selectedFindingId = findingId;
+  ui.leadInspectorRecommendationAt = '';
+  ui.submittedToUnitManagerAt = '';
+  ui.inspectorReviewSentAt = '';
+  pushNotification('inspector', 'CAP', 'Lead Inspector returned ' + findingId + ' for inspector re-assessment.');
+  addLog('Lead Inspector returned CAP review to Inspector', findingId);
+  persistAfterAction();
+  render();
+  toast('Returned to Inspector', findingId + ' was returned for inspector re-assessment in this demo.', 'warn');
+}
+
+function handleCapLeadSubmit(id) {
+  var ui = ensureCapTrackingUi();
+  var findingId = id || ui.selectedFindingId || state.params.findingId || 'F-2026-002';
+  ui.selectedFindingId = findingId;
+  ui.leadInspectorRecommendationAt = logTimestamp();
+  ui.submittedToUnitManagerAt = ui.leadInspectorRecommendationAt;
+  pushNotification('manager', 'CAP', 'Lead Inspector recommendation for ' + findingId + ' is ready for Department Manager closure approval.');
+  addLog('Lead Inspector CAP recommendation submitted', findingId);
+  persistAfterAction();
+  render();
+  toast('Recommendation sent', 'Lead Inspector recommendation was sent to Department Manager approval.', 'ok');
 }
 
 function handleCapDetailAddComment(id) {
@@ -1691,7 +1899,7 @@ function handleCapDetailAddComment(id) {
 function handleCapUnitChooseFile(id) {
   var ui = ensureCapTrackingUi();
   ui.selectedFindingId = id || ui.selectedFindingId || state.params.findingId || 'F-2026-002';
-  ui.unitAttachmentName = 'unit_manager_recommendation_note.pdf';
+  ui.unitAttachmentName = 'department_manager_closure_note.pdf';
   persistAfterAction();
   render();
   toast('Attachment staged', 'Mock attachment filename added. No real file was uploaded.', 'ok');
@@ -1699,9 +1907,9 @@ function handleCapUnitChooseFile(id) {
 
 function handleCapUnitViewInspectorReport(id) {
   var findingId = id || ensureCapTrackingUi().selectedFindingId || 'F-2026-002';
-  openModal(modalShell('2nd final report by inspectors', '' +
-    '<p><b>' + esc(findingId) + '</b> was reviewed by the Inspector and validated for Unit Manager recommendation.</p>' +
-    '<p class="muted">The Inspector concluded that the CAP needs further action because training records remain incomplete. This demo opens a report summary only.</p>',
+  openModal(modalShell('Inspector review summary', '' +
+    '<p><b>' + esc(findingId) + '</b> was reviewed by the Inspector and prepared for Lead Inspector recommendation.</p>' +
+    '<p class="muted">The Inspector concluded that the CAP needs further verification because training records remain incomplete. This demo opens a report summary only.</p>',
     '<button class="btn" data-act="close-modal">Close</button>' +
     '<button class="btn btn--primary" data-act="nav" data-view="cap-review-detail" data-id="' + esc(findingId) + '">Open Inspector Review</button>', true));
 }
@@ -1729,9 +1937,9 @@ function handleCapTrackingQuickAction(action) {
   }
   if (action === 'enforcement') {
     openModal(modalShell('Enforcement matrix', '' +
-      '<p>CAP deadlines are tracked from the final report issue date after ED approval.</p>' +
+      '<p>CAP deadlines are tracked from the Final Report Issued date after Executive Director / GM approval.</p>' +
       '<div class="lead-preview-deadlines"><span>Level 1: 14 days</span><span>Level 2: 90 days</span><span>Observation: No CAP</span></div>' +
-      '<p class="muted">This is demo guidance only. Enforcement decisions are not automatic.</p>',
+      '<p class="muted">Enforcement decisions follow the configured governance route and are not automatic.</p>',
       '<button class="btn" data-act="close-modal">Close</button>', false));
     return;
   }
@@ -2192,8 +2400,8 @@ function handleReportApproval(id, decision) {
     });
     addLog('Report approval decision recorded', report.id);
     if (report.finalLocked) {
-      addLog('Audit closed after ED report approval', report.auditId);
-      toast('Final report locked', 'Mock final report generated and audit closed after ED approval.', 'ok');
+      addLog('Audit closed after Executive Director / GM report approval', report.auditId);
+      toast('Final report issued', 'Mock final report issued and audit closed after Executive Director / GM approval.', 'ok');
     } else {
       toast('Report decision recorded', report.id + ' — ' + approvalSummary(report).statusLabel + '.', 'ok');
     }
@@ -2309,10 +2517,13 @@ document.addEventListener('change', function (e) {
   if (field === 'lead-report-rating' || field === 'lead-report-risk') {
     handleLeadReportFieldChange(field, e.target);
   }
+  if (field && field.indexOf('lead-assigned-') === 0) {
+    handleLeadAssignedFieldChange(field, e.target);
+  }
   if (field && field.indexOf('cap-review-') === 0) {
     handleCapReviewFieldChange(field, e.target);
   }
-  if (field && (field.indexOf('cap-detail-') === 0 || field.indexOf('cap-unit-') === 0)) {
+  if (field && (field.indexOf('cap-detail-') === 0 || field.indexOf('cap-unit-') === 0 || field.indexOf('cap-lead-') === 0 || field.indexOf('cap-inspector-') === 0)) {
     handleCapDetailFieldChange(field, e.target);
   }
 });
@@ -2334,13 +2545,16 @@ document.addEventListener('input', function (e) {
   if (field === 'lead-workflow-comment') {
     handleLeadWorkflowComment(e.target);
   }
+  if (field === 'lead-assigned-query') {
+    handleLeadAssignedFieldChange(field, e.target);
+  }
   if (field === 'cap-review-search') {
     ensureCapReviewUi().query = e.target.value || '';
   }
   if (field === 'cap-review-comment') {
     handleCapReviewCommentInput(e.target);
   }
-  if (field === 'cap-detail-review-comments' || field === 'cap-detail-enforcement-justification' || field === 'cap-detail-internal-comment' || field === 'cap-unit-justification') {
+  if (field === 'cap-detail-review-comments' || field === 'cap-detail-enforcement-justification' || field === 'cap-detail-internal-comment' || field === 'cap-unit-justification' || field === 'cap-lead-comments' || field === 'cap-inspector-comments') {
     handleCapDetailFieldChange(field, e.target);
   }
 });

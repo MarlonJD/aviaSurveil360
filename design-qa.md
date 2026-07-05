@@ -9,13 +9,23 @@
 - Interaction evidence: KPI filter, Status filter, Clear Filters, CAP Details/Evidence/History tabs, evidence file modal, Return for Revision comment requirement, and Submit Decision were exercised in browser QA.
 - Result: passed; no page errors or console errors; only CAP Reviews remains active in the sidebar; compact evidence table has no horizontal overflow.
 
+**Lead Inspector Assigned Audits QA**
+- Source visual truth: `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-8cc62a43-8e8b-424f-b675-a53846f7f5e4.png`
+- Desktop screenshot: `/private/tmp/avia-lead-assigned-audits-desktop.png`
+- Mobile screenshot: `/private/tmp/avia-lead-assigned-audits-mobile.png`
+- Viewports: 1280 x 720 and 390 x 844.
+- Flow tested: app loads -> Lead Inspector role -> Assigned Audits landing -> filters -> New Audit Assignment modal -> open audit workspace.
+- Interaction evidence: More Filters opens Due Window and Report Stage filters, search for `FlyNamibia` plus Apply Filters reduces the table to 1 audit, Reset returns to `Showing 1 to 8 of 18 audits`, New Audit Assignment opens the mock assignment package modal, and `AUD-2025-045` opens the Final Report workspace.
+- Result: passed; Lead Inspector now defaults to a simpler Assigned Audits table instead of the final report composer. The final report editor remains available after selecting an audit, and the page has no document-level horizontal overflow on desktop or 390px mobile; the wide audit table scrolls inside its own wrapper on mobile.
+
 **Lead Inspector Final Report QA**
 - Source visual truth: `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-98e4fb72-2a0b-4acb-ae8a-0a941954a643.png`
-- Desktop screenshot: `/private/tmp/avia-lead-final-report-smoke-fit.png`
-- Viewport: 1280 x 720.
-- Flow tested: app loads -> Lead Inspector role -> Final Report - Routine Inspection -> save draft -> submit to Unit Manager.
-- Interaction evidence: Preview Report modal, Save Draft, report section navigation, CAP deadline text, Submit to Unit Manager, submitted state, Lead Inspector completed state, and Unit Manager in-review state were exercised in browser QA.
-- Result: passed; Lead Inspector now defaults to the final report composer, shows the Unit Manager -> General Manager -> ED approval path, and clearly carries CAP closure deadlines of Level 1 = 14 days, Level 2 = 90 days, Observation = No CAP before service provider release after ED approval.
+- Desktop screenshot: `/private/tmp/avia-final-report-department-manager-flow-desktop.png`
+- Mobile viewport screenshot: `/private/tmp/avia-final-report-department-manager-flow-mobile.png`
+- Viewports: 1280 x 720 and 390 x 844.
+- Flow tested: app loads -> Lead Inspector role -> Assigned Audits -> selected audit -> Final Report - Routine Inspection -> save draft -> submit to Department Manager.
+- Interaction evidence: Preview Report modal, Save Draft, report section navigation, CAP deadline text, Submit to Department Manager, submitted state, Department Manager review, required Executive Director / GM Approval, and Final Report Issued state were exercised in browser QA.
+- Result: passed; the selected-audit final report workspace shows the approved report sequence: Inspector -> Preliminary Report -> Lead Inspector Review -> Department Manager Review -> Service Provider Comments / Factual Accuracy -> Lead Inspector Finalizes Report -> Department Manager Approval -> Executive Director / GM Approval -> Final Report Issued -> CAP Process Starts -> Inspector verifies CAP -> Lead Inspector recommends closure -> Department Manager approves closure. CAP closure deadlines remain Level 1 = 14 days, Level 2 = 90 days, Observation = No CAP.
 
 **Source Visual Truth**
 - `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-d40c0afc-3b52-4767-adbd-f181d1db159c.png`
@@ -55,8 +65,8 @@
 - Desktop screenshot: `/private/tmp/avia-lead-cap-tracking-smoke.png`
 - Viewport: 1536 x 900.
 - Flow tested: app loads -> Lead Inspector role -> CAP Reviews -> CAP Tracking - Service Provider.
-- Interaction evidence: Send Reminder writes a visible reminder state and toast, View Final Report opens the ED-approved distribution modal, Documents tab shows the sent final report/CAP package documents, and the F-2026-004 Escalate row action opens the overdue CAP escalation modal.
-- Process evidence: the screen states that the final report was approved by the Executive Director and sent to SkyCargo Air on 22 Jun 2026; Level 1 = 14 days, Level 2 = 90 days, Observation = No CAP; CAP Process Overview shows Final Report Approved -> Sent to Service Provider -> CAP Submission in progress.
+- Interaction evidence: Send Reminder writes a visible reminder state and toast, View Final Report opens the issued final report distribution modal, Documents tab shows the sent final report/CAP package documents, and the F-2026-004 Escalate row action opens the overdue CAP escalation modal.
+- Process evidence: the screen states that the Final Report Issued after Executive Director / GM approval and was sent to SkyCargo Air on 22 Jun 2026; Level 1 = 14 days, Level 2 = 90 days, Observation = No CAP; CAP Process Overview shows Final Report Issued -> CAP Process Starts -> CAP Submitted -> Inspector verifies CAP -> Lead Inspector recommends closure -> Department Manager approves closure -> Finding Closed.
 - Regression evidence: Inspector CAP Reviews remains on the original review workflow and does not show the Lead Inspector tracking table.
 - Result: passed; no console errors or warnings; no page-level horizontal overflow on desktop or 390px mobile.
 
@@ -66,18 +76,18 @@
 - Mobile screenshot: `/private/tmp/avia-cap-review-detail-mobile.png`
 - Viewports: 1536 x 900 and 390 x 844.
 - Flow tested: app loads with existing Lead Inspector demo state -> CAP Reviews -> F-2026-002 View CAP -> CAP Review - Finding F-2026-002 detail.
-- Interaction evidence: F-2026-002 row opens a detail screen instead of a modal, Finding Details and Enforcement Process tabs work, Prepare 2nd Final Report marks the Unit Manager stage ready, Submit to General Manager marks the GM stage in review, and Back to CAP Tracking returns to the CAP Tracking table.
-- Process evidence: the page shows the prior finding, service-provider CAP package, 1st review summary, 2nd final report workflow, Unit Manager recommendation, General Manager review stage, ED final decision stage, and enforcement options when the CAP is not effective.
+- Interaction evidence: F-2026-002 row opens a detail screen instead of a modal, Finding Details and Enforcement Process tabs work, Send Review to Lead Inspector marks the Lead Inspector Recommendation stage ready, Open Department Manager Approval routes to the manager closure decision screen, and Back to CAP Tracking returns to the CAP Tracking table.
+- Process evidence: the page shows the prior finding, service-provider CAP package, review summary, Inspector Review, Lead Inspector Recommendation, Department Manager Approval, Finding Closed, and optional escalation guidance when the CAP is not effective.
 - Result: passed; no console errors or warnings; no page-level horizontal overflow on desktop or 390px mobile.
 
-**Unit Manager CAP Review QA**
+**Department Manager CAP Approval QA**
 - Source visual truth: `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-9190883d-8f82-4244-b0b1-0976fecdfb2a.png`
-- Desktop screenshot: `/private/tmp/avia-unit-manager-review-desktop.png`
-- Mobile screenshot: `/private/tmp/avia-unit-manager-review-mobile.png`
+- Desktop screenshot: `/private/tmp/avia-cap-department-manager-closure-desktop.png`
+- Mobile screenshot: `/private/tmp/avia-cap-department-manager-closure-mobile.png`
 - Viewports: 1536 x 900 and 390 x 844.
-- Flow tested: app loads -> Manager role -> CAP Reviews -> Unit Manager Review - Finding F-2026-002.
-- Interaction evidence: License Renewal option selected, mock recommendation attachment staged, Submit Recommendation to General Manager moves Unit Manager to completed and General Manager Review to in review.
-- Process evidence: Inspector reviews whether the CAP closes the finding, sends the review to Lead Inspector, and Unit Manager then recommends enforcement/penalty, operational license action, or initial application decision for General Manager and ED review.
+- Flow tested: app loads -> Manager role -> CAP Reviews -> Department Manager Approval - Finding F-2026-002.
+- Interaction evidence: Closure decision selected, mock approval attachment staged, Approve Closure Decision marks Department Manager Approval complete and moves the workflow to Finding Closed.
+- Process evidence: Inspector verifies CAP evidence, sends the review to Lead Inspector, and the Lead Inspector recommendation goes to Department Manager closure approval. Report issuance already requires Executive Director / GM Approval before the CAP process starts.
 - Result: passed; no console errors or warnings; no page-level horizontal overflow on desktop or mobile.
 
 **final result: passed**

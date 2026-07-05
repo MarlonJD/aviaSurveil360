@@ -28,28 +28,36 @@ assert.equal(context.approvalSummary(report).ownerRole, 'manager');
 context.applyReportApprovalDecision(report, {
   decision: 'approve',
   actor: { role: 'manager', name: context.ROLES.manager.user },
-  comment: 'DM approved with recommendation-only enforcement note.',
+  comment: 'Department Manager released the preliminary report to the Service Provider.',
   enforcementRecommendation: { type: 'Warning', reason: 'Repeated training-record issue; human review required.' }
 });
 assert.equal(report.enforcementRecommendation.type, 'Warning');
-assert.equal(context.approvalSummary(report).ownerRole, 'gm');
-
-assert.throws(
-  () => context.applyReportApprovalDecision(report, { decision: 'return', actor: { role: 'gm', name: context.ROLES.gm.user }, reason: '' }),
-  /reason required/i,
-  'Report return requires a reason'
-);
+assert.equal(context.approvalSummary(report).ownerRole, 'leadInspector');
+assert.equal(report.finalLocked, false);
+assert.equal(report.status, 'released_to_service_provider');
 
 context.applyReportApprovalDecision(report, {
-  decision: 'return',
-  actor: { role: 'gm', name: context.ROLES.gm.user },
-  reason: 'Clarify recommendation wording.'
+  decision: 'forward',
+  actor: { role: 'leadInspector', name: context.ROLES.leadInspector.user },
+  comment: 'Service Provider CAP completion window closed; prepare Final Report.'
 });
 assert.equal(context.approvalSummary(report).ownerRole, 'manager');
+assert.equal(report.status, 'submitted_to_dm_final');
 
-context.applyReportApprovalDecision(report, { decision: 'approve', actor: { role: 'manager', name: context.ROLES.manager.user }, comment: 'Clarified.' });
-context.applyReportApprovalDecision(report, { decision: 'approve', actor: { role: 'gm', name: context.ROLES.gm.user }, comment: 'GM approved.' });
-context.applyReportApprovalDecision(report, { decision: 'approve', actor: { role: 'executiveDirector', name: context.ROLES.executiveDirector.user }, comment: 'ED approved final report.' });
+context.applyReportApprovalDecision(report, {
+  decision: 'approve',
+  actor: { role: 'manager', name: context.ROLES.manager.user },
+  comment: 'Department Manager final approval completed for Executive Director / GM approval.'
+});
+assert.equal(context.approvalSummary(report).ownerRole, 'executiveDirector');
+assert.equal(report.status, 'submitted_to_ed');
+
+context.applyReportApprovalDecision(report, {
+  decision: 'approve',
+  actor: { role: 'executiveDirector', name: context.ROLES.executiveDirector.user },
+  comment: 'Executive Director / GM approval completed; final report issued.'
+});
+assert.equal(context.approvalSummary(report).ownerRole, null);
 
 assert.equal(report.finalLocked, true);
 assert.equal(report.status, 'final_report_generated');

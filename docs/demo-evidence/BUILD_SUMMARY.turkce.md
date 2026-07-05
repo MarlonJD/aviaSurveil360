@@ -295,8 +295,8 @@ Desktop browser click-through ile şu governance yolları yerelde doğrulandı:
 - Department Manager, General Manager, Finance Review ve Executive Director
   planlama onay zinciri, final `Approved` durumuna kadar.
 - `CL-FOPS-v2.4` için General Manager checklist approval.
-- Lead Inspector -> Department Manager -> General Manager -> Executive Director
-  rapor onay zinciri, `Final Report Locked` durumuna kadar.
+- Lead Inspector -> Department Manager -> Executive Director / GM rapor onay
+  zinciri, `Final Report Issued` ve `Final Report Locked` durumuna kadar.
 - Inspector `Audit Work Queue` ve `Offline Field Inspection` demo sınırı.
 - Auditee portal izolasyonu: görünür `Internal CAA Note` veya `Inspector
   Workload` yok.

@@ -184,21 +184,47 @@ function workItemFromPlanningItem(item) {
   };
 }
 
+function reportTypeLabel(report) {
+  if (!report) return 'Report';
+  if (report.finalLocked || report.status === 'final_report_generated') return 'Final Report';
+  if (report.status === 'submitted_to_dm_final' || report.status === 'submitted_to_ed') return 'Final Report';
+  if (report.approval && report.approval.currentIndex >= 3) return 'Final Report';
+  var type = String(report.reportType || '').trim();
+  if (/final/i.test(type) && !/preliminary/i.test(type)) return 'Final Report';
+  if (/preliminary/i.test(type)) return 'Preliminary Report';
+  return type || 'Report';
+}
+
+function reportTypeTone(report) {
+  return reportTypeLabel(report) === 'Final Report' ? 'ok' : 'info';
+}
+
+function reportDueText(report) {
+  if (!report) return '-';
+  if (report.approvalDate) return 'Approved ' + fmtDate(report.approvalDate);
+  if (report.preliminaryNotice && report.preliminaryNotice.responseDueDate) {
+    return 'CAP due ' + fmtDate(report.preliminaryNotice.responseDueDate);
+  }
+  return 'Target report approval';
+}
+
 function workItemFromReport(report) {
   var audit = auditById(report.auditId);
   var summary = approvalSummary(report);
   var meta = approvalMetaForStatus(report.status);
+  var typeLabel = reportTypeLabel(report);
+  var priorityRank = summary.ownerRole === state.role ? 4 : 30;
   return {
     id: report.id,
     type: 'Report',
     title: report.title || report.id,
     subtitle: report.auditId + (audit ? ' · ' + audit.type : ''),
     organization: audit ? orgName(audit.orgId) : '—',
-    priority: summary.ownerRole === state.role ? workItemPriority('Your review', 'warn', 4) : workItemPriority('Report', meta.tone, 30),
+    priority: workItemPriority(typeLabel, reportTypeTone(report), priorityRank),
     lifecycle: summary.statusLabel,
     owner: summary.ownerLabel,
     nextAction: summary.nextAction,
-    dueText: report.approvalDate ? 'Approved ' + fmtDate(report.approvalDate) : 'Target report approval',
+    dueText: reportDueText(report),
     statusHtml: demoBadge(meta.label, meta.tone),
     primaryAction: { label: 'Open report', action: 'nav', view: 'audit-reports', cls: 'btn btn--primary' },
     route: { view: 'audit-reports', id: report.auditId },

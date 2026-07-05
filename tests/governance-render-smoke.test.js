@@ -95,8 +95,8 @@ const cases = [
   ['manager', 'Question Bank', () => context.viewQuestionBank()],
   ['manager', 'Checklist Builder', () => context.viewChecklistBuilder()],
   ['manager', 'Version History', () => context.viewChecklistVersions()],
-  ['leadInspector', 'Final Report - Routine Inspection', () => context.viewLeadReviewQueue()],
-  ['leadInspector', 'Airline XYZ Operator Audit Report', () => context.viewAuditReportsApproval()]
+  ['leadInspector', 'Assigned Audits', () => context.viewLeadReviewQueue()],
+  ['leadInspector', 'Airline XYZ Operator Audit Preliminary Report', () => context.viewAuditReportsApproval()]
 ];
 
 cases.forEach(([role, expected, render]) => {

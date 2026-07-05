@@ -77,7 +77,8 @@ const inspectorNavLabels = context.NAV.inspector
 assert.match(html, /My Inspections/);
 assert.match(html, /Assigned Inspections/);
 assert.match(html, /CAP Reviews/);
-assert.match(html, /Draft Reports/);
+assert.match(html, /Reports/);
+assert.doesNotMatch(html, /Draft Reports/);
 assert.match(html, /Profile/);
 assert.doesNotMatch(html, /Today’s Workbench/);
 assert.doesNotMatch(html, /Audit Work Queue/);
@@ -178,6 +179,50 @@ assert.match(capReviewHtml, /History/);
 assert.match(capReviewHtml, /Finding: F-2026-001/);
 assert.match(capReviewHtml, /Submit Decision/);
 assert.doesNotMatch(capReviewHtml, /Every finding shows owner/);
+
+context.state.view = 'cap-review-detail';
+context.state.params = { findingId: 'F-2026-002' };
+context.state.capTrackingUi = {
+  tab: 'overview',
+  detailTab: 'details',
+  reminderSentAt: '',
+  exportedAt: '',
+  selectedFindingId: 'F-2026-002',
+  inspectorReviewSentAt: '',
+  leadInspectorRecommendationAt: '',
+  submittedToUnitManagerAt: ''
+};
+context.render();
+const inspectorCapDetailHtml = elements.get('app-root').innerHTML;
+assert.match(inspectorCapDetailHtml, /CAP Review \(Inspector\)/);
+assert.match(inspectorCapDetailHtml, /Under Inspector Review/);
+assert.match(inspectorCapDetailHtml, /CAP Review \(Inspector\) › CAP-2025-045-001/);
+assert.match(inspectorCapDetailHtml, /Finding Information/);
+assert.match(inspectorCapDetailHtml, /Inadequate Flight Duty Time Monitoring/);
+assert.match(inspectorCapDetailHtml, /CAP Details/);
+assert.match(inspectorCapDetailHtml, /Evidence/);
+assert.match(inspectorCapDetailHtml, /Inspector Assessment/);
+assert.match(inspectorCapDetailHtml, /Comments &amp; History/);
+assert.match(inspectorCapDetailHtml, /Corrective Action Plan by Service Provider/);
+assert.match(inspectorCapDetailHtml, /Evidence Submitted \(5\)/);
+assert.match(inspectorCapDetailHtml, /Review Status/);
+assert.match(inspectorCapDetailHtml, /CAP Submitted by Service Provider/);
+assert.match(inspectorCapDetailHtml, /Pending Lead Inspector Review/);
+assert.match(inspectorCapDetailHtml, /Root Cause Addressed/);
+assert.match(inspectorCapDetailHtml, /Overall Assessment/);
+assert.match(inspectorCapDetailHtml, /Mary Adams/);
+assert.match(inspectorCapDetailHtml, /Request Revision/);
+assert.match(inspectorCapDetailHtml, /Request More Evidence/);
+assert.match(inspectorCapDetailHtml, /Submit to Lead Inspector/);
+assert.match(inspectorCapDetailHtml, /data-field="cap-inspector-root-cause"/);
+assert.doesNotMatch(inspectorCapDetailHtml, /Lead Inspector Decision/);
+
+context.handleCapDetailPrepareSecondReport('F-2026-002');
+assert.ok(context.state.capTrackingUi.inspectorReviewSentAt);
+assert.equal(context.state.capTrackingUi.leadInspectorRecommendationAt, '');
+assert.equal(context.state.capTrackingUi.submittedToUnitManagerAt, '');
+assert.equal(context.state.notifications[0].role, 'leadInspector');
+assert.match(context.state.notifications[0].text, /Inspector CAP review/);
 
 context.state.capReviewUi.decision = 'accept';
 context.state.capReviewUi.comment = 'CAP is acceptable; evidence remains required.';
