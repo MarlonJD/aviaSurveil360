@@ -21,7 +21,7 @@ var DEMO_PERSISTENCE_CONFIG = {
     'mock planning approvals',
     'mock checklist approvals',
     'mock potential findings',
-    'lead inspector review decisions and report workflow state',
+    'lead inspector review decisions, assignment drafts and report workflow state',
     'service provider final report CAP actions',
     'AI accept/edit/reject decisions',
     'selected filters',
@@ -1011,6 +1011,27 @@ function freshState() {
       advanced: false,
       appliedAt: ''
     },
+    leadAssignmentUi: {
+      selectedQuestions: {
+        'AVSEC-Q001': true,
+        'AVSEC-Q002': true,
+        'AVSEC-Q003': true,
+        'AVSEC-Q004': true
+      },
+      assignee: 'Ahmed Ali',
+      dueDate: '2026-06-13',
+      priority: 'Normal',
+      note: '',
+      department: 'AVSEC Operations',
+      section: 'access-control',
+      risk: 'all',
+      status: 'all',
+      query: '',
+      assignedAt: '',
+      draftSavedAt: '',
+      releasedAt: '',
+      downloadedAt: ''
+    },
     leadPreliminaryReportsUi: {
       query: '',
       status: 'all',
@@ -1192,6 +1213,48 @@ function mergeDemoState(saved) {
   if (!base.leadAssignedAuditsUi.due) base.leadAssignedAuditsUi.due = 'all';
   if (!base.leadAssignedAuditsUi.stage) base.leadAssignedAuditsUi.stage = 'all';
   base.leadAssignedAuditsUi.advanced = !!base.leadAssignedAuditsUi.advanced;
+  base.leadAssignmentUi = Object.assign({
+    selectedQuestions: {
+      'AVSEC-Q001': true,
+      'AVSEC-Q002': true,
+      'AVSEC-Q003': true,
+      'AVSEC-Q004': true
+    },
+    assignee: 'Ahmed Ali',
+    dueDate: '2026-06-13',
+    priority: 'Normal',
+    note: '',
+    department: 'AVSEC Operations',
+    section: 'access-control',
+    risk: 'all',
+    status: 'all',
+    query: '',
+    assignedAt: '',
+    draftSavedAt: '',
+    releasedAt: '',
+    downloadedAt: ''
+  }, saved.leadAssignmentUi || {});
+  if (!base.leadAssignmentUi.selectedQuestions || typeof base.leadAssignmentUi.selectedQuestions !== 'object') {
+    base.leadAssignmentUi.selectedQuestions = {
+      'AVSEC-Q001': true,
+      'AVSEC-Q002': true,
+      'AVSEC-Q003': true,
+      'AVSEC-Q004': true
+    };
+  }
+  if (!base.leadAssignmentUi.assignee) base.leadAssignmentUi.assignee = 'Ahmed Ali';
+  if (!base.leadAssignmentUi.dueDate) base.leadAssignmentUi.dueDate = '2026-06-13';
+  if (!base.leadAssignmentUi.priority) base.leadAssignmentUi.priority = 'Normal';
+  if (!base.leadAssignmentUi.note) base.leadAssignmentUi.note = '';
+  if (!base.leadAssignmentUi.department) base.leadAssignmentUi.department = 'AVSEC Operations';
+  if (!base.leadAssignmentUi.section) base.leadAssignmentUi.section = 'access-control';
+  if (!base.leadAssignmentUi.risk) base.leadAssignmentUi.risk = 'all';
+  if (!base.leadAssignmentUi.status) base.leadAssignmentUi.status = 'all';
+  if (!base.leadAssignmentUi.query) base.leadAssignmentUi.query = '';
+  if (!base.leadAssignmentUi.assignedAt) base.leadAssignmentUi.assignedAt = '';
+  if (!base.leadAssignmentUi.draftSavedAt) base.leadAssignmentUi.draftSavedAt = '';
+  if (!base.leadAssignmentUi.releasedAt) base.leadAssignmentUi.releasedAt = '';
+  if (!base.leadAssignmentUi.downloadedAt) base.leadAssignmentUi.downloadedAt = '';
   base.leadPreliminaryReportsUi = Object.assign({
     query: '',
     status: 'all',

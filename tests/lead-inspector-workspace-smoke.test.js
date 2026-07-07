@@ -61,6 +61,7 @@ assert.doesNotMatch(html, /lead-status-pill/);
 assert.match(html, /75%/);
 assert.match(html, /style="width:75%"/);
 assert.match(html, /aria-label="Open AUD-2025-045"/);
+assert.match(html, /data-view="lead-assignment"/);
 assert.doesNotMatch(html, /aria-label="Edit AUD-2025-045"/);
 assert.doesNotMatch(html, /More actions for AUD-2025-045/);
 assert.match(html, /Showing 1 to 8 of 18 audits/);
@@ -71,6 +72,46 @@ assert.doesNotMatch(html, /Final Report - Routine Inspection/);
 assert.doesNotMatch(html, /Report Details/);
 assert.doesNotMatch(html, /Report Sections/);
 
+context.state.view = 'lead-assignment';
+context.state.params = { auditId: 'AUD-2026-005' };
+html = context.viewLeadAssignmentWorkspace();
+
+assert.match(html, /AVSEC Inspection/);
+assert.match(html, /Assignment Overview/);
+assert.match(html, /Planning[\s\S]*Completed/);
+assert.match(html, /Approval[\s\S]*Completed/);
+assert.match(html, /Assignment[\s\S]*In Progress/);
+assert.match(html, /Execution[\s\S]*Pending/);
+assert.match(html, /AVSEC Operations Checklist/);
+assert.match(html, /186 Questions/);
+assert.match(html, /Checklist not yet assigned to inspectors/);
+assert.match(html, /Assign Checklist Questions/);
+assert.match(html, /Download Assignment Plan/);
+assert.doesNotMatch(html, /Preliminary Report - Routine Inspection/);
+assert.doesNotMatch(html, /Report Details/);
+assert.doesNotMatch(html, /Report Sections/);
+
+context.state.view = 'lead-assignment-questions';
+context.state.params = { auditId: 'AUD-2026-005' };
+html = context.viewLeadAssignmentQuestions();
+
+assert.match(html, /Assign Checklist Questions/);
+assert.match(html, /Checklist Items[\s\S]*186/);
+assert.match(html, /Assigned[\s\S]*124/);
+assert.match(html, /Unassigned[\s\S]*62/);
+assert.match(html, /Inspectors[\s\S]*4/);
+assert.match(html, /Ahmed Ali/);
+assert.match(html, /Maria Silva/);
+assert.match(html, /Are access control procedures implemented\?/);
+assert.match(html, /Assign Selected \(4\)/);
+assert.match(html, /data-field="lead-assignment-assignee"/);
+assert.match(html, /data-field="lead-assignment-due"/);
+assert.match(html, /data-field="lead-assignment-priority"/);
+assert.match(html, /data-field="lead-assignment-note"/);
+assert.match(html, /Assign Questions/);
+assert.match(html, /Release to Inspectors/);
+
+context.state.view = 'lead-review';
 context.state.params = { auditId: 'AUD-2026-005' };
 html = context.viewLeadReviewQueue();
 

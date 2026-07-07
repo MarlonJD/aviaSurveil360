@@ -115,7 +115,8 @@ var VIEW_TITLES = {
   'ssp-nasp': 'SSP/NASP Management', 'role-home': 'Home', planning: 'Planning', 'planning-approvals': 'Planning',
   'checklist-approvals': 'Checklist Approvals', 'question-bank': 'Question Bank',
   'checklist-builder': 'Checklist Builder', 'checklist-versions': 'Version History',
-  'lead-review': 'Lead Inspector Review', 'planning-board': 'Planning',
+  'lead-review': 'Lead Inspector Review', 'lead-assignment': 'Audit Assignment',
+  'lead-assignment-questions': 'Assign Checklist Questions', 'planning-board': 'Planning',
   'audit-reports': 'Audit Reports', 'cap-review-detail': 'CAP Review', 'final-report-prepare': 'Prepare Final Report',
   'final-report-view': 'Final Report',
   'unit-manager-review': 'Department Manager Approval'
@@ -363,6 +364,7 @@ function isNavActive(navItem) {
   var activeFilter = state.params && state.params.filter ? state.params.filter : selectedFilter(view, null);
   if (view === state.view) return navFilter ? activeFilter === navFilter : true;
   if (view === 'planning' && (state.view === 'planning-approvals' || state.view === 'planning-board')) return true;
+  if (view === 'lead-review' && (state.view === 'lead-assignment' || state.view === 'lead-assignment-questions')) return true;
   // keep parent nav highlighted on detail screens
   if (view === 'calendar' && (state.view === 'audit-detail' || state.view === 'checklist')) return true;
   if (view === 'findings' && state.view === 'finding' && state.role !== 'auditee') {
@@ -444,6 +446,8 @@ function renderContent() {
     case 'checklist-builder': return viewChecklistBuilder();
     case 'checklist-versions': return viewChecklistVersions();
     case 'lead-review': return viewLeadReviewQueue();
+    case 'lead-assignment': return viewLeadAssignmentWorkspace();
+    case 'lead-assignment-questions': return viewLeadAssignmentQuestions();
     case 'cap-review-detail': return viewLeadCapReviewDetail();
     case 'unit-manager-review': return viewUnitManagerCapReview();
     case 'planning-board': return viewPlanningBoard();
@@ -705,6 +709,19 @@ function handleAction(act, el) {
     case 'lead-assigned-more-filters': handleLeadAssignedMoreFilters(); break;
     case 'lead-assigned-new': handleLeadAssignedNew(); break;
     case 'lead-assigned-row-menu': handleLeadAssignedRowMenu(id); break;
+    case 'lead-assignment-preview-report': handleLeadAssignmentPreviewReport(); break;
+    case 'lead-assignment-preview-checklist': handleLeadAssignmentPreviewChecklist(); break;
+    case 'lead-assignment-view-details': handleLeadAssignmentViewDetails(); break;
+    case 'lead-assignment-view-team': handleLeadAssignmentViewTeam(); break;
+    case 'lead-assignment-guide': handleLeadAssignmentGuide(); break;
+    case 'lead-assignment-download': handleLeadAssignmentDownload(); break;
+    case 'lead-assignment-pick-inspector': handleLeadAssignmentPickInspector(id); break;
+    case 'lead-assignment-clear-selection': handleLeadAssignmentClearSelection(); break;
+    case 'lead-assignment-assign': handleLeadAssignmentAssign(); break;
+    case 'lead-assignment-save': handleLeadAssignmentSave(); break;
+    case 'lead-assignment-preview': handleLeadAssignmentPreview(); break;
+    case 'lead-assignment-release': handleLeadAssignmentRelease(); break;
+    case 'lead-assignment-bulk': handleLeadAssignmentBulk(el.getAttribute('data-mode')); break;
     case 'preliminary-report-new': handlePreliminaryReportNew(); break;
     case 'preliminary-report-open': handlePreliminaryReportOpen(id); break;
     case 'preliminary-report-actions': handlePreliminaryReportActions(id); break;
@@ -1269,8 +1286,209 @@ function handleLeadAssignedRowMenu(auditId) {
         metaItem('Next due', row.dueDate + ' - ' + row.dueStage) +
       '</div>' +
     '</div>',
-    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="nav" data-view="lead-review" data-id="' + esc(row.detailAuditId) + '">Open Audit Workspace</button>',
+    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="nav" data-view="lead-assignment" data-id="' + esc(row.detailAuditId) + '">Open Assignment Workspace</button>',
     false));
+}
+
+function ensureLeadAssignmentUi() {
+  if (typeof leadAssignmentUiState === 'function') return leadAssignmentUiState();
+  if (!state.leadAssignmentUi) state.leadAssignmentUi = {};
+  return state.leadAssignmentUi;
+}
+
+function handleLeadAssignmentFieldChange(field, target) {
+  var ui = ensureLeadAssignmentUi();
+  var value = target && target.value !== undefined ? target.value : '';
+  if (field === 'lead-assignment-question') {
+    var questionId = target && target.getAttribute ? target.getAttribute('data-id') : '';
+    if (questionId) ui.selectedQuestions[questionId] = !!target.checked;
+    persistAfterAction();
+    render();
+    return;
+  }
+  if (field === 'lead-assignment-select-visible') {
+    var selected = !!(target && target.checked);
+    if (typeof leadAssignmentFilteredQuestions === 'function') {
+      leadAssignmentFilteredQuestions(ui).forEach(function (row) { ui.selectedQuestions[row.id] = selected; });
+    }
+    persistAfterAction();
+    render();
+    return;
+  }
+  if (field === 'lead-assignment-assignee') ui.assignee = value || 'Ahmed Ali';
+  if (field === 'lead-assignment-due') ui.dueDate = value || '2026-06-13';
+  if (field === 'lead-assignment-priority') ui.priority = value || 'Normal';
+  if (field === 'lead-assignment-note') ui.note = value || '';
+  if (field === 'lead-assignment-department') ui.department = value || 'AVSEC Operations';
+  if (field === 'lead-assignment-section') ui.section = value || 'access-control';
+  if (field === 'lead-assignment-risk') ui.risk = value || 'all';
+  if (field === 'lead-assignment-status') ui.status = value || 'all';
+  if (field === 'lead-assignment-query') ui.query = value || '';
+  persistAfterAction();
+  if (field === 'lead-assignment-note') {
+    var counter = target.parentElement && target.parentElement.parentElement && target.parentElement.parentElement.querySelector ? target.parentElement.parentElement.querySelector('.lead-assignment-note-count') : null;
+    if (counter) counter.textContent = String(ui.note.length);
+  } else {
+    render();
+  }
+}
+
+function handleLeadAssignmentPickInspector(name) {
+  if (!name) return;
+  var ui = ensureLeadAssignmentUi();
+  ui.assignee = name;
+  persistAfterAction();
+  render();
+}
+
+function handleLeadAssignmentClearSelection() {
+  var ui = ensureLeadAssignmentUi();
+  ui.selectedQuestions = {};
+  persistAfterAction();
+  render();
+}
+
+function handleLeadAssignmentAssign() {
+  var ui = ensureLeadAssignmentUi();
+  var selected = typeof leadAssignmentSelectedQuestionIds === 'function' ? leadAssignmentSelectedQuestionIds(ui) : Object.keys(ui.selectedQuestions || {});
+  if (!selected.length) {
+    toast('No checklist questions selected', 'Select at least one question before assigning.', 'warn');
+    return;
+  }
+  ui.assignedAt = nowIsoDemo();
+  persistAfterAction();
+  render();
+  toast('Checklist questions assigned', selected.length + ' questions assigned to ' + ui.assignee + ' with ' + ui.priority + ' priority.', 'ok');
+}
+
+function handleLeadAssignmentSave() {
+  var ui = ensureLeadAssignmentUi();
+  ui.draftSavedAt = nowIsoDemo();
+  persistAfterAction();
+  render();
+  toast('Assignment draft saved', 'Due date, priority and instructions are saved in this demo browser.', 'ok');
+}
+
+function handleLeadAssignmentRelease() {
+  var ui = ensureLeadAssignmentUi();
+  ui.releasedAt = nowIsoDemo();
+  if (!ui.assignedAt) ui.assignedAt = ui.releasedAt;
+  state.notifications.unshift({
+    id: 'n-lead-assignment-' + state.notifSeq++,
+    role: 'leadInspector',
+    icon: '▣',
+    text: 'AVSEC checklist assignments released to inspectors.',
+    time: 'Now',
+    unread: false
+  });
+  persistAfterAction();
+  render();
+  toast('Released to inspectors', 'Inspectors can now work on their assigned checklist questions.', 'ok');
+}
+
+function handleLeadAssignmentDownload() {
+  var ui = ensureLeadAssignmentUi();
+  ui.downloadedAt = nowIsoDemo();
+  persistAfterAction();
+  render();
+  toast('Assignment plan prepared', 'Mock assignment plan is ready for the demo. No real file was generated.', 'ok');
+}
+
+function handleLeadAssignmentPreview() {
+  var ui = ensureLeadAssignmentUi();
+  var selected = typeof leadAssignmentSelectedQuestionIds === 'function' ? leadAssignmentSelectedQuestionIds(ui).length : 0;
+  openModal(modalShell('Assignment preview',
+    '<div class="lead-assigned-modal">' +
+      '<p><b>AVSEC Inspection</b> checklist assignment draft</p>' +
+      '<div class="metaline">' +
+        metaItem('Assignee', ui.assignee) +
+        metaItem('Selected questions', String(selected)) +
+        metaItem('Due date', ui.dueDate) +
+        metaItem('Priority', ui.priority) +
+      '</div>' +
+      '<p class="small muted mt-12">' + esc(ui.note || 'No special inspector instructions added.') + '</p>' +
+    '</div>',
+    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="lead-assignment-release">Release to Inspectors</button>',
+    false));
+}
+
+function handleLeadAssignmentPreviewReport() {
+  go('lead-review', { auditId: (state.params && state.params.auditId) || 'AUD-2026-005' });
+}
+
+function handleLeadAssignmentPreviewChecklist() {
+  openModal(modalShell('AVSEC Operations Checklist',
+    '<div class="lead-assigned-modal">' +
+      '<p><b>186 questions</b> across Operations, Cargo Security and Access Control.</p>' +
+      '<div class="list-mini"><span>Access control procedures</span><span>CCTV monitoring</span><span>Staff screening</span><span>Visitor pass control</span></div>' +
+      '<p class="small muted mt-12">Demo only: checklist preview uses mock content and does not open a production checklist engine.</p>' +
+    '</div>',
+    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="nav" data-view="lead-assignment-questions" data-id="' + esc((state.params && state.params.auditId) || 'AUD-2026-005') + '">Assign Questions</button>',
+    false));
+}
+
+function handleLeadAssignmentViewDetails() {
+  openModal(modalShell('Departments in scope',
+    '<div class="lead-assigned-modal">' +
+      '<div class="metaline">' +
+        metaItem('Operations', '62 questions') +
+        metaItem('Cargo Security', '64 questions') +
+        metaItem('Access Control', '60 questions') +
+      '</div>' +
+      '<p class="small muted mt-12">Scope is fixed for this frontend demo and can be reviewed before assignment release.</p>' +
+    '</div>',
+    '<button class="btn" data-act="close-modal">Close</button>',
+    false));
+}
+
+function handleLeadAssignmentViewTeam() {
+  var rows = typeof leadAssignmentInspectors === 'function' ? leadAssignmentInspectors() : [];
+  openModal(modalShell('Inspection team',
+    '<div class="lead-assigned-modal">' + rows.map(function (row) {
+      return '<div class="metaline">' + metaItem(row.name, row.unit + ' - ' + row.assigned + ' questions') + '</div>';
+    }).join('') + '<p class="small muted mt-12">Team workload is balanced before release to inspectors.</p></div>',
+    '<button class="btn" data-act="close-modal">Close</button>',
+    false));
+}
+
+function handleLeadAssignmentGuide() {
+  openModal(modalShell('Assignment guide',
+    '<div class="lead-assigned-modal">' +
+      '<p><b>Recommended order</b></p>' +
+      '<div class="list-mini"><span>1. Select checklist questions</span><span>2. Choose inspector, due date and priority</span><span>3. Add assignment instructions</span><span>4. Save draft or release to inspectors</span></div>' +
+    '</div>',
+    '<button class="btn" data-act="close-modal">Close</button>',
+    false));
+}
+
+function handleLeadAssignmentBulk(mode) {
+  var ui = ensureLeadAssignmentUi();
+  if (mode === 'assign-section' && typeof leadAssignmentFilteredQuestions === 'function') {
+    leadAssignmentFilteredQuestions(ui).forEach(function (row) { ui.selectedQuestions[row.id] = true; });
+    persistAfterAction();
+    render();
+    toast('Section selected', 'Visible checklist questions are ready for assignment.', 'ok');
+    return;
+  }
+  if (mode === 'reassign') {
+    ui.assignee = 'Maria Silva';
+    ui.assignedAt = nowIsoDemo();
+    persistAfterAction();
+    render();
+    toast('Questions reassigned', 'Selected questions are reassigned to Maria Silva in the demo.', 'ok');
+    return;
+  }
+  if (mode === 'remove') {
+    ui.selectedQuestions = {};
+    ui.assignedAt = '';
+    persistAfterAction();
+    render();
+    toast('Selection cleared', 'Selected assignment rows were cleared from the working draft.', 'warn');
+    return;
+  }
+  if (mode === 'export') {
+    handleLeadAssignmentDownload();
+  }
 }
 
 function handleLeadPreliminaryReportFieldChange(field, target) {
@@ -3416,6 +3634,9 @@ document.addEventListener('change', function (e) {
   if (field && field.indexOf('lead-assigned-') === 0) {
     handleLeadAssignedFieldChange(field, e.target);
   }
+  if (field && field.indexOf('lead-assignment-') === 0) {
+    handleLeadAssignmentFieldChange(field, e.target);
+  }
   if (field && field.indexOf('preliminary-report-') === 0) {
     handleLeadPreliminaryReportFieldChange(field, e.target);
   }
@@ -3449,6 +3670,9 @@ document.addEventListener('input', function (e) {
   }
   if (field === 'lead-assigned-query') {
     handleLeadAssignedFieldChange(field, e.target);
+  }
+  if (field === 'lead-assignment-query' || field === 'lead-assignment-note') {
+    handleLeadAssignmentFieldChange(field, e.target);
   }
   if (field === 'preliminary-report-query') {
     handleLeadPreliminaryReportFieldChange(field, e.target);

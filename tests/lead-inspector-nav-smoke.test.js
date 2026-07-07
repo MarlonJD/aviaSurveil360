@@ -188,6 +188,31 @@ assert.equal(context.state.leadPreliminaryReportsUi.mode, 'list');
 assert.match(elements.get('app-root').innerHTML, /Showing 1 to 8 of 18 reports/);
 assert.doesNotMatch(elements.get('app-root').innerHTML, /Report Approval Queue/);
 
+context.handleAction('nav', dataEl({ 'data-view': 'lead-assignment', 'data-id': 'AUD-2026-005' }));
+assert.equal(context.state.view, 'lead-assignment');
+assert.equal(context.state.params.auditId, 'AUD-2026-005');
+assert.match(elements.get('app-root').innerHTML, /Assignment Overview/);
+assert.match(elements.get('app-root').innerHTML, /Assign Checklist Questions/);
+assert.doesNotMatch(elements.get('app-root').innerHTML, /Preliminary Report - Routine Inspection/);
+
+context.handleAction('nav', dataEl({ 'data-view': 'lead-assignment-questions', 'data-id': 'AUD-2026-005' }));
+assert.equal(context.state.view, 'lead-assignment-questions');
+assert.match(elements.get('app-root').innerHTML, /Assign Selected \(4\)/);
+assert.match(elements.get('app-root').innerHTML, /data-field="lead-assignment-due"/);
+
+context.handleAction('lead-assignment-pick-inspector', dataEl({ 'data-id': 'Maria Silva' }));
+assert.equal(context.state.leadAssignmentUi.assignee, 'Maria Silva');
+context.handleLeadAssignmentFieldChange('lead-assignment-due', { value: '2026-06-14' });
+context.handleLeadAssignmentFieldChange('lead-assignment-priority', { value: 'High' });
+context.handleLeadAssignmentFieldChange('lead-assignment-note', { value: 'Prioritize cargo gate access logs.', parentElement: null });
+context.handleAction('lead-assignment-assign', dataEl({}));
+assert.ok(context.state.leadAssignmentUi.assignedAt);
+assert.match(elements.get('app-root').innerHTML, /Assignment Draft/);
+assert.match(elements.get('app-root').innerHTML, /Maria Silva/);
+context.handleAction('lead-assignment-release', dataEl({}));
+assert.ok(context.state.leadAssignmentUi.releasedAt);
+assert.match(elements.get('app-root').innerHTML, /Released/);
+
 context.handleAction('nav', dataEl({ 'data-view': 'lead-review', 'data-id': 'AUD-2026-005' }));
 assert.equal(context.state.params.auditId, 'AUD-2026-005');
 assert.match(elements.get('app-root').innerHTML, /Preliminary Report - Routine Inspection/);

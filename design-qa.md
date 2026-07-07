@@ -14,9 +14,18 @@
 - Desktop screenshot: `/private/tmp/avia-lead-assigned-audits-desktop.png`
 - Mobile screenshot: `/private/tmp/avia-lead-assigned-audits-mobile.png`
 - Viewports: 1280 x 720 and 390 x 844.
-- Flow tested: app loads -> Lead Inspector role -> Assigned Audits landing -> filters -> New Audit Assignment modal -> open audit workspace.
-- Interaction evidence: More Filters opens Due Window and Report Stage filters, search for `FlyNamibia` plus Apply Filters reduces the table to 1 audit, Reset returns to `Showing 1 to 8 of 18 audits`, New Audit Assignment opens the mock assignment package modal, and `AUD-2025-045` opens the Final Report workspace.
-- Result: passed; Lead Inspector now defaults to a simpler Assigned Audits table instead of the final report composer. The final report editor remains available after selecting an audit, and the page has no document-level horizontal overflow on desktop or 390px mobile; the wide audit table scrolls inside its own wrapper on mobile.
+- Flow tested: app loads -> Lead Inspector role -> Assigned Audits landing -> filters -> New Audit Assignment modal -> open assignment workspace.
+- Interaction evidence: More Filters opens Due Window and Report Stage filters, search for `FlyNamibia` plus Apply Filters reduces the table to 1 audit, Reset returns to `Showing 1 to 8 of 18 audits`, New Audit Assignment opens the mock assignment package modal, and `AUD-2025-045` opens the Assignment Overview workspace.
+- Result: passed; Lead Inspector now defaults to a simpler Assigned Audits table instead of the final report composer. Selecting an assigned audit opens the assignment workflow first, while the report editor remains available through the preliminary report action. The page has no document-level horizontal overflow on desktop or 390px mobile; the wide audit table scrolls inside its own wrapper on mobile.
+
+**Lead Inspector Assignment Workflow QA**
+- Source visual truth: `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-77e7cc3f-6d2d-4d1d-8d22-46c80abb78b1.png` and `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-48ed7c74-db63-4f0a-98f0-73e321b835dc.png`
+- Desktop screenshots: `/private/tmp/avia-lead-assignment-overview-desktop.png` and `/private/tmp/avia-lead-assignment-questions-desktop.png`
+- Mobile screenshot: `/private/tmp/avia-lead-assignment-questions-mobile.png`
+- Viewports: 1280 x 720 and 390 x 844.
+- Flow tested: Assigned Audits -> `AUD-2025-045` -> Assignment Overview -> Assign Checklist Questions -> set assignee, due date, priority, and note -> Assign Questions -> Release to Inspectors.
+- Interaction evidence: the audit row routes to `lead-assignment` instead of the preliminary report composer; Assignment Overview shows Planning, Approval, Assignment, and Execution stages; the assignment screen preserves selected checklist questions, inspector, due date, priority, and instruction note in demo state; Release to Inspectors changes the status to Released.
+- Result: passed; no browser console errors or warnings; desktop and 390px mobile have no document-level horizontal overflow, with the checklist table scrolling inside its own wrapper on mobile.
 
 **Lead Inspector Final Report QA**
 - Source visual truth: `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-98e4fb72-2a0b-4acb-ae8a-0a941954a643.png`
