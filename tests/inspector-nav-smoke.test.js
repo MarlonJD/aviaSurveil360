@@ -105,7 +105,7 @@ assert.match(html, /View Report/);
 assert.match(inspectorNavLabels, /Dashboard/);
 assert.match(inspectorNavLabels, /My Assignments/);
 assert.match(inspectorNavLabels, /Findings/);
-assert.match(inspectorNavLabels, /CAP Verification/);
+assert.doesNotMatch(inspectorNavLabels, /CAP Verification/);
 assert.doesNotMatch(inspectorNavLabels, /Checklists/);
 assert.doesNotMatch(inspectorNavLabels, /CAP Actions/);
 assert.doesNotMatch(inspectorNavLabels, /Documents/);
@@ -156,8 +156,9 @@ assert.doesNotMatch(inspectorNavLabels, /Offline Field/);
 assert.doesNotMatch(inspectorNavLabels, /Overdue Actions/);
 assert.doesNotMatch(inspectorNavLabels, /Repeat Findings/);
 assert.equal(context.NAV.inspector.some((item) => item.label === 'My Assignments' && item.view === 'inspector-assignments'), true);
-assert.equal(context.NAV.inspector.some((item) => item.label === 'Findings' && item.filter === 'open'), true);
-assert.equal(context.NAV.inspector.some((item) => item.label === 'CAP Verification' && item.filter === 'capreview'), true);
+assert.equal(context.NAV.inspector.some((item) => item.label === 'Findings' && item.view === 'findings'), true);
+assert.equal(context.NAV.inspector.some((item) => item.label === 'Findings' && item.filter === 'open'), false);
+assert.equal(context.NAV.inspector.some((item) => item.label === 'CAP Verification' && item.filter === 'capreview'), false);
 assert.equal(context.NAV.inspector.some((item) => item.label === 'Findings Review'), false);
 assert.equal(context.NAV.inspector.some((item) => item.view === 'package-builder'), false);
 assert.equal(context.NAV.inspector.some((item) => item.view === 'regulatory-library'), false);
@@ -213,6 +214,23 @@ assert.equal(context.state.inspectionWorkspaceAnswers['sms-8-2'].file, 'inspecti
 auditExecutionHtml = elements.get('app-root').innerHTML;
 assert.match(auditExecutionHtml, /inspection_8_2_evidence\.pdf/);
 
+context.handleAction('inspection-set-status', dataEl({ 'data-id': 'sms-8-1', 'data-status': 'noncompliant' }));
+assert.equal(context.state.inspectionWorkspaceAnswers['sms-8-1'].status, 'noncompliant');
+assert.ok(context.state.findings.some((finding) => finding.id === 'SMS-2026-8-1'));
+context.state.view = 'findings';
+context.state.params = { filter: 'open' };
+context.render();
+const syncedFindingHtml = elements.get('app-root').innerHTML;
+assert.match(syncedFindingHtml, /Findings/);
+assert.match(syncedFindingHtml, /All findings and CAPs from this inspection/);
+assert.match(syncedFindingHtml, /SMS-2026-8-1/);
+assert.match(syncedFindingHtml, /Are SMS improvement actions prioritized/);
+assert.match(syncedFindingHtml, /Waiting for CAP/);
+
+context.state.view = 'audit-detail';
+context.state.params = { auditId: 'AUD-2026-005' };
+context.render();
+
 context.handleAction('inspection-submit-lead', dataEl({ 'data-id': 'AUD-2026-005' }));
 auditExecutionHtml = elements.get('app-root').innerHTML;
 assert.ok(context.state.inspectionWorkspaceSubmittedAt);
@@ -253,11 +271,12 @@ context.state.view = 'findings';
 context.state.params = { filter: 'open' };
 context.render();
 const findingsHtml = elements.get('app-root').innerHTML;
-assert.match(findingsHtml, /Open Findings/);
-assert.match(findingsHtml, /SEC-2026-002/);
-assert.match(findingsHtml, /RAMP-2026-005/);
-assert.match(findingsHtml, /AWO-2026-003/);
-assert.match(findingsHtml, /Maintenance task sign-off overdue/);
+assert.match(findingsHtml, /Findings/);
+assert.match(findingsHtml, /All Findings/);
+assert.match(findingsHtml, /Waiting for CAP/);
+assert.match(findingsHtml, /CAP Submitted/);
+assert.match(findingsHtml, /Perimeter Fence Security/);
+assert.match(findingsHtml, /Access Control System/);
 assert.doesNotMatch(findingsHtml, /Overdue Findings/);
 assert.doesNotMatch(findingsHtml, /data-filter="overdue"/);
 
@@ -278,38 +297,36 @@ assert.doesNotMatch(inspectorReportsHtml, /Open finding/);
 context.state.view = 'findings';
 context.state.params = { filter: 'capreview' };
 context.state.capReviewUi = {
-  expandedId: 'SEC-2026-002',
-  tab: 'details',
+  expandedId: 'F-014-02',
+  tab: 'cap',
   status: 'all',
   due: 'all',
   query: '',
   decision: '',
-  comment: ''
+  comment: '',
+  filtersOpen: true,
+  findingDecisions: {}
 };
 context.render();
 const capReviewHtml = elements.get('app-root').innerHTML;
-assert.match(capReviewHtml, /CAP Verification/);
-assert.match(capReviewHtml, /Review CAP closure evidence submitted by service providers/);
-assert.match(capReviewHtml, /INS-2026-014/);
-assert.match(capReviewHtml, /CAP Evidence Submitted/);
-assert.match(capReviewHtml, /Ready for Inspector Verification/);
+assert.match(capReviewHtml, /Findings/);
+assert.match(capReviewHtml, /All findings and CAPs from this inspection/);
 assert.match(capReviewHtml, /SkyCargo Air/);
-assert.match(capReviewHtml, /Service Provider/);
-assert.match(capReviewHtml, /SkyCargo Ground Handling Ltd\./);
-assert.match(capReviewHtml, /SkyFuel Services/);
-assert.match(capReviewHtml, /SkySecurity Services/);
-assert.match(capReviewHtml, /SkyCatering Ltd\./);
-assert.match(capReviewHtml, /data-act="cap-review-provider"/);
-assert.match(capReviewHtml, /All CAPs \(14\)/);
-assert.match(capReviewHtml, /Pending My Verification \(3\)/);
-assert.match(capReviewHtml, /Verified by Me \(8\)/);
+assert.match(capReviewHtml, /Routine Inspection/);
+assert.match(capReviewHtml, /All Findings/);
+assert.match(capReviewHtml, /Returned/);
+assert.match(capReviewHtml, /Closed/);
 assert.match(capReviewHtml, /Perimeter Fence Security/);
 assert.match(capReviewHtml, /CCTV Coverage Gaps/);
-assert.match(capReviewHtml, /Vehicle Inspection Process/);
-assert.match(capReviewHtml, /Verification Summary/);
-assert.match(capReviewHtml, /CAP Level Breakdown/);
-assert.match(capReviewHtml, /My Verification Workload/);
-assert.match(capReviewHtml, /data-view="cap-review-detail"/);
+assert.match(capReviewHtml, /CAP &amp; Verification/);
+assert.match(capReviewHtml, /CAP Summary/);
+assert.match(capReviewHtml, /Inspector Verification/);
+assert.match(capReviewHtml, /Accept CAP/);
+assert.match(capReviewHtml, /Return for Revision/);
+assert.match(capReviewHtml, /Returned Flow/);
+assert.match(capReviewHtml, /Service Provider View/);
+assert.match(capReviewHtml, /Inspector View/);
+assert.match(capReviewHtml, /data-act="cap-review-row"/);
 assert.doesNotMatch(capReviewHtml, /cap-review-expanded-row/);
 assert.doesNotMatch(capReviewHtml, /data-field="cap-review-decision"/);
 assert.doesNotMatch(capReviewHtml, /Submit Decision/);

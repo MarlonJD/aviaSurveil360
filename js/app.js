@@ -36,8 +36,7 @@ var NAV = {
   inspector: [
     { view: 'dashboard', label: 'Dashboard', icon: '▦' },
     { view: 'inspector-assignments', label: 'My Assignments', icon: '▣', badge: '8' },
-    { view: 'findings', label: 'Findings', icon: '⚑', filter: 'open', badge: '2' },
-    { view: 'findings', label: 'CAP Verification', icon: '✓', filter: 'capreview', badge: '3' },
+    { view: 'findings', label: 'Findings', icon: '✓', badge: '14' },
     { view: 'messages', label: 'Messages', icon: '✉', badge: '2' },
     { view: 'calendar', label: 'Calendar', icon: '▤' },
     { view: 'reports', label: 'Reports', icon: '□' }
@@ -568,7 +567,9 @@ function go(view, opts) {
       capUi.comment = '';
     }
   }
-  var fallbackFilter = view === 'findings' ? selectedFilter('findings', 'all') : (view === 'calendar' ? 'active' : null);
+  var fallbackFilter = view === 'findings'
+    ? (state.role === 'inspector' ? 'open' : selectedFilter('findings', 'all'))
+    : (view === 'calendar' ? 'active' : null);
   state.params.filter = opts.filter || fallbackFilter || selectedFilter(view, null);
   if (view === 'inspector-assignments' && !opts.filter) delete state.params.filter;
   state.ui.notifOpen = false;
@@ -794,6 +795,12 @@ function handleAction(act, el) {
     case 'cap-review-clear': handleCapReviewClear(); break;
     case 'cap-review-submit-decision': handleCapReviewSubmitDecision(id); break;
     case 'cap-review-evidence': handleCapReviewEvidence(id, el.getAttribute('data-file')); break;
+    case 'finding-new': handleInspectorFindingNew(); break;
+    case 'finding-filter-toggle': handleInspectorFindingFilterToggle(); break;
+    case 'finding-edit': handleInspectorFindingEdit(id); break;
+    case 'finding-submit-revised': handleInspectorFindingSubmitRevised(id); break;
+    case 'finding-accept-cap': handleInspectorFindingDecision(id, 'accept'); break;
+    case 'finding-return-cap': handleInspectorFindingDecision(id, 'return'); break;
     case 'cap-track-tab': handleCapTrackingTab(tab); break;
     case 'cap-track-reminder': handleCapTrackingReminder(); break;
     case 'cap-track-view-report': handleCapTrackingViewReport(); break;
@@ -883,8 +890,75 @@ function setInspectionStatus(rowId, next) {
   if (!state.inspectionWorkspaceAnswers) state.inspectionWorkspaceAnswers = {};
   if (!state.inspectionWorkspaceAnswers[rowId]) state.inspectionWorkspaceAnswers[rowId] = {};
   state.inspectionWorkspaceAnswers[rowId].status = next;
+  if (next === 'noncompliant') ensureInspectionFindingForRow(row);
   persistAfterAction();
   return true;
+}
+
+function inspectionFindingId(row) {
+  var safeNo = String(row && row.no ? row.no : row.id).replace(/[^0-9A-Za-z]+/g, '-').replace(/^-+|-+$/g, '');
+  return 'SMS-2026-' + safeNo;
+}
+
+function inspectionFindingSeverity(row) {
+  if (!row) return 2;
+  if (/critical|access|owner|target/i.test(row.item || '')) return 2;
+  return 3;
+}
+
+function ensureInspectionFindingForRow(row) {
+  if (!row) return null;
+  var id = inspectionFindingId(row);
+  var existing = findingById(id);
+  var answer = state.inspectionWorkspaceAnswers && state.inspectionWorkspaceAnswers[row.id] ? state.inspectionWorkspaceAnswers[row.id] : {};
+  var comment = answer.comment !== undefined ? answer.comment : (row.comment || '');
+  var file = answer.file !== undefined ? answer.file : (row.file || '');
+  var title = (row.item || 'Checklist non-compliance').replace(/\?$/, '');
+  if (existing) {
+    existing.title = title;
+    existing.description = comment || ('Checklist item ' + row.no + ' was marked Non-Compliant during SMS Oversight Audit.');
+    existing.status = existing.status === 'CLOSED' ? 'WAITING_CAP' : existing.status;
+    existing.internalNotes = existing.internalNotes || [];
+    if (file && !existing.internalNotes.some(function (note) { return (note.text || '').indexOf(file) !== -1; })) {
+      existing.internalNotes.push({ author: currentActorLabel(), date: DEMO_TODAY, text: 'Checklist attachment referenced: ' + file });
+    }
+    if (state.inspectionWorkspaceAnswers[row.id]) state.inspectionWorkspaceAnswers[row.id].findingId = id;
+    return existing;
+  }
+  var finding = {
+    id: id,
+    title: title,
+    description: comment || ('Checklist item ' + row.no + ' was marked Non-Compliant during SMS Oversight Audit.'),
+    orgId: 'ORG-SKY',
+    auditId: 'AUD-2026-005',
+    severity: inspectionFindingSeverity(row),
+    reference: 'SMS Oversight Audit checklist item ' + row.no,
+    basis: 'Checklist item answered Non-Compliant',
+    status: 'WAITING_CAP',
+    capRequired: true,
+    evidenceRequired: true,
+    issuedDate: DEMO_TODAY,
+    dueDate: '2026-07-15',
+    closedDate: null,
+    closureType: null,
+    responsiblePerson: 'Service Provider CAP Owner',
+    cap: null,
+    capRevisions: [],
+    evidence: [],
+    commentsToAuditee: [],
+    internalNotes: [
+      {
+        author: currentActorLabel(),
+        date: DEMO_TODAY,
+        text: 'Auto-created from Inspector checklist workspace' + (file ? '. Checklist attachment referenced: ' + file : '.')
+      }
+    ]
+  };
+  state.findings.push(finding);
+  if (state.inspectionWorkspaceAnswers[row.id]) state.inspectionWorkspaceAnswers[row.id].findingId = id;
+  addLog('Finding created from checklist non-compliance', id);
+  pushNotification('auditee', 'CAP', 'New finding ' + id + ' requires CAP response from SkyCargo Air.');
+  return finding;
 }
 
 function setInspectionComment(rowId, comment) {
@@ -967,6 +1041,9 @@ function handleInspectionSetStatus(rowId, next) {
   persistAfterAction();
   closeModal();
   render();
+  if (next === 'noncompliant') {
+    toast('Finding added', inspectionFindingId(inspectionWorkspaceRow(rowId)) + ' is now visible in Findings.', 'warn');
+  }
 }
 
 function handleInspectionDownload(auditId) {
@@ -2425,8 +2502,8 @@ function capDecision(id, decision) {
 function ensureCapReviewUi() {
   if (!state.capReviewUi) {
     state.capReviewUi = {
-      expandedId: 'SEC-2026-002',
-      tab: 'details',
+      expandedId: 'F-014-02',
+      tab: 'cap',
       status: 'all',
       due: 'all',
       organization: 'all',
@@ -2434,10 +2511,12 @@ function ensureCapReviewUi() {
       query: '',
       selectedProviderId: 'skycargo-air',
       decision: '',
-      comment: ''
+      comment: '',
+      findingDecisions: {}
     };
   }
-  if (!state.capReviewUi.tab) state.capReviewUi.tab = 'details';
+  if (!state.capReviewUi.expandedId) state.capReviewUi.expandedId = 'F-014-02';
+  if (!state.capReviewUi.tab) state.capReviewUi.tab = 'cap';
   if (!state.capReviewUi.status) state.capReviewUi.status = 'all';
   if (!state.capReviewUi.due) state.capReviewUi.due = 'all';
   if (!state.capReviewUi.organization) state.capReviewUi.organization = 'all';
@@ -2446,6 +2525,7 @@ function ensureCapReviewUi() {
   if (!state.capReviewUi.selectedProviderId) state.capReviewUi.selectedProviderId = 'skycargo-air';
   if (state.capReviewUi.decision === undefined || state.capReviewUi.decision === null) state.capReviewUi.decision = '';
   if (state.capReviewUi.comment === undefined || state.capReviewUi.comment === null) state.capReviewUi.comment = '';
+  if (!state.capReviewUi.findingDecisions || typeof state.capReviewUi.findingDecisions !== 'object') state.capReviewUi.findingDecisions = {};
   return state.capReviewUi;
 }
 
@@ -2458,15 +2538,16 @@ function handleCapReviewProvider(id) {
   ui.level = 'all';
   ui.query = '';
   ui.expandedId = '';
-  ui.tab = 'details';
+  ui.tab = 'cap';
   persistAfterAction();
   render();
 }
 
 function handleCapReviewRow(id) {
   var ui = ensureCapReviewUi();
-  ui.expandedId = ui.expandedId === id ? '' : id;
-  ui.tab = 'details';
+  var changed = ui.expandedId !== id;
+  ui.expandedId = id || ui.expandedId || 'F-014-02';
+  if (changed || !ui.tab) ui.tab = 'cap';
   ui.decision = '';
   ui.comment = '';
   persistAfterAction();
@@ -2477,8 +2558,73 @@ function handleCapReviewTab(id, tab) {
   var ui = ensureCapReviewUi();
   ui.expandedId = id || ui.expandedId;
   ui.tab = tab || 'details';
+  ui.findingTabChosen = true;
   persistAfterAction();
   render();
+}
+
+function handleInspectorFindingNew() {
+  openModal(modalShell('New finding',
+    '<p class="modal__intro">New findings are created from the inspection checklist when an item is marked Non-Compliant.</p>' +
+      '<p class="muted">Demo shortcut: use the SMS Oversight Audit checklist, set a row to Non-Compliant, and it will appear here with CAP required.</p>',
+    '<button class="btn" data-act="close-modal">Close</button>' +
+      '<button class="btn btn--primary" data-act="nav" data-view="audit-detail" data-id="AUD-2026-005">Open Checklist</button>', false));
+}
+
+function handleInspectorFindingFilterToggle() {
+  var ui = ensureCapReviewUi();
+  ui.filtersOpen = ui.filtersOpen === false;
+  persistAfterAction();
+  render();
+}
+
+function handleInspectorFindingEdit(id) {
+  var ui = ensureCapReviewUi();
+  var findingId = id || ui.expandedId || 'F-014-02';
+  openModal(modalShell('Edit finding',
+    '<p class="modal__intro"><b>' + esc(findingId) + '</b> is edited from the checklist finding record in this demo.</p>' +
+      '<p class="muted">The Inspector can update the finding details before reminding the service provider, while CAP evidence remains versioned in the finding workspace.</p>',
+    '<button class="btn" data-act="close-modal">Close</button>' +
+      '<button class="btn btn--primary" data-act="cap-review-tab" data-id="' + esc(findingId) + '" data-tab="details">Open Details</button>', false));
+}
+
+function handleInspectorFindingSubmitRevised(id) {
+  var ui = ensureCapReviewUi();
+  var findingId = id || ui.expandedId || 'F-014-03';
+  ui.expandedId = findingId;
+  ui.tab = 'cap';
+  ui.findingDecisions[findingId] = {
+    decision: 'resubmitted',
+    at: logTimestamp()
+  };
+  addLog('Service provider resubmitted CAP package in Findings workspace', findingId);
+  persistAfterAction();
+  render();
+  toast('Revised CAP submitted', findingId + ' is ready for inspector verification.', 'ok');
+}
+
+function handleInspectorFindingDecision(id, decision) {
+  var ui = ensureCapReviewUi();
+  var findingId = id || ui.expandedId || 'F-014-02';
+  if (!ui.findingDecisions || typeof ui.findingDecisions !== 'object') ui.findingDecisions = {};
+  ui.findingDecisions[findingId] = {
+    decision: decision,
+    at: logTimestamp()
+  };
+  ui.expandedId = findingId;
+  ui.tab = 'cap';
+  addLog(decision === 'accept' ? 'Inspector accepted CAP from Findings workspace' : 'Inspector returned CAP from Findings workspace', findingId);
+  if (decision === 'accept') {
+    pushNotification('auditee', 'OK', 'Inspector accepted the CAP for ' + findingId + '.');
+    persistAfterAction();
+    render();
+    toast('CAP accepted', findingId + ' is marked accepted in this demo workspace.', 'ok');
+  } else {
+    pushNotification('auditee', 'REV', 'Inspector returned the CAP for ' + findingId + ' with revision comments.');
+    persistAfterAction();
+    render();
+    toast('Returned for revision', findingId + ' is back with the service provider for revision.', 'warn');
+  }
 }
 
 function handleCapReviewQuickFilter(status) {
@@ -2503,7 +2649,8 @@ function handleCapReviewClear() {
   ui.organization = 'all';
   ui.level = 'all';
   ui.query = '';
-  ui.tab = 'details';
+  ui.tab = 'cap';
+  ui.findingTabChosen = false;
   ui.decision = '';
   ui.comment = '';
   persistAfterAction();
@@ -2616,9 +2763,9 @@ function handleCapReviewSubmitDecision(id) {
 
 function handleCapReviewEvidence(id, fileName) {
   var f = findingById(id);
-  if (!f) return;
+  var title = (f && f.title) || id || 'Finding';
   openModal(modalShell('Evidence file', '<p><b>' + esc(fileName || 'Evidence file') + '</b></p>' +
-    '<p class="muted">This demo opens the evidence record only. No real file is downloaded or stored.</p>',
+    '<p class="muted">Linked finding: ' + esc(title) + '. This demo opens the evidence record only. No real file is downloaded or stored.</p>',
     '<button class="btn" data-act="close-modal">Close</button>', false));
 }
 
