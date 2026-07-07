@@ -1708,6 +1708,8 @@ function capReviewUiState() {
     tab: 'details',
     status: 'all',
     due: 'all',
+    organization: 'all',
+    level: 'all',
     query: '',
     selectedProviderId: 'skycargo-air',
     decision: '',
@@ -2070,6 +2072,10 @@ function inspectorCapReviewRowsForProvider(providerId) {
 }
 
 function inspectorCapReviewRowById(id) {
+  var verificationRows = typeof inspectorCapVerificationRows === 'function' ? inspectorCapVerificationRows() : [];
+  for (var v = 0; v < verificationRows.length; v++) {
+    if (verificationRows[v].id === id || verificationRows[v].detailId === id) return verificationRows[v];
+  }
   var providers = inspectorCapReviewProviders();
   for (var i = 0; i < providers.length; i++) {
     var rows = inspectorCapReviewRowsForProvider(providers[i].id);
@@ -2089,6 +2095,186 @@ function inspectorCapReviewFilteredRows(rows, ui) {
     if (!query) return true;
     return [row.id, row.title, row.checklist, row.levelLabel, row.statusLabel].join(' ').toLowerCase().indexOf(query) !== -1;
   });
+}
+
+function inspectorCapVerificationRows() {
+  return [
+    { group: 'SkyCargo Air (Service Provider)', groupCount: '4 CAPs', id: 'F-014-01', detailId: 'F-014-01', title: 'Perimeter Fence Security', organization: 'SkyCargo Air', orgKey: 'skycargo-air', checklist: 'Access Control', level: 'Level 1', levelKey: 'l1', levelLabel: 'Level 1 (Critical)', owner: 'John D.', due: '2026-07-14', dueDateText: '14 Jul 2026', dueRule: '14 days', dueKey: 'due7', submittedOn: '27 Jun 2026', statusKey: 'pending', statusLabel: 'Pending', statusTone: 'warn' },
+    { group: 'SkyCargo Air (Service Provider)', groupCount: '4 CAPs', id: 'F-014-02', detailId: 'F-014-02', title: 'Access Control System', organization: 'SkyCargo Air', orgKey: 'skycargo-air', checklist: 'Access Control', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', owner: 'John D.', due: '2026-09-25', dueDateText: '25 Sep 2026', dueRule: '90 days', dueKey: 'later', submittedOn: '27 Jun 2026', statusKey: 'verified', statusLabel: 'Verified', statusTone: 'ok' },
+    { group: 'SkyCargo Air (Service Provider)', groupCount: '4 CAPs', id: 'F-014-03', detailId: 'F-014-03', title: 'CCTV Coverage Gaps', organization: 'SkyCargo Air', orgKey: 'skycargo-air', checklist: 'Surveillance', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', owner: 'John D.', due: '2026-09-25', dueDateText: '25 Sep 2026', dueRule: '90 days', dueKey: 'later', submittedOn: '27 Jun 2026', statusKey: 'verified', statusLabel: 'Verified', statusTone: 'ok' },
+    { group: 'SkyCargo Air (Service Provider)', groupCount: '4 CAPs', id: 'F-014-04', detailId: 'F-014-04', title: 'Security Training Records', organization: 'SkyCargo Air', orgKey: 'skycargo-air', checklist: 'Training', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', owner: 'John D.', due: '', dueDateText: '-', dueRule: 'Observation / no due date', dueKey: 'no_due', submittedOn: '27 Jun 2026', statusKey: 'verified', statusLabel: 'Verified', statusTone: 'ok' },
+    { group: 'SkyCargo Ground Handling Ltd.', groupCount: '3 CAPs', id: 'F-014-05', detailId: 'F-014-05', title: 'Vehicle Inspection Process', organization: 'SkyCargo Ground Handling Ltd.', orgKey: 'skycargo-ground', checklist: 'Ground Handling', level: 'Level 1', levelKey: 'l1', levelLabel: 'Level 1 (Critical)', owner: 'Sarah K.', due: '2026-07-14', dueDateText: '14 Jul 2026', dueRule: '14 days', dueKey: 'due7', submittedOn: '27 Jun 2026', statusKey: 'pending', statusLabel: 'Pending', statusTone: 'warn' },
+    { group: 'SkyCargo Ground Handling Ltd.', groupCount: '3 CAPs', id: 'F-014-06', detailId: 'F-014-06', title: 'Equipment Maintenance Records', organization: 'SkyCargo Ground Handling Ltd.', orgKey: 'skycargo-ground', checklist: 'Maintenance', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', owner: 'Sarah K.', due: '', dueDateText: '-', dueRule: 'Observation / no due date', dueKey: 'no_due', submittedOn: '27 Jun 2026', statusKey: 'not_due', statusLabel: 'Not Due', statusTone: 'neutral' },
+    { group: 'SkyCargo Ground Handling Ltd.', groupCount: '3 CAPs', id: 'F-014-07', detailId: 'F-014-07', title: 'Ramp Safety Markings', organization: 'SkyCargo Ground Handling Ltd.', orgKey: 'skycargo-ground', checklist: 'Ramp Safety', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', owner: 'Sarah K.', due: '', dueDateText: '-', dueRule: 'Observation / no due date', dueKey: 'no_due', submittedOn: '27 Jun 2026', statusKey: 'returned', statusLabel: 'Returned', statusTone: 'danger' },
+    { group: 'SkyFuel Services', groupCount: '2 CAPs', id: 'F-014-08', detailId: 'F-014-08', title: 'Fuel Storage Area Security', organization: 'SkyFuel Services', orgKey: 'skyfuel', checklist: 'Fuel Security', level: 'Level 1', levelKey: 'l1', levelLabel: 'Level 1 (Critical)', owner: 'Michael T.', due: '2026-07-14', dueDateText: '14 Jul 2026', dueRule: '14 days', dueKey: 'due7', submittedOn: '27 Jun 2026', statusKey: 'verified', statusLabel: 'Verified', statusTone: 'ok' },
+    { group: 'SkyFuel Services', groupCount: '2 CAPs', id: 'F-014-09', detailId: 'F-014-09', title: 'Spill Response Equipment', organization: 'SkyFuel Services', orgKey: 'skyfuel', checklist: 'Emergency Response', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', owner: 'Michael T.', due: '2026-09-25', dueDateText: '25 Sep 2026', dueRule: '90 days', dueKey: 'later', submittedOn: '27 Jun 2026', statusKey: 'verified', statusLabel: 'Verified', statusTone: 'ok' },
+    { group: 'SkySecurity Services', groupCount: '3 CAPs', id: 'F-014-10', detailId: 'F-014-10', title: 'Guard Patrol Frequency', organization: 'SkySecurity Services', orgKey: 'skysecurity', checklist: 'Security Patrol', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', owner: 'David L.', due: '2026-09-25', dueDateText: '25 Sep 2026', dueRule: '90 days', dueKey: 'later', submittedOn: '27 Jun 2026', statusKey: 'verified', statusLabel: 'Verified', statusTone: 'ok' },
+    { group: 'SkySecurity Services', groupCount: '3 CAPs', id: 'F-014-11', detailId: 'F-014-11', title: 'Visitor Access Logs', organization: 'SkySecurity Services', orgKey: 'skysecurity', checklist: 'Access Control', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', owner: 'David L.', due: '', dueDateText: '-', dueRule: 'Observation / no due date', dueKey: 'no_due', submittedOn: '27 Jun 2026', statusKey: 'verified', statusLabel: 'Verified', statusTone: 'ok' },
+    { group: 'SkySecurity Services', groupCount: '3 CAPs', id: 'F-014-12', detailId: 'F-014-12', title: 'Emergency Communication', organization: 'SkySecurity Services', orgKey: 'skysecurity', checklist: 'Emergency Preparedness', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', owner: 'David L.', due: '', dueDateText: '-', dueRule: 'Observation / no due date', dueKey: 'no_due', submittedOn: '27 Jun 2026', statusKey: 'pending', statusLabel: 'Pending', statusTone: 'warn' },
+    { group: 'SkyCatering Ltd.', groupCount: '2 CAPs', id: 'F-014-13', detailId: 'F-014-13', title: 'Cold Chain Monitoring', organization: 'SkyCatering Ltd.', orgKey: 'skycatering', checklist: 'Catering', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', owner: 'Emma R.', due: '2026-09-25', dueDateText: '25 Sep 2026', dueRule: '90 days', dueKey: 'later', submittedOn: '27 Jun 2026', statusKey: 'verified', statusLabel: 'Verified', statusTone: 'ok' },
+    { group: 'SkyCatering Ltd.', groupCount: '2 CAPs', id: 'F-014-14', detailId: 'F-014-14', title: 'Food Safety Training', organization: 'SkyCatering Ltd.', orgKey: 'skycatering', checklist: 'Training', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', owner: 'Emma R.', due: '2026-09-25', dueDateText: '25 Sep 2026', dueRule: '90 days', dueKey: 'later', submittedOn: '27 Jun 2026', statusKey: 'not_due', statusLabel: 'Not Due', statusTone: 'neutral' }
+  ];
+}
+
+function inspectorCapVerificationNormalizedStatus(status) {
+  if (status === 'pending_review') return 'pending';
+  if (status === 'accepted') return 'verified';
+  if (status === 'revision_requested' || status === 'rejected') return 'returned';
+  return status || 'all';
+}
+
+function inspectorCapVerificationCounts(rows) {
+  var counts = { all: rows.length, pending: 0, verified: 0, returned: 0, not_due: 0, all_verified: 0, l1: 0, l2: 0, l3: 0, due7: 0, overdue: 0 };
+  rows.forEach(function (row) {
+    counts[row.statusKey] = (counts[row.statusKey] || 0) + 1;
+    counts[row.levelKey] = (counts[row.levelKey] || 0) + 1;
+    if (row.dueKey === 'due7') counts.due7++;
+    if (row.dueKey === 'overdue') counts.overdue++;
+    if (row.statusKey === 'verified' || row.statusKey === 'not_due') counts.all_verified++;
+  });
+  return counts;
+}
+
+function inspectorCapVerificationFilteredRows(ui) {
+  var query = (ui.query || '').toLowerCase().trim();
+  var status = inspectorCapVerificationNormalizedStatus(ui.status || 'all');
+  return inspectorCapVerificationRows().filter(function (row) {
+    if (status === 'all_verified') {
+      if (row.statusKey !== 'verified' && row.statusKey !== 'not_due') return false;
+    } else if (status !== 'all' && row.statusKey !== status) {
+      return false;
+    }
+    if (ui.organization && ui.organization !== 'all' && row.orgKey !== ui.organization) return false;
+    if (ui.level && ui.level !== 'all' && row.levelKey !== ui.level) return false;
+    if (ui.due && ui.due !== 'all' && row.dueKey !== ui.due) return false;
+    if (!query) return true;
+    return [row.id, row.title, row.organization, row.checklist, row.owner, row.levelLabel, row.statusLabel].join(' ').toLowerCase().indexOf(query) !== -1;
+  });
+}
+
+function inspectorCapVerificationSelectOptions(options, selected) {
+  return options.map(function (option) {
+    return '<option value="' + esc(option[0]) + '"' + (option[0] === selected ? ' selected' : '') + '>' + esc(option[1]) + '</option>';
+  }).join('');
+}
+
+function inspectorCapVerificationTabs(ui, counts) {
+  var active = inspectorCapVerificationNormalizedStatus(ui.status || 'all');
+  var tabs = [
+    ['all', 'All CAPs', counts.all],
+    ['pending', 'Pending My Verification', counts.pending],
+    ['verified', 'Verified by Me', counts.verified],
+    ['returned', 'Returned', counts.returned],
+    ['all_verified', 'All Verified', counts.all_verified]
+  ];
+  return '<div class="cap-verification-tabs">' + tabs.map(function (tab) {
+    return '<button class="' + (active === tab[0] ? 'is-active' : '') + '" data-act="cap-review-filter" data-status="' + esc(tab[0]) + '">' + esc(tab[1]) + ' (' + esc(String(tab[2])) + ')</button>';
+  }).join('') + '</div>';
+}
+
+function inspectorCapVerificationFilters(ui) {
+  var orgOptions = inspectorCapVerificationSelectOptions([
+    ['all', 'All Organizations'],
+    ['skycargo-air', 'SkyCargo Air'],
+    ['skycargo-ground', 'SkyCargo Ground Handling'],
+    ['skyfuel', 'SkyFuel Services'],
+    ['skysecurity', 'SkySecurity Services'],
+    ['skycatering', 'SkyCatering Ltd.']
+  ], ui.organization || 'all');
+  var levelOptions = inspectorCapVerificationSelectOptions([
+    ['all', 'All Levels'],
+    ['l1', 'Level 1 (Critical)'],
+    ['l2', 'Level 2 (Major)'],
+    ['l3', 'Level 3 (Observation)']
+  ], ui.level || 'all');
+  var statusOptions = inspectorCapVerificationSelectOptions([
+    ['all', 'All Statuses'],
+    ['pending', 'Pending'],
+    ['verified', 'Verified'],
+    ['returned', 'Returned'],
+    ['not_due', 'Not Due']
+  ], inspectorCapVerificationNormalizedStatus(ui.status || 'all'));
+  var dueOptions = inspectorCapVerificationSelectOptions([
+    ['all', 'All Due Dates'],
+    ['due7', 'Due in 7 Days'],
+    ['later', 'Later'],
+    ['no_due', 'No Due Date']
+  ], ui.due || 'all');
+  return '<div class="cap-verification-filters">' +
+    '<label class="cap-verification-search"><span class="sr-only">Search CAPs</span><input id="cap-review-search" type="search" data-field="cap-review-search" value="' + esc(ui.query || '') + '" placeholder="Search by Finding ID, title, organization..."><button class="icon-btn" data-act="cap-review-apply-filters" aria-label="Search CAPs">⌕</button></label>' +
+    '<label><span>Organization</span><select data-field="cap-review-organization">' + orgOptions + '</select></label>' +
+    '<label><span>CAP Level</span><select data-field="cap-review-level">' + levelOptions + '</select></label>' +
+    '<label><span>Verification Status</span><select data-field="cap-review-status">' + statusOptions + '</select></label>' +
+    '<label><span>Due Date</span><select data-field="cap-review-due">' + dueOptions + '</select></label>' +
+    '<button class="btn btn--sm" data-act="cap-review-clear">Reset</button>' +
+  '</div>';
+}
+
+function inspectorCapVerificationRowsHtml(rows) {
+  if (!rows.length) {
+    return '<tr><td colspan="9"><div class="empty">No CAPs match these filters.</div></td></tr>';
+  }
+  var currentGroup = '';
+  return rows.map(function (row) {
+    var group = '';
+    if (row.group !== currentGroup) {
+      currentGroup = row.group;
+      group = '<tr class="cap-verification-group"><td colspan="9"><button class="cap-review-expand" data-act="cap-review-provider" data-id="' + esc(row.orgKey) + '">⌄</button><b>' + esc(row.group) + '</b><span>' + esc(row.groupCount) + '</span></td></tr>';
+    }
+    var due = row.dueDateText === '-'
+      ? '<span>-</span>'
+      : '<b' + (row.dueKey === 'due7' ? ' class="is-danger"' : '') + '>' + esc(row.dueDateText) + '</b>';
+    var actionLabel = row.statusKey === 'pending' || row.statusKey === 'returned' ? 'Review' : 'View';
+    return group + '<tr>' +
+      '<td><button class="prelim-report-link" data-act="nav" data-view="cap-review-detail" data-id="' + esc(row.detailId) + '">' + esc(row.id) + '</button></td>' +
+      '<td><b>' + esc(row.title) + '</b><span>' + esc(row.checklist) + '</span></td>' +
+      '<td>' + esc(row.organization) + '</td>' +
+      '<td><span class="sp-level is-' + esc(row.levelKey) + '">' + esc(row.levelLabel) + '</span></td>' +
+      '<td>' + esc(row.owner) + '</td>' +
+      '<td>' + due + '<span>' + esc(row.dueRule) + '</span></td>' +
+      '<td>' + esc(row.submittedOn) + '</td>' +
+      '<td>' + demoBadge(row.statusLabel, row.statusTone) + '</td>' +
+      '<td><button class="btn btn--sm" data-act="nav" data-view="cap-review-detail" data-id="' + esc(row.detailId) + '">' + esc(actionLabel) + '</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function inspectorCapVerificationTable(rows) {
+  return '<section class="cap-verification-panel">' +
+    '<div class="cap-verification-table-wrap"><table class="cap-verification-table"><thead><tr>' +
+      '<th>Finding ID</th><th>Finding Title</th><th>Organization</th><th>CAP Level</th><th>CAP Owner</th><th>Due Date</th><th>CAP Evidence Submitted</th><th>Verification Status</th><th>Actions</th>' +
+    '</tr></thead><tbody>' + inspectorCapVerificationRowsHtml(rows) + '</tbody></table></div>' +
+    '<div class="cap-review-footer"><span>Showing ' + esc(rows.length ? '1 to ' + rows.length + ' of 14 CAPs' : '0 of 14 CAPs') + '</span></div>' +
+  '</section>';
+}
+
+function inspectorCapVerificationSide(counts) {
+  return '<aside class="cap-verification-side">' +
+    '<section class="cap-review-side-card"><h2>Verification Summary</h2><div class="cap-verification-summary">' +
+      '<div><b>14</b><span>Total CAPs</span></div>' +
+      '<div class="is-warn"><b>' + esc(String(counts.pending)) + '</b><span>Pending</span></div>' +
+      '<div class="is-ok"><b>' + esc(String(counts.verified)) + '</b><span>Verified</span></div>' +
+      '<div class="is-danger"><b>' + esc(String(counts.returned)) + '</b><span>Returned</span></div>' +
+      '<div><b>' + esc(String(counts.not_due)) + '</b><span>Not Due</span></div>' +
+    '</div></section>' +
+    '<section class="cap-review-side-card"><h2>CAP Level Breakdown</h2><div class="cap-verification-levels">' +
+      '<div class="is-danger"><b>' + esc(String(counts.l1)) + '</b><span>Level 1<br>(Critical)</span></div>' +
+      '<div class="is-warn"><b>' + esc(String(counts.l2)) + '</b><span>Level 2<br>(Major)</span></div>' +
+      '<div class="is-info"><b>' + esc(String(counts.l3)) + '</b><span>Level 3<br>(Observation)</span></div>' +
+    '</div></section>' +
+    '<section class="cap-review-side-card"><h2>My Verification Workload</h2><dl class="cap-review-summary-list">' +
+      '<dt>Pending My Verification</dt><dd>' + esc(String(counts.pending)) + '</dd>' +
+      '<dt>Due in 7 Days</dt><dd>' + esc(String(counts.due7)) + '</dd>' +
+      '<dt class="is-danger">Overdue</dt><dd class="is-danger">' + esc(String(counts.overdue)) + '</dd>' +
+      '<dt class="is-ok">Verified by Me</dt><dd class="is-ok">' + esc(String(counts.verified)) + '</dd>' +
+    '</dl></section>' +
+    '<section class="cap-review-side-card"><h2>Quick Links</h2><div class="cap-verification-links">' +
+      '<button class="btn btn--sm" data-act="nav" data-view="audit-detail" data-id="AUD-2026-005">View Inspection Record</button>' +
+      '<button class="btn btn--sm" data-act="nav" data-view="findings" data-filter="open">All Findings</button>' +
+      '<button class="btn btn--sm" data-act="final-report-ready-action" data-final-action="prepare">Final Report Draft</button>' +
+    '</div></section>' +
+    '<section class="cap-review-side-card"><h2>Notes</h2><p>Please verify that the service provider evidence is effective, adequate, and implemented within the due date. Return the CAP if the package is not satisfactory.</p></section>' +
+  '</aside>';
 }
 
 function inspectorCapReviewProviderCards(ui) {
@@ -2196,47 +2382,26 @@ function inspectorCapReviewTimeline() {
 
 function viewInspectorCapReviews() {
   var ui = capReviewUiState();
-  var selectedProvider = inspectorCapReviewProviderById(ui.selectedProviderId);
-  ui.selectedProviderId = selectedProvider.id;
-  var providerRows = inspectorCapReviewRowsForProvider(selectedProvider.id);
-  var visibleRows = inspectorCapReviewFilteredRows(providerRows, ui);
-  var actions = '<button class="btn" data-act="nav" data-view="cap-review-detail" data-id="F-014-01">View Final Report Progress</button>';
-  return '<div class="cap-review-page cap-submission-page">' +
-    '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><b>INS-2026-014</b><span>›</span><b>CAP Review</b></div>' +
-    pageHead('CAP Review', 'Select an organization to review its CAPs', actions) +
+  var allRows = inspectorCapVerificationRows();
+  var counts = inspectorCapVerificationCounts(allRows);
+  var visibleRows = inspectorCapVerificationFilteredRows(ui);
+  var actions = '<button class="btn" data-act="nav" data-view="audit-reports" data-filter="final">View Final Report Progress</button>';
+  return '<div class="cap-review-page cap-verification-page">' +
+    '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><b>INS-2026-014</b><span>›</span><b>CAP Verification</b></div>' +
+    pageHead('CAP Verification', 'Review CAP closure evidence submitted by service providers.', actions) +
     '<div class="cap-review-inspection-meta">' +
       '<div><span>Inspection ID</span><b>INS-2026-014</b></div>' +
       '<div><span>Inspection Type</span><b>Routine (Announced)</b></div>' +
+      '<div><span>Organization(s)</span><b>5 Organizations</b></div>' +
       '<div><span>Inspection Dates</span><b>12 - 14 Jun 2026</b></div>' +
-      '<div><span>Lead Inspector</span><b>Aylin Sezer</b></div>' +
-      '<div><span>Report Version</span><b>2.0 (CAP Submitted)</b></div>' +
-      '<div><span>CAP Submitted On</span><b>' + esc(selectedProvider.submittedOn) + '</b><small>by ' + esc(selectedProvider.name) + '</small></div>' +
+      '<div><span>CAP Evidence Submitted</span><b>27 Jun 2026</b></div>' +
+      '<div><span>Ready for Inspector Verification</span><b>Yes</b></div>' +
     '</div>' +
-    '<div class="cap-submission-layout">' +
-      '<main class="cap-submission-main">' +
-        '<section class="cap-submission-panel">' +
-          '<h2>1. Select Organization</h2>' +
-          '<p>This inspection includes CAPs from multiple organizations. Please select an organization to review.</p>' +
-          '<div class="cap-provider-strip">' + inspectorCapReviewProviderCards(ui) + '</div>' +
-        '</section>' +
-        '<section class="cap-submission-panel">' +
-          '<div class="cap-submission-panel__head">' +
-            '<div><h2>2. CAPs for ' + esc(selectedProvider.name) + ' (' + esc(selectedProvider.role) + ')</h2>' + demoBadge(selectedProvider.status === 'submitted' ? 'CAP Submitted' : 'Pending CAP', selectedProvider.status === 'submitted' ? 'ok' : 'warn') + '</div>' +
-            '<div class="cap-submission-search"><input id="cap-review-search" type="search" data-field="cap-review-search" value="' + esc(ui.query || '') + '" placeholder="Search CAPs..."><button class="icon-btn" data-act="cap-review-apply-filters" aria-label="Search CAPs">⌕</button><button class="btn btn--sm" data-act="cap-review-clear">Filter</button></div>' +
-          '</div>' +
-          inspectorCapReviewStatusTabs(ui, providerRows) +
-          '<div class="cap-submission-table-wrap"><table class="cap-submission-table"><thead><tr>' +
-            '<th>Finding ID</th><th>Finding Title</th><th>Level</th><th>Due Date (From Report)</th><th>CAP Submitted On</th><th>Status</th><th>Action</th>' +
-          '</tr></thead><tbody>' + inspectorCapReviewRowsHtml(visibleRows) + '</tbody></table></div>' +
-          '<div class="cap-review-footer"><span>Showing ' + esc(visibleRows.length ? '1 to ' + visibleRows.length + ' of ' + providerRows.length + ' CAPs' : '0 of ' + providerRows.length + ' CAPs') + '</span></div>' +
-        '</section>' +
-        '<div class="cap-review-next-step"><b>Next Step</b><span>Please review each CAP and take appropriate action: Accept, Request Revision, or Reject.</span></div>' +
-      '</main>' +
-      '<aside class="cap-submission-side">' +
-        inspectorCapReviewSummary(selectedProvider, providerRows) +
-        inspectorCapReviewDueGuide() +
-        inspectorCapReviewTimeline() +
-      '</aside>' +
+    inspectorCapVerificationTabs(ui, counts) +
+    inspectorCapVerificationFilters(ui) +
+    '<div class="cap-verification-layout">' +
+      '<main class="cap-verification-main">' + inspectorCapVerificationTable(visibleRows) + '</main>' +
+      inspectorCapVerificationSide(counts) +
     '</div>' +
   '</div>';
 }
@@ -2522,7 +2687,7 @@ function capDetailRowById(id) {
       levelLabel: submittedCap.levelLabel,
       department: submittedCap.checklist,
       cap: 'Yes',
-      owner: 'SkyCargo Air',
+      owner: submittedCap.organization || 'SkyCargo Air',
       due: submittedCap.due || '',
       status: submittedCap.statusLabel,
       days: submittedCap.dueRule,
@@ -6488,22 +6653,18 @@ function leadFinalReportTableHtml(rows, totalCount) {
     var status = leadFinalReportStatusMeta(row.status);
     var finalAction = row.actionType === 'preview' ? 'preview' : 'prepare';
     return '<tr>' +
-      '<td><button class="prelim-report-link" data-act="final-report-list-open" data-id="' + esc(row.reportId) + '">' + esc(row.inspectionId) + '</button></td>' +
-      '<td><b>' + esc(row.organization) + '</b><span>' + esc(row.orgCount) + '</span></td>' +
-      '<td>' + esc(row.type) + '</td>' +
-      '<td>' + esc(row.department) + '</td>' +
-      '<td>' + esc(row.dates) + '</td>' +
-      '<td>' + esc(row.version) + '</td>' +
+      '<td><button class="prelim-report-link" data-act="final-report-list-open" data-id="' + esc(row.reportId) + '">' + esc(row.inspectionId) + '</button><span>' + esc(row.type + ' · ' + row.dates) + '</span></td>' +
+      '<td><b>' + esc(row.organization) + '</b><span>' + esc(row.orgCount + ' · ' + row.department) + '</span></td>' +
       '<td><b>' + esc(row.findings) + '</b><span>' + esc(row.capDetail) + '</span></td>' +
-      '<td><span class="prelim-status is-' + esc(status.tone) + '">' + esc(status.label) + '</span><span>' + esc(row.cap) + '</span></td>' +
+      '<td><span class="prelim-status is-' + esc(status.tone) + '">' + esc(status.label) + '</span><span>' + esc(row.cap) + '</span><span>' + esc(row.version) + '</span></td>' +
       '<td><b>' + esc(row.lastUpdated) + '</b><span>' + esc(row.updatedBy) + '</span></td>' +
       '<td><b>' + esc(row.dueDate) + '</b><span>' + esc(row.dueNote) + '</span></td>' +
       '<td><button class="btn btn--sm" data-act="final-report-ready-action" data-final-action="' + esc(finalAction) + '">' + esc(row.action) + '</button></td>' +
     '</tr>';
-  }).join('') : '<tr><td colspan="11"><div class="empty">No final reports match the current filters.</div></td></tr>';
+  }).join('') : '<tr><td colspan="7"><div class="empty">No final reports match the current filters.</div></td></tr>';
   return '<section class="prelim-report-table-panel final-report-list-table-panel">' +
     '<div class="prelim-report-table-wrap"><table class="prelim-report-table final-report-list-table"><thead><tr>' +
-      '<th>Inspection ID</th><th>Organization</th><th>Inspection Type</th><th>Department</th><th>Inspection Dates</th><th>Report Version</th><th>Findings Summary</th><th>CAP Implementation</th><th>Last Updated</th><th>Due Date</th><th>Actions</th>' +
+      '<th>Inspection</th><th>Organization</th><th>Findings Summary</th><th>CAP Implementation</th><th>Last Updated</th><th>Due Date</th><th>Actions</th>' +
     '</tr></thead><tbody>' + body + '</tbody></table></div>' +
     '<div class="prelim-report-table-foot">' +
       '<span>Showing ' + (visibleRows.length ? '1' : '0') + ' to ' + esc(String(visibleRows.length)) + ' of ' + esc(String(totalCount)) + ' reports</span>' +
@@ -6625,8 +6786,8 @@ function viewLeadFinalReportReady() {
         '</tbody></table></div></section>' +
         '<section class="final-ready-panel"><h2>Final Report Preparation</h2><p>All CAPs are approved. You can now prepare the Final Report. Once submitted, it will go through the approval workflow.</p>' +
           '<div class="final-ready-prep-grid">' +
-            '<div class="final-ready-prep-card"><h3>Report Information</h3><dl><dt>Report Version</dt><dd>2.0 (Final)</dd><dt>Report Title (Draft)</dt><dd>INS-2026-014 Final Report - SkyCargo Air</dd><dt>Report Language</dt><dd>English</dd><dt>Last Updated</dt><dd>' + esc(prepared ? ui.finalReportPreparedAt : '30 Jun 2026 16:25') + '</dd></dl><button class="btn btn--sm">Edit Report Information</button></div>' +
-            '<div class="final-ready-prep-card"><h3>Report Sections</h3><ol>' + sections.map(function (section) { return '<li><span>' + esc(section[0]) + '</span>' + demoBadge(section[1], section[1] === 'Completed' ? 'ok' : (section[1] === 'In Progress' ? 'info' : 'neutral')) + '</li>'; }).join('') + '</ol></div>' +
+            '<div class="final-ready-prep-card"><h3>Report Information</h3><div class="final-ready-info-list"><div><span>Version</span><b>2.0 (Final)</b></div><div><span>Draft Title</span><b>INS-2026-014 Final Report - SkyCargo Air</b></div><div><span>Language</span><b>English</b></div><div><span>Last Updated</span><b>' + esc(prepared ? ui.finalReportPreparedAt : '30 Jun 2026 16:25') + '</b></div></div><button class="btn btn--sm">Edit Report Information</button></div>' +
+            '<div class="final-ready-prep-card"><h3>Report Sections</h3><div class="final-ready-section-list">' + sections.map(function (section) { return '<div><span>' + esc(section[0]) + '</span><em class="is-' + esc(section[1] === 'Completed' ? 'ok' : (section[1] === 'In Progress' ? 'info' : 'neutral')) + '">' + esc(section[1]) + '</em></div>'; }).join('') + '</div></div>' +
             '<div class="final-ready-prep-card final-ready-actions"><h3>Actions</h3><button class="btn btn--primary" data-act="final-report-ready-action" data-final-action="prepare">' + esc(prepared ? 'Continue Final Report' : 'Prepare / Edit Final Report') + '</button><button class="btn" data-act="final-report-ready-action" data-final-action="preview">Preview Final Report</button><button class="btn" data-act="final-report-ready-action" data-final-action="attachments">Manage Attachments</button></div>' +
           '</div></section>' +
       '</main>' +
@@ -7398,15 +7559,15 @@ function serviceProviderReportTabs(ui) {
 
 function serviceProviderCapStatus(row, ui) {
   if (!row.capRequired) return { label: 'Not Applicable', tone: 'neutral' };
-  if (ui.submittedCaps[row.id]) return { label: 'CAP Submitted', tone: 'ok' };
-  return { label: 'Pending CAP', tone: 'info' };
+  if (ui.submittedCaps[row.id]) return { label: 'CAP Evidence Submitted', tone: 'ok' };
+  return { label: 'Evidence Required', tone: 'info' };
 }
 
 function serviceProviderCapRowsHtml(ui) {
   return serviceProviderCapRequirements().map(function (row) {
     var status = serviceProviderCapStatus(row, ui);
     var action = row.capRequired
-      ? '<button class="btn btn--sm' + (ui.submittedCaps[row.id] ? '' : ' btn--primary') + '" data-act="service-report-submit-cap" data-id="' + esc(row.id) + '">' + esc(ui.submittedCaps[row.id] ? 'View CAP' : 'Submit CAP') + '</button>'
+      ? '<button class="btn btn--sm' + (ui.submittedCaps[row.id] ? '' : ' btn--primary') + '" data-act="service-report-submit-cap" data-id="' + esc(row.id) + '">' + esc(ui.submittedCaps[row.id] ? 'View Evidence' : 'Upload Evidence') + '</button>'
       : '<button class="btn btn--sm" data-act="service-report-view-finding" data-id="' + esc(row.id) + '">View Finding</button>';
     var due = row.capRequired
       ? '<b>' + esc(row.dueDateText) + '</b><small>(' + esc(row.dueRule) + ')</small>'
@@ -7496,15 +7657,15 @@ function serviceProviderCapTab(meta, ui) {
     '<main class="sp-report-main">' +
       '<section class="sp-report-panel">' +
         '<h2>CAP Requirements Summary</h2>' +
-        '<p>The following findings require corrective action. Submit the Corrective Action Plan (CAP) within the due date for each checklist finding.</p>' +
+        '<p>The following findings require corrective action evidence. Upload the CAP closure document or implementation evidence within the due date for each checklist finding.</p>' +
         '<div class="sp-report-summary-grid">' +
-          serviceProviderSummaryCard('Total CAP Required', capRequired.length, '', 'total') +
+          serviceProviderSummaryCard('Total Evidence Required', capRequired.length, '', 'total') +
           serviceProviderSummaryCard('Level 1 (Critical)', 2, '14 days', 'l1') +
           serviceProviderSummaryCard('Level 2 (Major)', 2, '90 days', 'l2') +
           serviceProviderSummaryCard('Level 3 (Observation)', 1, 'Observation', 'l3') +
           serviceProviderSummaryCard('Overdue', 0, '', 'overdue') +
         '</div>' +
-        '<h2 class="mt-24">CAP Requirements (5)</h2>' +
+        '<h2 class="mt-24">CAP Evidence Requirements (5)</h2>' +
         '<div class="sp-report-table-wrap"><table class="sp-report-table"><thead><tr><th>Finding ID</th><th>Finding Title</th><th>Level</th><th>Due Date</th><th>Days Left</th><th>Status</th><th>Action</th></tr></thead><tbody>' + serviceProviderCapRowsHtml(ui) + '</tbody></table></div>' +
         '<div class="sp-report-rules"><span>Due dates are calculated based on the finding level:</span><b class="is-l1">Level 1 = 14 days</b><b class="is-l2">Level 2 = 90 days</b><b class="is-l3">Level 3 = Observation</b></div>' +
       '</section>' +

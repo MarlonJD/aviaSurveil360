@@ -36,7 +36,8 @@ var NAV = {
   inspector: [
     { view: 'dashboard', label: 'Dashboard', icon: '▦' },
     { view: 'inspector-assignments', label: 'My Assignments', icon: '▣', badge: '8' },
-    { view: 'findings', label: 'Findings & CAP', icon: '✓', filter: 'open', badge: '5' },
+    { view: 'findings', label: 'Findings', icon: '⚑', filter: 'open', badge: '2' },
+    { view: 'findings', label: 'CAP Verification', icon: '✓', filter: 'capreview', badge: '3' },
     { view: 'messages', label: 'Messages', icon: '✉', badge: '2' },
     { view: 'calendar', label: 'Calendar', icon: '▤' },
     { view: 'reports', label: 'Reports', icon: '□' }
@@ -75,7 +76,6 @@ var NAV = {
     { view: 'lead-review', label: 'Assigned Audits', icon: '▣' },
     { view: 'audit-reports', label: 'Preliminary Reports', icon: '□', filter: 'preliminary', badge: '6' },
     { view: 'audit-reports', label: 'Final Reports', icon: '□', filter: 'final', badge: '4' },
-    { view: 'findings', label: 'CAP Verification', icon: '✓', filter: 'capreview', badge: '7' },
     { view: 'calendar', label: 'Calendar', icon: '▤' },
     { view: 'messages', label: 'Messages', icon: '✉' },
     { view: 'safety-intelligence', label: 'Analytics & Reports', icon: '⌁' },
@@ -123,8 +123,8 @@ var VIEW_TITLES = {
 };
 
 var ROLE_DESC = {
-  inspector: 'Inspector Workspace — daily operations, findings review, CAP review and field work.',
-  leadInspector: 'Lead Inspector — assigned audits, preliminary/final reports and CAP verification.',
+  inspector: 'Inspector Workspace — daily operations, findings review, CAP verification and field work.',
+  leadInspector: 'Lead Inspector — assigned audits and preliminary/final reports.',
   manager: 'Department Manager — planning items, approvals, scheduling and department oversight.',
   gm: 'General Manager — planning and report approvals, budget routing and audit release.',
   finance: 'Finance Review — budget and resource review for planned audits.',
@@ -1924,21 +1924,21 @@ function handleServiceProviderSubmitCap(findingId) {
   if (!row || !row.capRequired) return;
   var ui = ensureServiceProviderReportUi();
   var alreadySubmitted = !!ui.submittedCaps[row.id];
-  openModal(modalShell((alreadySubmitted ? 'CAP submitted - ' : 'Submit CAP - ') + row.id,
+  openModal(modalShell((alreadySubmitted ? 'CAP evidence submitted - ' : 'Upload CAP evidence - ') + row.id,
     '<div class="sp-report-cap-modal">' +
       '<p><b>' + esc(row.title) + '</b></p>' +
       '<div class="metaline">' +
         metaItem('Checklist item', row.checklist) +
         metaItem('Level', row.levelLabel) +
         metaItem('Due Date', row.dueDateText) +
-        metaItem('Status', alreadySubmitted ? 'CAP Submitted' : 'Pending CAP') +
+        metaItem('Status', alreadySubmitted ? 'CAP Evidence Submitted' : 'Evidence Required') +
       '</div>' +
-      '<label>Root cause<textarea placeholder="Describe root cause" rows="3"' + (alreadySubmitted ? ' readonly' : '') + '>' + (alreadySubmitted ? 'Mock CAP submitted for review.' : '') + '</textarea></label>' +
-      '<label>Corrective action<textarea placeholder="Describe corrective action" rows="3"' + (alreadySubmitted ? ' readonly' : '') + '>' + (alreadySubmitted ? 'Corrective action package is waiting for CAA review.' : '') + '</textarea></label>' +
-      '<p class="small muted mt-12">Frontend demo only: the CAP entry is saved in this browser state. No backend, notification service, or document storage is used.</p>' +
+      '<label>Implementation note<textarea placeholder="Describe what was completed" rows="3"' + (alreadySubmitted ? ' readonly' : '') + '>' + (alreadySubmitted ? 'Corrective action completed. Evidence package is waiting for inspector verification.' : '') + '</textarea></label>' +
+      '<label>CAP closure evidence<div class="filebox filebox--small"><div>' + esc(alreadySubmitted ? 'CAP_Closure_Evidence_' + row.id + '.pdf' : 'Click to attach a document (mock)') + '</div><div class="filebox__hint">Demo only: file name is shown; no real document is uploaded or stored.</div></div></label>' +
+      '<p class="small muted mt-12">The Service Provider uploads evidence to support CAP closure. The Inspector verifies the package before any finding can close.</p>' +
     '</div>',
     '<button class="btn" data-act="close-modal">Close</button>' +
-      (alreadySubmitted ? '' : '<button class="btn btn--primary" data-act="service-report-confirm-cap" data-id="' + esc(row.id) + '">Submit Mock CAP</button>'),
+      (alreadySubmitted ? '' : '<button class="btn btn--primary" data-act="service-report-confirm-cap" data-id="' + esc(row.id) + '">Submit Mock Evidence</button>'),
     false));
 }
 
@@ -1948,12 +1948,12 @@ function handleServiceProviderConfirmCap(findingId) {
   var ui = ensureServiceProviderReportUi();
   ui.submittedCaps[row.id] = logTimestamp();
   ui.tab = 'cap';
-  pushNotification('inspector', 'CAP', 'SkyCargo Air submitted a CAP for ' + row.id + ' from final report FR-2026-014.');
-  addLog('Service Provider submitted CAP', row.id);
+  pushNotification('inspector', 'CAP', 'SkyCargo Air uploaded CAP closure evidence for ' + row.id + ' from final report FR-2026-014.');
+  addLog('Service Provider uploaded CAP evidence', row.id);
   closeModal();
   persistAfterAction();
   render();
-  toast('CAP submitted', row.id + ' was sent to the CAA review queue in this demo.', 'ok');
+  toast('CAP evidence submitted', row.id + ' was sent to the inspector verification queue in this demo.', 'ok');
 }
 
 function handleServiceProviderViewFinding(findingId) {
@@ -2371,6 +2371,8 @@ function ensureCapReviewUi() {
       tab: 'details',
       status: 'all',
       due: 'all',
+      organization: 'all',
+      level: 'all',
       query: '',
       selectedProviderId: 'skycargo-air',
       decision: '',
@@ -2380,6 +2382,8 @@ function ensureCapReviewUi() {
   if (!state.capReviewUi.tab) state.capReviewUi.tab = 'details';
   if (!state.capReviewUi.status) state.capReviewUi.status = 'all';
   if (!state.capReviewUi.due) state.capReviewUi.due = 'all';
+  if (!state.capReviewUi.organization) state.capReviewUi.organization = 'all';
+  if (!state.capReviewUi.level) state.capReviewUi.level = 'all';
   if (state.capReviewUi.query === undefined || state.capReviewUi.query === null) state.capReviewUi.query = '';
   if (!state.capReviewUi.selectedProviderId) state.capReviewUi.selectedProviderId = 'skycargo-air';
   if (state.capReviewUi.decision === undefined || state.capReviewUi.decision === null) state.capReviewUi.decision = '';
@@ -2390,8 +2394,10 @@ function ensureCapReviewUi() {
 function handleCapReviewProvider(id) {
   var ui = ensureCapReviewUi();
   ui.selectedProviderId = id || 'skycargo-air';
+  ui.organization = id || 'all';
   ui.status = 'all';
   ui.due = 'all';
+  ui.level = 'all';
   ui.query = '';
   ui.expandedId = '';
   ui.tab = 'details';
@@ -2436,6 +2442,8 @@ function handleCapReviewClear() {
   var ui = ensureCapReviewUi();
   ui.status = 'all';
   ui.due = 'all';
+  ui.organization = 'all';
+  ui.level = 'all';
   ui.query = '';
   ui.tab = 'details';
   ui.decision = '';
@@ -2464,6 +2472,19 @@ function handleCapReviewFieldChange(field, target) {
   var ui = ensureCapReviewUi();
   if (field === 'cap-review-status') {
     ui.status = target.value || 'all';
+    persistAfterAction();
+    render();
+    return;
+  }
+  if (field === 'cap-review-organization') {
+    ui.organization = target.value || 'all';
+    ui.selectedProviderId = ui.organization === 'all' ? 'skycargo-air' : ui.organization;
+    persistAfterAction();
+    render();
+    return;
+  }
+  if (field === 'cap-review-level') {
+    ui.level = target.value || 'all';
     persistAfterAction();
     render();
     return;
