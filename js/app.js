@@ -722,6 +722,8 @@ function handleAction(act, el) {
     case 'inspection-submit-lead': handleInspectionSubmitLead(id); break;
     case 'inspection-section-preview': handleInspectionSectionPreview(id); break;
     case 'inspection-complete-sections': handleInspectionCompleteSections(id); break;
+    case 'inspection-file-open': handleInspectionFileOpen(id); break;
+    case 'inspection-file-attach': handleInspectionFileAttach(id); break;
     case 'inspection-row-menu': handleInspectionRowMenu(id); break;
     case 'inspection-set-status': handleInspectionSetStatus(id, status); break;
     case 'inspector-assignment-filter': handleInspectorAssignmentFilter(status); break;
@@ -900,7 +902,7 @@ function handleInspectionRowMenu(rowId) {
   var statusKey = inspectionExecutionStatus(row);
   var meta = INSPECTOR_EXECUTION_STATUS_META[statusKey] || INSPECTOR_EXECUTION_STATUS_META.na;
   var comment = inspectionExecutionComment(row) || 'No comment yet.';
-  var file = row.file || 'No file attached';
+  var file = (typeof inspectionExecutionFileName === 'function' ? inspectionExecutionFileName(row) : row.file) || 'No file attached';
   var body = '<div class="modal__intro"><b>' + esc(row.no) + '</b> ' + esc(row.item) + '</div>' +
     '<div class="metaline">' +
       metaItem('Compliance', meta.label) +
@@ -911,6 +913,52 @@ function handleInspectionRowMenu(rowId) {
     '<button class="btn" data-act="inspection-set-status" data-id="' + esc(row.id) + '" data-status="observed">Mark Observed</button>' +
     '<button class="btn btn--danger" data-act="inspection-set-status" data-id="' + esc(row.id) + '" data-status="noncompliant">Mark Non-Compliant</button>';
   openModal(modalShell('Checklist row actions', body, foot));
+}
+
+function handleInspectionFileOpen(rowId) {
+  var row = inspectionWorkspaceRow(rowId);
+  if (!row) return;
+  var file = (typeof inspectionExecutionFileName === 'function' ? inspectionExecutionFileName(row) : row.file) || '';
+  var body = '<div class="modal__intro"><b>' + esc(row.no) + '</b> ' + esc(row.item) + '</div>' +
+    '<div class="metaline">' +
+      metaItem('Attached file', file || 'No file attached') +
+      metaItem('Checklist section', (state.inspectionWorkspaceSection || '1.')) +
+      metaItem('Demo storage', 'File name only') +
+    '</div>' +
+    '<p class="small muted mt-12">Demo only: this previews the attachment record. No real document is uploaded, stored, or downloaded.</p>';
+  var foot = '<button class="btn" data-act="close-modal">Close</button>' +
+    (file
+      ? '<button class="btn btn--primary" data-act="inspection-row-menu" data-id="' + esc(row.id) + '">View Row Details</button>'
+      : '<button class="btn btn--primary" data-act="inspection-file-attach" data-id="' + esc(row.id) + '">Attach Mock File</button>');
+  openModal(modalShell(file ? 'Attached file preview' : 'Attach checklist evidence', body, foot));
+}
+
+function handleInspectionFileAttach(rowId) {
+  var row = inspectionWorkspaceRow(rowId);
+  if (!row) return;
+  if (!state.inspectionWorkspaceAnswers) state.inspectionWorkspaceAnswers = {};
+  if (!state.inspectionWorkspaceAnswers[row.id]) state.inspectionWorkspaceAnswers[row.id] = {};
+  var safeNo = String(row.no || row.id).replace(/[^0-9A-Za-z]+/g, '_').replace(/^_+|_+$/g, '');
+  state.inspectionWorkspaceAnswers[row.id].file = 'inspection_' + safeNo + '_evidence.pdf';
+  addLog('Mock checklist attachment selected', row.id);
+  persistAfterAction();
+  closeModal();
+  render();
+  toast('Attachment selected', 'Mock evidence filename added to ' + row.no + '. No real file was uploaded.', 'ok');
+}
+
+function handleInspectionSubmittedPackage(auditId) {
+  openModal(modalShell('Submitted checklist package',
+    '<div class="modal__intro"><b>SMS Oversight Audit</b> has already been submitted to the Lead Inspector.</div>' +
+      '<div class="metaline">' +
+        metaItem('Inspection ID', 'INS-2026-015') +
+        metaItem('Submitted on', state.inspectionWorkspaceSubmittedAt ? logTimestamp() : 'Submitted') +
+        metaItem('Package status', 'Available to Inspector workspace') +
+      '</div>' +
+      '<p class="small muted mt-12">The submitted checklist package stays active in the demo so the Inspector can open the question workspace or review attached evidence without waiting for Lead Inspector to inspect every row one by one.</p>',
+    '<button class="btn" data-act="close-modal">Close</button>' +
+      '<button class="btn btn--primary" data-act="nav" data-view="lead-assignment-questions" data-id="' + esc(auditId || 'AUD-2026-005') + '">Open Inspector Question Workspace</button>',
+    false));
 }
 
 function handleInspectionSetStatus(rowId, next) {
@@ -940,7 +988,7 @@ function handleInspectionSaveDraft(auditId) {
 
 function handleInspectionSubmitLead(auditId) {
   if (state.inspectionWorkspaceSubmittedAt) {
-    toast('Already submitted', 'This inspection is already marked submitted to the Lead Inspector.', 'info');
+    handleInspectionSubmittedPackage(auditId);
     return;
   }
   state.inspectionWorkspaceSubmittedAt = new Date().toISOString();
@@ -1500,6 +1548,10 @@ function handleLeadAssignmentAssign() {
   ui.assignedAt = nowIsoDemo();
   persistAfterAction();
   render();
+  if (state.role === 'inspector') {
+    toast('Questions marked', selected.length + ' questions marked for inspector review in this demo.', 'ok');
+    return;
+  }
   toast('Checklist questions assigned', selected.length + ' questions assigned to ' + ui.assignee + ' with ' + ui.priority + ' priority.', 'ok');
 }
 
@@ -1515,6 +1567,12 @@ function handleLeadAssignmentRelease() {
   var ui = ensureLeadAssignmentUi();
   ui.releasedAt = nowIsoDemo();
   if (!ui.assignedAt) ui.assignedAt = ui.releasedAt;
+  if (state.role === 'inspector') {
+    persistAfterAction();
+    render();
+    toast('Inspector review confirmed', 'Submitted checklist package remains available in the Inspector workspace.', 'ok');
+    return;
+  }
   state.notifications.unshift({
     id: 'n-lead-assignment-' + state.notifSeq++,
     role: 'leadInspector',

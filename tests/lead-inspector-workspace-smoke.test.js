@@ -104,6 +104,8 @@ assert.match(html, /Ahmed Ali/);
 assert.match(html, /Maria Silva/);
 assert.match(html, /Are access control procedures implemented\?/);
 assert.match(html, /Assign Selected \(4\)/);
+assert.match(html, /Checklist Item/);
+assert.doesNotMatch(html, /colspan="2"/);
 assert.match(html, /data-field="lead-assignment-assignee"/);
 assert.match(html, /data-field="lead-assignment-due"/);
 assert.match(html, /data-field="lead-assignment-priority"/);

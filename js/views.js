@@ -4104,6 +4104,11 @@ function inspectionExecutionComment(row) {
   return answer.comment !== undefined ? answer.comment : row.comment;
 }
 
+function inspectionExecutionFileName(row) {
+  var answer = inspectionExecutionAnswer(row);
+  return answer.file !== undefined ? answer.file : row.file;
+}
+
 function inspectionExecutionStatusButton(row) {
   var status = inspectionExecutionStatus(row);
   var meta = INSPECTOR_EXECUTION_STATUS_META[status] || INSPECTOR_EXECUTION_STATUS_META.na;
@@ -4118,10 +4123,13 @@ function inspectionExecutionStatusButton(row) {
 }
 
 function inspectionExecutionFile(row) {
-  if (!row.file) {
-    return '<span class="inspection-file inspection-file--empty"><span class="inspection-file__icon">&#128206;</span>No file attached</span>';
+  var file = inspectionExecutionFileName(row);
+  if (!file) {
+    return '<button class="inspection-file inspection-file--empty" data-act="inspection-file-open" data-id="' + esc(row.id) + '">' +
+      '<span class="inspection-file__icon">&#128206;</span>No file attached</button>';
   }
-  return '<span class="inspection-file"><span class="inspection-file__icon">&#128206;</span>' + esc(row.file) + '</span>';
+  return '<button class="inspection-file" data-act="inspection-file-open" data-id="' + esc(row.id) + '">' +
+    '<span class="inspection-file__icon">&#128206;</span>' + esc(file) + '</button>';
 }
 
 function inspectionExecutionLegendItem(status) {
@@ -4175,7 +4183,7 @@ function viewInspectorAuditExecution(audit) {
         '<div class="inspection-exec__actions">' +
           '<button class="btn" data-act="inspection-download-checklist" data-id="' + esc(audit.id) + '"><span>&#8681;</span>Download Checklist</button>' +
           '<button class="btn" data-act="inspection-save-draft" data-id="' + esc(audit.id) + '"><span>&#128190;</span>Save Draft</button>' +
-          '<button class="btn btn--primary" data-act="inspection-submit-lead" data-id="' + esc(audit.id) + '"' + (submitted ? ' disabled' : '') + '><span>&#10148;</span>' + (submitted ? 'Submitted' : 'Submit to Lead Inspector') + '</button>' +
+          '<button class="btn btn--primary inspection-submit-action" data-act="inspection-submit-lead" data-id="' + esc(audit.id) + '"><span>&#10148;</span>' + (submitted ? 'Submitted' : 'Submit to Lead Inspector') + '</button>' +
         '</div>' +
       '</div>' +
       '<div class="inspection-summary-card">' +
@@ -5516,6 +5524,7 @@ function leadAssignmentQuestionRowsHtml(ui) {
 function viewLeadAssignmentQuestions() {
   var ui = leadAssignmentUiState();
   var auditId = (state.params && state.params.auditId) || 'AUD-2026-005';
+  var inspectorMode = state.role === 'inspector';
   var selectedCount = leadAssignmentSelectedQuestionIds(ui).length;
   var inspectorOptions = leadAssignmentOptions(leadAssignmentInspectors().map(function (inspector) {
     return { value: inspector.name, label: inspector.name };
@@ -5550,8 +5559,8 @@ function viewLeadAssignmentQuestions() {
   var noteLength = (ui.note || '').length;
   return '<div class="lead-assignment-question-page">' +
     '<div class="lead-assignment-question-head">' +
-      '<div><button class="lead-assignment-back" data-act="nav" data-view="lead-assignment" data-id="' + esc(auditId) + '">&larr; Back to Assignment Overview</button><h1>Assign Checklist Questions</h1><p>Assign checklist questions to inspectors for this audit.</p></div>' +
-      '<button class="btn" data-act="lead-assignment-guide">ⓘ Start Assignment Guide</button>' +
+      '<div><button class="lead-assignment-back" data-act="nav" data-view="' + esc(inspectorMode ? 'audit-detail' : 'lead-assignment') + '" data-id="' + esc(auditId) + '">&larr; ' + esc(inspectorMode ? 'Back to Inspection' : 'Back to Assignment Overview') + '</button><h1>' + esc(inspectorMode ? 'Inspector Question Workspace' : 'Assign Checklist Questions') + '</h1><p>' + esc(inspectorMode ? 'Review the submitted checklist package and assigned questions without routing every row through the Lead Inspector.' : 'Assign checklist questions to inspectors for this audit.') + '</p></div>' +
+      '<button class="btn" data-act="lead-assignment-guide">' + esc(inspectorMode ? 'ⓘ Submitted Package Guide' : 'ⓘ Start Assignment Guide') + '</button>' +
     '</div>' +
     '<section class="lead-assignment-strip">' +
       '<span class="lead-assignment-strip-icon">▣</span>' +
@@ -5586,23 +5595,23 @@ function viewLeadAssignmentQuestions() {
           '<label><span>Status</span><select data-field="lead-assignment-status">' + statusOptions + '</select></label>' +
           '<label class="lead-assignment-search"><span>Search</span><input type="search" data-field="lead-assignment-query" value="' + esc(ui.query || '') + '" placeholder="Search questions..."></label>' +
         '</div>' +
-        '<div class="lead-assignment-table-wrap"><table class="lead-assignment-table"><thead><tr><th><input type="checkbox" data-field="lead-assignment-select-visible" aria-label="Select visible questions"></th><th colspan="2">Select All (62)</th><th>Risk Level</th><th>Assigned To</th></tr></thead><tbody>' + leadAssignmentQuestionRowsHtml(ui) + '</tbody></table></div>' +
+        '<div class="lead-assignment-table-wrap"><table class="lead-assignment-table"><thead><tr><th><input type="checkbox" data-field="lead-assignment-select-visible" aria-label="Select visible questions"></th><th>No.</th><th>Checklist Item</th><th>Risk Level</th><th>Assigned To</th></tr></thead><tbody>' + leadAssignmentQuestionRowsHtml(ui) + '</tbody></table></div>' +
       '</section>' +
       '<aside class="lead-assignment-side">' +
-        '<div class="lead-assignment-side-head"><h2>Assign Selected (' + esc(String(selectedCount)) + ')</h2><button data-act="lead-assignment-clear-selection" aria-label="Clear selected questions">×</button></div>' +
+        '<div class="lead-assignment-side-head"><h2>' + esc(inspectorMode ? 'Selected Questions' : 'Assign Selected') + ' (' + esc(String(selectedCount)) + ')</h2><button data-act="lead-assignment-clear-selection" aria-label="Clear selected questions">×</button></div>' +
         '<label><span>Assign To</span><select data-field="lead-assignment-assignee">' + inspectorOptions + '</select></label>' +
         '<label><span>Due Date</span><input type="date" data-field="lead-assignment-due" value="' + esc(ui.dueDate) + '"></label>' +
         '<label><span>Priority</span><select data-field="lead-assignment-priority">' + priorityOptions + '</select></label>' +
         '<label><span>Instructions <small>(Optional)</small></span><textarea maxlength="500" data-field="lead-assignment-note" placeholder="Add any specific instructions for the inspector...">' + esc(ui.note || '') + '</textarea></label>' +
         '<p>Characters: <span class="lead-assignment-note-count">' + esc(String(noteLength)) + '</span>/500</p>' +
-        '<div class="lead-assignment-side-summary">' + esc(String(selectedCount)) + ' questions will be assigned to <b>' + esc(ui.assignee) + '</b></div>' +
-        '<button class="btn btn--primary btn--block" data-act="lead-assignment-assign"' + (selectedCount ? '' : ' disabled') + '>➤ Assign Questions</button>' +
+        '<div class="lead-assignment-side-summary">' + (inspectorMode ? esc(String(selectedCount)) + ' questions selected for inspector review.' : esc(String(selectedCount)) + ' questions will be assigned to <b>' + esc(ui.assignee) + '</b>') + '</div>' +
+        '<button class="btn btn--primary btn--block" data-act="lead-assignment-assign"' + (selectedCount ? '' : ' disabled') + '>➤ ' + esc(inspectorMode ? 'Mark Selected for Review' : 'Assign Questions') + '</button>' +
       '</aside>' +
     '</div>' +
     '<div class="lead-assignment-bottom">' +
       '<section><h3>Assignment Summary</h3><div><span>Inspectors <b>4</b></span><span>Assigned <b>124</b></span><span>Unassigned <b>62</b></span><span>Total <b>186</b></span><span>Workload <b>Balanced</b></span></div></section>' +
       '<section><h3>Bulk Actions</h3><div class="lead-assignment-bulk"><button data-act="lead-assignment-bulk" data-mode="assign-section">Assign Section</button><button data-act="lead-assignment-bulk" data-mode="reassign">Reassign</button><button class="is-danger" data-act="lead-assignment-bulk" data-mode="remove">Remove Assignment</button><button data-act="lead-assignment-bulk" data-mode="export">Export Assignment</button></div></section>' +
-      '<section class="lead-assignment-bottom-actions"><button class="btn" data-act="lead-assignment-save">Save Draft</button><button class="btn" data-act="lead-assignment-preview">◎ Preview Assignment</button><button class="btn btn--primary" data-act="lead-assignment-release">➤ Release to Inspectors</button><p>Inspectors will be notified and can start working.</p></section>' +
+      '<section class="lead-assignment-bottom-actions"><button class="btn" data-act="lead-assignment-save">Save Draft</button><button class="btn" data-act="lead-assignment-preview">◎ ' + esc(inspectorMode ? 'Preview Submitted Package' : 'Preview Assignment') + '</button><button class="btn btn--primary" data-act="lead-assignment-release">➤ ' + esc(inspectorMode ? 'Confirm Inspector Review' : 'Release to Inspectors') + '</button><p>' + esc(inspectorMode ? 'Inspector review remains in this workspace; Lead Inspector does not need to inspect each row one by one.' : 'Inspectors will be notified and can start working.') + '</p></section>' +
     '</div>' +
   '</div>';
 }

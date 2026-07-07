@@ -197,6 +197,41 @@ auditExecutionHtml = elements.get('app-root').innerHTML;
 assert.ok(context.state.inspectionWorkspaceAllSectionsCompletedAt);
 assert.match(auditExecutionHtml, /Ready to Submit/);
 assert.match(auditExecutionHtml, /Sections Complete/);
+assert.match(auditExecutionHtml, /data-act="inspection-file-open"/);
+assert.match(auditExecutionHtml, /section_8_evidence_1\.pdf/);
+
+context.handleAction('inspection-file-open', dataEl({ 'data-id': 'sms-8-1' }));
+assert.match(elements.get('modal-host').innerHTML, /Attached file preview/);
+assert.match(elements.get('modal-host').innerHTML, /section_8_evidence_1\.pdf/);
+context.handleAction('close-modal', dataEl({}));
+
+context.handleAction('inspection-file-open', dataEl({ 'data-id': 'sms-8-2' }));
+assert.match(elements.get('modal-host').innerHTML, /Attach checklist evidence/);
+assert.match(elements.get('modal-host').innerHTML, /Attach Mock File/);
+context.handleAction('inspection-file-attach', dataEl({ 'data-id': 'sms-8-2' }));
+assert.equal(context.state.inspectionWorkspaceAnswers['sms-8-2'].file, 'inspection_8_2_evidence.pdf');
+auditExecutionHtml = elements.get('app-root').innerHTML;
+assert.match(auditExecutionHtml, /inspection_8_2_evidence\.pdf/);
+
+context.handleAction('inspection-submit-lead', dataEl({ 'data-id': 'AUD-2026-005' }));
+auditExecutionHtml = elements.get('app-root').innerHTML;
+assert.ok(context.state.inspectionWorkspaceSubmittedAt);
+assert.match(auditExecutionHtml, /Submitted to Lead Inspector/);
+assert.match(auditExecutionHtml, />Submitted<\/button>/);
+assert.doesNotMatch(auditExecutionHtml, /data-act="inspection-submit-lead"[^>]*disabled/);
+context.handleAction('inspection-submit-lead', dataEl({ 'data-id': 'AUD-2026-005' }));
+assert.match(elements.get('modal-host').innerHTML, /Submitted checklist package/);
+assert.match(elements.get('modal-host').innerHTML, /Open Inspector Question Workspace/);
+
+context.handleAction('nav', dataEl({ 'data-view': 'lead-assignment-questions', 'data-id': 'AUD-2026-005' }));
+const inspectorQuestionWorkspaceHtml = elements.get('app-root').innerHTML;
+assert.equal(context.state.role, 'inspector');
+assert.equal(context.state.view, 'lead-assignment-questions');
+assert.match(inspectorQuestionWorkspaceHtml, /Inspector Question Workspace/);
+assert.match(inspectorQuestionWorkspaceHtml, /without routing every row through the Lead Inspector/);
+assert.match(inspectorQuestionWorkspaceHtml, /Checklist Item/);
+assert.match(inspectorQuestionWorkspaceHtml, /Mark Selected for Review/);
+assert.doesNotMatch(inspectorQuestionWorkspaceHtml, /colspan="2"/);
 
 context.state.view = 'regulatory-library';
 context.state.params = {};
