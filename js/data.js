@@ -21,6 +21,7 @@ var DEMO_PERSISTENCE_CONFIG = {
     'mock planning approvals',
     'mock checklist approvals',
     'mock potential findings',
+    'inspector assignment filters',
     'lead inspector review decisions, assignment drafts and report workflow state',
     'service provider final report CAP actions',
     'AI accept/edit/reject decisions',
@@ -37,8 +38,8 @@ var DEMO_PERSISTENCE_CONFIG = {
    kept (display = Department Manager) so existing role-conditional code keeps
    working; a later phase may rename the key to `departmentManager`. */
 var ROLES = {
-  inspector:        { key: 'inspector',        name: 'Inspector',          user: 'Mary Adams', initials: 'MA', color: '#2f6fd6',
-                      assignmentAliases: ['Aylin Sezer'],
+  inspector:        { key: 'inspector',        name: 'Inspector',          user: 'Ahmed Ali', initials: 'AA', color: '#005db8',
+                      assignmentAliases: ['Aylin Sezer', 'Mary Adams'],
                       question: 'What do I need to inspect or review today?' },
   leadInspector:    { key: 'leadInspector',    name: 'Lead Inspector',     user: 'John Lead Inspector', initials: 'JL', color: '#1d4f99',
                       question: 'What needs review, conversion to finding, or report sign-off?' },
@@ -947,6 +948,16 @@ function freshState() {
     inspectionWorkspaceDownloadedAt: '',
     inspectionWorkspaceDraftSavedAt: '',
     inspectionWorkspaceSubmittedAt: '',
+    inspectorAssignmentsUi: {
+      query: '',
+      status: 'all',
+      type: 'all',
+      organization: 'all',
+      dateRange: 'all',
+      selectedAssignmentId: 'PR-2026-018',
+      appliedAt: '',
+      downloadedAt: ''
+    },
     capReviewUi: {
       expandedId: 'SEC-2026-002',
       tab: 'details',
@@ -1115,6 +1126,22 @@ function mergeDemoState(saved) {
   if (!base.inspectionWorkspaceDownloadedAt) base.inspectionWorkspaceDownloadedAt = '';
   if (!base.inspectionWorkspaceDraftSavedAt) base.inspectionWorkspaceDraftSavedAt = '';
   if (!base.inspectionWorkspaceSubmittedAt) base.inspectionWorkspaceSubmittedAt = '';
+  base.inspectorAssignmentsUi = Object.assign({
+    query: '',
+    status: 'all',
+    type: 'all',
+    organization: 'all',
+    dateRange: 'all',
+    selectedAssignmentId: 'PR-2026-018',
+    appliedAt: '',
+    downloadedAt: ''
+  }, saved.inspectorAssignmentsUi || {});
+  if (!base.inspectorAssignmentsUi.query) base.inspectorAssignmentsUi.query = '';
+  if (!base.inspectorAssignmentsUi.status) base.inspectorAssignmentsUi.status = 'all';
+  if (!base.inspectorAssignmentsUi.type) base.inspectorAssignmentsUi.type = 'all';
+  if (!base.inspectorAssignmentsUi.organization) base.inspectorAssignmentsUi.organization = 'all';
+  if (!base.inspectorAssignmentsUi.dateRange) base.inspectorAssignmentsUi.dateRange = 'all';
+  if (!base.inspectorAssignmentsUi.selectedAssignmentId) base.inspectorAssignmentsUi.selectedAssignmentId = 'PR-2026-018';
   base.capReviewUi = Object.assign({
     expandedId: 'SEC-2026-002',
     tab: 'details',

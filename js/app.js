@@ -34,11 +34,15 @@ var NAV = {
     { view: 'dashboard', label: 'Inspector Workload', icon: '▥' }
   ],
   inspector: [
-    { view: 'dashboard', label: 'My Inspections', icon: '▣' },
-    { view: 'findings', label: 'CAP Reviews', icon: '✓', filter: 'capreview' },
-    { view: 'findings', label: 'Findings Review', icon: '⚑', filter: 'open' },
-    { view: 'reports', label: 'Reports', icon: '□' },
-    { view: 'profile', label: 'Profile', icon: '○' }
+    { view: 'dashboard', label: 'Dashboard', icon: '▦' },
+    { view: 'inspector-assignments', label: 'My Assignments', icon: '▣', badge: '8' },
+    { view: 'inspector-assignments', label: 'Checklists', icon: '▤', filter: 'checklists' },
+    { view: 'findings', label: 'Findings', icon: '⚑', filter: 'open' },
+    { view: 'findings', label: 'CAP Actions', icon: '✓', filter: 'capreview', badge: '3' },
+    { view: 'reports', label: 'Documents', icon: '□', filter: 'documents' },
+    { view: 'messages', label: 'Messages', icon: '✉', badge: '2' },
+    { view: 'calendar', label: 'Calendar', icon: '▤' },
+    { view: 'reports', label: 'Reports', icon: '□' }
   ],
   auditee: [
     { section: 'Service Provider Portal' },
@@ -113,6 +117,7 @@ var VIEW_TITLES = {
   'offline-field': 'Inspection Evidence', 'usoap-readiness': 'USOAP Readiness',
   'cap-effectiveness': 'CAP Effectiveness', 'ai-assistant': 'AI Inspector Assistant',
   'ssp-nasp': 'SSP/NASP Management', 'role-home': 'Home', planning: 'Planning', 'planning-approvals': 'Planning',
+  'inspector-assignments': 'My Assignments',
   'checklist-approvals': 'Checklist Approvals', 'question-bank': 'Question Bank',
   'checklist-builder': 'Checklist Builder', 'checklist-versions': 'Version History',
   'lead-review': 'Lead Inspector Review', 'lead-assignment': 'Audit Assignment',
@@ -159,6 +164,7 @@ function homeView(role) {
   if (role === 'admin') return 'templates';
   if (role === 'gm' || role === 'finance' || role === 'executiveDirector') return 'planning';
   if (role === 'leadInspector') return 'lead-review';
+  if (role === 'inspector') return 'inspector-assignments';
   return 'dashboard';
 }
 
@@ -208,7 +214,7 @@ function navIconName(item) {
   var filter = (item && item.filter) || '';
 
   if (view === 'logout') return 'log-out';
-  if (label.indexOf('assigned audit') >= 0 || label.indexOf('inspection') >= 0) return 'clipboard-list';
+  if (label.indexOf('assignment') >= 0 || label.indexOf('assigned audit') >= 0 || label.indexOf('inspection') >= 0) return 'clipboard-list';
   if (label.indexOf('cap') >= 0 || filter === 'capreview' || view === 'unit-manager-review' || view === 'cap-effectiveness') return 'clipboard-check';
   if (label.indexOf('finding') >= 0 || view === 'findings' || view === 'my-findings') return 'finding-review';
   if (label.indexOf('report') >= 0 || label.indexOf('document') >= 0 || view === 'reports' || view === 'audit-reports') return 'file-text';
@@ -362,7 +368,10 @@ function isNavActive(navItem) {
   var view = typeof navItem === 'string' ? navItem : navItem.view;
   var navFilter = typeof navItem === 'string' ? null : navItem.filter;
   var activeFilter = state.params && state.params.filter ? state.params.filter : selectedFilter(view, null);
-  if (view === state.view) return navFilter ? activeFilter === navFilter : true;
+  if (view === state.view) {
+    if (view === 'inspector-assignments') return navFilter ? activeFilter === navFilter : (!activeFilter || activeFilter === 'all');
+    return navFilter ? activeFilter === navFilter : true;
+  }
   if (view === 'planning' && (state.view === 'planning-approvals' || state.view === 'planning-board')) return true;
   if (view === 'lead-review' && (state.view === 'lead-assignment' || state.view === 'lead-assignment-questions')) return true;
   // keep parent nav highlighted on detail screens
@@ -429,7 +438,8 @@ function crumbs() {
 
 function renderContent() {
   switch (state.view) {
-    case 'dashboard': return state.role === 'manager' ? viewManagerDashboard() : viewInspectorDashboard();
+    case 'dashboard': return state.role === 'manager' ? viewManagerDashboard() : viewInspectorAssignments();
+    case 'inspector-assignments': return viewInspectorAssignments();
     case 'safety-intelligence': return viewSafetyIntelligenceDashboard();
     case 'org-risk': return viewOrganizationRiskProfile();
     case 'regulatory-library': return viewRegulatoryLibrary();
@@ -473,7 +483,7 @@ function renderContent() {
     case 'users': return viewUsers();
     case 'settings': return viewSettings();
     case 'role-home': return viewRoleHome();
-    default: return state.role === 'manager' ? viewManagerDashboard() : viewInspectorDashboard();
+    default: return state.role === 'manager' ? viewManagerDashboard() : viewInspectorAssignments();
   }
 }
 
@@ -509,8 +519,15 @@ function renderNotifPanel() {
 
 function inspectorUserBar() {
   var r = ROLES[state.role] || ROLES.inspector;
+  var unread = unreadCount(state.role);
   return '<div class="inspector-userbar">' +
     '<button class="topbar__menu inspector-userbar__menu" data-act="toggle-menu" aria-label="Open menu">☰</button>' +
+    '<button class="inspector-userbar__icon" data-act="inspector-help" aria-label="Help">?</button>' +
+    '<div style="position:relative">' +
+      '<button class="inspector-userbar__icon" data-act="notif-toggle" aria-label="Notifications">&#128276;' +
+        (unread ? '<span class="dot">' + unread + '</span>' : '') + '</button>' +
+      (state.ui.notifOpen ? renderNotifPanel() : '') +
+    '</div>' +
     '<button class="inspector-user" data-act="nav" data-view="profile">' +
       '<span class="who__avatar" style="background:' + r.color + '">' + esc(r.initials) + '</span>' +
       '<span class="inspector-user__name">' + esc(r.user) + '</span>' +
@@ -523,6 +540,12 @@ function inspectorUserBar() {
 function go(view, opts) {
   opts = opts || {};
   state.view = view;
+  if (view === 'inspector-assignments') {
+    var assignmentUi = ensureInspectorAssignmentsUi();
+    if (opts.filter === 'checklists') assignmentUi.status = 'in-progress';
+    else if (!opts.filter) assignmentUi.status = 'all';
+    if (!opts.filter && state.selectedFilters) delete state.selectedFilters[view];
+  }
   if (view === 'lead-review' && !opts.auditId) delete state.params.auditId;
   if (view === 'audit-reports' && !opts.auditId) delete state.params.auditId;
   if (opts.auditId !== undefined && opts.auditId !== null && opts.auditId !== '') state.params.auditId = opts.auditId;
@@ -550,6 +573,7 @@ function go(view, opts) {
   }
   var fallbackFilter = view === 'findings' ? selectedFilter('findings', 'all') : (view === 'calendar' ? 'active' : null);
   state.params.filter = opts.filter || fallbackFilter || selectedFilter(view, null);
+  if (view === 'inspector-assignments' && !opts.filter) delete state.params.filter;
   state.ui.notifOpen = false;
   state.ui.menuOpen = false;
   closeModal();
@@ -569,6 +593,9 @@ function setRole(roleKey) {
     ensureLeadAssignedAuditsUi();
     leadUi.tab = 'report';
     leadUi.actionsOpen = false;
+  }
+  if (roleKey === 'inspector') {
+    ensureInspectorAssignmentsUi().status = 'all';
   }
   if (roleKey === 'auditee') {
     ensureServiceProviderReportUi();
@@ -626,6 +653,12 @@ function handleAction(act, el) {
     case 'nav': go(view, { auditId: id, findingId: id, orgId: id, filter: filter, tab: tab }); break;
     case 'toggle-menu': state.ui.menuOpen = !state.ui.menuOpen; render(); break;
     case 'set-filter': setSelectedFilter(el.getAttribute('data-key'), el.getAttribute('data-val')); render(); break;
+    case 'inspector-help':
+      openModal(modalShell('Inspector workspace help',
+        '<p class="modal__intro">Use My Assignments to open assigned audits, continue checklist work, review due dates and monitor your own progress. This is demo-only guidance; no real notification or backend service is used.</p>',
+        '<button class="btn btn--primary" data-act="close-modal">Got it</button>',
+        false));
+      break;
 
     case 'notif-toggle':
       state.ui.notifOpen = !state.ui.notifOpen;
@@ -693,6 +726,12 @@ function handleAction(act, el) {
     case 'inspection-section-preview': handleInspectionSectionPreview(id); break;
     case 'inspection-row-menu': handleInspectionRowMenu(id); break;
     case 'inspection-set-status': handleInspectionSetStatus(id, status); break;
+    case 'inspector-assignment-filter': handleInspectorAssignmentFilter(status); break;
+    case 'inspector-assignment-apply': handleInspectorAssignmentApply(); break;
+    case 'inspector-assignment-open': handleInspectorAssignmentOpen(id); break;
+    case 'inspector-assignment-select': handleInspectorAssignmentSelect(id); break;
+    case 'inspector-assignment-menu': handleInspectorAssignmentMenu(id); break;
+    case 'inspector-assignment-download': handleInspectorAssignmentDownload(); break;
     case 'lead-review-tab': handleLeadReviewTab(tab); break;
     case 'lead-review-section': handleLeadReviewSection(id); break;
     case 'lead-review-download': handleLeadReviewDownload(id); break;
@@ -1211,6 +1250,98 @@ function handleLeadReportFieldChange(field, target) {
   if (field === 'lead-report-rating') ui.reportRating = target.value || 'Acceptable with CAP';
   if (field === 'lead-report-risk') ui.reportRisk = target.value || 'Medium';
   persistAfterAction();
+}
+
+function ensureInspectorAssignmentsUi() {
+  if (typeof inspectorAssignmentsUiState === 'function') return inspectorAssignmentsUiState();
+  if (!state.inspectorAssignmentsUi) state.inspectorAssignmentsUi = {};
+  state.inspectorAssignmentsUi = Object.assign({
+    query: '',
+    status: 'all',
+    type: 'all',
+    organization: 'all',
+    dateRange: 'all',
+    selectedAssignmentId: 'PR-2026-018',
+    appliedAt: '',
+    downloadedAt: ''
+  }, state.inspectorAssignmentsUi || {});
+  return state.inspectorAssignmentsUi;
+}
+
+function handleInspectorAssignmentsFieldChange(field, target) {
+  var ui = ensureInspectorAssignmentsUi();
+  var value = target && target.value !== undefined ? target.value : '';
+  if (field === 'inspector-assignment-query') ui.query = value;
+  if (field === 'inspector-assignment-status') ui.status = value || 'all';
+  if (field === 'inspector-assignment-type') ui.type = value || 'all';
+  if (field === 'inspector-assignment-organization') ui.organization = value || 'all';
+  if (field === 'inspector-assignment-date') ui.dateRange = value || 'all';
+  persistAfterAction();
+  if (field !== 'inspector-assignment-query') render();
+}
+
+function handleInspectorAssignmentFilter(status) {
+  var ui = ensureInspectorAssignmentsUi();
+  ui.status = status || 'all';
+  state.view = 'inspector-assignments';
+  state.params = {};
+  persistAfterAction();
+  render();
+}
+
+function handleInspectorAssignmentApply() {
+  var ui = ensureInspectorAssignmentsUi();
+  ui.appliedAt = new Date().toISOString();
+  persistAfterAction();
+  render();
+  toast('Filters applied', 'My Assignments list updated.', 'ok');
+}
+
+function handleInspectorAssignmentOpen(assignmentId) {
+  var row = typeof inspectorAssignmentById === 'function' ? inspectorAssignmentById(assignmentId) : null;
+  if (!row) return;
+  var ui = ensureInspectorAssignmentsUi();
+  ui.selectedAssignmentId = row.id;
+  persistAfterAction();
+  if (row.status === 'completed') {
+    go('reports');
+    return;
+  }
+  go('audit-detail', { auditId: row.auditId || 'AUD-2026-005' });
+}
+
+function handleInspectorAssignmentSelect(assignmentId) {
+  var row = typeof inspectorAssignmentById === 'function' ? inspectorAssignmentById(assignmentId) : null;
+  if (!row) return;
+  var ui = ensureInspectorAssignmentsUi();
+  ui.selectedAssignmentId = row.id;
+  persistAfterAction();
+  render();
+}
+
+function handleInspectorAssignmentMenu(assignmentId) {
+  var row = typeof inspectorAssignmentById === 'function' ? inspectorAssignmentById(assignmentId) : null;
+  if (!row) return;
+  openModal(modalShell('Assignment actions',
+    '<div class="lead-assigned-modal">' +
+      '<p><b>' + esc(row.title) + '</b> · ' + esc(row.code) + '</p>' +
+      '<div class="metaline">' +
+        metaItem('Organization', row.organization) +
+        metaItem('Due Date', row.dueDate) +
+        metaItem('Progress', row.progress + '%') +
+        metaItem('Questions', row.questionsDone + ' / ' + row.questionsTotal) +
+      '</div>' +
+    '</div>',
+    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="inspector-assignment-open" data-id="' + esc(row.id) + '">' + esc(row.status === 'completed' ? 'View Report' : (row.status === 'open' ? 'Start' : 'Continue')) + '</button>',
+    false));
+}
+
+function handleInspectorAssignmentDownload() {
+  var ui = ensureInspectorAssignmentsUi();
+  ui.downloadedAt = nowIsoDemo();
+  persistAfterAction();
+  render();
+  toast('Assignment downloaded', 'Mock assignment summary prepared for this demo.', 'ok');
 }
 
 function handleLeadAssignedFieldChange(field, target) {
@@ -3631,6 +3762,9 @@ document.addEventListener('change', function (e) {
   if (field === 'lead-report-rating' || field === 'lead-report-risk') {
     handleLeadReportFieldChange(field, e.target);
   }
+  if (field && field.indexOf('inspector-assignment-') === 0) {
+    handleInspectorAssignmentsFieldChange(field, e.target);
+  }
   if (field && field.indexOf('lead-assigned-') === 0) {
     handleLeadAssignedFieldChange(field, e.target);
   }
@@ -3667,6 +3801,9 @@ document.addEventListener('input', function (e) {
   }
   if (field === 'lead-workflow-comment') {
     handleLeadWorkflowComment(e.target);
+  }
+  if (field === 'inspector-assignment-query') {
+    handleInspectorAssignmentsFieldChange(field, e.target);
   }
   if (field === 'lead-assigned-query') {
     handleLeadAssignedFieldChange(field, e.target);

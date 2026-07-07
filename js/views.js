@@ -1259,70 +1259,446 @@ function inspectorTable(headers, rows, empty) {
     }).join('') + '</tbody></table></div>';
 }
 
-function viewInspectorDashboard() {
-  var assignedAudits = sortedAuditsForQueue(state.audits.filter(function (audit) {
-    return auditAssignedToCurrentUser(audit) && !isClosedAudit(audit);
-  }));
-  var actionableFindings = inspectorActionableFindings();
-  var capReview = actionableFindings.filter(function (f) { return f.status === 'CAP_SUBMITTED'; });
-  var activeAudits = assignedAudits.filter(function (audit) {
-    return audit.status === 'Scheduled' || audit.status === 'In Progress';
-  });
-  var draftReports = (state.auditReports || []).filter(function (report) {
-    var audit = auditById(report.auditId);
-    return report.status === 'draft' && audit && auditAssignedToCurrentUser(audit) && audit.status === 'In Progress';
-  });
+var INSPECTOR_ASSIGNMENT_ROWS = [
+  {
+    id: 'PR-2026-018',
+    auditId: 'AUD-2026-005',
+    title: 'AVSEC Inspection',
+    code: 'PR-2026-018',
+    organization: 'SkyCargo Air',
+    location: 'JFK International Airport',
+    type: 'AVSEC',
+    dates: '12 - 14 Jun 2026',
+    status: 'in-progress',
+    statusLabel: 'In Progress',
+    progress: 60,
+    questionsDone: 112,
+    questionsTotal: 186,
+    completedQuestions: 38,
+    dueDate: '10 Jun 2026',
+    dueNote: '(1 day left)',
+    dueTone: 'danger',
+    icon: 'plane',
+    iconLabel: 'AV',
+    sections: [
+      { name: 'Access Control', total: 8, done: 5 },
+      { name: 'Screening', total: 10, done: 6 },
+      { name: 'Cargo Security', total: 12, done: 8 },
+      { name: 'Training & Awareness', total: 8, done: 4 }
+    ]
+  },
+  {
+    id: 'PR-2026-017',
+    auditId: 'AUD-2026-001',
+    title: 'Ramp Safety Inspection',
+    code: 'PR-2026-017',
+    organization: 'AirMove Ground',
+    location: 'JFK International Airport',
+    type: 'Safety',
+    dates: '10 - 11 Jun 2026',
+    status: 'in-progress',
+    statusLabel: 'In Progress',
+    progress: 30,
+    questionsDone: 24,
+    questionsTotal: 80,
+    completedQuestions: 16,
+    dueDate: '11 Jun 2026',
+    dueNote: '(2 days left)',
+    dueTone: 'warn',
+    icon: 'vehicle',
+    iconLabel: 'RS',
+    sections: [
+      { name: 'Ramp Operations', total: 12, done: 4 },
+      { name: 'Ground Equipment', total: 10, done: 3 },
+      { name: 'Apron Safety', total: 8, done: 2 }
+    ]
+  },
+  {
+    id: 'PR-2026-016',
+    auditId: 'AUD-2026-006',
+    title: 'SMS Audit',
+    code: 'PR-2026-016',
+    organization: 'BlueWings Airlines',
+    location: 'Head Office',
+    type: 'SMS',
+    dates: '5 - 7 Jun 2026',
+    status: 'in-progress',
+    statusLabel: 'In Progress',
+    progress: 75,
+    questionsDone: 60,
+    questionsTotal: 80,
+    completedQuestions: 45,
+    dueDate: '07 Jun 2026',
+    dueNote: '(Overdue)',
+    dueTone: 'danger',
+    icon: 'checklist',
+    iconLabel: 'SM',
+    sections: [
+      { name: 'Safety Policy', total: 10, done: 8 },
+      { name: 'Risk Management', total: 12, done: 9 },
+      { name: 'Safety Assurance', total: 10, done: 7 }
+    ]
+  },
+  {
+    id: 'PR-2026-015',
+    auditId: 'AUD-2026-001',
+    title: 'Dangerous Goods Inspection',
+    code: 'PR-2026-015',
+    organization: 'TransAir Cargo',
+    location: 'Cargo Terminal 3',
+    type: 'Cargo',
+    dates: '2 - 3 Jun 2026',
+    status: 'open',
+    statusLabel: 'Open',
+    progress: 0,
+    questionsDone: 0,
+    questionsTotal: 64,
+    completedQuestions: 0,
+    dueDate: '03 Jun 2026',
+    dueNote: '(Overdue)',
+    dueTone: 'danger',
+    icon: 'box',
+    iconLabel: 'DG',
+    sections: []
+  },
+  {
+    id: 'PR-2026-014',
+    auditId: 'AUD-2026-005',
+    title: 'Security Inspection',
+    code: 'PR-2026-014',
+    organization: 'JetFast Aviation',
+    location: 'Terminal 2',
+    type: 'Security',
+    dates: '1 - 2 Jun 2026',
+    status: 'in-progress',
+    statusLabel: 'In Progress',
+    progress: 10,
+    questionsDone: 6,
+    questionsTotal: 60,
+    completedQuestions: 6,
+    dueDate: '05 Jun 2026',
+    dueNote: '(Overdue)',
+    dueTone: 'danger',
+    icon: 'shield',
+    iconLabel: 'SE',
+    sections: [
+      { name: 'Terminal Access', total: 10, done: 2 },
+      { name: 'Security Patrols', total: 8, done: 1 },
+      { name: 'Records', total: 6, done: 1 }
+    ]
+  },
+  {
+    id: 'PR-2026-013',
+    auditId: 'AUD-2026-005',
+    title: 'Access Control Audit',
+    code: 'PR-2026-013',
+    organization: 'Global Handling',
+    location: 'Operations Center',
+    type: 'Security',
+    dates: '20 - 21 May 2026',
+    status: 'in-progress',
+    statusLabel: 'In Progress',
+    progress: 20,
+    questionsDone: 16,
+    questionsTotal: 80,
+    completedQuestions: 8,
+    dueDate: '21 May 2026',
+    dueNote: '',
+    dueTone: 'neutral',
+    icon: 'users',
+    iconLabel: 'AC',
+    sections: [
+      { name: 'Badging', total: 10, done: 2 },
+      { name: 'Access Logs', total: 10, done: 2 },
+      { name: 'Visitor Control', total: 8, done: 1 }
+    ]
+  },
+  {
+    id: 'PR-2026-012',
+    auditId: 'AUD-2026-002',
+    title: 'Baggage Handling Audit',
+    code: 'PR-2026-012',
+    organization: 'AirMove Ground',
+    location: 'Baggage Terminal',
+    type: 'Operations',
+    dates: '18 - 19 May 2026',
+    status: 'completed',
+    statusLabel: 'Completed',
+    progress: 100,
+    questionsDone: 72,
+    questionsTotal: 72,
+    completedQuestions: 72,
+    dueDate: '19 May 2026',
+    dueNote: '',
+    dueTone: 'neutral',
+    icon: 'baggage',
+    iconLabel: 'BH',
+    sections: []
+  },
+  {
+    id: 'PR-2026-011',
+    auditId: 'AUD-2026-003',
+    title: 'Training & Awareness Audit',
+    code: 'PR-2026-011',
+    organization: 'SkyCargo Air',
+    location: 'Training Center',
+    type: 'Training',
+    dates: '15 - 16 May 2026',
+    status: 'completed',
+    statusLabel: 'Completed',
+    progress: 100,
+    questionsDone: 48,
+    questionsTotal: 48,
+    completedQuestions: 48,
+    dueDate: '16 May 2026',
+    dueNote: '',
+    dueTone: 'neutral',
+    icon: 'training',
+    iconLabel: 'TR',
+    sections: []
+  }
+];
 
-  var assignedRows = assignedAudits.map(function (audit) {
-    return [
-      esc(inspectorInspectionId(audit)),
-      esc(orgName(audit.orgId)),
-      esc(audit.type),
-      auditStatusBadge(audit),
-      esc(fmtDate(audit.date)),
-      inspectorProgressHtml(inspectorProgressForAudit(audit)),
-      '<button class="btn btn--sm" data-act="nav" data-view="audit-detail" data-id="' + esc(audit.id) + '">Open</button>'
-    ];
-  });
+function inspectorAssignmentsUiDefaults() {
+  return {
+    query: '',
+    status: 'all',
+    type: 'all',
+    organization: 'all',
+    dateRange: 'all',
+    selectedAssignmentId: 'PR-2026-018',
+    appliedAt: '',
+    downloadedAt: ''
+  };
+}
 
-  var capRows = capReview.map(function (finding) {
-    return [
-      esc(inspectorCapId(finding)),
-      esc(inspectorInspectionId(auditById(finding.auditId))),
-      esc(orgName(finding.orgId)),
-      esc(finding.responsiblePerson || 'Service provider'),
-      esc(fmtDate(finding.cap && finding.cap.targetDate ? finding.cap.targetDate : finding.dueDate)),
-      demoBadge('Pending Review', 'warn'),
-      '<button class="btn btn--sm" data-act="nav" data-view="cap-review-detail" data-id="' + esc(finding.id) + '">Review</button>'
-    ];
-  });
+function inspectorAssignmentsUiState() {
+  if (!state.inspectorAssignmentsUi) state.inspectorAssignmentsUi = {};
+  state.inspectorAssignmentsUi = Object.assign(inspectorAssignmentsUiDefaults(), state.inspectorAssignmentsUi || {});
+  if (!state.inspectorAssignmentsUi.query) state.inspectorAssignmentsUi.query = '';
+  if (!state.inspectorAssignmentsUi.status) state.inspectorAssignmentsUi.status = 'all';
+  if (!state.inspectorAssignmentsUi.type) state.inspectorAssignmentsUi.type = 'all';
+  if (!state.inspectorAssignmentsUi.organization) state.inspectorAssignmentsUi.organization = 'all';
+  if (!state.inspectorAssignmentsUi.dateRange) state.inspectorAssignmentsUi.dateRange = 'all';
+  if (!state.inspectorAssignmentsUi.selectedAssignmentId) state.inspectorAssignmentsUi.selectedAssignmentId = 'PR-2026-018';
+  return state.inspectorAssignmentsUi;
+}
 
-  var reportRows = draftReports.map(function (report) {
-    var audit = auditById(report.auditId);
-    return [
-      esc(report.id.replace('RPT-AUD-', 'RPT-')),
-      esc(inspectorInspectionId(audit)),
-      esc(audit ? orgName(audit.orgId) : '-'),
-      esc(reportLastUpdated(report)),
-      demoBadge('Ready to Submit', 'ok'),
-      '<button class="btn btn--primary btn--sm" data-act="nav" data-view="audit-reports" data-id="' + esc(report.auditId) + '">Submit to Lead Inspector</button>'
-    ];
-  });
+function inspectorAssignmentById(id) {
+  return INSPECTOR_ASSIGNMENT_ROWS.filter(function (row) { return row.id === id; })[0] || null;
+}
 
-  return '' +
-    pageHead('My Inspections', '') +
-    '<div class="grid grid--kpi grid--kpi-4 mb-24">' +
-      kpiCard('My Inspections', String(assignedAudits.length), 'Assigned to me', { view: 'calendar', tone: 'info' }) +
-      kpiCard('In Progress', String(activeAudits.length), 'Inspections', { view: 'calendar', tone: 'warn' }) +
-      kpiCard('CAP Reviews', String(capReview.length), 'Pending review', { view: 'findings', filter: 'capreview', tone: capReview.length ? 'ok' : 'neutral' }) +
-      kpiCard('Reports', String(draftReports.length), 'Ready to submit', { view: 'reports', tone: draftReports.length ? 'info' : 'neutral' }) +
+function inspectorAssignmentStats() {
+  return {
+    open: 8,
+    inProgress: INSPECTOR_ASSIGNMENT_ROWS.filter(function (row) { return row.status === 'in-progress'; }).length,
+    completed: 3,
+    overdue: 1,
+    totalAssigned: 17,
+    questionsAssigned: 186,
+    questionsCompleted: 74,
+    questionsRemaining: 112,
+    averageCompletion: 47
+  };
+}
+
+function inspectorAssignmentSelect(name, field, value, options) {
+  return '<label class="inspector-assignment-filter"><span>' + esc(name) + '</span><select data-field="' + esc(field) + '">' +
+    options.map(function (option) {
+      return '<option value="' + esc(option[0]) + '"' + (value === option[0] ? ' selected' : '') + '>' + esc(option[1]) + '</option>';
+    }).join('') +
+  '</select></label>';
+}
+
+function inspectorAssignmentFilteredRows(ui) {
+  var query = String(ui.query || '').trim().toLowerCase();
+  return INSPECTOR_ASSIGNMENT_ROWS.filter(function (row) {
+    if (ui.status === 'in-progress' && row.status !== 'in-progress') return false;
+    if (ui.status === 'open' && row.status !== 'open') return false;
+    if (ui.status === 'completed' && row.status !== 'completed') return false;
+    if (ui.status === 'overdue' && row.dueTone !== 'danger') return false;
+    if (ui.type !== 'all' && row.type !== ui.type) return false;
+    if (ui.organization !== 'all' && row.organization !== ui.organization) return false;
+    if (ui.dateRange === 'overdue' && row.dueTone !== 'danger') return false;
+    if (ui.dateRange === 'this-week' && row.status === 'completed') return false;
+    if (query) {
+      var haystack = [row.title, row.code, row.organization, row.location, row.type, row.statusLabel].join(' ').toLowerCase();
+      if (haystack.indexOf(query) === -1) return false;
+    }
+    return true;
+  });
+}
+
+function inspectorAssignmentStatusBadge(row) {
+  var tone = row.status === 'completed' ? 'ok' : (row.status === 'open' ? 'neutral' : 'info');
+  return demoBadge(row.statusLabel, tone);
+}
+
+function inspectorAssignmentProgressHtml(row) {
+  var value = Math.max(0, Math.min(100, Number(row.progress) || 0));
+  var done = row.status === 'completed';
+  return '<div class="inspector-assignment-progress">' +
+    '<div class="inspector-assignment-progress__bar' + (done ? ' is-complete' : '') + '"><span style="width:' + value + '%"></span></div>' +
+    '<b>' + value + '%</b>' +
+  '</div>';
+}
+
+function inspectorAssignmentIcon(row) {
+  return '<span class="inspector-assignment-tile inspector-assignment-tile--' + esc(row.icon || 'default') + '">' + esc(row.iconLabel || row.type.slice(0, 2)) + '</span>';
+}
+
+function inspectorAssignmentActionLabel(row) {
+  if (row.status === 'completed') return 'View Report';
+  if (row.status === 'open') return 'Start';
+  return 'Continue';
+}
+
+function inspectorAssignmentRow(row) {
+  return '<tr>' +
+    '<td><div class="inspector-assignment-main">' + inspectorAssignmentIcon(row) +
+      '<button class="inspector-assignment-link" data-act="inspector-assignment-select" data-id="' + esc(row.id) + '">' + esc(row.title) + '<span>' + esc(row.code) + '</span></button></div></td>' +
+    '<td><b>' + esc(row.organization) + '</b><span>' + esc(row.location) + '</span></td>' +
+    '<td><span class="inspector-assignment-type">' + esc(row.type) + '</span></td>' +
+    '<td>' + esc(row.dates) + '</td>' +
+    '<td>' + inspectorAssignmentStatusBadge(row) + '</td>' +
+    '<td>' + inspectorAssignmentProgressHtml(row) + '</td>' +
+    '<td class="inspector-assignment-due is-' + esc(row.dueTone) + '"><b>' + esc(row.dueDate) + '</b>' + (row.dueNote ? '<span>' + esc(row.dueNote) + '</span>' : '') + '</td>' +
+    '<td><div class="inspector-assignment-actions">' +
+      '<button class="btn btn--sm' + (row.status === 'completed' ? '' : ' btn--primary') + '" data-act="inspector-assignment-open" data-id="' + esc(row.id) + '">' + esc(inspectorAssignmentActionLabel(row)) + '</button>' +
+      '<button class="iconbtn iconbtn--small" data-act="inspector-assignment-menu" data-id="' + esc(row.id) + '" aria-label="More actions for ' + esc(row.title) + '">&#8942;</button>' +
+    '</div></td>' +
+  '</tr>';
+}
+
+function inspectorAssignmentFilterBar(ui) {
+  var typeOptions = [['all', 'All Types'], ['AVSEC', 'AVSEC'], ['Safety', 'Safety'], ['SMS', 'SMS'], ['Cargo', 'Cargo'], ['Security', 'Security'], ['Operations', 'Operations'], ['Training', 'Training']];
+  var orgOptions = [['all', 'All Organizations'], ['SkyCargo Air', 'SkyCargo Air'], ['AirMove Ground', 'AirMove Ground'], ['BlueWings Airlines', 'BlueWings Airlines'], ['TransAir Cargo', 'TransAir Cargo'], ['JetFast Aviation', 'JetFast Aviation'], ['Global Handling', 'Global Handling']];
+  return '<div class="inspector-assignment-filters">' +
+    '<label class="inspector-assignment-filter inspector-assignment-filter--search"><span>Search audits</span><input type="search" data-field="inspector-assignment-query" value="' + esc(ui.query || '') + '" placeholder="Search audits..."><b aria-hidden="true">&#8981;</b></label>' +
+    inspectorAssignmentSelect('Status', 'inspector-assignment-status', ui.status, [['all', 'All Status'], ['open', 'Open'], ['in-progress', 'In Progress'], ['completed', 'Completed'], ['overdue', 'Overdue']]) +
+    inspectorAssignmentSelect('Type', 'inspector-assignment-type', ui.type, typeOptions) +
+    inspectorAssignmentSelect('Organization', 'inspector-assignment-organization', ui.organization, orgOptions) +
+    inspectorAssignmentSelect('Date', 'inspector-assignment-date', ui.dateRange, [['all', 'Date Range'], ['this-week', 'This Week'], ['overdue', 'Overdue']]) +
+    '<button class="btn" data-act="inspector-assignment-apply"><span>&#9661;</span> Filters</button>' +
+  '</div>';
+}
+
+function inspectorAssignmentKpi(label, value, sub, icon, status, tone, progress) {
+  var active = inspectorAssignmentsUiState().status === status;
+  return '<button class="inspector-assignment-kpi is-' + esc(tone || 'info') + (active ? ' is-active' : '') + '" data-act="inspector-assignment-filter" data-status="' + esc(status) + '">' +
+    '<span class="inspector-assignment-kpi__icon">' + icon + '</span>' +
+    '<span><b>' + esc(label) + '</b><strong>' + esc(value) + '</strong><em>' + esc(sub) + '</em>' +
+      (progress !== undefined ? '<i><span style="width:' + esc(String(progress)) + '%"></span></i>' : '') +
+    '</span>' +
+  '</button>';
+}
+
+function inspectorAssignmentKpis(ui) {
+  var stats = inspectorAssignmentStats();
+  if (ui.status === 'in-progress') {
+    return '<div class="inspector-assignment-kpis inspector-assignment-kpis--progress">' +
+      inspectorAssignmentKpi('In Progress Assignments', String(stats.inProgress), 'Audits', '&#128203;', 'in-progress', 'info') +
+      inspectorAssignmentKpi('Questions Assigned', String(stats.questionsAssigned), 'Total', '&#9716;', 'in-progress', 'warn') +
+      inspectorAssignmentKpi('Completed', String(stats.questionsCompleted), '(40%)', '&#10003;', 'completed', 'ok') +
+      inspectorAssignmentKpi('Remaining', String(stats.questionsRemaining), '(60%)', '&#8987;', 'in-progress', 'purple') +
+      inspectorAssignmentKpi('Avg. Completion', String(stats.averageCompletion) + '%', 'Across all audits', '&#128197;', 'in-progress', 'neutral', stats.averageCompletion) +
+    '</div>';
+  }
+  return '<div class="inspector-assignment-kpis">' +
+    inspectorAssignmentKpi('Open Assignments', String(stats.open), 'Audits', '&#128196;', 'all', 'info') +
+    inspectorAssignmentKpi('In Progress', String(stats.inProgress), 'Audits', '&#9716;', 'in-progress', 'warn') +
+    inspectorAssignmentKpi('Completed', String(stats.completed), 'Audits', '&#10003;', 'completed', 'ok') +
+    inspectorAssignmentKpi('Overdue', String(stats.overdue), 'Audits', '&#128197;', 'overdue', 'danger') +
+    inspectorAssignmentKpi('Total Assigned', String(stats.totalAssigned), 'Audits', '&#128452;', 'all', 'neutral') +
+  '</div>';
+}
+
+function inspectorAssignmentHeader(ui) {
+  var inProgress = ui.status === 'in-progress';
+  return '<div class="page-head inspector-assignment-head">' +
+    '<div class="page-head__main">' +
+      '<h1>My Assignments' + (inProgress ? ' / <span>In Progress</span>' : '') + '</h1>' +
+      '<div class="purpose">' + (inProgress ? 'Audits and tasks that are currently in progress.' : 'View and manage all audits and tasks assigned to you.') + '</div>' +
     '</div>' +
-    '<h2 class="section-heading">Assigned Inspections</h2>' +
-    inspectorTable(['Inspection ID', 'Organization', 'Application Type', 'Status', 'Due Date', 'Progress', 'Action'], assignedRows, 'No inspections assigned to you.') +
-    '<h2 class="section-heading mt-24">CAP Reviews</h2>' +
-    inspectorTable(['CAP ID', 'Inspection ID', 'Organization', 'Submitted By', 'Due Date', 'Status', 'Action'], capRows, 'No CAP reviews are pending.') +
-    '<h2 class="section-heading mt-24">Reports</h2>' +
-    inspectorTable(['Report ID', 'Inspection ID', 'Organization', 'Last Updated', 'Status', 'Action'], reportRows, 'No reports are ready to submit.');
+  '</div>';
+}
+
+function inspectorAssignmentTable(rows, ui) {
+  if (!rows.length) return '<div class="inspector-assignment-panel"><div class="empty">No assignments match these filters.</div></div>';
+  return '<div class="inspector-assignment-panel">' +
+    '<div class="inspector-assignment-table-wrap"><table class="inspector-assignment-table"><thead><tr>' +
+      '<th>Audit / Inspection</th><th>Organization</th><th>Type</th><th>Inspection Dates</th><th>Status</th><th>Progress</th><th>Due Date</th><th>Actions</th>' +
+    '</tr></thead><tbody>' + rows.map(inspectorAssignmentRow).join('') + '</tbody></table></div>' +
+    '<div class="inspector-assignment-table-foot">' +
+      '<span>Showing 1 to ' + esc(String(rows.length)) + ' of ' + esc(String(rows.length)) + ' results</span>' +
+      '<div class="inspector-assignment-pager"><button disabled>&lsaquo;</button><button disabled>&lsaquo;</button><button class="is-active">1</button><button disabled>&rsaquo;</button><button disabled>&rsaquo;</button></div>' +
+      '<label><select><option>10 per page</option></select></label>' +
+    '</div>' +
+  '</div>';
+}
+
+function inspectorAssignmentSectionRow(section) {
+  var pct = section.total ? Math.round((section.done / section.total) * 100) : 0;
+  return '<button data-act="inspector-assignment-select" data-id="PR-2026-018">' +
+    '<span>' + esc(section.name) + ' (' + esc(String(section.total)) + ' Questions)</span>' +
+    '<i><b style="width:' + pct + '%"></b></i>' +
+    '<em>' + esc(String(section.done)) + '/' + esc(String(section.total)) + ' (' + pct + '%)</em>' +
+    '<strong>&rsaquo;</strong>' +
+  '</button>';
+}
+
+function inspectorAssignmentDetailPanel(rows, ui) {
+  var selected = inspectorAssignmentById(ui.selectedAssignmentId);
+  if (!selected || selected.status !== 'in-progress') selected = rows[0] || inspectorAssignmentById('PR-2026-018');
+  if (!selected) return '';
+  var completed = Number(selected.completedQuestions) || Math.round((selected.progress * selected.questionsTotal) / 100);
+  var inProgress = Math.max(selected.questionsDone - completed, 0);
+  var notStarted = Math.max(selected.questionsTotal - selected.questionsDone, 0);
+  var sections = selected.sections && selected.sections.length ? selected.sections : INSPECTOR_ASSIGNMENT_ROWS[0].sections;
+  return '<div class="inspector-assignment-detail">' +
+    '<section class="inspector-assignment-detail-card inspector-assignment-detail-card--summary">' +
+      '<div class="inspector-assignment-detail-title">' + inspectorAssignmentIcon(selected) +
+        '<div><h2>' + esc(selected.title) + '</h2><span>' + esc(selected.code) + '</span></div>' +
+        inspectorAssignmentStatusBadge(selected) +
+      '</div>' +
+      '<dl><dt>Organization</dt><dd>' + esc(selected.organization) + '</dd><dt>Location</dt><dd>' + esc(selected.location) + '</dd><dt>Inspection Dates</dt><dd>' + esc(selected.dates) + '</dd><dt>Lead Inspector</dt><dd>John Lead Inspector</dd></dl>' +
+      '<button class="btn" data-act="nav" data-view="audit-detail" data-id="' + esc(selected.auditId) + '">View Audit Details</button>' +
+    '</section>' +
+    '<section class="inspector-assignment-detail-card inspector-assignment-progress-card">' +
+      '<h2>My Progress</h2>' +
+      '<div class="inspector-assignment-donut" style="--value:' + esc(String(selected.progress)) + '"><b>' + esc(String(selected.progress)) + '%</b><span>' + esc(String(selected.questionsDone)) + ' / ' + esc(String(selected.questionsTotal)) + '</span></div>' +
+      '<div class="inspector-assignment-legend">' +
+        '<span><i class="is-ok"></i>Completed <b>' + esc(String(completed)) + ' (' + Math.round((completed / selected.questionsTotal) * 100) + '%)</b></span>' +
+        '<span><i class="is-info"></i>In Progress <b>' + esc(String(inProgress)) + ' (' + Math.round((inProgress / selected.questionsTotal) * 100) + '%)</b></span>' +
+        '<span><i class="is-warn"></i>Not Started <b>' + esc(String(notStarted)) + ' (' + Math.round((notStarted / selected.questionsTotal) * 100) + '%)</b></span>' +
+      '</div>' +
+    '</section>' +
+    '<section class="inspector-assignment-detail-card inspector-assignment-sections">' +
+      '<div class="inspector-assignment-section-head"><h2>Sections Overview</h2><button data-act="inspector-assignment-select" data-id="' + esc(selected.id) + '">View All Questions</button></div>' +
+      '<div class="inspector-assignment-section-list">' + sections.map(inspectorAssignmentSectionRow).join('') + '</div>' +
+      '<div class="inspector-assignment-detail-actions">' +
+        '<button class="btn" data-act="inspector-assignment-download"><span>&#8681;</span> Download Assignment</button>' +
+        '<button class="btn btn--primary" data-act="inspector-assignment-open" data-id="' + esc(selected.id) + '"><span>&#8618;</span> Continue Working</button>' +
+      '</div>' +
+    '</section>' +
+  '</div>';
+}
+
+function viewInspectorAssignments() {
+  var ui = inspectorAssignmentsUiState();
+  if (state.params && state.params.filter === 'checklists' && ui.status === 'all') ui.status = 'in-progress';
+  var rows = inspectorAssignmentFilteredRows(ui);
+  return '<div class="inspector-assignment-page">' +
+    inspectorAssignmentHeader(ui) +
+    inspectorAssignmentKpis(ui) +
+    inspectorAssignmentFilterBar(ui) +
+    inspectorAssignmentTable(rows, ui) +
+    (ui.status === 'in-progress' ? inspectorAssignmentDetailPanel(rows, ui) : '') +
+  '</div>';
+}
+
+function viewInspectorDashboard() {
+  return viewInspectorAssignments();
 }
 
 /* =========================== Inspector CAP reviews =========================== */

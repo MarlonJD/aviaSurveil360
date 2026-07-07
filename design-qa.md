@@ -1,6 +1,15 @@
 **Findings**
 - No actionable P0/P1/P2 findings remain.
 
+**Inspector My Assignments QA**
+- Source visual truth: `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-e8e6b6ce-385b-4c04-9980-188930c4bc2a.png` and `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-d5b294ab-8891-48c9-8cb6-c3c1eaf27340.png`
+- Desktop screenshots: `/private/tmp/avia-inspector-my-assignments-desktop.png` and `/private/tmp/avia-inspector-my-assignments-in-progress-desktop.png`
+- Mobile screenshot: `/private/tmp/avia-inspector-my-assignments-mobile.png`
+- Viewports: 1440 x 950 and 390 x 844.
+- Flow tested: app loads -> Inspector role -> My Assignments -> In Progress KPI -> Continue Working.
+- Interaction evidence: My Assignments renders 8 assigned audits, the In Progress KPI filters to 5 rows and hides the open Dangerous Goods assignment, the detail panel shows Sections Overview and Continue Working, and Continue Working opens the SMS Oversight Audit workspace.
+- Result: passed; no browser console errors; no page-level horizontal overflow on mobile.
+
 **CAP Reviews QA**
 - Source visual truth: `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-75514c00-4844-4328-8d74-53cc041f5082.png`
 - Desktop screenshot: `/private/tmp/cap-review-final.png`
