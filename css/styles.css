@@ -5572,7 +5572,7 @@ button { font-family: inherit; }
 .lead-assigned-card.is-overdue .lead-assigned-card__icon { background: var(--danger-bg); color: var(--danger); }
 .lead-assigned-filterbar {
   display: grid;
-  grid-template-columns: minmax(170px, 1.2fr) repeat(4, minmax(105px, .68fr)) auto;
+  grid-template-columns: minmax(190px, 1.35fr) repeat(3, minmax(115px, .75fr)) auto;
   gap: 12px;
   align-items: end;
   background: var(--surface);
@@ -5643,7 +5643,7 @@ button { font-family: inherit; }
 }
 .lead-assigned-table {
   width: 100%;
-  min-width: 910px;
+  min-width: 815px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -5688,15 +5688,15 @@ button { font-family: inherit; }
 .lead-assigned-table th:nth-child(5) { width: 105px; }
 .lead-assigned-table th:nth-child(6) { width: 82px; }
 .lead-assigned-table th:nth-child(7) { width: 88px; }
-.lead-assigned-table th:nth-child(8) { width: 118px; }
-.lead-assigned-table th:nth-child(9) { width: 95px; }
-.lead-assigned-table th:nth-child(10) { width: 86px; }
-.lead-assigned-table td:nth-child(7),
-.lead-assigned-table td:nth-child(9) {
+.lead-assigned-table th:nth-child(8) { width: 96px; }
+.lead-assigned-table th:nth-child(9) {
+  width: 64px;
+  text-align: right;
+}
+.lead-assigned-table td:nth-child(7) {
   line-height: 1.25;
 }
-.lead-assigned-table td:nth-child(7) span,
-.lead-assigned-table td:nth-child(9) span {
+.lead-assigned-table td:nth-child(7) span {
   display: block;
   color: var(--ink-soft);
   font-size: 11.2px;
@@ -5715,8 +5715,7 @@ button { font-family: inherit; }
   text-decoration: underline;
 }
 .lead-department-pill,
-.lead-risk-pill,
-.lead-status-pill {
+.lead-risk-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5735,15 +5734,6 @@ button { font-family: inherit; }
 .lead-risk-pill.is-high { background: var(--danger-bg); color: var(--danger); border-color: #eccbc6; }
 .lead-risk-pill.is-medium { background: var(--warn-bg); color: var(--warn); border-color: #edd39d; }
 .lead-risk-pill.is-low { background: var(--ok-bg); color: var(--ok); border-color: #bfe6d0; }
-.lead-status-pill.is-info { background: var(--blue-50); color: var(--blue-500); border-color: #cfe0fb; }
-.lead-status-pill.is-draft { background: #f3edff; color: #7c3db5; border-color: #ddcdf7; }
-.lead-status-pill.is-pending { background: #e9fbfb; color: var(--info); border-color: #bfebee; }
-.lead-status-pill.is-overdue { background: var(--danger-bg); color: var(--danger); border-color: #eccbc6; }
-.lead-status-stack {
-  display: grid;
-  gap: 7px;
-  justify-items: start;
-}
 .lead-progress-cell {
   min-width: 96px;
   display: grid;

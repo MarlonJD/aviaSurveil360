@@ -4613,7 +4613,7 @@ function leadAssignedAuditsUiState() {
   if (!state.leadAssignedAuditsUi) state.leadAssignedAuditsUi = {};
   state.leadAssignedAuditsUi = Object.assign(leadAssignedAuditDefaultUi(), state.leadAssignedAuditsUi || {});
   if (!state.leadAssignedAuditsUi.query) state.leadAssignedAuditsUi.query = '';
-  if (!state.leadAssignedAuditsUi.status) state.leadAssignedAuditsUi.status = 'all';
+  state.leadAssignedAuditsUi.status = 'all';
   if (!state.leadAssignedAuditsUi.department) state.leadAssignedAuditsUi.department = 'all';
   if (!state.leadAssignedAuditsUi.auditType) state.leadAssignedAuditsUi.auditType = 'all';
   if (!state.leadAssignedAuditsUi.risk) state.leadAssignedAuditsUi.risk = 'all';
@@ -4639,9 +4639,8 @@ function leadAssignedAuditRows() {
 function leadAssignedAuditFilteredRows(ui) {
   var query = (ui.query || '').toLowerCase().trim();
   return leadAssignedAuditRows().filter(function (row) {
-    var text = [row.id, row.operator, row.department, row.auditType, row.risk, row.status, row.dueStage].join(' ').toLowerCase();
+    var text = [row.id, row.operator, row.department, row.auditType, row.risk, row.dates.join(' '), String(row.progress)].join(' ').toLowerCase();
     if (query && text.indexOf(query) === -1) return false;
-    if (ui.status !== 'all' && row.statusKey !== ui.status) return false;
     if (ui.department !== 'all' && row.department !== ui.department) return false;
     if (ui.auditType !== 'all' && row.auditTypeKey !== ui.auditType) return false;
     if (ui.risk !== 'all' && row.riskTone !== ui.risk) return false;
@@ -4670,13 +4669,6 @@ function leadAssignedKpiCard(title, value, suffix, percent, tone, icon) {
 }
 
 function leadAssignedFiltersHtml(ui) {
-  var statusOptions = leadAssignedOptions([
-    { value: 'all', label: 'All Statuses' },
-    { value: 'in-progress', label: 'In Progress' },
-    { value: 'draft-report', label: 'Draft Report' },
-    { value: 'pending-approval', label: 'Pending Approval' },
-    { value: 'overdue', label: 'Overdue' }
-  ], ui.status);
   var departmentOptions = leadAssignedOptions([
     { value: 'all', label: 'All Departments' },
     { value: 'OPS', label: 'OPS' },
@@ -4714,7 +4706,6 @@ function leadAssignedFiltersHtml(ui) {
   ], ui.stage);
   return '<div class="lead-assigned-filterbar">' +
     '<label class="lead-assigned-filter lead-assigned-filter--search"><span>Search audits</span><input type="search" data-field="lead-assigned-query" value="' + esc(ui.query || '') + '" placeholder="Search audits..."></label>' +
-    '<label class="lead-assigned-filter"><span>Status</span><select data-field="lead-assigned-status">' + statusOptions + '</select></label>' +
     '<label class="lead-assigned-filter"><span>Department</span><select data-field="lead-assigned-department">' + departmentOptions + '</select></label>' +
     '<label class="lead-assigned-filter"><span>Audit Type</span><select data-field="lead-assigned-audit-type">' + auditTypeOptions + '</select></label>' +
     '<label class="lead-assigned-filter"><span>Risk Level</span><select data-field="lead-assigned-risk">' + riskOptions + '</select></label>' +
@@ -4742,19 +4733,16 @@ function leadAssignedTableHtml(rows, filteredCount) {
       '<td>' + esc(row.auditType) + '</td>' +
       '<td><span class="lead-risk-pill is-' + esc(row.riskTone) + '">' + esc(row.risk) + '</span></td>' +
       '<td>' + esc(row.dates[0]) + '<br><span>' + esc(row.dates[1]) + '</span></td>' +
-      '<td><div class="lead-status-stack"><span class="lead-status-pill is-' + esc(row.statusTone) + '">' + esc(row.status) + '</span><div class="lead-progress-cell"><span>' + esc(String(row.progress)) + '%</span><div class="lead-progress"><i class="is-' + esc(row.riskTone) + '" style="width:' + esc(String(row.progress)) + '%"></i></div></div></div></td>' +
-      '<td><b>' + esc(row.dueDate) + '</b><span>' + esc(row.dueStage) + '</span></td>' +
+      '<td><div class="lead-progress-cell"><span>' + esc(String(row.progress)) + '%</span><div class="lead-progress"><i class="is-' + esc(row.riskTone) + '" style="width:' + esc(String(row.progress)) + '%"></i></div></div></td>' +
       '<td><div class="lead-row-actions">' +
-        '<button class="iconbtn iconbtn--small" data-act="nav" data-view="lead-review" data-id="' + esc(row.detailAuditId) + '" aria-label="View ' + esc(row.id) + '">◎</button>' +
-        '<button class="iconbtn iconbtn--small" data-act="nav" data-view="lead-review" data-id="' + esc(row.detailAuditId) + '" aria-label="Edit ' + esc(row.id) + '">✎</button>' +
-        '<button class="iconbtn iconbtn--small" data-act="lead-assigned-row-menu" data-id="' + esc(row.id) + '" aria-label="More actions for ' + esc(row.id) + '">⋮</button>' +
+        '<button class="iconbtn iconbtn--small" data-act="nav" data-view="lead-review" data-id="' + esc(row.detailAuditId) + '" aria-label="Open ' + esc(row.id) + '">◎</button>' +
       '</div></td>' +
     '</tr>';
-  }).join('') : '<tr><td colspan="10"><div class="empty">No assigned audits match the current filters.</div></td></tr>';
+  }).join('') : '<tr><td colspan="9"><div class="empty">No assigned audits match the current filters.</div></td></tr>';
 
   return '<section class="lead-assigned-table-panel">' +
     '<div class="lead-assigned-table-wrap"><table class="lead-assigned-table"><thead><tr>' +
-      '<th><input type="checkbox" aria-label="Select all visible audits"></th><th>Audit No. <span>↕</span></th><th>Operator / Organisation</th><th>Department <span>↕</span></th><th>Audit Type</th><th>Risk Level <span>↕</span></th><th>Audit Dates<br><small>Start - End</small></th><th>Status<br><small>Progress</small> <span>↕</span></th><th>Next Due Date</th><th>Actions</th>' +
+      '<th><input type="checkbox" aria-label="Select all visible audits"></th><th>Audit No. <span>↕</span></th><th>Operator / Organisation</th><th>Department <span>↕</span></th><th>Audit Type</th><th>Risk Level <span>↕</span></th><th>Audit Dates<br><small>Start - End</small></th><th>Progress <span>↕</span></th><th>Actions</th>' +
     '</tr></thead><tbody>' + body + '</tbody></table></div>' +
     '<div class="lead-assigned-table-foot">' +
       '<span>Showing 1 to ' + esc(String(visibleRows.length)) + ' of ' + esc(String(totalLabel)) + ' audits</span>' +

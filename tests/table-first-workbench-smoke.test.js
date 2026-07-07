@@ -71,6 +71,24 @@ assert.match(html, /Management Attention/);
 assert.match(html, /Management indicator only\. It does not trigger automatic enforcement, suspension or closure\./);
 assert.match(html, /class="ops-table"/);
 
+context.state.role = 'leadInspector';
+context.state.view = 'lead-review';
+context.state.params = {};
+context.state.leadAssignedAuditsUi = {};
+html = context.viewLeadAssignedAudits();
+assert.match(html, /Assigned Audits/);
+assert.doesNotMatch(html, /Next Due Date/);
+assert.doesNotMatch(html, /All Statuses/);
+assert.doesNotMatch(html, /data-field="lead-assigned-status"/);
+assert.doesNotMatch(html, /lead-status-pill/);
+assert.doesNotMatch(html, /28 May 2025/);
+assert.match(html, /75%/);
+assert.match(html, /style="width:75%"/);
+assert.match(html, /aria-label="Open AUD-2025-045"/);
+assert.doesNotMatch(html, /aria-label="Edit AUD-2025-045"/);
+assert.doesNotMatch(html, /More actions for AUD-2025-045/);
+assert.equal((html.match(/class="iconbtn iconbtn--small"/g) || []).length, 8);
+
 context.state.role = 'inspector';
 context.state.view = 'calendar';
 context.state.params = {};
