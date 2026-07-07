@@ -948,6 +948,7 @@ function freshState() {
     inspectionWorkspaceDownloadedAt: '',
     inspectionWorkspaceDraftSavedAt: '',
     inspectionWorkspaceSubmittedAt: '',
+    inspectionWorkspaceAllSectionsCompletedAt: '',
     inspectorAssignmentsUi: {
       query: '',
       status: 'all',
@@ -1055,6 +1056,8 @@ function freshState() {
       submittedAt: '',
       mockUploadName: '',
       includedFindings: {},
+      findingLevel: 'all',
+      findingQuery: '',
       declarations: {
         accurate: true,
         evidenceBased: true,
@@ -1126,6 +1129,7 @@ function mergeDemoState(saved) {
   if (!base.inspectionWorkspaceDownloadedAt) base.inspectionWorkspaceDownloadedAt = '';
   if (!base.inspectionWorkspaceDraftSavedAt) base.inspectionWorkspaceDraftSavedAt = '';
   if (!base.inspectionWorkspaceSubmittedAt) base.inspectionWorkspaceSubmittedAt = '';
+  if (!base.inspectionWorkspaceAllSectionsCompletedAt) base.inspectionWorkspaceAllSectionsCompletedAt = '';
   base.inspectorAssignmentsUi = Object.assign({
     query: '',
     status: 'all',
@@ -1294,6 +1298,8 @@ function mergeDemoState(saved) {
     submittedAt: '',
     mockUploadName: '',
     includedFindings: {},
+    findingLevel: 'all',
+    findingQuery: '',
     declarations: {
       accurate: true,
       evidenceBased: true,
@@ -1317,6 +1323,8 @@ function mergeDemoState(saved) {
   if (!base.leadPreliminaryReportsUi.draftSavedAt) base.leadPreliminaryReportsUi.draftSavedAt = '';
   if (!base.leadPreliminaryReportsUi.submittedAt) base.leadPreliminaryReportsUi.submittedAt = '';
   if (!base.leadPreliminaryReportsUi.mockUploadName) base.leadPreliminaryReportsUi.mockUploadName = '';
+  if (!base.leadPreliminaryReportsUi.findingLevel) base.leadPreliminaryReportsUi.findingLevel = 'all';
+  if (!base.leadPreliminaryReportsUi.findingQuery) base.leadPreliminaryReportsUi.findingQuery = '';
   if (!base.leadPreliminaryReportsUi.reportContent) base.leadPreliminaryReportsUi.reportContent = '';
   base.departmentPreliminaryReviewUi = Object.assign({
     tab: 'summary',

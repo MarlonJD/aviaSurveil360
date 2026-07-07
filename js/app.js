@@ -36,10 +36,7 @@ var NAV = {
   inspector: [
     { view: 'dashboard', label: 'Dashboard', icon: '▦' },
     { view: 'inspector-assignments', label: 'My Assignments', icon: '▣', badge: '8' },
-    { view: 'inspector-assignments', label: 'Checklists', icon: '▤', filter: 'checklists' },
-    { view: 'findings', label: 'Findings', icon: '⚑', filter: 'open' },
-    { view: 'findings', label: 'CAP Actions', icon: '✓', filter: 'capreview', badge: '3' },
-    { view: 'reports', label: 'Documents', icon: '□', filter: 'documents' },
+    { view: 'findings', label: 'Findings & CAP', icon: '✓', filter: 'open', badge: '5' },
     { view: 'messages', label: 'Messages', icon: '✉', badge: '2' },
     { view: 'calendar', label: 'Calendar', icon: '▤' },
     { view: 'reports', label: 'Reports', icon: '□' }
@@ -75,13 +72,11 @@ var NAV = {
      dedicated workspaces/approval queues arrive in later phases of
      docs/plans/2026-06-28-caa-governance-workflow-and-roles-plan.md. */
   leadInspector: [
-    { view: 'dashboard', label: 'Dashboard', icon: '▦' },
     { view: 'lead-review', label: 'Assigned Audits', icon: '▣' },
     { view: 'audit-reports', label: 'Preliminary Reports', icon: '□', filter: 'preliminary', badge: '6' },
     { view: 'audit-reports', label: 'Final Reports', icon: '□', filter: 'final', badge: '4' },
     { view: 'findings', label: 'CAP Verification', icon: '✓', filter: 'capreview', badge: '7' },
     { view: 'calendar', label: 'Calendar', icon: '▤' },
-    { view: 'audit-reports', label: 'Documents', icon: '□', filter: 'documents' },
     { view: 'messages', label: 'Messages', icon: '✉' },
     { view: 'safety-intelligence', label: 'Analytics & Reports', icon: '⌁' },
     { view: 'settings', label: 'Settings', icon: '⚙' }
@@ -548,7 +543,9 @@ function go(view, opts) {
   }
   if (view === 'lead-review' && !opts.auditId) delete state.params.auditId;
   if (view === 'audit-reports' && !opts.auditId) delete state.params.auditId;
+  if (view === 'audit-reports' && !opts.finalReportId) delete state.params.finalReportId;
   if (opts.auditId !== undefined && opts.auditId !== null && opts.auditId !== '') state.params.auditId = opts.auditId;
+  if (opts.finalReportId !== undefined && opts.finalReportId !== null && opts.finalReportId !== '') state.params.finalReportId = opts.finalReportId;
   if (opts.findingId !== undefined && opts.findingId !== null && opts.findingId !== '') state.params.findingId = opts.findingId;
   if (opts.orgId !== undefined && opts.orgId !== null && opts.orgId !== '') state.params.orgId = opts.orgId;
   if (view === 'org-risk' && !state.params.orgId) state.params.orgId = 'ORG-XYZ';
@@ -724,6 +721,7 @@ function handleAction(act, el) {
     case 'inspection-save-draft': handleInspectionSaveDraft(id); break;
     case 'inspection-submit-lead': handleInspectionSubmitLead(id); break;
     case 'inspection-section-preview': handleInspectionSectionPreview(id); break;
+    case 'inspection-complete-sections': handleInspectionCompleteSections(id); break;
     case 'inspection-row-menu': handleInspectionRowMenu(id); break;
     case 'inspection-set-status': handleInspectionSetStatus(id, status); break;
     case 'inspector-assignment-filter': handleInspectorAssignmentFilter(status); break;
@@ -808,6 +806,7 @@ function handleAction(act, el) {
     case 'inspector-cap-package-accept': handleInspectorCapPackageDecision(id, 'accept'); break;
     case 'inspector-cap-package-revision': handleInspectorCapPackageDecision(id, 'revision'); break;
     case 'inspector-cap-package-reject': handleInspectorCapPackageDecision(id, 'reject'); break;
+    case 'final-report-list-open': handleFinalReportListOpen(id); break;
     case 'final-report-ready-action': handleFinalReportReadyAction(el.getAttribute('data-final-action')); break;
     case 'final-report-prepare-step': handleFinalReportPrepareStep(el.getAttribute('data-step')); break;
     case 'final-report-prepare-next': handleFinalReportPrepareNext(); break;
@@ -952,6 +951,14 @@ function handleInspectionSubmitLead(auditId) {
   toast('Submitted', 'SMS Oversight Audit is marked submitted to the Lead Inspector.', 'ok');
 }
 
+function handleInspectionCompleteSections(auditId) {
+  state.inspectionWorkspaceAllSectionsCompletedAt = new Date().toISOString();
+  addLog('Inspector marked all checklist sections complete', auditId || 'SMS Oversight Audit');
+  persistAfterAction();
+  render();
+  toast('All sections complete', 'The checklist sections are marked complete. Submit to Lead Inspector when ready.', 'ok');
+}
+
 function handleInspectionSectionPreview(sectionId) {
   var section = typeof inspectionExecutionResolveSection === 'function' ? inspectionExecutionResolveSection(sectionId) : null;
   if (!section) return;
@@ -1077,6 +1084,8 @@ function ensureLeadPreliminaryReportsUi() {
     submittedAt: '',
     mockUploadName: '',
     includedFindings: {},
+    findingLevel: 'all',
+    findingQuery: '',
     declarations: {
       accurate: true,
       evidenceBased: true,
@@ -1100,6 +1109,8 @@ function ensureLeadPreliminaryReportsUi() {
   if (!state.leadPreliminaryReportsUi.draftSavedAt) state.leadPreliminaryReportsUi.draftSavedAt = '';
   if (!state.leadPreliminaryReportsUi.submittedAt) state.leadPreliminaryReportsUi.submittedAt = '';
   if (!state.leadPreliminaryReportsUi.mockUploadName) state.leadPreliminaryReportsUi.mockUploadName = '';
+  if (!state.leadPreliminaryReportsUi.findingLevel) state.leadPreliminaryReportsUi.findingLevel = 'all';
+  if (!state.leadPreliminaryReportsUi.findingQuery) state.leadPreliminaryReportsUi.findingQuery = '';
   if (!state.leadPreliminaryReportsUi.reportContent) state.leadPreliminaryReportsUi.reportContent = '';
   return state.leadPreliminaryReportsUi;
 }
@@ -1630,6 +1641,8 @@ function handleLeadPreliminaryReportFieldChange(field, target) {
   if (field === 'preliminary-report-organization') ui.organization = value || 'all';
   if (field === 'preliminary-report-period') ui.period = value || 'all';
   if (field === 'preliminary-report-content') ui.reportContent = value;
+  if (field === 'preliminary-report-finding-level') ui.findingLevel = value || 'all';
+  if (field === 'preliminary-report-finding-query') ui.findingQuery = value || '';
   if (field === 'preliminary-report-finding') {
     var findingId = target && target.getAttribute ? target.getAttribute('data-id') : '';
     if (findingId) ui.includedFindings[findingId] = !!target.checked;
@@ -2876,6 +2889,14 @@ function handleFinalReportReadyAction(action) {
   }
 }
 
+function handleFinalReportListOpen(reportId) {
+  state.view = 'audit-reports';
+  state.params = { filter: 'final', finalReportId: reportId || 'FR-2026-014' };
+  if (state.selectedFilters) state.selectedFilters['audit-reports'] = 'final';
+  persistAfterAction();
+  render();
+}
+
 function finalReportPrepareSteps() {
   return ['executive', 'overview', 'findings', 'cap', 'conclusions', 'recommendations', 'appendices', 'review'];
 }
@@ -2893,11 +2914,7 @@ function handleFinalReportPrepareNext() {
   var ui = ensureCapTrackingUi();
   var current = steps.indexOf(ui.finalReportPrepareStep || 'executive');
   if (current < 0) current = 0;
-  if (ui.finalReportPrepareStep === 'overview') {
-    ui.finalReportPrepareStep = 'review';
-  } else {
-    ui.finalReportPrepareStep = steps[Math.min(current + 1, steps.length - 1)];
-  }
+  ui.finalReportPrepareStep = steps[Math.min(current + 1, steps.length - 1)];
   ui.finalReportSavedAt = logTimestamp();
   persistAfterAction();
   render();
@@ -3083,8 +3100,16 @@ function downloadFinalReportPdf() {
 }
 
 function handleFinalReportPrepareFieldChange(field, target) {
-  if (field !== 'final-report-content') return;
   var ui = ensureCapTrackingUi();
+  if (field === 'final-report-list-query') ui.finalReportQuery = target && target.value !== undefined ? target.value : '';
+  if (field === 'final-report-list-status') ui.finalReportStatus = target && target.value ? target.value : 'all';
+  if (field === 'final-report-list-department') ui.finalReportDepartment = target && target.value ? target.value : 'all';
+  if (field === 'final-report-list-period') ui.finalReportPeriod = target && target.value ? target.value : 'all';
+  if (field !== 'final-report-content') {
+    persistAfterAction();
+    render();
+    return;
+  }
   ui.finalReportContent = target && target.value !== undefined ? target.value : '';
   persistAfterAction();
   var counter = target && target.parentElement && target.parentElement.querySelector ? target.parentElement.querySelector('.final-prepare-char-count') : null;
@@ -3811,13 +3836,16 @@ document.addEventListener('input', function (e) {
   if (field === 'lead-assignment-query' || field === 'lead-assignment-note') {
     handleLeadAssignmentFieldChange(field, e.target);
   }
-  if (field === 'preliminary-report-query') {
+  if (field === 'preliminary-report-query' || field === 'preliminary-report-finding-query') {
     handleLeadPreliminaryReportFieldChange(field, e.target);
   }
   if (field === 'preliminary-report-content') {
     handleLeadPreliminaryReportFieldChange(field, e.target);
   }
   if (field === 'final-report-content') {
+    handleFinalReportPrepareFieldChange(field, e.target);
+  }
+  if (field === 'final-report-list-query') {
     handleFinalReportPrepareFieldChange(field, e.target);
   }
   if (field === 'cap-review-search') {

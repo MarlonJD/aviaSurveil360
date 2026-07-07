@@ -3974,8 +3974,10 @@ function viewInspectorAuditExecution(audit) {
   var previousSection = activeIndex > 0 ? INSPECTOR_EXECUTION_SECTIONS[activeIndex - 1] : null;
   var nextSection = activeIndex < INSPECTOR_EXECUTION_SECTIONS.length - 1 ? INSPECTOR_EXECUTION_SECTIONS[activeIndex + 1] : null;
   var submitted = !!state.inspectionWorkspaceSubmittedAt;
+  var allSectionsComplete = !!state.inspectionWorkspaceAllSectionsCompletedAt;
   var downloadNote = state.inspectionWorkspaceDownloadedAt ? '<span class="inspection-save-state">Checklist downloaded</span>' : '';
   var draftNote = state.inspectionWorkspaceDraftSavedAt ? '<span class="inspection-save-state">Draft saved</span>' : '';
+  var completeNote = allSectionsComplete ? '<span class="inspection-save-state inspection-save-state--submitted">All sections complete</span>' : '';
   var submitNote = submitted ? '<span class="inspection-save-state inspection-save-state--submitted">Submitted to Lead Inspector</span>' : '';
   var sectionRows = INSPECTOR_EXECUTION_SECTIONS.map(function (section) {
     return '<button class="inspection-section' + (section.no === activeSection.no ? ' is-active' : '') + '" data-act="inspection-section-preview" data-id="' + esc(section.no) + '">' +
@@ -4003,7 +4005,7 @@ function viewInspectorAuditExecution(audit) {
         '<div>' +
           '<h1>SMS Oversight Audit</h1>' +
           '<div class="inspection-title-meta"><span>' + esc(org) + '</span><span>Routine Inspection</span></div>' +
-          '<div class="inspection-status-line">' + demoBadge(submitted ? 'Submitted' : 'In Progress', submitted ? 'ok' : 'info') + downloadNote + draftNote + submitNote + '</div>' +
+          '<div class="inspection-status-line">' + demoBadge(submitted ? 'Submitted' : (allSectionsComplete ? 'Ready to Submit' : 'In Progress'), submitted || allSectionsComplete ? 'ok' : 'info') + downloadNote + draftNote + completeNote + submitNote + '</div>' +
         '</div>' +
         '<div class="inspection-exec__actions">' +
           '<button class="btn" data-act="inspection-download-checklist" data-id="' + esc(audit.id) + '"><span>&#8681;</span>Download Checklist</button>' +
@@ -4044,7 +4046,9 @@ function viewInspectorAuditExecution(audit) {
           '<div class="inspection-bottom-nav">' +
             '<button class="btn" data-act="inspection-section-preview" data-id="previous"' + (previousSection ? '' : ' disabled') + '>&larr; ' + esc(previousSection ? previousSection.title : 'Previous Section') + '</button>' +
             '<span>' + esc(nextSection ? 'Next Section' : 'Final Section') + '</span>' +
-            '<button class="btn btn--primary" data-act="inspection-section-preview" data-id="next"' + (nextSection ? '' : ' disabled') + '>' + esc(nextSection ? nextSection.no + ' ' + nextSection.title : 'All Sections Complete') + ' &rarr;</button>' +
+            (nextSection
+              ? '<button class="btn btn--primary" data-act="inspection-section-preview" data-id="next">' + esc(nextSection.no + ' ' + nextSection.title) + ' &rarr;</button>'
+              : '<button class="btn btn--primary" data-act="inspection-complete-sections" data-id="' + esc(audit.id) + '"' + (allSectionsComplete ? ' disabled' : '') + '>' + esc(allSectionsComplete ? 'Sections Complete' : 'All Sections Complete') + ' &rarr;</button>') +
           '</div>' +
         '</section>' +
       '</div>' +
@@ -5790,12 +5794,30 @@ function leadPreliminarySelectedFindings(ui) {
   });
 }
 
+function leadPreliminaryFindingCounts(findings) {
+  return findings.reduce(function (counts, finding) {
+    counts[finding.level] = (counts[finding.level] || 0) + 1;
+    counts.all += 1;
+    return counts;
+  }, { all: 0, L1: 0, L2: 0, L3: 0 });
+}
+
+function leadPreliminaryFilteredFindings(ui) {
+  var query = (ui.findingQuery || '').toLowerCase().trim();
+  var level = ui.findingLevel || 'all';
+  return leadPreliminaryWorkflowFindings().filter(function (finding) {
+    if (level !== 'all' && finding.level !== level) return false;
+    if (!query) return true;
+    return (finding.id + ' ' + finding.title + ' ' + finding.area + ' ' + finding.levelLabel).toLowerCase().indexOf(query) >= 0;
+  });
+}
+
 function leadPreliminaryWorkflowStepMeta(step) {
   var map = {
     inspection: { index: 1, label: 'Inspection & Findings', next: 'Next: Report Content', nextStep: 'content' },
     content: { index: 2, label: 'Report Content', next: 'Next: Attachments', nextStep: 'attachments' },
     attachments: { index: 3, label: 'Attachments', next: 'Next: Review & Submit', nextStep: 'review' },
-    review: { index: 4, label: 'Review & Submit', next: 'Submit for Department Manager Review', nextStep: 'review' }
+    review: { index: 4, label: 'Review & Submit', next: 'Submit to Department Manager', nextStep: 'review' }
   };
   return map[step] || map.inspection;
 }
@@ -5805,7 +5827,7 @@ function leadPreliminaryWorkflowHeader(row, ui) {
   var meta = leadPreliminaryWorkflowStepMeta(step);
   var statusText = ui.submittedAt ? 'Pending Department Manager Review' : 'Draft';
   var nextAction = step === 'review'
-    ? '<button class="btn btn--primary" data-act="preliminary-report-submit"' + (ui.submittedAt ? ' disabled' : '') + '>' + esc(ui.submittedAt ? 'Pending Department Manager Review' : meta.next) + ' →</button>'
+    ? '<button class="btn btn--primary" data-act="preliminary-report-submit"' + (ui.submittedAt ? ' disabled' : '') + '>' + esc(ui.submittedAt ? 'Submitted to Department Manager' : meta.next) + ' →</button>'
     : '<button class="btn btn--primary" data-act="preliminary-report-next">' + esc(meta.next) + ' →</button>';
   return '<div class="prelim-workflow-head">' +
     '<div class="prelim-workflow-crumb"><button data-act="nav" data-view="audit-reports" data-filter="preliminary">⌂</button><span>Preliminary Reports</span><span>›</span><span>' + esc(row.id) + '</span><span>›</span><b>' + esc(meta.label) + '</b></div>' +
@@ -5850,17 +5872,24 @@ function leadPreliminaryWorkflowStepper(activeStep) {
 
 function leadPreliminaryFindingsSidePanel(ui, compact) {
   var findings = leadPreliminaryWorkflowFindings();
+  var filteredFindings = leadPreliminaryFilteredFindings(ui);
+  var counts = leadPreliminaryFindingCounts(findings);
   var selectedCount = leadPreliminarySelectedFindings(ui).length;
+  var levelOptions = [
+    ['all', 'All Levels (' + counts.all + ')'],
+    ['L1', 'Level 1 Critical (' + counts.L1 + ')'],
+    ['L2', 'Level 2 Major (' + counts.L2 + ')'],
+    ['L3', 'Level 3 Observation (' + counts.L3 + ')']
+  ].map(function (option) {
+    return '<option value="' + esc(option[0]) + '"' + ((ui.findingLevel || 'all') === option[0] ? ' selected' : '') + '>' + esc(option[1]) + '</option>';
+  }).join('');
   return '<aside class="prelim-findings-panel' + (compact ? ' is-compact' : '') + '">' +
-    '<div class="prelim-panel-tabs"><button class="is-active">Findings from Inspection (' + esc(String(selectedCount)) + ')</button><button>Checklist Results</button></div>' +
+    '<div class="prelim-panel-title"><h2>Findings from Inspection (' + esc(String(selectedCount)) + ')</h2><span>' + esc(String(filteredFindings.length)) + ' shown</span></div>' +
     '<div class="prelim-finding-filters">' +
-      '<span class="is-all">All <b>' + esc(String(findings.length)) + '</b></span>' +
-      '<span class="is-l1">Level 1 (Critical) <b>2</b></span>' +
-      '<span class="is-l2">Level 2 (Major) <b>3</b></span>' +
-      '<span class="is-l3">Level 3 (Observation) <b>4</b></span>' +
+      '<label><span>Severity</span><select data-field="preliminary-report-finding-level">' + levelOptions + '</select></label>' +
+      '<label class="prelim-finding-search"><span>Search</span><input type="search" data-field="preliminary-report-finding-query" value="' + esc(ui.findingQuery || '') + '" placeholder="Search findings..." aria-label="Search findings"></label>' +
     '</div>' +
-    '<div class="prelim-finding-search"><input type="search" placeholder="Search findings..." aria-label="Search findings"><button class="btn btn--sm">Filter</button></div>' +
-    '<div class="prelim-finding-list">' + findings.map(function (finding) {
+    '<div class="prelim-finding-list">' + (filteredFindings.length ? filteredFindings.map(function (finding) {
       var checked = ui.includedFindings[finding.id] !== false;
       return '<div class="prelim-finding-item is-' + esc(finding.level.toLowerCase()) + '">' +
         '<label aria-label="Include ' + esc(finding.id) + ' in report"><input type="checkbox" data-field="preliminary-report-finding" data-id="' + esc(finding.id) + '"' + (checked ? ' checked' : '') + '></label>' +
@@ -5870,7 +5899,7 @@ function leadPreliminaryFindingsSidePanel(ui, compact) {
         '<i>Reviewed</i>' +
         '<button type="button" class="btn btn--sm" data-act="preliminary-report-view-finding" data-id="' + esc(finding.id) + '">View</button>' +
       '</div>';
-    }).join('') + '</div>' +
+    }).join('') : '<div class="empty">No findings match this filter.</div>') + '</div>' +
   '</aside>';
 }
 
@@ -5979,7 +6008,7 @@ function leadPreliminaryReviewStep(row, ui) {
       '<label class="prelim-declaration"><input type="checkbox" data-field="preliminary-report-declaration" data-id="readyForReview"' + (ui.declarations.readyForReview ? ' checked' : '') + '> This report is ready for review and approval by the relevant authority.</label>' +
       '<div class="prelim-signature-grid"><label>Lead Inspector Name<input value="Aylin Sezer" readonly></label><label>Date<input value="15 Jun 2026" readonly></label><label>Signature<div class="prelim-signature">Aylin Sezer <span>Signed</span></div></label></div>' +
       '<div class="prelim-next-step">' +
-        '<div><h3>Next Step</h3><p>After Lead Inspector signature, the preliminary report is always forwarded to Department Manager Review.</p><p>If CAP is required, the Department Manager releases it to the Service Provider. If no CAP is required, the Department Manager continues the approval path.</p></div>' +
+        '<div class="prelim-next-step__intro"><h3>Next Step</h3><p>After Lead Inspector signature, the preliminary report is always forwarded to Department Manager Review. If CAP is required, the Department Manager releases it to the Service Provider; if no CAP is required, the Department Manager continues the approval path.</p></div>' +
         '<div class="prelim-flow-card is-current"><b>Department Manager</b><span>Review & Sign</span></div>' +
         '<div class="prelim-flow-card is-cap"><b>If CAP Required</b><span>Department Manager → Service Provider</span></div>' +
         '<div class="prelim-flow-card is-ok"><b>If No CAP Required</b><span>Department Manager Approval</span></div>' +
@@ -6004,7 +6033,7 @@ function leadPreliminaryWorkflowBottom(ui) {
   var step = ui.step || 'inspection';
   var backLabel = step === 'inspection' ? 'Back: Preliminary Reports' : 'Back: ' + leadPreliminaryWorkflowStepMeta(preliminaryReportPreviousStep(step)).label;
   var primary = step === 'review'
-    ? '<button class="btn btn--primary" data-act="preliminary-report-submit"' + (ui.submittedAt ? ' disabled' : '') + '>' + esc(ui.submittedAt ? 'Pending Department Manager Review' : 'Submit for Department Manager Review') + ' →</button>'
+    ? '<button class="btn btn--primary" data-act="preliminary-report-submit"' + (ui.submittedAt ? ' disabled' : '') + '>' + esc(ui.submittedAt ? 'Submitted to Department Manager' : 'Submit to Department Manager') + ' →</button>'
     : '<button class="btn btn--primary" data-act="preliminary-report-next">' + esc(leadPreliminaryWorkflowStepMeta(step).next) + ' →</button>';
   return '<div class="prelim-workflow-bottom"><button class="btn" data-act="preliminary-report-back">← ' + esc(backLabel) + '</button><div><button class="btn" data-act="preliminary-report-save">Save Draft</button>' + primary + '</div></div>';
 }
@@ -6370,6 +6399,138 @@ function finalReportAttachmentRows() {
   }).join('');
 }
 
+function leadFinalReportRows() {
+  var ui = capTrackingUiState();
+  var readyUpdated = ui.finalReportPreparedAt || ui.finalReportReadyAt || ui.allCapsApprovedAt || '30 Jun 2026';
+  return [
+    { reportId: 'FR-2026-014', inspectionId: 'INS-2026-014', organization: 'SkyCargo Air', orgCount: '5 Organizations', type: 'Routine (Announced)', department: 'Security', dates: '12 - 14 Jun 2026', version: '2.0 (Final)', status: ui.finalReportPreparedAt ? 'draft' : 'ready', lastUpdated: readyUpdated, updatedBy: 'Aylin Sezer', dueDate: '05 Jul 2026', dueNote: 'In 5 days', findings: '9 / 9 findings ready', cap: 'All CAPs approved', capDetail: '9 / 9 CAPs approved', period: 'last90', action: ui.finalReportPreparedAt ? 'Continue' : 'Prepare Report', actionType: 'prepare' },
+    { reportId: 'FR-2026-021', inspectionId: 'INS-2026-021', organization: 'National Airport Authority', orgCount: '1 Organization', type: 'Risk-based (Announced)', department: 'Aviation Safety', dates: '22 - 24 Jun 2026', version: '1.0 (Draft)', status: 'draft', lastUpdated: '02 Jul 2026', updatedBy: 'Aylin Sezer', dueDate: '12 Jul 2026', dueNote: 'In 12 days', findings: '5 / 7 findings ready', cap: 'CAP implementation open', capDetail: '2 CAPs still open', period: 'last90', action: 'Continue', actionType: 'prepare' },
+    { reportId: 'FR-2026-026', inspectionId: 'INS-2026-026', organization: 'AirExpress Ltd.', orgCount: '3 Organizations', type: 'Routine (Announced)', department: 'Security', dates: '18 - 20 Jun 2026', version: '1.0 (Submitted)', status: 'waiting', lastUpdated: '01 Jul 2026', updatedBy: 'Aylin Sezer', dueDate: '-', dueNote: '', findings: '6 / 6 findings closed', cap: 'CAP implementation closed', capDetail: '6 / 6 CAPs closed', period: 'last90', action: 'View Report', actionType: 'preview' },
+    { reportId: 'FR-2026-031', inspectionId: 'INS-2026-031', organization: 'Cargo Terminal Services', orgCount: '2 Organizations', type: 'Unannounced', department: 'Operations', dates: '10 - 11 Jun 2026', version: '1.0 (Returned)', status: 'returned', lastUpdated: '29 Jun 2026', updatedBy: 'Mehmet Kaya', dueDate: '-', dueNote: '', findings: '4 / 5 findings ready', cap: 'One CAP needs clarification', capDetail: '1 returned CAP response', period: 'last90', action: 'Revise Report', actionType: 'prepare' },
+    { reportId: 'FR-2026-038', inspectionId: 'INS-2026-038', organization: 'FlyHigh Catering', orgCount: '1 Organization', type: 'Routine (Announced)', department: 'Catering', dates: '05 - 07 Jun 2026', version: '1.0 (Final)', status: 'approved', lastUpdated: '25 Jun 2026', updatedBy: 'Elif Demir', dueDate: '-', dueNote: '', findings: '3 / 3 findings closed', cap: 'CAP implementation closed', capDetail: '3 / 3 CAPs closed', period: 'last90', action: 'View Report', actionType: 'preview' },
+    { reportId: 'FR-2026-040', inspectionId: 'INS-2026-040', organization: 'SkyFuel Services', orgCount: '1 Organization', type: 'Risk-based (Announced)', department: 'Fuel Operations', dates: '28 - 30 May 2026', version: '1.0 (Final)', status: 'approved', lastUpdated: '20 Jun 2026', updatedBy: 'Elif Demir', dueDate: '-', dueNote: '', findings: '2 / 2 findings closed', cap: 'CAP implementation closed', capDetail: '2 / 2 CAPs closed', period: 'last90', action: 'View Report', actionType: 'preview' },
+    { reportId: 'FR-2026-041', inspectionId: 'INS-2026-041', organization: 'Metro Ground Handling', orgCount: '2 Organizations', type: 'Routine', department: 'Ground Handling', dates: '15 - 17 May 2026', version: '1.0 (Final)', status: 'approved', lastUpdated: '18 Jun 2026', updatedBy: 'Selin Yildiz', dueDate: '-', dueNote: '', findings: '4 / 4 findings closed', cap: 'CAP implementation closed', capDetail: '4 / 4 CAPs closed', period: 'last90', action: 'View Report', actionType: 'preview' },
+    { reportId: 'FR-2026-045', inspectionId: 'INS-2026-045', organization: 'SecureAir Services', orgCount: '1 Organization', type: 'Unannounced', department: 'Security', dates: '30 Apr - 01 May 2026', version: '1.0 (Final)', status: 'approved', lastUpdated: '10 Jun 2026', updatedBy: 'Elif Demir', dueDate: '-', dueNote: '', findings: '1 / 1 finding closed', cap: 'No CAP required', capDetail: 'Observation closed', period: 'last90', action: 'View Report', actionType: 'preview' }
+  ];
+}
+
+function leadFinalReportStatusMeta(status) {
+  var map = {
+    ready: { label: 'Ready for Preparation', tone: 'ready' },
+    draft: { label: 'Draft', tone: 'draft' },
+    waiting: { label: 'Waiting Approval', tone: 'waiting' },
+    returned: { label: 'Returned for Revision', tone: 'returned' },
+    approved: { label: 'Approved', tone: 'approved' }
+  };
+  return map[status] || map.draft;
+}
+
+function leadFinalReportFilteredRows(ui) {
+  var query = (ui.finalReportQuery || '').toLowerCase().trim();
+  return leadFinalReportRows().filter(function (row) {
+    if (ui.finalReportStatus && ui.finalReportStatus !== 'all' && row.status !== ui.finalReportStatus) return false;
+    if (ui.finalReportDepartment && ui.finalReportDepartment !== 'all' && row.department !== ui.finalReportDepartment) return false;
+    if (ui.finalReportPeriod && ui.finalReportPeriod !== 'all' && row.period !== ui.finalReportPeriod) return false;
+    if (!query) return true;
+    return (row.reportId + ' ' + row.inspectionId + ' ' + row.organization + ' ' + row.department).toLowerCase().indexOf(query) >= 0;
+  });
+}
+
+function leadFinalReportMetricsHtml(rows) {
+  function count(status) {
+    return rows.filter(function (row) { return row.status === status; }).length;
+  }
+  return '<div class="prelim-report-metrics final-report-list-metrics">' +
+    leadPreliminaryMetricCard('All Reports', rows.length, 'total', 'file-text') +
+    leadPreliminaryMetricCard('Ready for Preparation', count('ready'), 'ready', 'clipboard-check') +
+    leadPreliminaryMetricCard('Draft', count('draft'), 'draft', 'file-text') +
+    leadPreliminaryMetricCard('Waiting Approval', count('waiting'), 'waiting', 'history') +
+    leadPreliminaryMetricCard('Returned', count('returned'), 'returned', 'refresh-cw') +
+    leadPreliminaryMetricCard('Approved', count('approved'), 'approved', 'check-circle') +
+  '</div>';
+}
+
+function leadFinalReportFiltersHtml(ui) {
+  var departments = leadFinalReportRows().map(function (row) { return row.department; }).filter(function (department, index, list) {
+    return list.indexOf(department) === index;
+  }).sort();
+  var statusOptions = [
+    ['all', 'All Statuses'],
+    ['ready', 'Ready for Preparation'],
+    ['draft', 'Draft'],
+    ['waiting', 'Waiting Approval'],
+    ['returned', 'Returned for Revision'],
+    ['approved', 'Approved']
+  ].map(function (option) {
+    return '<option value="' + esc(option[0]) + '"' + ((ui.finalReportStatus || 'all') === option[0] ? ' selected' : '') + '>' + esc(option[1]) + '</option>';
+  }).join('');
+  var departmentOptions = '<option value="all"' + ((ui.finalReportDepartment || 'all') === 'all' ? ' selected' : '') + '>All Departments</option>' +
+    departments.map(function (department) {
+      return '<option value="' + esc(department) + '"' + (ui.finalReportDepartment === department ? ' selected' : '') + '>' + esc(department) + '</option>';
+    }).join('');
+  var periodOptions = [
+    ['last90', 'Last 90 Days'],
+    ['all', 'All Dates']
+  ].map(function (option) {
+    return '<option value="' + esc(option[0]) + '"' + ((ui.finalReportPeriod || 'last90') === option[0] ? ' selected' : '') + '>' + esc(option[1]) + '</option>';
+  }).join('');
+  return '<div class="prelim-report-filters final-report-list-filters">' +
+    '<label class="prelim-report-search"><span class="prelim-report-filter-icon">⌕</span><input type="search" data-field="final-report-list-query" value="' + esc(ui.finalReportQuery || '') + '" placeholder="Search by inspection ID or organization..."></label>' +
+    '<label><span>Status</span><select data-field="final-report-list-status">' + statusOptions + '</select></label>' +
+    '<label><span>Department</span><select data-field="final-report-list-department">' + departmentOptions + '</select></label>' +
+    '<label><span>Date Range</span><select data-field="final-report-list-period">' + periodOptions + '</select></label>' +
+  '</div>';
+}
+
+function leadFinalReportTableHtml(rows, totalCount) {
+  var visibleRows = rows.slice(0, 8);
+  var body = visibleRows.length ? visibleRows.map(function (row) {
+    var status = leadFinalReportStatusMeta(row.status);
+    var finalAction = row.actionType === 'preview' ? 'preview' : 'prepare';
+    return '<tr>' +
+      '<td><button class="prelim-report-link" data-act="final-report-list-open" data-id="' + esc(row.reportId) + '">' + esc(row.inspectionId) + '</button></td>' +
+      '<td><b>' + esc(row.organization) + '</b><span>' + esc(row.orgCount) + '</span></td>' +
+      '<td>' + esc(row.type) + '</td>' +
+      '<td>' + esc(row.department) + '</td>' +
+      '<td>' + esc(row.dates) + '</td>' +
+      '<td>' + esc(row.version) + '</td>' +
+      '<td><b>' + esc(row.findings) + '</b><span>' + esc(row.capDetail) + '</span></td>' +
+      '<td><span class="prelim-status is-' + esc(status.tone) + '">' + esc(status.label) + '</span><span>' + esc(row.cap) + '</span></td>' +
+      '<td><b>' + esc(row.lastUpdated) + '</b><span>' + esc(row.updatedBy) + '</span></td>' +
+      '<td><b>' + esc(row.dueDate) + '</b><span>' + esc(row.dueNote) + '</span></td>' +
+      '<td><button class="btn btn--sm" data-act="final-report-ready-action" data-final-action="' + esc(finalAction) + '">' + esc(row.action) + '</button></td>' +
+    '</tr>';
+  }).join('') : '<tr><td colspan="11"><div class="empty">No final reports match the current filters.</div></td></tr>';
+  return '<section class="prelim-report-table-panel final-report-list-table-panel">' +
+    '<div class="prelim-report-table-wrap"><table class="prelim-report-table final-report-list-table"><thead><tr>' +
+      '<th>Inspection ID</th><th>Organization</th><th>Inspection Type</th><th>Department</th><th>Inspection Dates</th><th>Report Version</th><th>Findings Summary</th><th>CAP Implementation</th><th>Last Updated</th><th>Due Date</th><th>Actions</th>' +
+    '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+    '<div class="prelim-report-table-foot">' +
+      '<span>Showing ' + (visibleRows.length ? '1' : '0') + ' to ' + esc(String(visibleRows.length)) + ' of ' + esc(String(totalCount)) + ' reports</span>' +
+      '<div class="prelim-report-pager"><button disabled>‹</button><button class="is-active">1</button><button>2</button><button>3</button><button>›</button></div>' +
+    '</div>' +
+  '</section>';
+}
+
+function viewLeadFinalReports() {
+  var ui = capTrackingUiState();
+  if (!ui.finalReportStatus) ui.finalReportStatus = 'all';
+  if (!ui.finalReportDepartment) ui.finalReportDepartment = 'all';
+  if (!ui.finalReportPeriod) ui.finalReportPeriod = 'last90';
+  if (!ui.finalReportQuery) ui.finalReportQuery = '';
+  var allRows = leadFinalReportRows();
+  var rows = leadFinalReportFilteredRows(ui);
+  return '<div class="prelim-reports-page final-report-list-page">' +
+    '<div class="prelim-reports-head">' +
+      '<div><h1>Final Reports</h1><p>View and manage all final reports you are leading.</p></div>' +
+      '<div class="final-report-list-actions"><button class="btn" data-act="final-report-ready-action" data-final-action="preview">Preview PDF</button></div>' +
+    '</div>' +
+    leadFinalReportFiltersHtml(ui) +
+    leadFinalReportMetricsHtml(allRows) +
+    leadFinalReportTableHtml(rows, rows.length) +
+  '</div>';
+}
+
 function viewLeadFinalReportDocument() {
   return '<div class="final-report-view-page">' +
     '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><span>INS-2026-014</span><span>›</span><span>Final Reports</span><span>›</span><b>Final Report</b></div>' +
@@ -6522,27 +6683,11 @@ function finalReportPrepareStepper(activeStep) {
 }
 
 function finalReportOverviewStepper() {
-  var steps = [
-    ['executive', 'Executive Summary', '✓', 'is-done'],
-    ['overview', 'Inspection Overview', '2', 'is-active'],
-    ['review', 'Review & Submit', '3', '']
-  ];
-  return '<div class="final-prepare-stepper final-overview-stepper">' + steps.map(function (step) {
-    var cls = step[3] ? ' ' + step[3] : '';
-    return '<button class="final-prepare-step' + cls + '" data-act="final-report-prepare-step" data-step="' + esc(step[0]) + '"><span>' + esc(step[2]) + '</span><b>' + esc(step[1]) + '</b></button>';
-  }).join('') + '</div>';
+  return finalReportPrepareStepper('overview');
 }
 
 function finalReportReviewStepper() {
-  var steps = [
-    ['executive', 'Executive Summary', '✓', 'is-done'],
-    ['overview', 'Inspection Overview', '✓', 'is-done'],
-    ['review', 'Review & Submit', '3', 'is-active']
-  ];
-  return '<div class="final-prepare-stepper final-review-stepper">' + steps.map(function (step) {
-    var cls = step[3] ? ' ' + step[3] : '';
-    return '<button class="final-prepare-step' + cls + '" data-act="final-report-prepare-step" data-step="' + esc(step[0]) + '"><span>' + esc(step[2]) + '</span><b>' + esc(step[1]) + '</b></button>';
-  }).join('') + '</div>';
+  return finalReportPrepareStepper('review');
 }
 
 function finalReportPrepareSectionRail(activeStep) {
@@ -6809,7 +6954,7 @@ function viewLeadFinalReportInspectionOverview(ui) {
         '<section class="final-ready-panel"><h2>Next Steps</h2><p>All CAPs have been approved. Please proceed to prepare the final report.</p><ol class="final-overview-next-list"><li>Prepare Final Report</li><li>Submit for ED Approval</li><li>Report will be issued to the service provider</li><li>Track CAP closure in the CAP module</li></ol></section>' +
       '</aside>' +
     '</div>' +
-    '<div class="final-overview-bottom"><button class="btn" data-act="final-report-prepare-save">Save Draft</button><button class="btn btn--primary" data-act="final-report-prepare-next">Next: Review & Submit -></button></div>' +
+    '<div class="final-overview-bottom"><button class="btn" data-act="final-report-prepare-save">Save Draft</button><button class="btn btn--primary" data-act="final-report-prepare-next">Next: Findings Summary -></button></div>' +
   '</div>';
 }
 
@@ -6852,8 +6997,11 @@ function viewAuditReportsApproval() {
     if (preliminaryUi.mode === 'workflow') return viewLeadPreliminaryWorkflow();
     return viewLeadPreliminaryReports();
   }
-  if (!requestedAuditId && state.role === 'leadInspector' && requestedFilter === 'final') {
+  if (!requestedAuditId && state.role === 'leadInspector' && requestedFilter === 'final' && state.params && state.params.finalReportId) {
     return viewLeadFinalReportReady();
+  }
+  if (!requestedAuditId && state.role === 'leadInspector' && requestedFilter === 'final') {
+    return viewLeadFinalReports();
   }
   var report = requestedAuditId ? reportForAudit(requestedAuditId) : null;
   if (!report) report = state.auditReports && state.auditReports.length ? state.auditReports[0] : null;
