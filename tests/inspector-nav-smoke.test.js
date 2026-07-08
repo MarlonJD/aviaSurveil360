@@ -6,6 +6,8 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const elements = new Map();
 const stylesCss = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+const downloadClicks = [];
+let lastObjectUrlBlob = null;
 
 function stubElement(id) {
   if (!elements.has(id)) {
@@ -30,7 +32,16 @@ function stubCreatedElement() {
     className: '',
     innerHTML: '',
     style: {},
-    parentNode: null
+    parentNode: null,
+    href: '',
+    download: '',
+    click() {
+      downloadClicks.push({
+        href: this.href,
+        download: this.download,
+        text: lastObjectUrlBlob ? lastObjectUrlBlob.parts.join('') : ''
+      });
+    }
   };
 }
 
@@ -44,10 +55,22 @@ const context = {
   console,
   window: { scrollTo() {} },
   document: {
+    body: stubElement('body'),
     addEventListener() {},
     createElement: stubCreatedElement,
     getElementById: stubElement,
     querySelectorAll() { return []; }
+  },
+  Blob: function MockBlob(parts, options) {
+    this.parts = parts;
+    this.type = options && options.type;
+  },
+  URL: {
+    createObjectURL(blob) {
+      lastObjectUrlBlob = blob;
+      return 'blob:mock-' + downloadClicks.length;
+    },
+    revokeObjectURL() {}
   },
   setTimeout,
   clearTimeout
@@ -213,12 +236,23 @@ auditExecutionHtml = elements.get('app-root').innerHTML;
 assert.ok(context.state.inspectionWorkspaceAllSectionsCompletedAt);
 assert.match(auditExecutionHtml, /Ready to Submit/);
 assert.match(auditExecutionHtml, /Sections Complete/);
-assert.match(auditExecutionHtml, /data-act="inspection-file-open"/);
+assert.match(auditExecutionHtml, /data-act="inspection-file-download"/);
 assert.match(auditExecutionHtml, /section_8_evidence_1\.pdf/);
+
+const downloadCountBefore = downloadClicks.length;
+context.handleAction('inspection-file-download', dataEl({ 'data-id': 'sms-8-1' }));
+assert.equal(downloadClicks.length, downloadCountBefore + 1);
+assert.equal(downloadClicks[downloadClicks.length - 1].download, 'section_8_evidence_1_mock-download.txt');
+assert.match(downloadClicks[downloadClicks.length - 1].text, /Original file name: section_8_evidence_1\.pdf/);
+assert.match(downloadClicks[downloadClicks.length - 1].text, /The demo stores file names only/);
+assert.ok(context.state.inspectionWorkspaceDownloadedAttachments['sms-8-1']);
+auditExecutionHtml = elements.get('app-root').innerHTML;
+assert.match(auditExecutionHtml, /Attachment downloaded/);
 
 context.handleAction('inspection-file-open', dataEl({ 'data-id': 'sms-8-1' }));
 assert.match(elements.get('modal-host').innerHTML, /Attached file preview/);
 assert.match(elements.get('modal-host').innerHTML, /section_8_evidence_1\.pdf/);
+assert.match(elements.get('modal-host').innerHTML, /Download Mock File/);
 context.handleAction('close-modal', dataEl({}));
 
 context.handleAction('inspection-file-open', dataEl({ 'data-id': 'sms-8-2' }));

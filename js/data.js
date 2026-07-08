@@ -946,6 +946,7 @@ function freshState() {
     inspectionWorkspaceAnswers: {}, // { rowId: { status, comment } } for the simplified inspector workspace
     inspectionWorkspaceSection: '1.',
     inspectionWorkspaceDownloadedAt: '',
+    inspectionWorkspaceDownloadedAttachments: {},
     inspectionWorkspaceDraftSavedAt: '',
     inspectionWorkspaceSubmittedAt: '',
     inspectionWorkspaceAllSectionsCompletedAt: '',

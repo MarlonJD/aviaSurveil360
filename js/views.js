@@ -4440,7 +4440,7 @@ function inspectionExecutionFile(row) {
     return '<button class="inspection-file inspection-file--empty" data-act="inspection-file-open" data-id="' + esc(row.id) + '">' +
       '<span class="inspection-file__icon">&#128206;</span>No file attached</button>';
   }
-  return '<button class="inspection-file" data-act="inspection-file-open" data-id="' + esc(row.id) + '">' +
+  return '<button class="inspection-file" data-act="inspection-file-download" data-id="' + esc(row.id) + '" aria-label="Download mock attachment ' + esc(file) + '">' +
     '<span class="inspection-file__icon">&#128206;</span>' + esc(file) + '</button>';
 }
 
@@ -4461,6 +4461,8 @@ function viewInspectorAuditExecution(audit) {
   var submitted = !!state.inspectionWorkspaceSubmittedAt;
   var allSectionsComplete = !!state.inspectionWorkspaceAllSectionsCompletedAt;
   var downloadNote = state.inspectionWorkspaceDownloadedAt ? '<span class="inspection-save-state">Checklist downloaded</span>' : '';
+  var downloadedAttachments = state.inspectionWorkspaceDownloadedAttachments || {};
+  var attachmentDownloadNote = Object.keys(downloadedAttachments).length ? '<span class="inspection-save-state">Attachment downloaded</span>' : '';
   var draftNote = state.inspectionWorkspaceDraftSavedAt ? '<span class="inspection-save-state">Draft saved</span>' : '';
   var completeNote = allSectionsComplete ? '<span class="inspection-save-state inspection-save-state--submitted">All sections complete</span>' : '';
   var submitNote = submitted ? '<span class="inspection-save-state inspection-save-state--submitted">Submitted to Lead Inspector</span>' : '';
@@ -4490,7 +4492,7 @@ function viewInspectorAuditExecution(audit) {
         '<div>' +
           '<h1>SMS Oversight Audit</h1>' +
           '<div class="inspection-title-meta"><span>' + esc(org) + '</span><span>Routine Inspection</span></div>' +
-          '<div class="inspection-status-line">' + demoBadge(submitted ? 'Submitted' : (allSectionsComplete ? 'Ready to Submit' : 'In Progress'), submitted || allSectionsComplete ? 'ok' : 'info') + downloadNote + draftNote + completeNote + submitNote + '</div>' +
+          '<div class="inspection-status-line">' + demoBadge(submitted ? 'Submitted' : (allSectionsComplete ? 'Ready to Submit' : 'In Progress'), submitted || allSectionsComplete ? 'ok' : 'info') + downloadNote + attachmentDownloadNote + draftNote + completeNote + submitNote + '</div>' +
         '</div>' +
         '<div class="inspection-exec__actions">' +
           '<button class="btn" data-act="inspection-download-checklist" data-id="' + esc(audit.id) + '"><span>&#8681;</span>Download Checklist</button>' +
@@ -5075,7 +5077,7 @@ function leadReviewAttachmentHtml(row) {
   return '<div class="lead-attachments">' +
     '<div class="lead-attachments__count">&#128206; ' + esc(row.files.length + (row.files.length === 1 ? ' file' : ' files')) + '</div>' +
     row.files.map(function (file) {
-      return '<button class="lead-attachment" data-act="lead-review-file" data-id="' + esc(row.id) + '" data-file="' + esc(file) + '">' + esc(file) + '</button>';
+      return '<button class="lead-attachment" data-act="lead-review-file-download" data-id="' + esc(row.id) + '" data-file="' + esc(file) + '" aria-label="Download mock attachment ' + esc(file) + '">' + esc(file) + '</button>';
     }).join('') +
   '</div>';
 }

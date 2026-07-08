@@ -741,6 +741,7 @@ function handleAction(act, el) {
     case 'inspection-section-preview': handleInspectionSectionPreview(id); break;
     case 'inspection-complete-sections': handleInspectionCompleteSections(id); break;
     case 'inspection-file-open': handleInspectionFileOpen(id); break;
+    case 'inspection-file-download': handleInspectionFileDownload(id); break;
     case 'inspection-file-attach': handleInspectionFileAttach(id); break;
     case 'inspection-row-menu': handleInspectionRowMenu(id); break;
     case 'inspection-set-status': handleInspectionSetStatus(id, status); break;
@@ -755,6 +756,7 @@ function handleAction(act, el) {
     case 'lead-review-download': handleLeadReviewDownload(id); break;
     case 'lead-review-finalize': handleLeadReviewFinalize(id); break;
     case 'lead-review-file': handleLeadReviewFile(id, el.getAttribute('data-file')); break;
+    case 'lead-review-file-download': handleLeadReviewFileDownload(id, el.getAttribute('data-file')); break;
     case 'lead-report-generate': handleLeadReportGenerate(id); break;
     case 'lead-report-actions-toggle': handleLeadReportActionsToggle(); break;
     case 'lead-report-section': handleLeadReportSection(id); break;
@@ -1019,9 +1021,73 @@ function handleInspectionFileOpen(rowId) {
     '<p class="small muted mt-12">Demo only: this previews the attachment record. No real document is uploaded, stored, or downloaded.</p>';
   var foot = '<button class="btn" data-act="close-modal">Close</button>' +
     (file
-      ? '<button class="btn btn--primary" data-act="inspection-row-menu" data-id="' + esc(row.id) + '">View Row Details</button>'
+      ? '<button class="btn" data-act="inspection-row-menu" data-id="' + esc(row.id) + '">View Row Details</button>' +
+        '<button class="btn btn--primary" data-act="inspection-file-download" data-id="' + esc(row.id) + '">Download Mock File</button>'
       : '<button class="btn btn--primary" data-act="inspection-file-attach" data-id="' + esc(row.id) + '">Attach Mock File</button>');
   openModal(modalShell(file ? 'Attached file preview' : 'Attach checklist evidence', body, foot));
+}
+
+function mockAttachmentDownloadFileName(fileName) {
+  var safe = String(fileName || 'attachment')
+    .replace(/[\\/:*?"<>|]+/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/^\.+/, '')
+    .replace(/_+$/g, '');
+  if (!safe) safe = 'attachment';
+  return safe.replace(/\.[^.]+$/, '') + '_mock-download.txt';
+}
+
+function downloadPlainTextFile(fileName, text) {
+  if (typeof document === 'undefined' || typeof Blob === 'undefined' || typeof URL === 'undefined' || !document.body) return false;
+  var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 0);
+  return true;
+}
+
+function inspectionAttachmentDownloadText(row, fileName) {
+  var meta = INSPECTOR_EXECUTION_STATUS_META[inspectionExecutionStatus(row)] || INSPECTOR_EXECUTION_STATUS_META.na;
+  var comment = inspectionExecutionComment(row) || 'No comment entered.';
+  return [
+    'AviaSurveil360 - Mock Attachment Download',
+    '',
+    'Original file name: ' + fileName,
+    'Inspection: INS-2026-015',
+    'Audit: SMS Oversight Audit',
+    'Organization: SkyCargo Air',
+    'Checklist item: ' + row.no + ' - ' + row.item,
+    'Compliance: ' + meta.label,
+    'Inspector comment: ' + comment,
+    '',
+    'Demo boundary',
+    'This generated text file represents the mock attachment record in the frontend-only demo.',
+    'The demo stores file names only; no real document content, upload service, or evidence repository is included.'
+  ].join('\n');
+}
+
+function handleInspectionFileDownload(rowId) {
+  var row = inspectionWorkspaceRow(rowId);
+  if (!row) return;
+  var file = (typeof inspectionExecutionFileName === 'function' ? inspectionExecutionFileName(row) : row.file) || '';
+  if (!file) {
+    handleInspectionFileOpen(rowId);
+    return;
+  }
+  var downloaded = downloadPlainTextFile(mockAttachmentDownloadFileName(file), inspectionAttachmentDownloadText(row, file));
+  if (!state.inspectionWorkspaceDownloadedAttachments) state.inspectionWorkspaceDownloadedAttachments = {};
+  state.inspectionWorkspaceDownloadedAttachments[row.id] = new Date().toISOString();
+  addLog('Checklist attachment download simulated', file);
+  persistAfterAction();
+  render();
+  toast(downloaded ? 'Attachment downloaded' : 'Download unavailable',
+    downloaded ? file + ' was generated as a mock download in this browser.' : 'This browser does not support client-side mock downloads.',
+    downloaded ? 'ok' : 'warn');
 }
 
 function handleInspectionFileAttach(rowId) {
@@ -2335,7 +2401,44 @@ function handleLeadReviewFile(rowId, fileName) {
   openModal(modalShell('Attached file', '<p><b>' + esc(fileName || 'Attached file') + '</b></p>' +
     '<p class="muted">This demo previews the attachment record only. No real file is downloaded or stored.</p>' +
     '<p class="small muted mt-12">' + esc(row.no + ' · ' + row.item) + '</p>',
-    '<button class="btn" data-act="close-modal">Close</button>', false));
+    '<button class="btn" data-act="close-modal">Close</button>' +
+      '<button class="btn btn--primary" data-act="lead-review-file-download" data-id="' + esc(row.id) + '" data-file="' + esc(fileName || '') + '">Download Mock File</button>',
+    false));
+}
+
+function leadReviewAttachmentDownloadText(row, fileName) {
+  var meta = INSPECTOR_EXECUTION_STATUS_META[row.status] || INSPECTOR_EXECUTION_STATUS_META.na;
+  return [
+    'AviaSurveil360 - Mock Attachment Download',
+    '',
+    'Original file name: ' + fileName,
+    'Inspection: INS-2026-015',
+    'Audit: SMS Oversight Audit',
+    'Organization: SkyCargo Air',
+    'Checklist item: ' + row.no + ' - ' + row.item,
+    'Compliance: ' + meta.label,
+    'Lead review decision: ' + leadReviewRowDecision(row),
+    'Lead review comment: ' + (leadReviewRowComment(row) || 'No comment entered.'),
+    '',
+    'Demo boundary',
+    'This generated text file represents the mock attachment record in the frontend-only demo.',
+    'The demo stores file names only; no real document content, upload service, or evidence repository is included.'
+  ].join('\n');
+}
+
+function handleLeadReviewFileDownload(rowId, fileName) {
+  var row = typeof leadReviewRowById === 'function' ? leadReviewRowById(rowId) : null;
+  if (!row) return;
+  var file = fileName || (row.files && row.files.length ? row.files[0] : '');
+  if (!file) {
+    toast('No attachment', 'This checklist row has no mock attachment to download.', 'warn');
+    return;
+  }
+  var downloaded = downloadPlainTextFile(mockAttachmentDownloadFileName(file), leadReviewAttachmentDownloadText(row, file));
+  addLog('Lead review attachment download simulated', file);
+  toast(downloaded ? 'Attachment downloaded' : 'Download unavailable',
+    downloaded ? file + ' was generated as a mock download in this browser.' : 'This browser does not support client-side mock downloads.',
+    downloaded ? 'ok' : 'warn');
 }
 
 function handleMockChecklistEvidence(q) {
