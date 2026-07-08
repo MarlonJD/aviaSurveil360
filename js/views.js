@@ -2260,6 +2260,28 @@ function inspectorFindingTable(rows, selectedId) {
   '</section>';
 }
 
+function inspectorFindingQueueRowsHtml(rows, selectedId) {
+  if (!rows.length) {
+    return '<div class="empty">No findings match these filters.</div>';
+  }
+  return rows.map(function (row) {
+    var selected = row.id === selectedId;
+    return '<button class="finding-queue-item' + (selected ? ' is-selected' : '') + '" data-act="cap-review-row" data-id="' + esc(row.id) + '"' + (selected ? ' aria-current="true"' : '') + ' aria-label="Open finding ' + esc(row.id) + '">' +
+      '<span class="finding-queue-item__top"><b>' + esc(row.id) + '</b>' + demoBadge(row.statusLabel, row.statusTone) + '</span>' +
+      '<strong>' + esc(row.title) + '</strong>' +
+      '<span class="finding-queue-item__meta">' + esc(row.checklist) + ' · ' + esc(row.levelLabel) + '</span>' +
+      '<span class="finding-queue-item__due"><em' + (row.dueKey === 'due7' ? ' class="is-danger"' : '') + '>' + esc(row.dueDateText) + '</em><small>' + esc(row.dueRule) + '</small></span>' +
+    '</button>';
+  }).join('');
+}
+
+function inspectorFindingQueue(rows, selectedId) {
+  return '<section class="finding-queue-panel">' +
+    '<div class="finding-queue-head"><h2>Finding Queue</h2><span>' + esc(String(rows.length)) + ' findings</span></div>' +
+    '<div class="finding-queue-list">' + inspectorFindingQueueRowsHtml(rows, selectedId) + '</div>' +
+  '</section>';
+}
+
 function inspectorFindingEvidenceStrip(row) {
   var labels = row.statusKey === 'waiting_cap' ? ['Photo', 'Log', 'Note'] : ['CAP', 'Photo', 'Record'];
   return '<div class="finding-evidence-strip">' + labels.map(function (label, index) {
@@ -2278,6 +2300,29 @@ function inspectorFindingTimeline(row) {
   return '<div class="finding-timeline">' + steps.map(function (step) {
     return '<div class="finding-timeline-step is-' + esc(step[0]) + '"><span></span><p><b>' + esc(step[1]) + '</b><small>' + esc(step[2]) + '</small>' + (step[3] ? '<em>' + esc(step[3]) + '</em>' : '') + '</p></div>';
   }).join('') + '</div>';
+}
+
+function inspectorFindingNextAction(row) {
+  if (row.statusKey === 'waiting_cap') return 'Await CAP submission';
+  if (row.statusKey === 'cap_submitted') return 'Review CAP and evidence';
+  if (row.statusKey === 'returned') return 'Await revised CAP';
+  if (row.statusKey === 'closed') return 'Closed';
+  return 'Review finding';
+}
+
+function inspectorFindingCurrentOwner(row) {
+  if (row.statusKey === 'waiting_cap' || row.statusKey === 'returned') return row.organization + ' (Service Provider)';
+  if (row.statusKey === 'closed') return 'CAA Inspector';
+  return 'CAA Inspector';
+}
+
+function inspectorFindingActionStrip(row) {
+  return '<div class="finding-action-strip">' +
+    '<div><span>Current Owner</span><b>' + esc(inspectorFindingCurrentOwner(row)) + '</b></div>' +
+    '<div><span>Next Action</span><b>' + esc(inspectorFindingNextAction(row)) + '</b></div>' +
+    '<div><span>Due Date</span><b' + (row.dueKey === 'due7' ? ' class="is-danger"' : '') + '>' + esc(row.dueDateText) + '</b><small>' + esc(row.dueRule) + '</small></div>' +
+    '<div><span>Organization</span><b>' + esc(row.organization) + '</b></div>' +
+  '</div>';
 }
 
 function inspectorFindingDetailBody(row, ui) {
@@ -2320,6 +2365,7 @@ function inspectorFindingDetailPanel(row, ui) {
   }
   return '<section class="finding-detail-panel">' +
     '<div class="finding-detail-head"><div><h2><span>' + esc(row.id) + '</span> ' + esc(row.title) + '</h2><p><span>⌘</span> ' + esc(row.checklist) + '<span>▣</span> Raised on 15 Jun 2026 by ' + esc(row.owner) + '</p></div><div>' + demoBadge(row.levelLabel, row.levelKey === 'l1' ? 'danger' : (row.levelKey === 'l2' ? 'warn' : 'info')) + demoBadge(row.statusLabel, row.statusTone) + '</div></div>' +
+    inspectorFindingActionStrip(row) +
     '<div class="finding-detail-tabs">' +
       tabButton('details', 'Details') +
       tabButton('cap', 'CAP & Verification') +
@@ -2486,9 +2532,9 @@ function viewInspectorCapReviews() {
     pageHead('Findings', 'All findings and CAPs from this inspection', actions) +
     inspectorCapVerificationTabs(ui, counts) +
     (ui.filtersOpen === false ? '' : inspectorCapVerificationFilters(ui)) +
-    '<div class="finding-board responsive-workbench responsive-workbench--with-rail">' +
-      '<main>' + inspectorFindingTable(visibleRows, selected ? selected.id : '') + '</main>' +
-      (selected ? inspectorFindingDetailPanel(selected, ui) : '<section class="finding-detail-panel"><div class="empty">No findings match these filters.</div></section>') +
+    '<div class="finding-board finding-board--dossier responsive-workbench responsive-workbench--with-rail">' +
+      '<aside class="finding-queue-column">' + inspectorFindingQueue(visibleRows, selected ? selected.id : '') + '</aside>' +
+      '<main class="finding-dossier-column">' + (selected ? inspectorFindingDetailPanel(selected, ui) : '<section class="finding-detail-panel"><div class="empty">No findings match these filters.</div></section>') + '</main>' +
     '</div>' +
     inspectorFindingReturnedFlow() +
   '</div>';

@@ -5,6 +5,7 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 const elements = new Map();
+const stylesCss = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
 
 function stubElement(id) {
   if (!elements.has(id)) {
@@ -330,7 +331,8 @@ const capReviewOutput = capReviewHtml.replace(/&amp;/g, '&');
 assert.match(capReviewHtml, /Findings/);
 assert.match(capReviewHtml, /responsive-workbench/);
 assert.match(capReviewHtml, /responsive-filter-row/);
-assert.match(capReviewHtml, /responsive-table-shell/);
+assert.match(capReviewHtml, /finding-board--dossier/);
+assert.match(capReviewHtml, /finding-queue-panel/);
 assert.match(capReviewHtml, /All findings and CAPs from this inspection/);
 assert.match(capReviewHtml, /SkyCargo Air/);
 assert.match(capReviewHtml, /Routine Inspection/);
@@ -341,6 +343,9 @@ assert.match(capReviewHtml, /Perimeter Fence Security/);
 assert.match(capReviewHtml, /CCTV Coverage Gaps/);
 assert.match(capReviewHtml, /CAP &amp; Verification/);
 assert(capReviewOutput.includes('CAP & Verification'), 'Unified Findings detail should include CAP & Verification.');
+assert.match(capReviewHtml, /Finding Queue/);
+assert.match(capReviewHtml, /Current Owner/);
+assert.match(capReviewHtml, /Next Action/);
 assert.match(capReviewHtml, /CAP Summary/);
 assert.match(capReviewHtml, /Inspector Verification/);
 assert.match(capReviewHtml, /Accept CAP/);
@@ -353,6 +358,23 @@ assert.doesNotMatch(capReviewHtml, /cap-review-expanded-row/);
 assert.doesNotMatch(capReviewHtml, /data-field="cap-review-decision"/);
 assert.doesNotMatch(capReviewHtml, /Submit Decision/);
 assert.doesNotMatch(capReviewHtml, /Every finding shows owner/);
+
+context.handleAction('cap-review-tab', dataEl({ 'data-id': 'F-014-02', 'data-tab': 'details' }));
+const capReviewDetailsHtml = elements.get('app-root').innerHTML;
+assert.match(capReviewDetailsHtml, /Finding Description/);
+assert.match(capReviewDetailsHtml, /CAP Timeline/);
+assert.match(capReviewDetailsHtml, /finding-detail-split/);
+assert.match(capReviewDetailsHtml, /finding-meta-card/);
+assert.match(capReviewDetailsHtml, /Organization/);
+assert.match(capReviewDetailsHtml, /Finding Type/);
+assert.match(stylesCss, /\.finding-detail-tabs\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(136px,\s*1fr\)\)/s);
+assert.match(stylesCss, /\.finding-detail-tabs button\s*\{[^}]*min-width:\s*0;/s);
+assert.match(stylesCss, /\.finding-board\.finding-board--dossier\.responsive-workbench--with-rail\s*\{[^}]*grid-template-columns:\s*minmax\(300px,\s*360px\)\s+minmax\(0,\s*1fr\)/s);
+assert.match(stylesCss, /\.finding-action-strip\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(140px,\s*1fr\)\)/s);
+assert.match(stylesCss, /\.finding-meta-card div\s*\{[^}]*min-width:\s*0;/s);
+assert.match(stylesCss, /\.finding-detail-panel \.finding-detail-split\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(260px,\s*\.48fr\)/s);
+assert.match(stylesCss, /\.finding-detail-panel \.finding-meta-card\s*\{[^}]*minmax\(132px,\s*1fr\)/s);
+context.handleAction('cap-review-tab', dataEl({ 'data-id': 'F-014-02', 'data-tab': 'cap' }));
 
 context.handleCapReviewProvider('skyfuel');
 const skyFuelHtml = elements.get('app-root').innerHTML;
