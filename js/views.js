@@ -1573,7 +1573,7 @@ function inspectorAssignmentRow(row) {
 function inspectorAssignmentFilterBar(ui) {
   var typeOptions = [['all', 'All Types'], ['AVSEC', 'AVSEC'], ['Safety', 'Safety'], ['SMS', 'SMS'], ['Cargo', 'Cargo'], ['Security', 'Security'], ['Operations', 'Operations'], ['Training', 'Training']];
   var orgOptions = [['all', 'All Organizations'], ['SkyCargo Air', 'SkyCargo Air'], ['AirMove Ground', 'AirMove Ground'], ['BlueWings Airlines', 'BlueWings Airlines'], ['TransAir Cargo', 'TransAir Cargo'], ['JetFast Aviation', 'JetFast Aviation'], ['Global Handling', 'Global Handling']];
-  return '<div class="inspector-assignment-filters">' +
+  return '<div class="inspector-assignment-filters responsive-filter-row">' +
     '<label class="inspector-assignment-filter inspector-assignment-filter--search"><span>Search audits</span><input type="search" data-field="inspector-assignment-query" value="' + esc(ui.query || '') + '" placeholder="Search audits..."><b aria-hidden="true">&#8981;</b></label>' +
     inspectorAssignmentSelect('Status', 'inspector-assignment-status', ui.status, [['all', 'All Status'], ['open', 'Open'], ['in-progress', 'In Progress'], ['completed', 'Completed'], ['overdue', 'Overdue']]) +
     inspectorAssignmentSelect('Type', 'inspector-assignment-type', ui.type, typeOptions) +
@@ -2226,7 +2226,7 @@ function inspectorCapVerificationFilters(ui) {
     ['later', 'Later'],
     ['no_due', 'Closed / No Due Date']
   ], ui.due || 'all');
-  return '<div class="finding-filter-row">' +
+  return '<div class="finding-filter-row responsive-filter-row">' +
     '<label class="finding-search"><span class="sr-only">Search findings</span><input id="cap-review-search" type="search" data-field="cap-review-search" value="' + esc(ui.query || '') + '" placeholder="Search by ID, title, or keyword..."><button class="icon-btn" data-act="cap-review-apply-filters" aria-label="Search findings">⌕</button></label>' +
     '<label><span>CAP Level</span><select data-field="cap-review-level">' + levelOptions + '</select></label>' +
     '<label><span>CAP Status</span><select data-field="cap-review-status">' + statusOptions + '</select></label>' +
@@ -2242,7 +2242,7 @@ function inspectorFindingRowsHtml(rows, selectedId) {
   return rows.map(function (row) {
     return '<tr class="finding-list-row' + (row.id === selectedId ? ' is-selected' : '') + '" data-act="cap-review-row" data-id="' + esc(row.id) + '">' +
       '<td><button class="prelim-report-link" data-act="cap-review-row" data-id="' + esc(row.id) + '">' + esc(row.id) + '</button></td>' +
-      '<td><b>' + esc(row.title) + '</b><span>' + esc(row.checklist) + '</span></td>' +
+      '<td><b>' + esc(row.title) + '</b><span class="question-title">' + esc(row.checklist) + '</span></td>' +
       '<td><span class="sp-level is-' + esc(row.levelKey) + '">' + esc(row.levelLabel) + '</span></td>' +
       '<td>' + demoBadge(row.statusLabel, row.statusTone) + '</td>' +
       '<td><b' + (row.dueKey === 'due7' ? ' class="is-danger"' : '') + '>' + esc(row.dueDateText) + '</b><span>' + esc(row.dueRule) + '</span></td>' +
@@ -2253,7 +2253,7 @@ function inspectorFindingRowsHtml(rows, selectedId) {
 
 function inspectorFindingTable(rows, selectedId) {
   return '<section class="finding-list-panel">' +
-    '<div class="finding-list-table-wrap"><table class="finding-list-table"><thead><tr>' +
+    '<div class="finding-list-table-wrap responsive-table-shell"><table class="finding-list-table"><thead><tr>' +
       '<th>Finding ID</th><th>Title</th><th>CAP Level</th><th>Status</th><th>Due Date</th><th></th>' +
     '</tr></thead><tbody>' + inspectorFindingRowsHtml(rows, selectedId) + '</tbody></table></div>' +
     '<div class="finding-pagination"><span>Showing 1 to ' + esc(String(Math.min(rows.length, 7))) + ' of ' + esc(String(rows.length)) + ' findings</span><div><button class="icon-btn" disabled>‹</button><button class="finding-page-btn is-active" disabled>1</button><button class="finding-page-btn" disabled>2</button><button class="finding-page-btn" disabled>3</button><button class="icon-btn" disabled>›</button></div></div>' +
@@ -2486,7 +2486,7 @@ function viewInspectorCapReviews() {
     pageHead('Findings', 'All findings and CAPs from this inspection', actions) +
     inspectorCapVerificationTabs(ui, counts) +
     (ui.filtersOpen === false ? '' : inspectorCapVerificationFilters(ui)) +
-    '<div class="finding-board">' +
+    '<div class="finding-board responsive-workbench responsive-workbench--with-rail">' +
       '<main>' + inspectorFindingTable(visibleRows, selected ? selected.id : '') + '</main>' +
       (selected ? inspectorFindingDetailPanel(selected, ui) : '<section class="finding-detail-panel"><div class="empty">No findings match these filters.</div></section>') +
     '</div>' +
@@ -4250,7 +4250,7 @@ function viewInspectorAuditExecution(audit) {
   var checklistRows = inspectionExecutionItemsForSection(activeSection.no).map(function (row) {
     return '<tr>' +
       '<td>' + esc(row.no) + '</td>' +
-      '<td><div class="inspection-question">' + esc(row.item) + '</div></td>' +
+      '<td><div class="inspection-question checklist-item-title">' + esc(row.item) + '</div></td>' +
       '<td>' + inspectionExecutionStatusButton(row) + '</td>' +
       '<td><textarea class="inspection-comment" data-field="inspection-comment" data-id="' + esc(row.id) +
         '" placeholder="Add comments (optional)...">' + esc(inspectionExecutionComment(row)) + '</textarea></td>' +
@@ -4299,7 +4299,7 @@ function viewInspectorAuditExecution(audit) {
             '<h2>' + esc(activeSection.no + ' ' + activeSection.title) + '</h2>' +
             '<div class="inspection-card__meta">' + esc(activeSection.done + ' / ' + activeSection.total) + ' Completed <span>&#8963;</span></div>' +
           '</div>' +
-          '<div class="inspection-table-wrap">' +
+          '<div class="inspection-table-wrap responsive-table-shell">' +
             '<table class="inspection-table"><thead><tr>' +
               '<th style="width:58px">No.</th><th>Checklist Item</th><th style="width:190px">Compliance</th><th>Comments</th><th style="width:180px">Attached File</th><th style="width:44px"></th>' +
             '</tr></thead><tbody>' + checklistRows + '</tbody></table>' +
@@ -5602,7 +5602,7 @@ function leadAssignmentQuestionRowsHtml(ui) {
     return '<tr' + (selected ? ' class="is-selected"' : '') + '>' +
       '<td><input type="checkbox" data-field="lead-assignment-question" data-id="' + esc(row.id) + '"' + (selected ? ' checked' : '') + ' aria-label="Select question ' + esc(String(row.no)) + '"></td>' +
       '<td>' + esc(String(row.no)) + '.</td>' +
-      '<td>' + esc(row.text) + '</td>' +
+      '<td><span class="question-title">' + esc(row.text) + '</span></td>' +
       '<td><span class="lead-risk-pill is-' + esc(row.riskKey) + '">' + esc(row.risk) + '</span></td>' +
       '<td>' + assignedHtml + '</td>' +
     '</tr>';
@@ -5676,14 +5676,14 @@ function viewLeadAssignmentQuestions() {
         '<button class="lead-assignment-workload" data-act="lead-assignment-view-team">↗ View Workload Summary</button>' +
       '</aside>' +
       '<section class="lead-assignment-question-table-panel">' +
-        '<div class="lead-assignment-question-filters">' +
+        '<div class="lead-assignment-question-filters responsive-filter-row">' +
           '<label><span>Department</span><select data-field="lead-assignment-department">' + departmentOptions + '</select></label>' +
           '<label><span>Section</span><select data-field="lead-assignment-section">' + sectionOptions + '</select></label>' +
           '<label><span>Risk Level</span><select data-field="lead-assignment-risk">' + riskOptions + '</select></label>' +
           '<label><span>Status</span><select data-field="lead-assignment-status">' + statusOptions + '</select></label>' +
           '<label class="lead-assignment-search"><span>Search</span><input type="search" data-field="lead-assignment-query" value="' + esc(ui.query || '') + '" placeholder="Search questions..."></label>' +
         '</div>' +
-        '<div class="lead-assignment-table-wrap"><table class="lead-assignment-table"><thead><tr><th><input type="checkbox" data-field="lead-assignment-select-visible" aria-label="Select visible questions"></th><th>No.</th><th>Checklist Item</th><th>Risk Level</th><th>Assigned To</th></tr></thead><tbody>' + leadAssignmentQuestionRowsHtml(ui) + '</tbody></table></div>' +
+        '<div class="lead-assignment-table-wrap responsive-table-shell"><table class="lead-assignment-table assignment-question-table"><thead><tr><th><input type="checkbox" data-field="lead-assignment-select-visible" aria-label="Select visible questions"></th><th>No.</th><th>Checklist Item</th><th>Risk Level</th><th>Assigned To</th></tr></thead><tbody>' + leadAssignmentQuestionRowsHtml(ui) + '</tbody></table></div>' +
       '</section>' +
       '<aside class="lead-assignment-side">' +
         '<div class="lead-assignment-side-head"><h2>' + esc(inspectorMode ? 'Selected Questions' : 'Assign Selected') + ' (' + esc(String(selectedCount)) + ')</h2><button data-act="lead-assignment-clear-selection" aria-label="Clear selected questions">×</button></div>' +
@@ -5963,7 +5963,7 @@ function leadPreliminaryFiltersHtml(ui) {
   ].map(function (option) {
     return '<option value="' + esc(option[0]) + '"' + (ui.period === option[0] ? ' selected' : '') + '>' + esc(option[1]) + '</option>';
   }).join('');
-  return '<div class="prelim-report-filters">' +
+  return '<div class="prelim-report-filters responsive-filter-row">' +
     '<label class="prelim-report-search"><span class="prelim-report-filter-icon">⌕</span><input type="search" data-field="preliminary-report-query" value="' + esc(ui.query || '') + '" placeholder="Search reports..."></label>' +
     '<label><span>Status</span><select data-field="preliminary-report-status">' + statusOptions + '</select></label>' +
     '<label><span>Organization</span><select data-field="preliminary-report-organization">' + orgOptions + '</select></label>' +
@@ -6124,7 +6124,7 @@ function leadPreliminaryWorkflowStepper(activeStep) {
     { id: 'review', label: 'Review & Submit' }
   ];
   var activeIndex = leadPreliminaryWorkflowStepMeta(activeStep).index;
-  return '<div class="prelim-workflow-stepper">' + steps.map(function (step, index) {
+  return '<div class="prelim-workflow-stepper report-step-grid">' + steps.map(function (step, index) {
     var stepIndex = index + 1;
     var cls = stepIndex < activeIndex ? ' is-done' : (stepIndex === activeIndex ? ' is-active' : '');
     var marker = stepIndex < activeIndex ? '✓' : String(stepIndex);
@@ -6736,7 +6736,7 @@ function leadFinalReportFiltersHtml(ui) {
   ].map(function (option) {
     return '<option value="' + esc(option[0]) + '"' + ((ui.finalReportPeriod || 'last90') === option[0] ? ' selected' : '') + '>' + esc(option[1]) + '</option>';
   }).join('');
-  return '<div class="prelim-report-filters final-report-list-filters">' +
+  return '<div class="prelim-report-filters final-report-list-filters responsive-filter-row">' +
     '<label class="prelim-report-search"><span class="prelim-report-filter-icon">⌕</span><input type="search" data-field="final-report-list-query" value="' + esc(ui.finalReportQuery || '') + '" placeholder="Search by inspection ID or organization..."></label>' +
     '<label><span>Status</span><select data-field="final-report-list-status">' + statusOptions + '</select></label>' +
     '<label><span>Department</span><select data-field="final-report-list-department">' + departmentOptions + '</select></label>' +

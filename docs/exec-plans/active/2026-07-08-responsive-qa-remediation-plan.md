@@ -8,6 +8,8 @@
 
 **Tech Stack:** HTML, CSS, Vanilla JavaScript, mock client-side state, existing Node smoke tests, local static server, Browser/visual QA.
 
+**Execution Status 2026-07-08:** verified locally. The local static demo passed the full rendered route/viewport matrix with 258 checks, 0 failures, and 0 console warnings/errors. Deployed Vercel verification is not run because no push/deploy was requested; release remains pending.
+
 ## Global Constraints
 
 - Keep the demo frontend-only: no backend, database, API, authentication, real uploads, email, or framework migration.
@@ -152,7 +154,7 @@ Browser automation note: the in-app Browser `domSnapshot()` API failed in this s
 - Consumes: current static demo at `index.html`.
 - Produces: a route/viewport matrix that later tasks must turn from failing to passing.
 
-- [ ] **Step 1: Start the static demo**
+- [x] **Step 1: Start the static demo**
 
 Run:
 
@@ -162,7 +164,7 @@ python3 -m http.server 4173
 
 Expected: `http://127.0.0.1:4173/index.html` serves the demo.
 
-- [ ] **Step 2: Record matrix pages**
+- [x] **Step 2: Record matrix pages**
 
 Create `docs/demo-evidence/RESPONSIVE_QA_2026-07-08.md` with this route list:
 
@@ -234,7 +236,7 @@ Create `docs/demo-evidence/RESPONSIVE_QA_2026-07-08.md` with this route list:
 - Executive Director Planning
 ```
 
-- [ ] **Step 3: Capture each failing state**
+- [x] **Step 3: Capture each failing state**
 
 For every failing viewport/route, add:
 
@@ -249,7 +251,7 @@ For every failing viewport/route, add:
 - Candidate owner files:
 ```
 
-- [ ] **Step 4: Mark pass/fail per route**
+- [x] **Step 4: Mark pass/fail per route**
 
 Add a compact table:
 
@@ -270,7 +272,7 @@ Add a compact table:
 - Consumes: `NAV.inspector`, `go()`, `viewFindings()`, `viewInspectorCapReviews()`.
 - Produces: Inspector sees one `Findings` nav item for findings and CAP lifecycle.
 
-- [ ] **Step 1: Write the nav assertion**
+- [x] **Step 1: Write the nav assertion**
 
 Update `tests/inspector-nav-smoke.test.js` to assert:
 
@@ -280,7 +282,7 @@ assert(!output.includes('CAP Verification'), 'Inspector nav should not show sepa
 assert(output.includes('CAP & Verification'), 'Unified Findings detail should include CAP & Verification.');
 ```
 
-- [ ] **Step 2: Run the targeted test**
+- [x] **Step 2: Run the targeted test**
 
 Run:
 
@@ -290,7 +292,7 @@ node tests/inspector-nav-smoke.test.js
 
 Expected before fix if stale code is present: failure on `CAP Verification`.
 
-- [ ] **Step 3: Route old CAP entry points to Findings**
+- [x] **Step 3: Route old CAP entry points to Findings**
 
 In `js/app.js`, ensure any inspector attempt to open old CAP verification routes lands on:
 
@@ -300,7 +302,7 @@ go('findings', { filter: 'open' });
 
 Keep Lead Inspector and Department Manager CAP-specific routes separate only where they represent approval/closure ownership.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run:
 
@@ -320,7 +322,7 @@ Expected: test passes and local Inspector sidebar has no separate `CAP Verificat
 - Consumes: Findings/CAP tables, legacy CAP review tables, right summary rails.
 - Produces: No page-level horizontal overflow; tables scroll inside wrappers only.
 
-- [ ] **Step 1: Add shared layout wrappers**
+- [x] **Step 1: Add shared layout wrappers**
 
 In `css/styles.css`, add or normalize:
 
@@ -361,7 +363,7 @@ In `css/styles.css`, add or normalize:
 }
 ```
 
-- [ ] **Step 2: Apply wrappers to CAP/Finding tables**
+- [x] **Step 2: Apply wrappers to CAP/Finding tables**
 
 In `js/views.js`, wrap dense CAP/Finding tables with:
 
@@ -371,7 +373,7 @@ In `js/views.js`, wrap dense CAP/Finding tables with:
 
 Use `responsive-workbench responsive-workbench--with-rail` around main table plus summary/notes rail.
 
-- [ ] **Step 3: Prevent badge collisions**
+- [x] **Step 3: Prevent badge collisions**
 
 Add:
 
@@ -395,7 +397,7 @@ td .cap-level-badge {
 }
 ```
 
-- [ ] **Step 4: Verify target regression**
+- [x] **Step 4: Verify target regression**
 
 At `1920 x 1080`, Inspector Findings/CAP route must not show:
 
@@ -413,7 +415,7 @@ At `1920 x 1080`, Inspector Findings/CAP route must not show:
 - Consumes: My Assignments, Findings, CAP review, lead assignment filters.
 - Produces: Filters wrap cleanly or collapse to a compact secondary row without leaving the card.
 
-- [ ] **Step 1: Add shared filter grid**
+- [x] **Step 1: Add shared filter grid**
 
 Add:
 
@@ -433,11 +435,11 @@ Add:
 }
 ```
 
-- [ ] **Step 2: Replace one-off filter rows**
+- [x] **Step 2: Replace one-off filter rows**
 
 Replace custom filter wrappers on high-risk workbenches with `responsive-filter-row`.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 At `1366 x 768`, `1024 x 768`, and `390 x 844`, filter controls must stay inside the card and remain tappable.
 
@@ -451,7 +453,7 @@ At `1366 x 768`, `1024 x 768`, and `390 x 844`, filter controls must stay inside
 - Consumes: `viewInspectorAuditExecution()`, `viewLeadAssignmentQuestions()`.
 - Produces: No vertical letter collapse; evidence/file controls remain visible.
 
-- [ ] **Step 1: Set minimum table widths inside scroll shells**
+- [x] **Step 1: Set minimum table widths inside scroll shells**
 
 Use:
 
@@ -464,7 +466,7 @@ Use:
 
 Only the table wrapper should scroll, not the page.
 
-- [ ] **Step 2: Prevent vertical word collapse**
+- [x] **Step 2: Prevent vertical word collapse**
 
 Add:
 
@@ -481,7 +483,7 @@ Add:
 }
 ```
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 At `768 x 1024` and `390 x 844`, assigned question text must not render as one character per line.
 
@@ -495,7 +497,7 @@ At `768 x 1024` and `390 x 844`, assigned question text must not render as one c
 - Consumes: Lead Inspector preliminary report workflow, final report list, final report preparation, department review.
 - Produces: Report stages are proportional, readable, and action buttons are visible at medium/tablet widths.
 
-- [ ] **Step 1: Collapse report step cards below desktop**
+- [x] **Step 1: Collapse report step cards below desktop**
 
 Use a responsive grid:
 
@@ -507,7 +509,7 @@ Use a responsive grid:
 }
 ```
 
-- [ ] **Step 2: Keep action bars wrapping**
+- [x] **Step 2: Keep action bars wrapping**
 
 Add:
 
@@ -525,7 +527,7 @@ Add:
 }
 ```
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 At `1024 x 768` and `768 x 1024`, preliminary/final report screens must not show tall empty columns, clipped submit buttons, or overlapped next-step copy.
 
@@ -540,7 +542,7 @@ At `1024 x 768` and `768 x 1024`, preliminary/final report screens must not show
 - Consumes: existing static demo and smoke tests.
 - Produces: repeatable evidence that Node tests and browser QA both ran.
 
-- [ ] **Step 1: Run syntax checks**
+- [x] **Step 1: Run syntax checks**
 
 Run:
 
@@ -551,7 +553,7 @@ node --check js/views.js
 
 Expected: no output and exit code `0`.
 
-- [ ] **Step 2: Run all Node smoke tests**
+- [x] **Step 2: Run all Node smoke tests**
 
 Run:
 
@@ -561,7 +563,7 @@ node -e "const fs=require('fs'); const path=require('path'); const {spawnSync}=r
 
 Expected: every smoke test prints `ok`.
 
-- [ ] **Step 3: Run browser QA matrix**
+- [x] **Step 3: Run browser QA matrix**
 
 For each viewport listed above, verify:
 
@@ -571,7 +573,7 @@ document.documentElement.scrollWidth <= document.documentElement.clientWidth + 4
 
 Exceptions are allowed only for intentional inner table wrappers such as `.responsive-table-shell`.
 
-- [ ] **Step 4: Record evidence**
+- [x] **Step 4: Record evidence**
 
 Update `docs/demo-evidence/RESPONSIVE_QA_2026-07-08.md` with:
 
@@ -592,7 +594,7 @@ Update `docs/demo-evidence/RESPONSIVE_QA_2026-07-08.md` with:
 - Consumes: completed responsive fixes.
 - Produces: Vercel/browser loads the updated static assets.
 
-- [ ] **Step 1: Bump asset query version**
+- [x] **Step 1: Bump asset query version**
 
 In `index.html`, replace the current asset query string with a new token:
 
@@ -602,7 +604,7 @@ In `index.html`, replace the current asset query string with a new token:
 
 Use the same token for CSS and all JS script tags.
 
-- [ ] **Step 2: Verify local fresh load**
+- [x] **Step 2: Verify local fresh load**
 
 Open:
 
@@ -616,7 +618,7 @@ Expected:
 - Findings screen shows CAP lifecycle states inside the same workspace.
 - No stale 20260707 assets are requested.
 
-- [ ] **Step 3: Verify deployed fresh load after push**
+- [ ] **Step 3: Verify deployed fresh load after push** - not run; no push/deploy was requested. Release pending.
 
 Open:
 

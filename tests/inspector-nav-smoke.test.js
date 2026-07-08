@@ -79,13 +79,17 @@ const inspectorNavLabels = context.NAV.inspector
   .filter((item) => item.label)
   .map((item) => item.label)
   .join(' ');
+const initialOutput = inspectorNavLabels + ' ' + html;
 
 assert.equal(context.homeView('inspector'), 'inspector-assignments');
+assert(initialOutput.includes('Findings'), 'Inspector nav should show Findings.');
+assert(!initialOutput.includes('CAP Verification'), 'Inspector nav should not show separate CAP Verification.');
 assert.match(html, /My Assignments/);
 assert.match(html, /View and manage all audits and tasks assigned to you\./);
 assert.match(html, /Open Assignments/);
 assert.match(html, /Total Assigned/);
 assert.match(html, /Search audits/);
+assert.match(html, /responsive-filter-row/);
 assert.match(html, /All Status/);
 assert.match(html, /All Types/);
 assert.match(html, /All Organizations/);
@@ -170,6 +174,16 @@ assert.equal(context.NAV.manager.some((item) => item.view === 'checklist-builder
 assert.equal(context.NAV.admin.some((item) => item.view === 'regulatory-library' && item.label === 'NAMCARS Library'), true);
 assert.equal(context.NAV.manager.some((item) => item.view === 'cap-effectiveness' && item.label === 'Repeat Findings'), true);
 
+context.go('cap-verification');
+const legacyCapRedirectHtml = elements.get('app-root').innerHTML;
+assert.equal(context.state.view, 'findings');
+assert.equal(context.state.params.filter, 'open');
+assert.equal(context.state.selectedFilters.findings, 'open');
+assert.match(legacyCapRedirectHtml, /Findings/);
+assert.match(legacyCapRedirectHtml, /All findings and CAPs from this inspection/);
+assert.doesNotMatch(legacyCapRedirectHtml, /CAP Verification/);
+context.go('inspector-assignments');
+
 context.handleAction('inspector-assignment-filter', dataEl({ 'data-status': 'in-progress' }));
 const inProgressAssignmentsHtml = elements.get('app-root').innerHTML;
 assert.equal(context.state.view, 'inspector-assignments');
@@ -246,6 +260,9 @@ const inspectorQuestionWorkspaceHtml = elements.get('app-root').innerHTML;
 assert.equal(context.state.role, 'inspector');
 assert.equal(context.state.view, 'lead-assignment-questions');
 assert.match(inspectorQuestionWorkspaceHtml, /Inspector Question Workspace/);
+assert.match(inspectorQuestionWorkspaceHtml, /responsive-filter-row/);
+assert.match(inspectorQuestionWorkspaceHtml, /responsive-table-shell/);
+assert.match(inspectorQuestionWorkspaceHtml, /assignment-question-table/);
 assert.match(inspectorQuestionWorkspaceHtml, /without routing every row through the Lead Inspector/);
 assert.match(inspectorQuestionWorkspaceHtml, /Checklist Item/);
 assert.match(inspectorQuestionWorkspaceHtml, /Mark Selected for Review/);
@@ -309,7 +326,11 @@ context.state.capReviewUi = {
 };
 context.render();
 const capReviewHtml = elements.get('app-root').innerHTML;
+const capReviewOutput = capReviewHtml.replace(/&amp;/g, '&');
 assert.match(capReviewHtml, /Findings/);
+assert.match(capReviewHtml, /responsive-workbench/);
+assert.match(capReviewHtml, /responsive-filter-row/);
+assert.match(capReviewHtml, /responsive-table-shell/);
 assert.match(capReviewHtml, /All findings and CAPs from this inspection/);
 assert.match(capReviewHtml, /SkyCargo Air/);
 assert.match(capReviewHtml, /Routine Inspection/);
@@ -319,6 +340,7 @@ assert.match(capReviewHtml, /Closed/);
 assert.match(capReviewHtml, /Perimeter Fence Security/);
 assert.match(capReviewHtml, /CCTV Coverage Gaps/);
 assert.match(capReviewHtml, /CAP &amp; Verification/);
+assert(capReviewOutput.includes('CAP & Verification'), 'Unified Findings detail should include CAP & Verification.');
 assert.match(capReviewHtml, /CAP Summary/);
 assert.match(capReviewHtml, /Inspector Verification/);
 assert.match(capReviewHtml, /Accept CAP/);

@@ -2751,6 +2751,17 @@ button { font-family: inherit; }
   font-weight: 720;
   overflow-wrap: anywhere;
 }
+.finding-detail-panel .finding-cap-grid,
+.finding-detail-panel .finding-detail-dl {
+  grid-template-columns: 1fr;
+}
+.finding-detail-panel .finding-detail-dl {
+  gap: 4px 0;
+}
+.finding-detail-panel .finding-detail-dl dd {
+  overflow-wrap: normal;
+  word-break: normal;
+}
 .finding-detail-card .is-ok { color: var(--ok); }
 .finding-detail-card .is-warn { color: var(--warn); }
 .finding-detail-card .is-danger { color: var(--danger); }
@@ -9540,10 +9551,16 @@ button { font-family: inherit; }
 }
 .sp-report-main {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
+  min-width: 0;
+}
+.sp-report-side {
+  min-width: 0;
 }
 .sp-report-panel,
 .sp-report-side-card {
+  min-width: 0;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -9613,14 +9630,17 @@ button { font-family: inherit; }
 .sp-report-summary-card.is-overdue { background: #f8eefb; border-color: #e3c6ef; }
 .sp-report-summary-card.is-overdue strong { color: #7a1fb1; }
 .sp-report-table-wrap {
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   border: 1px solid var(--line-soft);
   border-radius: 6px;
 }
 .sp-report-table {
   width: 100%;
+  min-width: 920px;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto;
 }
 .sp-report-table th,
 .sp-report-table td {
@@ -9671,6 +9691,139 @@ button { font-family: inherit; }
 .sp-days.is-l2 { background: var(--warn-bg); color: var(--warn); }
 .sp-level.is-l3,
 .sp-days.is-l3 { background: var(--blue-50); color: var(--blue-500); }
+
+/* Shared responsive workbench primitives for dense audit/CAP screens. */
+.responsive-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+.responsive-workbench > * {
+  min-width: 0;
+}
+.responsive-table-shell {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+.responsive-table-shell table {
+  width: 100%;
+  min-width: 860px;
+}
+.responsive-rail {
+  min-width: 0;
+}
+.responsive-filter-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  align-items: end;
+  min-width: 0;
+}
+.responsive-filter-row > * {
+  min-width: 0;
+}
+.finding-board.responsive-workbench {
+  grid-template-columns: minmax(0, 1fr);
+  overflow: visible;
+}
+.badge,
+.status-pill,
+.finding-level-pill,
+.cap-level-badge,
+.sp-level,
+.cap-track-level,
+.cap-track-status,
+.sp-report-badge,
+.prelim-workflow-badge,
+.dm-prelim-badge {
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.25;
+}
+td .badge,
+td .status-pill,
+td .finding-level-pill,
+td .cap-level-badge,
+td .sp-level,
+td .cap-track-level,
+td .cap-track-status,
+td .sp-report-badge {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+}
+.inspection-table,
+.assignment-question-table {
+  min-width: 920px;
+}
+.assignment-question-table td,
+.inspection-table td {
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+.assignment-question-table .question-title,
+.inspection-table .checklist-item-title {
+  display: block;
+  min-width: 220px;
+}
+.report-step-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.prelim-workflow-stepper.report-step-grid {
+  align-items: stretch;
+  padding: 14px;
+}
+.prelim-workflow-stepper.report-step-grid .prelim-workflow-step {
+  min-width: 0;
+  padding: 0 8px 10px;
+}
+.prelim-workflow-stepper.report-step-grid .prelim-workflow-step::after {
+  display: none;
+}
+.report-action-bar,
+.final-report-actions,
+.cap-track-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.report-action-bar .btn,
+.final-report-actions .btn,
+.cap-track-head-actions .btn {
+  white-space: normal;
+}
+.final-ready-prep-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+@media (min-width: 1200px) {
+  .responsive-workbench--with-rail {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+    align-items: start;
+  }
+  .finding-board.responsive-workbench--with-rail {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  }
+}
+
+@media (max-width: 1199px) {
+  .responsive-rail {
+    order: 2;
+  }
+  .sp-report-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .responsive-filter-row {
+    grid-template-columns: 1fr;
+  }
+}
 .sp-report-due b,
 .sp-report-due small {
   display: block;
@@ -12617,7 +12770,7 @@ button { font-family: inherit; }
     overflow-x: auto;
   }
   .sp-report-table {
-    min-width: 760px;
+    min-width: 680px;
   }
   .sp-report-rules {
     align-items: stretch;

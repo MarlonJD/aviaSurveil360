@@ -174,6 +174,14 @@ var INSPECTOR_RESTRICTED_VIEWS = {
   templates: true
 };
 
+var INSPECTOR_LEGACY_CAP_VIEWS = {
+  'cap-verification': true,
+  'cap-verification-review': true,
+  'cap-verification-detail': true,
+  'inspector-cap-verification': true,
+  'inspector-cap-reviews': true
+};
+
 var LEAD_INSPECTOR_RESTRICTED_VIEWS = {
   planning: true,
   'planning-approvals': true,
@@ -183,6 +191,11 @@ var LEAD_INSPECTOR_RESTRICTED_VIEWS = {
 };
 
 function normalizeViewForRole() {
+  if (state.role === 'inspector' && INSPECTOR_LEGACY_CAP_VIEWS[state.view]) {
+    state.view = 'findings';
+    state.params = { filter: 'open' };
+    if (state.selectedFilters) state.selectedFilters.findings = 'open';
+  }
   if (state.role === 'inspector' && INSPECTOR_RESTRICTED_VIEWS[state.view]) {
     state.view = homeView(state.role);
     state.params = {};
@@ -533,6 +546,10 @@ function inspectorUserBar() {
 /* ----------------------------- Navigation ----------------------------- */
 function go(view, opts) {
   opts = opts || {};
+  if (state.role === 'inspector' && INSPECTOR_LEGACY_CAP_VIEWS[view]) {
+    view = 'findings';
+    opts = Object.assign({}, opts, { filter: 'open' });
+  }
   state.view = view;
   if (view === 'inspector-assignments') {
     var assignmentUi = ensureInspectorAssignmentsUi();

@@ -123,5 +123,6 @@ assert.match(html, /CAP &amp; Verification/);
 assert.match(html, /Inspector Verification/);
 assert.match(html, /Returned Flow/);
 assert.match(html, /data-act="cap-review-row"/);
+assert.doesNotMatch(html, /CAP Verification/);
 
 console.log('service-provider-final-report-smoke: ok');
