@@ -67,6 +67,25 @@ function renderAttentionStrip(items) {
   }).join('') + '</div>';
 }
 
+function commandMetric(label, value, tone) {
+  return '<div class="command-metric' + (tone ? ' is-' + esc(tone) : '') + '">' +
+    '<span>' + esc(label) + '</span><b>' + esc(value || '-') + '</b></div>';
+}
+
+function workbenchCommand(title, purpose, metrics, actionsHtml, modifier) {
+  var cls = 'workbench-command' + (modifier ? ' workbench-command--' + esc(modifier) : '');
+  return '<section class="' + cls + '">' +
+    '<div class="workbench-command__main">' +
+      '<h2>' + esc(title) + '</h2>' +
+      (purpose ? '<p>' + esc(purpose) + '</p>' : '') +
+    '</div>' +
+    '<div class="workbench-command__meta">' + (metrics || []).map(function (metric) {
+      return commandMetric(metric.label, metric.value, metric.tone);
+    }).join('') + '</div>' +
+    (actionsHtml ? '<div class="workbench-command__actions">' + actionsHtml + '</div>' : '') +
+  '</section>';
+}
+
 function workItemActionButton(item) {
   var action = item.primaryAction;
   if (!action) return '';
@@ -293,6 +312,15 @@ function planningNextAction(item) {
   return planningPrepMeta(prep.status).label;
 }
 
+function planningBlockingReason(item) {
+  var approval = approvalSummary(item);
+  var prep = item.preparation || { status: 'not_released' };
+  if (approval.outcome === 'rejected') return 'Approval rejected; revise or archive the plan.';
+  if (approval.outcome !== 'approved') return 'Waiting for ' + approval.ownerLabel + ' decision.';
+  if (prep.status === 'ready_for_execution') return 'No blocker in demo data.';
+  return planningNextAction(item);
+}
+
 function planningCurrentOwner(item) {
   var approval = approvalSummary(item);
   var prep = item.preparation || { status: 'not_released' };
@@ -443,23 +471,34 @@ function viewPlanningWorkspace(forcedTab) {
       { label: 'Mock approval history', tone: 'info' },
       { label: 'No real authorization service', tone: 'warn' }
     ]) +
-    '<h2 class="section-heading">Planning Workbench</h2>' +
-    renderOpsTable(planningItems, { selectedId: item.id, empty: 'No planning work items are seeded.' }) +
-    '<div class="governance-hero planning-workspace__hero mb-16">' +
-      '<div>' +
-        '<div class="governance-hero__eyebrow">Canonical planning workspace</div>' +
-        '<h2>' + esc(item.title) + '</h2>' +
-        '<p>' + esc(item.purpose) + '</p>' +
+    '<div class="approval-package">' +
+      workbenchCommand('Planning approval package', item.title, [
+        { label: 'Current owner', value: planningCurrentOwner(item), tone: approval.outcome === 'approved' ? prepMeta.tone : approval.statusTone },
+        { label: 'Next action', value: planningNextAction(item), tone: 'info' },
+        { label: 'Blocking reason', value: planningBlockingReason(item), tone: approval.outcome === 'approved' ? prepMeta.tone : approval.statusTone }
+      ], '', 'approval') +
+      '<div class="approval-package__queue">' +
+        '<h2 class="section-heading">Planning Workbench</h2>' +
+        renderOpsTable(planningItems, { selectedId: item.id, empty: 'No planning work items are seeded.' }) +
       '</div>' +
-      '<div class="governance-hero__metrics">' +
-        compactMetric('Current owner', planningCurrentOwner(item), approval.outcome === 'approved' ? prepMeta.tone : approval.statusTone) +
-        compactMetric('Next action', planningNextAction(item), 'info') +
-        compactMetric('Approval status', approval.statusLabel, approvalMeta.tone) +
-        compactMetric('Preparation status', prepMeta.label, prepMeta.tone) +
+      '<div class="governance-hero planning-workspace__hero mb-16">' +
+        '<div>' +
+          '<div class="governance-hero__eyebrow">Canonical planning workspace</div>' +
+          '<h2>' + esc(item.title) + '</h2>' +
+          '<p>' + esc(item.purpose) + '</p>' +
+        '</div>' +
+        '<div class="governance-hero__metrics">' +
+          compactMetric('Current owner', planningCurrentOwner(item), approval.outcome === 'approved' ? prepMeta.tone : approval.statusTone) +
+          compactMetric('Next action', planningNextAction(item), 'info') +
+          compactMetric('Approval status', approval.statusLabel, approvalMeta.tone) +
+          compactMetric('Preparation status', prepMeta.label, prepMeta.tone) +
+        '</div>' +
       '</div>' +
-    '</div>' +
-    planningWorkspaceTabsHtml(activeTab) +
-    body;
+      '<div class="approval-package__decision">' +
+        planningWorkspaceTabsHtml(activeTab) +
+        body +
+      '</div>' +
+    '</div>';
 }
 
 function viewPlanningApprovals() {
@@ -562,34 +601,59 @@ function checklistStatusBadge(status) {
 
 function viewQuestionBank() {
   var canEdit = canManageChecklistConfig(state.role);
-  var rows = (state.questionBank || []).map(function (q) {
-    return '<tr>' +
-      '<td><div class="ops-cell-title">' + esc(q.title) + '</div><div class="ops-cell-sub">' + esc(q.id) + ' · ' + esc(q.text) + '</div></td>' +
-      '<td>' + esc(q.department) + '</td>' +
-      '<td>' + esc(q.category) + '</td>' +
-      '<td>' + esc(q.regulationRef) + '<div class="ops-cell-sub">Expected evidence: ' + esc(q.exampleEvidence) + '</div></td>' +
-      '<td>' + (q.commentRequired ? demoBadge('Comment required', 'warn') : demoBadge('Comment optional', 'neutral')) + '</td>' +
-      '<td>' + demoBadge(q.status, q.status === 'Active' ? 'ok' : 'neutral') + '</td>' +
-    '</tr>';
+  var questions = state.questionBank || [];
+  var selected = questions[0] || null;
+  var rows = questions.map(function (q, idx) {
+    return '<div class="configuration-list-item' + (idx === 0 ? ' is-selected' : '') + '">' +
+      '<span><b>' + esc(q.title) + '</b><small>' + esc(q.id) + ' · ' + esc(q.department) + ' · ' + esc(q.category) + '</small></span>' +
+      demoBadge(q.status, q.status === 'Active' ? 'ok' : 'neutral') +
+    '</div>';
   }).join('');
   var createPanel = canEdit
-    ? '<div class="card mb-16"><div class="card__head"><h3>New Question</h3><span class="sub">Mock item, saved in browser</span></div><div class="card__body">' +
+    ? '<div class="configuration-create-panel"><h3>New Question</h3><span class="sub">Mock item, saved in browser</span>' +
         '<div class="form-2col"><div class="form-row"><label>Title</label><input id="qb-title" type="text" value="Training evidence reconciliation"></div>' +
         '<div class="form-row"><label>Question text</label><input id="qb-text" type="text" value="Does the training matrix reconcile to sampled crew certificate evidence?"></div></div>' +
         '<button class="btn btn--primary" data-act="qb-create">+ New Question</button>' +
-      '</div></div>'
+      '</div>'
     : '<div class="scope-note">Read-only preview. Inspectors cannot edit checklist configuration in this demo.</div>';
+  var preview = selected
+    ? '<div class="selected-question-preview">' +
+        '<div class="configuration-preview-head"><div><span>Selected Question Preview</span><h2>' + esc(selected.title) + '</h2></div>' + demoBadge(selected.status, selected.status === 'Active' ? 'ok' : 'neutral') + '</div>' +
+        '<p>' + esc(selected.text) + '</p>' +
+        '<div class="decision-bar decision-bar--configuration">' +
+          commandMetric('Current owner', canEdit ? 'Admin / Department Manager' : 'Configuration owner', 'info') +
+          commandMetric('Next action', canEdit ? 'Review reference and publish through version flow' : 'Read-only preview', 'warn') +
+          commandMetric('Version status', 'Reusable question', 'neutral') +
+        '</div>' +
+        '<div class="reg-trace reg-trace--compact configuration-trace">' +
+          '<div class="reg-trace__head"><span class="reg-trace__mark">Regulatory reference</span>' + demoBadge('Reference only', 'warn') + '</div>' +
+          '<div class="reg-trace__grid">' +
+            '<div><span>Department</span><b>' + esc(selected.department) + '</b></div>' +
+            '<div><span>Category</span><b>' + esc(selected.category) + '</b></div>' +
+            '<div><span>Reference</span><b>' + esc(selected.regulationRef) + '</b></div>' +
+            '<div><span>Expected evidence preview</span><b>' + esc(selected.exampleEvidence) + '</b></div>' +
+            '<div><span>Comment requirement</span><b>' + esc(selected.commentRequired ? 'Comment required for exception answers' : 'Comment optional') + '</b></div>' +
+            '<div><span>Demo boundary</span><b>Mock configuration data only</b></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    : '<div class="empty">No question bank records are seeded.</div>';
 
   return pageHead('Question Bank', 'Reusable checklist questions with configured references and expected evidence.') +
     guardrailStrip([
       { label: 'Mock configuration data' },
       { label: 'Regulatory references only', tone: 'warn' }
     ]) +
-    createPanel +
-    '<h2 class="section-heading">Questions</h2>' +
-    '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
-      '<th>Question</th><th>Department</th><th>Category</th><th>Reference / expected evidence</th><th>Comment</th><th>Status</th>' +
-    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+    '<div class="configuration-studio">' +
+      '<aside class="configuration-studio__list">' +
+        '<div class="configuration-search"><label>Search questions</label><input type="search" value="" placeholder="Crew training, evidence, regulation"></div>' +
+        '<div class="configuration-list">' + rows + '</div>' +
+      '</aside>' +
+      '<main class="configuration-studio__preview">' +
+        preview +
+        createPanel +
+      '</main>' +
+    '</div>';
 }
 
 function viewChecklistBuilder() {
@@ -808,7 +872,28 @@ function viewSafetyIntelligenceDashboard() {
     if (filter === 'overdue') return state.findings.some(function (f) { return f.orgId === r.orgId && dueInfo(f).overdue; });
     return true;
   });
-  var signalItems = filteredProfiles.map(workItemFromRiskProfile).sort(workItemSort);
+  var signalCards = filteredProfiles.sort(function (a, b) { return b.score - a.score; }).map(function (profile) {
+    var org = orgById(profile.orgId);
+    var tone = profile.score >= 80 ? 'danger' : 'warn';
+    var openForOrg = state.findings.filter(function (finding) { return finding.orgId === profile.orgId && finding.status !== 'CLOSED'; });
+    var overdueForOrg = openForOrg.filter(function (finding) { return dueInfo(finding).overdue; });
+    return '<article class="safety-signal-card is-' + tone + '" data-act="nav" data-view="org-risk" data-id="' + esc(profile.orgId) + '">' +
+      '<div class="safety-signal-card__score"><span>Mock risk</span><b>' + esc(String(profile.score)) + '</b></div>' +
+      '<div class="safety-signal-card__main">' +
+        '<div class="safety-signal-card__head"><h3>' + esc(org ? org.name : profile.orgId) + '</h3>' + demoBadge(profile.band, tone) + '</div>' +
+        '<p><b>Recommended action:</b> ' + esc(profile.recommendedAction) + '</p>' +
+        '<div class="safety-signal-card__drivers"><span>Risk drivers</span><div>' +
+          profile.drivers.map(function (driver) { return '<em>' + esc(driver) + '</em>'; }).join('') +
+        '</div></div>' +
+      '</div>' +
+      '<div class="safety-signal-card__decision">' +
+        commandMetric('Current owner', 'CAA Manager', 'info') +
+        commandMetric('Open findings', String(openForOrg.length), openForOrg.length ? 'warn' : 'ok') +
+        commandMetric('Overdue', String(overdueForOrg.length), overdueForOrg.length ? 'danger' : 'ok') +
+        '<button class="btn btn--primary btn--sm" data-act="nav" data-view="org-risk" data-id="' + esc(profile.orgId) + '">Open profile</button>' +
+      '</div>' +
+    '</article>';
+  }).join('');
 
   return pageHead('Safety Intelligence Dashboard', 'Decide which risk, delay, or workload issue needs management attention today.', chips) +
     guardrailStrip([
@@ -823,16 +908,21 @@ function viewSafetyIntelligenceDashboard() {
       { label: 'Waiting CAA Review', value: String(waiting.length), tone: waiting.length ? 'warn' : 'ok' },
       { label: 'Repeat risk profiles', value: String(repeat.length), tone: repeat.length ? 'warn' : 'ok' }
     ]) +
-    '<div class="grid grid--main">' +
-      '<div><h2 class="section-heading">Management Signal Table</h2>' +
-        renderOpsTable(signalItems, { empty: 'No safety intelligence signals for this filter.' }) + '</div>' +
-      '<div class="v2-panel">' +
-        '<h3>Recommended Management Action</h3>' +
-        '<p>' + esc(topRisk ? topRisk.recommendedAction : 'Review open findings and CAP/evidence queues.') + '</p>' +
-        '<div class="divider"></div>' +
-        compactMetric('Section workload', 'Balanced (demo)', 'info') +
-        compactMetric('Plan slippage', '2 planned audits not started', 'warn') +
-      '</div>' +
+    workbenchCommand('Management attention command', topRisk ? topRisk.recommendedAction : 'Review open findings and CAP/evidence queues.', [
+      { label: 'Current owner', value: 'CAA Manager', tone: 'info' },
+      { label: 'Next action', value: 'Open highest-risk profile', tone: 'warn' },
+      { label: 'Blocking reason', value: overdue.length ? 'Overdue CAP/evidence exists' : 'No blocker in demo data', tone: overdue.length ? 'danger' : 'ok' }
+    ], '<button class="btn btn--primary" data-act="nav" data-view="org-risk" data-id="' + esc(topRisk ? topRisk.orgId : 'ORG-XYZ') + '">Open highest risk profile</button>', 'safety') +
+    '<h2 class="section-heading">Management Signal Dossiers</h2>' +
+    '<div class="safety-signal-grid">' +
+      (signalCards || '<div class="empty">No safety intelligence signals for this filter.</div>') +
+    '</div>' +
+    '<div class="v2-panel mt-16">' +
+      '<h3>Recommended Management Action</h3>' +
+      '<p>' + esc(topRisk ? topRisk.recommendedAction : 'Review open findings and CAP/evidence queues.') + '</p>' +
+      '<div class="divider"></div>' +
+      compactMetric('Section workload', 'Balanced (demo)', 'info') +
+      compactMetric('Plan slippage', '2 planned audits not started', 'warn') +
     '</div>';
 }
 
@@ -1684,12 +1774,39 @@ function inspectorAssignmentDetailPanel(rows, ui) {
   '</div>';
 }
 
+function inspectorNextAssignmentDossier(rows, ui) {
+  var source = INSPECTOR_ASSIGNMENT_ROWS.filter(function (row) { return row.status !== 'completed'; });
+  var selected = inspectorAssignmentById(ui.selectedAssignmentId) || rows[0] || source[0] || inspectorAssignmentById('PR-2026-018');
+  if (!selected) return '';
+  var completed = Number(selected.completedQuestions) || Math.round((selected.progress * selected.questionsTotal) / 100);
+  var remaining = Math.max((selected.questionsTotal || 0) - completed, 0);
+  return '<section class="inspector-next-dossier">' +
+    '<div class="inspector-next-dossier__main">' +
+      '<div class="workbench-command__eyebrow">Next inspection</div>' +
+      '<h2>' + esc(selected.title) + '</h2>' +
+      '<p>' + esc(selected.organization) + ' · ' + esc(selected.type) + ' · ' + esc(selected.location) + '</p>' +
+      '<div class="inspector-next-dossier__meta">' +
+        commandMetric('Current owner', 'CAA Inspector', 'info') +
+        commandMetric('Next action', inspectorAssignmentActionLabel(selected), selected.status === 'overdue' ? 'danger' : 'warn') +
+        commandMetric('Due Date', selected.dueDate + (selected.dueNote ? ' · ' + selected.dueNote : ''), selected.dueTone || 'neutral') +
+        commandMetric('Remaining questions', String(remaining), remaining ? 'warn' : 'ok') +
+      '</div>' +
+    '</div>' +
+    '<div class="inspector-next-dossier__progress">' +
+      '<div class="inspector-assignment-donut" style="--value:' + esc(String(selected.progress)) + '"><b>' + esc(String(selected.progress)) + '%</b><span>' + esc(String(completed)) + ' / ' + esc(String(selected.questionsTotal)) + '</span></div>' +
+      '<button class="btn btn--primary" data-act="inspector-assignment-open" data-id="' + esc(selected.id) + '">Continue Work</button>' +
+      '<button class="btn" data-act="nav" data-view="audit-detail" data-id="' + esc(selected.auditId) + '">Open audit dossier</button>' +
+    '</div>' +
+  '</section>';
+}
+
 function viewInspectorAssignments() {
   var ui = inspectorAssignmentsUiState();
   if (state.params && state.params.filter === 'checklists' && ui.status === 'all') ui.status = 'in-progress';
   var rows = inspectorAssignmentFilteredRows(ui);
   return '<div class="inspector-assignment-page">' +
     inspectorAssignmentHeader(ui) +
+    inspectorNextAssignmentDossier(rows, ui) +
     inspectorAssignmentKpis(ui) +
     inspectorAssignmentFilterBar(ui) +
     inspectorAssignmentTable(rows, ui) +
@@ -3198,17 +3315,22 @@ function leadCapDecisionPanel(ui, data) {
 
 function viewLeadInspectorCapReviewDetail(ui, data) {
   return '<div class="cap-detail-page lead-cap-review-page">' +
-    '<div class="cap-detail-head">' +
-      '<div>' +
+    '<section class="workbench-command workbench-command--lead-cap cap-detail-head">' +
+      '<div class="workbench-command__main">' +
         '<div class="cap-track-breadcrumb">Dashboard › Finding Closure › CAP Review › CAP-2025-045-001</div>' +
         '<h1>CAP Review (Lead Inspector) ' + demoBadge('Waiting for Review', 'info') + '</h1>' +
         '<p class="lead-review-muted">Review the corrective action plan and inspector assessment, then make your decision.</p>' +
+      '</div>' +
+      '<div class="workbench-command__meta">' +
+        commandMetric('Current owner', 'Lead Inspector', 'info') +
+        commandMetric('Decision needed', 'Recommend, return, or request evidence', 'warn') +
+        commandMetric('Due Date', '20 May 2025 · Due today', 'danger') +
       '</div>' +
       '<div class="cap-track-head-actions">' +
         '<button class="btn" data-act="cap-track-export">Export PDF</button>' +
         '<button class="btn btn--primary" data-act="cap-track-quick-action" data-track-action="actions">Actions ▾</button>' +
       '</div>' +
-    '</div>' +
+    '</section>' +
     '<div class="lead-cap-review-layout">' +
       leadCapReviewList(data.id) +
       '<main class="lead-cap-main">' + leadCapFindingInformation(data) + leadCapSubmittedPlan(data) + leadCapInspectorAssessment(data) + '</main>' +
@@ -3901,13 +4023,63 @@ function viewProfile() {
 }
 
 /* =========================== Auditee — My Findings =========================== */
+function auditeeRequestAction(finding) {
+  if (finding.status === 'WAITING_CAP') return { label: 'Submit CAP', action: 'cap', tone: 'primary' };
+  if (finding.status === 'CAP_MORE_INFO') return { label: 'Respond to CAA', action: 'cap', tone: 'primary' };
+  if (finding.status === 'EVIDENCE_REQUIRED') return { label: 'Upload Evidence', action: 'evidence', tone: 'primary' };
+  if (finding.status === 'EVIDENCE_MORE_INFO') return { label: 'Respond to CAA', action: 'evidence', tone: 'primary' };
+  if (finding.status === 'CAP_SUBMITTED' || finding.status === 'EVIDENCE_SUBMITTED') return { label: 'View submitted package', action: 'nav', tone: 'secondary' };
+  if (finding.status === 'CLOSED') return { label: 'View Report', action: 'nav', tone: 'secondary' };
+  return { label: 'Open request', action: 'nav', tone: 'secondary' };
+}
+
+function auditeeRequestCard(finding) {
+  var d = dueInfo(finding);
+  var action = auditeeRequestAction(finding);
+  var actionAttrs = action.action === 'nav'
+    ? ' data-act="nav" data-view="' + (finding.status === 'CLOSED' ? 'report' : 'finding') + '" data-id="' + esc(finding.id) + '"'
+    : ' data-act="' + esc(action.action) + '" data-id="' + esc(finding.id) + '"';
+  return '<article class="auditee-request-card">' +
+    '<div class="auditee-request-card__main">' +
+      '<div class="auditee-request-card__top"><b>' + esc(finding.id) + '</b>' + demoBadge(statusMeta(finding).label, statusMeta(finding).badge) + '</div>' +
+      '<h3>' + esc(finding.title) + '</h3>' +
+      '<p>' + esc(nextActionLabel(finding)) + '</p>' +
+      '<div class="auditee-request-card__meta">' +
+        commandMetric('Due Date', finding.status === 'CLOSED' ? 'Closed ' + fmtDate(finding.closedDate) : fmtDate(finding.dueDate) + (d.label !== '—' ? ' · ' + d.label : ''), d.overdue ? 'danger' : (d.dueSoon ? 'warn' : 'neutral')) +
+        commandMetric('Related audit', finding.auditId || 'Pending CAA assignment', 'info') +
+        commandMetric('Expected evidence', finding.evidenceRequired ? 'Evidence required before closure' : 'No evidence requested', finding.evidenceRequired ? 'warn' : 'neutral') +
+      '</div>' +
+    '</div>' +
+    '<div class="auditee-request-card__action">' +
+      '<button class="btn' + (action.tone === 'primary' ? ' btn--primary' : '') + ' btn--sm"' + actionAttrs + '>' + esc(action.label) + '</button>' +
+    '</div>' +
+  '</article>';
+}
+
+function auditeeRequestGroup(title, description, findings, tone) {
+  return '<section class="auditee-request-group is-' + esc(tone || 'neutral') + '">' +
+    '<div class="auditee-request-group__head"><div><h2>' + esc(title) + '</h2><p>' + esc(description) + '</p></div><b>' + esc(String(findings.length)) + '</b></div>' +
+    '<div class="auditee-request-group__body">' +
+      (findings.length ? findings.map(auditeeRequestCard).join('') : '<div class="empty">No requests in this group.</div>') +
+    '</div>' +
+  '</section>';
+}
+
 function viewAuditeeMyFindings() {
   var mine = visibleFindings();
   var open = mine.filter(function (f) { return f.status !== 'CLOSED'; });
-  var capReq = mine.filter(function (f) { return f.status === 'WAITING_CAP' || f.status === 'CAP_MORE_INFO'; });
-  var evReq = mine.filter(function (f) { return f.status === 'EVIDENCE_REQUIRED' || f.status === 'EVIDENCE_MORE_INFO'; });
   var dueSoon = open.filter(function (f) { return dueInfo(f).dueSoon; });
   var overdue = open.filter(function (f) { return dueInfo(f).overdue; });
+  var requiredNow = mine.filter(function (f) {
+    return f.status === 'WAITING_CAP' || f.status === 'EVIDENCE_REQUIRED';
+  });
+  var waitingCaa = mine.filter(function (f) {
+    return f.status === 'CAP_SUBMITTED' || f.status === 'EVIDENCE_SUBMITTED';
+  });
+  var returned = mine.filter(function (f) {
+    return f.status === 'CAP_MORE_INFO' || f.status === 'EVIDENCE_MORE_INFO';
+  });
+  var closed = mine.filter(function (f) { return f.status === 'CLOSED'; });
 
   var items = mine.map(function (finding) {
     return workItemFromFinding(finding, { allEvidenceVersions: true });
@@ -3916,13 +4088,19 @@ function viewAuditeeMyFindings() {
   return '' +
     pageHead('Service Provider Portal — ' + ROLES.auditee.orgName, 'What the CAA needs from your organization, and by when.') +
     '<div class="scope-note">🔒 You are viewing only ' + esc(ROLES.auditee.orgName) + ' portal data. CAA-only working information is outside this portal.</div>' +
-    renderAttentionStrip([
-      { label: 'CAP required', value: String(capReq.length), tone: capReq.length ? 'warn' : 'ok' },
-      { label: 'Evidence required', value: String(evReq.length), tone: evReq.length ? 'warn' : 'ok' },
-      { label: 'Due Soon', value: String(dueSoon.length), tone: dueSoon.length ? 'warn' : 'ok' },
-      { label: 'Overdue', value: String(overdue.length), tone: overdue.length ? 'danger' : 'ok' }
-    ]) +
+    workbenchCommand('Auditee request center', 'Plain-language view of what the CAA needs from your organization.', [
+      { label: 'Required now', value: String(requiredNow.length + returned.length), tone: requiredNow.length || returned.length ? 'warn' : 'ok' },
+      { label: 'Waiting CAA review', value: String(waitingCaa.length), tone: waitingCaa.length ? 'info' : 'neutral' },
+      { label: 'Due soon / overdue', value: String(dueSoon.length) + ' / ' + String(overdue.length), tone: overdue.length ? 'danger' : (dueSoon.length ? 'warn' : 'ok') }
+    ], '', 'auditee') +
     '<h2 class="section-heading">My CAA Requests</h2>' +
+    '<div class="auditee-request-center">' +
+      auditeeRequestGroup('Required Now', 'Submit a CAP, upload evidence, or answer the latest CAA request.', requiredNow, 'warn') +
+      auditeeRequestGroup('Waiting CAA Review', 'You have submitted information and the CAA owns the next review step.', waitingCaa, 'info') +
+      auditeeRequestGroup('Returned / More Information Requested', 'The CAA needs a response before review can continue.', returned, 'danger') +
+      auditeeRequestGroup('Closed / Archive', 'Closed findings and final reports remain available for reference.', closed, 'ok') +
+    '</div>' +
+    '<h2 class="section-heading mt-16">All CAA Requests</h2>' +
     renderOpsTable(items, {
       includeChildren: true,
       hideOrganization: true,
@@ -4501,10 +4679,15 @@ function viewChecklistRunner() {
   var checklistTable = '<div class="ops-table-wrap ops-table-wrap--stack"><table class="ops-table"><thead><tr>' +
     '<th style="width:82px">Row</th><th>Checklist question</th><th>Answer</th><th>Expected evidence</th><th>Finding status</th><th style="width:110px"></th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table></div>';
-  var activePanel = '<div class="active-row-panel">' +
+  var activePanel = '<div class="active-row-panel question-dossier">' +
     '<div class="active-row-panel__title">' + esc(activeItem.text) + '</div>' +
-    '<div class="active-row-panel__meta">' + esc(activeItem.ref) + ' · Expected evidence: ' + esc(activeItem.evidence) + '</div>' +
+    '<div class="active-row-panel__meta">' + esc(activeItem.ref) + ' · Expected Evidence: ' + esc(activeItem.evidence) + '</div>' +
     regulatoryTraceHtml(regulatoryTraceForQuestion(activeItem.id), true) +
+    '<div class="decision-bar decision-bar--checklist">' +
+      commandMetric('Current owner', 'CAA Inspector', 'info') +
+      commandMetric('Next action', selected ? 'Confirm answer and notes' : 'Choose an answer', selected ? 'ok' : 'warn') +
+      commandMetric('Finding path', activeFlagged ? 'Potential finding required' : 'No finding yet', activeFlagged ? 'danger' : 'neutral') +
+    '</div>' +
     '<div class="answers">' +
       aBtn('compliant', 'Compliant', 'sel-compliant') +
       aBtn('noncompliant', 'Non-Compliant', 'sel-noncompliant') +
@@ -4521,9 +4704,9 @@ function viewChecklistRunner() {
       '<div class="progress"><div class="progress__bar" style="width:' + pct + '%"></div></div>' +
       '<div class="progress-band__hint">Demo scenario: mark <b>Are crew training records complete and up to date?</b> as <b>Non-Compliant</b> to raise a finding.</div>' +
     '</div>' +
-    '<div class="active-row-layout">' +
-      '<div>' + checklistTable + '</div>' +
+    '<div class="checklist-dossier-layout active-row-layout">' +
       activePanel +
+      '<aside class="checklist-question-queue"><h2 class="section-heading">Question navigation</h2>' + checklistTable + '</aside>' +
     '</div>';
 }
 
@@ -7938,11 +8121,57 @@ function inspectorPastReportItemFromFinding(finding) {
   };
 }
 
+function viewAdminReportCatalog() {
+  var catalog = [
+    ['Closure Report', 'Finding closure package', 'Finding, CAP, accepted evidence, closure basis', 'Published template'],
+    ['Audit Report Approval', 'Preliminary and final report package', 'Audit scope, findings, CAP summary, approval route', 'Governance package'],
+    ['Oversight Health Summary', 'Management indicator report', 'Risk drivers, overdue work, workload signal', 'Management indicator only']
+  ];
+  var rows = catalog.map(function (item, idx) {
+    return '<div class="configuration-list-item' + (idx === 0 ? ' is-selected' : '') + '">' +
+      '<span><b>' + esc(item[0]) + '</b><small>' + esc(item[1]) + '</small></span>' +
+      demoBadge(item[3], idx === 0 ? 'ok' : 'info') +
+    '</div>';
+  }).join('');
+  return pageHead('Report Catalog', 'Configure which mock report packages are visible in the demo.') +
+    guardrailStrip([
+      { label: 'Mock report catalog' },
+      { label: 'No real reporting engine', tone: 'warn' }
+    ]) +
+    '<div class="configuration-studio report-catalog-studio">' +
+      '<aside class="configuration-studio__list">' +
+        '<div class="configuration-search"><label>Search reports</label><input type="search" value="" placeholder="Closure, audit approval, health"></div>' +
+        '<div class="configuration-list">' + rows + '</div>' +
+      '</aside>' +
+      '<main class="configuration-studio__preview">' +
+        '<div class="selected-question-preview">' +
+          '<div class="configuration-preview-head"><div><span>Selected Report Package</span><h2>Closure Report</h2></div>' + demoBadge('Published template', 'ok') + '</div>' +
+          '<p>Preview-only report definition for a closed finding package. It references the finding, CAP, evidence versions, CAA review result, and closure basis.</p>' +
+          '<div class="decision-bar decision-bar--configuration">' +
+            commandMetric('Current owner', 'Admin Preview', 'info') +
+            commandMetric('Next action', 'Review package fields', 'warn') +
+            commandMetric('Demo boundary', 'No real PDF engine or storage', 'neutral') +
+          '</div>' +
+          '<div class="reg-trace reg-trace--compact configuration-trace">' +
+            '<div class="reg-trace__head"><span class="reg-trace__mark">Package fields</span>' + demoBadge('Mock configuration', 'neutral') + '</div>' +
+            '<div class="reg-trace__grid">' +
+              '<div><span>Source record</span><b>Finding</b></div>' +
+              '<div><span>Lifecycle</span><b>Finding -> CAP -> Evidence -> CAA Review -> Closure</b></div>' +
+              '<div><span>Expected evidence preview</span><b>Accepted evidence versions and review result</b></div>' +
+              '<div><span>Regulatory reference</span><b>Finding basis / configured rule reference</b></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</main>' +
+    '</div>';
+}
+
 function viewReports() {
   if (state.role === 'auditee') {
     var reportFilter = state.params && state.params.filter ? state.params.filter : selectedFilter('reports', 'received');
     if (reportFilter === 'received') return viewServiceProviderFinalReport();
   }
+  if (state.role === 'admin') return viewAdminReportCatalog();
   var closed = visibleFindings().filter(function (f) { return f.status === 'CLOSED'; });
   if (state.role === 'inspector') {
     var pastReports = closed.map(inspectorPastReportItemFromFinding).sort(workItemSort);

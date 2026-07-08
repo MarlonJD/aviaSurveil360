@@ -1,7 +1,7 @@
 # Premium UI Remediation Plan
 
 Date: 2026-07-08
-Status: active
+Status: ready-for-verification
 Owner: Codex
 Related audit: `2026-07-08-ui-self-critique-audit.md`
 
@@ -221,6 +221,31 @@ Required rendered checks:
   high-priority surfaces.
 - Verify no backend, database, API, auth, upload, email, real notification, real
   regulatory ingestion, production audit log, or framework migration was added.
+
+## Implementation Evidence - 2026-07-08
+
+- `verified locally`: Blocking visual defects remediated for Safety
+  Intelligence internal action clipping, Lead CAP Review topbar overlap, and
+  decision/editor/admin screens where selected work was cramped into rails.
+- `verified locally`: Shared premium workbench patterns added for command
+  headers, dossier layouts, regulatory trace blocks, decision bars, auditee
+  request center, governance approval packages, and admin configuration studio.
+- `verified locally`: `git diff --check`, `node --check js/views.js`, and
+  `for f in tests/*.test.js; do node "$f" || exit 1; done` pass.
+- `verified locally`: Full screenshot capture completed for 55 routes across
+  desktop, tablet, and mobile viewports; local evidence is under
+  `/private/tmp/aviasurveil360-premium-ui-remediation-2026-07-08/` with 165
+  screenshots, 0 capture errors, 0 console issues, 0 document overflow issues,
+  0 clipping issues, and 0 overlap issues.
+- `verified locally`: Targeted Playwright interaction proof passed for Manager
+  Safety Intelligence -> Organization Risk Profile navigation, with no console
+  issues.
+- `release pending`: Stakeholder review/sign-off is still required before
+  moving this plan to `completed/`.
+- `not run`: Production, release, deployment, backend, database, API, real auth,
+  real upload/storage, real notification, real AI, real regulatory ingestion,
+  and production audit-log checks remain out of scope for this frontend-only
+  demo task.
 
 ## Risks
 
