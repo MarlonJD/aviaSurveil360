@@ -4438,10 +4438,10 @@ function inspectionExecutionFile(row) {
   var file = inspectionExecutionFileName(row);
   if (!file) {
     return '<button class="inspection-file inspection-file--empty" data-act="inspection-file-open" data-id="' + esc(row.id) + '">' +
-      '<span class="inspection-file__icon">&#128206;</span>No file attached</button>';
+      '<span class="inspection-file__icon">&#128206;</span><span class="inspection-file__name">No file attached</span></button>';
   }
   return '<button class="inspection-file" data-act="inspection-file-download" data-id="' + esc(row.id) + '" aria-label="Download mock attachment ' + esc(file) + '">' +
-    '<span class="inspection-file__icon">&#128206;</span>' + esc(file) + '</button>';
+    '<span class="inspection-file__icon">&#128206;</span><span class="inspection-file__name">' + esc(file) + '</span></button>';
 }
 
 function inspectionExecutionLegendItem(status) {
@@ -4527,7 +4527,7 @@ function viewInspectorAuditExecution(audit) {
           '</div>' +
           '<div class="inspection-table-wrap responsive-table-shell">' +
             '<table class="inspection-table"><thead><tr>' +
-              '<th style="width:58px">No.</th><th>Checklist Item</th><th style="width:190px">Compliance</th><th>Comments</th><th style="width:180px">Attached File</th><th style="width:44px"></th>' +
+              '<th style="width:58px">No.</th><th>Checklist Item</th><th style="width:190px">Compliance</th><th>Comments</th><th style="width:260px">Attached File</th><th style="width:44px"></th>' +
             '</tr></thead><tbody>' + checklistRows + '</tbody></table>' +
           '</div>' +
           '<div class="inspection-bottom-nav">' +

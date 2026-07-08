@@ -9,6 +9,24 @@ const stylesCss = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
 const downloadClicks = [];
 let lastObjectUrlBlob = null;
 
+function cssRuleBody(selector) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = stylesCss.match(new RegExp(`${escaped}\\s*\\{([\\s\\S]*?)\\}`));
+  return match ? match[1] : '';
+}
+
+const inspectionFileRule = cssRuleBody('.inspection-file');
+const inspectionFileNameRule = cssRuleBody('.inspection-file__name');
+const inspectionTableRule = cssRuleBody('.inspection-table');
+const responsiveInspectionTableRule = cssRuleBody('.responsive-table-shell .inspection-table');
+assert.match(inspectionFileRule, /white-space:\s*normal/);
+assert.doesNotMatch(inspectionFileRule, /white-space:\s*nowrap/);
+assert.match(inspectionFileRule, /width:\s*100%/);
+assert.match(inspectionFileNameRule, /overflow-wrap:\s*anywhere/);
+assert.match(inspectionFileNameRule, /word-break:\s*break-word/);
+assert.match(inspectionTableRule, /min-width:\s*1080px/);
+assert.match(responsiveInspectionTableRule, /min-width:\s*1080px/);
+
 function stubElement(id) {
   if (!elements.has(id)) {
     elements.set(id, {
@@ -237,7 +255,9 @@ assert.ok(context.state.inspectionWorkspaceAllSectionsCompletedAt);
 assert.match(auditExecutionHtml, /Ready to Submit/);
 assert.match(auditExecutionHtml, /Sections Complete/);
 assert.match(auditExecutionHtml, /data-act="inspection-file-download"/);
+assert.match(auditExecutionHtml, /<th style="width:260px">Attached File<\/th>/);
 assert.match(auditExecutionHtml, /section_8_evidence_1\.pdf/);
+assert.match(auditExecutionHtml, /inspection-file__name">section_8_evidence_1\.pdf/);
 
 const downloadCountBefore = downloadClicks.length;
 context.handleAction('inspection-file-download', dataEl({ 'data-id': 'sms-8-1' }));
