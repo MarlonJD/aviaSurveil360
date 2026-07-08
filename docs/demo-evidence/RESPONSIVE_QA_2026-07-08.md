@@ -1,10 +1,10 @@
 # Responsive QA Evidence - 2026-07-08
 
-Status: verified locally
+Status: production verified
 
 Test URL: `http://127.0.0.1:4173/index.html`
 Build boundary: frontend-only static demo; mock data and browser-local state only.
-Production deployment verification: not run - no push/deploy was requested. Release status: release pending.
+Production deployment verification: verified locally against `https://aviasurveil360.vercel.app/index.html` after push. Release status: production verified.
 
 ## Viewports
 
@@ -78,8 +78,10 @@ Production deployment verification: not run - no push/deploy was requested. Rele
 ## Automated Render Matrix
 
 Final local matrix result: 258 checks, 258 pass, 0 fail, 0 console warnings/errors.
+Final production matrix result: 258 checks, 258 pass, 0 fail, 0 console warnings/errors.
 
 Full JSON evidence: `/private/tmp/aviasurveil360-responsive-qa-2026-07-08/matrix-results.json`
+Production JSON evidence: `/private/tmp/aviasurveil360-responsive-qa-prod-2026-07-08/matrix-results.json`
 
 | Role | Route | 1920 x 1080 | 1536 x 864 | 1366 x 768 | 1024 x 768 | 768 x 1024 | 390 x 844 |
 |---|---|---|---|---|---|---|---|
@@ -134,6 +136,13 @@ Full JSON evidence: `/private/tmp/aviasurveil360-responsive-qa-2026-07-08/matrix
 - `/private/tmp/aviasurveil360-responsive-qa-2026-07-08/lead-assignment-768x1024.png`
 - `/private/tmp/aviasurveil360-responsive-qa-2026-07-08/final-report-prepare-1024x768.png`
 
+Production screenshots:
+
+- `/private/tmp/aviasurveil360-responsive-qa-prod-2026-07-08/inspector-findings-1920x1080.png`
+- `/private/tmp/aviasurveil360-responsive-qa-prod-2026-07-08/inspector-findings-390x844.png`
+- `/private/tmp/aviasurveil360-responsive-qa-prod-2026-07-08/lead-assignment-768x1024.png`
+- `/private/tmp/aviasurveil360-responsive-qa-prod-2026-07-08/final-report-prepare-1024x768.png`
+
 ## Issues Resolved
 
 ### QA-01: Deployed/cached inspector screen still shows legacy CAP Verification
@@ -146,7 +155,7 @@ Evidence:
 - Final render matrix: pass for Inspector `Findings` at all six viewports.
 - `index.html` asset token bumped to `20260708-responsive-qa`.
 
-Production status: not run - deployed Vercel fresh-load verification is release pending.
+Production status: verified on `https://aviasurveil360.vercel.app/index.html`; Inspector `Findings` renders without a separate `CAP Verification` nav entry.
 
 ### QA-02: Legacy CAP Verification table has badge/text collisions
 
@@ -210,7 +219,7 @@ Evidence:
 
 - `rg -n "20260708-responsive-qa" index.html`: all CSS/JS asset tags use the new token.
 
-Production status: not run - deployed Vercel fresh-load verification is release pending.
+Production status: verified. `curl -L https://aviasurveil360.vercel.app/index.html` returned CSS and JS URLs with `20260708-responsive-qa`.
 
 ### QA-09: Current automated smoke tests do not cover rendered responsive quality
 
@@ -233,7 +242,10 @@ Evidence:
 - `node tests/service-provider-final-report-smoke.test.js`: passed.
 - All `tests/*.test.js`: 19 passed.
 - Rendered matrix with bundled Playwright/Chromium: 258 checks, 0 failures, 0 console warnings/errors.
+- Vercel deployment: `dpl_3zekWVTiaG8y2jbUDxGpjGM89EYv`, target `production`, state `READY`, commit `7e1ff388e8dc3dbd34a1f380e5f73a795662b6da`.
+- `curl -L https://aviasurveil360.vercel.app/index.html`: returned `20260708-responsive-qa` asset URLs.
+- Production rendered matrix with bundled Playwright/Chromium: 258 checks, 0 failures, 0 console warnings/errors.
 
 ## Remaining Risk
 
-- Production deployment verification is not run because no push/deploy was requested. The next release owner must verify `https://aviasurveil360.vercel.app` on a fresh load and confirm the new `20260708-responsive-qa` asset URLs before marking this plan completed.
+- No open responsive QA release risk remains for this plan. This evidence is still demo-only and does not claim production-grade backend, authentication, real upload, notification, reporting engine, or audit-log behavior.

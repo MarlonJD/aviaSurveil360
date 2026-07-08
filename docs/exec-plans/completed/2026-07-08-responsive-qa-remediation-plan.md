@@ -8,7 +8,7 @@
 
 **Tech Stack:** HTML, CSS, Vanilla JavaScript, mock client-side state, existing Node smoke tests, local static server, Browser/visual QA.
 
-**Execution Status 2026-07-08:** verified locally. The local static demo passed the full rendered route/viewport matrix with 258 checks, 0 failures, and 0 console warnings/errors. Deployed Vercel verification is not run because no push/deploy was requested; release remains pending.
+**Execution Status 2026-07-08:** completed. The local static demo and deployed Vercel site both passed the full rendered route/viewport matrix with 258 checks, 0 failures, and 0 console warnings/errors. The production fresh-load check confirmed `20260708-responsive-qa` CSS/JS assets on `https://aviasurveil360.vercel.app`.
 
 ## Global Constraints
 
@@ -618,7 +618,7 @@ Expected:
 - Findings screen shows CAP lifecycle states inside the same workspace.
 - No stale 20260707 assets are requested.
 
-- [ ] **Step 3: Verify deployed fresh load after push** - not run; no push/deploy was requested. Release pending.
+- [x] **Step 3: Verify deployed fresh load after push**
 
 Open:
 
