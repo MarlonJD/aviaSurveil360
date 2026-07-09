@@ -7994,6 +7994,251 @@ function viewManagerFindingsReview() {
     '<div class="manager-workbench manager-findings-workbench">' + left + right + '</div>';
 }
 
+/* =========================== Department Manager inspection team =========================== */
+function inspectionTeamUiState() {
+  if (!state.inspectionTeamUi || typeof state.inspectionTeamUi !== 'object') state.inspectionTeamUi = {};
+  var ui = state.inspectionTeamUi;
+  if (typeof ui.query !== 'string') ui.query = '';
+  if (!ui.department) ui.department = 'all';
+  if (!ui.status) ui.status = 'all';
+  if (!ui.dateRange) ui.dateRange = 'all';
+  if (!ui.selectedAuditId) ui.selectedAuditId = 'AUD-2026-001';
+  if (['overview', 'members', 'assignments', 'documents', 'history'].indexOf(ui.tab) === -1) ui.tab = 'overview';
+  if (typeof ui.openMenuAuditId !== 'string') ui.openMenuAuditId = '';
+  return ui;
+}
+
+function managerTeamOption(value, label, selectedValue) {
+  return '<option value="' + esc(value) + '"' + (value === selectedValue ? ' selected' : '') + '>' + esc(label) + '</option>';
+}
+
+function managerTeamStatusBadge(status) {
+  var tone = status === 'Completed' || status === 'Closed' || status === 'Report Issued'
+    ? 'ok'
+    : (status === 'In Progress' ? 'warn' : 'info');
+  return demoBadge(status, tone);
+}
+
+function managerTeamFilters(ui, rows) {
+  var departments = {};
+  rows.forEach(function (row) { if (row.department) departments[row.department] = true; });
+  return '<div class="manager-team-filters">' +
+    '<label class="manager-team-search"><span>Search teams</span><div><input id="manager-team-query" type="search" value="' + esc(ui.query) + '" placeholder="Audit ID, organization, inspector"><button class="btn btn--primary btn--sm" data-act="manager-team-filter" data-key="query">Search</button></div></label>' +
+    '<label><span>Department</span><select data-field="manager-team-department">' +
+      managerTeamOption('all', 'All Departments', ui.department) +
+      Object.keys(departments).sort().map(function (department) { return managerTeamOption(department, department, ui.department); }).join('') +
+    '</select></label>' +
+    '<label><span>Status</span><select data-field="manager-team-status">' +
+      managerTeamOption('all', 'All Statuses', ui.status) +
+      managerTeamOption('active', 'Active', ui.status) +
+      managerTeamOption('upcoming', 'Upcoming', ui.status) +
+      managerTeamOption('completed', 'Completed', ui.status) +
+    '</select></label>' +
+    '<label><span>Audit Date</span><select data-field="manager-team-date-range">' +
+      managerTeamOption('all', 'All Dates', ui.dateRange) +
+      managerTeamOption('today', 'Today', ui.dateRange) +
+      managerTeamOption('upcoming', 'Upcoming', ui.dateRange) +
+      managerTeamOption('past', 'Past', ui.dateRange) +
+    '</select></label>' +
+    '<button class="btn btn--sm manager-team-reset" data-act="manager-team-filter" data-key="reset">Reset</button>' +
+  '</div>';
+}
+
+function managerTeamMetrics(rows) {
+  var active = rows.filter(function (row) { return row.status === 'In Progress'; }).length;
+  var upcoming = rows.filter(function (row) { return row.startDate > DEMO_TODAY; }).length;
+  var month = DEMO_TODAY.slice(0, 7);
+  var complete = rows.filter(function (row) {
+    return row.endDate.slice(0, 7) === month && ['Completed', 'Closed', 'Report Issued'].indexOf(row.status) !== -1;
+  }).length;
+  var items = [
+    ['Total Teams', rows.length, 'Manager-scoped teams', 'info'],
+    ['Active Teams', active, 'In progress now', 'warn'],
+    ['Upcoming Inspections', upcoming, 'Start after today', 'info'],
+    ['Completed This Month', complete, 'Authorized outcomes', 'ok']
+  ];
+  return '<div class="manager-team-kpis">' + items.map(function (item) {
+    return '<div class="manager-team-kpi is-' + esc(item[3]) + '"><span>' + esc(item[0]) + '</span><strong>' + esc(String(item[1])) + '</strong><small>' + esc(item[2]) + '</small></div>';
+  }).join('') + '</div>';
+}
+
+function managerTeamActionMenu(row, open) {
+  var actions = [
+    ['manager-team-select', 'View Team Details'],
+    ['manager-team-edit', 'Edit Team'],
+    ['manager-team-add', 'Add Inspector'],
+    ['manager-team-remove', 'Remove Inspector'],
+    ['manager-team-lead', 'Change Lead Inspector'],
+    ['manager-team-schedule', 'Update Schedule'],
+    ['manager-team-package', 'View Assignment Package'],
+    ['manager-team-audit', 'View Audit Details'],
+    ['manager-team-message', 'Send Message to Team'],
+    ['manager-team-download', 'Download Team Assignment'],
+    ['manager-team-activity', 'View Activity Log']
+  ];
+  return '<div class="manager-team-row-actions">' +
+    '<button class="manager-team-menu-trigger" data-act="manager-team-menu" data-id="' + esc(row.auditId) + '" aria-label="Open team actions for ' + esc(row.auditId) + '" aria-expanded="' + (open ? 'true' : 'false') + '">⋯</button>' +
+    '<div class="manager-team-menu" role="menu"' + (open ? '' : ' hidden') + '>' + actions.map(function (action) {
+      return '<button role="menuitem" data-act="' + esc(action[0]) + '" data-id="' + esc(row.auditId) + '">' + esc(action[1]) + '</button>';
+    }).join('') + '</div>' +
+  '</div>';
+}
+
+function managerTeamTable(rows, selectedAuditId, openMenuAuditId) {
+  var body = rows.length ? rows.map(function (row) {
+    var selected = row.auditId === selectedAuditId;
+    return '<tr class="manager-team-row' + (selected ? ' is-selected' : '') + '">' +
+      '<td><button class="manager-team-audit-link" data-act="manager-team-select" data-id="' + esc(row.auditId) + '"' + (selected ? ' aria-current="true"' : '') + '>' + esc(row.auditId) + '</button><small>' + esc(row.auditType) + '</small></td>' +
+      '<td><b>' + esc(row.organization) + '</b><small>' + esc(row.department) + '</small></td>' +
+      '<td><b>' + esc(fmtDate(row.startDate)) + '</b><small>to ' + esc(fmtDate(row.endDate)) + '</small></td>' +
+      '<td><b>' + esc(row.lead.name) + '</b><small>Lead Inspector</small></td>' +
+      '<td><b>' + esc(String(row.memberCount)) + '</b><small>manager-scoped inspectors</small></td>' +
+      '<td>' + managerTeamStatusBadge(row.status) + '</td>' +
+      '<td>' + managerTeamActionMenu(row, openMenuAuditId === row.auditId) + '</td>' +
+    '</tr>';
+  }).join('') : '<tr><td colspan="7"><div class="empty">No inspection teams match these filters.</div></td></tr>';
+  return '<div class="manager-team-table"><table><thead><tr><th>Audit</th><th>Organization</th><th>Schedule</th><th>Lead Inspector</th><th>Team</th><th>Status</th><th>Actions</th></tr></thead><tbody>' + body + '</tbody></table></div>';
+}
+
+function managerTeamTabs(active) {
+  var tabs = [
+    ['overview', 'Overview'],
+    ['members', 'Team Members'],
+    ['assignments', 'Assignments'],
+    ['documents', 'Documents'],
+    ['history', 'History']
+  ];
+  return '<div class="manager-team-tabs" role="tablist" aria-label="Inspection team sections">' + tabs.map(function (tab) {
+    return '<button role="tab" aria-selected="' + (active === tab[0] ? 'true' : 'false') + '" class="' + (active === tab[0] ? 'is-active' : '') + '" data-act="manager-team-tab" data-tab="' + esc(tab[0]) + '">' + esc(tab[1]) + '</button>';
+  }).join('') + '</div>';
+}
+
+function managerTeamMemberTable(row, allowActions) {
+  if (!row.members.length) return '<div class="empty">No manager-scoped inspectors are assigned.</div>';
+  return '<div class="manager-team-member-table"><table><thead><tr><th>Role</th><th>Name</th><th>Department</th><th>Email</th><th>Status</th>' + (allowActions ? '<th></th>' : '') + '</tr></thead><tbody>' + row.members.map(function (member) {
+    var isLead = member.id === row.team.leadUserId;
+    var action = '';
+    if (allowActions) {
+      action = '<td><div class="manager-team-member-actions">' +
+        (!isLead ? '<button class="btn btn--sm" data-act="manager-team-member-lead" data-id="' + esc(row.auditId) + '" data-user="' + esc(member.id) + '">Make Lead</button>' : '') +
+        (!isLead ? '<button class="btn btn--sm" data-act="manager-team-member-remove" data-id="' + esc(row.auditId) + '" data-user="' + esc(member.id) + '">Remove</button>' : '') +
+      '</div></td>';
+    }
+    return '<tr><td>' + esc(isLead ? 'Lead Inspector' : member.role) + '</td><td><b>' + esc(member.name) + '</b></td><td>' + esc(member.department) + '</td><td><a href="mailto:' + esc(member.email) + '">' + esc(member.email) + '</a></td><td>' + demoBadge(member.status || 'Active', member.status === 'Active' ? 'ok' : 'neutral') + '</td>' + action + '</tr>';
+  }).join('') + '</tbody></table></div>';
+}
+
+function managerTeamOverview(row) {
+  return '<div class="manager-team-tab-panel" role="tabpanel">' +
+    '<div class="manager-team-overview-cards">' +
+      '<article><span>Lead Inspector</span><strong>' + esc(row.lead.name) + '</strong></article>' +
+      '<article><span>Team Members</span><strong>' + esc(String(row.memberCount)) + '</strong></article>' +
+      '<article><span>Department</span><strong>' + esc(row.department) + '</strong></article>' +
+      '<article><span>Current Status</span><strong>' + esc(row.status) + '</strong></article>' +
+    '</div>' +
+    '<div class="manager-team-section-head"><div><h3>Inspection Team</h3><p>Only inspectors in this Department Manager reporting line are shown.</p></div><button class="btn btn--sm" data-act="manager-team-add" data-id="' + esc(row.auditId) + '">Add Inspector</button></div>' +
+    managerTeamMemberTable(row, false) +
+    '<div class="manager-team-notes"><label for="manager-team-notes">Team notes</label><textarea id="manager-team-notes" placeholder="Add a browser-local team note.">' + esc(row.notes) + '</textarea><div><span>Demo-only note visible in this workspace.</span><button class="btn btn--primary btn--sm" data-act="manager-team-save-notes" data-id="' + esc(row.auditId) + '">Save Notes</button></div></div>' +
+  '</div>';
+}
+
+function managerTeamMembers(row) {
+  return '<div class="manager-team-tab-panel" role="tabpanel"><div class="manager-team-section-head"><div><h3>Team Members</h3><p>Manage membership and Lead Inspector assignment within the allowed reporting line.</p></div><button class="btn btn--primary btn--sm" data-act="manager-team-add" data-id="' + esc(row.auditId) + '">Add Inspector</button></div>' + managerTeamMemberTable(row, true) + '</div>';
+}
+
+function managerTeamAssignments(row) {
+  return '<div class="manager-team-tab-panel" role="tabpanel"><div class="manager-team-section-head"><div><h3>Assignments</h3><p>The assignment package is a mock preview for stakeholder feedback.</p></div><button class="btn btn--sm" data-act="manager-team-package" data-id="' + esc(row.auditId) + '">View Assignment Package</button></div>' +
+    '<dl class="manager-team-definition-grid"><div><dt>Audit</dt><dd>' + esc(row.auditId) + '</dd></div><div><dt>Organization</dt><dd>' + esc(row.organization) + '</dd></div><div><dt>Inspection type</dt><dd>' + esc(row.auditType) + '</dd></div><div><dt>Department</dt><dd>' + esc(row.department) + '</dd></div><div><dt>Schedule</dt><dd>' + esc(fmtDate(row.startDate)) + ' – ' + esc(fmtDate(row.endDate)) + '</dd></div><div><dt>Lead Inspector</dt><dd>' + esc(row.lead.name) + '</dd></div></dl>' +
+    '<div class="manager-team-inline-actions"><button class="btn" data-act="manager-team-audit" data-id="' + esc(row.auditId) + '">View Audit Details</button><button class="btn" data-act="manager-team-download" data-id="' + esc(row.auditId) + '">Download Team Assignment</button></div>' +
+  '</div>';
+}
+
+function managerTeamDocuments(row) {
+  var attachmentRows = row.attachments.length ? row.attachments.map(function (filename) {
+    return '<li><span>📄</span><div><b>' + esc(filename) + '</b><small>Selected filename only · no file bytes stored</small></div></li>';
+  }).join('') : '<li class="is-empty">No additional attachment filenames selected.</li>';
+  return '<div class="manager-team-tab-panel" role="tabpanel"><div class="manager-team-section-head"><div><h3>Documents</h3><p>Attachments preserve filenames only; this demo does not upload or store files.</p></div></div>' +
+    '<ul class="manager-team-documents"><li><span>📄</span><div><b>Team Assignment Package</b><small>Generated browser-side PDF</small></div><button class="btn btn--sm" data-act="manager-team-download" data-id="' + esc(row.auditId) + '">Download PDF</button></li>' + attachmentRows + '</ul>' +
+    '<div class="manager-team-attachment"><label for="manager-team-attachment">Add attachment filename</label><input id="manager-team-attachment" type="file"><button class="btn btn--primary btn--sm" data-act="manager-team-add-attachment" data-id="' + esc(row.auditId) + '">Add Filename</button></div>' +
+  '</div>';
+}
+
+function managerTeamHistory(row) {
+  var items = row.history.slice().reverse().map(function (entry) {
+    return '<li><time>' + esc(entry.at) + '</time><div><b>' + esc(entry.action) + '</b><small>' + esc(entry.actor || 'Department Manager') + '</small></div></li>';
+  });
+  if (!items.length) items.push('<li class="is-empty">No team activity has been recorded.</li>');
+  var messages = row.messages.slice().reverse().map(function (message) {
+    return '<article><div><b>' + esc(message.author || 'Department Manager') + '</b><time>' + esc(message.at) + '</time></div><p>' + esc(message.body) + '</p></article>';
+  }).join('') || '<div class="empty">No team messages have been recorded.</div>';
+  return '<div class="manager-team-tab-panel" role="tabpanel"><div class="manager-team-history-grid"><section><h3>Activity Log</h3><ol class="manager-team-history">' + items.join('') + '</ol></section><section><h3>Team Messages</h3><div class="manager-team-messages">' + messages + '</div></section></div></div>';
+}
+
+function managerTeamDossier(row, tab) {
+  var body = tab === 'members' ? managerTeamMembers(row)
+    : (tab === 'assignments' ? managerTeamAssignments(row)
+      : (tab === 'documents' ? managerTeamDocuments(row)
+        : (tab === 'history' ? managerTeamHistory(row) : managerTeamOverview(row))));
+  return '<section class="manager-team-dossier"><div class="manager-team-dossier-head"><div><span>Selected inspection team</span><h2>' + esc(row.auditId) + ' · ' + esc(row.organization) + '</h2><p>' + esc(row.reference) + '</p></div><div class="manager-team-dossier-actions">' + managerTeamStatusBadge(row.status) + '<button class="btn btn--sm" data-act="manager-team-edit" data-id="' + esc(row.auditId) + '">Edit Team</button></div><dl class="manager-team-meta"><div><dt>Start Date</dt><dd>' + esc(fmtDate(row.startDate)) + '</dd></div><div><dt>End Date</dt><dd>' + esc(fmtDate(row.endDate)) + '</dd></div><div><dt>Lead Inspector</dt><dd>' + esc(row.lead.name) + '</dd></div><div><dt>Department</dt><dd>' + esc(row.department) + '</dd></div><div><dt>Members</dt><dd>' + esc(String(row.memberCount)) + '</dd></div><div><dt>Status</dt><dd>' + esc(row.status) + '</dd></div></dl></div>' + managerTeamTabs(tab) + body + '</section>';
+}
+
+function viewInspectionTeam() {
+  var ui = inspectionTeamUiState();
+  var allRows = managerTeamRows(state, { query: '', department: 'all', status: 'all', dateRange: 'all' });
+  var rows = managerTeamRows(state, ui);
+  var selected = rows.filter(function (row) { return row.auditId === ui.selectedAuditId; })[0] || rows[0] || null;
+  if (selected && selected.auditId !== ui.selectedAuditId) ui.selectedAuditId = selected.auditId;
+  var left = '<section class="manager-team-list"><div class="manager-workbench-panel-head"><div><span>Department workspace</span><h2>Inspection Teams</h2></div><button class="btn btn--primary btn--sm" data-act="manager-team-add" data-id="' + esc(selected ? selected.auditId : '') + '"' + (selected ? '' : ' disabled') + '>Add Inspector</button></div>' + managerTeamFilters(ui, allRows) + managerTeamMetrics(rows) + managerTeamTable(rows, selected ? selected.auditId : '', ui.openMenuAuditId) + '</section>';
+  var right = selected ? managerTeamDossier(selected, ui.tab) : '<section class="manager-team-dossier manager-team-dossier--empty"><div class="empty">Select an inspection team to review its assignment.</div></section>';
+  return pageHead('Inspection Team', 'Review manager-scoped inspectors, active teams, schedules, assignments, and team actions.') + '<div class="manager-workbench manager-team-workbench">' + left + right + '</div>';
+}
+
+function modalManagerTeamEdit(row) {
+  var body = '<div class="modal__intro">Edit browser-local notes for <b>' + esc(row.auditId) + '</b>. Membership and Lead Inspector changes use their focused forms.</div><div class="form-row"><label for="manager-team-edit-notes">Team notes</label><textarea id="manager-team-edit-notes">' + esc(row.notes) + '</textarea></div>';
+  return modalShell('Edit Inspection Team', body, '<button class="btn" data-act="close-modal">Cancel</button><button class="btn btn--primary" data-act="manager-team-save-edit" data-id="' + esc(row.auditId) + '">Save Team</button>');
+}
+
+function modalManagerTeamAdd(row) {
+  var current = row.team.memberIds || [];
+  var users = managerScopedTeamUsers(state).filter(function (user) { return current.indexOf(user.id) === -1; });
+  var body = users.length
+    ? '<div class="modal__intro">Only inspectors who report to this Department Manager can be selected.</div><div class="form-row"><label for="manager-team-add-user">Inspector</label><select id="manager-team-add-user">' + users.map(function (user) { return '<option value="' + esc(user.id) + '">' + esc(user.name + ' · ' + user.department) + '</option>'; }).join('') + '</select></div>'
+    : '<div class="empty">All eligible inspectors are already assigned to this team.</div>';
+  return modalShell('Add Inspector', body, '<button class="btn" data-act="close-modal">Cancel</button>' + (users.length ? '<button class="btn btn--primary" data-act="manager-team-confirm-add" data-id="' + esc(row.auditId) + '">Add Inspector</button>' : ''));
+}
+
+function modalManagerTeamRemove(row) {
+  var users = row.members.filter(function (user) { return user.id !== row.team.leadUserId; });
+  var body = users.length
+    ? '<div class="modal__intro">The current Lead Inspector cannot be removed until another team member is selected as lead.</div><div class="form-row"><label for="manager-team-remove-user">Inspector</label><select id="manager-team-remove-user">' + users.map(function (user) { return '<option value="' + esc(user.id) + '">' + esc(user.name) + '</option>'; }).join('') + '</select></div>'
+    : '<div class="empty">No removable inspector is available.</div>';
+  return modalShell('Remove Inspector', body, '<button class="btn" data-act="close-modal">Cancel</button>' + (users.length ? '<button class="btn btn--danger" data-act="manager-team-confirm-remove" data-id="' + esc(row.auditId) + '">Remove Inspector</button>' : ''));
+}
+
+function modalManagerTeamLead(row) {
+  var users = row.members.filter(function (user) { return user.id !== row.team.leadUserId; });
+  var body = users.length
+    ? '<div class="modal__intro">The new Lead Inspector must already be assigned to this inspection team.</div><div class="form-row"><label for="manager-team-lead-user">New Lead Inspector</label><select id="manager-team-lead-user">' + users.map(function (user) { return '<option value="' + esc(user.id) + '">' + esc(user.name) + '</option>'; }).join('') + '</select></div>'
+    : '<div class="empty">Add another team member before changing the Lead Inspector.</div>';
+  return modalShell('Change Lead Inspector', body, '<button class="btn" data-act="close-modal">Cancel</button>' + (users.length ? '<button class="btn btn--primary" data-act="manager-team-confirm-lead" data-id="' + esc(row.auditId) + '">Change Lead Inspector</button>' : ''));
+}
+
+function modalManagerTeamSchedule(row) {
+  var body = '<div class="modal__intro">Update the visible demo schedule. The change will be appended to team history.</div><div class="form-2col"><div class="form-row"><label for="manager-team-start-date">Start date</label><input id="manager-team-start-date" type="date" value="' + esc(row.startDate) + '"></div><div class="form-row"><label for="manager-team-end-date">End date</label><input id="manager-team-end-date" type="date" value="' + esc(row.endDate) + '"></div></div><div id="manager-team-schedule-error" class="manager-team-form-error" role="alert"></div>';
+  return modalShell('Update Schedule', body, '<button class="btn" data-act="close-modal">Cancel</button><button class="btn btn--primary" data-act="manager-team-confirm-schedule" data-id="' + esc(row.auditId) + '">Update Schedule</button>');
+}
+
+function modalManagerTeamPackage(row) {
+  var members = row.members.map(function (member) { return '<li>' + esc(member.name + (member.id === row.team.leadUserId ? ' — Lead Inspector' : ' — ' + member.role)) + '</li>'; }).join('');
+  var body = '<div class="manager-team-package-preview"><div><span>AviaSurveil360 demo assignment</span><h3>' + esc(row.organization + ' · ' + row.auditId) + '</h3><p>' + esc(row.auditType) + '</p></div><dl><div><dt>Department</dt><dd>' + esc(row.department) + '</dd></div><div><dt>Schedule</dt><dd>' + esc(fmtDate(row.startDate)) + ' – ' + esc(fmtDate(row.endDate)) + '</dd></div></dl><h4>Assigned inspectors</h4><ul>' + members + '</ul><p class="small muted">Demo preview only. This is not a production document repository or assignment authority.</p></div>';
+  return modalShell('View Assignment Package', body, '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="manager-team-download" data-id="' + esc(row.auditId) + '">Download Team Assignment</button>', true);
+}
+
+function modalManagerTeamMessage(row) {
+  var body = '<div class="modal__intro">Record a mock in-app message for all ' + esc(String(row.memberCount)) + ' team members. No real email, SMS, or external notification will be sent.</div><div class="form-row"><label for="manager-team-message-body">Message <span class="req">*</span></label><textarea id="manager-team-message-body" placeholder="Write the team message."></textarea></div><div id="manager-team-message-error" class="manager-team-form-error" role="alert"></div>';
+  return modalShell('Send Message to Team', body, '<button class="btn" data-act="close-modal">Cancel</button><button class="btn btn--primary" data-act="manager-team-confirm-message" data-id="' + esc(row.auditId) + '">Send Message</button>');
+}
+
 /* =========================== Findings list (manager/inspector) =========================== */
 var FILTER_LABELS = {
   all: 'All Findings', open: 'Open Findings', overdue: 'Overdue Findings', critical: 'Critical Findings',

@@ -17,6 +17,7 @@ var NAV = {
     { view: 'safety-intelligence', label: 'Team Dashboard', icon: '⌁' },
     { view: 'ssp-nasp', label: 'Executive Dashboard', icon: '▣' },
     { section: 'Oversight' },
+    { view: 'inspection-team', label: 'Inspection Team', icon: '▤' },
     { view: 'calendar', label: 'Audit Work Queue', icon: '▤' },
     { section: 'Organisations' },
     { view: 'organizations', label: 'Operators / Providers', icon: '🏢' },
@@ -101,7 +102,7 @@ var NAV = {
 };
 
 var VIEW_TITLES = {
-  dashboard: 'Dashboard', calendar: 'Audit Work Queue', findings: 'Findings', 'findings-review': 'Findings Review', 'my-findings': 'My Findings',
+  dashboard: 'Dashboard', calendar: 'Audit Work Queue', findings: 'Findings', 'findings-review': 'Findings Review', 'inspection-team': 'Inspection Team', 'my-findings': 'My Findings',
   reports: 'Reports', report: 'Report', messages: 'Messages', templates: 'Templates',
   'template-preview': 'Template Preview', auditlog: 'Audit Log', 'audit-detail': 'Audit Detail',
   checklist: 'Checklist Runner', finding: 'Finding Detail', wizard: 'New Audit Wizard',
@@ -473,6 +474,7 @@ function renderContent() {
     case 'final-report-prepare': return viewLeadFinalReportPrepare();
     case 'final-report-view': return viewLeadFinalReportDocument();
     case 'findings-review': return viewManagerFindingsReview();
+    case 'inspection-team': return viewInspectionTeam();
     case 'calendar': return viewCalendar();
     case 'audit-detail': return viewAuditDetail();
     case 'checklist': return viewChecklistRunner();
@@ -756,6 +758,241 @@ function handleManagerFindingsExport() {
   toast('Findings list exported', rows.length + ' inspection row(s) were written to the demo CSV.', 'ok');
 }
 
+function managerTeamRowForAudit(auditId) {
+  return managerTeamRows(state, { query: '', department: 'all', status: 'all', dateRange: 'all' }).filter(function (row) {
+    return row.auditId === auditId;
+  })[0] || null;
+}
+
+function handleManagerTeamMenu(auditId) {
+  if (!managerTeamRowForAudit(auditId)) return;
+  var ui = inspectionTeamUiState();
+  ui.openMenuAuditId = ui.openMenuAuditId === auditId ? '' : auditId;
+  render();
+}
+
+function handleManagerTeamSelect(auditId) {
+  if (!managerTeamRowForAudit(auditId)) return;
+  var ui = inspectionTeamUiState();
+  ui.selectedAuditId = auditId;
+  ui.tab = 'overview';
+  ui.openMenuAuditId = '';
+  persistAfterAction();
+  render();
+}
+
+function handleManagerTeamFilter(key, explicitValue) {
+  var ui = inspectionTeamUiState();
+  if (key === 'reset') {
+    ui.query = '';
+    ui.department = 'all';
+    ui.status = 'all';
+    ui.dateRange = 'all';
+  } else if (key === 'query') {
+    ui.query = explicitValue !== null && explicitValue !== undefined ? explicitValue : val('manager-team-query');
+  } else if (key === 'department') {
+    ui.department = explicitValue || 'all';
+  } else if (key === 'status') {
+    ui.status = explicitValue || 'all';
+  } else if (key === 'dateRange') {
+    ui.dateRange = explicitValue || 'all';
+  } else {
+    return;
+  }
+  ui.openMenuAuditId = '';
+  var rows = managerTeamRows(state, ui);
+  if (rows.length && !rows.some(function (row) { return row.auditId === ui.selectedAuditId; })) ui.selectedAuditId = rows[0].auditId;
+  persistAfterAction();
+  render();
+}
+
+function handleManagerTeamTab(tab) {
+  if (['overview', 'members', 'assignments', 'documents', 'history'].indexOf(tab) === -1) return;
+  var ui = inspectionTeamUiState();
+  ui.tab = tab;
+  ui.openMenuAuditId = '';
+  persistAfterAction();
+  render();
+}
+
+function openManagerTeamModal(auditId, renderer) {
+  var row = managerTeamRowForAudit(auditId);
+  if (!row) {
+    toast('Inspection team unavailable', 'This team is not in the current Department Manager scope.', 'warn');
+    return;
+  }
+  inspectionTeamUiState().openMenuAuditId = '';
+  openModal(renderer(row));
+}
+
+function managerTeamModalError(id, message) {
+  var target = document.getElementById(id);
+  if (target) target.innerHTML = esc(message || '');
+}
+
+function handleManagerTeamMutation(result, actionLabel) {
+  if (!result.ok) {
+    toast('Team change not saved', result.message, 'warn');
+    return false;
+  }
+  addLog(actionLabel, result.team ? result.team.auditId : 'Inspection Team');
+  closeModal();
+  persistAfterAction();
+  render();
+  toast('Inspection team updated', result.message, 'ok');
+  return true;
+}
+
+function handleManagerTeamConfirmAdd(auditId) {
+  handleManagerTeamMutation(addManagerTeamMember(state, auditId, val('manager-team-add-user')), 'Inspector added to team');
+}
+
+function handleManagerTeamConfirmRemove(auditId) {
+  handleManagerTeamMutation(removeManagerTeamMember(state, auditId, val('manager-team-remove-user')), 'Inspector removed from team');
+}
+
+function handleManagerTeamConfirmLead(auditId) {
+  handleManagerTeamMutation(changeManagerTeamLead(state, auditId, val('manager-team-lead-user')), 'Team Lead Inspector changed');
+}
+
+function handleManagerTeamConfirmSchedule(auditId) {
+  var result = updateManagerTeamSchedule(state, auditId, val('manager-team-start-date'), val('manager-team-end-date'));
+  if (!result.ok) {
+    managerTeamModalError('manager-team-schedule-error', result.message);
+    return;
+  }
+  handleManagerTeamMutation(result, 'Inspection team schedule updated');
+}
+
+function handleManagerTeamConfirmMessage(auditId) {
+  var result = recordManagerTeamMessage(state, auditId, val('manager-team-message-body'));
+  if (!result.ok) {
+    managerTeamModalError('manager-team-message-error', result.message);
+    return;
+  }
+  addLog('Message sent to inspection team', auditId);
+  pushNotification('inspector', '✉', 'Department Manager sent a team message for ' + auditId + '.');
+  closeModal();
+  persistAfterAction();
+  render();
+  toast('Message recorded', result.message, 'ok');
+}
+
+function handleManagerTeamSaveEdit(auditId, fieldId) {
+  var team = managerTeamByAuditId(state, auditId);
+  if (!team) return;
+  var notes = val(fieldId || 'manager-team-edit-notes');
+  if (team.notes === notes) {
+    closeModal();
+    toast('No team changes', 'The browser-local team notes were already up to date.', 'info');
+    return;
+  }
+  team.notes = notes;
+  managerTeamAppendHistory(team, 'Team notes updated');
+  addLog('Inspection team notes updated', auditId);
+  closeModal();
+  persistAfterAction();
+  render();
+  toast('Team notes saved', 'The browser-local team notes were updated.', 'ok');
+}
+
+function handleManagerTeamSaveNotes(auditId) {
+  handleManagerTeamSaveEdit(auditId, 'manager-team-notes');
+}
+
+function handleManagerTeamAddAttachment(auditId) {
+  var team = managerTeamByAuditId(state, auditId);
+  var input = document.getElementById('manager-team-attachment');
+  var file = input && input.files && input.files[0];
+  if (!team || !file || !file.name) {
+    toast('Choose a file', 'Select a file so its filename can be added to the demo team record.', 'warn');
+    return;
+  }
+  if (!Array.isArray(team.attachments)) team.attachments = [];
+  if (team.attachments.indexOf(file.name) !== -1) {
+    toast('Filename already listed', file.name + ' is already in the team documents list.', 'warn');
+    return;
+  }
+  team.attachments.push(file.name);
+  managerTeamAppendHistory(team, 'Attachment filename added: ' + file.name);
+  addLog('Inspection team attachment filename added', auditId);
+  persistAfterAction();
+  render();
+  toast('Filename added', file.name + ' was recorded. No file bytes were uploaded or stored.', 'ok');
+}
+
+function handleManagerTeamMemberAction(auditId, userId, action) {
+  var result = action === 'lead'
+    ? changeManagerTeamLead(state, auditId, userId)
+    : removeManagerTeamMember(state, auditId, userId);
+  handleManagerTeamMutation(result, action === 'lead' ? 'Team Lead Inspector changed' : 'Inspector removed from team');
+}
+
+function handleManagerTeamPackage(auditId) {
+  openManagerTeamModal(auditId, modalManagerTeamPackage);
+}
+
+function handleManagerTeamAudit(auditId) {
+  if (!auditById(auditId)) {
+    toast('Audit unavailable', 'The linked audit could not be found in this demo state.', 'warn');
+    return;
+  }
+  go('audit-detail', { auditId: auditId });
+}
+
+function handleManagerTeamActivity(auditId) {
+  if (!managerTeamRowForAudit(auditId)) return;
+  var ui = inspectionTeamUiState();
+  ui.selectedAuditId = auditId;
+  ui.tab = 'history';
+  ui.openMenuAuditId = '';
+  persistAfterAction();
+  render();
+}
+
+function managerTeamAssignmentLines(row) {
+  var lines = [
+    'AviaSurveil360 Team Assignment',
+    'Demo-only assignment document - not a production authority record',
+    '',
+    'Audit ID: ' + row.auditId,
+    'Organization: ' + row.organization,
+    'Organization Type: Operator / Service Provider',
+    'Inspection: ' + row.auditType,
+    'Department: ' + row.department,
+    'Status: ' + row.status,
+    'Start Date: ' + row.startDate,
+    'End Date: ' + row.endDate,
+    'Lead Inspector: ' + row.lead.name,
+    '',
+    'Assigned Inspectors:'
+  ];
+  row.members.forEach(function (member) {
+    lines.push('- ' + member.name + ' | ' + (member.id === row.team.leadUserId ? 'Lead Inspector' : member.role) + ' | ' + member.department + ' | ' + member.email);
+  });
+  if (row.notes) lines.push('', 'Team Notes:', row.notes);
+  lines.push('', 'Generated in the AviaSurveil360 frontend-only demo. No backend, real file storage, or production document service is used.');
+  return lines;
+}
+
+function handleManagerTeamDownload(auditId) {
+  var row = managerTeamRowForAudit(auditId);
+  if (!row) {
+    toast('Download unavailable', 'The inspection team could not be found in the current manager scope.', 'warn');
+    return;
+  }
+  var filename = row.organization.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_' + row.auditId + '_Team_Assignment.pdf';
+  try {
+    downloadAviaPdf(filename, managerTeamAssignmentLines(row));
+    managerTeamAppendHistory(row.team, 'Team assignment PDF downloaded');
+    addLog('Inspection team assignment PDF downloaded', auditId);
+    persistAfterAction();
+    toast('Team assignment downloaded', filename + ' was generated in this browser.', 'ok');
+  } catch (error) {
+    toast('Download unavailable', 'This browser could not create the demo PDF download.', 'warn');
+  }
+}
+
 /* ----------------------------- Action dispatch ----------------------------- */
 function handleAction(act, el) {
   var id = el.getAttribute('data-id');
@@ -793,6 +1030,31 @@ function handleAction(act, el) {
     case 'manager-findings-open-finding': handleManagerFindingsOpenFinding(id); break;
     case 'manager-findings-open-report': handleManagerFindingsOpenReport(id); break;
     case 'manager-findings-export': handleManagerFindingsExport(); break;
+
+    case 'manager-team-menu': handleManagerTeamMenu(id); break;
+    case 'manager-team-select': handleManagerTeamSelect(id); break;
+    case 'manager-team-filter': handleManagerTeamFilter(el.getAttribute('data-key'), el.getAttribute('data-value')); break;
+    case 'manager-team-tab': handleManagerTeamTab(tab); break;
+    case 'manager-team-edit': openManagerTeamModal(id, modalManagerTeamEdit); break;
+    case 'manager-team-add': openManagerTeamModal(id, modalManagerTeamAdd); break;
+    case 'manager-team-remove': openManagerTeamModal(id, modalManagerTeamRemove); break;
+    case 'manager-team-lead': openManagerTeamModal(id, modalManagerTeamLead); break;
+    case 'manager-team-schedule': openManagerTeamModal(id, modalManagerTeamSchedule); break;
+    case 'manager-team-package': handleManagerTeamPackage(id); break;
+    case 'manager-team-audit': handleManagerTeamAudit(id); break;
+    case 'manager-team-message': openManagerTeamModal(id, modalManagerTeamMessage); break;
+    case 'manager-team-download': handleManagerTeamDownload(id); break;
+    case 'manager-team-activity': handleManagerTeamActivity(id); break;
+    case 'manager-team-confirm-add': handleManagerTeamConfirmAdd(id); break;
+    case 'manager-team-confirm-remove': handleManagerTeamConfirmRemove(id); break;
+    case 'manager-team-confirm-lead': handleManagerTeamConfirmLead(id); break;
+    case 'manager-team-confirm-schedule': handleManagerTeamConfirmSchedule(id); break;
+    case 'manager-team-confirm-message': handleManagerTeamConfirmMessage(id); break;
+    case 'manager-team-save-edit': handleManagerTeamSaveEdit(id); break;
+    case 'manager-team-save-notes': handleManagerTeamSaveNotes(id); break;
+    case 'manager-team-add-attachment': handleManagerTeamAddAttachment(id); break;
+    case 'manager-team-member-lead': handleManagerTeamMemberAction(id, el.getAttribute('data-user'), 'lead'); break;
+    case 'manager-team-member-remove': handleManagerTeamMemberAction(id, el.getAttribute('data-user'), 'remove'); break;
 
     case 'start-checklist': startChecklist(id); break;
     case 'select-checklist-question': state.params.questionId = q; render(); break;
@@ -4218,8 +4480,17 @@ document.addEventListener('click', function (e) {
   if (e.target && e.target.id === 'modal-host') { closeModal(); return; }
   var el = e.target.closest ? e.target.closest('[data-act]') : null;
   if (!el) {
-    // clicking elsewhere closes an open notifications panel
-    if (state && state.role && state.ui.notifOpen) { state.ui.notifOpen = false; render(); }
+    // Clicking elsewhere closes transient panels without changing the selected row.
+    var transientChanged = false;
+    if (state && state.role && state.ui.notifOpen) {
+      state.ui.notifOpen = false;
+      transientChanged = true;
+    }
+    if (state && state.inspectionTeamUi && state.inspectionTeamUi.openMenuAuditId) {
+      state.inspectionTeamUi.openMenuAuditId = '';
+      transientChanged = true;
+    }
+    if (transientChanged) render();
     return;
   }
   var act = el.getAttribute('data-act');
@@ -4244,6 +4515,15 @@ document.addEventListener('change', function (e) {
   }
   if (field === 'manager-findings-date-range') {
     handleManagerFindingsFilter('dateRange', e.target.value);
+  }
+  if (field === 'manager-team-department') {
+    handleManagerTeamFilter('department', e.target.value);
+  }
+  if (field === 'manager-team-status') {
+    handleManagerTeamFilter('status', e.target.value);
+  }
+  if (field === 'manager-team-date-range') {
+    handleManagerTeamFilter('dateRange', e.target.value);
   }
   if (field === 'lead-review-decision') {
     handleLeadReviewDecision(e.target.getAttribute('data-id'), e.target.value);

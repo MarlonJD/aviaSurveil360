@@ -714,12 +714,12 @@ node tests/planning-release-smoke.test.js
 
 Expected: all exit 0.
 
-- [ ] **Step 8: Review checkpoint without committing**
+- [x] **Step 8: Review checkpoint without committing**
 
 Run `git diff --check`; confirm every enabled menu item changes visible state,
 opens content, navigates, or downloads. Do not commit.
 
-- [ ] **Step 9: Commit and push Inspection Team**
+- [x] **Step 9: Commit and push Inspection Team**
 
 After Step 8 passes, stage only Task 3 files/hunks, inspect
 `git diff --cached`, commit with `feat: add department manager inspection team`,
