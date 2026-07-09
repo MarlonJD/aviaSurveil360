@@ -1259,7 +1259,7 @@ and push the current branch.
 - Produces: GM Dashboard, Report Approvals, Departments, and Risk Dashboard
   views/actions without Department Manager editing controls.
 
-- [ ] **Step 1: Write the failing General Manager workspace smoke test**
+- [x] **Step 1: Write the failing General Manager workspace smoke test**
 
 ```js
 assert.deepEqual(context.NAV.gm.map(function (item) { return item.label; }), [
@@ -1282,14 +1282,14 @@ assert.equal(result.report.locked, true);
 Assert a Preliminary Report and a Final Report not at the GM stage cannot be
 issued, and the GM view contains no team/checklist editing controls.
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run `node tests/general-manager-workspace-smoke.test.js`.
 
 Expected: FAIL because the exact GM allowlist, projection, and final-authorized
 decision function do not exist.
 
-- [ ] **Step 3: Implement the GM projection and decision guard**
+- [x] **Step 3: Implement the GM projection and decision guard**
 
 Project Pending Final Reports, High Risk Findings, reports awaiting GM approval,
 Overdue CAPs, department rows, risk heat map/distribution, and approval rows from
@@ -1298,14 +1298,14 @@ shared state. `approve` is allowed only for an unlocked Final Report with
 metadata, history, audit log, and mock notification. `return` requires a comment
 and sends the report to the configured Department Manager/Lead Inspector stage.
 
-- [ ] **Step 4: Render the exact GM navigation and workspaces**
+- [x] **Step 4: Render the exact GM navigation and workspaces**
 
 Replace `NAV.gm` with the allowlist from Step 1. Render the supplied GM Dashboard
 anatomy, Report Approvals queue, Departments overview, cross-department Risk
 Dashboard, and existing Settings route. Row open/approve/return controls update
 visible state and history; no enabled control is toast-only.
 
-- [ ] **Step 5: Verify GREEN and report governance regressions**
+- [x] **Step 5: Verify GREEN and report governance regressions**
 
 Run:
 
@@ -1322,7 +1322,7 @@ node tests/governance-render-smoke.test.js
 Expected: all exit 0 and Department Manager approval alone still does not issue
 or lock the Final Report.
 
-- [ ] **Step 6: Commit and push General Manager workspaces**
+- [x] **Step 6: Commit and push General Manager workspaces**
 
 Run `git diff --check`, stage only Task 9 files/hunks, inspect
 `git diff --cached`, commit with `feat: add general manager oversight dashboard`,

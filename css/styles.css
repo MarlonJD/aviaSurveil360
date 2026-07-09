@@ -15829,3 +15829,87 @@ td .sp-report-badge {
   .manager-risk-matrix-grid { grid-template-columns: repeat(5, minmax(30px, 1fr)); }
   .manager-risk-matrix-grid > div { min-height: 37px; }
 }
+
+/* ====================== General Manager Oversight ====================== */
+.gm-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.gm-kpis article { padding: 14px; border: 1px solid var(--line-soft); border-top: 3px solid var(--brand); border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--shadow-sm); }
+.gm-kpis article.is-danger { border-top-color: var(--danger); }
+.gm-kpis article.is-warn { border-top-color: var(--warning); }
+.gm-kpis article.is-ok { border-top-color: var(--ok); }
+.gm-kpis span { display: block; color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+.gm-kpis strong { display: block; margin-top: 7px; font-size: 25px; }
+.gm-dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(360px, .65fr); gap: 12px; margin-bottom: 12px; }
+.gm-panel,
+.gm-report-detail { min-width: 0; padding: 14px; border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-sm); }
+.gm-panel > header,
+.gm-report-detail > header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 11px; }
+.gm-panel > header > span,
+.gm-panel > header div > span,
+.gm-report-detail > header div > span { color: var(--brand-strong); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.gm-panel > header h2,
+.gm-report-detail > header h2 { margin: 3px 0 0; font-size: 15px; }
+.gm-report-detail > header p { margin: 4px 0 0; color: var(--text-muted); }
+.gm-table { overflow-x: auto; border: 1px solid var(--line-soft); border-radius: var(--radius-md); }
+.gm-table table { width: 100%; min-width: 760px; border-collapse: collapse; }
+.gm-table th,
+.gm-table td { padding: 9px; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; font-size: 10px; }
+.gm-table th { color: var(--text-muted); font-size: 8px; text-transform: uppercase; letter-spacing: .04em; }
+.gm-table td small { display: block; margin-top: 3px; color: var(--text-muted); }
+.gm-panel > .gm-table + .btn { margin-top: 10px; }
+.gm-exposure-score { display: inline-grid; place-items: center; min-width: 27px; height: 25px; padding: 0 5px; border-radius: 7px; background: var(--brand-soft); color: var(--brand-strong); font-weight: 900; }
+.gm-risk-heat { display: flex; flex-direction: column; }
+.gm-risk-matrix { display: grid; grid-template-columns: repeat(5, minmax(34px, 1fr)); gap: 4px; flex: 1; }
+.gm-risk-matrix > div { display: grid; place-items: center; min-height: 42px; border-radius: 5px; color: #17324d; }
+.gm-risk-matrix > div.is-low { background: #dff1e7; }
+.gm-risk-matrix > div.is-medium { background: #fff0bd; }
+.gm-risk-matrix > div.is-high { background: #ffd2b5; }
+.gm-risk-matrix > div.is-critical { background: #f3b6b6; color: #7f1d1d; }
+.gm-risk-matrix b { font-size: 12px; }
+.gm-risk-matrix small { opacity: .65; font-size: 8px; }
+.gm-risk-axis { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; color: var(--text-muted); font-size: 8px; }
+.gm-dashboard-queue { margin-bottom: 12px; }
+.gm-report-actions { display: flex; gap: 5px; flex-wrap: wrap; min-width: 330px; }
+.gm-approval-workspace { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(330px, .7fr); gap: 12px; align-items: start; }
+.gm-approval-table table { min-width: 1020px; }
+.gm-report-detail { position: sticky; top: 76px; }
+.gm-report-detail dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin: 0; }
+.gm-report-detail dl > div { padding: 9px; border: 1px solid var(--line-soft); border-radius: var(--radius-sm); background: var(--surface-subtle); }
+.gm-report-detail dt { color: var(--text-muted); font-size: 9px; text-transform: uppercase; }
+.gm-report-detail dd { margin: 3px 0 0; font-size: 10px; font-weight: 800; }
+.gm-report-detail > section { margin-top: 14px; }
+.gm-report-detail h3 { margin: 0 0 5px; font-size: 12px; }
+.gm-report-detail p { margin: 0; color: var(--text-secondary); line-height: 1.5; }
+.gm-detail-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 14px; }
+.gm-report-detail ol { margin: 0; padding: 0; list-style: none; }
+.gm-report-detail ol li { display: grid; grid-template-columns: 112px 1fr; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+.gm-report-detail time { color: var(--text-muted); font-size: 9px; }
+.gm-report-detail li b,
+.gm-report-detail li small { display: block; }
+.gm-report-detail li b { font-size: 10px; }
+.gm-report-detail li small { margin-top: 2px; color: var(--text-muted); font-size: 9px; }
+.gm-final-rule { margin-top: 14px; padding: 10px; border-left: 3px solid var(--warning); background: var(--warning-soft); color: var(--text-secondary); font-size: 10px; line-height: 1.45; }
+.gm-decision-validation { min-height: 18px; margin-top: 5px; color: var(--danger); font-size: 10px; }
+.gm-dashboard-grid > .manager-risk-panel { min-width: 0; }
+
+@media (max-width: 1100px) {
+  .gm-dashboard-grid,
+  .gm-approval-workspace { grid-template-columns: 1fr; }
+  .gm-report-detail { position: static; }
+}
+
+@media (max-width: 760px) {
+  .gm-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gm-panel,
+  .gm-report-detail { padding: 12px; }
+  .gm-report-actions { min-width: 280px; }
+}
+
+@media (max-width: 480px) {
+  .gm-kpis { grid-template-columns: 1fr; }
+  .gm-report-detail dl { grid-template-columns: 1fr; }
+  .gm-detail-actions { align-items: stretch; flex-direction: column; }
+  .gm-detail-actions .btn { width: 100%; }
+  .gm-report-detail ol li { grid-template-columns: 1fr; gap: 3px; }
+  .gm-risk-matrix { grid-template-columns: repeat(5, minmax(28px, 1fr)); }
+  .gm-risk-matrix > div { min-height: 36px; }
+}

@@ -62,12 +62,11 @@ var NAV = {
     { view: 'settings', label: 'Settings', icon: '⚙' }
   ],
   gm: [
-    { section: 'Approvals' },
-    { view: 'planning', label: 'Planning', icon: '▤' },
-    { view: 'checklist-approvals', label: 'Checklist Approvals', icon: '▧' },
-    { view: 'audit-reports', label: 'Audit Reports', icon: '📄' },
-    { section: 'Reports' },
-    { view: 'reports', label: 'Reports', icon: '📄' }
+    { view: 'gm-dashboard', label: 'Dashboard', icon: '▦' },
+    { view: 'gm-report-approvals', label: 'Report Approvals', icon: '📄' },
+    { view: 'gm-departments', label: 'Departments', icon: '▤' },
+    { view: 'gm-risk', label: 'Risk Dashboard', icon: '⌁' },
+    { view: 'settings', label: 'Settings', icon: '⚙' }
   ],
   finance: [
     { section: 'Review' },
@@ -99,14 +98,16 @@ var VIEW_TITLES = {
   'lead-assignment-questions': 'Assign Checklist Questions', 'planning-board': 'Planning',
   'audit-reports': 'Audit Reports', 'cap-review-detail': 'CAP Review', 'final-report-prepare': 'Prepare Final Report',
   'final-report-view': 'Final Report',
-  'unit-manager-review': 'Department Manager Approval'
+  'unit-manager-review': 'Department Manager Approval',
+  'gm-dashboard': 'General Manager Dashboard', 'gm-report-approvals': 'Report Approvals',
+  'gm-departments': 'Departments', 'gm-risk': 'Risk Dashboard'
 };
 
 var ROLE_DESC = {
   inspector: 'Inspector Workspace — daily operations, findings review, CAP verification and field work.',
   leadInspector: 'Lead Inspector — assigned audits and preliminary/final reports.',
   manager: 'Department Manager — planning items, approvals, scheduling and department oversight.',
-  gm: 'General Manager — planning and report approvals, budget routing and audit release.',
+  gm: 'General Manager — final report authorization, department oversight and cross-department risk review.',
   finance: 'Finance Review — budget and resource review for planned audits.',
   executiveDirector: 'Executive Director — final approval of plans and audit reports.',
   auditee: 'Service Provider Portal — findings, CAP uploads, responses and shared documents.',
@@ -137,7 +138,8 @@ var pickedFiles = {};
 function homeView(role) {
   if (role === 'auditee') return 'reports';
   if (role === 'admin') return 'templates';
-  if (role === 'gm' || role === 'finance' || role === 'executiveDirector') return 'planning';
+  if (role === 'gm') return 'gm-dashboard';
+  if (role === 'finance' || role === 'executiveDirector') return 'planning';
   if (role === 'leadInspector') return 'lead-review';
   if (role === 'inspector') return 'inspector-assignments';
   return 'dashboard';
@@ -171,6 +173,14 @@ var LEAD_INSPECTOR_RESTRICTED_VIEWS = {
   users: true
 };
 
+var GENERAL_MANAGER_ALLOWED_VIEWS = {
+  'gm-dashboard': true,
+  'gm-report-approvals': true,
+  'gm-departments': true,
+  'gm-risk': true,
+  settings: true
+};
+
 function normalizeViewForRole() {
   if (state.role === 'inspector' && INSPECTOR_LEGACY_CAP_VIEWS[state.view]) {
     state.view = 'findings';
@@ -182,6 +192,10 @@ function normalizeViewForRole() {
     state.params = {};
   }
   if (state.role === 'leadInspector' && LEAD_INSPECTOR_RESTRICTED_VIEWS[state.view]) {
+    state.view = homeView(state.role);
+    state.params = {};
+  }
+  if (state.role === 'gm' && !GENERAL_MANAGER_ALLOWED_VIEWS[state.view]) {
     state.view = homeView(state.role);
     state.params = {};
   }
@@ -459,6 +473,10 @@ function renderContent() {
     case 'manager-risk': return viewManagerRiskDashboard();
     case 'cap-monitoring': return viewManagerCapMonitoring();
     case 'manager-checklists': return viewManagerChecklistManagement();
+    case 'gm-dashboard': return viewGeneralManagerDashboard();
+    case 'gm-report-approvals': return viewGeneralManagerReportApprovals();
+    case 'gm-departments': return viewGeneralManagerDepartments();
+    case 'gm-risk': return viewGeneralManagerRiskDashboard();
     case 'calendar': return viewCalendar();
     case 'audit-detail': return viewAuditDetail();
     case 'checklist': return viewChecklistRunner();
@@ -1180,6 +1198,37 @@ function handleManagerRiskExport() {
   toast('Risk summary exported', projection.totalFindings + ' finding row(s) were written to the browser-side CSV.', 'ok');
 }
 
+function handleGeneralManagerReportOpen(reportId) {
+  var projection = generalManagerProjection(state);
+  if (!projection.approvalRows.some(function (row) { return row.id === reportId; })) return;
+  generalManagerUiState().selectedReportId = reportId;
+  state.view = 'gm-report-approvals';
+  state.params = { reportId: reportId };
+  persistAfterAction();
+  render();
+}
+
+function handleGeneralManagerDecisionOpen(reportId, decision) {
+  var report = managerReportById(state, reportId);
+  if (!report || ['approve', 'return'].indexOf(decision) === -1) return;
+  openModal(modalGeneralManagerDecision(report, decision));
+}
+
+function handleGeneralManagerDecisionConfirm(reportId, decision) {
+  var result = applyGeneralManagerReportDecision(state, reportId, decision, val('gm-report-comment'), ROLES.gm.user);
+  if (!result.ok) {
+    var validation = document.getElementById('gm-report-validation');
+    if (validation) validation.innerHTML = esc(result.message);
+    toast('Final Report decision', result.message, 'warn');
+    return;
+  }
+  generalManagerUiState().selectedReportId = '';
+  closeModal();
+  persistAfterAction();
+  render();
+  toast(decision === 'approve' ? 'Final Report issued' : 'Final Report returned', result.message, 'ok');
+}
+
 function managerChecklistActor() {
   return ROLES.manager ? ROLES.manager.user : 'Department Manager';
 }
@@ -1478,6 +1527,10 @@ function handleAction(act, el) {
 
     case 'manager-risk-reset': handleManagerRiskFilter('reset'); break;
     case 'manager-risk-export': handleManagerRiskExport(); break;
+
+    case 'gm-report-open': handleGeneralManagerReportOpen(id); break;
+    case 'gm-report-decision': handleGeneralManagerDecisionOpen(id, el.getAttribute('data-decision')); break;
+    case 'gm-report-confirm-decision': handleGeneralManagerDecisionConfirm(id, el.getAttribute('data-decision')); break;
 
     case 'manager-checklist-filter': handleManagerChecklistFilter(el.getAttribute('data-value')); break;
     case 'manager-checklist-select': handleManagerChecklistSelect(id); break;

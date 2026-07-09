@@ -627,6 +627,121 @@ function managerRiskCsv(projection) {
   return '\uFEFF' + rows.map(function (row) { return row.map(managerRiskCsvCell).join(','); }).join('\r\n');
 }
 
+function generalManagerProjection(target) {
+  var s = target || state;
+  var risk = managerRiskProjection(s, { dateRange: 'all', department: 'all', inspection: 'all', risk: 'all' });
+  var reports = Array.isArray(s.managerReports) ? s.managerReports : [];
+  var audits = Array.isArray(s.audits) ? s.audits : [];
+  var approvalRows = reports.filter(function (report) {
+    return report.reportType === 'Final Report' && report.status === 'submitted_to_executive' && report.locked !== true;
+  }).map(function (report) {
+    var audit = audits.filter(function (candidate) { return candidate.id === report.auditId; })[0] || null;
+    return {
+      id: report.id,
+      report: report,
+      auditId: report.auditId,
+      organization: report.organization,
+      department: audit ? (audit.domain || 'Unassigned') : 'Unassigned',
+      version: report.version,
+      leadInspector: report.leadInspector,
+      submittedAt: report.submittedAt,
+      status: report.status,
+      summary: report.summary,
+      locked: !!report.locked
+    };
+  }).sort(function (left, right) { return (right.submittedAt || '').localeCompare(left.submittedAt || '') || left.id.localeCompare(right.id); });
+
+  var departmentNames = Array.from(new Set(audits.map(function (audit) { return audit.domain || 'Unassigned'; }).concat(risk.departmentDistribution.map(function (row) { return row.department; })))).sort();
+  var departments = departmentNames.map(function (department) {
+    var distribution = risk.departmentDistribution.filter(function (row) { return row.department === department; })[0] || { high: 0, medium: 0, low: 0, veryLow: 0, total: 0, score: 0 };
+    var departmentAudits = audits.filter(function (audit) { return (audit.domain || 'Unassigned') === department; });
+    var departmentRows = risk.rows.filter(function (row) { return row.department === department; });
+    return {
+      department: department,
+      audits: departmentAudits.length,
+      activeAudits: departmentAudits.filter(function (audit) { return ['Scheduled', 'Planned', 'In Progress'].indexOf(audit.status) !== -1; }).length,
+      totalFindings: distribution.total,
+      high: distribution.high,
+      medium: distribution.medium,
+      low: distribution.low,
+      veryLow: distribution.veryLow,
+      overdueCaps: departmentRows.filter(function (row) { return row.overdueCap; }).length,
+      exposureScore: distribution.score
+    };
+  }).sort(function (left, right) { return right.exposureScore - left.exposureScore || left.department.localeCompare(right.department); });
+
+  return {
+    pendingFinalReports: approvalRows.length,
+    highRiskFindings: risk.rows.filter(function (row) { return row.riskLevel === 'High' && !row.closed; }).length,
+    reportsAwaitingApproval: approvalRows.length,
+    overdueCaps: risk.overdueCaps,
+    departments: departments,
+    approvalRows: approvalRows,
+    riskMatrix: risk.matrix,
+    riskDistribution: { high: risk.high, medium: risk.medium, low: risk.low, veryLow: risk.veryLow, total: risk.totalFindings },
+    recentHighRiskFindings: risk.recentHighRiskFindings,
+    risk: risk
+  };
+}
+
+function generalManagerDecisionResult(ok, message, report) {
+  return { ok: ok, message: message, report: report || null };
+}
+
+function applyGeneralManagerReportDecision(target, reportId, decision, comment, actor) {
+  var s = target || state;
+  var report = managerReportById(s, reportId);
+  if (!report) return generalManagerDecisionResult(false, 'Final Report artifact not found.', null);
+  if (report.reportType !== 'Final Report') return generalManagerDecisionResult(false, 'Only a Final Report can receive final authorized approval.', report);
+  if (report.status !== 'submitted_to_executive' || report.locked === true) {
+    return generalManagerDecisionResult(false, 'This Final Report is not at the unlocked final authorized approval stage.', report);
+  }
+  if (['approve', 'return'].indexOf(decision) === -1) return generalManagerDecisionResult(false, 'Choose approve or return.', report);
+  var cleanComment = String(comment || '').trim();
+  if (decision === 'return' && !cleanComment) return generalManagerDecisionResult(false, 'A General Manager comment is required to return the Final Report.', report);
+
+  var actorName = actor && actor.name ? actor.name : String(actor || 'General Manager');
+  var at = managerReportDecisionTimestamp();
+  if (!Array.isArray(report.history)) report.history = [];
+  if (decision === 'approve') {
+    report.status = 'issued';
+    report.ownerRole = 'auditee';
+    report.locked = true;
+    report.finalAuthorizedBy = actorName;
+    report.finalAuthorizedAt = at;
+    report.issuedAt = at;
+    report.generalManagerDecision = 'approve';
+    report.generalManagerComment = cleanComment;
+    report.history.push({ at: at, actor: actorName, action: 'Final Report received final authorized approval and was issued', comment: cleanComment });
+  } else {
+    report.status = 'pending_manager';
+    report.ownerRole = 'manager';
+    report.locked = false;
+    report.generalManagerDecision = 'return';
+    report.generalManagerComment = cleanComment;
+    report.returnedAt = at;
+    report.history.push({ at: at, actor: actorName, action: 'Final Report returned to Department Manager', comment: cleanComment });
+  }
+
+  if (!Array.isArray(s.auditLog)) s.auditLog = [];
+  var logId = 'L' + (Number(s.logSeq) || (s.auditLog.length + 1));
+  if (Number.isFinite(Number(s.logSeq))) s.logSeq += 1;
+  s.auditLog.unshift({ id: logId, time: at, actor: actorName + ' (General Manager)', action: decision === 'approve' ? 'Final Report issued after final authorized approval' : 'Final Report returned to Department Manager', target: report.id, system: false });
+
+  if (!Array.isArray(s.notifications)) s.notifications = [];
+  var notificationId = 'N' + (Number(s.notifSeq) || (s.notifications.length + 1));
+  if (Number.isFinite(Number(s.notifSeq))) s.notifSeq += 1;
+  s.notifications.unshift({
+    id: notificationId,
+    role: decision === 'approve' ? 'auditee' : 'manager',
+    icon: decision === 'approve' ? 'RPT' : 'REV',
+    text: decision === 'approve' ? report.id + ' was issued after final authorized approval.' : report.id + ' was returned with a General Manager comment.',
+    time: 'Just now',
+    unread: true
+  });
+  return generalManagerDecisionResult(true, decision === 'approve' ? 'Final Report issued after final authorized approval.' : 'Final Report returned to Department Manager.', report);
+}
+
 function managerChecklistTimestamp() {
   return managerReportDecisionTimestamp();
 }

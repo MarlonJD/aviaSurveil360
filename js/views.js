@@ -1404,6 +1404,92 @@ function viewManagerRiskDashboard() {
     '<div class="guardrail-note"><b>Management indicator only:</b> This risk dashboard supports oversight prioritization and does not trigger automatic legal, enforcement, certificate, or closure action.</div>';
 }
 
+function generalManagerUiState() {
+  if (!state.generalManagerUi || typeof state.generalManagerUi !== 'object') state.generalManagerUi = {};
+  var ui = state.generalManagerUi;
+  if (typeof ui.selectedReportId !== 'string') ui.selectedReportId = '';
+  if (typeof ui.validationMessage !== 'string') ui.validationMessage = '';
+  return ui;
+}
+
+function generalManagerKpis(projection) {
+  var items = [
+    ['Pending Final Reports', projection.pendingFinalReports, 'warn'],
+    ['High Risk Findings', projection.highRiskFindings, 'danger'],
+    ['Reports Awaiting Your Approval', projection.reportsAwaitingApproval, 'info'],
+    ['Overdue CAPs', projection.overdueCaps, projection.overdueCaps ? 'danger' : 'ok']
+  ];
+  return '<div class="gm-kpis">' + items.map(function (item) { return '<article class="is-' + item[2] + '"><span>' + esc(item[0]) + '</span><strong>' + item[1] + '</strong></article>'; }).join('') + '</div>';
+}
+
+function generalManagerDepartmentTable(projection, compact) {
+  var body = projection.departments.length ? projection.departments.map(function (row) {
+    return '<tr><td><b>' + esc(row.department) + '</b></td><td>' + row.audits + '</td><td>' + row.activeAudits + '</td><td>' + row.totalFindings + '</td><td>' + row.high + '</td><td>' + row.medium + '</td><td>' + row.overdueCaps + '</td><td><span class="gm-exposure-score">' + row.exposureScore + '</span></td></tr>';
+  }).join('') : '<tr><td colspan="8"><div class="empty">No department data is available.</div></td></tr>';
+  return '<div class="gm-table"><table><thead><tr><th>Department</th><th>Audits</th><th>Active</th><th>Findings</th><th>High</th><th>Medium</th><th>Overdue CAPs</th><th>Exposure</th></tr></thead><tbody>' + body + '</tbody></table></div>' + (compact ? '<button class="btn btn--sm" data-act="go" data-view="gm-departments">View All Departments</button>' : '');
+}
+
+function generalManagerHeatMap(projection, title) {
+  function tone(score) { return score >= 15 ? 'critical' : (score >= 10 ? 'high' : (score >= 5 ? 'medium' : 'low')); }
+  return '<section class="gm-panel gm-risk-heat"><header><span>Likelihood × Impact</span><h2>' + esc(title || 'Risk Heat Map') + '</h2></header><div class="gm-risk-matrix">' + projection.riskMatrix.map(function (cell) {
+    return '<div class="is-' + tone(cell.score) + '" title="Likelihood ' + cell.likelihood + ', Impact ' + cell.impact + '"><b>' + cell.count + '</b><small>' + cell.score + '</small></div>';
+  }).join('') + '</div><div class="gm-risk-axis"><span>Higher likelihood ↑</span><span>Impact →</span></div></section>';
+}
+
+function generalManagerApprovalTable(projection, compact) {
+  var body = projection.approvalRows.length ? projection.approvalRows.map(function (row) {
+    return '<tr><td><b>' + esc(row.id) + '</b><small>' + esc(row.auditId) + '</small></td><td>' + esc(row.organization) + '</td><td>' + esc(row.department) + '</td><td>v' + esc(row.version) + '</td><td>' + esc(row.leadInspector) + '</td><td>' + esc(row.submittedAt) + '</td><td><div class="gm-report-actions"><button class="btn btn--sm" data-act="gm-report-open" data-id="' + esc(row.id) + '">Open Report</button><button class="btn btn--sm" data-act="gm-report-decision" data-id="' + esc(row.id) + '" data-decision="return">Return Report</button><button class="btn btn--primary btn--sm" data-act="gm-report-decision" data-id="' + esc(row.id) + '" data-decision="approve">Approve Final Report</button></div></td></tr>';
+  }).join('') : '<tr><td colspan="7"><div class="empty"><b>No Final Reports awaiting approval</b><span>Department Manager-approved Final Reports will appear here.</span></div></td></tr>';
+  return '<div class="gm-table gm-approval-table"><table><thead><tr><th>Report</th><th>Organization</th><th>Department</th><th>Version</th><th>Lead Inspector</th><th>Submitted</th><th>Decision</th></tr></thead><tbody>' + body + '</tbody></table></div>' + (compact ? '<button class="btn btn--sm" data-act="go" data-view="gm-report-approvals">Open Report Approvals</button>' : '');
+}
+
+function generalManagerRecentRisk(projection) {
+  var rows = projection.recentHighRiskFindings.length ? projection.recentHighRiskFindings.map(function (row) {
+    return '<tr><td><b>' + esc(row.id) + '</b><small>' + esc(row.title) + '</small></td><td>' + esc(row.organization) + '</td><td>' + esc(row.department) + '</td><td>' + esc(row.inspectionId) + '</td><td>' + esc(fmtDate(row.issuedDate)) + '</td><td>' + esc(row.status.replace(/_/g, ' ')) + '</td></tr>';
+  }).join('') : '<tr><td colspan="6"><div class="empty">No recent high-risk findings are available.</div></td></tr>';
+  return '<section class="gm-panel gm-recent-risk"><header><span>Priority visibility</span><h2>Recent High-Risk Findings</h2></header><div class="gm-table"><table><thead><tr><th>Finding</th><th>Organization</th><th>Department</th><th>Inspection</th><th>Issued</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
+}
+
+function viewGeneralManagerDashboard() {
+  var projection = generalManagerProjection(state);
+  return pageHead('General Manager Dashboard', 'Review final authorized report decisions, department exposure, high-risk findings, and overdue CAPs.') + generalManagerKpis(projection) +
+    '<div class="gm-dashboard-grid"><section class="gm-panel"><header><span>Cross-department oversight</span><h2>Department Overview</h2></header>' + generalManagerDepartmentTable(projection, true) + '</section>' + generalManagerHeatMap(projection, 'Risk Heat Map') + '</div>' +
+    '<section class="gm-panel gm-dashboard-queue"><header><span>Final authorized stage</span><h2>Final Report Approval Queue</h2></header>' + generalManagerApprovalTable(projection, true) + '</section>' +
+    '<div class="guardrail-note"><b>Final authorization boundary:</b> Department Manager approval alone does not issue or lock a Final Report. Only the configured final General Manager authorization can issue and lock it in this demo.</div>';
+}
+
+function generalManagerReportDetail(row) {
+  if (!row) return '<section class="gm-report-detail"><div class="empty"><b>Select a Final Report</b><span>Open a queue row to inspect the report and its authorization history.</span></div></section>';
+  var history = row.report.history.slice().reverse().map(function (entry) { return '<li><time>' + esc(entry.at) + '</time><div><b>' + esc(entry.action) + '</b><small>' + esc(entry.actor) + (entry.comment ? ' · ' + esc(entry.comment) : '') + '</small></div></li>'; }).join('');
+  return '<section class="gm-report-detail"><header><div><span>Selected Final Report</span><h2>' + esc(row.id) + ' · ' + esc(row.organization) + '</h2><p>' + esc(row.auditId + ' · ' + row.department) + '</p></div>' + demoBadge('Awaiting Final Authorization', 'warn') + '</header><dl><div><dt>Version</dt><dd>' + esc(row.version) + '</dd></div><div><dt>Lead Inspector</dt><dd>' + esc(row.leadInspector) + '</dd></div><div><dt>Submitted</dt><dd>' + esc(row.submittedAt) + '</dd></div><div><dt>Locked</dt><dd>No</dd></div></dl><section><h3>Executive Summary</h3><p>' + esc(row.summary) + '</p></section><div class="gm-detail-actions"><button class="btn" data-act="gm-report-decision" data-id="' + esc(row.id) + '" data-decision="return">Return Report</button><button class="btn btn--primary" data-act="gm-report-decision" data-id="' + esc(row.id) + '" data-decision="approve">Approve Final Report</button></div><section><h3>Authorization History</h3><ol>' + history + '</ol></section><div class="gm-final-rule"><b>Issuance rule:</b> This approval is the configured final authorization. A successful approval issues and locks this Final Report.</div></section>';
+}
+
+function viewGeneralManagerReportApprovals() {
+  var ui = generalManagerUiState();
+  var projection = generalManagerProjection(state);
+  var selected = projection.approvalRows.filter(function (row) { return row.id === ui.selectedReportId; })[0] || projection.approvalRows[0] || null;
+  ui.selectedReportId = selected ? selected.id : '';
+  return pageHead('Report Approvals', 'Review only Department Manager-approved Final Reports at the configured final authorized stage.') + generalManagerKpis(projection) + '<div class="gm-approval-workspace"><section class="gm-panel"><header><span>Authorization queue</span><h2>Final Reports Awaiting Your Approval</h2></header>' + generalManagerApprovalTable(projection, false) + '</section>' + generalManagerReportDetail(selected) + '</div>' +
+    '<div class="guardrail-note"><b>Restricted workspace:</b> General Manager users do not receive Department Manager team-editing or checklist-editing controls.</div>';
+}
+
+function viewGeneralManagerDepartments() {
+  var projection = generalManagerProjection(state);
+  return pageHead('Departments', 'Compare audit activity, findings, risk exposure, and overdue CAP attention across departments.') + '<section class="gm-panel"><header><span>Cross-department oversight</span><h2>Department Overview</h2></header>' + generalManagerDepartmentTable(projection, false) + '</section><div class="gm-dashboard-grid">' + generalManagerHeatMap(projection, 'Department Risk Heat Map') + managerRiskRing(projection.risk) + '</div>';
+}
+
+function viewGeneralManagerRiskDashboard() {
+  var projection = generalManagerProjection(state);
+  return pageHead('Cross-Department Risk Dashboard', 'Review aggregated department exposure without team or checklist editing controls.') + generalManagerKpis(projection) + '<div class="gm-dashboard-grid">' + generalManagerHeatMap(projection, 'Risk Exposure Matrix') + managerRiskRing(projection.risk) + managerRiskDepartments(projection.risk) + managerRiskOverdue(projection.risk) + '</div>' + generalManagerRecentRisk(projection) +
+    '<div class="guardrail-note"><b>Management indicator only:</b> Cross-department risk values do not trigger automatic legal, enforcement, certificate, or closure action.</div>';
+}
+
+function modalGeneralManagerDecision(report, decision) {
+  var approve = decision === 'approve';
+  var body = '<div class="modal__intro"><b>' + esc(report.id) + '</b> · ' + esc(report.organization) + '<br>' + (approve ? 'This is the configured final authorization and will issue and lock the Final Report.' : 'A comment is required before returning the Final Report to the Department Manager.') + '</div><div class="form-row"><label>General Manager Comment' + (approve ? '' : ' <span class="req">*</span>') + '</label><textarea id="gm-report-comment" placeholder="Record the authorization rationale or required revision."></textarea><div id="gm-report-validation" class="gm-decision-validation" role="alert"></div></div>';
+  return modalShell(approve ? 'Approve Final Report' : 'Return Final Report', body, '<button class="btn" data-act="close-modal">Cancel</button><button class="btn ' + (approve ? 'btn--primary' : 'btn--danger') + '" data-act="gm-report-confirm-decision" data-id="' + esc(report.id) + '" data-decision="' + esc(decision) + '">' + (approve ? 'Approve & Issue Final Report' : 'Return Report') + '</button>');
+}
+
 function managerChecklistUiState() {
   if (!state.managerChecklistUi || typeof state.managerChecklistUi !== 'object') state.managerChecklistUi = {};
   var ui = state.managerChecklistUi;

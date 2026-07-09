@@ -47,7 +47,7 @@ var ROLES = {
   manager:          { key: 'manager',          name: 'Department Manager', user: 'Mehmet Kaya',  initials: 'MK', color: '#2f6fd6',
                       question: 'Where are we exposed, delayed or overloaded?' },
   gm:               { key: 'gm',               name: 'General Manager',    user: 'Okan Demir',   initials: 'OD', color: '#0f766e',
-                      question: 'Which audits and budgets should I approve or release?' },
+                      question: 'Which Final Reports need authorization, and where are departments exposed?' },
   finance:          { key: 'finance',          name: 'Finance Review',     user: 'Derya Acar',   initials: 'DA', color: '#b45309',
                       question: 'Is the requested budget and resource justified?' },
   executiveDirector:{ key: 'executiveDirector',name: 'Executive Director', user: 'Ufuk Aslan',   initials: 'UA', color: '#9f1239',
