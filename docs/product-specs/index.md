@@ -20,13 +20,14 @@ handoff and local-language review.
 12. `workflows/REMINDERS_AND_ESCALATION_WORKFLOW.md`
 13. `modules/`
 14. `screen-specs/SCREEN_INVENTORY_AND_FORMS.md`
-15. `data-and-rules/CONCEPTUAL_DATA_MODEL.md`
-16. `data-and-rules/STATUS_PERMISSION_SECURITY.md`
-17. `analytics/OVERSIGHT_HEALTH_INDEX_AND_KPIS.md`
-18. `analytics/REPORT_CATALOG.md`
-19. `scenarios/DEMO_SCENARIO_OPERATOR_AUDIT.md`
-20. `scenarios/OTHER_DOMAIN_SCENARIOS_AND_EDGE_CASES.md`
-21. `references/GLOSSARY_AND_SOURCE_NOTES.md`
+15. `screen-specs/DEPARTMENT_MANAGER_WORKSPACES.md`
+16. `data-and-rules/CONCEPTUAL_DATA_MODEL.md`
+17. `data-and-rules/STATUS_PERMISSION_SECURITY.md`
+18. `analytics/OVERSIGHT_HEALTH_INDEX_AND_KPIS.md`
+19. `analytics/REPORT_CATALOG.md`
+20. `scenarios/DEMO_SCENARIO_OPERATOR_AUDIT.md`
+21. `scenarios/OTHER_DOMAIN_SCENARIOS_AND_EDGE_CASES.md`
+22. `references/GLOSSARY_AND_SOURCE_NOTES.md`
 
 ## Folder Map
 
@@ -37,7 +38,7 @@ handoff and local-language review.
 | `ux-plan/` | UX principles, navigation, and role information architecture. |
 | `workflows/` | Surveillance, checklist, Finding, CAP, Evidence, reminders, and escalation lifecycle rules. |
 | `modules/` | Module-level fields, states, actions, and acceptance criteria. |
-| `screen-specs/` | Screen inventory and form-level expectations. |
+| `screen-specs/` | Screen inventory, form-level expectations, and the Department/General Manager oversight workspaces design. |
 | `data-and-rules/` | Conceptual data model, statuses, permissions, visibility, and security rules. |
 | `analytics/` | Oversight Health Index, KPIs, and report catalog. |
 | `scenarios/` | Demo scenario and edge-case replay paths. |
