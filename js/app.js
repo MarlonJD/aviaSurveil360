@@ -456,7 +456,7 @@ function renderContent() {
     case 'findings-review': return viewManagerFindingsReview();
     case 'inspection-team': return viewInspectionTeam();
     case 'reports-approval': return viewManagerReportsApproval();
-    case 'manager-risk': return viewManagerWorkspacePlaceholder('Risk Dashboard', 'Department risk indicators and exposure views are being prepared in this demo sequence.');
+    case 'manager-risk': return viewManagerRiskDashboard();
     case 'cap-monitoring': return viewManagerCapMonitoring();
     case 'manager-checklists': return viewManagerChecklistManagement();
     case 'calendar': return viewCalendar();
@@ -1136,6 +1136,50 @@ function handleManagerCapAddUpdate(capId) {
   toast('CAP update added', result.message, 'ok');
 }
 
+function handleManagerRiskFilter(key, value) {
+  var ui = managerRiskUiState();
+  if (key === 'reset') {
+    ui.dateRange = 'all';
+    ui.department = 'all';
+    ui.inspection = 'all';
+    ui.risk = 'all';
+  } else if (key === 'dateRange') {
+    ui.dateRange = value || 'all';
+  } else if (key === 'department') {
+    ui.department = value || 'all';
+  } else if (key === 'inspection') {
+    ui.inspection = value || 'all';
+  } else if (key === 'risk') {
+    ui.risk = value || 'all';
+  } else {
+    return;
+  }
+  persistAfterAction();
+  render();
+}
+
+function handleManagerRiskExport() {
+  var ui = managerRiskUiState();
+  var projection = managerRiskProjection(state, ui);
+  if (typeof document === 'undefined' || !document.body || typeof Blob === 'undefined' || typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') {
+    toast('Export unavailable', 'This browser cannot create the demo risk CSV download.', 'warn');
+    return;
+  }
+  var blob = new Blob([managerRiskCsv(projection)], { type: 'text/csv;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = 'Fly_Namibia_Department_Risk_Summary.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 0);
+  ui.exportedAt = nowIsoDemo();
+  addLog('Department Manager risk summary exported', projection.totalFindings + ' finding rows');
+  persistAfterAction();
+  toast('Risk summary exported', projection.totalFindings + ' finding row(s) were written to the browser-side CSV.', 'ok');
+}
+
 function managerChecklistActor() {
   return ROLES.manager ? ROLES.manager.user : 'Department Manager';
 }
@@ -1431,6 +1475,9 @@ function handleAction(act, el) {
     case 'manager-cap-close': handleManagerCapClose(); break;
     case 'manager-cap-tab': handleManagerCapTab(tab); break;
     case 'manager-cap-add-update': handleManagerCapAddUpdate(id); break;
+
+    case 'manager-risk-reset': handleManagerRiskFilter('reset'); break;
+    case 'manager-risk-export': handleManagerRiskExport(); break;
 
     case 'manager-checklist-filter': handleManagerChecklistFilter(el.getAttribute('data-value')); break;
     case 'manager-checklist-select': handleManagerChecklistSelect(id); break;
@@ -4930,6 +4977,10 @@ document.addEventListener('change', function (e) {
   if (field === 'manager-cap-department') handleManagerCapFilter('department', e.target.value);
   if (field === 'manager-cap-inspection') handleManagerCapFilter('inspection', e.target.value);
   if (field === 'manager-cap-due') handleManagerCapFilter('due', e.target.value);
+  if (field === 'manager-risk-date') handleManagerRiskFilter('dateRange', e.target.value);
+  if (field === 'manager-risk-department') handleManagerRiskFilter('department', e.target.value);
+  if (field === 'manager-risk-inspection') handleManagerRiskFilter('inspection', e.target.value);
+  if (field === 'manager-risk-level') handleManagerRiskFilter('risk', e.target.value);
   if (field === 'lead-review-decision') {
     handleLeadReviewDecision(e.target.getAttribute('data-id'), e.target.value);
   }

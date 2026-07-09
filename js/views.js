@@ -1302,6 +1302,108 @@ function viewManagerWorkspacePlaceholder(title, message) {
   return pageHead(title, message) + '<section class="manager-dashboard-panel manager-dashboard-placeholder"><div class="empty"><b>' + esc(title) + '</b><span>This route is reserved for the approved frontend-only manager workspace and is not a production service.</span></div></section>';
 }
 
+function managerRiskUiState() {
+  if (!state.managerRiskUi || typeof state.managerRiskUi !== 'object') state.managerRiskUi = {};
+  var ui = state.managerRiskUi;
+  if (['all', 'last-30', 'last-90', 'year'].indexOf(ui.dateRange) === -1) ui.dateRange = 'all';
+  if (typeof ui.department !== 'string') ui.department = 'all';
+  if (typeof ui.inspection !== 'string') ui.inspection = 'all';
+  if (['all', 'High', 'Medium', 'Low', 'Very Low'].indexOf(ui.risk) === -1) ui.risk = 'all';
+  if (typeof ui.exportedAt !== 'string') ui.exportedAt = '';
+  return ui;
+}
+
+function managerRiskOption(value, label, selected) {
+  return '<option value="' + esc(value) + '"' + (value === selected ? ' selected' : '') + '>' + esc(label) + '</option>';
+}
+
+function managerRiskFilters(ui, projection) {
+  return '<div class="manager-risk-filters"><label><span>Date Range</span><select data-field="manager-risk-date">' + managerRiskOption('all', 'All Dates', ui.dateRange) + managerRiskOption('last-30', 'Last 30 Days', ui.dateRange) + managerRiskOption('last-90', 'Last 90 Days', ui.dateRange) + managerRiskOption('year', 'Current Year', ui.dateRange) + '</select></label>' +
+    '<label><span>Department</span><select data-field="manager-risk-department">' + managerRiskOption('all', 'All Departments', ui.department) + projection.availableDepartments.map(function (department) { return managerRiskOption(department, department, ui.department); }).join('') + '</select></label>' +
+    '<label><span>Inspection</span><select data-field="manager-risk-inspection">' + managerRiskOption('all', 'All Inspections', ui.inspection) + projection.availableInspections.map(function (inspection) { return managerRiskOption(inspection.id, inspection.id + ' · ' + inspection.label, ui.inspection); }).join('') + '</select></label>' +
+    '<label><span>Risk Level</span><select data-field="manager-risk-level">' + managerRiskOption('all', 'All Risk Levels', ui.risk) + managerRiskOption('High', 'High', ui.risk) + managerRiskOption('Medium', 'Medium', ui.risk) + managerRiskOption('Low', 'Low', ui.risk) + managerRiskOption('Very Low', 'Very Low', ui.risk) + '</select></label>' +
+    '<button class="btn btn--sm" data-act="manager-risk-reset">Reset</button><button class="btn btn--primary btn--sm" data-act="manager-risk-export">Export CSV</button></div>';
+}
+
+function managerRiskKpis(projection) {
+  var cards = [
+    ['Total Findings', projection.totalFindings, 'info'],
+    ['High Risk', projection.high, 'danger'],
+    ['Medium Risk', projection.medium, 'warn'],
+    ['Low Risk', projection.low, 'info'],
+    ['Very Low Risk', projection.veryLow, 'neutral'],
+    ['Overdue CAPs', projection.overdueCaps, projection.overdueCaps ? 'danger' : 'ok']
+  ];
+  return '<div class="manager-risk-kpis">' + cards.map(function (card) { return '<article class="is-' + esc(card[2]) + '"><span>' + esc(card[0]) + '</span><strong>' + esc(String(card[1])) + '</strong></article>'; }).join('') + '</div>';
+}
+
+function managerRiskRing(projection) {
+  var total = Math.max(projection.totalFindings, 1);
+  var highEnd = projection.high / total * 100;
+  var mediumEnd = highEnd + projection.medium / total * 100;
+  var lowEnd = mediumEnd + projection.low / total * 100;
+  var background = projection.totalFindings ? 'conic-gradient(var(--danger) 0 ' + highEnd + '%, var(--warning) ' + highEnd + '% ' + mediumEnd + '%, var(--brand) ' + mediumEnd + '% ' + lowEnd + '%, var(--line) ' + lowEnd + '% 100%)' : 'conic-gradient(var(--line-soft) 0 100%)';
+  var legend = [['High', projection.high, 'danger'], ['Medium', projection.medium, 'warn'], ['Low', projection.low, 'info'], ['Very Low', projection.veryLow, 'neutral']].map(function (item) {
+    return '<li class="is-' + item[2] + '"><span></span><b>' + esc(item[0]) + '</b><em>' + item[1] + '</em></li>';
+  }).join('');
+  return '<section class="manager-risk-panel"><header><span>Risk distribution</span><h2>Findings by Risk</h2></header><div class="manager-risk-ring-wrap"><div class="manager-risk-ring" style="background:' + esc(background) + '"><div><strong>' + projection.totalFindings + '</strong><span>Findings</span></div></div><ul>' + legend + '</ul></div></section>';
+}
+
+function managerRiskTrend(projection) {
+  var max = projection.trend.reduce(function (value, item) { return Math.max(value, item.total); }, 1);
+  var bars = projection.trend.length ? projection.trend.map(function (item) {
+    var height = Math.max(5, Math.round(item.total / max * 100));
+    return '<div title="' + esc(item.week + ': ' + item.total + ' findings') + '"><span style="height:' + height + '%"><i style="height:' + (item.high / Math.max(item.total, 1) * 100) + '%"></i></span><small>' + esc(item.week.replace(/^\d{4}-/, '')) + '</small></div>';
+  }).join('') : '<div class="manager-risk-chart-empty">No trend data</div>';
+  return '<section class="manager-risk-panel"><header><span>Weekly view</span><h2>Risk Trend</h2></header><div class="manager-risk-trend">' + bars + '</div></section>';
+}
+
+function managerRiskMatrix(projection) {
+  function tone(score) { return score >= 15 ? 'critical' : (score >= 10 ? 'high' : (score >= 5 ? 'medium' : 'low')); }
+  var cells = projection.matrix.map(function (cell) {
+    return '<div class="is-' + tone(cell.score) + '" title="Likelihood ' + cell.likelihood + ', Impact ' + cell.impact + '"><span>' + cell.count + '</span><small>' + cell.score + '</small></div>';
+  }).join('');
+  return '<section class="manager-risk-panel manager-risk-matrix-panel"><header><span>Likelihood × Impact</span><h2>Risk Exposure Matrix</h2></header><div class="manager-risk-matrix"><div class="manager-risk-axis-y">Likelihood</div><div class="manager-risk-matrix-grid">' + cells + '</div><div class="manager-risk-axis-x">Impact →</div></div></section>';
+}
+
+function managerRiskTopAreas(projection) {
+  var max = projection.topRiskyAreas.reduce(function (value, row) { return Math.max(value, row.score); }, 1);
+  var rows = projection.topRiskyAreas.length ? projection.topRiskyAreas.map(function (row) {
+    return '<li><div><b>' + esc(row.department) + '</b><span>' + row.total + ' findings</span></div><span><i style="width:' + Math.round(row.score / max * 100) + '%"></i></span><em>' + row.score + '</em></li>';
+  }).join('') : '<li class="is-empty">No risk areas match these filters.</li>';
+  return '<section class="manager-risk-panel"><header><span>Weighted exposure</span><h2>Top Risky Areas</h2></header><ol class="manager-risk-areas">' + rows + '</ol></section>';
+}
+
+function managerRiskDepartments(projection) {
+  var rows = projection.departmentDistribution.length ? projection.departmentDistribution.map(function (row) {
+    function width(value) { return value / Math.max(row.total, 1) * 100; }
+    return '<li><div><b>' + esc(row.department) + '</b><span>' + row.total + '</span></div><div class="manager-risk-stack" title="High ' + row.high + ', Medium ' + row.medium + ', Low ' + row.low + ', Very Low ' + row.veryLow + '"><i class="is-high" style="width:' + width(row.high) + '%"></i><i class="is-medium" style="width:' + width(row.medium) + '%"></i><i class="is-low" style="width:' + width(row.low) + '%"></i><i class="is-very-low" style="width:' + width(row.veryLow) + '%"></i></div></li>';
+  }).join('') : '<li class="is-empty">No department distribution is available.</li>';
+  return '<section class="manager-risk-panel"><header><span>Finding mix</span><h2>Department Risk Distribution</h2></header><ul class="manager-risk-departments">' + rows + '</ul></section>';
+}
+
+function managerRiskOverdue(projection) {
+  return '<section class="manager-risk-panel"><header><span>Corrective action attention</span><h2>Overdue CAPs by Risk</h2></header><div class="manager-risk-overdue">' + projection.overdueByRisk.map(function (item) {
+    return '<article class="is-' + esc(item.riskLevel.toLowerCase().replace(/\s/g, '-')) + '"><span>' + esc(item.riskLevel) + '</span><strong>' + item.count + '</strong></article>';
+  }).join('') + '</div><p>CAP acceptance is not finding closure. Required evidence and authorized verification remain separate.</p></section>';
+}
+
+function managerRiskRecent(projection) {
+  var body = projection.recentHighRiskFindings.length ? projection.recentHighRiskFindings.map(function (row) {
+    return '<tr><td><button data-act="go" data-view="finding" data-id="' + esc(row.id) + '">' + esc(row.id) + '</button><small>' + esc(row.title) + '</small></td><td>' + esc(row.organization) + '</td><td>' + esc(row.department) + '</td><td>' + esc(row.inspectionId) + '</td><td>' + esc(fmtDate(row.issuedDate)) + '</td><td>' + esc(row.status.replace(/_/g, ' ')) + '</td><td>' + (row.overdueCap ? demoBadge('Overdue', 'danger') : demoBadge('On track', 'ok')) + '</td></tr>';
+  }).join('') : '<tr><td colspan="7"><div class="empty">No recent high-risk findings match these filters.</div></td></tr>';
+  return '<section class="manager-risk-panel manager-risk-recent"><header><span>Priority review</span><h2>Recent High-Risk Findings</h2></header><div><table><thead><tr><th>Finding</th><th>Organization</th><th>Department</th><th>Inspection</th><th>Issued</th><th>Status</th><th>CAP Due</th></tr></thead><tbody>' + body + '</tbody></table></div></section>';
+}
+
+function viewManagerRiskDashboard() {
+  var ui = managerRiskUiState();
+  var projection = managerRiskProjection(state, ui);
+  var empty = projection.totalFindings === 0 ? '<div class="manager-risk-empty"><b>No risk records match these filters.</b><span>Reset or change a filter to restore the management view.</span></div>' : '';
+  return pageHead('Risk Dashboard', 'Review finding exposure, Due Dates, and CAP attention across the department using management indicators.') +
+    '<section class="manager-risk-workspace">' + managerRiskFilters(ui, projection) + managerRiskKpis(projection) + empty + '<div class="manager-risk-grid">' + managerRiskRing(projection) + managerRiskTrend(projection) + managerRiskMatrix(projection) + managerRiskTopAreas(projection) + managerRiskDepartments(projection) + managerRiskOverdue(projection) + '</div>' + managerRiskRecent(projection) + '</section>' +
+    '<div class="guardrail-note"><b>Management indicator only:</b> This risk dashboard supports oversight prioritization and does not trigger automatic legal, enforcement, certificate, or closure action.</div>';
+}
+
 function managerChecklistUiState() {
   if (!state.managerChecklistUi || typeof state.managerChecklistUi !== 'object') state.managerChecklistUi = {};
   var ui = state.managerChecklistUi;

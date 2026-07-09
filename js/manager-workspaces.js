@@ -463,6 +463,170 @@ function addManagerCapUpdate(target, capId, text, actor) {
   return { ok: true, message: 'CAP update added.', cap: managerCapById(target, capId) };
 }
 
+function managerRiskLevel(severity) {
+  if (severity === 1) return 'High';
+  if (severity === 2) return 'Medium';
+  if (severity === 3) return 'Low';
+  return 'Very Low';
+}
+
+function managerRiskCoordinates(finding, overdue) {
+  if (finding.severity === 1) return { likelihood: overdue ? 5 : 4, impact: 5 };
+  if (finding.severity === 2) return { likelihood: overdue ? 4 : 3, impact: 4 };
+  if (finding.severity === 3) return { likelihood: overdue ? 3 : 2, impact: 3 };
+  return { likelihood: finding.status === 'CLOSED' ? 1 : 2, impact: 2 };
+}
+
+function managerRiskWeek(date) {
+  if (!date) return 'Unknown';
+  var value = new Date(date + 'T00:00:00Z');
+  var start = new Date(Date.UTC(value.getUTCFullYear(), 0, 1));
+  var day = Math.floor((value - start) / 86400000);
+  var week = Math.ceil((day + start.getUTCDay() + 1) / 7);
+  return value.getUTCFullYear() + '-W' + String(week).padStart(2, '0');
+}
+
+function managerRiskProjection(target, filters) {
+  var s = target || state;
+  var opts = filters || {};
+  var dateRange = opts.dateRange || 'all';
+  var departmentFilter = opts.department || 'all';
+  var inspectionFilter = opts.inspection || 'all';
+  var riskFilter = opts.risk || 'all';
+  var audits = Array.isArray(s.audits) ? s.audits : [];
+  var orgs = Array.isArray(s.orgs) ? s.orgs : [];
+  var findings = Array.isArray(s.findings) ? s.findings : [];
+
+  function auditFor(auditId) {
+    return audits.filter(function (audit) { return audit.id === auditId; })[0] || null;
+  }
+
+  function orgFor(orgId) {
+    return orgs.filter(function (org) { return org.id === orgId; })[0] || null;
+  }
+
+  function matchesDate(date) {
+    if (dateRange === 'all') return true;
+    if (!date) return false;
+    var age = daysBetween(date, DEMO_TODAY);
+    if (dateRange === 'last-30') return age >= 0 && age <= 30;
+    if (dateRange === 'last-90') return age >= 0 && age <= 90;
+    if (dateRange === 'year') return date.slice(0, 4) === DEMO_TODAY.slice(0, 4);
+    return true;
+  }
+
+  var rows = findings.map(function (finding) {
+    var audit = auditFor(finding.auditId);
+    var org = orgFor(finding.orgId);
+    var department = finding.department || (audit && audit.domain) || 'Unassigned';
+    var dueDate = finding.cap && finding.cap.dueDate ? finding.cap.dueDate : finding.dueDate;
+    var overdue = finding.status !== 'CLOSED' && finding.capRequired && !!dueDate && dueDate < DEMO_TODAY;
+    var riskLevel = managerRiskLevel(finding.severity);
+    var coordinates = managerRiskCoordinates(finding, overdue);
+    return {
+      id: finding.id,
+      title: finding.title,
+      organization: org ? org.name : '—',
+      organizationId: finding.orgId || '',
+      inspectionId: finding.auditId || 'Unassigned',
+      inspection: audit ? (audit.ref || audit.type || audit.id) : 'Unassigned',
+      department: department,
+      issuedDate: finding.issuedDate || '',
+      dueDate: dueDate || '',
+      status: finding.status,
+      closed: finding.status === 'CLOSED',
+      capRequired: !!finding.capRequired,
+      overdueCap: overdue,
+      severity: finding.severity,
+      riskLevel: riskLevel,
+      likelihood: coordinates.likelihood,
+      impact: coordinates.impact,
+      riskScore: coordinates.likelihood * coordinates.impact,
+      week: managerRiskWeek(finding.issuedDate)
+    };
+  }).filter(function (row) {
+    if (!matchesDate(row.issuedDate)) return false;
+    if (departmentFilter !== 'all' && row.department !== departmentFilter) return false;
+    if (inspectionFilter !== 'all' && row.inspectionId !== inspectionFilter) return false;
+    if (riskFilter !== 'all' && row.riskLevel !== riskFilter) return false;
+    return true;
+  });
+
+  var matrix = [];
+  for (var likelihood = 5; likelihood >= 1; likelihood -= 1) {
+    for (var impact = 1; impact <= 5; impact += 1) {
+      matrix.push({
+        likelihood: likelihood,
+        impact: impact,
+        score: likelihood * impact,
+        count: rows.filter(function (row) { return row.likelihood === likelihood && row.impact === impact; }).length
+      });
+    }
+  }
+
+  var departmentMap = {};
+  var weekMap = {};
+  rows.forEach(function (row) {
+    if (!departmentMap[row.department]) departmentMap[row.department] = { department: row.department, high: 0, medium: 0, low: 0, veryLow: 0, total: 0, score: 0 };
+    var department = departmentMap[row.department];
+    var key = row.riskLevel === 'Very Low' ? 'veryLow' : row.riskLevel.toLowerCase();
+    department[key] += 1;
+    department.total += 1;
+    department.score += row.riskLevel === 'High' ? 4 : (row.riskLevel === 'Medium' ? 3 : (row.riskLevel === 'Low' ? 2 : 1));
+    if (!weekMap[row.week]) weekMap[row.week] = { week: row.week, high: 0, medium: 0, low: 0, veryLow: 0, total: 0 };
+    weekMap[row.week][key] += 1;
+    weekMap[row.week].total += 1;
+  });
+
+  var departmentDistribution = Object.keys(departmentMap).map(function (key) { return departmentMap[key]; }).sort(function (left, right) {
+    return right.score - left.score || left.department.localeCompare(right.department);
+  });
+  var trend = Object.keys(weekMap).map(function (key) { return weekMap[key]; }).sort(function (left, right) { return left.week.localeCompare(right.week); });
+  var overdueByRisk = ['High', 'Medium', 'Low', 'Very Low'].map(function (level) {
+    return { riskLevel: level, count: rows.filter(function (row) { return row.overdueCap && row.riskLevel === level; }).length };
+  });
+  var high = rows.filter(function (row) { return row.riskLevel === 'High'; }).length;
+  var medium = rows.filter(function (row) { return row.riskLevel === 'Medium'; }).length;
+  var low = rows.filter(function (row) { return row.riskLevel === 'Low'; }).length;
+  var veryLow = rows.filter(function (row) { return row.riskLevel === 'Very Low'; }).length;
+
+  return {
+    filters: { dateRange: dateRange, department: departmentFilter, inspection: inspectionFilter, risk: riskFilter },
+    rows: rows,
+    totalFindings: rows.length,
+    high: high,
+    medium: medium,
+    low: low,
+    veryLow: veryLow,
+    overdueCaps: rows.filter(function (row) { return row.overdueCap; }).length,
+    matrix: matrix,
+    trend: trend,
+    topRiskyAreas: departmentDistribution.slice(0, 5),
+    departmentDistribution: departmentDistribution,
+    overdueByRisk: overdueByRisk,
+    recentHighRiskFindings: rows.filter(function (row) { return row.riskLevel === 'High'; }).slice().sort(function (left, right) {
+      return (right.issuedDate || '').localeCompare(left.issuedDate || '') || left.id.localeCompare(right.id);
+    }).slice(0, 6),
+    availableDepartments: Array.from(new Set(findings.map(function (finding) {
+      var audit = auditFor(finding.auditId);
+      return finding.department || (audit && audit.domain) || 'Unassigned';
+    }))).sort(),
+    availableInspections: audits.map(function (audit) { return { id: audit.id, label: audit.ref || audit.type || audit.id }; }).sort(function (left, right) { return left.id.localeCompare(right.id); })
+  };
+}
+
+function managerRiskCsvCell(value) {
+  return '"' + String(value === null || value === undefined ? '' : value).replace(/"/g, '""') + '"';
+}
+
+function managerRiskCsv(projection) {
+  var columns = ['Finding ID', 'Organization', 'Inspection', 'Department', 'Issued Date', 'Due Date', 'Status', 'Risk Level', 'Likelihood', 'Impact', 'Risk Score', 'Overdue CAP'];
+  var rows = [columns].concat((projection && projection.rows ? projection.rows : []).map(function (row) {
+    return [row.id, row.organization, row.inspectionId, row.department, row.issuedDate, row.dueDate, row.status, row.riskLevel, row.likelihood, row.impact, row.riskScore, row.overdueCap ? 'Yes' : 'No'];
+  }));
+  return '\uFEFF' + rows.map(function (row) { return row.map(managerRiskCsvCell).join(','); }).join('\r\n');
+}
+
 function managerChecklistTimestamp() {
   return managerReportDecisionTimestamp();
 }

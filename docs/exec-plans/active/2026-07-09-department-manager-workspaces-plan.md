@@ -1178,7 +1178,7 @@ and push the current branch.
 - Produces: `managerRiskCsv(projection) -> string`.
 - Produces: `viewManagerRiskDashboard() -> string` and `manager-risk-*` actions.
 
-- [ ] **Step 1: Write the failing manager risk smoke test**
+- [x] **Step 1: Write the failing manager risk smoke test**
 
 ```js
 const projection = context.managerRiskProjection(context.freshState(), {
@@ -1195,13 +1195,13 @@ assert.match(context.viewManagerRiskDashboard(), /Risk Exposure Matrix/);
 Assert a no-match filter returns zero metrics and a visible empty state without
 throwing.
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run `node tests/manager-risk-dashboard-smoke.test.js`.
 
 Expected: FAIL because the role-specific projection and route do not exist.
 
-- [ ] **Step 3: Implement shared-state risk aggregation**
+- [x] **Step 3: Implement shared-state risk aggregation**
 
 Normalize finding risk into High, Medium, Low, and Very Low management buckets;
 calculate the 5x5 likelihood/impact matrix; aggregate by department and week;
@@ -1209,7 +1209,7 @@ count overdue CAPs by risk; and select recent high-risk findings. Keep the
 Oversight Health/risk indicator disclaimer and never mutate enforcement or
 closure state.
 
-- [ ] **Step 4: Render filters, compact charts, tables, and export**
+- [x] **Step 4: Render filters, compact charts, tables, and export**
 
 Render four filters, six KPI cards, findings-by-risk ring, trend, 5x5 matrix,
 top risky areas, department stacked distribution, overdue CAP summary, and
@@ -1217,7 +1217,7 @@ recent findings table. Use HTML/CSS and existing chart primitives; do not add a
 chart library or handcrafted SVG. Export a browser-side UTF-8 CSV rather than a
 toast-only action.
 
-- [ ] **Step 5: Verify GREEN and risk boundary regressions**
+- [x] **Step 5: Verify GREEN and risk boundary regressions**
 
 Run:
 
@@ -1232,7 +1232,7 @@ node tests/demo-boundary-smoke.test.js
 
 Expected: all exit 0.
 
-- [ ] **Step 6: Commit and push the Department Manager Risk Dashboard**
+- [x] **Step 6: Commit and push the Department Manager Risk Dashboard**
 
 Run `git diff --check`, stage only Task 8 files/hunks, inspect
 `git diff --cached`, commit with `feat: add department manager risk dashboard`,

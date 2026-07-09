@@ -15,6 +15,7 @@ vm.createContext(context);
   'js/checklists.js',
   'js/inspection.js',
   'js/reports.js',
+  'js/manager-workspaces.js',
   'js/work-items.js',
   'js/views.js'
 ].forEach((file) => {
@@ -70,9 +71,12 @@ context.state.role = 'manager';
 context.state.view = 'dashboard';
 context.state.params = {};
 html = context.viewManagerDashboard();
-assert.match(html, /Management Attention/);
-assert.match(html, /Management indicator only\. It does not trigger automatic enforcement, suspension or closure\./);
-assert.match(html, /class="ops-table"/);
+assert.match(html, /Department Manager Dashboard/);
+assert.match(html, /What needs attention\?/);
+assert.match(html, /Recent High-Risk Findings/);
+assert.match(html, /Upcoming Audits/);
+assert.match(html, /Management indicators only:/);
+assert.match(html, /class="manager-dashboard-table"/);
 
 context.state.role = 'leadInspector';
 context.state.view = 'lead-review';
