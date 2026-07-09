@@ -760,7 +760,7 @@ function viewRoleHome() {
       ],
       rows: [
         ['CAB-2026-001', 'Potential finding from Cabin Inspection checklist', 'Severity review pending', 'findings'],
-        ['AUD-2026-001', 'FlyNamibia Cabin Inspection', 'Team and checklist execution', 'calendar'],
+        ['AUD-2026-001', 'Fly Namibia Cabin Inspection', 'Team and checklist execution', 'calendar'],
         ['RPT-2026-004', 'Preliminary report package', 'Lead sign-off before Department Manager review', 'audit-reports']
       ]
     },
@@ -778,7 +778,7 @@ function viewRoleHome() {
       ],
       rows: [
         ['PLAN-2026-Q3', 'Quarterly surveillance plan', 'Check scope and budget rationale', 'planning'],
-        ['AUD-2026-001', 'FlyNamibia Cabin Inspection', 'Release candidate after approvals', 'planning'],
+        ['AUD-2026-001', 'Fly Namibia Cabin Inspection', 'Release candidate after approvals', 'planning'],
         ['RPT-2026-002', 'Final report package', 'GM review before ED approval', 'reports']
       ]
     },
@@ -797,7 +797,7 @@ function viewRoleHome() {
       rows: [
         ['PLAN-2026-Q3', 'Surveillance plan budget', 'Travel and inspector-day review', 'planning'],
         ['AUD-2026-006', 'Maintenance provider inspection', 'Budget rationale returned', 'planning'],
-        ['AUD-2026-001', 'FlyNamibia Cabin Inspection', 'Finance accepted for ED review', 'planning']
+        ['AUD-2026-001', 'Fly Namibia Cabin Inspection', 'Finance accepted for ED review', 'planning']
       ]
     },
     executiveDirector: {
@@ -1360,8 +1360,8 @@ var INSPECTOR_ASSIGNMENT_ROWS = [
     auditId: 'AUD-2026-001',
     title: 'Cabin Inspection',
     code: 'PR-2026-018',
-    organization: 'FlyNamibia',
-    location: 'FlyNamibia aircraft cabin / on-site inspection',
+    organization: 'Fly Namibia',
+    location: 'Fly Namibia aircraft cabin / on-site inspection',
     type: 'Cabin Safety',
     dates: '15 Jun 2026',
     status: 'in-progress',
@@ -1674,7 +1674,7 @@ function inspectorAssignmentRow(row) {
 
 function inspectorAssignmentFilterBar(ui) {
   var typeOptions = [['all', 'All Types'], ['Cabin Safety', 'Cabin Safety'], ['AVSEC', 'AVSEC'], ['Safety', 'Safety'], ['SMS', 'SMS'], ['Cargo', 'Cargo'], ['Security', 'Security'], ['Operations', 'Operations'], ['Training', 'Training']];
-  var orgOptions = [['all', 'All Organizations'], ['FlyNamibia', 'FlyNamibia'], ['SkyCargo Air', 'SkyCargo Air'], ['AirMove Ground', 'AirMove Ground'], ['BlueWings Airlines', 'BlueWings Airlines'], ['TransAir Cargo', 'TransAir Cargo'], ['JetFast Aviation', 'JetFast Aviation'], ['Global Handling', 'Global Handling']];
+  var orgOptions = [['all', 'All Organizations'], ['Fly Namibia', 'Fly Namibia'], ['SkyCargo Air', 'SkyCargo Air'], ['AirMove Ground', 'AirMove Ground'], ['BlueWings Airlines', 'BlueWings Airlines'], ['TransAir Cargo', 'TransAir Cargo'], ['JetFast Aviation', 'JetFast Aviation'], ['Global Handling', 'Global Handling']];
   return '<div class="inspector-assignment-filters responsive-filter-row">' +
     '<label class="inspector-assignment-filter inspector-assignment-filter--search"><span>Search audits</span><input type="search" data-field="inspector-assignment-query" value="' + esc(ui.query || '') + '" placeholder="Search audits..."><b aria-hidden="true">&#8981;</b></label>' +
     inspectorAssignmentSelect('Status', 'inspector-assignment-status', ui.status, [['all', 'All Status'], ['open', 'Open'], ['in-progress', 'In Progress'], ['completed', 'Completed'], ['overdue', 'Overdue']]) +
@@ -5512,12 +5512,12 @@ function leadAssignedAuditsUiState() {
 
 function leadAssignedAuditRows() {
   return [
-    { id: 'AUD-2025-045', detailAuditId: 'AUD-2026-001', operator: 'FlyNamibia (Pty) Ltd', department: 'OPS', departmentTone: 'info', auditType: 'Cabin Inspection', auditTypeKey: 'cabin-inspection', risk: 'High', riskTone: 'high', dates: ['15 Jun 2026', '15 Jun 2026'], status: 'In Progress', statusKey: 'in-progress', statusTone: 'info', progress: 75, dueDate: '15 Jun 2026', dueStage: 'Checklist Execution', stageKey: 'checklist-execution', dueKey: 'due-soon' },
+    { id: 'AUD-2025-045', detailAuditId: 'AUD-2026-001', operator: 'Fly Namibia', department: 'OPS', departmentTone: 'info', auditType: 'Cabin Inspection', auditTypeKey: 'cabin-inspection', risk: 'High', riskTone: 'high', dates: ['15 Jun 2026', '15 Jun 2026'], status: 'In Progress', statusKey: 'in-progress', statusTone: 'info', progress: 75, dueDate: '15 Jun 2026', dueStage: 'Checklist Execution', stageKey: 'checklist-execution', dueKey: 'due-soon' },
     { id: 'AUD-2025-038', detailAuditId: 'AUD-2026-005', operator: 'National Airways Corp', department: 'PEL', departmentTone: 'ok', auditType: 'Certification', auditTypeKey: 'certification', risk: 'Medium', riskTone: 'medium', dates: ['05 May 2025', '09 May 2025'], status: 'Draft Report', statusKey: 'draft-report', statusTone: 'draft', progress: 60, dueDate: '25 May 2025', dueStage: 'Preliminary Report', stageKey: 'preliminary-report', dueKey: 'due-soon' },
     { id: 'AUD-2025-031', detailAuditId: 'AUD-2026-005', operator: 'Skyline Aviation (Pty) Ltd', department: 'AIR', departmentTone: 'teal', auditType: 'Ramp Inspection', auditTypeKey: 'ramp-inspection', risk: 'High', riskTone: 'high', dates: ['28 Apr 2025', '30 Apr 2025'], status: 'Pending Approval', statusKey: 'pending-approval', statusTone: 'pending', progress: 90, dueDate: '22 May 2025', dueStage: 'Dept. Review', stageKey: 'department-review', dueKey: 'due-soon' },
     { id: 'AUD-2025-019', detailAuditId: 'AUD-2026-005', operator: 'Desert Air Maintenance', department: 'AIR', departmentTone: 'teal', auditType: 'Continued Airworthiness', auditTypeKey: 'continued-airworthiness', risk: 'Medium', riskTone: 'medium', dates: ['14 Apr 2025', '17 Apr 2025'], status: 'In Progress', statusKey: 'in-progress', statusTone: 'info', progress: 40, dueDate: '26 May 2025', dueStage: 'Evidence Review', stageKey: 'evidence-review', dueKey: 'due-soon' },
     { id: 'AUD-2025-012', detailAuditId: 'AUD-2026-005', operator: 'NamAir Connect', department: 'ANS', departmentTone: 'warn', auditType: 'Service Provider Audit', auditTypeKey: 'service-provider-audit', risk: 'Low', riskTone: 'low', dates: ['07 Apr 2025', '11 Apr 2025'], status: 'Draft Report', statusKey: 'draft-report', statusTone: 'draft', progress: 55, dueDate: '24 May 2025', dueStage: 'Preliminary Report', stageKey: 'preliminary-report', dueKey: 'due-soon' },
-    { id: 'AUD-2025-007', detailAuditId: 'AUD-2026-005', operator: 'FlyNamibia (Pty) Ltd', department: 'OPS', departmentTone: 'info', auditType: 'Regular Surveillance', auditTypeKey: 'regular-surveillance', risk: 'High', riskTone: 'high', dates: ['31 Mar 2025', '04 Apr 2025'], status: 'Overdue', statusKey: 'overdue', statusTone: 'overdue', progress: 80, dueDate: '15 May 2025', dueStage: 'Findings Review', stageKey: 'findings-review', dueKey: 'overdue' },
+    { id: 'AUD-2025-007', detailAuditId: 'AUD-2026-005', operator: 'Fly Namibia', department: 'OPS', departmentTone: 'info', auditType: 'Regular Surveillance', auditTypeKey: 'regular-surveillance', risk: 'High', riskTone: 'high', dates: ['31 Mar 2025', '04 Apr 2025'], status: 'Overdue', statusKey: 'overdue', statusTone: 'overdue', progress: 80, dueDate: '15 May 2025', dueStage: 'Findings Review', stageKey: 'findings-review', dueKey: 'overdue' },
     { id: 'AUD-2025-003', detailAuditId: 'AUD-2026-005', operator: 'Aero Taxi Services', department: 'OPS', departmentTone: 'info', auditType: 'Focused Inspection', auditTypeKey: 'focused-inspection', risk: 'Medium', riskTone: 'medium', dates: ['24 Mar 2025', '25 Mar 2025'], status: 'In Progress', statusKey: 'in-progress', statusTone: 'info', progress: 30, dueDate: '27 May 2025', dueStage: 'Evidence Review', stageKey: 'evidence-review', dueKey: 'due-soon' },
     { id: 'AUD-2025-001', detailAuditId: 'AUD-2026-005', operator: 'Aviation Training Academy', department: 'PEL', departmentTone: 'ok', auditType: 'Certification', auditTypeKey: 'certification', risk: 'Low', riskTone: 'low', dates: ['20 Mar 2025', '21 Mar 2025'], status: 'Pending Approval', statusKey: 'pending-approval', statusTone: 'pending', progress: 95, dueDate: '21 May 2025', dueStage: 'Final Review', stageKey: 'final-review', dueKey: 'due-soon' }
   ];
@@ -5783,9 +5783,9 @@ function viewLeadAssignmentWorkspace() {
       '<button class="btn" data-act="lead-assignment-preview-report">▣ View Preliminary Report</button>' +
     '</div>' +
     '<section class="lead-assignment-summary">' +
-      '<div><small>Organization</small><b>FlyNamibia</b><small>Organization Type</small><b>Airline</b></div>' +
+      '<div><small>Organization</small><b>Fly Namibia</b><small>Organization Type</small><b>Operator / Service Provider</b></div>' +
       '<div><small>Inspection Type</small><b>Cabin Inspection</b><small>Risk Category</small><span class="lead-risk-pill is-high">High</span></div>' +
-      '<div><small>Inspection Dates</small><b>▣ 15 Jun 2026</b><small>Location</small><b>FlyNamibia aircraft cabin / on-site inspection</b></div>' +
+      '<div><small>Inspection Dates</small><b>▣ 15 Jun 2026</b><small>Location</small><b>Fly Namibia aircraft cabin / on-site inspection</b></div>' +
       '<div><small>Planned By</small><b>Cabin Safety Oversight Department</b><small>Budget (Approved)</small><b>Demo only</b></div>' +
     '</section>' +
     leadAssignmentStepperHtml(ui) +
@@ -5906,7 +5906,7 @@ function viewLeadAssignmentQuestions() {
     '<section class="lead-assignment-strip">' +
       '<span class="lead-assignment-strip-icon">▣</span>' +
       '<div><small>Inspection</small><b>Cabin Inspection</b><p>AUD-2026-001</p></div>' +
-      '<div><small>Organization</small><b>FlyNamibia</b></div>' +
+      '<div><small>Organization</small><b>Fly Namibia</b></div>' +
       '<div><small>Inspection Dates</small><b>▣ 15 Jun 2026</b></div>' +
       '<div><small>Lead Inspector</small><b>John Lead Inspector</b></div>' +
       '<div><small>Status</small><span class="lead-assignment-status">' + esc(ui.releasedAt ? 'Released' : (ui.assignedAt ? 'Assignment Draft' : 'Planning')) + '</span></div>' +
@@ -6125,13 +6125,13 @@ function leadPreliminaryReportRows() {
     { id: 'PR-2026-012', inspection: 'Ground Handling Inspection', organization: 'Prime Handling', dates: '25 - 26 May 2026', status: 'submitted', updated: '26 May 2026 13:50', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 2, major: 1, observation: 1 } },
     { id: 'PR-2026-011', inspection: 'Wildlife Hazard Inspection', organization: 'GreenAir', dates: '21 - 22 May 2026', status: 'draft', updated: '22 May 2026 08:30', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 1, major: 0, observation: 2 } },
     { id: 'PR-2026-010', inspection: 'Maintenance Oversight Inspection', organization: 'West Air (Pty) Ltd', dates: '18 - 20 May 2026', status: 'submitted', updated: '21 May 2026 10:40', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 2, major: 2, observation: 2 } },
-    { id: 'PR-2026-009', inspection: 'Cabin Inspection', organization: 'FlyNamibia', dates: '14 - 16 May 2026', status: 'approved', updated: '17 May 2026 13:05', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 3, major: 1, observation: 4 } },
+    { id: 'PR-2026-009', inspection: 'Cabin Inspection', organization: 'Fly Namibia', dates: '14 - 16 May 2026', status: 'approved', updated: '17 May 2026 13:05', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 3, major: 1, observation: 4 } },
     { id: 'PR-2026-008', inspection: 'Cabin Safety Inspection', organization: 'National Airways Corp', dates: '10 - 12 May 2026', status: 'released', updated: '13 May 2026 12:35', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 1, major: 2, observation: 3 } },
     { id: 'PR-2026-007', inspection: 'Airport Security Inspection', organization: 'SkyCargo Air', dates: '6 - 8 May 2026', status: 'draft', updated: '9 May 2026 17:20', auditId: 'AUD-2026-005', period: 'may', findings: { critical: 6, major: 3, observation: 2 } },
     { id: 'PR-2026-006', inspection: 'Cargo Facility Inspection', organization: 'Metro Cargo', dates: '1 - 3 May 2026', status: 'submitted', updated: '4 May 2026 09:55', auditId: 'AUD-2026-005', period: 'may', findings: { critical: 4, major: 2, observation: 1 } },
     { id: 'PR-2026-005', inspection: 'Continuing Airworthiness Audit', organization: 'Desert Air Maintenance', dates: '27 - 29 Apr 2026', status: 'approved', updated: '30 Apr 2026 14:10', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 2, major: 2, observation: 3 } },
     { id: 'PR-2026-004', inspection: 'Fuel Safety Inspection', organization: 'BlueWings Airlines', dates: '22 - 24 Apr 2026', status: 'submitted', updated: '25 Apr 2026 10:10', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 3, major: 1, observation: 3 } },
-    { id: 'PR-2026-003', inspection: 'Training Records Audit', organization: 'FlyNamibia', dates: '17 - 19 Apr 2026', status: 'approved', updated: '20 Apr 2026 16:00', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 2, major: 1, observation: 4 } },
+    { id: 'PR-2026-003', inspection: 'Training Records Audit', organization: 'Fly Namibia', dates: '17 - 19 Apr 2026', status: 'approved', updated: '20 Apr 2026 16:00', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 2, major: 1, observation: 4 } },
     { id: 'PR-2026-002', inspection: 'Passenger Handling Inspection', organization: 'Prime Handling', dates: '10 - 12 Apr 2026', status: 'submitted', updated: '13 Apr 2026 11:25', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 2, major: 0, observation: 2 } },
     { id: 'PR-2026-001', inspection: 'Emergency Response Inspection', organization: 'JetFast Aviation', dates: '5 - 7 Apr 2026', status: 'released', updated: '8 Apr 2026 09:20', auditId: 'AUD-2026-005', period: 'apr', findings: { critical: 4, major: 1, observation: 3 } }
   ];
@@ -7785,7 +7785,7 @@ function serviceProviderReportUiState() {
 }
 
 function serviceProviderFinalReportMeta() {
-  var organization = ROLES.auditee.orgName || 'FlyNamibia';
+  var organization = ROLES.auditee.orgName || 'Fly Namibia';
   return {
     reportId: 'FR-2026-014',
     inspectionId: 'INS-2026-014',
@@ -8496,7 +8496,7 @@ function modalEvidence(f) {
     'Expected: proof the PBE serviceability issue was corrected and the cabin defect record was closed or controlled.</div>' +
     '<div class="form-row"><label>Evidence file <span class="req">*</span></label>' +
       '<div class="filebox" data-act="mock-pick" data-target="ev-file"><div class="filebox__icon">📄</div>' +
-      '<div>Click to select a file (mock)</div><div class="filebox__hint">Suggested: FlyNamibia_PBE_Serviceability_Record_CAB-2026-001.pdf</div></div>' +
+      '<div>Click to select a file (mock)</div><div class="filebox__hint">Suggested: Fly_Namibia_PBE_Serviceability_Record_CAB-2026-001.pdf</div></div>' +
       '<div id="ev-file"></div></div>' +
     '<div class="form-row"><label>Note to CAA (optional)</label>' +
       '<textarea id="ev-note" placeholder="Anything the inspector should know about this evidence."></textarea></div>';
@@ -8639,7 +8639,7 @@ function viewAuditWizard() {
         '<div class="form-row"><label>Mode</label><select id="wz-mode">' +
           ['On-site', 'Remote'].map(function (m) { return '<option' + (w.mode === m ? ' selected' : '') + '>' + esc(m) + '</option>'; }).join('') + '</select></div>' +
       '</div>' +
-      '<div class="form-row"><label>Location <span class="req">*</span></label><input type="text" id="wz-loc" value="' + esc(w.location || '') + '" placeholder="e.g. FlyNamibia HQ"></div>';
+      '<div class="form-row"><label>Location <span class="req">*</span></label><input type="text" id="wz-loc" value="' + esc(w.location || '') + '" placeholder="e.g. Fly Namibia HQ"></div>';
   } else if (step === 3) {
     bodyHtml =
       '<div class="form-row"><label>Lead inspector <span class="req">*</span></label><select id="wz-lead">' +

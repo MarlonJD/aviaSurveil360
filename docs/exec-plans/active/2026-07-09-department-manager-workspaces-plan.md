@@ -355,7 +355,7 @@ git status --short
 Expected: no whitespace errors; the unrelated untracked rollout plan remains
 untouched. Do not commit.
 
-- [ ] **Step 8: Commit and push the verified foundation**
+- [x] **Step 8: Commit and push the verified foundation**
 
 Stage only Task 1 files/hunks, inspect `git diff --cached`, commit with
 `feat: add department manager workspace foundation`, and push the current

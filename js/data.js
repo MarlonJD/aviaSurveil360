@@ -5,10 +5,11 @@
 
 /* Fixed "today" so Due Soon / Overdue math is deterministic in the demo. */
 var DEMO_TODAY = '2026-06-15';
+var CANONICAL_SERVICE_PROVIDER_NAME = 'Fly Namibia';
 
 /* Demo persistence boundary. Views must not call localStorage directly. */
 var DEMO_STORAGE_KEY = 'aviasurveil360:v2-demo-state';
-var DEMO_STATE_VERSION = 4;
+var DEMO_STATE_VERSION = 5;
 var DEMO_PERSISTENCE_CONFIG = {
   storageKey: DEMO_STORAGE_KEY,
   label: 'Frontend-only demo - saved in this browser',
@@ -51,8 +52,8 @@ var ROLES = {
                       question: 'Is the requested budget and resource justified?' },
   executiveDirector:{ key: 'executiveDirector',name: 'Executive Director', user: 'Ufuk Aslan',   initials: 'UA', color: '#9f1239',
                       question: 'What needs my final approval to proceed?' },
-  auditee:          { key: 'auditee',          name: 'Auditee',            user: 'FlyNamibia Quality Manager', initials: 'FN', color: '#1f9d62',
-                      org: 'ORG-XYZ', orgName: 'FlyNamibia',
+  auditee:          { key: 'auditee',          name: 'Auditee',            user: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager', initials: 'FN', color: '#1f9d62',
+                      org: 'ORG-XYZ', orgName: CANONICAL_SERVICE_PROVIDER_NAME,
                       question: 'What does the CAA need from my organization?' },
   admin:            { key: 'admin',            name: 'Admin Preview',      user: 'System Admin', initials: 'AP', color: '#c77700',
                       question: 'Which template or rule must be configured?' }
@@ -103,7 +104,7 @@ var V2_STATUS = {
 
 /* ----------------------------- Organizations ----------------------------- */
 var SEED_ORGS = [
-  { id: 'ORG-XYZ', name: 'FlyNamibia',        type: 'Air Operator (AOC)',        contact: 'FlyNamibia Quality Manager', repeatFindings: 1 },
+  { id: 'ORG-XYZ', name: CANONICAL_SERVICE_PROVIDER_NAME, type: 'Operator / Service Provider', contact: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager', repeatFindings: 1 },
   { id: 'ORG-SKY', name: 'SkyCargo Air',       type: 'Air Operator (AOC)',        contact: 'Mara Olsen',   repeatFindings: 2 },
   { id: 'ORG-BLU', name: 'BlueWing Aviation',  type: 'Approved Training Org',     contact: 'Dieter Kraus', repeatFindings: 0 }
 ];
@@ -250,8 +251,8 @@ var SEED_MANAGED_CHECKLISTS = [
 
 /* ----------------------------- Audits (2026 surveillance plan) ----------------------------- */
 var SEED_AUDITS = [
-  { id: 'AUD-2026-001', ref: '2026 Cabin Inspection - FlyNamibia', orgId: 'ORG-XYZ', type: 'Cabin Inspection', domain: 'Cabin Safety',
-    templateId: 'TPL-CABIN-2026', date: DEMO_TODAY, mode: 'On-site', location: 'FlyNamibia aircraft cabin / on-site inspection',
+  { id: 'AUD-2026-001', ref: '2026 Cabin Inspection - ' + CANONICAL_SERVICE_PROVIDER_NAME, orgId: 'ORG-XYZ', type: 'Cabin Inspection', domain: 'Cabin Safety',
+    templateId: 'TPL-CABIN-2026', date: DEMO_TODAY, mode: 'On-site', location: CANONICAL_SERVICE_PROVIDER_NAME + ' aircraft cabin / on-site inspection',
     lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer'], status: 'Scheduled', checklistStarted: false },
   { id: 'AUD-2026-002', ref: 'Q1 Ramp Inspection', orgId: 'ORG-SKY', type: 'Ramp Inspection', domain: 'Ramp',
     templateId: 'TPL-RAMP-2026', date: '2026-02-12', mode: 'On-site', location: 'Apron 4',
@@ -260,7 +261,7 @@ var SEED_AUDITS = [
     templateId: 'TPL-AWO-2026', date: '2026-03-20', mode: 'On-site', location: 'BlueWing Hangar 2',
     lead: 'Aylin Sezer', team: ['Aylin Sezer'], status: 'Report Issued', checklistStarted: true },
   { id: 'AUD-2026-004', ref: 'Cabin Safety Audit', orgId: 'ORG-XYZ', type: 'Follow-up Inspection', domain: 'Cabin Safety',
-    templateId: 'TPL-CAB-2026', date: '2026-04-15', mode: 'On-site', location: 'FlyNamibia Training Centre',
+    templateId: 'TPL-CAB-2026', date: '2026-04-15', mode: 'On-site', location: CANONICAL_SERVICE_PROVIDER_NAME + ' Training Centre',
     lead: 'Caner Yildiz', team: ['Caner Yildiz'], status: 'Closed', checklistStarted: true },
   { id: 'AUD-2026-005', ref: 'Security Audit', orgId: 'ORG-SKY', type: 'Special Inspection', domain: 'Security',
     templateId: 'TPL-SEC-2026', date: '2026-05-22', mode: 'On-site', location: 'SkyCargo Terminal',
@@ -280,6 +281,77 @@ var SEED_AUDITS = [
    The demo's hero finding (CAB-2026-001) is NOT seeded — the inspector
    creates it live from the checklist. These seed records give the
    dashboards realistic numbers. */
+var SEED_MANAGER_FINDINGS = [
+  {
+    id: 'CAB-2026-011', title: 'Emergency equipment serviceability record incomplete',
+    orgId: 'ORG-XYZ', auditId: 'AUD-2026-001', department: 'Cabin Safety', severity: 1,
+    reference: 'Configured reference CAB-EME-01 (demo)',
+    basis: 'Configured cabin inspection check recorded as Non-Compliant',
+    description: 'The sampled emergency equipment position did not have a complete serviceability record available for review.',
+    status: 'CAP_SUBMITTED', capRequired: true, evidenceRequired: true,
+    issuedDate: '2026-06-15', dueDate: '2026-06-19', closedDate: null,
+    closureType: null, responsiblePerson: CANONICAL_SERVICE_PROVIDER_NAME + ' Cabin Safety Manager',
+    cap: { rootCause: 'The equipment register and maintenance record were maintained in separate files.',
+           correctiveAction: 'Reconciled the sampled position against the current serviceability register.',
+           preventiveAction: 'Added a single register review before each cabin inspection.',
+           responsible: CANONICAL_SERVICE_PROVIDER_NAME + ' Cabin Safety Manager',
+           targetDate: '2026-06-18', submittedDate: '2026-06-17', status: 'Submitted' },
+    evidence: [],
+    commentsToAuditee: [ { author: 'Caner Yildiz', date: '2026-06-15', text: 'Submit the CAP and expected serviceability evidence for authorized review.' } ],
+    internalNotes: [ { author: 'Caner Yildiz', date: '2026-06-17', text: 'CAP received; evidence verification remains pending.' } ]
+  },
+  {
+    id: 'CAB-2026-012', title: 'Cabin crew training sample missing recurrent check evidence',
+    orgId: 'ORG-XYZ', auditId: 'AUD-2026-001', department: 'Cabin Safety', severity: 2,
+    reference: 'Configured reference CAB-TRG-02 (demo)',
+    basis: 'Configured training-record sample recorded as Non-Compliant',
+    description: 'One sampled cabin crew training record did not include the expected recurrent check evidence.',
+    status: 'EVIDENCE_REQUIRED', capRequired: true, evidenceRequired: true,
+    issuedDate: '2026-06-15', dueDate: '2026-06-24', closedDate: null,
+    closureType: null, responsiblePerson: CANONICAL_SERVICE_PROVIDER_NAME + ' Training Manager',
+    cap: { rootCause: 'A completed recurrent check was not linked to the central training record.',
+           correctiveAction: 'Linked the completed check to the sampled crew record.',
+           preventiveAction: 'Added a monthly exception review for unlinked checks.',
+           responsible: CANONICAL_SERVICE_PROVIDER_NAME + ' Training Manager',
+           targetDate: '2026-06-22', submittedDate: '2026-06-18', status: 'Accepted' },
+    evidence: [],
+    commentsToAuditee: [ { author: 'Aylin Sezer', date: '2026-06-19', text: 'CAP accepted. Upload the expected evidence; the finding remains open.' } ],
+    internalNotes: [ { author: 'Aylin Sezer', date: '2026-06-19', text: 'Verify the linked recurrent check before closure.' } ]
+  },
+  {
+    id: 'CAB-2026-013', title: 'Cabin defect follow-up owner not recorded',
+    orgId: 'ORG-XYZ', auditId: 'AUD-2026-001', department: 'Cabin Safety', severity: 3,
+    reference: 'Configured reference CAB-REC-03 (demo)',
+    basis: 'Configured cabin records check recorded as Non-Compliant',
+    description: 'The sampled cabin defect follow-up entry did not identify the responsible completion owner.',
+    status: 'WAITING_CAP', capRequired: true, evidenceRequired: true,
+    issuedDate: '2026-06-15', dueDate: '2026-06-27', closedDate: null,
+    closureType: null, responsiblePerson: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager',
+    cap: { rootCause: '', correctiveAction: '', preventiveAction: '', responsible: '',
+           targetDate: '', submittedDate: '', status: 'Not Submitted' },
+    evidence: [],
+    commentsToAuditee: [ { author: 'Caner Yildiz', date: '2026-06-15', text: 'Provide root cause, corrective action, preventive action, owner, and Target date.' } ],
+    internalNotes: []
+  },
+  {
+    id: 'CAB-2026-014', title: 'Cabin inspection document index improvement',
+    orgId: 'ORG-XYZ', auditId: 'AUD-2026-001', department: 'Cabin Safety', severity: 0,
+    reference: 'Configured reference CAB-DOC-04 (demo)',
+    basis: 'Configured cabin documentation check recorded as an Observation',
+    description: 'The document index could more clearly identify the latest approved cabin inspection record set.',
+    status: 'CLOSED', capRequired: false, evidenceRequired: false,
+    issuedDate: '2026-06-15', dueDate: '2026-06-20', closedDate: '2026-06-18',
+    closureType: 'authorized-no-cap', responsiblePerson: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager',
+    cap: { rootCause: 'Not required for this observation.', correctiveAction: 'Updated the index label.',
+           preventiveAction: 'Review index labels during document publication.',
+           responsible: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager',
+           targetDate: '2026-06-18', submittedDate: '2026-06-18', status: 'Not Required' },
+    evidence: [],
+    commentsToAuditee: [ { author: 'Caner Yildiz', date: '2026-06-18', text: 'Authorized observation closure recorded after the index update review.' } ],
+    internalNotes: [ { author: 'Mehmet Kaya', date: '2026-06-18', text: 'Authorized demo closure path reviewed and recorded.' } ]
+  }
+];
+
 var SEED_FINDINGS = [
   {
     id: 'OPS-2025-014', title: 'Pre-flight documentation filing incomplete',
@@ -359,7 +431,7 @@ var SEED_FINDINGS = [
     commentsToAuditee: [ { author: 'Caner Yildiz', date: '2026-05-10', text: 'Acknowledgement register accepted. Closed.' } ],
     internalNotes: []
   }
-];
+].concat(SEED_MANAGER_FINDINGS);
 
 var SEED_POTENTIAL_FINDINGS = [];
 
@@ -367,7 +439,7 @@ var SEED_AUDIT_REPORTS = [
   {
     id: 'RPT-AUD-2026-001',
     auditId: 'AUD-2026-001',
-    title: 'FlyNamibia Cabin Inspection Preliminary Report',
+    title: CANONICAL_SERVICE_PROVIDER_NAME + ' Cabin Inspection Preliminary Report',
     reportType: 'Preliminary Report',
     status: 'draft',
     approvalType: 'report',
@@ -386,7 +458,7 @@ var SEED_AUDIT_REPORTS = [
     ],
     attachments: ['PBE_Cabin_Position_Photo.jpg (mock filename only)', 'Cabin_Checklist_Response_Summary.pdf (mock)'],
     preliminaryNotice: {
-      recipient: 'FlyNamibia Quality Manager',
+      recipient: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager',
       capRequired: true,
       capRequiredCount: 1,
       status: 'Pending Department Manager review',
@@ -608,7 +680,7 @@ var SEED_REGULATORY_TRACES = [
     version: '2026 mock edition',
     clauseRef: 'CAB EMEQ PBE',
     effectiveDate: '2026-01-01',
-    applicabilityReason: 'FlyNamibia is an air operator with cabin emergency equipment installed.',
+    applicabilityReason: CANONICAL_SERVICE_PROVIDER_NAME + ' is an operator / service provider with cabin emergency equipment installed.',
     linkedChecklist: 'Cabin Inspection / EM EQ / PBE serviceability',
     linkedEvidence: 'PBE serviceability record; cabin defect rectification reference; inspector photo filename',
     approvalState: V2_STATUS.published,
@@ -719,7 +791,7 @@ var SEED_FIELD_PACKAGE = {
   checkedOutBy: 'Caner Yildiz',
   checkedOutAt: '2026-06-15T08:30:00',
   status: 'checked_out_demo',
-  packageName: 'FlyNamibia Cabin Inspection field package',
+  packageName: CANONICAL_SERVICE_PROVIDER_NAME + ' Cabin Inspection field package',
   localItems: ['Checklist questions', 'Expected evidence list', 'Draft field note', 'Mock attachment queue']
 };
 
@@ -834,7 +906,7 @@ var SEED_PLANNING_ITEMS = [
     id: 'PLAN-2026-Q3-CABIN',
     title: 'Q3 Cabin Inspection Surveillance Plan',
     department: 'Cabin Safety',
-    organization: 'FlyNamibia',
+    organization: CANONICAL_SERVICE_PROVIDER_NAME,
     organizationId: 'ORG-XYZ',
     purpose: 'Focused Q3 cabin inspection plan for emergency equipment serviceability oversight.',
     riskCategory: 'Emergency equipment serviceability',
@@ -884,7 +956,7 @@ var SEED_PLANNING_ITEMS = [
 
 /* ----------------------------- Notifications (in-UI only) ----------------------------- */
 var SEED_NOTIFICATIONS = [
-  { id: 'N1', role: 'inspector', icon: '📋', text: 'Cabin Inspection for FlyNamibia is scheduled for today.', time: 'Today 08:10', unread: true },
+  { id: 'N1', role: 'inspector', icon: '📋', text: 'Cabin Inspection for ' + CANONICAL_SERVICE_PROVIDER_NAME + ' is scheduled for today.', time: 'Today 08:10', unread: true },
   { id: 'N2', role: 'inspector', icon: '📎', text: 'Evidence submitted on RAMP-2026-005 is waiting for your review.', time: 'Yesterday', unread: true },
   { id: 'N3', role: 'manager',   icon: '⚠️', text: 'AWO-2026-003 (Level 2 Major) is now Overdue.', time: 'Today 07:55', unread: true },
   { id: 'N5', role: 'gm', icon: '🧾', text: 'Planning item PLAN-2026-Q3-CABIN is waiting for GM review.', time: 'Today 10:30', unread: true },
@@ -895,22 +967,60 @@ var SEED_NOTIFICATIONS = [
 var SEED_AUDIT_LOG = [
   { id: 'L1', time: '2026-06-08 14:22', actor: 'Mara Olsen (Auditee)', action: 'CAP submitted', target: 'SEC-2026-002', system: false },
   { id: 'L2', time: '2026-05-25 09:40', actor: 'Aylin Sezer (CAA Inspector)', action: 'Finding issued', target: 'SEC-2026-002', system: false },
-  { id: 'L3', time: '2026-05-10 11:05', actor: 'Caner Yildiz (CAA Inspector)', action: 'Finding closed (evidence accepted)', target: 'CAB-2026-004', system: false }
+  { id: 'L3', time: '2026-05-10 11:05', actor: 'Caner Yildiz (CAA Inspector)', action: 'Finding closed (evidence accepted)', target: 'CAB-2026-004', system: false },
+  { id: 'L4', time: '2026-06-18 15:30', actor: 'Mehmet Kaya (Department Manager)', action: 'Finding closed (authorized closure - no CAP required)', target: 'CAB-2026-014', system: false }
 ];
 
 /* ----------------------------- Users (Admin preview, read-only) ----------------------------- */
 var SEED_USERS = [
-  { name: 'Mehmet Kaya',  role: 'Department Manager', org: '—',            mfa: 'On',  status: 'Active' },
-  { name: 'Okan Demir',   role: 'General Manager',    org: '—',            mfa: 'On',  status: 'Active' },
-  { name: 'Derya Acar',   role: 'Finance Review',     org: '—',            mfa: 'On',  status: 'Active' },
-  { name: 'Ufuk Aslan',   role: 'Executive Director', org: '—',            mfa: 'On',  status: 'Active' },
-  { name: 'Caner Yildiz', role: 'Lead Inspector', org: '—',                mfa: 'On',  status: 'Active' },
-  { name: 'Aylin Sezer',  role: 'CAA Inspector',  org: '—',                mfa: 'On',  status: 'Active' },
-  { name: 'Mehmet Aydin', role: 'CAA Inspector',  org: '—',                mfa: 'On',  status: 'Active' },
-  { name: 'FlyNamibia Quality Manager', role: 'Auditee',        org: 'FlyNamibia',       mfa: 'n/a', status: 'Active' },
-  { name: 'Mara Olsen',   role: 'Auditee',        org: 'SkyCargo Air',      mfa: 'n/a', status: 'Active' },
-  { name: 'Dieter Kraus', role: 'Auditee',        org: 'BlueWing Aviation', mfa: 'n/a', status: 'Invited' },
-  { name: 'System Admin', role: 'Admin',          org: '—',                 mfa: 'On',  status: 'Active' }
+  { id: 'USR-MANAGER-MEHMET', name: 'Mehmet Kaya', role: 'Department Manager', roleKey: 'manager', department: 'Cabin Safety', email: 'mehmet.kaya@caa.demo', reportsToRole: 'gm', org: '—', mfa: 'On', status: 'Active' },
+  { id: 'USR-OKAN', name: 'Okan Demir', role: 'General Manager', roleKey: 'gm', department: 'Flight Safety', email: 'okan.demir@caa.demo', reportsToRole: 'executiveDirector', org: '—', mfa: 'On', status: 'Active' },
+  { id: 'USR-DERYA', name: 'Derya Acar', role: 'Finance Review', roleKey: 'finance', department: 'Finance', email: 'derya.acar@caa.demo', reportsToRole: 'gm', org: '—', mfa: 'On', status: 'Active' },
+  { id: 'USR-UFUK', name: 'Ufuk Aslan', role: 'Executive Director', roleKey: 'executiveDirector', department: 'Executive Office', email: 'ufuk.aslan@caa.demo', reportsToRole: null, org: '—', mfa: 'On', status: 'Active' },
+  { id: 'USR-CANER', name: 'Caner Yildiz', role: 'Lead Inspector', roleKey: 'leadInspector', department: 'Cabin Safety', email: 'caner.yildiz@caa.demo', reportsToRole: 'manager', org: '—', mfa: 'On', status: 'Active' },
+  { id: 'USR-AYLIN', name: 'Aylin Sezer', role: 'CAA Inspector', roleKey: 'inspector', department: 'Cabin Safety', email: 'aylin.sezer@caa.demo', reportsToRole: 'manager', org: '—', mfa: 'On', status: 'Active' },
+  { id: 'USR-MEHMET', name: 'Mehmet Aydin', role: 'CAA Inspector', roleKey: 'inspector', department: 'Cabin Safety', email: 'mehmet.aydin@caa.demo', reportsToRole: 'manager', org: '—', mfa: 'On', status: 'Active' },
+  { id: 'USR-SELIN', name: 'Selin Demir', role: 'CAA Inspector', roleKey: 'inspector', department: 'Cabin Safety', email: 'selin.demir@caa.demo', reportsToRole: 'manager', org: '—', mfa: 'On', status: 'Active' },
+  { id: 'USR-FLY-NAMIBIA-QM', name: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager', role: 'Auditee', roleKey: 'auditee', department: 'External', email: 'quality@flynamibia.demo', reportsToRole: null, org: CANONICAL_SERVICE_PROVIDER_NAME, mfa: 'n/a', status: 'Active' },
+  { id: 'USR-MARA', name: 'Mara Olsen', role: 'Auditee', roleKey: 'auditee', department: 'External', email: 'mara.olsen@skycargo.demo', reportsToRole: null, org: 'SkyCargo Air', mfa: 'n/a', status: 'Active' },
+  { id: 'USR-DIETER', name: 'Dieter Kraus', role: 'Auditee', roleKey: 'auditee', department: 'External', email: 'dieter.kraus@bluewing.demo', reportsToRole: null, org: 'BlueWing Aviation', mfa: 'n/a', status: 'Invited' },
+  { id: 'USR-ADMIN', name: 'System Admin', role: 'Admin', roleKey: 'admin', department: 'Administration', email: 'admin@caa.demo', reportsToRole: null, org: '—', mfa: 'On', status: 'Active' }
+];
+
+var SEED_INSPECTION_TEAMS = [
+  {
+    id: 'TEAM-AUD-2026-001',
+    auditId: 'AUD-2026-001',
+    department: 'Cabin Safety',
+    status: 'In Progress',
+    startDate: '2026-06-15',
+    endDate: '2026-06-20',
+    leadUserId: 'USR-CANER',
+    memberIds: ['USR-CANER', 'USR-AYLIN', 'USR-MEHMET', 'USR-SELIN'],
+    notes: 'Preliminary Report review target: 21 Jun 2026. Final Report submission target: 27 Jun 2026.',
+    attachments: [],
+    messages: [],
+    history: [{ at: '2026-06-10 09:00', actor: 'Mehmet Kaya', action: 'Inspection team confirmed' }]
+  }
+];
+
+var SEED_MANAGER_REPORTS = [
+  {
+    id: 'PR-2026-018', auditId: 'AUD-2026-001', organization: CANONICAL_SERVICE_PROVIDER_NAME,
+    reportType: 'Preliminary Report', version: '1.0', leadInspector: 'Caner Yildiz',
+    submittedAt: '2026-07-09 10:30', status: 'pending_manager', ownerRole: 'manager',
+    capRequired: true, managerComment: '', attachments: ['Cabin_Checklist_Response_Summary.pdf'],
+    summary: 'Preliminary Cabin Inspection report for authorized review.',
+    history: [{ at: '2026-07-09 10:30', actor: 'Caner Yildiz', action: 'Submitted to Department Manager' }]
+  },
+  {
+    id: 'FR-2026-018', auditId: 'AUD-2026-001', organization: CANONICAL_SERVICE_PROVIDER_NAME,
+    reportType: 'Final Report', version: '2.0', leadInspector: 'Caner Yildiz',
+    submittedAt: '2026-07-10 14:20', status: 'pending_manager', ownerRole: 'manager',
+    capRequired: true, managerComment: '', attachments: ['CAP_Evidence_Summary.pdf'],
+    summary: 'Final Cabin Inspection report prepared after the configured CAP/evidence stage.',
+    history: [{ at: '2026-07-10 14:20', actor: 'Caner Yildiz', action: 'Final Report submitted to Department Manager' }]
+  }
 ];
 
 /* ----------------------------- Working state ----------------------------- */
@@ -947,6 +1057,12 @@ function freshState() {
     sspNasp: deepClone(SEED_SSP_NASP),
     offlineOutbox: deepClone(SEED_OFFLINE_OUTBOX),
     planningItems: deepClone(SEED_PLANNING_ITEMS),
+    users: deepClone(SEED_USERS),
+    inspectionTeams: deepClone(SEED_INSPECTION_TEAMS),
+    managerReports: deepClone(SEED_MANAGER_REPORTS),
+    managerFindingsUi: { query: '', status: 'all', dateRange: 'all', selectedAuditId: 'AUD-2026-001', tab: 'overview' },
+    inspectionTeamUi: { query: '', department: 'all', status: 'all', dateRange: 'all', selectedAuditId: 'AUD-2026-001', tab: 'overview', openMenuAuditId: '' },
+    managerReportsUi: { query: '', reportType: 'all', status: 'all', selectedReportId: 'PR-2026-018', tab: 'summary', validationMessage: '' },
     offline: { simulated: false, lastMessage: null },
     selectedFilters: {
       findings: 'all',
@@ -1112,18 +1228,102 @@ function seedState() {
   state = freshState();
 }
 
+function canonicalizeLegacyProviderDisplay(value) {
+  if (typeof value !== 'string') return value;
+  return value
+    .replace(/FlyNamibia \(Pty\) Ltd/g, CANONICAL_SERVICE_PROVIDER_NAME)
+    .replace(/FlyNamibia/g, CANONICAL_SERVICE_PROVIDER_NAME);
+}
+
+function canonicalizeLegacyProviderFilename(value) {
+  if (typeof value !== 'string') return value;
+  return value
+    .replace(/FlyNamibia \(Pty\) Ltd/g, 'Fly_Namibia')
+    .replace(/FlyNamibia/g, 'Fly_Namibia');
+}
+
+function normalizeLegacyProviderFields(value, schema) {
+  if (Array.isArray(value)) {
+    value.forEach(function (item, index) {
+      value[index] = normalizeLegacyProviderFields(item, schema);
+    });
+    return value;
+  }
+  if (schema === 'display') return canonicalizeLegacyProviderDisplay(value);
+  if (schema === 'filename') return canonicalizeLegacyProviderFilename(value);
+  if (!value || typeof value !== 'object' || !schema || typeof schema !== 'object') return value;
+  Object.keys(schema).forEach(function (field) {
+    if (value[field] !== undefined && value[field] !== null) {
+      value[field] = normalizeLegacyProviderFields(value[field], schema[field]);
+    }
+  });
+  return value;
+}
+
+function normalizeLegacyProviderState(target) {
+  var schemas = {
+    orgs: { name: 'display', contact: 'display' },
+    audits: { ref: 'display', location: 'display', organization: 'display' },
+    auditReports: {
+      title: 'display', executiveSummaryDraft: 'display', observations: 'display', recommendations: 'display', attachments: 'filename',
+      preliminaryNotice: { recipient: 'display' }
+    },
+    managerReports: { organization: 'display', summary: 'display', attachments: 'filename' },
+    notifications: { text: 'display' },
+    findings: {
+      title: 'display', description: 'display', responsiblePerson: 'display', organization: 'display',
+      cap: { responsible: 'display' },
+      evidence: { fileName: 'filename' },
+      commentsToAuditee: { text: 'display' }
+    },
+    users: { name: 'display', org: 'display' },
+    planningItems: { organization: 'display' },
+    riskProfiles: { organization: 'display' },
+    regulatoryTraces: { applicabilityReason: 'display' },
+    inspectionPackage: { packageName: 'display', organization: 'display' },
+    fieldPackage: { packageName: 'display', organization: 'display' }
+  };
+  Object.keys(schemas).forEach(function (collection) {
+    if (target[collection] !== undefined && target[collection] !== null) {
+      target[collection] = normalizeLegacyProviderFields(target[collection], schemas[collection]);
+    }
+  });
+  return target;
+}
+
 function mergeDemoState(saved) {
   var base = freshState();
+  var managerFindingsUiDefault = deepClone(base.managerFindingsUi);
+  var inspectionTeamUiDefault = deepClone(base.inspectionTeamUi);
+  var managerReportsUiDefault = deepClone(base.managerReportsUi);
   if (!saved || typeof saved !== 'object') return base;
   Object.keys(saved).forEach(function (key) {
     if (key === 'ui') return;
     base[key] = saved[key];
   });
+  normalizeLegacyProviderState(base);
   base.ui = Object.assign({ notifOpen: false, menuOpen: false }, saved.ui || {});
   base.params = saved.params || {};
   base.selectedFilters = Object.assign(freshState().selectedFilters, saved.selectedFilters || {});
   base.offline = Object.assign({ simulated: false, lastMessage: null }, saved.offline || {});
   if (!Array.isArray(base.offlineOutbox)) base.offlineOutbox = [];
+  if (!Array.isArray(base.users)) base.users = deepClone(SEED_USERS);
+  if (!Array.isArray(base.inspectionTeams)) base.inspectionTeams = deepClone(SEED_INSPECTION_TEAMS);
+  if (!Array.isArray(base.managerReports)) base.managerReports = deepClone(SEED_MANAGER_REPORTS);
+  if (!Array.isArray(base.findings)) base.findings = deepClone(SEED_FINDINGS);
+  SEED_MANAGER_FINDINGS.forEach(function (seedFinding) {
+    var exists = base.findings.some(function (finding) { return finding.id === seedFinding.id; });
+    if (!exists) base.findings.push(deepClone(seedFinding));
+  });
+  if (!Array.isArray(base.auditLog)) base.auditLog = [];
+  SEED_AUDIT_LOG.forEach(function (seedLog) {
+    if (seedLog.id !== 'L4') return;
+    var exists = base.auditLog.some(function (log) { return log.id === seedLog.id; });
+    if (!exists) base.auditLog.push(deepClone(seedLog));
+  });
+  base.managerFindingsUi = Object.assign({}, managerFindingsUiDefault, saved.managerFindingsUi || {});
+  base.inspectionTeamUi = Object.assign({}, inspectionTeamUiDefault, saved.inspectionTeamUi || {});
+  base.managerReportsUi = Object.assign({}, managerReportsUiDefault, saved.managerReportsUi || {});
   if (!Array.isArray(base.potentialFindings)) base.potentialFindings = deepClone(SEED_POTENTIAL_FINDINGS);
   if (!Array.isArray(base.auditReports)) base.auditReports = deepClone(SEED_AUDIT_REPORTS);
   if (!Array.isArray(base.leadAuditReviews) || base.leadAuditReviews.length === 0) base.leadAuditReviews = deepClone(SEED_LEAD_AUDIT_REVIEWS);

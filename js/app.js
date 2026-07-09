@@ -499,7 +499,7 @@ function renderLogin() {
     var r = ROLES[k];
     return '<button class="role-card" data-act="role" data-role="' + k + '">' +
       '<div class="role-card__icon" style="background:' + r.color + '">' + ROLE_ICON[k] + '</div>' +
-      '<div><div class="role-card__name">' + esc(EXPERIENCE_LABEL[k] || r.name) + (k === 'auditee' ? ' — FlyNamibia' : '') + '</div>' +
+      '<div><div class="role-card__name">' + esc(EXPERIENCE_LABEL[k] || r.name) + (k === 'auditee' ? ' — Fly Namibia' : '') + '</div>' +
       '<div class="role-card__desc">' + esc(ROLE_DESC[k]) + '</div>' +
       '<div class="role-card__q">“' + esc(r.question) + '”</div></div></button>';
   }).join('');
@@ -509,7 +509,7 @@ function renderLogin() {
       '<div class="login__sub">Civil Aviation Authority surveillance &amp; oversight — clickable demo</div></div></div></div>' +
     '<div class="login__body"><div class="login__prompt">Choose a role to enter the demo. You can switch roles at any time from the top bar.</div>' +
       '<div class="role-grid">' + cards + '</div>' +
-      '<div class="login__foot">Demo scenario: a CAA Inspector raises <b>Finding CAB-2026-001</b> for FlyNamibia from a Cabin Inspection emergency equipment checklist. ' +
+      '<div class="login__foot">Demo scenario: a CAA Inspector raises <b>Finding CAB-2026-001</b> for Fly Namibia from a Cabin Inspection emergency equipment checklist. ' +
       'The auditee submits a CAP and evidence; CAP acceptance does not close the finding, accepted evidence is required; the manager dashboard updates. ' +
       'This is a mock prototype — no real authentication, backend, database or integrations. V2 demo actions are saved only in this browser.</div>' +
     '</div></div></div>';
@@ -637,7 +637,7 @@ function closeModal() {
 /* ----------------------------- Mock file pick ----------------------------- */
 function mockPick(targetId) {
   var defaults = {
-    'ev-file': { name: 'FlyNamibia_PBE_Serviceability_Record_CAB-2026-001.pdf', size: '1.6 MB' },
+    'ev-file': { name: 'Fly_Namibia_PBE_Serviceability_Record_CAB-2026-001.pdf', size: '1.6 MB' },
     'cap-file': { name: 'CAP_Supporting_Notes.pdf', size: '0.9 MB' }
   };
   var d = defaults[targetId] || { name: 'Document.pdf', size: '1.0 MB' };
@@ -1759,7 +1759,7 @@ function handleLeadAssignmentPreview() {
   var selected = typeof leadAssignmentSelectedQuestionIds === 'function' ? leadAssignmentSelectedQuestionIds(ui).length : 0;
   openModal(modalShell('Assignment preview',
     '<div class="lead-assigned-modal">' +
-      '<p><b>Cabin Inspection</b> checklist assignment draft for FlyNamibia</p>' +
+      '<p><b>Cabin Inspection</b> checklist assignment draft for Fly Namibia</p>' +
       '<div class="metaline">' +
         metaItem('Assignee', ui.assignee) +
         metaItem('Selected questions', String(selected)) +

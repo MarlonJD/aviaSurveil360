@@ -45,7 +45,7 @@ assert.match(html, /My Assignments/);
 assert.match(html, /Open Assignments/);
 assert.match(html, /Audit \/ Inspection/);
 assert.match(html, /Cabin Inspection/);
-assert.match(html, /FlyNamibia/);
+assert.match(html, /Fly Namibia/);
 assert.match(html, /Ramp Safety Inspection/);
 assert.match(html, /View Report/);
 assert.doesNotMatch(html, /My Inspections/);

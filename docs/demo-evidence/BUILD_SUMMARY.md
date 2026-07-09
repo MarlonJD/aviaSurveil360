@@ -70,7 +70,7 @@ Experience details:
 2. **CAA Inspector** — Inspector Workspace, My Inspections home, audit
    execution, checklist runner, findings, CAP/evidence review, and draft report
    follow-up.
-3. **Auditee (FlyNamibia)** — Service Provider Portal for own findings, CAP
+3. **Auditee (Fly Namibia)** — Service Provider Portal for own findings, CAP
    submission, evidence filename submission, CAA-visible comments, and closure
    status.
 4. **Admin Preview** — templates, users, settings, audit log, and regulatory
@@ -123,16 +123,16 @@ messages, and audit log.
 
 The primary first-run story is now workbook-derived Cabin Inspection demo data:
 
-1. CAA Manager sees the `2026 Cabin Inspection - FlyNamibia` plan.
-2. CAA Inspector opens the FlyNamibia Cabin Inspection and runs the
+1. CAA Manager sees the `2026 Cabin Inspection - Fly Namibia` plan.
+2. CAA Inspector opens the Fly Namibia Cabin Inspection and runs the
    `Cabin Inspection` checklist.
 3. Inspector marks the `EM EQ / PBE` checklist question `Non-Compliant`.
 4. Lead Inspector converts `PF-2026-001` into `Finding CAB-2026-001`.
-5. FlyNamibia submits root cause, corrective action, preventive action, target
+5. Fly Namibia submits root cause, corrective action, preventive action, target
    completion date, and mock evidence filenames.
 6. Lead Inspector accepts the CAP; the finding remains
    `CAP Accepted - Evidence Required`.
-7. FlyNamibia submits `FlyNamibia_PBE_Serviceability_Record_CAB-2026-001.pdf` as a mock
+7. Fly Namibia submits `Fly_Namibia_PBE_Serviceability_Record_CAB-2026-001.pdf` as a mock
    filename.
 8. Lead Inspector accepts evidence and the finding closes.
 
@@ -253,18 +253,18 @@ prototype check. Console warnings/errors were empty.
 Verified:
 
 - role-select copy names `Finding CAB-2026-001` and `Cabin Inspection`
-- audit calendar shows FlyNamibia `2026 Cabin Inspection - FlyNamibia` under `Cabin Safety`
+- audit calendar shows Fly Namibia `2026 Cabin Inspection - Fly Namibia` under `Cabin Safety`
 - checklist runner opens the `EM EQ / PBE` question by default and shows the
   workbook section profile
 - marking the PBE item `Non-Compliant` creates `PF-2026-001`
 - Lead Inspector sees the pending potential finding and converts it to
   `CAB-2026-001` with `Level 1 Critical`, risk category
   `Emergency Preparedness`, and finding type `Equipment`
-- FlyNamibia sees only its auditee portal data and submits CAP details
+- Fly Namibia sees only its auditee portal data and submits CAP details
 - accepting CAP does not close the finding; it moves to
   `CAP Accepted - Evidence Required`
-- FlyNamibia submits mock evidence filename
-  `FlyNamibia_PBE_Serviceability_Record_CAB-2026-001.pdf`
+- Fly Namibia submits mock evidence filename
+  `Fly_Namibia_PBE_Serviceability_Record_CAB-2026-001.pdf`
 - accepting evidence closes `CAB-2026-001`
 - Manager Dashboard shows `CAB-2026-001` as a recent closed scenario update,
   including CAP and evidence child rows
@@ -284,7 +284,7 @@ afterAcceptCap: EVIDENCE_REQUIRED
 afterSubmitEvidence: EVIDENCE_SUBMITTED
 afterAcceptEvidence: CLOSED
 managerDashboard: CAB-2026-001 visible as Closed with CAP/evidence rows
-mockEvidenceFilename: FlyNamibia_PBE_Serviceability_Record_CAB-2026-001.pdf
+mockEvidenceFilename: Fly_Namibia_PBE_Serviceability_Record_CAB-2026-001.pdf
 console errors/warnings: []
 browser preview: http://127.0.0.1:4173/index.html
 ```
@@ -418,7 +418,7 @@ Product guardrails verified:
   required before closure.
 - Evidence version history remains visible as preserved versions, not
   overwritten records.
-- Auditee users see only FlyNamibia portal data and do not see internal CAA
+- Auditee users see only Fly Namibia portal data and do not see internal CAA
   notes, other organizations, inspector workload, or internal risk scoring.
 - Oversight Health Index remains a management indicator only and does not
   trigger automatic enforcement, suspension, or closure.

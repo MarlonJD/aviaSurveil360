@@ -95,7 +95,7 @@ assert.doesNotMatch(html, /Draft Reports/);
 assert.match(html, /New Audit Assignment/);
 assert.match(html, /Search audits/);
 assert.match(html, /AUD-2025-045/);
-assert.match(html, /FlyNamibia \(Pty\) Ltd/);
+assert.match(html, /Fly Namibia/);
 assert.match(html, /Cabin Inspection/);
 assert.match(html, /Apply Filters/);
 assert.doesNotMatch(html, /Planning/);

@@ -69,7 +69,7 @@ Deneyim detayları:
 2. **CAA Inspector** — Inspector Workspace, My Inspections ana ekranı,
    denetim/checklist yürütme, bulgu açma, CAP/kanıt inceleme ve draft report
    takibi.
-3. **Auditee (FlyNamibia)** — Service Provider Portal; kendi bulguları, CAP
+3. **Auditee (Fly Namibia)** — Service Provider Portal; kendi bulguları, CAP
    gönderimi, kanıt dosya adı gönderimi, CAA’ye görünür yorumlar ve closure
    status.
 4. **Admin Preview** — şablonlar, kullanıcılar, ayarlar, audit log ve
@@ -121,17 +121,17 @@ Findings, CAP formu, kanıt formu/inceleme, rapor önizleme, admin şablon
 Ana ilk çalıştırma hikayesi artık workbook-derived Cabin Inspection demo
 verisine dayanır:
 
-1. CAA Manager, `2026 Cabin Inspection - FlyNamibia` planını görür.
-2. CAA Inspector, FlyNamibia Cabin Inspection denetimini açar ve
+1. CAA Manager, `2026 Cabin Inspection - Fly Namibia` planını görür.
+2. CAA Inspector, Fly Namibia Cabin Inspection denetimini açar ve
    `Cabin Inspection` checklist'ini yürütür.
 3. Inspector, `EM EQ / PBE` sorusunu `Non-Compliant` işaretler.
 4. Lead Inspector, `PF-2026-001` potential finding'ini
    `Finding CAB-2026-001` olarak dönüştürür.
-5. FlyNamibia root cause, corrective action, preventive action, target
+5. Fly Namibia root cause, corrective action, preventive action, target
    completion date ve mock evidence dosya adlarını gönderir.
 6. Lead Inspector CAP'i kabul eder; bulgu
    `CAP Accepted - Evidence Required` durumunda kalır.
-7. FlyNamibia `FlyNamibia_PBE_Serviceability_Record_CAB-2026-001.pdf` dosya adını mock
+7. Fly Namibia `Fly_Namibia_PBE_Serviceability_Record_CAB-2026-001.pdf` dosya adını mock
    evidence olarak gönderir.
 8. Lead Inspector evidence kabul eder ve bulgu kapanır.
 
@@ -251,20 +251,20 @@ lokal HTTP server kullanıldı. Console warning/error listesi boştu.
 Doğrulananlar:
 
 - role-select metni `Finding CAB-2026-001` ve `Cabin Inspection` gösteriyor
-- audit calendar, FlyNamibia için `Cabin Safety` altında
-  `2026 Cabin Inspection - FlyNamibia` gösteriyor
+- audit calendar, Fly Namibia için `Cabin Safety` altında
+  `2026 Cabin Inspection - Fly Namibia` gösteriyor
 - checklist runner varsayılan olarak `EM EQ / PBE` sorusunu açıyor ve workbook
   bölüm profilini gösteriyor
 - PBE satırını `Non-Compliant` işaretlemek `PF-2026-001` oluşturuyor
 - Lead Inspector pending potential finding'i görüyor ve `Level 1 Critical`,
   `Emergency Preparedness`, `Equipment` alanlarıyla `CAB-2026-001` bulgusuna
   dönüştürüyor
-- FlyNamibia yalnızca kendi auditee portal verisini görüyor ve CAP detaylarını
+- Fly Namibia yalnızca kendi auditee portal verisini görüyor ve CAP detaylarını
   gönderiyor
 - CAP kabulü bulguyu kapatmıyor; durum
   `CAP Accepted - Evidence Required` oluyor
-- FlyNamibia mock evidence dosya adı olarak
-  `FlyNamibia_PBE_Serviceability_Record_CAB-2026-001.pdf` gönderiyor
+- Fly Namibia mock evidence dosya adı olarak
+  `Fly_Namibia_PBE_Serviceability_Record_CAB-2026-001.pdf` gönderiyor
 - evidence kabulü `CAB-2026-001` bulgusunu kapatıyor
 - Manager Dashboard, `CAB-2026-001` bulgusunu CAP/evidence alt satırlarıyla
   birlikte yakın zamanda kapanmış scenario update olarak gösteriyor
@@ -284,7 +284,7 @@ afterAcceptCap: EVIDENCE_REQUIRED
 afterSubmitEvidence: EVIDENCE_SUBMITTED
 afterAcceptEvidence: CLOSED
 managerDashboard: CAB-2026-001 visible as Closed with CAP/evidence rows
-mockEvidenceFilename: FlyNamibia_PBE_Serviceability_Record_CAB-2026-001.pdf
+mockEvidenceFilename: Fly_Namibia_PBE_Serviceability_Record_CAB-2026-001.pdf
 console errors/warnings: []
 browser preview: http://127.0.0.1:4173/index.html
 ```
@@ -419,7 +419,7 @@ Doğrulanan ürün guardrail'leri:
   evidence gerektiğini açıkça söyler.
 - Evidence version history korunur; eski evidence kayıtları konsept olarak
   overwrite edilmez.
-- Auditee kullanıcıları yalnızca FlyNamibia portal verisini görür; Internal
+- Auditee kullanıcıları yalnızca Fly Namibia portal verisini görür; Internal
   CAA Note, başka kuruluşlar, inspector workload veya internal risk scoring
   görmez.
 - Oversight Health Index yalnızca yönetim göstergesidir; otomatik enforcement,

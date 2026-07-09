@@ -54,7 +54,7 @@ assert.match(assignedAuditHeader[1], /<th>Progress <span>/);
 assert.doesNotMatch(assignedAuditHeader[1], /Status/);
 assert.doesNotMatch(assignedAuditHeader[1], /Next Due Date/);
 assert.match(html, /AUD-2025-045/);
-assert.match(html, /FlyNamibia \(Pty\) Ltd/);
+assert.match(html, /Fly Namibia/);
 assert.match(html, /Cabin Inspection/);
 assert.doesNotMatch(html, /28 May 2025/);
 assert.doesNotMatch(html, /Findings Review/);
@@ -78,7 +78,7 @@ context.state.params = { auditId: 'AUD-2026-001' };
 html = context.viewLeadAssignmentWorkspace();
 
 assert.match(html, /Cabin Inspection/);
-assert.match(html, /FlyNamibia/);
+assert.match(html, /Fly Namibia/);
 assert.match(html, /Assignment Overview/);
 assert.match(html, /Planning[\s\S]*Completed/);
 assert.match(html, /Approval[\s\S]*Completed/);
@@ -237,7 +237,7 @@ assert.match(html, /Submitted findings and comments/);
 assert.match(html, /Access control log gaps at cargo gate/);
 assert.match(html, /Submit Preliminary Report/);
 assert.match(html, /Report Approval Queue/);
-assert.match(html, /FlyNamibia Cabin Inspection Preliminary Report/);
+assert.match(html, /Fly Namibia Cabin Inspection Preliminary Report/);
 assert.match(html, /CAP due 24 Jun 2026/);
 
 console.log('lead-inspector-workspace-smoke: ok');

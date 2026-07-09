@@ -141,7 +141,7 @@ assert.match(html, /Inspection Dates/);
 assert.match(html, /Due Date/);
 assert.match(html, /Cabin Inspection/);
 assert.match(html, /PR-2026-018/);
-assert.match(html, /FlyNamibia/);
+assert.match(html, /Fly Namibia/);
 assert.match(html, /Ramp Safety Inspection/);
 assert.match(html, /SMS Audit/);
 assert.match(html, /Dangerous Goods Inspection/);
