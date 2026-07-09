@@ -463,6 +463,336 @@ function addManagerCapUpdate(target, capId, text, actor) {
   return { ok: true, message: 'CAP update added.', cap: managerCapById(target, capId) };
 }
 
+function managerChecklistTimestamp() {
+  return managerReportDecisionTimestamp();
+}
+
+function managerChecklistHistory(item, actor, action) {
+  if (!Array.isArray(item.history)) item.history = [];
+  item.history.push({ at: managerChecklistTimestamp(), actor: actor || 'Department Manager', action: action });
+}
+
+function managerChecklistSlug(value) {
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 28) || 'PACKAGE';
+}
+
+function managerChecklistUniqueId(items, prefix) {
+  var next = items.length + 1;
+  var id = prefix + String(next).padStart(3, '0');
+  while (items.some(function (item) { return item.id === id; })) {
+    next += 1;
+    id = prefix + String(next).padStart(3, '0');
+  }
+  return id;
+}
+
+function managerChecklistPackageById(target, packageId) {
+  var s = target || state;
+  return (s.managedChecklists || []).filter(function (item) { return item.id === packageId; })[0] || null;
+}
+
+function ensureManagerChecklistPackageShape(target, item) {
+  if (!item.owner) item.owner = 'Department Manager';
+  if (!item.effectiveDate) item.effectiveDate = DEMO_TODAY;
+  if (!item.status) item.status = item.publishedVersion ? 'Published' : 'Draft';
+  if (!item.version) item.version = item.publishedVersion || '0.1';
+  if (!Array.isArray(item.attachments)) item.attachments = [];
+  if (!Array.isArray(item.history)) item.history = [];
+  if (!Array.isArray(item.versions)) item.versions = [];
+  if (!Array.isArray(item.draftQuestionIds)) item.draftQuestionIds = [];
+  if (!Array.isArray(item.sections) || !item.sections.length) {
+    var version = item.versions.filter(function (candidate) { return candidate.version === item.publishedVersion; })[0] || item.versions[0] || null;
+    item.sections = [{
+      id: item.id + '-SEC-GENERAL',
+      name: 'General',
+      order: 1,
+      questionIds: version && Array.isArray(version.questionIds) ? version.questionIds.slice() : []
+    }];
+  }
+  item.sections.forEach(function (section, index) {
+    if (!section.id) section.id = item.id + '-SEC-' + String(index + 1).padStart(2, '0');
+    if (!section.name) section.name = 'Section ' + (index + 1);
+    section.order = index + 1;
+    if (!Array.isArray(section.questionIds)) section.questionIds = [];
+  });
+  return item;
+}
+
+function managerChecklistPackages(target, filters) {
+  var s = target || state;
+  if (!Array.isArray(s.managedChecklists)) s.managedChecklists = [];
+  var status = filters && filters.status ? filters.status : 'all';
+  return s.managedChecklists.map(function (item) {
+    return ensureManagerChecklistPackageShape(s, item);
+  }).filter(function (item) {
+    if (status === 'Active') return item.status !== 'Archived';
+    if (status === 'Archived') return item.status === 'Archived';
+    if (status === 'Draft') return item.status === 'Draft';
+    if (status === 'Published') return item.status === 'Published';
+    return true;
+  });
+}
+
+function managerChecklistQuestionById(target, questionId) {
+  var s = target || state;
+  return (s.questionBank || []).filter(function (question) { return question.id === questionId; })[0] || null;
+}
+
+function managerChecklistEnsureDraft(item, actor) {
+  if (item.status === 'Archived') return { ok: false, message: 'Archived packages cannot be edited.', package: item };
+  if (item.status !== 'Draft') {
+    var max = (item.versions || []).reduce(function (value, version) {
+      return Math.max(value, Number.parseFloat(version.version) || 0);
+    }, Number.parseFloat(item.version) || 0);
+    item.version = (max + 0.1).toFixed(1);
+    item.status = 'Draft';
+    item.draftQuestionIds = [];
+    managerChecklistHistory(item, actor, 'Draft version ' + item.version + ' created from published package');
+  }
+  return { ok: true, message: 'Draft ready.', package: item };
+}
+
+function createManagerChecklistPackage(target, name, department, actor) {
+  var s = target || state;
+  var cleanName = String(name || '').trim();
+  if (!cleanName) return { ok: false, message: 'Package name is required.', package: null };
+  if (managerChecklistPackages(s).some(function (item) { return item.name.toLowerCase() === cleanName.toLowerCase(); })) {
+    return { ok: false, message: 'A package with this name already exists.', package: null };
+  }
+  var idBase = 'MGR-CL-' + managerChecklistSlug(cleanName);
+  var id = idBase;
+  var suffix = 2;
+  while (managerChecklistPackageById(s, id)) { id = idBase + '-' + suffix; suffix += 1; }
+  var item = {
+    id: id,
+    name: cleanName,
+    department: String(department || 'Cabin Safety').trim() || 'Cabin Safety',
+    inspectionType: 'Department Managed',
+    owner: actor || 'Department Manager',
+    effectiveDate: DEMO_TODAY,
+    status: 'Draft',
+    version: '0.1',
+    publishedVersion: '',
+    attachments: [],
+    history: [],
+    draftQuestionIds: [],
+    sections: [{ id: id + '-SEC-01', name: 'General', order: 1, questionIds: [] }],
+    versions: []
+  };
+  managerChecklistHistory(item, actor, 'Checklist package created');
+  s.managedChecklists.push(item);
+  return { ok: true, message: 'Checklist package created.', package: item };
+}
+
+function duplicateManagerChecklistPackage(target, packageId, actor) {
+  var s = target || state;
+  var source = managerChecklistPackageById(s, packageId);
+  if (!source) return { ok: false, message: 'Checklist package not found.', package: null };
+  ensureManagerChecklistPackageShape(s, source);
+  var name = source.name + ' Copy';
+  var suffix = 2;
+  while (managerChecklistPackages(s).some(function (item) { return item.name.toLowerCase() === name.toLowerCase(); })) {
+    name = source.name + ' Copy ' + suffix;
+    suffix += 1;
+  }
+  var created = createManagerChecklistPackage(s, name, source.department, actor);
+  if (!created.ok) return created;
+  var item = created.package;
+  item.inspectionType = source.inspectionType;
+  item.version = source.version || source.publishedVersion || '1.0';
+  item.sections = deepClone(source.sections).map(function (section, index) {
+    return {
+      id: item.id + '-SEC-' + String(index + 1).padStart(2, '0'),
+      name: section.name,
+      order: index + 1,
+      questionIds: (section.questionIds || []).slice()
+    };
+  });
+  item.attachments = (source.attachments || []).slice();
+  managerChecklistHistory(item, actor, 'Package duplicated from ' + source.id);
+  return { ok: true, message: 'Checklist package duplicated.', package: item };
+}
+
+function archiveManagerChecklistPackage(target, packageId, actor) {
+  var item = managerChecklistPackageById(target, packageId);
+  if (!item) return { ok: false, message: 'Checklist package not found.', package: null };
+  item.status = 'Archived';
+  managerChecklistHistory(item, actor, 'Checklist package archived');
+  return { ok: true, message: 'Checklist package archived.', package: item };
+}
+
+function publishManagerChecklistVersion(target, packageId, actor) {
+  var item = managerChecklistPackageById(target, packageId);
+  if (!item) return { ok: false, message: 'Checklist package not found.', package: null, version: null };
+  ensureManagerChecklistPackageShape(target, item);
+  if (item.status === 'Archived') return { ok: false, message: 'Archived packages cannot be published.', package: item, version: null };
+  var max = item.versions.reduce(function (value, version) {
+    return Math.max(value, Number.parseFloat(version.version) || 0);
+  }, Number.parseFloat(item.version) || 0);
+  var versionNumber = item.status === 'Draft' && item.version && Number.parseFloat(item.version) > max
+    ? item.version
+    : (max + 0.1).toFixed(1);
+  item.versions.forEach(function (version) {
+    if (version.status === 'published_active') version.status = 'archived';
+  });
+  var version = {
+    id: item.id + '-v' + versionNumber,
+    version: versionNumber,
+    status: 'published_active',
+    approvalType: 'checklist',
+    createdBy: actor || 'Department Manager',
+    createdDate: DEMO_TODAY,
+    changeReason: 'Published from the Department Manager browser-local checklist workspace.',
+    questionIds: item.sections.reduce(function (ids, section) { return ids.concat(section.questionIds || []); }, []),
+    sections: deepClone(item.sections),
+    approval: { chain: [], currentIndex: 0, outcome: 'approved', returnPolicy: 'configured_role', history: [{ actor: actor || 'Department Manager', role: 'manager', action: 'published', date: managerChecklistTimestamp(), comment: 'Demo version published.' }] }
+  };
+  item.versions.push(version);
+  item.version = versionNumber;
+  item.publishedVersion = versionNumber;
+  item.status = 'Published';
+  item.effectiveDate = DEMO_TODAY;
+  item.draftQuestionIds = [];
+  managerChecklistHistory(item, actor, 'Version ' + versionNumber + ' published');
+  return { ok: true, message: 'Checklist version published.', package: item, version: version };
+}
+
+function addManagerChecklistSection(target, packageId, name, actor) {
+  var item = managerChecklistPackageById(target, packageId);
+  if (!item) return { ok: false, message: 'Checklist package not found.', package: null, section: null };
+  ensureManagerChecklistPackageShape(target, item);
+  var cleanName = String(name || '').trim();
+  if (!cleanName) return { ok: false, message: 'Section name is required.', package: item, section: null };
+  if (item.sections.some(function (section) { return section.name.toLowerCase() === cleanName.toLowerCase(); })) {
+    return { ok: false, message: 'A section with this name already exists.', package: item, section: null };
+  }
+  var draft = managerChecklistEnsureDraft(item, actor);
+  if (!draft.ok) return { ok: false, message: draft.message, package: item, section: null };
+  var section = { id: managerChecklistUniqueId(item.sections, item.id + '-SEC-'), name: cleanName, order: item.sections.length + 1, questionIds: [] };
+  item.sections.push(section);
+  managerChecklistHistory(item, actor, 'Section added: ' + cleanName);
+  return { ok: true, message: 'Checklist section added.', package: item, section: section };
+}
+
+function removeManagerChecklistSection(target, packageId, sectionId, actor) {
+  var item = managerChecklistPackageById(target, packageId);
+  if (!item) return { ok: false, message: 'Checklist package not found.', package: null };
+  ensureManagerChecklistPackageShape(target, item);
+  if (item.sections.length <= 1) return { ok: false, message: 'The last section cannot be removed.', package: item };
+  var section = item.sections.filter(function (candidate) { return candidate.id === sectionId; })[0] || null;
+  if (!section) return { ok: false, message: 'Checklist section not found.', package: item };
+  var draft = managerChecklistEnsureDraft(item, actor);
+  if (!draft.ok) return draft;
+  item.sections = item.sections.filter(function (candidate) { return candidate.id !== sectionId; });
+  item.sections.forEach(function (candidate, index) { candidate.order = index + 1; });
+  managerChecklistHistory(item, actor, 'Section removed: ' + section.name);
+  return { ok: true, message: 'Checklist section removed.', package: item };
+}
+
+function moveManagerChecklistSection(target, packageId, sectionId, direction, actor) {
+  var item = managerChecklistPackageById(target, packageId);
+  if (!item) return { ok: false, message: 'Checklist package not found.', package: null };
+  ensureManagerChecklistPackageShape(target, item);
+  var index = item.sections.findIndex(function (section) { return section.id === sectionId; });
+  if (index < 0) return { ok: false, message: 'Checklist section not found.', package: item };
+  var next = direction === 'up' ? index - 1 : index + 1;
+  if (next < 0 || next >= item.sections.length) return { ok: false, message: 'Section is already at that boundary.', package: item };
+  var draft = managerChecklistEnsureDraft(item, actor);
+  if (!draft.ok) return draft;
+  var swap = item.sections[next];
+  item.sections[next] = item.sections[index];
+  item.sections[index] = swap;
+  item.sections.forEach(function (section, order) { section.order = order + 1; });
+  managerChecklistHistory(item, actor, 'Section reordered: ' + sectionId + ' ' + direction);
+  return { ok: true, message: 'Checklist section reordered.', package: item };
+}
+
+function managerChecklistRisk(likelihood, impact) {
+  var likelihoodScores = { Rare: 1, Unlikely: 2, Possible: 3, Likely: 4, 'Almost Certain': 5 };
+  var impactScores = { Insignificant: 1, Minor: 2, Moderate: 3, Major: 4, Catastrophic: 5 };
+  var score = (likelihoodScores[likelihood] || 1) * (impactScores[impact] || 1);
+  return { score: score, level: score >= 15 ? 'Critical' : (score >= 10 ? 'High' : (score >= 5 ? 'Medium' : 'Low')) };
+}
+
+function saveManagerChecklistQuestion(target, packageId, sectionId, payload, actor) {
+  var s = target || state;
+  var item = managerChecklistPackageById(s, packageId);
+  if (!item) return { ok: false, message: 'Checklist package not found.', package: null, question: null };
+  ensureManagerChecklistPackageShape(s, item);
+  var section = item.sections.filter(function (candidate) { return candidate.id === sectionId; })[0] || null;
+  if (!section) return { ok: false, message: 'Checklist section not found.', package: item, question: null };
+  var cleanText = String(payload && payload.text || '').trim();
+  var cleanReference = String(payload && payload.reference || '').trim();
+  if (!cleanText || !cleanReference) return { ok: false, message: 'Question text and configured reference are required.', package: item, question: null };
+  var draft = managerChecklistEnsureDraft(item, actor);
+  if (!draft.ok) return { ok: false, message: draft.message, package: item, question: null };
+  var question = payload.id ? managerChecklistQuestionById(s, payload.id) : null;
+  if (question && item.draftQuestionIds.indexOf(question.id) === -1) {
+    var draftId = managerChecklistUniqueId(s.questionBank || [], 'MGR-Q-');
+    var questionIndex = section.questionIds.indexOf(question.id);
+    question = Object.assign({}, deepClone(question), { id: draftId });
+    s.questionBank.push(question);
+    item.draftQuestionIds.push(draftId);
+    if (questionIndex >= 0) section.questionIds[questionIndex] = draftId;
+  }
+  if (!question) {
+    question = { id: managerChecklistUniqueId(s.questionBank || [], 'MGR-Q-') };
+    if (!Array.isArray(s.questionBank)) s.questionBank = [];
+    s.questionBank.push(question);
+    item.draftQuestionIds.push(question.id);
+    section.questionIds.push(question.id);
+  }
+  var risk = managerChecklistRisk(payload.likelihood, payload.impact);
+  Object.assign(question, {
+    title: cleanText.length > 64 ? cleanText.slice(0, 61) + '...' : cleanText,
+    text: cleanText,
+    reference: cleanReference,
+    regulationRef: cleanReference,
+    guidance: String(payload.guidance || '').trim(),
+    inspectorGuidance: String(payload.guidance || '').trim(),
+    evidenceMethods: Array.isArray(payload.evidenceMethods) ? payload.evidenceMethods.slice() : [],
+    likelihood: payload.likelihood || 'Rare',
+    impact: payload.impact || 'Insignificant',
+    riskScore: risk.score,
+    riskLevel: risk.level,
+    findingTypes: Array.isArray(payload.findingTypes) ? payload.findingTypes.slice() : [],
+    mandatory: !!payload.mandatory,
+    critical: !!payload.critical,
+    status: payload.status || 'Active',
+    department: item.department
+  });
+  managerChecklistHistory(item, actor, 'Question saved: ' + question.id);
+  return { ok: true, message: 'Checklist question saved.', package: item, question: question };
+}
+
+function duplicateManagerChecklistQuestion(target, packageId, sectionId, questionId, actor) {
+  var s = target || state;
+  var source = managerChecklistQuestionById(s, questionId);
+  if (!source) return { ok: false, message: 'Checklist question not found.', question: null };
+  var result = saveManagerChecklistQuestion(s, packageId, sectionId, {
+    text: source.text + ' (Copy)', reference: source.reference || source.regulationRef,
+    guidance: source.guidance || source.inspectorGuidance,
+    evidenceMethods: source.evidenceMethods || [], likelihood: source.likelihood,
+    impact: source.impact, findingTypes: source.findingTypes || [], mandatory: source.mandatory,
+    critical: source.critical, status: source.status
+  }, actor);
+  if (result.ok) managerChecklistHistory(result.package, actor, 'Question duplicated from ' + questionId + ': ' + result.question.id);
+  return result;
+}
+
+function removeManagerChecklistQuestion(target, packageId, sectionId, questionId, actor) {
+  var item = managerChecklistPackageById(target, packageId);
+  if (!item) return { ok: false, message: 'Checklist package not found.', package: null };
+  ensureManagerChecklistPackageShape(target, item);
+  var section = item.sections.filter(function (candidate) { return candidate.id === sectionId; })[0] || null;
+  if (!section || section.questionIds.indexOf(questionId) === -1) return { ok: false, message: 'Checklist question not found in this section.', package: item };
+  var draft = managerChecklistEnsureDraft(item, actor);
+  if (!draft.ok) return draft;
+  section.questionIds = section.questionIds.filter(function (id) { return id !== questionId; });
+  managerChecklistHistory(item, actor, 'Question removed: ' + questionId);
+  return { ok: true, message: 'Checklist question removed.', package: item };
+}
+
 function managerTeamByAuditId(target, auditId) {
   var s = ensureManagerWorkspaceState(target);
   return s.inspectionTeams.filter(function (team) { return team.auditId === auditId; })[0] || null;

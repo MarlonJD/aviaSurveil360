@@ -1302,6 +1302,128 @@ function viewManagerWorkspacePlaceholder(title, message) {
   return pageHead(title, message) + '<section class="manager-dashboard-panel manager-dashboard-placeholder"><div class="empty"><b>' + esc(title) + '</b><span>This route is reserved for the approved frontend-only manager workspace and is not a production service.</span></div></section>';
 }
 
+function managerChecklistUiState() {
+  if (!state.managerChecklistUi || typeof state.managerChecklistUi !== 'object') state.managerChecklistUi = {};
+  var ui = state.managerChecklistUi;
+  if (['Active', 'Draft', 'Published', 'Archived'].indexOf(ui.status) === -1) ui.status = 'Active';
+  if (typeof ui.selectedPackageId !== 'string') ui.selectedPackageId = '';
+  if (typeof ui.selectedSectionId !== 'string') ui.selectedSectionId = '';
+  if (typeof ui.selectedQuestionId !== 'string') ui.selectedQuestionId = '';
+  if (typeof ui.validationMessage !== 'string') ui.validationMessage = '';
+  return ui;
+}
+
+function managerChecklistStatusBadge(status) {
+  var tone = status === 'Published' ? 'ok' : (status === 'Draft' ? 'warn' : (status === 'Archived' ? 'neutral' : 'info'));
+  return demoBadge(status, tone);
+}
+
+function managerChecklistPackageRail(packages, selectedId, ui) {
+  var tabs = ['Active', 'Draft', 'Published', 'Archived'].map(function (status) {
+    return '<button class="' + (ui.status === status ? 'is-active' : '') + '" data-act="manager-checklist-filter" data-value="' + esc(status) + '">' + esc(status) + '</button>';
+  }).join('');
+  var rows = packages.length ? packages.map(function (item) {
+    var selected = item.id === selectedId;
+    var questionCount = item.sections.reduce(function (count, section) { return count + section.questionIds.length; }, 0);
+    return '<button class="manager-checklist-package' + (selected ? ' is-selected' : '') + '" data-act="manager-checklist-select" data-id="' + esc(item.id) + '"' + (selected ? ' aria-current="true"' : '') + '>' +
+      '<span>' + esc(item.name) + '</span><small>' + esc(item.department) + ' · ' + questionCount + ' questions</small><em>v' + esc(item.version) + ' · ' + esc(item.status) + '</em></button>';
+  }).join('') : '<div class="empty"><b>No packages</b><span>Create a package or change the status filter.</span></div>';
+  return '<aside class="manager-checklist-packages"><header><div><span>Department workspace</span><h2>Checklist Packages</h2></div><button class="btn btn--primary btn--sm" data-act="manager-checklist-create">Create Package</button></header><div class="manager-checklist-status-tabs" role="tablist" aria-label="Package status">' + tabs + '</div><div class="manager-checklist-package-list">' + rows + '</div></aside>';
+}
+
+function managerChecklistPackageInfo(item) {
+  var attachments = item.attachments.length ? item.attachments.map(function (filename) {
+    return '<li><span>📎</span><div><b>' + esc(filename) + '</b><small>Selected filename only · no file storage</small></div></li>';
+  }).join('') : '<li class="is-empty">No attachment filenames recorded.</li>';
+  var history = item.history.length ? item.history.slice().reverse().map(function (entry) {
+    return '<li><time>' + esc(entry.at) + '</time><div><b>' + esc(entry.action) + '</b><small>' + esc(entry.actor) + '</small></div></li>';
+  }).join('') : '<li class="is-empty">No package history recorded.</li>';
+  var versions = item.versions.length ? item.versions.slice().reverse().map(function (version) {
+    return '<li><div><b>Version ' + esc(version.version) + '</b><small>' + esc(version.createdDate || '—') + ' · ' + esc(version.createdBy || '—') + '</small></div><span>' + esc(String(version.status || '').replace(/_/g, ' ')) + '</span></li>';
+  }).join('') : '<li class="is-empty">No published versions yet.</li>';
+  return '<section class="manager-checklist-package-info"><div class="manager-checklist-section-title"><div><span>Selected package</span><h3>Package Information</h3></div>' + managerChecklistStatusBadge(item.status) + '</div>' +
+    '<dl><div><dt>Name</dt><dd>' + esc(item.name) + '</dd></div><div><dt>Department</dt><dd>' + esc(item.department) + '</dd></div><div><dt>Owner</dt><dd>' + esc(item.owner) + '</dd></div><div><dt>Inspection Type</dt><dd>' + esc(item.inspectionType) + '</dd></div><div><dt>Effective Date</dt><dd>' + esc(fmtDate(item.effectiveDate)) + '</dd></div><div><dt>Version</dt><dd>v' + esc(item.version) + '</dd></div></dl>' +
+    '<div class="manager-checklist-package-actions"><button class="btn btn--sm" data-act="manager-checklist-duplicate" data-id="' + esc(item.id) + '">Duplicate</button><button class="btn btn--sm" data-act="manager-checklist-archive" data-id="' + esc(item.id) + '"' + (item.status === 'Archived' ? ' disabled' : '') + '>Archive</button><button class="btn btn--primary btn--sm" data-act="manager-checklist-publish" data-id="' + esc(item.id) + '"' + (item.status === 'Archived' ? ' disabled' : '') + '>Publish New Version</button></div>' +
+    '<details><summary>Attachments</summary><ul class="manager-checklist-mini-list">' + attachments + '</ul><label class="manager-checklist-file">Add attachment filename<input id="manager-checklist-attachment" type="file"><button class="btn btn--sm" data-act="manager-checklist-attachment" data-id="' + esc(item.id) + '">Add Filename</button></label></details>' +
+    '<details><summary>Version History</summary><ul class="manager-checklist-mini-list">' + versions + '</ul></details>' +
+    '<details><summary>History</summary><ol class="manager-checklist-history">' + history + '</ol></details></section>';
+}
+
+function managerChecklistSections(item, ui) {
+  var sections = item.sections.map(function (section, index) {
+    var selected = section.id === ui.selectedSectionId;
+    return '<li class="' + (selected ? 'is-selected' : '') + '"><button data-act="manager-checklist-section-select" data-id="' + esc(section.id) + '"><span>' + esc(section.name) + '</span><small>' + section.questionIds.length + ' questions</small></button><div><button data-act="manager-checklist-section-move" data-id="' + esc(section.id) + '" data-direction="up" aria-label="Move section up"' + (index === 0 ? ' disabled' : '') + '>↑</button><button data-act="manager-checklist-section-move" data-id="' + esc(section.id) + '" data-direction="down" aria-label="Move section down"' + (index === item.sections.length - 1 ? ' disabled' : '') + '>↓</button><button data-act="manager-checklist-section-remove" data-id="' + esc(section.id) + '" aria-label="Remove section"' + (item.sections.length === 1 ? ' disabled' : '') + '>×</button></div></li>';
+  }).join('');
+  return '<section class="manager-checklist-sections"><div class="manager-checklist-section-title"><div><span>Package structure</span><h3>Sections & Questions</h3></div><button class="btn btn--sm" data-act="manager-checklist-section-add" data-id="' + esc(item.id) + '">Add Section</button></div><ol>' + sections + '</ol></section>';
+}
+
+function managerChecklistQuestionRows(item, section, ui) {
+  var questions = section ? section.questionIds.map(function (questionId) { return managerChecklistQuestionById(state, questionId); }).filter(Boolean) : [];
+  var rows = questions.length ? questions.map(function (question, index) {
+    var selected = question.id === ui.selectedQuestionId;
+    return '<button class="manager-checklist-question-row' + (selected ? ' is-selected' : '') + '" data-act="manager-checklist-question-select" data-id="' + esc(question.id) + '"><span>' + (index + 1) + '</span><div><b>' + esc(question.text || question.title) + '</b><small>' + esc(question.status || 'Active') + ' · ' + esc(question.riskLevel || 'Not assessed') + '</small></div></button>';
+  }).join('') : '<div class="empty"><b>No questions in this section</b><span>Add a question to begin the browser-local draft.</span></div>';
+  return '<div class="manager-checklist-question-list"><header><b>' + esc(section ? section.name : 'Select a section') + '</b><button class="btn btn--primary btn--sm" data-act="manager-checklist-question-add"' + (section ? '' : ' disabled') + '>Add Question</button></header>' + rows + '</div>';
+}
+
+function managerChecklistOptions(values, selected) {
+  return values.map(function (value) { return '<option value="' + esc(value) + '"' + (value === selected ? ' selected' : '') + '>' + esc(value) + '</option>'; }).join('');
+}
+
+function managerChecklistQuestionEditor(question, item, section, ui) {
+  var draft = question || {};
+  var likelihood = draft.likelihood || 'Rare';
+  var impact = draft.impact || 'Insignificant';
+  var risk = managerChecklistRisk(likelihood, impact);
+  var evidenceMethods = Array.isArray(draft.evidenceMethods) ? draft.evidenceMethods.join(', ') : (draft.exampleEvidence ? 'Document Review' : '');
+  var findingTypes = Array.isArray(draft.findingTypes) ? draft.findingTypes.join(', ') : (draft.findingType || 'Compliance');
+  var reference = draft.reference || draft.regulationRef || '';
+  var guidance = draft.guidance || draft.inspectorGuidance || '';
+  return '<form class="manager-checklist-question-editor" onsubmit="return false"><div class="manager-checklist-section-title"><div><span>Question editor</span><h3>' + (question ? 'Edit Question' : 'New Question') + '</h3></div><span class="manager-checklist-risk is-' + esc(risk.level.toLowerCase()) + '">' + esc(risk.level) + ' · ' + risk.score + '</span></div>' +
+    '<div class="manager-checklist-editor-grid"><label class="is-wide"><span>Question Text</span><textarea id="manager-checklist-question-text" placeholder="Enter a clear inspection question.">' + esc(draft.text || '') + '</textarea></label>' +
+    '<label class="is-wide"><span>Configured Requirement / Reference</span><input id="manager-checklist-question-reference" value="' + esc(reference) + '" placeholder="Configured reference or finding basis"></label>' +
+    '<label class="is-wide"><span>Guidance Note</span><textarea id="manager-checklist-question-guidance" placeholder="Inspector guidance for this demo question.">' + esc(guidance) + '</textarea></label>' +
+    '<label><span>Evidence Methods</span><input id="manager-checklist-question-evidence" value="' + esc(evidenceMethods) + '" placeholder="Document Review, Interview"></label>' +
+    '<label><span>Finding Types</span><input id="manager-checklist-question-findings" value="' + esc(findingTypes) + '" placeholder="Compliance, Equipment"></label>' +
+    '<label><span>Likelihood</span><select id="manager-checklist-question-likelihood">' + managerChecklistOptions(['Rare', 'Unlikely', 'Possible', 'Likely', 'Almost Certain'], likelihood) + '</select></label>' +
+    '<label><span>Impact</span><select id="manager-checklist-question-impact">' + managerChecklistOptions(['Insignificant', 'Minor', 'Moderate', 'Major', 'Catastrophic'], impact) + '</select></label>' +
+    '<label><span>Status</span><select id="manager-checklist-question-status">' + managerChecklistOptions(['Active', 'Inactive'], draft.status || 'Active') + '</select></label>' +
+    '<div class="manager-checklist-toggles"><label><input id="manager-checklist-question-mandatory" type="checkbox"' + (draft.mandatory ? ' checked' : '') + '> Mandatory</label><label><input id="manager-checklist-question-critical" type="checkbox"' + (draft.critical ? ' checked' : '') + '> Critical</label></div></div>' +
+    '<div class="manager-checklist-validation" role="alert">' + esc(ui.validationMessage) + '</div><footer><button class="btn" data-act="manager-checklist-question-duplicate" data-id="' + esc(draft.id || '') + '"' + (question ? '' : ' disabled') + '>Duplicate</button><button class="btn btn--danger" data-act="manager-checklist-question-remove" data-id="' + esc(draft.id || '') + '"' + (question ? '' : ' disabled') + '>Remove</button><button class="btn btn--primary" data-act="manager-checklist-question-save" data-id="' + esc(draft.id || '') + '" data-package="' + esc(item.id) + '" data-section="' + esc(section ? section.id : '') + '"' + (section ? '' : ' disabled') + '>Save Question</button></footer></form>';
+}
+
+function viewManagerChecklistManagement() {
+  var ui = managerChecklistUiState();
+  var allPackages = managerChecklistPackages(state);
+  var packages = managerChecklistPackages(state, { status: ui.status });
+  var item = managerChecklistPackageById(state, ui.selectedPackageId);
+  if (!item || (ui.status !== 'Archived' && item.status === 'Archived') || (ui.status === 'Draft' && item.status !== 'Draft') || (ui.status === 'Published' && item.status !== 'Published')) {
+    item = packages[0] || null;
+    ui.selectedPackageId = item ? item.id : '';
+  }
+  if (!item && allPackages.length && ui.status === 'Active') item = allPackages[0];
+  if (!item) return pageHead('Checklist Management', 'Manage department checklist packages, versions, sections, and questions in browser-local demo state.') + '<div class="manager-checklist-layout">' + managerChecklistPackageRail(packages, '', ui) + '<section class="manager-checklist-empty"><div class="empty"><b>No package selected</b><span>Create a checklist package to begin.</span></div></section></div>';
+  ensureManagerChecklistPackageShape(state, item);
+  var section = item.sections.filter(function (candidate) { return candidate.id === ui.selectedSectionId; })[0] || item.sections[0];
+  ui.selectedSectionId = section ? section.id : '';
+  var question = ui.selectedQuestionId ? managerChecklistQuestionById(state, ui.selectedQuestionId) : null;
+  if (!question || !section || section.questionIds.indexOf(question.id) === -1) question = section && section.questionIds.length ? managerChecklistQuestionById(state, section.questionIds[0]) : null;
+  ui.selectedQuestionId = question ? question.id : '';
+  return pageHead('Checklist Management', 'Manage package information, preserved versions, sections, and questions in browser-local demo state.') +
+    '<div class="manager-checklist-layout">' + managerChecklistPackageRail(packages, item.id, ui) + '<main class="manager-checklist-workspace">' + managerChecklistPackageInfo(item) + managerChecklistSections(item, ui) + managerChecklistQuestionRows(item, section, ui) + managerChecklistQuestionEditor(question, item, section, ui) + '</main></div>' +
+    '<div class="guardrail-note"><b>Demo boundary:</b> Published versions are preserved. Editing creates a browser-local draft and does not change a production rule or legal obligation.</div>';
+}
+
+function modalManagerChecklistCreate() {
+  var body = '<div class="form-row"><label>Package Name <span class="req">*</span></label><input id="manager-checklist-package-name" placeholder="Checklist package name"></div><div class="form-row"><label>Department</label><input id="manager-checklist-package-department" value="Cabin Safety"></div>';
+  return modalShell('Create Checklist Package', body, '<button class="btn" data-act="close-modal">Cancel</button><button class="btn btn--primary" data-act="manager-checklist-confirm-create">Create Package</button>');
+}
+
+function modalManagerChecklistSection(packageId) {
+  var body = '<div class="form-row"><label>Section Name <span class="req">*</span></label><input id="manager-checklist-section-name" placeholder="Section name"></div>';
+  return modalShell('Add Checklist Section', body, '<button class="btn" data-act="close-modal">Cancel</button><button class="btn btn--primary" data-act="manager-checklist-confirm-section" data-id="' + esc(packageId) + '">Add Section</button>');
+}
+
 function managerCapUiState() {
   if (!state.managerCapUi || typeof state.managerCapUi !== 'object') state.managerCapUi = {};
   var ui = state.managerCapUi;

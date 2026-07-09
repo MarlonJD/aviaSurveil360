@@ -458,7 +458,7 @@ function renderContent() {
     case 'reports-approval': return viewManagerReportsApproval();
     case 'manager-risk': return viewManagerWorkspacePlaceholder('Risk Dashboard', 'Department risk indicators and exposure views are being prepared in this demo sequence.');
     case 'cap-monitoring': return viewManagerCapMonitoring();
-    case 'manager-checklists': return viewManagerWorkspacePlaceholder('Checklist Management', 'Department checklist package management is being prepared in this demo sequence.');
+    case 'manager-checklists': return viewManagerChecklistManagement();
     case 'calendar': return viewCalendar();
     case 'audit-detail': return viewAuditDetail();
     case 'checklist': return viewChecklistRunner();
@@ -1136,6 +1136,225 @@ function handleManagerCapAddUpdate(capId) {
   toast('CAP update added', result.message, 'ok');
 }
 
+function managerChecklistActor() {
+  return ROLES.manager ? ROLES.manager.user : 'Department Manager';
+}
+
+function handleManagerChecklistResult(result, action, target) {
+  var ui = managerChecklistUiState();
+  if (!result.ok) {
+    ui.validationMessage = result.message;
+    render();
+    toast('Checklist Management', result.message, 'warn');
+    return false;
+  }
+  ui.validationMessage = '';
+  addLog(action, target || (result.package && result.package.id) || 'Checklist Management');
+  persistAfterAction();
+  render();
+  toast('Checklist Management', result.message, 'ok');
+  return true;
+}
+
+function handleManagerChecklistSelect(packageId) {
+  var item = managerChecklistPackageById(state, packageId);
+  if (!item) return;
+  ensureManagerChecklistPackageShape(state, item);
+  var ui = managerChecklistUiState();
+  ui.selectedPackageId = item.id;
+  ui.selectedSectionId = item.sections[0] ? item.sections[0].id : '';
+  ui.selectedQuestionId = item.sections[0] && item.sections[0].questionIds[0] ? item.sections[0].questionIds[0] : '';
+  ui.validationMessage = '';
+  persistAfterAction();
+  render();
+}
+
+function handleManagerChecklistFilter(status) {
+  var ui = managerChecklistUiState();
+  ui.status = ['Active', 'Draft', 'Published', 'Archived'].indexOf(status) !== -1 ? status : 'Active';
+  var packages = managerChecklistPackages(state, { status: ui.status });
+  ui.selectedPackageId = packages[0] ? packages[0].id : '';
+  ui.selectedSectionId = '';
+  ui.selectedQuestionId = '';
+  ui.validationMessage = '';
+  persistAfterAction();
+  render();
+}
+
+function handleManagerChecklistConfirmCreate() {
+  var result = createManagerChecklistPackage(state, val('manager-checklist-package-name'), val('manager-checklist-package-department'), managerChecklistActor());
+  if (!result.ok) {
+    toast('Create Package', result.message, 'warn');
+    return;
+  }
+  var ui = managerChecklistUiState();
+  ui.status = 'Draft';
+  ui.selectedPackageId = result.package.id;
+  ui.selectedSectionId = result.package.sections[0].id;
+  ui.selectedQuestionId = '';
+  closeModal();
+  handleManagerChecklistResult(result, 'Department checklist package created', result.package.id);
+}
+
+function handleManagerChecklistDuplicate(packageId) {
+  var result = duplicateManagerChecklistPackage(state, packageId, managerChecklistActor());
+  if (result.ok) {
+    var ui = managerChecklistUiState();
+    ui.status = 'Draft';
+    ui.selectedPackageId = result.package.id;
+    ui.selectedSectionId = result.package.sections[0] ? result.package.sections[0].id : '';
+    ui.selectedQuestionId = result.package.sections[0] && result.package.sections[0].questionIds[0] ? result.package.sections[0].questionIds[0] : '';
+  }
+  handleManagerChecklistResult(result, 'Department checklist package duplicated', packageId);
+}
+
+function handleManagerChecklistArchive(packageId) {
+  var result = archiveManagerChecklistPackage(state, packageId, managerChecklistActor());
+  if (result.ok) {
+    var ui = managerChecklistUiState();
+    ui.status = 'Active';
+    var packages = managerChecklistPackages(state, { status: 'Active' });
+    ui.selectedPackageId = packages[0] ? packages[0].id : '';
+    ui.selectedSectionId = '';
+    ui.selectedQuestionId = '';
+  }
+  handleManagerChecklistResult(result, 'Department checklist package archived', packageId);
+}
+
+function handleManagerChecklistPublish(packageId) {
+  var result = publishManagerChecklistVersion(state, packageId, managerChecklistActor());
+  if (result.ok) managerChecklistUiState().status = 'Published';
+  handleManagerChecklistResult(result, 'Department checklist version published', packageId);
+}
+
+function handleManagerChecklistSectionSelect(sectionId) {
+  var ui = managerChecklistUiState();
+  var item = managerChecklistPackageById(state, ui.selectedPackageId);
+  if (!item) return;
+  var section = item.sections.filter(function (candidate) { return candidate.id === sectionId; })[0] || null;
+  if (!section) return;
+  ui.selectedSectionId = section.id;
+  ui.selectedQuestionId = section.questionIds[0] || '';
+  ui.validationMessage = '';
+  persistAfterAction();
+  render();
+}
+
+function handleManagerChecklistConfirmSection(packageId) {
+  var result = addManagerChecklistSection(state, packageId, val('manager-checklist-section-name'), managerChecklistActor());
+  if (!result.ok) {
+    toast('Add Section', result.message, 'warn');
+    return;
+  }
+  var ui = managerChecklistUiState();
+  ui.status = 'Draft';
+  ui.selectedSectionId = result.section.id;
+  ui.selectedQuestionId = '';
+  closeModal();
+  handleManagerChecklistResult(result, 'Department checklist section added', packageId);
+}
+
+function handleManagerChecklistSectionRemove(sectionId) {
+  var ui = managerChecklistUiState();
+  var result = removeManagerChecklistSection(state, ui.selectedPackageId, sectionId, managerChecklistActor());
+  if (result.ok) {
+    ui.status = 'Draft';
+    ui.selectedSectionId = result.package.sections[0].id;
+    ui.selectedQuestionId = result.package.sections[0].questionIds[0] || '';
+  }
+  handleManagerChecklistResult(result, 'Department checklist section removed', ui.selectedPackageId);
+}
+
+function handleManagerChecklistSectionMove(sectionId, direction) {
+  var ui = managerChecklistUiState();
+  var result = moveManagerChecklistSection(state, ui.selectedPackageId, sectionId, direction, managerChecklistActor());
+  if (result.ok) ui.status = 'Draft';
+  handleManagerChecklistResult(result, 'Department checklist section reordered', ui.selectedPackageId);
+}
+
+function handleManagerChecklistQuestionSelect(questionId) {
+  var question = managerChecklistQuestionById(state, questionId);
+  if (!question) return;
+  var ui = managerChecklistUiState();
+  ui.selectedQuestionId = question.id;
+  ui.validationMessage = '';
+  persistAfterAction();
+  render();
+}
+
+function handleManagerChecklistQuestionAdd() {
+  var ui = managerChecklistUiState();
+  ui.selectedQuestionId = '';
+  ui.validationMessage = '';
+  render();
+}
+
+function managerChecklistCsv(id) {
+  return val(id).split(',').map(function (item) { return item.trim(); }).filter(Boolean);
+}
+
+function handleManagerChecklistQuestionSave(questionId, packageId, sectionId) {
+  var mandatory = document.getElementById('manager-checklist-question-mandatory');
+  var critical = document.getElementById('manager-checklist-question-critical');
+  var result = saveManagerChecklistQuestion(state, packageId, sectionId, {
+    id: questionId || '',
+    text: val('manager-checklist-question-text'),
+    reference: val('manager-checklist-question-reference'),
+    guidance: val('manager-checklist-question-guidance'),
+    evidenceMethods: managerChecklistCsv('manager-checklist-question-evidence'),
+    likelihood: val('manager-checklist-question-likelihood'),
+    impact: val('manager-checklist-question-impact'),
+    findingTypes: managerChecklistCsv('manager-checklist-question-findings'),
+    mandatory: !!(mandatory && mandatory.checked),
+    critical: !!(critical && critical.checked),
+    status: val('manager-checklist-question-status') || 'Active'
+  }, managerChecklistActor());
+  if (result.ok) {
+    var ui = managerChecklistUiState();
+    ui.status = 'Draft';
+    ui.selectedQuestionId = result.question.id;
+  }
+  handleManagerChecklistResult(result, 'Department checklist question saved', packageId);
+}
+
+function handleManagerChecklistQuestionDuplicate(questionId) {
+  var ui = managerChecklistUiState();
+  var result = duplicateManagerChecklistQuestion(state, ui.selectedPackageId, ui.selectedSectionId, questionId, managerChecklistActor());
+  if (result.ok) {
+    ui.status = 'Draft';
+    ui.selectedQuestionId = result.question.id;
+  }
+  handleManagerChecklistResult(result, 'Department checklist question duplicated', ui.selectedPackageId);
+}
+
+function handleManagerChecklistQuestionRemove(questionId) {
+  var ui = managerChecklistUiState();
+  var result = removeManagerChecklistQuestion(state, ui.selectedPackageId, ui.selectedSectionId, questionId, managerChecklistActor());
+  if (result.ok) {
+    ui.status = 'Draft';
+    var item = managerChecklistPackageById(state, ui.selectedPackageId);
+    var section = item.sections.filter(function (candidate) { return candidate.id === ui.selectedSectionId; })[0];
+    ui.selectedQuestionId = section && section.questionIds[0] ? section.questionIds[0] : '';
+  }
+  handleManagerChecklistResult(result, 'Department checklist question removed', ui.selectedPackageId);
+}
+
+function handleManagerChecklistAttachment(packageId) {
+  var input = document.getElementById('manager-checklist-attachment');
+  var filename = input && input.files && input.files[0] ? input.files[0].name : '';
+  var item = managerChecklistPackageById(state, packageId);
+  if (!item || !filename) {
+    toast('Checklist Attachment', 'Choose a filename first. No file content is stored.', 'warn');
+    return;
+  }
+  item.attachments.push(filename);
+  managerChecklistHistory(item, managerChecklistActor(), 'Attachment filename added: ' + filename);
+  addLog('Department checklist attachment filename added', packageId);
+  persistAfterAction();
+  render();
+  toast('Checklist Attachment', filename + ' was recorded as a filename only.', 'ok');
+}
+
 /* ----------------------------- Action dispatch ----------------------------- */
 function handleAction(act, el) {
   var id = el.getAttribute('data-id');
@@ -1212,6 +1431,25 @@ function handleAction(act, el) {
     case 'manager-cap-close': handleManagerCapClose(); break;
     case 'manager-cap-tab': handleManagerCapTab(tab); break;
     case 'manager-cap-add-update': handleManagerCapAddUpdate(id); break;
+
+    case 'manager-checklist-filter': handleManagerChecklistFilter(el.getAttribute('data-value')); break;
+    case 'manager-checklist-select': handleManagerChecklistSelect(id); break;
+    case 'manager-checklist-create': openModal(modalManagerChecklistCreate()); break;
+    case 'manager-checklist-confirm-create': handleManagerChecklistConfirmCreate(); break;
+    case 'manager-checklist-duplicate': handleManagerChecklistDuplicate(id); break;
+    case 'manager-checklist-archive': handleManagerChecklistArchive(id); break;
+    case 'manager-checklist-publish': handleManagerChecklistPublish(id); break;
+    case 'manager-checklist-section-select': handleManagerChecklistSectionSelect(id); break;
+    case 'manager-checklist-section-add': openModal(modalManagerChecklistSection(id)); break;
+    case 'manager-checklist-confirm-section': handleManagerChecklistConfirmSection(id); break;
+    case 'manager-checklist-section-remove': handleManagerChecklistSectionRemove(id); break;
+    case 'manager-checklist-section-move': handleManagerChecklistSectionMove(id, el.getAttribute('data-direction')); break;
+    case 'manager-checklist-question-select': handleManagerChecklistQuestionSelect(id); break;
+    case 'manager-checklist-question-add': handleManagerChecklistQuestionAdd(); break;
+    case 'manager-checklist-question-save': handleManagerChecklistQuestionSave(id, el.getAttribute('data-package'), el.getAttribute('data-section')); break;
+    case 'manager-checklist-question-duplicate': handleManagerChecklistQuestionDuplicate(id); break;
+    case 'manager-checklist-question-remove': handleManagerChecklistQuestionRemove(id); break;
+    case 'manager-checklist-attachment': handleManagerChecklistAttachment(id); break;
 
     case 'start-checklist': startChecklist(id); break;
     case 'select-checklist-question': state.params.questionId = q; render(); break;

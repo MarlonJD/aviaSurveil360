@@ -197,6 +197,19 @@ var SEED_MANAGED_CHECKLISTS = [
     name: 'Cabin Inspection',
     department: 'Cabin Safety',
     inspectionType: 'Routine / Risk Based',
+    owner: 'Department Manager',
+    effectiveDate: '2026-05-11',
+    status: 'Published',
+    version: '1.0',
+    attachments: ['Cabin_Inspection_Source_Profile.xlsx'],
+    history: [
+      { at: '2026-05-11 11:05', actor: 'Okan Demir', action: 'Version 1.0 published for demo use' },
+      { at: '2026-06-15 11:10', actor: 'Selin Demir', action: 'Version 1.1 submitted for governance review' }
+    ],
+    sections: [
+      { id: 'CL-CABIN-SEC-EMERGENCY', name: 'Emergency Equipment', order: 1, questionIds: ['cab-lav-oxygen-compartment', 'cab-seat-oxygen-mask', 'cab-em-eq-pbe', 'cab-em-eq-first-aid-oxygen'] },
+      { id: 'CL-CABIN-SEC-CABIN', name: 'Cabin Areas & Exits', order: 2, questionIds: ['cab-galley-oven', 'cab-exit-safety-strap'] }
+    ],
     publishedVersion: '1.0',
     versions: [
       {
@@ -1085,6 +1098,7 @@ function freshState() {
     inspectionTeamUi: { query: '', department: 'all', status: 'all', dateRange: 'all', selectedAuditId: 'AUD-2026-001', tab: 'overview', openMenuAuditId: '' },
     managerReportsUi: { query: '', reportType: 'all', status: 'all', selectedReportId: 'PR-2026-018', tab: 'summary', validationMessage: '' },
     managerCapUi: { status: 'all', department: 'all', inspection: 'all', due: 'all', selectedCapId: '', drawerOpen: false, tab: 'overview', validationMessage: '' },
+    managerChecklistUi: { status: 'Active', selectedPackageId: 'CL-CABIN', selectedSectionId: 'CL-CABIN-SEC-EMERGENCY', selectedQuestionId: 'cab-em-eq-pbe', panel: 'question', validationMessage: '' },
     offline: { simulated: false, lastMessage: null },
     selectedFilters: {
       findings: 'all',
@@ -1319,6 +1333,7 @@ function mergeDemoState(saved) {
   var inspectionTeamUiDefault = deepClone(base.inspectionTeamUi);
   var managerReportsUiDefault = deepClone(base.managerReportsUi);
   var managerCapUiDefault = deepClone(base.managerCapUi);
+  var managerChecklistUiDefault = deepClone(base.managerChecklistUi);
   if (!saved || typeof saved !== 'object') return base;
   Object.keys(saved).forEach(function (key) {
     if (key === 'ui') return;
@@ -1356,6 +1371,7 @@ function mergeDemoState(saved) {
   base.inspectionTeamUi = Object.assign({}, inspectionTeamUiDefault, saved.inspectionTeamUi || {});
   base.managerReportsUi = Object.assign({}, managerReportsUiDefault, saved.managerReportsUi || {});
   base.managerCapUi = Object.assign({}, managerCapUiDefault, saved.managerCapUi || {});
+  base.managerChecklistUi = Object.assign({}, managerChecklistUiDefault, saved.managerChecklistUi || {});
   if (!Array.isArray(base.potentialFindings)) base.potentialFindings = deepClone(SEED_POTENTIAL_FINDINGS);
   if (!Array.isArray(base.auditReports)) base.auditReports = deepClone(SEED_AUDIT_REPORTS);
   if (!Array.isArray(base.leadAuditReviews) || base.leadAuditReviews.length === 0) base.leadAuditReviews = deepClone(SEED_LEAD_AUDIT_REVIEWS);
@@ -1371,6 +1387,19 @@ function mergeDemoState(saved) {
     if (!Array.isArray(item.preparation.history)) item.preparation.history = [];
   });
   if (!Array.isArray(base.managedChecklists)) base.managedChecklists = deepClone(SEED_MANAGED_CHECKLISTS);
+  SEED_MANAGED_CHECKLISTS.forEach(function (seedPackage) {
+    var current = base.managedChecklists.filter(function (item) { return item.id === seedPackage.id; })[0] || null;
+    if (!current) {
+      base.managedChecklists.push(deepClone(seedPackage));
+      return;
+    }
+    ['owner', 'effectiveDate', 'status', 'version'].forEach(function (field) {
+      if (current[field] === undefined || current[field] === null || current[field] === '') current[field] = seedPackage[field];
+    });
+    ['attachments', 'history', 'sections'].forEach(function (field) {
+      if (!Array.isArray(current[field])) current[field] = deepClone(seedPackage[field]);
+    });
+  });
   if (!Array.isArray(base.questionBank)) base.questionBank = deepClone(SEED_QUESTION_BANK);
   if (!base.inspectionWorkspaceAnswers || typeof base.inspectionWorkspaceAnswers !== 'object') base.inspectionWorkspaceAnswers = {};
   if (!base.inspectionWorkspaceSection) base.inspectionWorkspaceSection = '1.';

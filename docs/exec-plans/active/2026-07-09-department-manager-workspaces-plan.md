@@ -1083,7 +1083,7 @@ and push the current branch.
 - Produces: `viewManagerChecklistManagement() -> string` and
   `manager-checklist-*` actions.
 
-- [ ] **Step 1: Write the failing checklist management smoke test**
+- [x] **Step 1: Write the failing checklist management smoke test**
 
 ```js
 const state = context.freshState();
@@ -1106,28 +1106,28 @@ Also assert blank names/questions are rejected, the last section cannot be
 removed, archive hides a package from the Active filter, and publishing creates
 a preserved version/history entry.
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run `node tests/manager-checklist-management-smoke.test.js`.
 
 Expected: FAIL because the Department Manager package/section/question API and
 route are absent.
 
-- [ ] **Step 3: Normalize managed checklist packages for the reference layout**
+- [x] **Step 3: Normalize managed checklist packages for the reference layout**
 
 Add defensive package fields for department, effective date, owner, status,
 version, attachments, sections, questions, and history while preserving current
 published checklist records. Mutations operate on drafts; publishing snapshots
 the prior version and increments the new version without overwriting history.
 
-- [ ] **Step 4: Implement validated package, section, and question mutations**
+- [x] **Step 4: Implement validated package, section, and question mutations**
 
 Use stable IDs; reject duplicate package/section names in the same scope; reject
 blank question text/reference; calculate the demo risk score from likelihood and
 impact; and record actor/action/timestamp history for every create, duplicate,
 archive, reorder, save, remove, or publish operation.
 
-- [ ] **Step 5: Render and wire Checklist Management**
+- [x] **Step 5: Render and wire Checklist Management**
 
 Match the supplied three-column package/section/question anatomy. Implement
 working create, duplicate, archive, publish, add/remove/reorder section, and
@@ -1135,7 +1135,7 @@ add/edit/duplicate/activate/deactivate/remove question controls. The edit panel
 contains the exact fields in the approved design and persists browser-local
 state. Attachment controls store selected filenames only.
 
-- [ ] **Step 6: Verify GREEN and existing checklist governance**
+- [x] **Step 6: Verify GREEN and existing checklist governance**
 
 Run:
 
@@ -1153,7 +1153,7 @@ node tests/governance-render-smoke.test.js
 Expected: all exit 0; current published/runnable checklist behavior remains
 available.
 
-- [ ] **Step 7: Commit and push Checklist Management**
+- [x] **Step 7: Commit and push Checklist Management**
 
 Run `git diff --check`, stage only Task 7 files/hunks, inspect
 `git diff --cached`, commit with `feat: add department checklist management`,
