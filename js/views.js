@@ -1259,38 +1259,47 @@ function nextActionBar(f) {
 
 /* =========================== Manager dashboard =========================== */
 function viewManagerDashboard() {
-  var k = computeKpis();
-  var ohi = computeOHI();
-  var needsAttention = state.findings.filter(function (f) {
-    return f.id !== 'CAB-2026-001' && f.status !== 'CLOSED' && (f.severity === 1 || dueInfo(f).overdue);
-  });
-  var scenarioUpdates = state.findings.filter(function (f) {
-    return f.id === 'CAB-2026-001';
-  });
-  var notStarted = state.audits.filter(function (a) { return a.status === 'Planned'; });
-  var attentionItems = scenarioUpdates.map(function (finding) {
-    return workItemFromFinding(finding, { allEvidenceVersions: true });
-  }).concat(needsAttention.map(function (finding) {
-    return workItemFromFinding(finding, { allEvidenceVersions: true });
-  }).concat(notStarted.map(workItemFromAudit)).sort(workItemSort));
+  var dashboard = managerDashboardProjection(state);
+  var kpis = [
+    ['Total Audits', dashboard.totalAudits, dashboard.inProgressAudits + ' in progress', 'info'],
+    ['Reports Awaiting Approval', dashboard.reportsAwaitingApproval, 'Preliminary and Final', 'warn'],
+    ['Open Findings', dashboard.openFindings, 'CAA review and auditee action', 'danger'],
+    ['CAPs In Progress', dashboard.capInProgress, 'CAP acceptance is not closure', 'info'],
+    ['Overdue CAPs', dashboard.overdueCaps, 'Management follow-up', dashboard.overdueCaps ? 'danger' : 'ok'],
+    ['Inspection Team', dashboard.teamMembers, 'Manager reporting line', 'ok']
+  ];
+  var tasks = [
+    ['Audits', 'Review the audit work queue and upcoming inspections.', 'calendar', '▤'],
+    ['Reports Approval', 'Decide Preliminary and Final Report submissions.', 'reports-approval', '□'],
+    ['Risk Dashboard', 'Review department exposure and high-risk areas.', 'manager-risk', '⌁'],
+    ['Inspection Team', 'Review teams, assignments, and schedules.', 'inspection-team', '▥'],
+    ['Findings Review', 'Inspect findings requiring management attention.', 'findings-review', '⚑'],
+    ['CAP Monitoring', 'Track CAP owners, Due Dates, and evidence action.', 'cap-monitoring', '✓'],
+    ['Checklist Management', 'Maintain department packages and versions.', 'manager-checklists', '▧']
+  ];
+  var recentRows = dashboard.recentHighRiskFindings.length ? dashboard.recentHighRiskFindings.map(function (finding) {
+    return '<tr><td><b>' + esc(finding.id) + '</b><small>' + esc(finding.title) + '</small></td><td>' + esc(orgName(finding.orgId)) + '</td><td>' + severityHtml(finding) + '</td><td>' + esc(ownerLabel(finding)) + '</td><td>' + esc(nextActionLabel(finding)) + '</td><td>' + esc(finding.dueDate ? fmtDate(finding.dueDate) : '—') + '</td><td><button class="btn btn--sm" data-act="go" data-view="finding" data-id="' + esc(finding.id) + '">Open</button></td></tr>';
+  }).join('') : '<tr><td colspan="7"><div class="empty">No open high-risk findings require attention.</div></td></tr>';
+  var upcomingRows = dashboard.upcomingAudits.length ? dashboard.upcomingAudits.map(function (audit) {
+    return '<tr><td><b>' + esc(audit.id) + '</b><small>' + esc(audit.ref || audit.type) + '</small></td><td>' + esc(orgName(audit.orgId)) + '</td><td>' + esc(audit.domain || '—') + '</td><td>' + esc(fmtDate(audit.date)) + '</td><td>' + demoBadge(audit.status, audit.status === 'In Progress' ? 'warn' : 'info') + '</td><td><button class="btn btn--sm" data-act="go" data-view="audit-detail" data-id="' + esc(audit.id) + '">Open</button></td></tr>';
+  }).join('') : '<tr><td colspan="6"><div class="empty">No upcoming audits are available.</div></td></tr>';
 
-  return '' +
-    pageHead('Supervisor / Manager Dashboard', 'Performance, risk, workload, SSP and CAP oversight.') +
-    renderAttentionStrip([
-      { label: 'Open Findings', value: String(k.openFindings), tone: k.openFindings ? 'warn' : 'ok' },
-      { label: 'Overdue Findings', value: String(k.overdueFindings), tone: k.overdueFindings ? 'danger' : 'ok' },
-      { label: 'Critical Findings', value: String(k.criticalFindings), tone: k.criticalFindings ? 'danger' : 'ok' },
-      { label: 'Plan Completion', value: k.planCompletion + '%', tone: 'info' },
-      { label: 'OHI', value: ohi.score + ' · ' + ohi.band, tone: ohi.score < 60 ? 'danger' : (ohi.score < 75 ? 'warn' : 'ok') }
-    ]) +
-    '<div class="guardrail-note"><b>Oversight Health Index:</b> Management indicator only. It does not trigger automatic enforcement, suspension or closure.</div>' +
-    '<div class="row-actions mb-16">' +
-      '<button class="btn btn--primary" data-act="nav" data-view="findings" data-filter="overdue">Open overdue findings</button>' +
-      '<button class="btn" data-act="nav" data-view="calendar">Open audit work queue</button>' +
-      '<button class="btn" data-act="nav" data-view="planning">Open planning</button>' +
+  return pageHead('Department Manager Dashboard', 'Operational oversight for ' + dashboard.organization + ', report decisions, findings, CAPs, and inspection teams.') +
+    '<div class="manager-dashboard-kpis">' + kpis.map(function (item) {
+      return '<article class="is-' + esc(item[3]) + '"><span>' + esc(item[0]) + '</span><strong>' + esc(String(item[1])) + '</strong><small>' + esc(item[2]) + '</small></article>';
+    }).join('') + '</div>' +
+    '<section class="manager-dashboard-tasks"><div class="manager-dashboard-section-head"><div><span>Manager workspace</span><h2>What needs attention?</h2></div></div><div>' + tasks.map(function (task) {
+      return '<button class="manager-dashboard-task" data-act="go" data-view="' + esc(task[2]) + '"><span>' + esc(task[3]) + '</span><div><b>' + esc(task[0]) + '</b><small>' + esc(task[1]) + '</small></div><em>Open →</em></button>';
+    }).join('') + '</div></section>' +
+    '<div class="manager-dashboard-grid">' +
+      '<section class="manager-dashboard-panel"><div class="manager-dashboard-section-head"><div><span>Priority review</span><h2>Recent High-Risk Findings</h2></div><button class="btn btn--sm" data-act="go" data-view="findings-review">View Findings Review</button></div><div class="manager-dashboard-table"><table><thead><tr><th>Finding</th><th>Organization</th><th>Severity</th><th>Current Owner</th><th>Next Action</th><th>Due Date</th><th></th></tr></thead><tbody>' + recentRows + '</tbody></table></div></section>' +
+      '<section class="manager-dashboard-panel"><div class="manager-dashboard-section-head"><div><span>Surveillance schedule</span><h2>Upcoming Audits</h2></div><button class="btn btn--sm" data-act="go" data-view="calendar">View Audits</button></div><div class="manager-dashboard-table"><table><thead><tr><th>Audit</th><th>Organization</th><th>Department</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody>' + upcomingRows + '</tbody></table></div></section>' +
     '</div>' +
-    '<h2 class="section-heading">Management Attention & Recent Closure</h2>' +
-    renderOpsTable(attentionItems, { includeChildren: true, empty: 'No critical, overdue, recently closed, or not-started management items right now.' });
+    '<div class="guardrail-note"><b>Management indicators only:</b> Dashboard and risk values do not trigger automatic legal, enforcement, certificate, or finding-closure decisions.</div>';
+}
+
+function viewManagerWorkspacePlaceholder(title, message) {
+  return pageHead(title, message) + '<section class="manager-dashboard-panel manager-dashboard-placeholder"><div class="empty"><b>' + esc(title) + '</b><span>This route is reserved for the approved frontend-only manager workspace and is not a production service.</span></div></section>';
 }
 
 function workbenchItem(tone, title, meta, actionLabel, view, id, filter) {

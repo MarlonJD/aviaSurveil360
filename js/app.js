@@ -5,33 +5,14 @@
 /* Navigation per role: three primary experiences with grouped IA. */
 var NAV = {
   manager: [
-    { section: 'Dashboard' },
-    { view: 'dashboard', label: 'My Dashboard', icon: '▦' },
-    { view: 'planning', label: 'Planning', icon: '▤' },
-    { view: 'checklist-approvals', label: 'Checklist Approvals', icon: '▧' },
-    { view: 'question-bank', label: 'Question Bank', icon: '□' },
-    { view: 'checklist-builder', label: 'Checklist Builder', icon: '▧' },
-    { view: 'checklist-versions', label: 'Version History', icon: '◷' },
+    { view: 'dashboard', label: 'Dashboard', icon: '▦' },
+    { view: 'calendar', label: 'Audits', icon: '▤' },
     { view: 'reports-approval', label: 'Reports Approval', icon: '📄', badge: '2' },
-    { view: 'safety-intelligence', label: 'Team Dashboard', icon: '⌁' },
-    { view: 'ssp-nasp', label: 'Executive Dashboard', icon: '▣' },
-    { section: 'Oversight' },
-    { view: 'inspection-team', label: 'Inspection Team', icon: '▤' },
-    { view: 'calendar', label: 'Audit Work Queue', icon: '▤' },
-    { section: 'Organisations' },
-    { view: 'organizations', label: 'Operators / Providers', icon: '🏢' },
-    { view: 'org-risk', label: 'Risk Profiles', icon: '◇', id: 'ORG-XYZ' },
-    { section: 'Findings & CAPs' },
+    { view: 'manager-risk', label: 'Risk Dashboard', icon: '⌁' },
+    { view: 'inspection-team', label: 'Inspection Team', icon: '▥' },
     { view: 'findings-review', label: 'Findings Review', icon: '⚑' },
-    { view: 'unit-manager-review', label: 'CAP Reviews', icon: '✓' },
-    { view: 'cap-effectiveness', label: 'Repeat Findings', icon: '↻' },
-    { section: 'USOAP / SSP' },
-    { view: 'usoap-readiness', label: 'Protocol Questions', icon: '◎' },
-    { view: 'ssp-nasp', label: 'SSP Indicators', icon: '▣' },
-    { section: 'Analytics' },
-    { view: 'safety-intelligence', label: 'Risk Trends', icon: '⌁' },
-    { view: 'cap-effectiveness', label: 'CAP Effectiveness', icon: '✓' },
-    { view: 'dashboard', label: 'Inspector Workload', icon: '▥' }
+    { view: 'cap-monitoring', label: 'CAP Monitoring', icon: '✓' },
+    { view: 'manager-checklists', label: 'Checklist Management', icon: '▧' }
   ],
   inspector: [
     { view: 'dashboard', label: 'Dashboard', icon: '▦' },
@@ -101,7 +82,7 @@ var NAV = {
 };
 
 var VIEW_TITLES = {
-  dashboard: 'Dashboard', calendar: 'Audit Work Queue', findings: 'Findings', 'findings-review': 'Findings Review', 'inspection-team': 'Inspection Team', 'reports-approval': 'Reports Approval', 'my-findings': 'My Findings',
+  dashboard: 'Dashboard', calendar: 'Audit Work Queue', findings: 'Findings', 'findings-review': 'Findings Review', 'inspection-team': 'Inspection Team', 'reports-approval': 'Reports Approval', 'manager-risk': 'Risk Dashboard', 'cap-monitoring': 'CAP Monitoring', 'manager-checklists': 'Checklist Management', 'my-findings': 'My Findings',
   reports: 'Reports', report: 'Report', messages: 'Messages', templates: 'Templates',
   'template-preview': 'Template Preview', auditlog: 'Audit Log', 'audit-detail': 'Audit Detail',
   checklist: 'Checklist Runner', finding: 'Finding Detail', wizard: 'New Audit Wizard',
@@ -475,6 +456,9 @@ function renderContent() {
     case 'findings-review': return viewManagerFindingsReview();
     case 'inspection-team': return viewInspectionTeam();
     case 'reports-approval': return viewManagerReportsApproval();
+    case 'manager-risk': return viewManagerWorkspacePlaceholder('Risk Dashboard', 'Department risk indicators and exposure views are being prepared in this demo sequence.');
+    case 'cap-monitoring': return viewManagerWorkspacePlaceholder('CAP Monitoring', 'Corrective action plan monitoring is being prepared in this demo sequence.');
+    case 'manager-checklists': return viewManagerWorkspacePlaceholder('Checklist Management', 'Department checklist package management is being prepared in this demo sequence.');
     case 'calendar': return viewCalendar();
     case 'audit-detail': return viewAuditDetail();
     case 'checklist': return viewChecklistRunner();
@@ -1104,6 +1088,7 @@ function handleAction(act, el) {
     case 'role': setRole(el.getAttribute('data-role')); break;
     case 'logout': state.role = null; state.view = 'login'; state.ui.notifOpen = false; state.ui.menuOpen = false; closeModal(); persistAfterAction(); render(); break;
     case 'nav': go(view, { auditId: id, findingId: id, orgId: id, filter: filter, tab: tab }); break;
+    case 'go': go(view, { auditId: id, findingId: id, orgId: id, filter: filter, tab: tab }); break;
     case 'toggle-menu': state.ui.menuOpen = !state.ui.menuOpen; render(); break;
     case 'set-filter': setSelectedFilter(el.getAttribute('data-key'), el.getAttribute('data-val')); render(); break;
     case 'inspector-help':

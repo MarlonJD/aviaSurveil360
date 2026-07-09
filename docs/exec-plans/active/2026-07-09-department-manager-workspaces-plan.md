@@ -902,7 +902,7 @@ branch.
 - Produces: `managerDashboardProjection(targetState) -> ManagerDashboardProjection`.
 - Produces: the exact `NAV.manager` allowlist and working dashboard-card routes.
 
-- [ ] **Step 1: Write the failing manager navigation/dashboard smoke test**
+- [x] **Step 1: Write the failing manager navigation/dashboard smoke test**
 
 Assert the exact visible navigation contract and shared-state projections:
 
@@ -922,14 +922,14 @@ assert.doesNotMatch(context.viewManagerDashboard(), /Calendar|Documents|Correcti
 Also assert every dashboard task card has a `data-act="go"` route present in
 the manager allowlist.
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run `node tests/manager-navigation-dashboard-smoke.test.js`.
 
 Expected: FAIL because the current manager sidebar contains legacy entries and
 the dashboard does not expose the approved projection contract.
 
-- [ ] **Step 3: Implement the projection and exact sidebar allowlist**
+- [x] **Step 3: Implement the projection and exact sidebar allowlist**
 
 Implement `managerDashboardProjection` by deriving counts from shared state:
 audits, pending manager reports, open/high-risk findings, active/overdue CAPs,
@@ -937,14 +937,14 @@ manager-scoped team members, upcoming audits, and recent high-risk findings.
 Replace `NAV.manager` with the exact ordered allowlist from Step 1. Keep legacy
 routes internal only when existing flows still need them.
 
-- [ ] **Step 4: Render and wire the compact Department Manager Dashboard**
+- [x] **Step 4: Render and wire the compact Department Manager Dashboard**
 
 Render six KPI cards, seven task cards, upcoming audits, and recent high-risk
 findings using the existing card/table visual system. Each card navigates to the
 named route and retains `Fly Namibia` copy. Add responsive rules without
 changing unrelated role dashboards.
 
-- [ ] **Step 5: Verify GREEN and regressions**
+- [x] **Step 5: Verify GREEN and regressions**
 
 Run:
 
@@ -959,7 +959,7 @@ node tests/inspection-team-smoke.test.js
 
 Expected: all exit 0.
 
-- [ ] **Step 6: Commit and push manager navigation/dashboard**
+- [x] **Step 6: Commit and push manager navigation/dashboard**
 
 Run `git diff --check`, stage only Task 5 files/hunks, inspect
 `git diff --cached`, commit with `feat: add department manager dashboard`, and

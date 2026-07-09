@@ -289,6 +289,48 @@ function managerReportPdfLines(report, variant, target) {
   return lines;
 }
 
+function managerDashboardProjection(target) {
+  var s = target || state;
+  var audits = Array.isArray(s.audits) ? s.audits : [];
+  var findings = Array.isArray(s.findings) ? s.findings : [];
+  var reports = Array.isArray(s.managerReports) ? s.managerReports : [];
+  var teams = Array.isArray(s.inspectionTeams) ? s.inspectionTeams : [];
+  var users = Array.isArray(s.users) ? s.users : [];
+  var openFindings = findings.filter(function (finding) { return finding.status !== 'CLOSED'; });
+  var capFindings = openFindings.filter(function (finding) { return finding.capRequired; });
+  var teamMemberIds = {};
+  teams.forEach(function (team) {
+    (team.memberIds || []).forEach(function (userId) {
+      var user = users.filter(function (candidate) { return candidate.id === userId; })[0] || null;
+      if (user && user.reportsToRole === 'manager') teamMemberIds[userId] = true;
+    });
+  });
+  return {
+    organization: typeof CANONICAL_SERVICE_PROVIDER_NAME === 'string' ? CANONICAL_SERVICE_PROVIDER_NAME : 'Fly Namibia',
+    totalAudits: audits.length,
+    inProgressAudits: audits.filter(function (audit) { return audit.status === 'In Progress'; }).length,
+    reportsAwaitingApproval: reports.filter(function (report) { return report.status === 'pending_manager'; }).length,
+    openFindings: openFindings.length,
+    capInProgress: capFindings.filter(function (finding) {
+      return finding.status !== 'WAITING_CAP' && finding.cap && finding.cap.status !== 'Not Submitted';
+    }).length,
+    overdueCaps: capFindings.filter(function (finding) {
+      return !!finding.dueDate && finding.dueDate < DEMO_TODAY;
+    }).length,
+    teamMembers: Object.keys(teamMemberIds).length,
+    recentHighRiskFindings: openFindings.filter(function (finding) {
+      return finding.severity === 1;
+    }).slice().sort(function (left, right) {
+      return (right.issuedDate || '').localeCompare(left.issuedDate || '') || left.id.localeCompare(right.id);
+    }).slice(0, 5),
+    upcomingAudits: audits.filter(function (audit) {
+      return !!audit.date && audit.date >= DEMO_TODAY && audit.status !== 'Closed' && audit.status !== 'Report Issued';
+    }).slice().sort(function (left, right) {
+      return left.date.localeCompare(right.date) || left.id.localeCompare(right.id);
+    }).slice(0, 5)
+  };
+}
+
 function managerTeamByAuditId(target, auditId) {
   var s = ensureManagerWorkspaceState(target);
   return s.inspectionTeams.filter(function (team) { return team.auditId === auditId; })[0] || null;
