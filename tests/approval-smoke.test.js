@@ -37,7 +37,7 @@ assert.ok(Array.isArray(initialState.planningItems), 'planning items are seeded 
 assert.equal(initialState.planningItems.length, 1, 'one thin-slice planning item is seeded');
 
 const item = clone(initialState.planningItems[0]);
-assert.equal(item.id, 'PLAN-2026-Q3-OPS');
+assert.equal(item.id, 'PLAN-2026-Q3-CABIN');
 assert.equal(item.budgetRequired, true);
 assert.equal(context.approvalSummary(item).ownerRole, 'gm');
 assert.match(context.approvalSummary(item).nextAction, /Finance/);

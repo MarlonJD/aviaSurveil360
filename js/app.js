@@ -509,8 +509,8 @@ function renderLogin() {
       '<div class="login__sub">Civil Aviation Authority surveillance &amp; oversight — clickable demo</div></div></div></div>' +
     '<div class="login__body"><div class="login__prompt">Choose a role to enter the demo. You can switch roles at any time from the top bar.</div>' +
       '<div class="role-grid">' + cards + '</div>' +
-      '<div class="login__foot">Demo scenario: a CAA Inspector raises <b>Finding OPS-2026-001</b> for Airline XYZ from a Flight Operations checklist. ' +
-      'The auditee submits a CAP and evidence; the inspector reviews and closes the finding; the manager dashboard updates. ' +
+      '<div class="login__foot">Demo scenario: a CAA Inspector raises <b>Finding CAB-2026-001</b> for Airline XYZ from a Cabin Inspection emergency equipment checklist. ' +
+      'The auditee submits a CAP and evidence; CAP acceptance does not close the finding, accepted evidence is required; the manager dashboard updates. ' +
       'This is a mock prototype — no real authentication, backend, database or integrations. V2 demo actions are saved only in this browser.</div>' +
     '</div></div></div>';
 }
@@ -637,7 +637,7 @@ function closeModal() {
 /* ----------------------------- Mock file pick ----------------------------- */
 function mockPick(targetId) {
   var defaults = {
-    'ev-file': { name: 'Training_Record_Updated.pdf', size: '1.6 MB' },
+    'ev-file': { name: 'PBE_Serviceability_Record_CAB-2026-001.pdf', size: '1.6 MB' },
     'cap-file': { name: 'CAP_Supporting_Notes.pdf', size: '0.9 MB' }
   };
   var d = defaults[targetId] || { name: 'Document.pdf', size: '1.0 MB' };
@@ -2443,8 +2443,8 @@ function handleLeadReviewFileDownload(rowId, fileName) {
 
 function handleMockChecklistEvidence(q) {
   if (!state.checklistAnswers[q]) state.checklistAnswers[q] = {};
-  state.checklistAnswers[q].evidenceFiles = ['Training_Record_Sample.pdf'];
-  toast('Mock evidence selected', 'Training_Record_Sample.pdf attached as a file name only. No upload or storage occurs.', 'ok');
+  state.checklistAnswers[q].evidenceFiles = ['PBE_Cabin_Position_Photo.jpg'];
+  toast('Mock evidence selected', 'PBE_Cabin_Position_Photo.jpg attached as a file name only. No upload or storage occurs.', 'ok');
   persistAfterAction();
   render();
 }
@@ -2470,7 +2470,7 @@ function handleConvertPotentialFinding(id) {
     var finding = convertPotentialFindingToFinding(id, {
       actorName: ROLES[state.role].user,
       severity: severity,
-      title: val('pf-title-' + id) || 'Crew training records incomplete'
+      title: val('pf-title-' + id) || 'PBE not serviceable or not accessible in cabin emergency equipment check'
     });
     addLog('Potential Finding converted to Finding', finding.id);
     pushNotification('auditee', '⚑', 'New finding ' + finding.id + ' was issued to ' + orgName(finding.orgId) + '. A CAP is required.');
@@ -2512,7 +2512,7 @@ function issueFinding(auditId, q) {
   var a = auditById(auditId);
   var item = null;
   for (var i = 0; i < state.checklist.items.length; i++) if (state.checklist.items[i].id === q) item = state.checklist.items[i];
-  var id = 'OPS-2026-' + String(state.findingSeq).padStart(3, '0');
+  var id = 'CAB-2026-' + String(state.findingSeq).padStart(3, '0');
 
   var internalNote = val('fd-internal');
   var trace = regulatoryTraceForQuestion(q);
@@ -2523,6 +2523,8 @@ function issueFinding(auditId, q) {
     orgId: a.orgId,
     auditId: a.id,
     severity: parseInt(val('fd-sev') || '2', 10),
+    riskCategory: item && item.riskCategory ? item.riskCategory : '',
+    findingType: item && item.findingType ? item.findingType : '',
     reference: (item ? item.ref : 'Configured rule (regulatory reference)'),
     traceId: trace ? trace.id : null,
     basis: 'Checklist item answered Non-Compliant',
@@ -3694,8 +3696,8 @@ function createOfflineFieldAction() {
   var auditId = state.fieldPackage.auditId;
   var payload = {
     auditId: auditId,
-    findingId: 'OPS-2026-001',
-    fileName: 'Training_Record_Field_Photo.jpg',
+    findingId: 'CAB-2026-001',
+    fileName: 'PBE_Cabin_Position_Photo.jpg',
     note: 'Mock field note captured while offline. File name only; no file storage.',
     payloadSummary: 'Mock evidence filename and field note captured for ' + auditId + '.'
   };
@@ -4040,7 +4042,7 @@ function startWizard() {
     location: '',
     lead: INSPECTORS[0],
     team: [],
-    templateId: 'TPL-FOPS-2026',
+    templateId: 'TPL-CABIN-2026',
     scope: ''
   };
   go('wizard');

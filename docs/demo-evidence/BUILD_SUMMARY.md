@@ -31,17 +31,17 @@ and return to seed data.
 
 | File | Purpose |
 |---|---|
-| `index.html` | Demo ribbon now states frontend-only browser persistence and no real backend/AI/regulatory integrations. |
+| `index.html` | Demo ribbon now states frontend-only browser persistence and the asset query token was bumped for the Cabin Inspection scenario update. |
 | `css/styles.css` | V2 responsive UI for role-based workspaces, simplified Inspector My Inspections home, simplified Inspector chrome, SMS checklist workspace, regulatory trace ribbons, governance panels, offline outbox, AI draft controls, and 390px mobile behavior. |
-| `js/data.js` | Backend-ready mock records, seed V2 datasets, status values, and isolated `localStorage` demo storage helpers. |
-| `js/helpers.js` | Selectors, status helpers, regulatory trace lookups, outbox helpers, and demo badge helpers. |
+| `js/data.js` | Backend-ready mock records, the workbook-derived Cabin Inspection seed checklist, status values, and isolated `localStorage` demo storage helpers. |
+| `js/helpers.js` | Selectors, status helpers, Cabin/PBE regulatory trace lookups, outbox helpers, and demo badge helpers. |
 | `js/work-items.js` | Shared table-first work-item shaping for audits, findings, CAP/evidence child rows, approvals, planning items, and admin queues. |
-| `js/views.js` | Existing screens plus simplified Inspector My Inspections home, the SMS Oversight Audit checklist workspace, the nine Frontend V2 screens, Service Provider Portal framing, reusable Regulatory Trace display, and table-first work queues. |
-| `js/app.js` | Role-based experience navigation including simplified Inspector nav/chrome, centralized persistence calls, simulated inspection draft actions, simulated offline transitions, AI decision transitions, stable ID generation, and checklist row selection. |
+| `js/views.js` | Existing screens plus Cabin Inspection checklist runner copy, Lead Inspector potential finding decisions, Service Provider Portal framing, reusable Regulatory Trace display, and table-first work queues. |
+| `js/app.js` | Role-based experience navigation, centralized persistence calls, Cabin Inspection finding/CAP/evidence transitions, simulated offline transitions, AI decision transitions, stable ID generation, and checklist row selection. |
 | `docs/demo-evidence/BUILD_SUMMARY.md` | This English canonical build summary. |
 | `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Turkish companion summary for stakeholder handoff. |
 | `docs/exec-plans/index.md` | Updated only if the active plan status / next todo changes. |
-| `tests/table-first-workbench-smoke.test.js` | Focused smoke coverage for table-first rows, row-click routing, and auditee privacy boundaries. |
+| `tests/*.test.js` | Focused smoke coverage updated for the Cabin Inspection hero path, checklist management, lifecycle transitions, demo boundaries, and existing workbench/governance surfaces. |
 
 No backend, database, API, framework migration, real file storage, real AI
 service, real regulatory ingestion, or real notification service was added.
@@ -116,6 +116,31 @@ inspector dashboard, audit plan calendar, audit detail, checklist runner,
 finding detail, auditee My Findings, CAP form, evidence form/review, closure
 report preview, admin template preview, organizations, users, settings, reports,
 messages, and audit log.
+
+---
+
+## Primary Cabin Inspection scenario
+
+The primary first-run story is now workbook-derived Cabin Inspection demo data:
+
+1. CAA Manager sees the `2026 Cabin Inspection` plan for Airline XYZ.
+2. CAA Inspector opens the Airline XYZ Cabin Inspection and runs the
+   `Cabin Inspection` checklist.
+3. Inspector marks the `EM EQ / PBE` checklist question `Non-Compliant`.
+4. Lead Inspector converts `PF-2026-001` into `Finding CAB-2026-001`.
+5. Airline XYZ submits root cause, corrective action, preventive action, target
+   completion date, and mock evidence filenames.
+6. Lead Inspector accepts the CAP; the finding remains
+   `CAP Accepted - Evidence Required`.
+7. Airline XYZ submits `PBE_Serviceability_Record_CAB-2026-001.pdf` as a mock
+   filename.
+8. Lead Inspector accepts evidence and the finding closes.
+
+The source workbook profile is represented as a mock/configured checklist
+source: 126 Cabin Inspection rows across `GALLEY`, `LAV`, `PAX SEAT`, `EM EQ`,
+`VID+CREW SEAT`, and `COCKPIT+CAB GEN COND+EXITS`. The runnable demo uses a
+curated 6-question subset for demo speed. The workbook is not a live import,
+legal source, regulatory ingestion source, or production checklist repository.
 
 ---
 
@@ -201,9 +226,9 @@ The original product rules remain preserved:
 
 ## Verification results
 
-Status: **verified locally** for the frontend-only demo.
+Status: **verified locally** for the frontend-only Cabin Inspection scenario.
 
-Automated syntax checks:
+Automated syntax checks passed:
 
 ```bash
 node --check js/data.js
@@ -218,46 +243,50 @@ node --check js/views.js
 node --check js/app.js
 ```
 
-Browser smoke verification used Playwright against `index.html` with no console
-errors. Verified:
+All direct Node smoke tests under `tests/*.test.js` passed locally.
 
-- Inspector Workspace opens on simplified `My Inspections`
-- `My Inspections` shows four KPI cards and three focused tables: Assigned
-  Inspections, CAP Reviews, and Draft Reports
-- the `Open` action renders the Inspector-only `SMS Oversight Audit` checklist
-  workspace with checklist sections, compliance controls, comments, attached
-  mock file names, draft save, and Lead Inspector submit actions
-- the old guardrail pill row, attention strip, and quick-action button row are
-  hidden from the Inspector home screen
-- Supervisor / Manager Dashboard and SSP/NASP dashboard remain reachable
-- Service Provider Portal framing is visible to the auditee role
-- all nine V2 screens are reachable by role-appropriate navigation
-- original Operator Audit scenario still works end to end
-- CAP acceptance leaves `OPS-2026-001` at `EVIDENCE_REQUIRED`
-- evidence acceptance closes `OPS-2026-001`
-- auditee view showed no visible `Internal CAA Note`, `Inspector Workload`,
-  regulatory governance, AI governance, or other-organization wording
-- refresh preserves created finding, CAP, evidence filename, AI decision, and offline outbox state
-- Reset demo clears `localStorage` and removes created demo state
-- offline outbox transitions from waiting to `synced_to_demo_state`
-- audit log records `Offline item synced (demo)`
-- 390px viewport had no horizontal overflow on all new V2 screens
+Browser smoke verification used the in-app Browser against the local static
+server at `http://127.0.0.1:4173/index.html`. Direct `file://` navigation was
+blocked by browser policy, so the local HTTP server was used for the rendered
+prototype check. Console warnings/errors were empty.
 
-Final browser evidence summary:
+Verified:
+
+- role-select copy names `Finding CAB-2026-001` and `Cabin Inspection`
+- audit calendar shows Airline XYZ `2026 Cabin Inspection` under `Cabin Safety`
+- checklist runner opens the `EM EQ / PBE` question by default and shows the
+  workbook section profile
+- marking the PBE item `Non-Compliant` creates `PF-2026-001`
+- Lead Inspector sees the pending potential finding and converts it to
+  `CAB-2026-001` with `Level 1 Critical`, risk category
+  `Emergency Preparedness`, and finding type `Equipment`
+- Airline XYZ sees only its auditee portal data and submits CAP details
+- accepting CAP does not close the finding; it moves to
+  `CAP Accepted - Evidence Required`
+- Airline XYZ submits mock evidence filename
+  `PBE_Serviceability_Record_CAB-2026-001.pdf`
+- accepting evidence closes `CAB-2026-001`
+- Manager Dashboard shows `CAB-2026-001` as a recent closed scenario update,
+  including CAP and evidence child rows
+- `Comment to Auditee` and `Internal CAA Note` remain separate on review modals
+- no backend, database, API, real authentication, real upload/storage, real
+  regulatory ingestion, real AI service, production audit log, framework
+  migration, or deployment was added
+
+Final Cabin Inspection browser evidence summary:
 
 ```text
-afterIssue: WAITING_CAP
+potentialFinding: PF-2026-001
+convertedFinding: CAB-2026-001
+afterConvert: WAITING_CAP
 afterSubmitCap: CAP_SUBMITTED
 afterAcceptCap: EVIDENCE_REQUIRED
 afterSubmitEvidence: EVIDENCE_SUBMITTED
 afterAcceptEvidence: CLOSED
-aiDecision: edited
-outboxStatus after refresh: synced_to_demo_state
-reset storage: null
-console errors: []
-mobile scrollWidth/clientWidth: 390/390 on all V2 screens
-My Inspections mobile scrollWidth/clientWidth: 390/390
-Service Provider Portal mobile scrollWidth/clientWidth: 390/390
+managerDashboard: CAB-2026-001 visible as Closed with CAP/evidence rows
+mockEvidenceFilename: PBE_Serviceability_Record_CAB-2026-001.pdf
+console errors/warnings: []
+browser preview: http://127.0.0.1:4173/index.html
 ```
 
 ### CAA Governance browser QA - 2026-06-29
@@ -467,11 +496,10 @@ Verification (verified locally):
 - All 17 Node smoke tests under `tests/` passed, including
   `table-first-workbench-smoke`, `demo-boundary-smoke`, and
   `checklist-comment-render-smoke`.
-- Full lifecycle click-through in a real browser: checklist Q2 Non-Compliant
-  -> `PF-2026-001` -> Lead conversion to `OPS-2026-001` -> auditee CAP ->
-  CAP accepted leaves the finding at `EVIDENCE_REQUIRED` (not closed) ->
-  auditee evidence -> evidence accepted closes the finding with
-  `closureType: evidence-accepted` and preserved evidence versions.
+- The old table-first lifecycle smoke path was superseded by the Cabin
+  Inspection scenario documented above: `PF-2026-001` converts to
+  `CAB-2026-001`, CAP acceptance leaves evidence required, and evidence
+  acceptance closes the finding with preserved evidence versions.
 - Auditee privacy re-verified: no `Internal CAA Note`, no other organizations,
   no inspector workload, no internal risk scoring in the portal render.
 - Fresh Playwright screenshot set captured after the changes:

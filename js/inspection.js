@@ -92,7 +92,7 @@ function convertPotentialFindingToFinding(potentialId, options) {
   var audit = auditById(potential.auditId);
   var item = checklistItemById(potential.questionId);
   var trace = regulatoryTraceForQuestion(potential.questionId);
-  var id = 'OPS-2026-' + String(state.findingSeq).padStart(3, '0');
+  var id = 'CAB-2026-' + String(state.findingSeq).padStart(3, '0');
   var finding = {
     id: id,
     title: options.title || (potential.result === 'observation' ? 'Checklist observation requires follow-up' : 'Checklist non-compliance'),
@@ -100,6 +100,8 @@ function convertPotentialFindingToFinding(potentialId, options) {
     orgId: potential.orgId,
     auditId: potential.auditId,
     severity: severity,
+    riskCategory: item && item.riskCategory ? item.riskCategory : '',
+    findingType: item && item.findingType ? item.findingType : '',
     reference: item ? item.ref : 'Configured rule (regulatory reference)',
     traceId: trace ? trace.id : null,
     basis: 'Lead Inspector converted Potential Finding ' + potential.id,

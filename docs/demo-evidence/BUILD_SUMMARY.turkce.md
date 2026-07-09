@@ -33,16 +33,16 @@ başlangıç verisine döndürür.
 
 | Dosya | Amaç |
 |---|---|
-| `index.html` | Demo şeridi artık tarayıcıya kayıtlı frontend-only demo olduğunu ve gerçek backend/AI/regülasyon entegrasyonu olmadığını belirtir. |
+| `index.html` | Demo şeridi artık tarayıcıya kayıtlı frontend-only demo olduğunu belirtir; Cabin Inspection senaryosu için asset query token güncellendi. |
 | `css/styles.css` | Rol bazlı çalışma alanları, sadeleştirilmiş Inspector My Inspections ana ekranı, sade Inspector chrome, SMS checklist çalışma alanı, Regulatory Trace, offline outbox, AI taslak kontrolleri ve 390px mobil düzeni. |
-| `js/data.js` | Backend'e yakın sahte kayıtlar, V2 seed verileri, açık status değerleri ve izole `localStorage` demo saklama yardımcıları. |
-| `js/helpers.js` | Seçiciler, status yardımcıları, regulatory trace lookup, outbox yardımcıları ve demo badge yardımcıları. |
+| `js/data.js` | Backend'e yakın sahte kayıtlar, workbook-derived Cabin Inspection seed checklist, açık status değerleri ve izole `localStorage` demo saklama yardımcıları. |
+| `js/helpers.js` | Seçiciler, status yardımcıları, Cabin/PBE regulatory trace lookup, outbox yardımcıları ve demo badge yardımcıları. |
 | `js/work-items.js` | Audit, finding, CAP/evidence alt satırları, approval, planning ve admin kuyrukları için ortak table-first iş öğesi hazırlama katmanı. |
-| `js/views.js` | Mevcut ekranlar, sadeleştirilmiş Inspector My Inspections ana ekranı, SMS Oversight Audit checklist çalışma alanı, dokuz V2 ekranı, Service Provider Portal çerçevesi, yeniden kullanılabilir Regulatory Trace görünümü ve table-first iş kuyrukları. |
-| `js/app.js` | Sadeleştirilmiş Inspector navigasyonu/chrome'u dahil rol bazlı deneyim navigasyonu, merkezi kalıcılık çağrıları, simüle inspection draft aksiyonları, simüle offline geçişleri, AI karar geçişleri, stabil ID üretimi ve checklist satır seçimi. |
+| `js/views.js` | Mevcut ekranlar, Cabin Inspection checklist runner metinleri, Lead Inspector potential finding kararları, Service Provider Portal çerçevesi, yeniden kullanılabilir Regulatory Trace görünümü ve table-first iş kuyrukları. |
+| `js/app.js` | Rol bazlı deneyim navigasyonu, merkezi kalıcılık çağrıları, Cabin Inspection finding/CAP/evidence geçişleri, simüle offline geçişleri, AI karar geçişleri, stabil ID üretimi ve checklist satır seçimi. |
 | `docs/demo-evidence/BUILD_SUMMARY.md` | İngilizce kanonik özet. |
 | `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Bu Türkçe paydaş özeti. |
-| `tests/table-first-workbench-smoke.test.js` | Table-first satırlar, row-click navigasyon ve auditee gizlilik sınırları için odaklı smoke testi. |
+| `tests/*.test.js` | Cabin Inspection hero path, checklist management, lifecycle geçişleri, demo sınırları ve mevcut workbench/governance yüzeyleri için güncellenmiş smoke kapsamı. |
 
 Backend, veritabanı, API, framework geçişi, gerçek dosya saklama, gerçek AI
 servisi, gerçek regülasyon içe aktarma veya gerçek bildirim servisi eklenmedi.
@@ -113,6 +113,34 @@ V1 iş akışı ekranları erişilebilir kalır: rol seçimi, yönetici/denetçi
 denetim takvimi, denetim detayı, checklist runner, bulgu detayı, Auditee My
 Findings, CAP formu, kanıt formu/inceleme, rapor önizleme, admin şablon
 önizleme, kuruluşlar, kullanıcılar, ayarlar, raporlar, mesajlar ve audit log.
+
+---
+
+## Ana Cabin Inspection senaryosu
+
+Ana ilk çalıştırma hikayesi artık workbook-derived Cabin Inspection demo
+verisine dayanır:
+
+1. CAA Manager, Airline XYZ için `2026 Cabin Inspection` planını görür.
+2. CAA Inspector, Airline XYZ Cabin Inspection denetimini açar ve
+   `Cabin Inspection` checklist'ini yürütür.
+3. Inspector, `EM EQ / PBE` sorusunu `Non-Compliant` işaretler.
+4. Lead Inspector, `PF-2026-001` potential finding'ini
+   `Finding CAB-2026-001` olarak dönüştürür.
+5. Airline XYZ root cause, corrective action, preventive action, target
+   completion date ve mock evidence dosya adlarını gönderir.
+6. Lead Inspector CAP'i kabul eder; bulgu
+   `CAP Accepted - Evidence Required` durumunda kalır.
+7. Airline XYZ `PBE_Serviceability_Record_CAB-2026-001.pdf` dosya adını mock
+   evidence olarak gönderir.
+8. Lead Inspector evidence kabul eder ve bulgu kapanır.
+
+Kaynak workbook profili mock/configured checklist kaynağı olarak temsil edilir:
+`GALLEY`, `LAV`, `PAX SEAT`, `EM EQ`, `VID+CREW SEAT` ve
+`COCKPIT+CAB GEN COND+EXITS` bölümlerinde 126 Cabin Inspection satırı. Demo
+hızlı yürüsün diye yalnızca seçilmiş 6 soru çalıştırılır. Workbook canlı import,
+hukuki kaynak, gerçek regulatory ingestion kaynağı veya production checklist
+repository değildir.
 
 ---
 
@@ -196,9 +224,9 @@ Korunan ürün kuralları:
 
 ## Doğrulama sonuçları
 
-Durum: **verified locally** (frontend-only demo).
+Durum: Cabin Inspection frontend-only senaryosu için **verified locally**.
 
-Çalıştırılan syntax kontrolleri:
+Çalıştırılan syntax kontrolleri geçti:
 
 ```bash
 node --check js/data.js
@@ -213,46 +241,52 @@ node --check js/views.js
 node --check js/app.js
 ```
 
-Playwright ile `index.html` üzerinde tarayıcı smoke testi yapıldı; konsol hatası yok.
+`tests/*.test.js` altındaki tüm doğrudan Node smoke testleri yerelde geçti.
+
+Tarayıcı smoke doğrulaması in-app Browser ile
+`http://127.0.0.1:4173/index.html` üzerinden yapıldı. Doğrudan `file://`
+navigasyonu browser policy tarafından engellendiği için render kontrolünde
+lokal HTTP server kullanıldı. Console warning/error listesi boştu.
+
 Doğrulananlar:
 
-- Inspector Workspace'in sadeleştirilmiş `My Inspections` ile açılması
-- `My Inspections` içinde dört KPI kartı ve üç odaklı tablo görünmesi:
-  Assigned Inspections, CAP Reviews ve Draft Reports
-- `Open` aksiyonunun Inspector'a özel `SMS Oversight Audit` checklist çalışma
-  alanını göstermesi; checklist sections, compliance kontrolleri, yorumlar,
-  sahte attached-file adları, draft save ve Lead Inspector submit aksiyonları
-- eski guardrail pill satırı, attention strip ve hızlı aksiyon buton satırının
-  Inspector ana ekranından saklanması
-- Supervisor / Manager Dashboard ve SSP/NASP dashboard ekranlarının erişilebilir kalması
-- Service Provider Portal çerçevesinin auditee rolünde görünmesi
-- dokuz V2 ekranının role uygun navigasyonla erişilebilir olması
-- mevcut Operator Audit senaryosunun uçtan uca çalışması
-- CAP kabulünden sonra `OPS-2026-001` durumunun `EVIDENCE_REQUIRED` kalması
-- kanıt kabulünden sonra `OPS-2026-001` durumunun `CLOSED` olması
-- auditee görünümünde `Internal CAA Note`, `Inspector Workload`, regulatory
-  governance, AI governance veya başka kuruluş metninin görünmemesi
-- refresh sonrası bulgu, CAP, kanıt dosya adı, AI kararı ve offline outbox durumunun korunması
-- Reset demo sonrası `localStorage` ve oluşturulan demo durumunun temizlenmesi
-- offline outbox'ın beklemeden `synced_to_demo_state` durumuna geçmesi
-- audit log içinde `Offline item synced (demo)` kaydı oluşması
-- tüm yeni V2 ekranlarında 390px viewport için yatay taşma olmaması
+- role-select metni `Finding CAB-2026-001` ve `Cabin Inspection` gösteriyor
+- audit calendar, Airline XYZ için `Cabin Safety` altında `2026 Cabin
+  Inspection` gösteriyor
+- checklist runner varsayılan olarak `EM EQ / PBE` sorusunu açıyor ve workbook
+  bölüm profilini gösteriyor
+- PBE satırını `Non-Compliant` işaretlemek `PF-2026-001` oluşturuyor
+- Lead Inspector pending potential finding'i görüyor ve `Level 1 Critical`,
+  `Emergency Preparedness`, `Equipment` alanlarıyla `CAB-2026-001` bulgusuna
+  dönüştürüyor
+- Airline XYZ yalnızca kendi auditee portal verisini görüyor ve CAP detaylarını
+  gönderiyor
+- CAP kabulü bulguyu kapatmıyor; durum
+  `CAP Accepted - Evidence Required` oluyor
+- Airline XYZ mock evidence dosya adı olarak
+  `PBE_Serviceability_Record_CAB-2026-001.pdf` gönderiyor
+- evidence kabulü `CAB-2026-001` bulgusunu kapatıyor
+- Manager Dashboard, `CAB-2026-001` bulgusunu CAP/evidence alt satırlarıyla
+  birlikte yakın zamanda kapanmış scenario update olarak gösteriyor
+- `Comment to Auditee` ve `Internal CAA Note` review modal'larında ayrı kalıyor
+- backend, veritabanı, API, gerçek authentication, gerçek upload/storage,
+  gerçek regulatory ingestion, gerçek AI servisi, production audit log,
+  framework migration veya deployment eklenmedi
 
-Final browser evidence özeti:
+Final Cabin Inspection browser evidence özeti:
 
 ```text
-afterIssue: WAITING_CAP
+potentialFinding: PF-2026-001
+convertedFinding: CAB-2026-001
+afterConvert: WAITING_CAP
 afterSubmitCap: CAP_SUBMITTED
 afterAcceptCap: EVIDENCE_REQUIRED
 afterSubmitEvidence: EVIDENCE_SUBMITTED
 afterAcceptEvidence: CLOSED
-aiDecision: edited
-outboxStatus after refresh: synced_to_demo_state
-reset storage: null
-console errors: []
-mobile scrollWidth/clientWidth: 390/390 on all V2 screens
-My Inspections mobile scrollWidth/clientWidth: 390/390
-Service Provider Portal mobile scrollWidth/clientWidth: 390/390
+managerDashboard: CAB-2026-001 visible as Closed with CAP/evidence rows
+mockEvidenceFilename: PBE_Serviceability_Record_CAB-2026-001.pdf
+console errors/warnings: []
+browser preview: http://127.0.0.1:4173/index.html
 ```
 
 ### CAA Governance browser QA - 2026-06-29
@@ -468,11 +502,10 @@ Doğrulama (lokal olarak doğrulandı):
 - `tests/` altındaki 17 Node smoke testinin tamamı geçti
   (`table-first-workbench-smoke`, `demo-boundary-smoke` ve
   `checklist-comment-render-smoke` dahil).
-- Gerçek browser'da tam yaşam döngüsü tıklaması: checklist Q2 Non-Compliant
-  -> `PF-2026-001` -> Lead dönüşümü `OPS-2026-001` -> auditee CAP -> CAP
-  kabulü bulguyu `EVIDENCE_REQUIRED` durumunda bırakır (kapatmaz) -> auditee
-  kanıtı -> kanıt kabulü bulguyu `closureType: evidence-accepted` ile kapatır
-  ve kanıt versiyonları korunur.
+- Eski table-first lifecycle smoke path artık yukarıda belgelenen Cabin
+  Inspection senaryosu ile superseded durumdadır: `PF-2026-001`,
+  `CAB-2026-001` bulgusuna dönüşür; CAP kabulü evidence gereksinimini korur;
+  evidence kabulü bulguyu kapatır ve evidence version geçmişi korunur.
 - Auditee gizliliği yeniden doğrulandı: portal render'ında `Internal CAA
   Note`, başka kuruluş, inspector workload veya internal risk scoring yok.
 - Değişikliklerden sonra taze Playwright screenshot seti alındı:

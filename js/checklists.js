@@ -8,7 +8,7 @@ function canManageChecklistConfig(roleKey) {
 }
 
 function activeManagedChecklist() {
-  return managedChecklistById('CL-FOPS') || (state.managedChecklists && state.managedChecklists[0]);
+  return managedChecklistById('CL-CABIN') || (state.managedChecklists && state.managedChecklists[0]);
 }
 
 function questionBankById(id) {
@@ -91,9 +91,9 @@ function createQuestionBankItem(payload) {
     id: id,
     title: payload.title || 'New checklist question',
     text: payload.text || 'Does the sampled record meet the configured evidence expectation?',
-    regulationRef: payload.regulationRef || 'Configured rule FOPS-CRT-04 (regulatory reference)',
-    department: payload.department || 'Flight Operations',
-    category: payload.category || 'Evidence quality',
+    regulationRef: payload.regulationRef || 'Configured reference: ICAO Annex 6 / Cabin emergency equipment (demo)',
+    department: payload.department || 'Cabin Safety',
+    category: payload.category || 'Emergency Preparedness',
     commentRequired: !!payload.commentRequired,
     evidenceRequired: payload.evidenceRequired !== false,
     allowPotentialFinding: payload.allowPotentialFinding !== false,

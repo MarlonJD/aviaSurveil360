@@ -1,8 +1,8 @@
-# Demo Scenario — Operator Audit
+# Demo Scenario — Cabin Inspection
 
 ## Scenario
 
-Operator Audit for Airline XYZ: Incomplete Crew Training Records.
+Cabin Inspection for Airline XYZ: PBE serviceability and accessibility not confirmed.
 
 ## Actors
 
@@ -12,33 +12,36 @@ Operator Audit for Airline XYZ: Incomplete Crew Training Records.
 
 ## Data
 
-- Audit: 2026 Operator Audit
-- Checklist: Flight Operations Audit
-- Question: Are crew training records complete and up to date?
-- Finding: OPS-2026-001
-- Severity: Level 2 Major
+- Audit: 2026 Cabin Inspection
+- Checklist: Cabin Inspection
+- Question: Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?
+- Finding: CAB-2026-001
+- Severity: Level 1 Critical
+- Risk category: Emergency Preparedness
+- Finding type: Equipment
 - Due date: 30 days
 
 ## Flow
 
-1. Manager opens dashboard and sees 2026 surveillance plan.
-2. Operator Audit for Airline XYZ is scheduled.
-3. Inspector opens today's assigned audit.
-4. Inspector starts Flight Operations checklist.
-5. Inspector marks crew training records question Non-Compliant.
-6. System opens finding form with prefilled organization, audit and checklist reference.
-7. Inspector issues Finding OPS-2026-001.
-8. Airline XYZ auditee logs in and sees My Findings.
+1. Manager opens dashboard and sees the 2026 Cabin Inspection plan for Airline XYZ.
+2. Cabin Inspection for Airline XYZ is scheduled.
+3. Inspector opens today's assigned Cabin Inspection.
+4. Inspector starts the Cabin Inspection checklist.
+5. Inspector opens the `EM EQ / PBE` question and marks it Non-Compliant.
+6. System opens a finding form with prefilled organization, audit, checklist reference, severity, and expected evidence context.
+7. Inspector issues Finding CAB-2026-001.
+8. Airline XYZ auditee logs in and sees My Findings for its own organization only.
 9. Auditee submits CAP:
-   - Root cause: Training records were maintained manually.
-   - Corrective action: Migrate to digital training system.
-   - Preventive action: Monthly training record audit.
+   - Root cause: Pre-flight cabin equipment serviceability checks did not reconcile the PBE position with the deferred defect list.
+   - Corrective action: Replace or service the affected PBE, update the cabin defect record, and confirm serviceability before release.
+   - Preventive action: Add a supervisor review of emergency equipment checks and monthly sampling of PBE serviceability records.
    - Target completion date: 15 July 2026.
-10. Auditee uploads Training_Record_Updated.pdf.
-11. Inspector reviews and accepts evidence.
-12. Finding closes.
-13. Manager dashboard updates.
+10. Auditee uploads PBE_Serviceability_Record_CAB-2026-001.pdf and may reference PBE_Cabin_Position_Photo.jpg as a mock filename.
+11. Inspector reviews and accepts the CAP. The finding remains open at Evidence Required.
+12. Inspector reviews and accepts evidence.
+13. Finding closes only after evidence acceptance.
+14. Manager dashboard updates.
 
 ## Demo message
 
-The system replaced e-mail follow-up with a traceable CAA–auditee workflow.
+The system turns a cabin emergency equipment checklist exception into a traceable CAA-auditee CAP and evidence workflow. The workbook-derived checklist is demo/mock configuration data and is not a legal or regulatory source.

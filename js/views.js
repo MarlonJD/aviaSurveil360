@@ -646,7 +646,7 @@ function viewQuestionBank() {
     ]) +
     '<div class="configuration-studio">' +
       '<aside class="configuration-studio__list">' +
-        '<div class="configuration-search"><label>Search questions</label><input type="search" value="" placeholder="Crew training, evidence, regulation"></div>' +
+        '<div class="configuration-search"><label>Search questions</label><input type="search" value="" placeholder="PBE, emergency equipment, evidence"></div>' +
         '<div class="configuration-list">' + rows + '</div>' +
       '</aside>' +
       '<main class="configuration-studio__preview">' +
@@ -759,8 +759,8 @@ function viewRoleHome() {
         ['Finding Closure', '7', 'After final report', 'neutral', 'findings']
       ],
       rows: [
-        ['OPS-2026-001', 'Potential finding from Flight Operations checklist', 'Severity review pending', 'findings'],
-        ['AUD-2026-001', 'Airline XYZ Operator Audit', 'Team and checklist execution', 'calendar'],
+        ['CAB-2026-001', 'Potential finding from Cabin Inspection checklist', 'Severity review pending', 'findings'],
+        ['AUD-2026-001', 'Airline XYZ Cabin Inspection', 'Team and checklist execution', 'calendar'],
         ['RPT-2026-004', 'Preliminary report package', 'Lead sign-off before Department Manager review', 'audit-reports']
       ]
     },
@@ -1262,12 +1262,17 @@ function viewManagerDashboard() {
   var k = computeKpis();
   var ohi = computeOHI();
   var needsAttention = state.findings.filter(function (f) {
-    return f.status !== 'CLOSED' && (f.severity === 1 || dueInfo(f).overdue);
+    return f.id !== 'CAB-2026-001' && f.status !== 'CLOSED' && (f.severity === 1 || dueInfo(f).overdue);
+  });
+  var scenarioUpdates = state.findings.filter(function (f) {
+    return f.id === 'CAB-2026-001';
   });
   var notStarted = state.audits.filter(function (a) { return a.status === 'Planned'; });
-  var attentionItems = needsAttention.map(function (finding) {
+  var attentionItems = scenarioUpdates.map(function (finding) {
     return workItemFromFinding(finding, { allEvidenceVersions: true });
-  }).concat(notStarted.map(workItemFromAudit)).sort(workItemSort);
+  }).concat(needsAttention.map(function (finding) {
+    return workItemFromFinding(finding, { allEvidenceVersions: true });
+  }).concat(notStarted.map(workItemFromAudit)).sort(workItemSort));
 
   return '' +
     pageHead('Supervisor / Manager Dashboard', 'Performance, risk, workload, SSP and CAP oversight.') +
@@ -1284,8 +1289,8 @@ function viewManagerDashboard() {
       '<button class="btn" data-act="nav" data-view="calendar">Open audit work queue</button>' +
       '<button class="btn" data-act="nav" data-view="planning">Open planning</button>' +
     '</div>' +
-    '<h2 class="section-heading">Management Attention</h2>' +
-    renderOpsTable(attentionItems, { includeChildren: true, empty: 'No critical, overdue, or not-started management items right now.' });
+    '<h2 class="section-heading">Management Attention & Recent Closure</h2>' +
+    renderOpsTable(attentionItems, { includeChildren: true, empty: 'No critical, overdue, recently closed, or not-started management items right now.' });
 }
 
 function workbenchItem(tone, title, meta, actionLabel, view, id, filter) {
@@ -4619,7 +4624,8 @@ function viewChecklistRunner() {
       return ans.answer === 'noncompliant' || ans.answer === 'observation' || ans.potentialFindingId || ans.findingId;
     })[0];
     var unanswered = tpl.items.filter(function (item) { return !(answers[item.id] && answers[item.id].answer); })[0];
-    activeQuestionId = (flaggedItem || unanswered || tpl.items[0]).id;
+    var heroItem = tpl.items.filter(function (item) { return item.id === 'cab-em-eq-pbe'; })[0];
+    activeQuestionId = (flaggedItem || heroItem || unanswered || tpl.items[0]).id;
   }
   var activeItem = tpl.items.filter(function (item) { return item.id === activeQuestionId; })[0] || tpl.items[0];
   var activeAnswer = answers[activeItem.id] || {};
@@ -4639,7 +4645,7 @@ function viewChecklistRunner() {
       : (ans.potentialFindingId ? demoBadge('Potential Finding', 'warn') : '<span class="muted small">No finding</span>');
     return '<tr class="ops-row' + (it.id === activeItem.id ? ' is-selected' : '') + '" data-act="select-checklist-question" data-q="' + esc(it.id) + '">' +
       '<td data-col="priority"><span class="ops-priority is-' + (ans.answer === 'noncompliant' ? 'danger' : (ans.answer === 'observation' ? 'warn' : 'neutral')) + '">Q' + (idx + 1) + '</span></td>' +
-      '<td data-col="item"><div class="ops-cell-title">' + esc(it.text) + '</div><div class="ops-cell-sub">' + esc(it.ref) + '</div></td>' +
+      '<td data-col="item"><div class="ops-cell-title">' + esc(it.text) + '</div><div class="ops-cell-sub">' + esc((it.section ? it.section + ' / ' : '') + (it.subSection ? it.subSection + ' · ' : '') + it.ref) + '</div></td>' +
       '<td data-col="status">' + answerBadge(ans) + '</td>' +
       '<td data-col="lifecycle">' + esc(it.evidence) + '</td>' +
       '<td data-col="next" data-label="Finding:">' + findingState + '</td>' +
@@ -4683,7 +4689,7 @@ function viewChecklistRunner() {
     '</tr></thead><tbody>' + rows + '</tbody></table></div>';
   var activePanel = '<div class="active-row-panel question-dossier">' +
     '<div class="active-row-panel__title">' + esc(activeItem.text) + '</div>' +
-    '<div class="active-row-panel__meta">' + esc(activeItem.ref) + ' · Expected Evidence: ' + esc(activeItem.evidence) + '</div>' +
+    '<div class="active-row-panel__meta">' + esc((activeItem.section ? activeItem.section + ' / ' : '') + (activeItem.subSection ? activeItem.subSection + ' · ' : '') + activeItem.ref) + ' · Expected Evidence: ' + esc(activeItem.evidence) + '</div>' +
     regulatoryTraceHtml(regulatoryTraceForQuestion(activeItem.id), true) +
     '<div class="decision-bar decision-bar--checklist">' +
       commandMetric('Current owner', 'CAA Inspector', 'info') +
@@ -4704,7 +4710,7 @@ function viewChecklistRunner() {
     '<div class="progress-band">' +
       '<span class="progress-band__count">' + answered + ' of ' + tpl.items.length + ' answered</span>' +
       '<div class="progress"><div class="progress__bar" style="width:' + pct + '%"></div></div>' +
-      '<div class="progress-band__hint">Demo scenario: mark <b>Are crew training records complete and up to date?</b> as <b>Non-Compliant</b> to raise a finding.</div>' +
+      '<div class="progress-band__hint">Demo scenario: mark <b>EM EQ / PBE serviceability</b> as <b>Non-Compliant</b> to raise a finding. Source sections: GALLEY, LAV, PAX SEAT, EM EQ, VID+CREW SEAT, COCKPIT+CAB GEN COND+EXITS.</div>' +
     '</div>' +
     '<div class="checklist-dossier-layout active-row-layout">' +
       activePanel +
@@ -4803,7 +4809,7 @@ function leadPotentialDecisionRowsHtml(potentials) {
       var status = approvalMetaForStatus(pf.status);
       var canDecide = state.role === 'leadInspector' && pf.status === 'pending_lead_review';
       var decision = canDecide
-        ? '<div class="divider"></div><div class="form-row"><label>Finding title</label><input id="pf-title-' + esc(pf.id) + '" type="text" value="Crew training records incomplete"></div>' +
+        ? '<div class="divider"></div><div class="form-row"><label>Finding title</label><input id="pf-title-' + esc(pf.id) + '" type="text" value="PBE not serviceable or not accessible in cabin emergency equipment check"></div>' +
           '<div class="form-row"><label>Lead severity <span class="req">*</span></label><select id="pf-severity-' + esc(pf.id) + '">' +
             '<option value="">Select severity</option><option value="3">Level 3 Minor</option><option value="2">Level 2 Major</option><option value="1">Level 1 Critical</option><option value="0">Observation</option>' +
           '</select></div>' +
@@ -5938,6 +5944,7 @@ function viewLeadAssignmentQuestions() {
 function viewLeadAssignedAudits() {
   var ui = leadAssignedAuditsUiState();
   var rows = leadAssignedAuditFilteredRows(ui);
+  var potentialPanel = leadPotentialDecisionRowsHtml((state.potentialFindings || []).slice().reverse());
   return '<div class="lead-assigned-page">' +
     '<div class="lead-assigned-crumb">Dashboard <span>›</span> <b>Assigned Audits</b></div>' +
     '<div class="lead-assigned-head">' +
@@ -5951,6 +5958,7 @@ function viewLeadAssignedAudits() {
       leadAssignedKpiCard('Pending Approval', '3', 'Audits', 17, 'pending', '➤') +
       leadAssignedKpiCard('Overdue', '2', 'Audits', 11, 'overdue', '!') +
     '</div>' +
+    potentialPanel +
     leadAssignedFiltersHtml(ui) +
     leadAssignedTableHtml(rows, rows.length) +
     '<div class="lead-assigned-legend"><span><b class="is-high"></b>High Risk</span><span><b class="is-medium"></b>Medium Risk</span><span><b class="is-low"></b>Low Risk</span></div>' +
@@ -6101,7 +6109,7 @@ function leadPreliminaryReportRows() {
     { id: 'PR-2026-012', inspection: 'Ground Handling Inspection', organization: 'Prime Handling', dates: '25 - 26 May 2026', status: 'submitted', updated: '26 May 2026 13:50', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 2, major: 1, observation: 1 } },
     { id: 'PR-2026-011', inspection: 'Wildlife Hazard Inspection', organization: 'GreenAir', dates: '21 - 22 May 2026', status: 'draft', updated: '22 May 2026 08:30', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 1, major: 0, observation: 2 } },
     { id: 'PR-2026-010', inspection: 'Maintenance Oversight Inspection', organization: 'West Air (Pty) Ltd', dates: '18 - 20 May 2026', status: 'submitted', updated: '21 May 2026 10:40', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 2, major: 2, observation: 2 } },
-    { id: 'PR-2026-009', inspection: 'Flight Operations Audit', organization: 'Airline XYZ', dates: '14 - 16 May 2026', status: 'approved', updated: '17 May 2026 13:05', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 3, major: 1, observation: 4 } },
+    { id: 'PR-2026-009', inspection: 'Cabin Inspection', organization: 'Airline XYZ', dates: '14 - 16 May 2026', status: 'approved', updated: '17 May 2026 13:05', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 3, major: 1, observation: 4 } },
     { id: 'PR-2026-008', inspection: 'Cabin Safety Inspection', organization: 'National Airways Corp', dates: '10 - 12 May 2026', status: 'released', updated: '13 May 2026 12:35', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 1, major: 2, observation: 3 } },
     { id: 'PR-2026-007', inspection: 'Airport Security Inspection', organization: 'SkyCargo Air', dates: '6 - 8 May 2026', status: 'draft', updated: '9 May 2026 17:20', auditId: 'AUD-2026-005', period: 'may', findings: { critical: 6, major: 3, observation: 2 } },
     { id: 'PR-2026-006', inspection: 'Cargo Facility Inspection', organization: 'Metro Cargo', dates: '1 - 3 May 2026', status: 'submitted', updated: '4 May 2026 09:55', auditId: 'AUD-2026-005', period: 'may', findings: { critical: 4, major: 2, observation: 1 } },
@@ -7675,6 +7683,8 @@ function viewFinding() {
             metaItem('Due Date', dueDisplay) +
             metaItem('Organization', orgName(f.orgId)) +
             metaItem('Related audit', f.auditId || '—') +
+            metaItem('Risk category', f.riskCategory || '—') +
+            metaItem('Finding type', f.findingType || '—') +
             metaItem('Responsible person', f.responsiblePerson || '—') +
           '</div>' +
           '<div class="divider"></div>' +
@@ -8270,16 +8280,17 @@ function viewMessages() {
 /* =========================== Admin — Templates =========================== */
 function viewTemplates() {
   var rows = state.templateLibrary.map(function (t) {
-    var open = t.id === 'TPL-FOPS-2026';
+    var open = t.id === 'TPL-CABIN-2026';
     var badge = t.status === 'Published' ? 'ok' : 'neutral';
+    var itemLabel = typeof t.items === 'number' ? String(t.items) + ' items' : String(t.items);
     return '<tr class="' + (open ? 'row-click' : '') + '"' + (open ? ' data-act="nav" data-view="template-preview" data-id="' + t.id + '"' : '') + '>' +
       '<td><b>' + esc(t.name) + '</b></td><td>' + esc(t.domain) + '</td><td>' + esc(t.version) + '</td>' +
-      '<td>' + t.items + ' items</td>' +
+      '<td>' + esc(itemLabel) + '</td>' +
       '<td><span class="badge badge--' + badge + '"><span class="dot"></span>' + esc(t.status) + '</span></td>' +
       '<td style="text-align:right">' + (open ? '<button class="btn btn--sm" data-act="nav" data-view="template-preview" data-id="' + t.id + '">Preview</button>' : '<span class="muted small">—</span>') + '</td></tr>';
   }).join('');
   return pageHead('Checklist Templates', 'Which template or rule must be configured? (Preview only.)') +
-    '<div class="callout mb-16">Admin can configure templates and rules. In this demo only the <b>Flight Operations Audit</b> template is openable for preview.</div>' +
+    '<div class="callout mb-16">Admin can configure templates and rules. In this demo only the <b>Cabin Inspection</b> template is openable for preview.</div>' +
     '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
     '<th>Template</th><th>Domain</th><th>Version</th><th>Items</th><th>Status</th><th></th></tr></thead><tbody>' +
     rows + '</tbody></table></div>';
@@ -8306,7 +8317,9 @@ function viewTemplatePreview() {
       metaItem('Template ID', tpl.id) + metaItem('Domain', tpl.domain) +
       metaItem('Version', tpl.version) + metaItem('Owner', tpl.owner) +
       metaItem('Items', String(tpl.items.length)) + metaItem('Status', 'Published') +
-    '</div></div></div>' + table;
+    '</div></div></div>' +
+    '<div class="callout mb-16">Source workbook profile: 126 Cabin Inspection rows across 6 sections. This demo runs a curated 6-question subset; the source workbook remains a mock/configured checklist reference, not a live import or legal source.</div>' +
+    table;
 }
 
 /* =========================== Admin — Audit Log =========================== */
@@ -8446,7 +8459,7 @@ function modalCapForm(f) {
       '<div class="help">Preventive action</div><textarea id="cap-prev" placeholder="The change that prevents recurrence."></textarea></div>' +
     '<div class="form-2col">' +
       '<div class="form-row"><label>Who is responsible? <span class="req">*</span></label>' +
-        '<input type="text" id="cap-resp" placeholder="Name or role" value="Director of Flight Operations"></div>' +
+        '<input type="text" id="cap-resp" placeholder="Name or role" value="Cabin Maintenance Lead"></div>' +
       '<div class="form-row"><label>When will it be completed? <span class="req">*</span></label>' +
         '<div class="help">Target completion date</div><input type="date" id="cap-date" value="2026-07-15"></div>' +
     '</div>' +
@@ -8463,10 +8476,10 @@ function modalCapForm(f) {
 function modalEvidence(f) {
   var body =
     '<div class="modal__intro">📎 Finding <b>' + esc(f.id) + '</b>. Upload files that show the corrective action is complete. ' +
-    'Expected: proof the crew training records are now complete and maintained.</div>' +
+    'Expected: proof the PBE serviceability issue was corrected and the cabin defect record was closed or controlled.</div>' +
     '<div class="form-row"><label>Evidence file <span class="req">*</span></label>' +
       '<div class="filebox" data-act="mock-pick" data-target="ev-file"><div class="filebox__icon">📄</div>' +
-      '<div>Click to select a file (mock)</div><div class="filebox__hint">Suggested: Training_Record_Updated.pdf</div></div>' +
+      '<div>Click to select a file (mock)</div><div class="filebox__hint">Suggested: PBE_Serviceability_Record_CAB-2026-001.pdf</div></div>' +
       '<div id="ev-file"></div></div>' +
     '<div class="form-row"><label>Note to CAA (optional)</label>' +
       '<textarea id="ev-note" placeholder="Anything the inspector should know about this evidence."></textarea></div>';
@@ -8527,7 +8540,9 @@ function modalFindingForm(auditId, qId) {
   var a = auditById(auditId);
   var item = null;
   for (var i = 0; i < state.checklist.items.length; i++) if (state.checklist.items[i].id === qId) item = state.checklist.items[i];
-  var nextId = 'OPS-2026-' + String(state.findingSeq).padStart(3, '0');
+  var nextId = 'CAB-2026-' + String(state.findingSeq).padStart(3, '0');
+  var itemSeverity = item && item.severity !== undefined ? item.severity : 1;
+  var isPbeHero = qId === 'cab-em-eq-pbe';
   var body =
     '<div class="modal__intro">A finding will be created from the Non-Compliant checklist item. Organization, audit and reference are prefilled.</div>' +
     '<div class="form-2col">' +
@@ -8535,15 +8550,15 @@ function modalFindingForm(auditId, qId) {
       '<div class="form-row"><label>Organization</label><input type="text" value="' + esc(orgName(a.orgId)) + '" readonly></div>' +
     '</div>' +
     '<div class="form-row"><label>Title <span class="req">*</span></label>' +
-      '<input type="text" id="fd-title" value="Crew training records incomplete"></div>' +
+      '<input type="text" id="fd-title" value="' + esc(isPbeHero ? 'PBE not serviceable or not accessible in cabin emergency equipment check' : 'Cabin inspection checklist non-compliance') + '"></div>' +
     '<div class="form-row"><label>Description <span class="req">*</span></label>' +
-      '<textarea id="fd-desc">Sampled crew training records were incomplete and not up to date at the time of the audit.</textarea></div>' +
+      '<textarea id="fd-desc">' + esc(isPbeHero ? 'The inspected PBE position could not be confirmed as serviceable and accessible during the cabin emergency equipment check.' : 'A cabin inspection checklist item was marked Non-Compliant during the audit.') + '</textarea></div>' +
     '<div class="form-2col">' +
       '<div class="form-row"><label>Severity</label><select id="fd-sev">' +
-        '<option value="1">Level 1 Critical</option>' +
-        '<option value="2" selected>Level 2 Major</option>' +
-        '<option value="3">Level 3 Minor</option>' +
-        '<option value="0">Observation</option></select></div>' +
+        '<option value="1"' + (itemSeverity === 1 ? ' selected' : '') + '>Level 1 Critical</option>' +
+        '<option value="2"' + (itemSeverity === 2 ? ' selected' : '') + '>Level 2 Major</option>' +
+        '<option value="3"' + (itemSeverity === 3 ? ' selected' : '') + '>Level 3 Minor</option>' +
+        '<option value="0"' + (itemSeverity === 0 ? ' selected' : '') + '>Observation</option></select></div>' +
       '<div class="form-row"><label>Due Date</label><input type="date" id="fd-due" value="2026-07-15"></div>' +
     '</div>' +
     '<div class="form-row"><label>Regulatory reference</label>' +
@@ -8623,7 +8638,7 @@ function viewAuditWizard() {
     bodyHtml =
       '<div class="form-row"><label>Checklist template <span class="req">*</span></label><select id="wz-tpl">' +
         state.templateLibrary.map(function (t) { return '<option value="' + t.id + '"' + (w.templateId === t.id ? ' selected' : '') + '>' + esc(t.name) + ' · ' + esc(t.version) + '</option>'; }).join('') +
-      '</select><div class="help">Only the Flight Operations Audit template is runnable in this demo.</div></div>' +
+      '</select><div class="help">Only the Cabin Inspection template is runnable in this demo.</div></div>' +
       '<div class="form-row"><label>Scope (optional)</label><textarea id="wz-scope" placeholder="Areas in scope for this audit.">' + esc(w.scope || '') + '</textarea></div>';
   } else {
     var orgN = orgName(w.orgId);

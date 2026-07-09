@@ -91,8 +91,8 @@ function regulatoryTraceForQuestion(questionId) {
 function regulatoryTraceForFinding(finding) {
   if (!finding) return null;
   if (finding.traceId) return regulatoryTraceById(finding.traceId);
-  if (finding.reference && finding.reference.indexOf('crew training') > -1) return regulatoryTraceById('TRACE-OPS-TRG-4.2');
-  if (finding.id && finding.id.indexOf('OPS-') === 0) return regulatoryTraceById('TRACE-OPS-TRG-4.2');
+  if (finding.reference && finding.reference.indexOf('PBE') > -1) return regulatoryTraceById('TRACE-CAB-PBE-EMEQ');
+  if (finding.id && finding.id.indexOf('CAB-') === 0) return regulatoryTraceById('TRACE-CAB-PBE-EMEQ');
   return null;
 }
 

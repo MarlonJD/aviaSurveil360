@@ -13,7 +13,7 @@ vm.createContext(context);
 
 context.state = context.freshState();
 const auditId = 'AUD-2026-001';
-const questionId = 'q2';
+const questionId = 'cab-em-eq-pbe';
 
 assert.ok(Array.isArray(context.state.potentialFindings), 'potential findings collection exists');
 
@@ -23,12 +23,12 @@ assert.throws(
   'Non-Compliant checklist result requires a comment'
 );
 
-context.recordChecklistResult(auditId, questionId, 'noncompliant', 'Two sampled records lacked current recurrent training evidence.', ['Training_Record_Sample.pdf']);
+context.recordChecklistResult(auditId, questionId, 'noncompliant', 'The inspected PBE position could not be confirmed as serviceable and accessible.', ['PBE_Cabin_Position_Photo.jpg']);
 const potential = context.createPotentialFinding(auditId, questionId, { actorName: 'Aylin Sezer' });
 
 assert.equal(potential.status, 'pending_lead_review');
 assert.equal(potential.result, 'noncompliant');
-assert.equal(context.state.findings.some((finding) => finding.id === 'OPS-2026-001'), false, 'Potential Finding does not create a real finding yet');
+assert.equal(context.state.findings.some((finding) => finding.id === 'CAB-2026-001'), false, 'Potential Finding does not create a real finding yet');
 
 assert.throws(
   () => context.convertPotentialFindingToFinding(potential.id, { actorName: 'Caner Yildiz' }),
@@ -38,15 +38,17 @@ assert.throws(
 
 const finding = context.convertPotentialFindingToFinding(potential.id, {
   actorName: 'Caner Yildiz',
-  severity: 2,
-  title: 'Crew training records incomplete'
+  severity: 1,
+  title: 'PBE not serviceable or not accessible in cabin emergency equipment check'
 });
 
 assert.equal(potential.status, 'converted');
 assert.equal(potential.findingId, finding.id);
-assert.equal(finding.id, 'OPS-2026-001');
+assert.equal(finding.id, 'CAB-2026-001');
 assert.equal(finding.status, 'WAITING_CAP');
-assert.equal(finding.severity, 2);
+assert.equal(finding.severity, 1);
+assert.equal(finding.riskCategory, 'Emergency Preparedness');
+assert.equal(finding.findingType, 'Equipment');
 assert.equal(context.state.checklistAnswers[questionId].findingId, finding.id);
 
 console.log('inspection-execution-smoke: ok');

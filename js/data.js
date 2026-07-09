@@ -110,89 +110,103 @@ var SEED_ORGS = [
 
 /* ----------------------------- Checklist template ----------------------------- */
 var SEED_CHECKLIST = {
-  id: 'TPL-FOPS-2026',
-  name: 'Flight Operations Audit',
-  domain: 'Flight Operations',
-  version: 'v3.2 (2026)',
-  owner: 'Standards & Training Section',
+  id: 'TPL-CABIN-2026',
+  name: 'Cabin Inspection',
+  domain: 'Cabin Safety',
+  version: 'v1.0 (2026 demo)',
+  owner: 'Cabin Safety Section',
   items: [
-    { id: 'q1', text: 'Is the Operations Manual current and approved?',
-      ref: 'Configured rule FOPS-OM-01 (regulatory reference: Operations Manual currency)',
-      evidence: 'Approved Operations Manual revision record' },
-    { id: 'q2', text: 'Are crew training records complete and up to date?',
-      ref: 'Configured rule FOPS-CRT-04 (regulatory reference: crew training & checking records)',
-      evidence: 'Crew training matrix and completion certificates' },
-    { id: 'q3', text: 'Are Flight Time Limitation (FTL) records maintained?',
-      ref: 'Configured rule FOPS-FTL-02 (regulatory reference: flight & duty time records)',
-      evidence: 'FTL monitoring report for the audited period' },
-    { id: 'q4', text: 'Is the Minimum Equipment List (MEL) approved and available to crews?',
-      ref: 'Configured rule FOPS-MEL-03 (regulatory reference: approved MEL)',
-      evidence: 'Approved MEL and crew distribution evidence' },
-    { id: 'q5', text: 'Are dangerous goods training certificates valid?',
-      ref: 'Configured rule FOPS-DG-05 (regulatory reference: dangerous goods training)',
-      evidence: 'Valid dangerous goods training certificates' }
+    { id: 'cab-galley-oven', section: 'GALLEY', subSection: 'Galley Items', riskCategory: 'Cabin Safety', severity: 2, findingType: 'Equipment',
+      text: 'Is the oven installed, serviceable, and in compliance with configured cabin inspection requirements?',
+      ref: 'Configured reference: ICAO Annex 6 / Company Cabin Inspection Manual (demo)',
+      evidence: 'Galley equipment serviceability record or cabin defect rectification note' },
+    { id: 'cab-lav-oxygen-compartment', section: 'LAV', subSection: 'Lavatories', riskCategory: 'Emergency Preparedness', severity: 1, findingType: 'Equipment',
+      text: 'Is the lavatory oxygen compartment installed, serviceable, and in compliance with configured cabin emergency equipment requirements?',
+      ref: 'Configured reference: ICAO Annex 6 / Company Cabin Inspection Manual (demo)',
+      evidence: 'Lavatory oxygen compartment serviceability record and inspection note' },
+    { id: 'cab-seat-oxygen-mask', section: 'PAX SEAT', subSection: 'Pax Seats', riskCategory: 'Emergency Preparedness', severity: 1, findingType: 'Equipment',
+      text: 'Is the passenger oxygen mask compartment installed, serviceable, and in compliance with configured cabin emergency equipment requirements?',
+      ref: 'Configured reference: ICAO Annex 6 / Company Cabin Inspection Manual (demo)',
+      evidence: 'Passenger seat oxygen mask compartment check record' },
+    { id: 'cab-em-eq-pbe', section: 'EM EQ', subSection: 'Emergency Equipment', riskCategory: 'Emergency Preparedness', severity: 1, findingType: 'Equipment',
+      text: 'Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?',
+      ref: 'Configured reference: ICAO Annex 6 / Cabin emergency equipment (demo reference)',
+      evidence: 'PBE replacement/serviceability record, cabin defect rectification reference, and inspector photo filename' },
+    { id: 'cab-em-eq-first-aid-oxygen', section: 'EM EQ', subSection: 'Emergency Equipment', riskCategory: 'Emergency Preparedness', severity: 1, findingType: 'Equipment',
+      text: 'Are first aid oxygen masks installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?',
+      ref: 'Configured reference: ICAO Annex 6 / Cabin emergency equipment (demo reference)',
+      evidence: 'First aid oxygen serviceability record and inspection sign-off' },
+    { id: 'cab-exit-safety-strap', section: 'COCKPIT+CAB GEN COND+EXITS', subSection: 'Exits', riskCategory: 'Flight Operations', severity: 2, findingType: 'Operational',
+      text: 'Is the exit safety strap installed, serviceable, and in compliance with configured exit equipment requirements?',
+      ref: 'Configured reference: ICAO Annex 6 / Cabin exits (demo reference)',
+      evidence: 'Exit equipment inspection record and rectification note if applicable' }
   ]
 };
 
 var SEED_QUESTION_BANK = [
-  { id: 'QB-001', title: 'Operations manual currency', text: 'Is the Operations Manual current and approved?',
-    regulationRef: 'Configured rule FOPS-OM-01 (regulatory reference)', department: 'Flight Operations',
-    category: 'Documentation', commentRequired: false, evidenceRequired: true, allowPotentialFinding: true,
-    inspectorGuidance: 'Check the current revision record and approval page.',
-    exampleEvidence: 'Approved Operations Manual revision record', notes: 'Demo question bank item.', status: 'Active' },
-  { id: 'QB-002', title: 'Crew training records', text: 'Are crew training records complete and up to date?',
-    regulationRef: 'Configured rule FOPS-CRT-04 (regulatory reference)', department: 'Flight Operations',
-    category: 'Training', commentRequired: true, evidenceRequired: true, allowPotentialFinding: true,
-    inspectorGuidance: 'Sample crew records against the training matrix.',
-    exampleEvidence: 'Crew training matrix and completion certificates', notes: 'Hero scenario question.', status: 'Active' },
-  { id: 'QB-003', title: 'Flight time limitation records', text: 'Are Flight Time Limitation (FTL) records maintained?',
-    regulationRef: 'Configured rule FOPS-FTL-02 (regulatory reference)', department: 'Flight Operations',
-    category: 'Records', commentRequired: false, evidenceRequired: true, allowPotentialFinding: true,
-    inspectorGuidance: 'Review a sample FTL monitoring report.',
-    exampleEvidence: 'FTL monitoring report for the audited period', notes: 'Demo question bank item.', status: 'Active' },
-  { id: 'QB-004', title: 'MEL availability', text: 'Is the Minimum Equipment List (MEL) approved and available to crews?',
-    regulationRef: 'Configured rule FOPS-MEL-03 (regulatory reference)', department: 'Flight Operations',
-    category: 'Operational control', commentRequired: false, evidenceRequired: true, allowPotentialFinding: true,
-    inspectorGuidance: 'Confirm approved MEL distribution to operating crew.',
-    exampleEvidence: 'Approved MEL and crew distribution evidence', notes: 'Demo question bank item.', status: 'Active' },
-  { id: 'QB-005', title: 'Dangerous goods training', text: 'Are dangerous goods training certificates valid?',
-    regulationRef: 'Configured rule FOPS-DG-05 (regulatory reference)', department: 'Flight Operations',
-    category: 'Training', commentRequired: false, evidenceRequired: true, allowPotentialFinding: true,
-    inspectorGuidance: 'Sample certificate validity dates.',
-    exampleEvidence: 'Valid dangerous goods training certificates', notes: 'Demo question bank item.', status: 'Active' },
-  { id: 'QB-006', title: 'Training evidence cross-check', text: 'Does the training matrix reconcile to sampled crew certificate evidence?',
-    regulationRef: 'Configured rule FOPS-CRT-04 (regulatory reference)', department: 'Flight Operations',
-    category: 'Evidence quality', commentRequired: true, evidenceRequired: true, allowPotentialFinding: true,
-    inspectorGuidance: 'Cross-check the matrix row against at least one certificate sample.',
-    exampleEvidence: 'Training matrix row plus matching certificate sample', notes: 'Added for checklist management demo.', status: 'Active' }
+  { id: 'cab-galley-oven', title: 'Galley oven serviceability', text: 'Is the oven installed, serviceable, and in compliance with configured cabin inspection requirements?',
+    regulationRef: 'Configured reference: ICAO Annex 6 / Company Cabin Inspection Manual (demo)', department: 'Cabin Safety',
+    category: 'Galley', commentRequired: false, evidenceRequired: true, allowPotentialFinding: true,
+    inspectorGuidance: 'Review galley equipment condition and record a finding if serviceability cannot be confirmed.',
+    exampleEvidence: 'Galley equipment serviceability record or cabin defect rectification note', notes: 'Workbook-derived demo question; wording curated for stakeholder demo.', status: 'Active' },
+  { id: 'cab-lav-oxygen-compartment', title: 'Lavatory oxygen compartment', text: 'Is the lavatory oxygen compartment installed, serviceable, and in compliance with configured cabin emergency equipment requirements?',
+    regulationRef: 'Configured reference: ICAO Annex 6 / Company Cabin Inspection Manual (demo)', department: 'Cabin Safety',
+    category: 'Emergency Preparedness', commentRequired: true, evidenceRequired: true, allowPotentialFinding: true,
+    inspectorGuidance: 'Confirm the compartment is accessible and serviceable; capture a comment for any exception answer.',
+    exampleEvidence: 'Lavatory oxygen compartment serviceability record and inspection note', notes: 'Workbook-derived demo question; wording curated for stakeholder demo.', status: 'Active' },
+  { id: 'cab-seat-oxygen-mask', title: 'Passenger oxygen mask compartment', text: 'Is the passenger oxygen mask compartment installed, serviceable, and in compliance with configured cabin emergency equipment requirements?',
+    regulationRef: 'Configured reference: ICAO Annex 6 / Company Cabin Inspection Manual (demo)', department: 'Cabin Safety',
+    category: 'Emergency Preparedness', commentRequired: true, evidenceRequired: true, allowPotentialFinding: true,
+    inspectorGuidance: 'Sample the passenger seat oxygen mask compartment and record the seat row/location in comments.',
+    exampleEvidence: 'Passenger seat oxygen mask compartment check record', notes: 'Workbook-derived demo question; wording curated for stakeholder demo.', status: 'Active' },
+  { id: 'cab-em-eq-pbe', title: 'PBE serviceability', text: 'Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?',
+    regulationRef: 'Configured reference: ICAO Annex 6 / Cabin emergency equipment (demo reference)', department: 'Cabin Safety',
+    category: 'Emergency Preparedness', commentRequired: true, evidenceRequired: true, allowPotentialFinding: true,
+    inspectorGuidance: 'Check PBE presence, accessibility, serviceability marking, and defect records before raising a finding.',
+    exampleEvidence: 'PBE replacement/serviceability record, cabin defect rectification reference, and inspector photo filename', notes: 'Workbook-derived demo question; wording curated for stakeholder demo.', status: 'Active' },
+  { id: 'cab-em-eq-first-aid-oxygen', title: 'First aid oxygen masks', text: 'Are first aid oxygen masks installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?',
+    regulationRef: 'Configured reference: ICAO Annex 6 / Cabin emergency equipment (demo reference)', department: 'Cabin Safety',
+    category: 'Emergency Preparedness', commentRequired: true, evidenceRequired: true, allowPotentialFinding: true,
+    inspectorGuidance: 'Confirm masks are present, accessible, and reflected in serviceability records.',
+    exampleEvidence: 'First aid oxygen serviceability record and inspection sign-off', notes: 'Workbook-derived demo question; wording curated for stakeholder demo.', status: 'Active' },
+  { id: 'cab-exit-safety-strap', title: 'Exit safety strap', text: 'Is the exit safety strap installed, serviceable, and in compliance with configured exit equipment requirements?',
+    regulationRef: 'Configured reference: ICAO Annex 6 / Cabin exits (demo reference)', department: 'Cabin Safety',
+    category: 'Exits', commentRequired: false, evidenceRequired: true, allowPotentialFinding: true,
+    inspectorGuidance: 'Check exit equipment condition and record any rectification reference.',
+    exampleEvidence: 'Exit equipment inspection record and rectification note if applicable', notes: 'Workbook-derived demo question; wording curated for stakeholder demo.', status: 'Active' },
+  { id: 'cab-lav-waste-container', title: 'Lavatory waste container flap', text: 'Is the lavatory waste container flap installed, serviceable, and in compliance with configured cabin inspection requirements?',
+    regulationRef: 'Configured reference: ICAO Annex 6 / Company Cabin Inspection Manual (demo)', department: 'Cabin Safety',
+    category: 'Lavatories', commentRequired: false, evidenceRequired: true, allowPotentialFinding: true,
+    inspectorGuidance: 'Use as an extra reusable bank item for checklist versioning demo.',
+    exampleEvidence: 'Lavatory inspection record or cabin defect rectification note', notes: 'Workbook-derived demo question; available for checklist versioning demo.', status: 'Active' }
 ];
 
 /* Other templates only shown in Admin preview list (not runnable in demo). */
 var SEED_TEMPLATE_LIBRARY = [
+  { id: 'TPL-CABIN-2026', name: 'Cabin Inspection', domain: 'Cabin Safety', version: 'v1.0 (2026 demo)', items: '126 source rows / 6 runnable demo rows', status: 'Published' },
   { id: 'TPL-FOPS-2026', name: 'Flight Operations Audit', domain: 'Flight Operations', version: 'v3.2 (2026)', items: 5, status: 'Published' },
   { id: 'TPL-AWO-2026',  name: 'Continuing Airworthiness Audit', domain: 'Airworthiness', version: 'v2.0 (2026)', items: 8, status: 'Published' },
   { id: 'TPL-RAMP-2026', name: 'Ramp Inspection (SAFA-style)', domain: 'Ramp', version: 'v1.4 (2026)', items: 12, status: 'Published' },
-  { id: 'TPL-SEC-2026',  name: 'Aviation Security Audit', domain: 'Security', version: 'v1.1 (2026)', items: 10, status: 'Draft' },
-  { id: 'TPL-CAB-2026',  name: 'Cabin Safety Audit', domain: 'Cabin Safety', version: 'v2.3 (2026)', items: 6, status: 'Published' }
+  { id: 'TPL-SEC-2026',  name: 'Aviation Security Audit', domain: 'Security', version: 'v1.1 (2026)', items: 10, status: 'Draft' }
 ];
 
 var SEED_MANAGED_CHECKLISTS = [
   {
-    id: 'CL-FOPS',
-    name: 'Flight Operations Surveillance',
-    department: 'Flight Operations',
+    id: 'CL-CABIN',
+    name: 'Cabin Inspection',
+    department: 'Cabin Safety',
     inspectionType: 'Routine / Risk Based',
-    publishedVersion: '2.3',
+    publishedVersion: '1.0',
     versions: [
       {
-        id: 'CL-FOPS-v2.3',
-        version: '2.3',
+        id: 'CL-CABIN-v1.0',
+        version: '1.0',
         status: 'published_active',
         approvalType: 'checklist',
         createdBy: 'Selin Demir',
         createdDate: '2026-05-10',
-        changeReason: 'Current active checklist used by the runnable demo.',
-        questionIds: ['q1', 'q2', 'q3', 'q4', 'q5'],
+        changeReason: 'Current active Cabin Inspection checklist used by the runnable demo.',
+        questionIds: ['cab-galley-oven', 'cab-lav-oxygen-compartment', 'cab-seat-oxygen-mask', 'cab-em-eq-pbe', 'cab-em-eq-first-aid-oxygen', 'cab-exit-safety-strap'],
         approval: {
           chain: [
             { role: 'manager', label: 'Department Manager', returnToRole: null },
@@ -202,21 +216,21 @@ var SEED_MANAGED_CHECKLISTS = [
           outcome: 'approved',
           returnPolicy: 'configured_role',
           history: [
-            { actor: 'Selin Demir', role: 'manager', action: 'submitted', date: '2026-05-10 09:20', comment: 'Submitted active Flight Operations checklist version.' },
+            { actor: 'Selin Demir', role: 'manager', action: 'submitted', date: '2026-05-10 09:20', comment: 'Submitted active Cabin Inspection checklist version.' },
             { actor: 'Okan Demir', role: 'gm', action: 'approved', date: '2026-05-11 11:05', comment: 'Approved for demo active use.' }
           ]
         }
       },
       {
-        id: 'CL-FOPS-v2.4',
-        version: '2.4',
+        id: 'CL-CABIN-v1.1',
+        version: '1.1',
         status: 'under_review',
         approvalType: 'checklist',
         createdBy: 'Selin Demir',
         createdDate: '2026-06-15',
-        changeReason: 'Clarify expected evidence for crew training record checks before Q3 surveillance.',
+        changeReason: 'Clarify expected evidence for PBE serviceability and cabin emergency equipment checks before Q3 surveillance.',
         impact: 'Inspector checklist wording only; no production rule or legal obligation is changed.',
-        questionIds: ['q1', 'q2', 'q3', 'q4', 'q5'],
+        questionIds: ['cab-galley-oven', 'cab-lav-oxygen-compartment', 'cab-seat-oxygen-mask', 'cab-em-eq-pbe', 'cab-em-eq-first-aid-oxygen', 'cab-exit-safety-strap'],
         approval: {
           chain: [
             { role: 'manager', label: 'Department Manager', returnToRole: null },
@@ -226,7 +240,7 @@ var SEED_MANAGED_CHECKLISTS = [
           outcome: null,
           returnPolicy: 'configured_role',
           history: [
-            { actor: 'Selin Demir', role: 'manager', action: 'submitted', date: '2026-06-15 11:10', comment: 'Submitted checklist version 2.4 for GM approval.' }
+            { actor: 'Selin Demir', role: 'manager', action: 'submitted', date: '2026-06-15 11:10', comment: 'Submitted Cabin Inspection checklist version 1.1 for GM approval.' }
           ]
         }
       }
@@ -236,8 +250,8 @@ var SEED_MANAGED_CHECKLISTS = [
 
 /* ----------------------------- Audits (2026 surveillance plan) ----------------------------- */
 var SEED_AUDITS = [
-  { id: 'AUD-2026-001', ref: '2026 Operator Audit', orgId: 'ORG-XYZ', type: 'Continued Surveillance', domain: 'Flight Operations',
-    templateId: 'TPL-FOPS-2026', date: DEMO_TODAY, mode: 'On-site', location: 'Airline XYZ HQ',
+  { id: 'AUD-2026-001', ref: '2026 Cabin Inspection', orgId: 'ORG-XYZ', type: 'Cabin Inspection', domain: 'Cabin Safety',
+    templateId: 'TPL-CABIN-2026', date: DEMO_TODAY, mode: 'On-site', location: 'Airline XYZ aircraft cabin / on-site inspection',
     lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer'], status: 'Scheduled', checklistStarted: false },
   { id: 'AUD-2026-002', ref: 'Q1 Ramp Inspection', orgId: 'ORG-SKY', type: 'Ramp Inspection', domain: 'Ramp',
     templateId: 'TPL-RAMP-2026', date: '2026-02-12', mode: 'On-site', location: 'Apron 4',
@@ -252,10 +266,10 @@ var SEED_AUDITS = [
     templateId: 'TPL-SEC-2026', date: '2026-05-22', mode: 'On-site', location: 'SkyCargo Terminal',
     lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer', 'Mehmet Aydin'], status: 'In Progress', checklistStarted: true },
   { id: 'AUD-2026-006', ref: 'Certificate Renewal Review', orgId: 'ORG-BLU', type: 'Certificate Renewal', domain: 'Licensing',
-    templateId: 'TPL-FOPS-2026', date: '2026-09-10', mode: 'On-site', location: 'BlueWing HQ',
+    templateId: 'TPL-CABIN-2026', date: '2026-09-10', mode: 'On-site', location: 'BlueWing HQ',
     lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer'], status: 'Planned', checklistStarted: false },
   { id: 'AUD-2026-007', ref: 'Initial Application Review', orgId: 'ORG-XYZ', type: 'Initial Application', domain: 'Certification',
-    templateId: 'TPL-FOPS-2026', date: '2026-10-05', mode: 'Remote', location: 'Document review',
+    templateId: 'TPL-CABIN-2026', date: '2026-10-05', mode: 'Remote', location: 'Document review',
     lead: 'Aylin Sezer', team: ['Aylin Sezer'], status: 'Planned', checklistStarted: false },
   { id: 'AUD-2026-008', ref: 'Variation / Amendment Review', orgId: 'ORG-XYZ', type: 'Variation / Amendment', domain: 'Licensing',
     templateId: 'TPL-RAMP-2026', date: '2026-11-18', mode: 'On-site', location: 'Apron 1',
@@ -263,7 +277,7 @@ var SEED_AUDITS = [
 ];
 
 /* ----------------------------- Findings -----------------------------
-   The demo's hero finding (OPS-2026-001) is NOT seeded — the inspector
+   The demo's hero finding (CAB-2026-001) is NOT seeded — the inspector
    creates it live from the checklist. These seed records give the
    dashboards realistic numbers. */
 var SEED_FINDINGS = [
@@ -353,7 +367,7 @@ var SEED_AUDIT_REPORTS = [
   {
     id: 'RPT-AUD-2026-001',
     auditId: 'AUD-2026-001',
-    title: 'Airline XYZ Operator Audit Preliminary Report',
+    title: 'Airline XYZ Cabin Inspection Preliminary Report',
     reportType: 'Preliminary Report',
     status: 'draft',
     approvalType: 'report',
@@ -363,14 +377,14 @@ var SEED_AUDIT_REPORTS = [
     approvedBy: null,
     mockDigitalSignature: null,
     enforcementRecommendation: null,
-    executiveSummaryDraft: 'AI-generated preliminary draft - requires authorized review. The operator audit identified a repeated crew training record control weakness. After Department Manager review, the preliminary report is released to the Service Provider only when CAP-required findings exist, so the provider can complete the CAP response before Final Report preparation.',
-    observations: ['Crew training evidence needs clearer reconciliation to sampled matrix rows.'],
+    executiveSummaryDraft: 'AI-generated preliminary draft - requires authorized review. The cabin inspection identified a critical emergency equipment serviceability concern involving PBE accessibility/serviceability. After Department Manager review, the preliminary report is released to the Service Provider only when CAP-required findings exist, so the provider can complete the CAP response before Final Report preparation.',
+    observations: ['PBE serviceability evidence must reconcile the cabin position, defect record, and rectification/serviceability record.'],
     recommendations: [
       'If CAP-required findings exist, release the preliminary report to the Service Provider after Department Manager review.',
       'Prepare the Final Report after the Service Provider completes the CAP response within the defined window.',
       'Require CAP/evidence follow-up before closure. Enforcement recommendation, if any, remains human-authorized only.'
     ],
-    attachments: ['Training_Record_Sample.pdf (mock filename only)', 'Checklist_Response_Summary.pdf (mock)'],
+    attachments: ['PBE_Cabin_Position_Photo.jpg (mock filename only)', 'Cabin_Checklist_Response_Summary.pdf (mock)'],
     preliminaryNotice: {
       recipient: 'Airline XYZ Quality Manager',
       capRequired: true,
@@ -507,34 +521,34 @@ var SEED_LEAD_AUDIT_REVIEWS = [
 /* ----------------------------- Frontend V2 mock data ----------------------------- */
 var SEED_REGULATORY_DOCUMENTS = [
   {
-    id: 'REG-NAMCARS-OPS-2026',
+    id: 'REG-CABIN-EQ-2026',
     family: 'NAMCARS',
-    title: 'Flight Operations Requirements',
+    title: 'Cabin Emergency Equipment Requirements',
     version: '2026 mock edition',
     status: V2_STATUS.published,
     effectiveDate: '2026-01-01',
-    supersedes: 'REG-NAMCARS-OPS-2024',
+    supersedes: 'REG-CABIN-EQ-2024',
     supersededBy: null,
     changeHistory: [
-      { id: 'CHG-OPS-001', date: '2025-11-20', summary: 'Mock update added clearer crew training record evidence expectations.' },
-      { id: 'CHG-OPS-002', date: '2026-01-01', summary: 'Mock edition marked effective for demo package building.' }
+      { id: 'CHG-CAB-001', date: '2025-11-20', summary: 'Mock update added clearer PBE serviceability evidence expectations.' },
+      { id: 'CHG-CAB-002', date: '2026-01-01', summary: 'Mock edition marked effective for demo package building.' }
     ],
     clauses: [
       {
-        id: 'OPS-TRG-4.2',
-        reference: 'OPS 4.2',
-        title: 'Crew training records',
+        id: 'CAB-EMEQ-PBE',
+        reference: 'CAB EMEQ PBE',
+        title: 'PBE serviceability and accessibility',
         status: V2_STATUS.published,
-        applicability: 'Air operator with scheduled passenger operations',
-        expectedEvidence: ['Training record sample', 'Training matrix', 'Responsible manager attestation']
+        applicability: 'Air operator with cabin emergency equipment installed',
+        expectedEvidence: ['PBE serviceability record', 'Cabin defect rectification reference', 'Inspector photo filename']
       },
       {
-        id: 'OPS-MAN-2.1',
-        reference: 'OPS 2.1',
-        title: 'Operations manual currency',
+        id: 'CAB-GALLEY-OVEN',
+        reference: 'CAB GALLEY',
+        title: 'Galley equipment serviceability',
         status: V2_STATUS.published,
-        applicability: 'Air operator with active operations manual approval',
-        expectedEvidence: ['Approved operations manual revision record']
+        applicability: 'Air operator with inspected galley equipment',
+        expectedEvidence: ['Galley equipment serviceability record']
       }
     ]
   },
@@ -562,9 +576,9 @@ var SEED_REGULATORY_DOCUMENTS = [
     ]
   },
   {
-    id: 'REG-USOAP-PQ-OPS-MOCK',
+    id: 'REG-USOAP-PQ-CAB-MOCK',
     family: 'USOAP PQ',
-    title: 'USOAP OPS Protocol Questions',
+    title: 'USOAP Cabin Oversight Protocol Questions',
     version: 'Mock PQ edition for demo',
     status: V2_STATUS.draft,
     effectiveDate: '2026-01-15',
@@ -575,9 +589,9 @@ var SEED_REGULATORY_DOCUMENTS = [
     ],
     clauses: [
       {
-        id: 'PQ-OPS-MOCK-001',
-        reference: 'PQ OPS mock 001',
-        title: 'Evidence of training record oversight',
+        id: 'PQ-CAB-MOCK-001',
+        reference: 'PQ CAB mock 001',
+        title: 'Evidence of cabin emergency equipment oversight',
         status: V2_STATUS.draft,
         applicability: 'Applicable in mock demo only',
         expectedEvidence: ['Published checklist mapping', 'Finding/CAP/evidence trail', 'Verification history']
@@ -588,43 +602,43 @@ var SEED_REGULATORY_DOCUMENTS = [
 
 var SEED_REGULATORY_TRACES = [
   {
-    id: 'TRACE-OPS-TRG-4.2',
-    sourceDocumentId: 'REG-NAMCARS-OPS-2026',
-    sourceDocument: 'NAMCARS Flight Operations Requirements',
+    id: 'TRACE-CAB-PBE-EMEQ',
+    sourceDocumentId: 'REG-CABIN-EQ-2026',
+    sourceDocument: 'NAMCARS Cabin Emergency Equipment Requirements',
     version: '2026 mock edition',
-    clauseRef: 'OPS 4.2',
+    clauseRef: 'CAB EMEQ PBE',
     effectiveDate: '2026-01-01',
-    applicabilityReason: 'Airline XYZ is an air operator with scheduled passenger operations.',
-    linkedChecklist: 'Flight Operations Audit / Crew training records complete?',
-    linkedEvidence: 'Training record sample; training matrix; responsible manager attestation',
+    applicabilityReason: 'Airline XYZ is an air operator with cabin emergency equipment installed.',
+    linkedChecklist: 'Cabin Inspection / EM EQ / PBE serviceability',
+    linkedEvidence: 'PBE serviceability record; cabin defect rectification reference; inspector photo filename',
     approvalState: V2_STATUS.published,
     demoLabel: 'Mock regulatory library',
     legalGuardrail: 'Not a legal decision'
   },
   {
-    id: 'TRACE-USOAP-PQ-OPS-001',
-    sourceDocumentId: 'REG-USOAP-PQ-OPS-MOCK',
-    sourceDocument: 'USOAP OPS Protocol Questions',
+    id: 'TRACE-USOAP-PQ-CAB-001',
+    sourceDocumentId: 'REG-USOAP-PQ-CAB-MOCK',
+    sourceDocument: 'USOAP Cabin Oversight Protocol Questions',
     version: 'Mock PQ edition for demo',
-    clauseRef: 'PQ OPS mock 001',
+    clauseRef: 'PQ CAB mock 001',
     effectiveDate: '2026-01-15',
     applicabilityReason: 'Used to demonstrate readiness evidence mapping only.',
-    linkedChecklist: 'Flight Operations checklist and related CAP/evidence trail',
+    linkedChecklist: 'Cabin Inspection checklist and related CAP/evidence trail',
     linkedEvidence: 'Published checklist mapping; accepted evidence; verification history',
     approvalState: V2_STATUS.draft,
     demoLabel: 'Demo data',
     legalGuardrail: 'Not an official ICAO result'
   },
   {
-    id: 'TRACE-AI-OPS-DRAFT',
-    sourceDocumentId: 'REG-NAMCARS-OPS-2026',
-    sourceDocument: 'NAMCARS Flight Operations Requirements',
+    id: 'TRACE-AI-CAB-DRAFT',
+    sourceDocumentId: 'REG-CABIN-EQ-2026',
+    sourceDocument: 'NAMCARS Cabin Emergency Equipment Requirements',
     version: '2026 mock edition',
-    clauseRef: 'OPS 4.2',
+    clauseRef: 'CAB EMEQ PBE',
     effectiveDate: '2026-01-01',
-    applicabilityReason: 'AI draft references the same configured training-record clause as the checklist item.',
+    applicabilityReason: 'AI draft references the same configured PBE serviceability check as the checklist item.',
     linkedChecklist: 'AI Inspector Assistant draft finding language',
-    linkedEvidence: 'Training matrix and sampled crew records',
+    linkedEvidence: 'PBE serviceability record and cabin defect rectification reference',
     approvalState: V2_STATUS.underReview,
     demoLabel: 'AI-generated draft - requires authorized review',
     legalGuardrail: 'Not a legal decision'
@@ -632,11 +646,12 @@ var SEED_REGULATORY_TRACES = [
 ];
 
 var SEED_QUESTION_TRACES = {
-  q1: 'TRACE-OPS-TRG-4.2',
-  q2: 'TRACE-OPS-TRG-4.2',
-  q3: 'TRACE-OPS-TRG-4.2',
-  q4: 'TRACE-OPS-TRG-4.2',
-  q5: 'TRACE-OPS-TRG-4.2'
+  'cab-galley-oven': 'TRACE-CAB-PBE-EMEQ',
+  'cab-lav-oxygen-compartment': 'TRACE-CAB-PBE-EMEQ',
+  'cab-seat-oxygen-mask': 'TRACE-CAB-PBE-EMEQ',
+  'cab-em-eq-pbe': 'TRACE-CAB-PBE-EMEQ',
+  'cab-em-eq-first-aid-oxygen': 'TRACE-CAB-PBE-EMEQ',
+  'cab-exit-safety-strap': 'TRACE-CAB-PBE-EMEQ'
 };
 
 var SEED_RISK_PROFILES = [
@@ -646,13 +661,13 @@ var SEED_RISK_PROFILES = [
     score: 74,
     band: 'Needs Attention',
     status: V2_STATUS.published,
-    drivers: ['Repeat training records finding', 'CAP due soon', 'Flight Operations audit scheduled'],
+    drivers: ['Emergency equipment serviceability focus', 'CAP due soon', 'Cabin Inspection scheduled'],
     previousFindings: ['OPS-2025-014', 'CAB-2026-004'],
-    capPerformance: 'One recent CAP closed after evidence acceptance; training-record recurrence remains a mock risk indicator.',
+    capPerformance: 'One recent CAP closed after evidence acceptance; emergency-equipment serviceability remains a mock risk indicator.',
     fleetChange: 'Two additional leased aircraft planned in Q3 (demo data).',
     occurrenceTrend: 'Placeholder trend: slightly elevated documentation-related occurrences (demo data).',
-    recommendedAction: 'Prioritize Flight Operations checklist focus on training records and CAP effectiveness.',
-    traceId: 'TRACE-OPS-TRG-4.2'
+    recommendedAction: 'Prioritize Cabin Inspection focus on PBE serviceability and CAP effectiveness.',
+    traceId: 'TRACE-CAB-PBE-EMEQ'
   },
   {
     id: 'RISK-ORG-SKY-2026',
@@ -666,34 +681,34 @@ var SEED_RISK_PROFILES = [
     fleetChange: 'Cargo route expansion noted for demo planning.',
     occurrenceTrend: 'Placeholder trend: cargo access-control events under review.',
     recommendedAction: 'Prioritize evidence review and security follow-up.',
-    traceId: 'TRACE-OPS-TRG-4.2'
+    traceId: 'TRACE-CAB-PBE-EMEQ'
   }
 ];
 
 var SEED_INSPECTION_PACKAGE = {
-  id: 'PKG-AUD-2026-001-FOPS',
+  id: 'PKG-AUD-2026-001-CABIN',
   auditId: 'AUD-2026-001',
   organizationId: 'ORG-XYZ',
-  auditType: 'Operator Audit',
-  domain: 'Flight Operations',
+  auditType: 'Cabin Inspection',
+  domain: 'Cabin Safety',
   status: V2_STATUS.draft,
-  riskFocus: ['Crew training records', 'CAP effectiveness follow-up', 'Operations manual currency'],
+  riskFocus: ['Emergency equipment serviceability', 'PBE serviceability', 'Cabin inspection CAP follow-up'],
   questions: [
     {
-      id: 'PKG-Q-OPS-TRG-4.2',
-      checklistItemId: 'q2',
-      text: 'Are crew training records complete and up to date?',
-      whyIncluded: 'Repeat finding history and mock risk profile indicate training-record oversight needs focused sampling.',
-      expectedEvidence: ['Training record sample', 'Training matrix', 'Responsible manager attestation'],
-      traceId: 'TRACE-OPS-TRG-4.2'
+      id: 'PKG-Q-CAB-PBE',
+      checklistItemId: 'cab-em-eq-pbe',
+      text: 'Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?',
+      whyIncluded: 'Mock risk profile indicates emergency equipment serviceability needs focused sampling.',
+      expectedEvidence: ['PBE serviceability record', 'Cabin defect rectification reference', 'Inspector photo filename'],
+      traceId: 'TRACE-CAB-PBE-EMEQ'
     },
     {
-      id: 'PKG-Q-OPS-MAN-2.1',
-      checklistItemId: 'q1',
-      text: 'Is the Operations Manual current and approved?',
-      whyIncluded: 'Manual currency is a configured baseline check for this operator audit.',
-      expectedEvidence: ['Approved Operations Manual revision record'],
-      traceId: 'TRACE-OPS-TRG-4.2'
+      id: 'PKG-Q-CAB-GALLEY',
+      checklistItemId: 'cab-galley-oven',
+      text: 'Is the oven installed, serviceable, and in compliance with configured cabin inspection requirements?',
+      whyIncluded: 'Galley equipment is a configured baseline cabin inspection check for this operator.',
+      expectedEvidence: ['Galley equipment serviceability record'],
+      traceId: 'TRACE-CAB-PBE-EMEQ'
     }
   ]
 };
@@ -704,7 +719,7 @@ var SEED_FIELD_PACKAGE = {
   checkedOutBy: 'Caner Yildiz',
   checkedOutAt: '2026-06-15T08:30:00',
   status: 'checked_out_demo',
-  packageName: 'Airline XYZ Flight Operations field package',
+  packageName: 'Airline XYZ Cabin Inspection field package',
   localItems: ['Checklist questions', 'Expected evidence list', 'Draft field note', 'Mock attachment queue']
 };
 
@@ -712,20 +727,20 @@ var SEED_OFFLINE_OUTBOX = [];
 
 var SEED_USOAP_READINESS = [
   {
-    id: 'USOAP-OPS-001',
-    pqId: 'PQ-OPS-MOCK-001',
+    id: 'USOAP-CAB-001',
+    pqId: 'PQ-CAB-MOCK-001',
     criticalElement: 'CE-7',
-    auditArea: 'OPS',
+    auditArea: 'Cabin Safety',
     applicability: 'Applicable in mock demo',
     readinessStatus: 'missing_evidence',
-    linkedCapIds: ['OPS-2026-001'],
+    linkedCapIds: ['CAB-2026-001'],
     linkedEvidenceIds: [],
     verificationHistory: [
       { id: 'VER-PQ-001', date: '2026-05-20', result: 'Gap logged from mock readiness review.' }
     ],
     trend: 'Evidence package incomplete - demo only, no EI claim.',
     note: 'Mock PQ readiness record for demo only; not an official ICAO assessment.',
-    traceId: 'TRACE-USOAP-PQ-OPS-001'
+    traceId: 'TRACE-USOAP-PQ-CAB-001'
   }
 ];
 
@@ -739,8 +754,8 @@ var SEED_CAP_EFFECTIVENESS = [
       { id: 'CAPREV-OPS-2025-014-1', status: V2_STATUS.accepted, submittedDate: '2025-11-20', note: 'Accepted after CAA review.' }
     ],
     verificationStatus: 'effective_with_monitoring',
-    recurrenceIndicator: 'Related training-record weakness reappeared in 2026 mock scenario.',
-    postClosureReview: 'Monitor next Flight Operations audit before treating CAP as durable.',
+    recurrenceIndicator: 'Related cabin inspection evidence weakness informs the 2026 mock scenario.',
+    postClosureReview: 'Monitor next Cabin Inspection before treating CAP as durable.',
     reopenPath: 'Inspector may create a new finding if recurrence is verified.'
   },
   {
@@ -760,25 +775,25 @@ var SEED_CAP_EFFECTIVENESS = [
 
 var SEED_AI_SUGGESTIONS = [
   {
-    id: 'AI-SUG-OPS-001',
+    id: 'AI-SUG-CAB-001',
     type: 'draft_finding_language',
     status: V2_STATUS.pendingReview,
-    title: 'Draft finding language for crew training records',
-    sourceRefs: ['REG-NAMCARS-OPS-2026 / OPS 4.2', 'Checklist item q2'],
-    draft: 'Sampled crew training records were incomplete and did not demonstrate current completion status for selected crew members.',
+    title: 'Draft finding language for PBE serviceability',
+    sourceRefs: ['REG-CABIN-EQ-2026 / CAB EMEQ PBE', 'Checklist item cab-em-eq-pbe'],
+    draft: 'The inspected PBE position could not be confirmed as serviceable and accessible against the configured cabin emergency equipment check.',
     limitation: 'AI-generated draft - requires authorized review. The inspector must verify facts and wording before use.',
-    traceId: 'TRACE-AI-OPS-DRAFT',
+    traceId: 'TRACE-AI-CAB-DRAFT',
     decision: null
   },
   {
-    id: 'AI-SUG-OPS-002',
+    id: 'AI-SUG-CAB-002',
     type: 'checklist_question_suggestion',
     status: V2_STATUS.pendingReview,
     title: 'Suggested checklist focus',
-    sourceRefs: ['Risk profile RISK-ORG-XYZ-2026', 'NAMCARS OPS 4.2'],
-    draft: 'Add targeted sampling of recurrent crew training record gaps and compare CAP effectiveness against previous closure evidence.',
+    sourceRefs: ['Risk profile RISK-ORG-XYZ-2026', 'NAMCARS CAB EMEQ PBE'],
+    draft: 'Add targeted sampling of PBE serviceability and compare CAP effectiveness against accepted emergency equipment closure evidence.',
     limitation: 'AI-generated draft - requires authorized review. It cannot publish an official checklist.',
-    traceId: 'TRACE-AI-OPS-DRAFT',
+    traceId: 'TRACE-AI-CAB-DRAFT',
     decision: null
   }
 ];
@@ -787,7 +802,7 @@ var SEED_SSP_NASP = {
   objectives: [
     {
       id: 'SSP-OBJ-001',
-      title: 'Strengthen operational oversight follow-up',
+      title: 'Strengthen cabin emergency equipment oversight follow-up',
       status: 'monitoring',
       notLegalDecision: true,
       spis: [
@@ -795,7 +810,7 @@ var SEED_SSP_NASP = {
         { id: 'SPI-OPS-REC-01', label: 'Repeat finding recurrence', current: '2 repeat areas', target: 'Downward trend', trend: 'Monitor' }
       ],
       naspActions: [
-        { id: 'NASP-ACT-001', owner: 'Flight Operations Section', targetDate: '2026-09-30', status: 'in_progress', linkedFindingIds: ['OPS-2025-014', 'OPS-2026-001'] }
+        { id: 'NASP-ACT-001', owner: 'Cabin Safety Section', targetDate: '2026-09-30', status: 'in_progress', linkedFindingIds: ['CAB-2026-001'] }
       ]
     },
     {
@@ -816,13 +831,13 @@ var SEED_SSP_NASP = {
 /* ----------------------------- Planning approvals (Phase 0B thin slice) ----------------------------- */
 var SEED_PLANNING_ITEMS = [
   {
-    id: 'PLAN-2026-Q3-OPS',
-    title: 'Q3 Flight Operations Surveillance Plan',
-    department: 'Flight Operations',
+    id: 'PLAN-2026-Q3-CABIN',
+    title: 'Q3 Cabin Inspection Surveillance Plan',
+    department: 'Cabin Safety',
     organization: 'Airline XYZ',
     organizationId: 'ORG-XYZ',
-    purpose: 'Focused Q3 operator audit plan for repeated crew training record oversight.',
-    riskCategory: 'Repeat training-record finding',
+    purpose: 'Focused Q3 cabin inspection plan for emergency equipment serviceability oversight.',
+    riskCategory: 'Emergency equipment serviceability',
     triggerType: 'Risk based / repeat finding',
     budgetRequired: true,
     requestedBudget: 'USD 12,500',
@@ -860,7 +875,7 @@ var SEED_PLANNING_ITEMS = [
           role: 'manager',
           action: 'submitted',
           date: '2026-06-15 10:30',
-          comment: 'Submitted budget-required Q3 Flight Operations surveillance item for GM review.'
+          comment: 'Submitted budget-required Q3 Cabin Inspection surveillance item for GM review.'
         }
       ]
     }
@@ -869,10 +884,10 @@ var SEED_PLANNING_ITEMS = [
 
 /* ----------------------------- Notifications (in-UI only) ----------------------------- */
 var SEED_NOTIFICATIONS = [
-  { id: 'N1', role: 'inspector', icon: '📋', text: 'Operator Audit for Airline XYZ is scheduled for today.', time: 'Today 08:10', unread: true },
+  { id: 'N1', role: 'inspector', icon: '📋', text: 'Cabin Inspection for Airline XYZ is scheduled for today.', time: 'Today 08:10', unread: true },
   { id: 'N2', role: 'inspector', icon: '📎', text: 'Evidence submitted on RAMP-2026-005 is waiting for your review.', time: 'Yesterday', unread: true },
   { id: 'N3', role: 'manager',   icon: '⚠️', text: 'AWO-2026-003 (Level 2 Major) is now Overdue.', time: 'Today 07:55', unread: true },
-  { id: 'N5', role: 'gm', icon: '🧾', text: 'Planning item PLAN-2026-Q3-OPS is waiting for GM review.', time: 'Today 10:30', unread: true },
+  { id: 'N5', role: 'gm', icon: '🧾', text: 'Planning item PLAN-2026-Q3-CABIN is waiting for GM review.', time: 'Today 10:30', unread: true },
   { id: 'N4', role: 'auditee',   icon: '📨', text: 'Welcome to the Auditee Portal. Open My Findings to see required actions.', time: 'Today', unread: true }
 ];
 
@@ -976,7 +991,7 @@ function freshState() {
       selectedFindingId: '',
       detailTab: 'details',
       reviewStatus: 'not_effective',
-      reviewComments: 'The submitted CAP does not address all required actions. Training records are still incomplete for some staff. Additional corrective actions are required.',
+      reviewComments: 'The submitted CAP does not address all required actions. PBE serviceability evidence is still incomplete for the sampled cabin position. Additional corrective actions are required.',
       reviewOutcome: 'needs_action',
       enforcementLevel: 'administrative_penalty',
       enforcementJustification: '',
@@ -987,7 +1002,7 @@ function freshState() {
       unitRecommendationType: 'administrative_penalty',
       unitRecommendationLevel: 'administrative_penalty',
       unitComplianceDueDate: '2026-09-20',
-      unitJustification: 'The CAP has initiated corrective actions; however, updated training records are still incomplete for multiple staff members. Therefore, an administrative penalty is recommended to ensure timely compliance.',
+      unitJustification: 'The CAP has initiated corrective actions; however, PBE serviceability evidence is still incomplete for the sampled cabin position. Therefore, an administrative penalty is recommended to ensure timely compliance.',
       unitAttachmentName: '',
       unitManagerRecommendationAt: '',
       departmentManagerApprovedAt: '',
@@ -1080,7 +1095,7 @@ function freshState() {
       submittedCaps: {},
       downloadedAt: ''
     },
-    findingSeq: 1,              // OPS-2026-00X live counter
+    findingSeq: 1,              // CAB-2026-00X live counter
     potentialSeq: 1,            // PF-2026-00X live counter
     auditSeq: 9,                // AUD-2026-00X counter for the New Audit Wizard
     notifSeq: 100,
@@ -1163,7 +1178,7 @@ function mergeDemoState(saved) {
     selectedFindingId: '',
     detailTab: 'details',
     reviewStatus: 'not_effective',
-    reviewComments: 'The submitted CAP does not address all required actions. Training records are still incomplete for some staff. Additional corrective actions are required.',
+    reviewComments: 'The submitted CAP does not address all required actions. PBE serviceability evidence is still incomplete for the sampled cabin position. Additional corrective actions are required.',
     reviewOutcome: 'needs_action',
     enforcementLevel: 'administrative_penalty',
     enforcementJustification: '',
@@ -1174,7 +1189,7 @@ function mergeDemoState(saved) {
     unitRecommendationType: 'administrative_penalty',
     unitRecommendationLevel: 'administrative_penalty',
     unitComplianceDueDate: '2026-09-20',
-    unitJustification: 'The CAP has initiated corrective actions; however, updated training records are still incomplete for multiple staff members. Therefore, an administrative penalty is recommended to ensure timely compliance.',
+    unitJustification: 'The CAP has initiated corrective actions; however, PBE serviceability evidence is still incomplete for the sampled cabin position. Therefore, an administrative penalty is recommended to ensure timely compliance.',
     unitAttachmentName: '',
     unitManagerRecommendationAt: '',
     departmentManagerApprovedAt: '',
@@ -1411,5 +1426,5 @@ var AUDIT_TYPES = [
   'Document Review',
   'Remote Inspection'
 ];
-var AUDIT_DOMAINS = ['Flight Operations', 'Ramp', 'Airworthiness', 'Cabin Safety', 'Security', 'Dangerous Goods', 'Licensing', 'Certification', 'Surveillance', 'Investigation', 'Document Review'];
+var AUDIT_DOMAINS = ['Cabin Safety', 'Flight Operations', 'Ramp', 'Airworthiness', 'Security', 'Dangerous Goods', 'Licensing', 'Certification', 'Surveillance', 'Investigation', 'Document Review'];
 var INSPECTORS = ['Caner Yildiz', 'Aylin Sezer', 'Mehmet Aydin'];

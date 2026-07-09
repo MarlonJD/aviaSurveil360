@@ -22,7 +22,7 @@ function actor(role) {
 const state = context.freshState();
 assert.ok(Array.isArray(state.managedChecklists), 'managed checklists are seeded');
 const checklist = state.managedChecklists[0];
-const version = clone(checklist.versions.find((item) => item.id === 'CL-FOPS-v2.4'));
+const version = clone(checklist.versions.find((item) => item.id === 'CL-CABIN-v1.1'));
 
 assert.equal(version.approvalType, 'checklist');
 assert.equal(context.approvalSummary(version).ownerRole, 'gm');
@@ -34,7 +34,7 @@ assert.throws(
   'GM checklist return requires a reason'
 );
 
-context.applyApprovalDecision(version, { decision: 'return', actor: actor('gm'), reason: 'Clarify the new crew training evidence requirement.' });
+context.applyApprovalDecision(version, { decision: 'return', actor: actor('gm'), reason: 'Clarify the new PBE serviceability evidence requirement.' });
 assert.equal(context.approvalSummary(version).ownerRole, 'manager');
 assert.equal(version.status, 'checklist_returned');
 

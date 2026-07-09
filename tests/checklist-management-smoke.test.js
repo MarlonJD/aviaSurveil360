@@ -27,17 +27,17 @@ assert.throws(
 
 const draft = context.createChecklistDraftVersion(checklist, {
   actorName: 'Selin Demir',
-  reason: 'Add explicit crew training evidence guidance for Q3 surveillance.'
+  reason: 'Add explicit PBE serviceability evidence guidance for Q3 cabin inspection surveillance.'
 });
 assert.equal(draft.status, 'draft');
-assert.equal(draft.version, '2.5');
-assert.match(draft.changeReason, /crew training evidence/);
+assert.equal(draft.version, '1.2');
+assert.match(draft.changeReason, /PBE serviceability evidence/);
 
-context.addQuestionToChecklistVersion(draft, 'QB-006');
-assert.ok(draft.questionIds.includes('QB-006'), 'builder can add a question from the bank');
+context.addQuestionToChecklistVersion(draft, 'cab-lav-waste-container');
+assert.ok(draft.questionIds.includes('cab-lav-waste-container'), 'builder can add a question from the bank');
 
-context.moveChecklistQuestion(draft, 'QB-006', 'up');
-assert.equal(draft.questionIds[draft.questionIds.length - 2], 'QB-006', 'builder can reorder questions with controls');
+context.moveChecklistQuestion(draft, 'cab-lav-waste-container', 'up');
+assert.equal(draft.questionIds[draft.questionIds.length - 2], 'cab-lav-waste-container', 'builder can reorder questions with controls');
 
 assert.throws(
   () => context.publishChecklistVersion(checklist, draft, { actorName: 'Selin Demir' }),
@@ -45,7 +45,7 @@ assert.throws(
   'draft cannot publish before approval'
 );
 
-const reviewVersion = checklist.versions.find((item) => item.id === 'CL-FOPS-v2.4');
+const reviewVersion = checklist.versions.find((item) => item.id === 'CL-CABIN-v1.1');
 context.applyApprovalDecision(reviewVersion, {
   decision: 'approve',
   actor: { role: 'gm', name: context.ROLES.gm.user },
@@ -53,9 +53,9 @@ context.applyApprovalDecision(reviewVersion, {
 });
 context.publishChecklistVersion(checklist, reviewVersion, { actorName: 'Selin Demir' });
 
-const archived = checklist.versions.find((item) => item.id === 'CL-FOPS-v2.3');
+const archived = checklist.versions.find((item) => item.id === 'CL-CABIN-v1.0');
 assert.equal(reviewVersion.status, 'published_active');
 assert.equal(archived.status, 'archived');
-assert.equal(checklist.publishedVersion, '2.4');
+assert.equal(checklist.publishedVersion, '1.1');
 
 console.log('checklist-management-smoke: ok');
