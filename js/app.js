@@ -1666,11 +1666,11 @@ function handleLeadAssignmentFieldChange(field, target) {
     return;
   }
   if (field === 'lead-assignment-assignee') ui.assignee = value || 'Ahmed Ali';
-  if (field === 'lead-assignment-due') ui.dueDate = value || '2026-06-13';
+  if (field === 'lead-assignment-due') ui.dueDate = value || '2026-06-15';
   if (field === 'lead-assignment-priority') ui.priority = value || 'Normal';
   if (field === 'lead-assignment-note') ui.note = value || '';
-  if (field === 'lead-assignment-department') ui.department = value || 'AVSEC Operations';
-  if (field === 'lead-assignment-section') ui.section = value || 'access-control';
+  if (field === 'lead-assignment-department') ui.department = value || 'Cabin Safety';
+  if (field === 'lead-assignment-section') ui.section = value || 'emergency-equipment';
   if (field === 'lead-assignment-risk') ui.risk = value || 'all';
   if (field === 'lead-assignment-status') ui.status = value || 'all';
   if (field === 'lead-assignment-query') ui.query = value || '';
@@ -1737,7 +1737,7 @@ function handleLeadAssignmentRelease() {
     id: 'n-lead-assignment-' + state.notifSeq++,
     role: 'leadInspector',
     icon: '▣',
-    text: 'AVSEC checklist assignments released to inspectors.',
+    text: 'Cabin Inspection checklist assignments released to inspectors.',
     time: 'Now',
     unread: false
   });
@@ -1759,7 +1759,7 @@ function handleLeadAssignmentPreview() {
   var selected = typeof leadAssignmentSelectedQuestionIds === 'function' ? leadAssignmentSelectedQuestionIds(ui).length : 0;
   openModal(modalShell('Assignment preview',
     '<div class="lead-assigned-modal">' +
-      '<p><b>AVSEC Inspection</b> checklist assignment draft</p>' +
+      '<p><b>Cabin Inspection</b> checklist assignment draft for FlyNamibia</p>' +
       '<div class="metaline">' +
         metaItem('Assignee', ui.assignee) +
         metaItem('Selected questions', String(selected)) +
@@ -1773,27 +1773,27 @@ function handleLeadAssignmentPreview() {
 }
 
 function handleLeadAssignmentPreviewReport() {
-  go('lead-review', { auditId: (state.params && state.params.auditId) || 'AUD-2026-005' });
+  go('lead-review', { auditId: (state.params && state.params.auditId) || 'AUD-2026-001' });
 }
 
 function handleLeadAssignmentPreviewChecklist() {
-  openModal(modalShell('AVSEC Operations Checklist',
+  openModal(modalShell('Cabin Inspection Checklist',
     '<div class="lead-assigned-modal">' +
-      '<p><b>186 questions</b> across Operations, Cargo Security and Access Control.</p>' +
-      '<div class="list-mini"><span>Access control procedures</span><span>CCTV monitoring</span><span>Staff screening</span><span>Visitor pass control</span></div>' +
+      '<p><b>126 questions</b> across cabin sections and emergency equipment checks.</p>' +
+      '<div class="list-mini"><span>Galley</span><span>Lavatories</span><span>Passenger seats</span><span>Emergency equipment</span></div>' +
       '<p class="small muted mt-12">Demo only: checklist preview uses mock content and does not open a production checklist engine.</p>' +
     '</div>',
-    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="nav" data-view="lead-assignment-questions" data-id="' + esc((state.params && state.params.auditId) || 'AUD-2026-005') + '">Assign Questions</button>',
+    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="nav" data-view="lead-assignment-questions" data-id="' + esc((state.params && state.params.auditId) || 'AUD-2026-001') + '">Assign Questions</button>',
     false));
 }
 
 function handleLeadAssignmentViewDetails() {
-  openModal(modalShell('Departments in scope',
+  openModal(modalShell('Sections in scope',
     '<div class="lead-assigned-modal">' +
       '<div class="metaline">' +
-        metaItem('Operations', '62 questions') +
-        metaItem('Cargo Security', '64 questions') +
-        metaItem('Access Control', '60 questions') +
+        metaItem('Emergency Equipment', '22 questions') +
+        metaItem('Cabin Condition + Exits', '21 questions') +
+        metaItem('Galley / Lavatories / Seats', '83 questions') +
       '</div>' +
       '<p class="small muted mt-12">Scope is fixed for this frontend demo and can be reviewed before assignment release.</p>' +
     '</div>',

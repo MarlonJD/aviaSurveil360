@@ -8,7 +8,7 @@ var DEMO_TODAY = '2026-06-15';
 
 /* Demo persistence boundary. Views must not call localStorage directly. */
 var DEMO_STORAGE_KEY = 'aviasurveil360:v2-demo-state';
-var DEMO_STATE_VERSION = 3;
+var DEMO_STATE_VERSION = 4;
 var DEMO_PERSISTENCE_CONFIG = {
   storageKey: DEMO_STORAGE_KEY,
   label: 'Frontend-only demo - saved in this browser',
@@ -1041,17 +1041,17 @@ function freshState() {
     },
     leadAssignmentUi: {
       selectedQuestions: {
-        'AVSEC-Q001': true,
-        'AVSEC-Q002': true,
-        'AVSEC-Q003': true,
-        'AVSEC-Q004': true
+        'CAB-Q001': true,
+        'CAB-Q002': true,
+        'CAB-Q003': true,
+        'CAB-Q004': true
       },
       assignee: 'Ahmed Ali',
-      dueDate: '2026-06-13',
+      dueDate: '2026-06-15',
       priority: 'Normal',
       note: '',
-      department: 'AVSEC Operations',
-      section: 'access-control',
+      department: 'Cabin Safety',
+      section: 'emergency-equipment',
       risk: 'all',
       status: 'all',
       query: '',
@@ -1262,17 +1262,17 @@ function mergeDemoState(saved) {
   base.leadAssignedAuditsUi.advanced = !!base.leadAssignedAuditsUi.advanced;
   base.leadAssignmentUi = Object.assign({
     selectedQuestions: {
-      'AVSEC-Q001': true,
-      'AVSEC-Q002': true,
-      'AVSEC-Q003': true,
-      'AVSEC-Q004': true
+      'CAB-Q001': true,
+      'CAB-Q002': true,
+      'CAB-Q003': true,
+      'CAB-Q004': true
     },
     assignee: 'Ahmed Ali',
-    dueDate: '2026-06-13',
+    dueDate: '2026-06-15',
     priority: 'Normal',
     note: '',
-    department: 'AVSEC Operations',
-    section: 'access-control',
+    department: 'Cabin Safety',
+    section: 'emergency-equipment',
     risk: 'all',
     status: 'all',
     query: '',
@@ -1283,18 +1283,26 @@ function mergeDemoState(saved) {
   }, saved.leadAssignmentUi || {});
   if (!base.leadAssignmentUi.selectedQuestions || typeof base.leadAssignmentUi.selectedQuestions !== 'object') {
     base.leadAssignmentUi.selectedQuestions = {
-      'AVSEC-Q001': true,
-      'AVSEC-Q002': true,
-      'AVSEC-Q003': true,
-      'AVSEC-Q004': true
+      'CAB-Q001': true,
+      'CAB-Q002': true,
+      'CAB-Q003': true,
+      'CAB-Q004': true
+    };
+  }
+  if (Object.keys(base.leadAssignmentUi.selectedQuestions).some(function (id) { return id.indexOf('AVSEC-') === 0; })) {
+    base.leadAssignmentUi.selectedQuestions = {
+      'CAB-Q001': true,
+      'CAB-Q002': true,
+      'CAB-Q003': true,
+      'CAB-Q004': true
     };
   }
   if (!base.leadAssignmentUi.assignee) base.leadAssignmentUi.assignee = 'Ahmed Ali';
-  if (!base.leadAssignmentUi.dueDate) base.leadAssignmentUi.dueDate = '2026-06-13';
+  if (!base.leadAssignmentUi.dueDate || base.leadAssignmentUi.dueDate === '2026-06-13') base.leadAssignmentUi.dueDate = '2026-06-15';
   if (!base.leadAssignmentUi.priority) base.leadAssignmentUi.priority = 'Normal';
   if (!base.leadAssignmentUi.note) base.leadAssignmentUi.note = '';
-  if (!base.leadAssignmentUi.department) base.leadAssignmentUi.department = 'AVSEC Operations';
-  if (!base.leadAssignmentUi.section) base.leadAssignmentUi.section = 'access-control';
+  if (!base.leadAssignmentUi.department || base.leadAssignmentUi.department === 'AVSEC Operations') base.leadAssignmentUi.department = 'Cabin Safety';
+  if (!base.leadAssignmentUi.section || base.leadAssignmentUi.section === 'access-control') base.leadAssignmentUi.section = 'emergency-equipment';
   if (!base.leadAssignmentUi.risk) base.leadAssignmentUi.risk = 'all';
   if (!base.leadAssignmentUi.status) base.leadAssignmentUi.status = 'all';
   if (!base.leadAssignmentUi.query) base.leadAssignmentUi.query = '';

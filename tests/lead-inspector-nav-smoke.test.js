@@ -95,7 +95,8 @@ assert.doesNotMatch(html, /Draft Reports/);
 assert.match(html, /New Audit Assignment/);
 assert.match(html, /Search audits/);
 assert.match(html, /AUD-2025-045/);
-assert.match(html, /West Air \(Pty\) Ltd/);
+assert.match(html, /FlyNamibia \(Pty\) Ltd/);
+assert.match(html, /Cabin Inspection/);
 assert.match(html, /Apply Filters/);
 assert.doesNotMatch(html, /Planning/);
 assert.doesNotMatch(html, /data-view="planning"/);
@@ -189,23 +190,23 @@ assert.equal(context.state.leadPreliminaryReportsUi.mode, 'list');
 assert.match(elements.get('app-root').innerHTML, /Showing 1 to 8 of 18 reports/);
 assert.doesNotMatch(elements.get('app-root').innerHTML, /Report Approval Queue/);
 
-context.handleAction('nav', dataEl({ 'data-view': 'lead-assignment', 'data-id': 'AUD-2026-005' }));
+context.handleAction('nav', dataEl({ 'data-view': 'lead-assignment', 'data-id': 'AUD-2026-001' }));
 assert.equal(context.state.view, 'lead-assignment');
-assert.equal(context.state.params.auditId, 'AUD-2026-005');
+assert.equal(context.state.params.auditId, 'AUD-2026-001');
 assert.match(elements.get('app-root').innerHTML, /Assignment Overview/);
 assert.match(elements.get('app-root').innerHTML, /Assign Checklist Questions/);
 assert.doesNotMatch(elements.get('app-root').innerHTML, /Preliminary Report - Routine Inspection/);
 
-context.handleAction('nav', dataEl({ 'data-view': 'lead-assignment-questions', 'data-id': 'AUD-2026-005' }));
+context.handleAction('nav', dataEl({ 'data-view': 'lead-assignment-questions', 'data-id': 'AUD-2026-001' }));
 assert.equal(context.state.view, 'lead-assignment-questions');
 assert.match(elements.get('app-root').innerHTML, /Assign Selected \(4\)/);
 assert.match(elements.get('app-root').innerHTML, /data-field="lead-assignment-due"/);
 
 context.handleAction('lead-assignment-pick-inspector', dataEl({ 'data-id': 'Maria Silva' }));
 assert.equal(context.state.leadAssignmentUi.assignee, 'Maria Silva');
-context.handleLeadAssignmentFieldChange('lead-assignment-due', { value: '2026-06-14' });
+context.handleLeadAssignmentFieldChange('lead-assignment-due', { value: '2026-06-15' });
 context.handleLeadAssignmentFieldChange('lead-assignment-priority', { value: 'High' });
-context.handleLeadAssignmentFieldChange('lead-assignment-note', { value: 'Prioritize cargo gate access logs.', parentElement: null });
+context.handleLeadAssignmentFieldChange('lead-assignment-note', { value: 'Prioritize emergency equipment checks.', parentElement: null });
 context.handleAction('lead-assignment-assign', dataEl({}));
 assert.ok(context.state.leadAssignmentUi.assignedAt);
 assert.match(elements.get('app-root').innerHTML, /Assignment Draft/);

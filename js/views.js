@@ -1357,29 +1357,31 @@ function inspectorTable(headers, rows, empty) {
 var INSPECTOR_ASSIGNMENT_ROWS = [
   {
     id: 'PR-2026-018',
-    auditId: 'AUD-2026-005',
-    title: 'AVSEC Inspection',
+    auditId: 'AUD-2026-001',
+    title: 'Cabin Inspection',
     code: 'PR-2026-018',
-    organization: 'SkyCargo Air',
-    location: 'JFK International Airport',
-    type: 'AVSEC',
-    dates: '12 - 14 Jun 2026',
+    organization: 'FlyNamibia',
+    location: 'FlyNamibia aircraft cabin / on-site inspection',
+    type: 'Cabin Safety',
+    dates: '15 Jun 2026',
     status: 'in-progress',
     statusLabel: 'In Progress',
-    progress: 60,
-    questionsDone: 112,
-    questionsTotal: 186,
-    completedQuestions: 38,
-    dueDate: '10 Jun 2026',
-    dueNote: '(1 day left)',
-    dueTone: 'danger',
+    progress: 10,
+    questionsDone: 12,
+    questionsTotal: 126,
+    completedQuestions: 10,
+    dueDate: '15 Jun 2026',
+    dueNote: '(Today)',
+    dueTone: 'warn',
     icon: 'plane',
-    iconLabel: 'AV',
+    iconLabel: 'CI',
     sections: [
-      { name: 'Access Control', total: 8, done: 5 },
-      { name: 'Screening', total: 10, done: 6 },
-      { name: 'Cargo Security', total: 12, done: 8 },
-      { name: 'Training & Awareness', total: 8, done: 4 }
+      { name: 'Galley', total: 21, done: 2 },
+      { name: 'Lavatories', total: 20, done: 1 },
+      { name: 'Passenger Seats', total: 21, done: 2 },
+      { name: 'Emergency Equipment', total: 22, done: 4 },
+      { name: 'Video + Crew Seat', total: 21, done: 1 },
+      { name: 'Cockpit, Cabin Condition + Exits', total: 21, done: 2 }
     ]
   },
   {
@@ -1584,16 +1586,21 @@ function inspectorAssignmentById(id) {
 }
 
 function inspectorAssignmentStats() {
+  var inProgressRows = INSPECTOR_ASSIGNMENT_ROWS.filter(function (row) { return row.status === 'in-progress'; });
+  var questionsAssigned = inProgressRows.reduce(function (sum, row) { return sum + (Number(row.questionsTotal) || 0); }, 0);
+  var questionsCompleted = inProgressRows.reduce(function (sum, row) { return sum + (Number(row.completedQuestions) || 0); }, 0);
+  var questionsRemaining = Math.max(questionsAssigned - questionsCompleted, 0);
+  var averageCompletion = questionsAssigned ? Math.round((questionsCompleted / questionsAssigned) * 100) : 0;
   return {
     open: 8,
-    inProgress: INSPECTOR_ASSIGNMENT_ROWS.filter(function (row) { return row.status === 'in-progress'; }).length,
+    inProgress: inProgressRows.length,
     completed: 3,
     overdue: 1,
     totalAssigned: 17,
-    questionsAssigned: 186,
-    questionsCompleted: 74,
-    questionsRemaining: 112,
-    averageCompletion: 47
+    questionsAssigned: questionsAssigned,
+    questionsCompleted: questionsCompleted,
+    questionsRemaining: questionsRemaining,
+    averageCompletion: averageCompletion
   };
 }
 
@@ -1666,8 +1673,8 @@ function inspectorAssignmentRow(row) {
 }
 
 function inspectorAssignmentFilterBar(ui) {
-  var typeOptions = [['all', 'All Types'], ['AVSEC', 'AVSEC'], ['Safety', 'Safety'], ['SMS', 'SMS'], ['Cargo', 'Cargo'], ['Security', 'Security'], ['Operations', 'Operations'], ['Training', 'Training']];
-  var orgOptions = [['all', 'All Organizations'], ['SkyCargo Air', 'SkyCargo Air'], ['AirMove Ground', 'AirMove Ground'], ['BlueWings Airlines', 'BlueWings Airlines'], ['TransAir Cargo', 'TransAir Cargo'], ['JetFast Aviation', 'JetFast Aviation'], ['Global Handling', 'Global Handling']];
+  var typeOptions = [['all', 'All Types'], ['Cabin Safety', 'Cabin Safety'], ['AVSEC', 'AVSEC'], ['Safety', 'Safety'], ['SMS', 'SMS'], ['Cargo', 'Cargo'], ['Security', 'Security'], ['Operations', 'Operations'], ['Training', 'Training']];
+  var orgOptions = [['all', 'All Organizations'], ['FlyNamibia', 'FlyNamibia'], ['SkyCargo Air', 'SkyCargo Air'], ['AirMove Ground', 'AirMove Ground'], ['BlueWings Airlines', 'BlueWings Airlines'], ['TransAir Cargo', 'TransAir Cargo'], ['JetFast Aviation', 'JetFast Aviation'], ['Global Handling', 'Global Handling']];
   return '<div class="inspector-assignment-filters responsive-filter-row">' +
     '<label class="inspector-assignment-filter inspector-assignment-filter--search"><span>Search audits</span><input type="search" data-field="inspector-assignment-query" value="' + esc(ui.query || '') + '" placeholder="Search audits..."><b aria-hidden="true">&#8981;</b></label>' +
     inspectorAssignmentSelect('Status', 'inspector-assignment-status', ui.status, [['all', 'All Status'], ['open', 'Open'], ['in-progress', 'In Progress'], ['completed', 'Completed'], ['overdue', 'Overdue']]) +
@@ -1691,11 +1698,13 @@ function inspectorAssignmentKpi(label, value, sub, icon, status, tone, progress)
 function inspectorAssignmentKpis(ui) {
   var stats = inspectorAssignmentStats();
   if (ui.status === 'in-progress') {
+    var completedPct = stats.questionsAssigned ? Math.round((stats.questionsCompleted / stats.questionsAssigned) * 100) : 0;
+    var remainingPct = stats.questionsAssigned ? Math.max(0, 100 - completedPct) : 0;
     return '<div class="inspector-assignment-kpis inspector-assignment-kpis--progress">' +
       inspectorAssignmentKpi('In Progress Assignments', String(stats.inProgress), 'Audits', '&#128203;', 'in-progress', 'info') +
       inspectorAssignmentKpi('Questions Assigned', String(stats.questionsAssigned), 'Total', '&#9716;', 'in-progress', 'warn') +
-      inspectorAssignmentKpi('Completed', String(stats.questionsCompleted), '(40%)', '&#10003;', 'completed', 'ok') +
-      inspectorAssignmentKpi('Remaining', String(stats.questionsRemaining), '(60%)', '&#8987;', 'in-progress', 'purple') +
+      inspectorAssignmentKpi('Completed', String(stats.questionsCompleted), '(' + completedPct + '%)', '&#10003;', 'completed', 'ok') +
+      inspectorAssignmentKpi('Remaining', String(stats.questionsRemaining), '(' + remainingPct + '%)', '&#8987;', 'in-progress', 'purple') +
       inspectorAssignmentKpi('Avg. Completion', String(stats.averageCompletion) + '%', 'Across all audits', '&#128197;', 'in-progress', 'neutral', stats.averageCompletion) +
     '</div>';
   }
@@ -1732,9 +1741,9 @@ function inspectorAssignmentTable(rows, ui) {
   '</div>';
 }
 
-function inspectorAssignmentSectionRow(section) {
+function inspectorAssignmentSectionRow(section, assignmentId) {
   var pct = section.total ? Math.round((section.done / section.total) * 100) : 0;
-  return '<button data-act="inspector-assignment-select" data-id="PR-2026-018">' +
+  return '<button data-act="inspector-assignment-select" data-id="' + esc(assignmentId || 'PR-2026-018') + '">' +
     '<span>' + esc(section.name) + ' (' + esc(String(section.total)) + ' Questions)</span>' +
     '<i><b style="width:' + pct + '%"></b></i>' +
     '<em>' + esc(String(section.done)) + '/' + esc(String(section.total)) + ' (' + pct + '%)</em>' +
@@ -1770,7 +1779,7 @@ function inspectorAssignmentDetailPanel(rows, ui) {
     '</section>' +
     '<section class="inspector-assignment-detail-card inspector-assignment-sections">' +
       '<div class="inspector-assignment-section-head"><h2>Sections Overview</h2><button data-act="inspector-assignment-select" data-id="' + esc(selected.id) + '">View All Questions</button></div>' +
-      '<div class="inspector-assignment-section-list">' + sections.map(inspectorAssignmentSectionRow).join('') + '</div>' +
+      '<div class="inspector-assignment-section-list">' + sections.map(function (section) { return inspectorAssignmentSectionRow(section, selected.id); }).join('') + '</div>' +
       '<div class="inspector-assignment-detail-actions">' +
         '<button class="btn" data-act="inspector-assignment-download"><span>&#8681;</span> Download Assignment</button>' +
         '<button class="btn btn--primary" data-act="inspector-assignment-open" data-id="' + esc(selected.id) + '"><span>&#8618;</span> Continue Working</button>' +
@@ -5503,7 +5512,7 @@ function leadAssignedAuditsUiState() {
 
 function leadAssignedAuditRows() {
   return [
-    { id: 'AUD-2025-045', detailAuditId: 'AUD-2026-005', operator: 'West Air (Pty) Ltd', department: 'OPS', departmentTone: 'info', auditType: 'Regular Surveillance', auditTypeKey: 'regular-surveillance', risk: 'High', riskTone: 'high', dates: ['12 May 2025', '16 May 2025'], status: 'In Progress', statusKey: 'in-progress', statusTone: 'info', progress: 75, dueDate: '28 May 2025', dueStage: 'Findings Review', stageKey: 'findings-review', dueKey: 'due-soon' },
+    { id: 'AUD-2025-045', detailAuditId: 'AUD-2026-001', operator: 'FlyNamibia (Pty) Ltd', department: 'OPS', departmentTone: 'info', auditType: 'Cabin Inspection', auditTypeKey: 'cabin-inspection', risk: 'High', riskTone: 'high', dates: ['15 Jun 2026', '15 Jun 2026'], status: 'In Progress', statusKey: 'in-progress', statusTone: 'info', progress: 75, dueDate: '15 Jun 2026', dueStage: 'Checklist Execution', stageKey: 'checklist-execution', dueKey: 'due-soon' },
     { id: 'AUD-2025-038', detailAuditId: 'AUD-2026-005', operator: 'National Airways Corp', department: 'PEL', departmentTone: 'ok', auditType: 'Certification', auditTypeKey: 'certification', risk: 'Medium', riskTone: 'medium', dates: ['05 May 2025', '09 May 2025'], status: 'Draft Report', statusKey: 'draft-report', statusTone: 'draft', progress: 60, dueDate: '25 May 2025', dueStage: 'Preliminary Report', stageKey: 'preliminary-report', dueKey: 'due-soon' },
     { id: 'AUD-2025-031', detailAuditId: 'AUD-2026-005', operator: 'Skyline Aviation (Pty) Ltd', department: 'AIR', departmentTone: 'teal', auditType: 'Ramp Inspection', auditTypeKey: 'ramp-inspection', risk: 'High', riskTone: 'high', dates: ['28 Apr 2025', '30 Apr 2025'], status: 'Pending Approval', statusKey: 'pending-approval', statusTone: 'pending', progress: 90, dueDate: '22 May 2025', dueStage: 'Dept. Review', stageKey: 'department-review', dueKey: 'due-soon' },
     { id: 'AUD-2025-019', detailAuditId: 'AUD-2026-005', operator: 'Desert Air Maintenance', department: 'AIR', departmentTone: 'teal', auditType: 'Continued Airworthiness', auditTypeKey: 'continued-airworthiness', risk: 'Medium', riskTone: 'medium', dates: ['14 Apr 2025', '17 Apr 2025'], status: 'In Progress', statusKey: 'in-progress', statusTone: 'info', progress: 40, dueDate: '26 May 2025', dueStage: 'Evidence Review', stageKey: 'evidence-review', dueKey: 'due-soon' },
@@ -5557,6 +5566,7 @@ function leadAssignedFiltersHtml(ui) {
   var auditTypeOptions = leadAssignedOptions([
     { value: 'all', label: 'All Types' },
     { value: 'regular-surveillance', label: 'Regular Surveillance' },
+    { value: 'cabin-inspection', label: 'Cabin Inspection' },
     { value: 'certification', label: 'Certification' },
     { value: 'ramp-inspection', label: 'Ramp Inspection' },
     { value: 'continued-airworthiness', label: 'Continued Airworthiness' },
@@ -5632,17 +5642,17 @@ function leadAssignedTableHtml(rows, filteredCount) {
 function leadAssignmentDefaultUi() {
   return {
     selectedQuestions: {
-      'AVSEC-Q001': true,
-      'AVSEC-Q002': true,
-      'AVSEC-Q003': true,
-      'AVSEC-Q004': true
+      'CAB-Q001': true,
+      'CAB-Q002': true,
+      'CAB-Q003': true,
+      'CAB-Q004': true
     },
     assignee: 'Ahmed Ali',
-    dueDate: '2026-06-13',
+    dueDate: '2026-06-15',
     priority: 'Normal',
     note: '',
-    department: 'AVSEC Operations',
-    section: 'access-control',
+    department: 'Cabin Safety',
+    section: 'emergency-equipment',
     risk: 'all',
     status: 'all',
     query: '',
@@ -5659,12 +5669,15 @@ function leadAssignmentUiState() {
   if (!state.leadAssignmentUi.selectedQuestions || typeof state.leadAssignmentUi.selectedQuestions !== 'object') {
     state.leadAssignmentUi.selectedQuestions = leadAssignmentDefaultUi().selectedQuestions;
   }
+  if (Object.keys(state.leadAssignmentUi.selectedQuestions).some(function (id) { return id.indexOf('AVSEC-') === 0; })) {
+    state.leadAssignmentUi.selectedQuestions = leadAssignmentDefaultUi().selectedQuestions;
+  }
   if (!state.leadAssignmentUi.assignee) state.leadAssignmentUi.assignee = 'Ahmed Ali';
-  if (!state.leadAssignmentUi.dueDate) state.leadAssignmentUi.dueDate = '2026-06-13';
+  if (!state.leadAssignmentUi.dueDate) state.leadAssignmentUi.dueDate = '2026-06-15';
   if (!state.leadAssignmentUi.priority) state.leadAssignmentUi.priority = 'Normal';
   if (state.leadAssignmentUi.note === undefined || state.leadAssignmentUi.note === null) state.leadAssignmentUi.note = '';
-  if (!state.leadAssignmentUi.department) state.leadAssignmentUi.department = 'AVSEC Operations';
-  if (!state.leadAssignmentUi.section) state.leadAssignmentUi.section = 'access-control';
+  if (!state.leadAssignmentUi.department) state.leadAssignmentUi.department = 'Cabin Safety';
+  if (!state.leadAssignmentUi.section) state.leadAssignmentUi.section = 'emergency-equipment';
   if (!state.leadAssignmentUi.risk) state.leadAssignmentUi.risk = 'all';
   if (!state.leadAssignmentUi.status) state.leadAssignmentUi.status = 'all';
   if (!state.leadAssignmentUi.query) state.leadAssignmentUi.query = '';
@@ -5677,25 +5690,25 @@ function leadAssignmentUiState() {
 
 function leadAssignmentInspectors() {
   return [
-    { name: 'Ahmed Ali', initials: 'AA', unit: 'Operations', assigned: 38, tone: 'blue' },
-    { name: 'Maria Silva', initials: 'MS', unit: 'Cargo Security', assigned: 45, tone: 'green' },
-    { name: 'David Kim', initials: 'DK', unit: 'Terminal Operations', assigned: 41, tone: 'amber' },
-    { name: 'Fatima Omar', initials: 'FO', unit: 'Access Control', assigned: 0, tone: 'purple' }
+    { name: 'Ahmed Ali', initials: 'AA', unit: 'Cabin Safety', assigned: 28, tone: 'blue' },
+    { name: 'Maria Silva', initials: 'MS', unit: 'Emergency Equipment', assigned: 32, tone: 'green' },
+    { name: 'David Kim', initials: 'DK', unit: 'Cabin Condition', assigned: 24, tone: 'amber' },
+    { name: 'Fatima Omar', initials: 'FO', unit: 'Cabin Exits', assigned: 0, tone: 'purple' }
   ];
 }
 
 function leadAssignmentQuestions() {
   return [
-    { id: 'AVSEC-Q001', no: 1, text: 'Are access control procedures implemented?', risk: 'High', riskKey: 'high', assignedTo: 'Ahmed Ali', status: 'assigned', section: 'Access Control', sectionKey: 'access-control' },
-    { id: 'AVSEC-Q002', no: 2, text: 'Is CCTV monitored continuously?', risk: 'High', riskKey: 'high', assignedTo: 'Ahmed Ali', status: 'assigned', section: 'Access Control', sectionKey: 'access-control' },
-    { id: 'AVSEC-Q003', no: 3, text: 'Is staff screening conducted?', risk: 'Medium', riskKey: 'medium', assignedTo: 'Ahmed Ali', status: 'assigned', section: 'Access Control', sectionKey: 'access-control' },
-    { id: 'AVSEC-Q004', no: 4, text: 'Are visitor passes controlled?', risk: 'Medium', riskKey: 'medium', assignedTo: 'Ahmed Ali', status: 'assigned', section: 'Access Control', sectionKey: 'access-control' },
-    { id: 'AVSEC-Q005', no: 5, text: 'Is patrol frequency adequate?', risk: 'Low', riskKey: 'low', assignedTo: '', status: 'unassigned', section: 'Access Control', sectionKey: 'access-control' },
-    { id: 'AVSEC-Q006', no: 6, text: 'Are access points secured when unattended?', risk: 'High', riskKey: 'high', assignedTo: '', status: 'unassigned', section: 'Access Control', sectionKey: 'access-control' },
-    { id: 'AVSEC-Q007', no: 7, text: 'Are access control records maintained?', risk: 'Medium', riskKey: 'medium', assignedTo: '', status: 'unassigned', section: 'Access Control', sectionKey: 'access-control' },
-    { id: 'AVSEC-Q008', no: 8, text: 'Is there a backup power for access control systems?', risk: 'Low', riskKey: 'low', assignedTo: '', status: 'unassigned', section: 'Access Control', sectionKey: 'access-control' },
-    { id: 'AVSEC-Q009', no: 9, text: 'Are prohibited items detected at access points?', risk: 'High', riskKey: 'high', assignedTo: '', status: 'unassigned', section: 'Access Control', sectionKey: 'access-control' },
-    { id: 'AVSEC-Q010', no: 10, text: 'Are security staff properly trained?', risk: 'Medium', riskKey: 'medium', assignedTo: '', status: 'unassigned', section: 'Access Control', sectionKey: 'access-control' }
+    { id: 'CAB-Q001', no: 1, text: 'Is PBE serviceable and accessible in the required cabin position?', risk: 'High', riskKey: 'high', assignedTo: 'Ahmed Ali', status: 'assigned', section: 'Emergency Equipment', sectionKey: 'emergency-equipment' },
+    { id: 'CAB-Q002', no: 2, text: 'Are fire extinguishers within inspection date and correctly secured?', risk: 'High', riskKey: 'high', assignedTo: 'Ahmed Ali', status: 'assigned', section: 'Emergency Equipment', sectionKey: 'emergency-equipment' },
+    { id: 'CAB-Q003', no: 3, text: 'Are oxygen bottles serviceable, secured, and pressure checked?', risk: 'Medium', riskKey: 'medium', assignedTo: 'Ahmed Ali', status: 'assigned', section: 'Emergency Equipment', sectionKey: 'emergency-equipment' },
+    { id: 'CAB-Q004', no: 4, text: 'Are emergency lights and exit signs serviceable?', risk: 'Medium', riskKey: 'medium', assignedTo: 'Ahmed Ali', status: 'assigned', section: 'Emergency Equipment', sectionKey: 'emergency-equipment' },
+    { id: 'CAB-Q005', no: 5, text: 'Are galley latches, carts, and stowage areas secured?', risk: 'Low', riskKey: 'low', assignedTo: '', status: 'unassigned', section: 'Galley', sectionKey: 'galley' },
+    { id: 'CAB-Q006', no: 6, text: 'Are lavatory smoke detectors and placards serviceable?', risk: 'High', riskKey: 'high', assignedTo: '', status: 'unassigned', section: 'Lavatories', sectionKey: 'lavatories' },
+    { id: 'CAB-Q007', no: 7, text: 'Are passenger seats, belts, and placards in acceptable condition?', risk: 'Medium', riskKey: 'medium', assignedTo: '', status: 'unassigned', section: 'Passenger Seats', sectionKey: 'passenger-seats' },
+    { id: 'CAB-Q008', no: 8, text: 'Are crew seats and restraints serviceable?', risk: 'Low', riskKey: 'low', assignedTo: '', status: 'unassigned', section: 'Video + Crew Seat', sectionKey: 'video-crew-seat' },
+    { id: 'CAB-Q009', no: 9, text: 'Are exits unobstructed and correctly placarded?', risk: 'High', riskKey: 'high', assignedTo: '', status: 'unassigned', section: 'Cockpit, Cabin Condition + Exits', sectionKey: 'cockpit-cabin-exits' },
+    { id: 'CAB-Q010', no: 10, text: 'Is general cabin condition acceptable for the inspection scope?', risk: 'Medium', riskKey: 'medium', assignedTo: '', status: 'unassigned', section: 'Cockpit, Cabin Condition + Exits', sectionKey: 'cockpit-cabin-exits' }
   ];
 }
 
@@ -5761,35 +5774,35 @@ function leadAssignmentInspectorAvatar(name) {
 
 function viewLeadAssignmentWorkspace() {
   var ui = leadAssignmentUiState();
-  var auditId = (state.params && state.params.auditId) || 'AUD-2026-005';
+  var auditId = (state.params && state.params.auditId) || 'AUD-2026-001';
   var assignmentLabel = leadAssignmentStatusLabel(ui);
   return '<div class="lead-assignment-page">' +
     '<button class="lead-assignment-back" data-act="nav" data-view="lead-review">&larr; Back to Assigned Audits</button>' +
     '<div class="lead-assignment-titlebar">' +
-      '<div><h1>AVSEC Inspection <span class="lead-assignment-approved">Approved</span></h1><p>PR-2026-018</p></div>' +
+      '<div><h1>Cabin Inspection <span class="lead-assignment-approved">Approved</span></h1><p>AUD-2026-001</p></div>' +
       '<button class="btn" data-act="lead-assignment-preview-report">▣ View Preliminary Report</button>' +
     '</div>' +
     '<section class="lead-assignment-summary">' +
-      '<div><small>Organization</small><b>SkyCargo Air</b><small>Organization Type</small><b>Airline</b></div>' +
-      '<div><small>Inspection Type</small><b>AVSEC Inspection</b><small>Risk Category</small><span class="lead-risk-pill is-high">High</span></div>' +
-      '<div><small>Inspection Dates</small><b>▣ 12 - 14 Jun 2026</b><small>Location</small><b>JFK International Airport</b></div>' +
-      '<div><small>Planned By</small><b>Security Oversight Department</b><small>Budget (Approved)</small><b>12,500 USD</b></div>' +
+      '<div><small>Organization</small><b>FlyNamibia</b><small>Organization Type</small><b>Airline</b></div>' +
+      '<div><small>Inspection Type</small><b>Cabin Inspection</b><small>Risk Category</small><span class="lead-risk-pill is-high">High</span></div>' +
+      '<div><small>Inspection Dates</small><b>▣ 15 Jun 2026</b><small>Location</small><b>FlyNamibia aircraft cabin / on-site inspection</b></div>' +
+      '<div><small>Planned By</small><b>Cabin Safety Oversight Department</b><small>Budget (Approved)</small><b>Demo only</b></div>' +
     '</section>' +
     leadAssignmentStepperHtml(ui) +
     '<div class="lead-assignment-grid">' +
       '<section class="lead-assignment-card lead-assignment-card--wide">' +
         '<h2>Assignment Overview</h2><p>Review audit details and manage team assignment.</p>' +
-        leadAssignmentOverviewRow('▣', 'Checklist', 'AVSEC Operations Checklist', '186 Questions', '<button class="btn btn--sm" data-act="lead-assignment-preview-checklist">Preview Checklist</button>') +
-        leadAssignmentOverviewRow('▦', 'Departments in Scope', '3 Departments', 'Operations, Cargo, Access Control', '<button class="btn btn--sm" data-act="lead-assignment-view-details">View Details</button>') +
+        leadAssignmentOverviewRow('▣', 'Checklist', 'Cabin Inspection Checklist', '126 Questions', '<button class="btn btn--sm" data-act="lead-assignment-preview-checklist">Preview Checklist</button>') +
+        leadAssignmentOverviewRow('▦', 'Sections in Scope', '6 Sections', 'Galley, lavatories, seats, emergency equipment and exits', '<button class="btn btn--sm" data-act="lead-assignment-view-details">View Details</button>') +
         leadAssignmentOverviewRow('☷', 'Team Size', '4 Inspectors', '1 Lead Inspector', '<button class="btn btn--sm" data-act="lead-assignment-view-team">View Team</button>') +
         leadAssignmentOverviewRow('!', 'Assignment Status', assignmentLabel, leadAssignmentSummaryStatus(ui), '<button class="btn btn--sm btn--primary" data-act="nav" data-view="lead-assignment-questions" data-id="' + esc(auditId) + '">' + esc(ui.assignedAt ? 'Continue Assignment' : 'Start Assignment') + '</button>') +
       '</section>' +
       '<section class="lead-assignment-card">' +
         '<h2>Inspection Scope</h2>' +
-        '<div class="lead-assignment-scope-row"><span>Departments</span><b>3</b></div>' +
-        '<div class="lead-assignment-scope-row"><span>Locations</span><b>2</b></div>' +
-        '<div class="lead-assignment-scope-row"><span>Checklists</span><b>186 Questions</b></div>' +
-        '<div class="lead-assignment-scope-row"><span>Estimated Duration</span><b>3 Days</b></div>' +
+        '<div class="lead-assignment-scope-row"><span>Sections</span><b>6</b></div>' +
+        '<div class="lead-assignment-scope-row"><span>Locations</span><b>1</b></div>' +
+        '<div class="lead-assignment-scope-row"><span>Checklists</span><b>126 Questions</b></div>' +
+        '<div class="lead-assignment-scope-row"><span>Estimated Duration</span><b>1 Day</b></div>' +
         '<div class="lead-assignment-scope-row"><span>Inspectors</span><b>4</b></div>' +
         '<div class="lead-assignment-scope-row"><span>Lead Inspector</span><b>John Lead Inspector</b></div>' +
       '</section>' +
@@ -5810,7 +5823,7 @@ function viewLeadAssignmentWorkspace() {
     '</div>' +
     '<section class="lead-assignment-info">' +
       '<button class="is-active">Audit Information</button><button>Departments</button><button>Checklist Summary</button><button>Documents</button><button>History</button>' +
-      '<div><span>Created By <b>Security Oversight Department</b></span><span>Created On <b>01 Jun 2026 09:15</b></span><span>Last Updated <b>' + esc(ui.assignedAt ? '07 Jun 2026 14:20' : '05 Jun 2026 14:20') + '</b></span><span>Last Updated By <b>Mary Department Manager</b></span></div>' +
+      '<div><span>Created By <b>Cabin Safety Oversight Department</b></span><span>Created On <b>15 Jun 2026 09:15</b></span><span>Last Updated <b>' + esc(ui.assignedAt ? '15 Jun 2026 14:20' : '15 Jun 2026 10:20') + '</b></span><span>Last Updated By <b>Mary Department Manager</b></span></div>' +
     '</section>' +
   '</div>';
 }
@@ -5848,7 +5861,7 @@ function leadAssignmentQuestionRowsHtml(ui) {
 
 function viewLeadAssignmentQuestions() {
   var ui = leadAssignmentUiState();
-  var auditId = (state.params && state.params.auditId) || 'AUD-2026-005';
+  var auditId = (state.params && state.params.auditId) || 'AUD-2026-001';
   var inspectorMode = state.role === 'inspector';
   var selectedCount = leadAssignmentSelectedQuestionIds(ui).length;
   var inspectorOptions = leadAssignmentOptions(leadAssignmentInspectors().map(function (inspector) {
@@ -5861,14 +5874,17 @@ function viewLeadAssignmentQuestions() {
     { value: 'Urgent', label: 'Urgent' }
   ], ui.priority);
   var departmentOptions = leadAssignmentOptions([
-    { value: 'AVSEC Operations', label: 'AVSEC Operations' },
-    { value: 'Cargo Security', label: 'Cargo Security' },
-    { value: 'Terminal Operations', label: 'Terminal Operations' }
+    { value: 'Cabin Safety', label: 'Cabin Safety' },
+    { value: 'Emergency Equipment', label: 'Emergency Equipment' },
+    { value: 'Cabin Condition', label: 'Cabin Condition' }
   ], ui.department);
   var sectionOptions = leadAssignmentOptions([
-    { value: 'access-control', label: 'Access Control' },
-    { value: 'screening', label: 'Screening' },
-    { value: 'cargo', label: 'Cargo Security' }
+    { value: 'emergency-equipment', label: 'Emergency Equipment' },
+    { value: 'galley', label: 'Galley' },
+    { value: 'lavatories', label: 'Lavatories' },
+    { value: 'passenger-seats', label: 'Passenger Seats' },
+    { value: 'video-crew-seat', label: 'Video + Crew Seat' },
+    { value: 'cockpit-cabin-exits', label: 'Cockpit, Cabin Condition + Exits' }
   ], ui.section);
   var riskOptions = leadAssignmentOptions([
     { value: 'all', label: 'All' },
@@ -5889,18 +5905,18 @@ function viewLeadAssignmentQuestions() {
     '</div>' +
     '<section class="lead-assignment-strip">' +
       '<span class="lead-assignment-strip-icon">▣</span>' +
-      '<div><small>Inspection</small><b>AVSEC Inspection</b><p>INS-2026-018</p></div>' +
-      '<div><small>Organization</small><b>SkyCargo Air</b></div>' +
-      '<div><small>Inspection Dates</small><b>▣ 12 - 14 Jun 2026</b></div>' +
+      '<div><small>Inspection</small><b>Cabin Inspection</b><p>AUD-2026-001</p></div>' +
+      '<div><small>Organization</small><b>FlyNamibia</b></div>' +
+      '<div><small>Inspection Dates</small><b>▣ 15 Jun 2026</b></div>' +
       '<div><small>Lead Inspector</small><b>John Lead Inspector</b></div>' +
       '<div><small>Status</small><span class="lead-assignment-status">' + esc(ui.releasedAt ? 'Released' : (ui.assignedAt ? 'Assignment Draft' : 'Planning')) + '</span></div>' +
     '</section>' +
     '<div class="lead-assignment-metrics">' +
-      leadAssignmentMetricCard('Checklist Items', '186', 'Total Questions', 'blue', '▣') +
-      leadAssignmentMetricCard('Assigned', '124', '66.7%', 'green', '✓') +
-      leadAssignmentMetricCard('Unassigned', '62', '33.3%', 'orange', '⌁') +
+      leadAssignmentMetricCard('Checklist Items', '126', 'Total Questions', 'blue', '▣') +
+      leadAssignmentMetricCard('Assigned', '42', '33.3%', 'green', '✓') +
+      leadAssignmentMetricCard('Unassigned', '84', '66.7%', 'orange', '⌁') +
       leadAssignmentMetricCard('Inspectors', '4', 'Team Members', 'purple', '☷') +
-      leadAssignmentMetricCard('Departments', '7', 'In Scope', 'teal', '▤') +
+      leadAssignmentMetricCard('Sections', '6', 'In Scope', 'teal', '▤') +
     '</div>' +
     '<div class="lead-assignment-workspace">' +
       '<aside class="lead-assignment-inspectors"><div class="lead-assignment-panel-head"><h2>Inspectors</h2><button data-act="lead-assignment-view-team">+ Add Inspector</button></div>' +
@@ -5934,7 +5950,7 @@ function viewLeadAssignmentQuestions() {
       '</aside>' +
     '</div>' +
     '<div class="lead-assignment-bottom">' +
-      '<section><h3>Assignment Summary</h3><div><span>Inspectors <b>4</b></span><span>Assigned <b>124</b></span><span>Unassigned <b>62</b></span><span>Total <b>186</b></span><span>Workload <b>Balanced</b></span></div></section>' +
+      '<section><h3>Assignment Summary</h3><div><span>Inspectors <b>4</b></span><span>Assigned <b>42</b></span><span>Unassigned <b>84</b></span><span>Total <b>126</b></span><span>Workload <b>Balanced</b></span></div></section>' +
       '<section><h3>Bulk Actions</h3><div class="lead-assignment-bulk"><button data-act="lead-assignment-bulk" data-mode="assign-section">Assign Section</button><button data-act="lead-assignment-bulk" data-mode="reassign">Reassign</button><button class="is-danger" data-act="lead-assignment-bulk" data-mode="remove">Remove Assignment</button><button data-act="lead-assignment-bulk" data-mode="export">Export Assignment</button></div></section>' +
       '<section class="lead-assignment-bottom-actions"><button class="btn" data-act="lead-assignment-save">Save Draft</button><button class="btn" data-act="lead-assignment-preview">◎ ' + esc(inspectorMode ? 'Preview Submitted Package' : 'Preview Assignment') + '</button><button class="btn btn--primary" data-act="lead-assignment-release">➤ ' + esc(inspectorMode ? 'Confirm Inspector Review' : 'Release to Inspectors') + '</button><p>' + esc(inspectorMode ? 'Inspector review remains in this workspace; Lead Inspector does not need to inspect each row one by one.' : 'Inspectors will be notified and can start working.') + '</p></section>' +
     '</div>' +
