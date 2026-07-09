@@ -747,7 +747,7 @@ and push the current branch.
 - Produces: `viewManagerReportsApproval() -> string`.
 - Produces actions prefixed `manager-report-`.
 
-- [ ] **Step 1: Write the failing report decision test**
+- [x] **Step 1: Write the failing report decision test**
 
 Assert separate artifacts and exact transitions:
 
@@ -774,13 +774,13 @@ assert.match(result.message, /comment/i);
 Also test `return` with a comment, terminal-stage decision blocking, appended
 history, and the unchanged sibling report.
 
-- [ ] **Step 2: Run decision test and verify RED**
+- [x] **Step 2: Run decision test and verify RED**
 
 Run `node tests/manager-reports-approval-smoke.test.js`.
 
 Expected: FAIL because decision functions and the route do not exist.
 
-- [ ] **Step 3: Implement report selectors and decision state machine**
+- [x] **Step 3: Implement report selectors and decision state machine**
 
 Use these manager-stage transitions:
 
@@ -801,7 +801,7 @@ var MANAGER_REPORT_TRANSITIONS = {
 `pending_manager` records accept a manager decision. Every success records
 `managerDecision`, `managerDecisionAt`, `managerComment`, and a history entry.
 
-- [ ] **Step 4: Write the failing PDF/download smoke test**
+- [x] **Step 4: Write the failing PDF/download smoke test**
 
 Inject fake Blob/URL/document objects and assert:
 
@@ -819,13 +819,13 @@ assert.equal(createdBlobOptions.type, 'application/pdf');
 
 Repeat for Final Report and Executive Summary filenames.
 
-- [ ] **Step 5: Run PDF test and verify RED**
+- [x] **Step 5: Run PDF test and verify RED**
 
 Run `node tests/manager-report-pdf-smoke.test.js`.
 
 Expected: FAIL because report-specific line/filename behavior is missing.
 
-- [ ] **Step 6: Render Reports Approval and wire interactions**
+- [x] **Step 6: Render Reports Approval and wire interactions**
 
 Add the route/nav label `Reports Approval`. Render:
 
@@ -844,7 +844,7 @@ inline `validationMessage` when the comment is empty. A success persists,
 records a mock in-app notification for the next owner, records the audit log,
 and re-renders the selected dossier.
 
-- [ ] **Step 7: Implement report PDF lines and downloads**
+- [x] **Step 7: Implement report PDF lines and downloads**
 
 `managerReportPdfLines` includes product name, report type/version, Audit ID,
 Organization, Lead Inspector, submitted date, status, executive summary,
@@ -857,7 +857,7 @@ Use exact filenames:
 - `Fly_Namibia_Final_Report_FR-2026-018.pdf`
 - `Fly_Namibia_Executive_Summary_PR-2026-018.pdf` or the selected Final ID
 
-- [ ] **Step 8: Verify GREEN and existing governance regressions**
+- [x] **Step 8: Verify GREEN and existing governance regressions**
 
 Run:
 
@@ -874,12 +874,12 @@ node tests/governance-render-smoke.test.js
 
 Expected: all exit 0.
 
-- [ ] **Step 9: Review checkpoint without committing**
+- [x] **Step 9: Review checkpoint without committing**
 
 Run `git diff --check`; verify manager approval does not issue/lock a Final
 Report. Do not commit.
 
-- [ ] **Step 10: Commit and push Reports Approval and PDFs**
+- [x] **Step 10: Commit and push Reports Approval and PDFs**
 
 Stage only Task 4 files/hunks, inspect `git diff --cached`, commit with
 `feat: add manager report approvals and pdf downloads`, and push the current

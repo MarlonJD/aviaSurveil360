@@ -13830,6 +13830,234 @@ td .sp-report-badge {
   .ops-table-wrap--stack .ops-table tr.ops-row--child td:first-child { padding-left: 0; }
 }
 
+/* ================= Department Manager Reports Approval ================= */
+.manager-report-workbench {
+  display: grid;
+  grid-template-columns: minmax(560px, .95fr) minmax(560px, 1.05fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.manager-report-list,
+.manager-report-dossier {
+  min-width: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.manager-report-list { padding: 18px; }
+.manager-report-demo-label { font-size: 12px; color: var(--text-muted); }
+
+.manager-report-filters {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.5fr) minmax(150px, .7fr) minmax(170px, .8fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 16px;
+}
+
+.manager-report-filters label { min-width: 0; }
+.manager-report-filters label > span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.manager-report-filters input,
+.manager-report-filters select,
+.manager-report-decision textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.manager-report-filters input,
+.manager-report-filters select { height: 38px; padding: 0 10px; }
+.manager-report-search > div { display: flex; gap: 8px; }
+.manager-report-search input { min-width: 0; }
+.manager-report-reset { min-height: 38px; }
+
+.manager-report-counters {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(100px, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.manager-report-counters button {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.manager-report-counters button:hover,
+.manager-report-counters button:focus-visible { border-color: var(--brand); }
+.manager-report-counters span { display: block; color: var(--text-muted); font-size: 10px; }
+.manager-report-counters strong { display: block; margin-top: 4px; font-size: 20px; }
+
+.manager-report-queue,
+.manager-report-findings { overflow-x: auto; border: 1px solid var(--line-soft); border-radius: var(--radius-md); }
+.manager-report-queue table,
+.manager-report-findings table { width: 100%; border-collapse: collapse; }
+.manager-report-queue th,
+.manager-report-queue td,
+.manager-report-findings th,
+.manager-report-findings td { padding: 11px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; text-align: left; }
+.manager-report-queue th,
+.manager-report-findings th { color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+.manager-report-queue td,
+.manager-report-findings td { font-size: 12px; }
+.manager-report-queue td small,
+.manager-report-findings td small { display: block; margin-top: 3px; color: var(--text-muted); }
+.manager-report-row.is-selected { background: var(--brand-soft); box-shadow: inset 3px 0 0 var(--brand); }
+.manager-report-id {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--brand-strong);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.manager-report-dossier { overflow: hidden; }
+.manager-report-dossier--empty { min-height: 240px; display: grid; place-items: center; }
+.manager-report-dossier-head { padding: 18px; border-bottom: 1px solid var(--line-soft); }
+.manager-report-dossier-head > div:first-child > span,
+.manager-report-list .manager-workbench-panel-head span:first-child,
+.manager-report-preview > span {
+  color: var(--brand-strong);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.manager-report-dossier-head h2 { margin: 4px 0; font-size: 21px; }
+.manager-report-dossier-head p { margin: 0; color: var(--text-muted); }
+.manager-report-head-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+.manager-report-dossier-head dl,
+.manager-report-preview dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 0;
+}
+.manager-report-dossier-head dl > div,
+.manager-report-preview dl > div { padding: 10px; border: 1px solid var(--line-soft); border-radius: var(--radius-sm); background: var(--surface-subtle); }
+.manager-report-dossier-head dt,
+.manager-report-preview dt { color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+.manager-report-dossier-head dd,
+.manager-report-preview dd { margin: 4px 0 0; font-size: 12px; font-weight: 700; }
+
+.manager-report-tabs { display: flex; gap: 4px; overflow-x: auto; padding: 0 14px; border-bottom: 1px solid var(--line-soft); }
+.manager-report-tabs button {
+  flex: 0 0 auto;
+  padding: 12px 10px 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 700;
+  cursor: pointer;
+}
+.manager-report-tabs button.is-active { border-bottom-color: var(--brand); color: var(--brand-strong); }
+.manager-report-panel { padding: 18px; }
+.manager-report-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.manager-report-summary-grid article { padding: 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface-subtle); }
+.manager-report-summary-grid span { display: block; color: var(--text-muted); font-size: 11px; }
+.manager-report-summary-grid strong { display: block; margin-top: 5px; font-size: 20px; }
+.manager-report-copy { margin-top: 14px; }
+.manager-report-copy h3 { margin: 0 0 6px; font-size: 15px; }
+.manager-report-copy p { margin: 0; line-height: 1.55; color: var(--text-secondary); }
+.manager-report-boundary { margin-top: 14px; padding: 11px 12px; border-left: 3px solid var(--warning); background: var(--warning-soft); color: var(--text-secondary); font-size: 12px; }
+
+.manager-report-attachments,
+.manager-report-history { margin: 0; padding: 0; list-style: none; }
+.manager-report-attachments li { display: flex; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line-soft); }
+.manager-report-attachments li:last-child { border-bottom: 0; }
+.manager-report-attachments small { display: block; color: var(--text-muted); }
+.manager-report-history li { display: grid; grid-template-columns: 126px 1fr; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line-soft); }
+.manager-report-history time { color: var(--text-muted); font-size: 11px; }
+.manager-report-history small,
+.manager-report-history p { display: block; margin: 3px 0 0; color: var(--text-muted); font-size: 11px; }
+
+.manager-report-decision { padding: 16px 18px 18px; border-top: 1px solid var(--line-soft); background: var(--surface-subtle); }
+.manager-report-decision > label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 800; }
+.manager-report-decision textarea { min-height: 88px; padding: 10px; resize: vertical; }
+.manager-report-validation { min-height: 20px; padding-top: 5px; color: var(--danger); font-size: 12px; }
+.manager-report-decision-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.manager-report-decision--complete { display: flex; align-items: center; min-height: 76px; }
+.manager-report-decision--complete b,
+.manager-report-decision--complete span { display: block; }
+.manager-report-decision--complete span { margin-top: 3px; color: var(--text-muted); font-size: 12px; }
+
+.manager-report-download { position: relative; }
+.manager-report-download summary { list-style: none; cursor: pointer; }
+.manager-report-download summary::-webkit-details-marker { display: none; }
+.manager-report-download > div {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 220px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+.manager-report-download button { width: 100%; padding: 9px; border: 0; border-radius: 5px; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.manager-report-download button:hover,
+.manager-report-download button:focus-visible { background: var(--surface-subtle); }
+.manager-report-preview h2 { margin: 5px 0; }
+.manager-report-preview h3 { margin: 18px 0 6px; }
+.manager-report-preview > p,
+.manager-report-preview li { line-height: 1.5; color: var(--text-secondary); }
+
+@media (max-width: 1280px) {
+  .manager-report-workbench { grid-template-columns: 1fr; }
+  .manager-report-counters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 800px) {
+  .manager-report-filters { grid-template-columns: 1fr 1fr; }
+  .manager-report-search { grid-column: 1 / -1; }
+  .manager-report-dossier-head dl,
+  .manager-report-preview dl,
+  .manager-report-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .manager-report-list { padding: 14px; }
+  .manager-report-filters,
+  .manager-report-dossier-head dl,
+  .manager-report-preview dl,
+  .manager-report-summary-grid { grid-template-columns: 1fr; }
+  .manager-report-search { grid-column: auto; }
+  .manager-report-search > div { flex-direction: column; }
+  .manager-report-filters .btn { width: 100%; }
+  .manager-report-counters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .manager-report-head-actions,
+  .manager-report-decision-actions { align-items: stretch; flex-direction: column; }
+  .manager-report-head-actions > *,
+  .manager-report-decision-actions .btn { width: 100%; }
+  .manager-report-download > div { left: 0; right: auto; width: min(260px, calc(100vw - 48px)); }
+  .manager-report-history li { grid-template-columns: 1fr; gap: 3px; }
+}
+
 @media (max-width: 1180px) {
   .cap-review-inspection-meta {
     grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -12,8 +12,7 @@ var NAV = {
     { view: 'question-bank', label: 'Question Bank', icon: '□' },
     { view: 'checklist-builder', label: 'Checklist Builder', icon: '▧' },
     { view: 'checklist-versions', label: 'Version History', icon: '◷' },
-    { view: 'audit-reports', label: 'Audit Reports', icon: '📄', filter: 'all' },
-    { view: 'audit-reports', label: 'Preliminary Reports', icon: '□', filter: 'preliminary', badge: '1' },
+    { view: 'reports-approval', label: 'Reports Approval', icon: '📄', badge: '2' },
     { view: 'safety-intelligence', label: 'Team Dashboard', icon: '⌁' },
     { view: 'ssp-nasp', label: 'Executive Dashboard', icon: '▣' },
     { section: 'Oversight' },
@@ -102,7 +101,7 @@ var NAV = {
 };
 
 var VIEW_TITLES = {
-  dashboard: 'Dashboard', calendar: 'Audit Work Queue', findings: 'Findings', 'findings-review': 'Findings Review', 'inspection-team': 'Inspection Team', 'my-findings': 'My Findings',
+  dashboard: 'Dashboard', calendar: 'Audit Work Queue', findings: 'Findings', 'findings-review': 'Findings Review', 'inspection-team': 'Inspection Team', 'reports-approval': 'Reports Approval', 'my-findings': 'My Findings',
   reports: 'Reports', report: 'Report', messages: 'Messages', templates: 'Templates',
   'template-preview': 'Template Preview', auditlog: 'Audit Log', 'audit-detail': 'Audit Detail',
   checklist: 'Checklist Runner', finding: 'Finding Detail', wizard: 'New Audit Wizard',
@@ -475,6 +474,7 @@ function renderContent() {
     case 'final-report-view': return viewLeadFinalReportDocument();
     case 'findings-review': return viewManagerFindingsReview();
     case 'inspection-team': return viewInspectionTeam();
+    case 'reports-approval': return viewManagerReportsApproval();
     case 'calendar': return viewCalendar();
     case 'audit-detail': return viewAuditDetail();
     case 'checklist': return viewChecklistRunner();
@@ -993,6 +993,104 @@ function handleManagerTeamDownload(auditId) {
   }
 }
 
+function handleManagerReportSelect(reportId) {
+  if (!managerReportById(state, reportId)) return;
+  var ui = managerReportsUiState();
+  ui.selectedReportId = reportId;
+  ui.tab = 'summary';
+  ui.validationMessage = '';
+  persistAfterAction();
+  render();
+}
+
+function handleManagerReportFilter(key, explicitValue) {
+  var ui = managerReportsUiState();
+  if (key === 'reset') {
+    ui.query = '';
+    ui.reportType = 'all';
+    ui.status = 'all';
+  } else if (key === 'query') {
+    ui.query = explicitValue !== null && explicitValue !== undefined ? explicitValue : val('manager-report-query');
+  } else if (key === 'reportType') {
+    ui.reportType = explicitValue || 'all';
+  } else if (key === 'status') {
+    ui.status = explicitValue || 'all';
+  } else {
+    return;
+  }
+  var rows = managerReportRows(state, ui);
+  if (rows.length && !rows.some(function (report) { return report.id === ui.selectedReportId; })) {
+    ui.selectedReportId = rows[0].id;
+  }
+  ui.validationMessage = '';
+  persistAfterAction();
+  render();
+}
+
+function handleManagerReportTab(tab) {
+  if (['summary', 'findings', 'attachments', 'comments', 'history'].indexOf(tab) === -1) return;
+  managerReportsUiState().tab = tab;
+  persistAfterAction();
+  render();
+}
+
+function managerReportNotificationText(report) {
+  if (report.status === 'released_to_service_provider') return report.id + ' was released to the Fly Namibia Service Provider Portal for CAP response.';
+  if (report.status === 'submitted_to_gm') return report.id + ' was forwarded to the General Manager approval stage.';
+  if (report.status === 'submitted_to_executive') return report.id + ' was forwarded for configured final authorized approval.';
+  if (report.status === 'revision_requested') return report.id + ' requires revision before manager approval.';
+  return report.id + ' was returned to the Lead Inspector.';
+}
+
+function handleManagerReportDecision(reportId, decision) {
+  var ui = managerReportsUiState();
+  var result = applyManagerReportDecision(
+    state,
+    reportId,
+    decision,
+    val('manager-report-comment'),
+    { role: 'manager', name: ROLES.manager.user }
+  );
+  if (!result.ok) {
+    ui.validationMessage = result.message;
+    render();
+    return;
+  }
+  ui.validationMessage = '';
+  addLog('Department Manager report decision: ' + decision, reportId);
+  if (result.report.ownerRole) {
+    pushNotification(result.report.ownerRole, '📄', managerReportNotificationText(result.report));
+  }
+  persistAfterAction();
+  render();
+  toast('Report decision recorded', result.message, 'ok');
+}
+
+function handleManagerReportPreview(reportId) {
+  var report = managerReportById(state, reportId);
+  if (!report) return;
+  openModal(modalManagerReportPreview(report));
+}
+
+function handleManagerReportDownload(reportId, variant) {
+  var report = managerReportById(state, reportId);
+  if (!report) {
+    toast('Download unavailable', 'The selected report artifact could not be found.', 'warn');
+    return;
+  }
+  var pdfVariant = variant === 'executive' ? 'executive' : 'report';
+  var filename = managerReportPdfFilename(report, pdfVariant);
+  try {
+    downloadAviaPdf(filename, managerReportPdfLines(report, pdfVariant, state));
+    addLog((pdfVariant === 'executive' ? 'Executive Summary' : report.reportType) + ' PDF downloaded', reportId);
+    persistAfterAction();
+    toast('Report PDF downloaded', filename + ' was generated in this browser.', 'ok');
+  } catch (error) {
+    managerReportsUiState().validationMessage = 'This browser could not create the demo PDF download.';
+    render();
+  }
+}
+
 /* ----------------------------- Action dispatch ----------------------------- */
 function handleAction(act, el) {
   var id = el.getAttribute('data-id');
@@ -1055,6 +1153,13 @@ function handleAction(act, el) {
     case 'manager-team-add-attachment': handleManagerTeamAddAttachment(id); break;
     case 'manager-team-member-lead': handleManagerTeamMemberAction(id, el.getAttribute('data-user'), 'lead'); break;
     case 'manager-team-member-remove': handleManagerTeamMemberAction(id, el.getAttribute('data-user'), 'remove'); break;
+
+    case 'manager-report-select': handleManagerReportSelect(id); break;
+    case 'manager-report-filter': handleManagerReportFilter(el.getAttribute('data-key'), el.getAttribute('data-value')); break;
+    case 'manager-report-tab': handleManagerReportTab(tab); break;
+    case 'manager-report-decision': handleManagerReportDecision(id, el.getAttribute('data-decision')); break;
+    case 'manager-report-preview': handleManagerReportPreview(id); break;
+    case 'manager-report-download': handleManagerReportDownload(id, el.getAttribute('data-variant')); break;
 
     case 'start-checklist': startChecklist(id); break;
     case 'select-checklist-question': state.params.questionId = q; render(); break;
@@ -4524,6 +4629,12 @@ document.addEventListener('change', function (e) {
   }
   if (field === 'manager-team-date-range') {
     handleManagerTeamFilter('dateRange', e.target.value);
+  }
+  if (field === 'manager-report-type') {
+    handleManagerReportFilter('reportType', e.target.value);
+  }
+  if (field === 'manager-report-status') {
+    handleManagerReportFilter('status', e.target.value);
   }
   if (field === 'lead-review-decision') {
     handleLeadReviewDecision(e.target.getAttribute('data-id'), e.target.value);

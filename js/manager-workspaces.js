@@ -110,6 +110,185 @@ function managerReportById(target, reportId) {
   return s.managerReports.filter(function (report) { return report.id === reportId; })[0] || null;
 }
 
+var MANAGER_REPORT_TRANSITIONS = {
+  'Preliminary Report': {
+    approveWithCap: {
+      status: 'released_to_service_provider',
+      ownerRole: 'auditee',
+      action: 'Approved and released to Service Provider'
+    },
+    approveWithoutCap: {
+      status: 'submitted_to_gm',
+      ownerRole: 'gm',
+      action: 'Approved and forwarded to General Manager'
+    }
+  },
+  'Final Report': {
+    approve: {
+      status: 'submitted_to_executive',
+      ownerRole: 'executiveDirector',
+      action: 'Department Manager approved and forwarded for final authorized approval'
+    }
+  }
+};
+
+function managerReportDecisionResult(ok, message, report) {
+  return { ok: ok, message: message, report: report || null };
+}
+
+function managerReportDecisionTimestamp() {
+  if (typeof logTimestamp === 'function') return logTimestamp();
+  return (typeof DEMO_TODAY === 'string' ? DEMO_TODAY : '2026-06-15') + ' 00:00';
+}
+
+function managerReportRows(target, filters) {
+  var s = ensureManagerWorkspaceState(target);
+  var opts = filters || {};
+  var query = String(opts.query || '').trim().toLowerCase();
+  var reportType = opts.reportType || 'all';
+  var status = opts.status || 'all';
+
+  function matchesStatus(report) {
+    if (status === 'all') return true;
+    if (status === 'pending') return report.status === 'pending_manager';
+    if (status === 'revision') return report.status === 'revision_requested' || report.status === 'returned_to_lead';
+    if (status === 'approved') {
+      return ['released_to_service_provider', 'submitted_to_gm', 'submitted_to_executive', 'issued'].indexOf(report.status) !== -1;
+    }
+    return report.status === status;
+  }
+
+  return s.managerReports.filter(function (report) {
+    if (reportType !== 'all' && report.reportType !== reportType) return false;
+    if (!matchesStatus(report)) return false;
+    var haystack = [
+      report.id,
+      report.auditId,
+      report.organization,
+      report.reportType,
+      report.version,
+      report.leadInspector,
+      report.status,
+      report.summary
+    ].join(' ').toLowerCase();
+    return !query || haystack.indexOf(query) !== -1;
+  }).sort(function (left, right) {
+    return (right.submittedAt || '').localeCompare(left.submittedAt || '') || left.id.localeCompare(right.id);
+  });
+}
+
+function applyManagerReportDecision(target, reportId, decision, comment, actor) {
+  var report = managerReportById(target, reportId);
+  if (!report) return managerReportDecisionResult(false, 'Report artifact not found.', null);
+  if (report.status !== 'pending_manager') {
+    return managerReportDecisionResult(false, 'This report is no longer pending the Department Manager decision.', report);
+  }
+  if (['approve', 'revision', 'return'].indexOf(decision) === -1) {
+    return managerReportDecisionResult(false, 'Choose a supported report decision.', report);
+  }
+
+  var cleanComment = String(comment || '').trim();
+  if ((decision === 'revision' || decision === 'return') && !cleanComment) {
+    return managerReportDecisionResult(false, 'A manager comment is required to request revision or return the report.', report);
+  }
+
+  var transition = null;
+  if (decision === 'revision') {
+    transition = {
+      status: 'revision_requested',
+      ownerRole: 'leadInspector',
+      action: 'Revision requested by Department Manager'
+    };
+  } else if (decision === 'return') {
+    transition = {
+      status: 'returned_to_lead',
+      ownerRole: 'leadInspector',
+      action: 'Returned to Lead Inspector by Department Manager'
+    };
+  } else if (report.reportType === 'Preliminary Report') {
+    transition = report.capRequired
+      ? MANAGER_REPORT_TRANSITIONS['Preliminary Report'].approveWithCap
+      : MANAGER_REPORT_TRANSITIONS['Preliminary Report'].approveWithoutCap;
+  } else if (report.reportType === 'Final Report') {
+    transition = MANAGER_REPORT_TRANSITIONS['Final Report'].approve;
+  }
+
+  if (!transition) return managerReportDecisionResult(false, 'No manager transition is configured for this report.', report);
+
+  var at = managerReportDecisionTimestamp();
+  var actorName = actor && actor.name ? actor.name : String(actor || 'Department Manager');
+  report.status = transition.status;
+  report.ownerRole = transition.ownerRole;
+  report.managerDecision = decision;
+  report.managerDecisionAt = at;
+  report.managerComment = cleanComment;
+  if (!Array.isArray(report.history)) report.history = [];
+  report.history.push({
+    at: at,
+    actor: actorName,
+    action: transition.action,
+    comment: cleanComment
+  });
+  return managerReportDecisionResult(true, transition.action + '.', report);
+}
+
+function managerReportPdfFilename(report, variant) {
+  var type = report && report.reportType === 'Final Report' ? 'Final_Report' : 'Preliminary_Report';
+  if (variant === 'executive') return 'Fly_Namibia_Executive_Summary_' + report.id + '.pdf';
+  return 'Fly_Namibia_' + type + '_' + report.id + '.pdf';
+}
+
+function managerReportPdfLines(report, variant, target) {
+  if (!report) return ['AviaSurveil360 Demo Report', 'Demo-only report artifact unavailable.'];
+  var s = target || (typeof state !== 'undefined' ? state : null);
+  var findings = s && Array.isArray(s.findings)
+    ? s.findings.filter(function (finding) { return finding.auditId === report.auditId; })
+    : [];
+  var counts = managerFindingCounts(findings);
+  var title = variant === 'executive' ? 'Executive Summary' : report.reportType;
+  var status = String(report.status || 'unknown').replace(/_/g, ' ');
+  var lines = [
+    'AviaSurveil360 - ' + title,
+    'Demo-only browser-generated document - not a production authority record',
+    '',
+    'Report ID: ' + report.id,
+    'Audit ID: ' + report.auditId,
+    'Organization: ' + report.organization,
+    'Organization Type: Operator / Service Provider',
+    'Report Type: ' + report.reportType,
+    'Version: ' + report.version,
+    'Lead Inspector: ' + report.leadInspector,
+    'Submitted: ' + report.submittedAt,
+    'Status: ' + status,
+    '',
+    'Executive Summary',
+    report.summary || 'No executive summary is available.',
+    '',
+    'Findings Summary',
+    'Total: ' + counts.total,
+    'Level 1 Critical: ' + counts.critical,
+    'Level 2 Major: ' + counts.major,
+    'Level 3 Minor: ' + counts.minor,
+    'Observations: ' + counts.observations,
+    'Open: ' + counts.open + ' | In Review: ' + counts.inReview + ' | Closed: ' + counts.closed,
+    '',
+    report.capRequired
+      ? 'CAP/evidence note: CAP response and required evidence remain subject to configured CAA review.'
+      : 'CAP/evidence note: This report is configured as not requiring a CAP response.'
+  ];
+  if (report.reportType === 'Final Report') {
+    lines.push('Authorization note: Department Manager approval does not issue or lock this Final Report; configured final authorized approval is required.');
+  }
+  if (variant !== 'executive' && findings.length) {
+    lines.push('', 'Finding Records');
+    findings.forEach(function (finding) {
+      lines.push(finding.id + ' | ' + finding.title + ' | Severity ' + finding.severity + ' | ' + finding.status);
+    });
+  }
+  lines.push('', 'Demo-only: no production reporting engine, document storage, e-signature, or records-management service is used.');
+  return lines;
+}
+
 function managerTeamByAuditId(target, auditId) {
   var s = ensureManagerWorkspaceState(target);
   return s.inspectionTeams.filter(function (team) { return team.auditId === auditId; })[0] || null;

@@ -8239,6 +8239,216 @@ function modalManagerTeamMessage(row) {
   return modalShell('Send Message to Team', body, '<button class="btn" data-act="close-modal">Cancel</button><button class="btn btn--primary" data-act="manager-team-confirm-message" data-id="' + esc(row.auditId) + '">Send Message</button>');
 }
 
+/* =========================== Department Manager reports approval =========================== */
+function managerReportsUiState() {
+  if (!state.managerReportsUi || typeof state.managerReportsUi !== 'object') state.managerReportsUi = {};
+  var ui = state.managerReportsUi;
+  if (typeof ui.query !== 'string') ui.query = '';
+  if (!ui.reportType) ui.reportType = 'all';
+  if (!ui.status) ui.status = 'all';
+  if (!ui.selectedReportId) ui.selectedReportId = 'PR-2026-018';
+  if (['summary', 'findings', 'attachments', 'comments', 'history'].indexOf(ui.tab) === -1) ui.tab = 'summary';
+  if (typeof ui.validationMessage !== 'string') ui.validationMessage = '';
+  return ui;
+}
+
+function managerReportStatusLabel(status) {
+  var labels = {
+    pending_manager: 'Pending My Approval',
+    revision_requested: 'Revision Requested',
+    returned_to_lead: 'Returned to Lead Inspector',
+    released_to_service_provider: 'Released to Service Provider',
+    submitted_to_gm: 'Submitted to General Manager',
+    submitted_to_executive: 'Pending Final Authorized Approval',
+    issued: 'Issued'
+  };
+  return labels[status] || String(status || 'Unknown').replace(/_/g, ' ');
+}
+
+function managerReportStatusBadge(status) {
+  var tone = status === 'pending_manager' || status === 'submitted_to_executive'
+    ? 'warn'
+    : (status === 'revision_requested' || status === 'returned_to_lead'
+      ? 'danger'
+      : (status === 'issued' || status === 'released_to_service_provider' ? 'ok' : 'info'));
+  return demoBadge(managerReportStatusLabel(status), tone);
+}
+
+function managerReportOwnerLabel(ownerRole) {
+  if (ownerRole === 'auditee') return 'Fly Namibia Service Provider Portal';
+  return ROLES[ownerRole] ? ROLES[ownerRole].name : (ownerRole || '—');
+}
+
+function managerReportOption(value, label, selected) {
+  return '<option value="' + esc(value) + '"' + (value === selected ? ' selected' : '') + '>' + esc(label) + '</option>';
+}
+
+function managerReportFilters(ui) {
+  return '<div class="manager-report-filters">' +
+    '<label class="manager-report-search"><span>Search reports</span><div><input id="manager-report-query" type="search" value="' + esc(ui.query) + '" placeholder="Report ID, audit, organization"><button class="btn btn--primary btn--sm" data-act="manager-report-filter" data-key="query">Search</button></div></label>' +
+    '<label><span>Report Type</span><select data-field="manager-report-type">' +
+      managerReportOption('all', 'All Reports', ui.reportType) +
+      managerReportOption('Preliminary Report', 'Preliminary Reports', ui.reportType) +
+      managerReportOption('Final Report', 'Final Reports', ui.reportType) +
+    '</select></label>' +
+    '<label><span>Status</span><select data-field="manager-report-status">' +
+      managerReportOption('all', 'All Statuses', ui.status) +
+      managerReportOption('pending', 'Pending My Approval', ui.status) +
+      managerReportOption('revision', 'Revision Requested / Returned', ui.status) +
+      managerReportOption('approved', 'Approved / Forwarded', ui.status) +
+    '</select></label>' +
+    '<button class="btn btn--sm manager-report-reset" data-act="manager-report-filter" data-key="reset">Reset</button>' +
+  '</div>';
+}
+
+function managerReportCounters(allReports) {
+  var counters = [
+    ['All Reports', allReports.length, 'all', 'all'],
+    ['Preliminary Reports', allReports.filter(function (report) { return report.reportType === 'Preliminary Report'; }).length, 'reportType', 'Preliminary Report'],
+    ['Final Reports', allReports.filter(function (report) { return report.reportType === 'Final Report'; }).length, 'reportType', 'Final Report'],
+    ['Pending My Approval', allReports.filter(function (report) { return report.status === 'pending_manager'; }).length, 'status', 'pending'],
+    ['Revision Requested', allReports.filter(function (report) { return report.status === 'revision_requested' || report.status === 'returned_to_lead'; }).length, 'status', 'revision'],
+    ['Approved', allReports.filter(function (report) { return ['released_to_service_provider', 'submitted_to_gm', 'submitted_to_executive', 'issued'].indexOf(report.status) !== -1; }).length, 'status', 'approved']
+  ];
+  return '<div class="manager-report-counters">' + counters.map(function (counter) {
+    var attrs = counter[2] === 'all'
+      ? ' data-act="manager-report-filter" data-key="reset"'
+      : ' data-act="manager-report-filter" data-key="' + esc(counter[2]) + '" data-value="' + esc(counter[3]) + '"';
+    return '<button' + attrs + '><span>' + esc(counter[0]) + '</span><strong>' + esc(String(counter[1])) + '</strong></button>';
+  }).join('') + '</div>';
+}
+
+function managerReportQueueRows(reports, selectedReportId) {
+  if (!reports.length) return '<tr><td colspan="7"><div class="empty">No reports match these filters.</div></td></tr>';
+  return reports.map(function (report) {
+    var selected = report.id === selectedReportId;
+    return '<tr class="manager-report-row' + (selected ? ' is-selected' : '') + '">' +
+      '<td><button class="manager-report-id" data-act="manager-report-select" data-id="' + esc(report.id) + '"' + (selected ? ' aria-current="true"' : '') + '>' + esc(report.id) + '</button><small>' + esc(report.auditId) + '</small></td>' +
+      '<td><b>' + esc(report.organization) + '</b><small>Operator / Service Provider</small></td>' +
+      '<td><b>' + esc(report.reportType) + '</b><small>Version ' + esc(report.version) + '</small></td>' +
+      '<td>' + esc(report.leadInspector) + '</td>' +
+      '<td>' + esc(report.submittedAt) + '</td>' +
+      '<td>' + managerReportStatusBadge(report.status) + '</td>' +
+      '<td><button class="btn btn--sm' + (selected ? ' btn--primary' : '') + '" data-act="manager-report-select" data-id="' + esc(report.id) + '">' + (selected ? 'Selected' : 'Review') + '</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function managerReportQueue(reports, selectedReportId) {
+  return '<div class="manager-report-queue"><table><thead><tr><th>Report</th><th>Organization</th><th>Type</th><th>Lead Inspector</th><th>Submitted</th><th>Status</th><th></th></tr></thead><tbody>' + managerReportQueueRows(reports, selectedReportId) + '</tbody></table></div>';
+}
+
+function managerReportTabs(active) {
+  var tabs = [
+    ['summary', 'Summary'],
+    ['findings', 'Findings'],
+    ['attachments', 'Attachments'],
+    ['comments', 'Comments'],
+    ['history', 'History']
+  ];
+  return '<div class="manager-report-tabs" role="tablist" aria-label="Report dossier sections">' + tabs.map(function (tab) {
+    return '<button role="tab" aria-selected="' + (active === tab[0] ? 'true' : 'false') + '" class="' + (active === tab[0] ? 'is-active' : '') + '" data-act="manager-report-tab" data-tab="' + esc(tab[0]) + '">' + esc(tab[1]) + '</button>';
+  }).join('') + '</div>';
+}
+
+function managerReportSummaryPanel(report) {
+  var findings = managerFindingsForAudit(state, report.auditId);
+  var counts = managerFindingCounts(findings);
+  return '<div class="manager-report-panel" role="tabpanel">' +
+    '<div class="manager-report-summary-grid">' +
+      '<article><span>Total Findings</span><strong>' + esc(String(counts.total)) + '</strong></article>' +
+      '<article><span>Level 1 Critical</span><strong>' + esc(String(counts.critical)) + '</strong></article>' +
+      '<article><span>Open / In Review</span><strong>' + esc(String(counts.open + counts.inReview)) + '</strong></article>' +
+      '<article><span>CAP Required</span><strong>' + (report.capRequired ? 'Yes' : 'No') + '</strong></article>' +
+    '</div>' +
+    '<section class="manager-report-copy"><h3>Report Summary</h3><p>' + esc(report.summary || 'No report summary has been entered.') + '</p></section>' +
+    '<div class="manager-report-boundary"><b>Approval boundary:</b> Department Manager approval of a Final Report only forwards it to the configured final authorized stage. It does not issue or lock the report.</div>' +
+  '</div>';
+}
+
+function managerReportFindingsPanel(report) {
+  var findings = managerFindingsForAudit(state, report.auditId);
+  var rows = findings.length ? findings.map(function (finding) {
+    return '<tr><td><b>' + esc(finding.id) + '</b><small>' + esc(finding.title) + '</small></td><td>' + severityHtml(finding) + '</td><td>' + statusBadge(finding) + '</td><td>' + esc(ownerLabel(finding)) + '</td><td>' + esc(nextActionLabel(finding)) + '</td><td>' + esc(finding.dueDate ? fmtDate(finding.dueDate) : '—') + '</td></tr>';
+  }).join('') : '<tr><td colspan="6"><div class="empty">No findings are linked to this report.</div></td></tr>';
+  return '<div class="manager-report-panel" role="tabpanel"><div class="manager-report-findings"><table><thead><tr><th>Finding</th><th>Severity</th><th>Status</th><th>Current Owner</th><th>Next Action</th><th>Due Date</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+}
+
+function managerReportAttachmentsPanel(report) {
+  var items = (report.attachments || []).map(function (filename) {
+    return '<li><span>📄</span><div><b>' + esc(filename) + '</b><small>Preserved demo attachment filename · no file storage</small></div></li>';
+  }).join('') || '<li class="is-empty">No attachment filenames are listed.</li>';
+  return '<div class="manager-report-panel" role="tabpanel"><ul class="manager-report-attachments">' + items + '</ul></div>';
+}
+
+function managerReportCommentsPanel(report) {
+  return '<div class="manager-report-panel" role="tabpanel"><section class="manager-report-copy"><h3>Manager Comments</h3><p>' + esc(report.managerComment || 'No manager decision comment has been recorded.') + '</p></section><div class="manager-report-boundary">Comments in this manager dossier remain separate from any <b>Comment to Auditee</b> or <b>Internal CAA Note</b>.</div></div>';
+}
+
+function managerReportHistoryPanel(report) {
+  var items = (report.history || []).slice().reverse().map(function (entry) {
+    return '<li><time>' + esc(entry.at || '—') + '</time><div><b>' + esc(entry.action || 'Report updated') + '</b><small>' + esc(entry.actor || 'System') + '</small>' + (entry.comment ? '<p>' + esc(entry.comment) + '</p>' : '') + '</div></li>';
+  }).join('') || '<li class="is-empty">No report history is available.</li>';
+  return '<div class="manager-report-panel" role="tabpanel"><ol class="manager-report-history">' + items + '</ol></div>';
+}
+
+function managerReportPanel(report, tab) {
+  if (tab === 'findings') return managerReportFindingsPanel(report);
+  if (tab === 'attachments') return managerReportAttachmentsPanel(report);
+  if (tab === 'comments') return managerReportCommentsPanel(report);
+  if (tab === 'history') return managerReportHistoryPanel(report);
+  return managerReportSummaryPanel(report);
+}
+
+function managerReportDownloadMenu(report) {
+  var label = report.reportType === 'Final Report' ? 'Final Report PDF' : 'Preliminary Report PDF';
+  return '<details class="manager-report-download"><summary class="btn btn--sm">Download PDF</summary><div>' +
+    '<button data-act="manager-report-download" data-id="' + esc(report.id) + '" data-variant="report">' + esc(label) + '</button>' +
+    '<button data-act="manager-report-download" data-id="' + esc(report.id) + '" data-variant="executive">Executive Summary PDF</button>' +
+  '</div></details>';
+}
+
+function managerReportDecisionPanel(report, ui) {
+  if (report.status !== 'pending_manager') {
+    return '<div class="manager-report-decision manager-report-decision--complete"><div><b>Manager stage completed</b><span>' + esc(managerReportStatusLabel(report.status)) + ' · Current owner: ' + esc(managerReportOwnerLabel(report.ownerRole)) + '</span></div></div>';
+  }
+  return '<div class="manager-report-decision"><label for="manager-report-comment">Manager Comments</label><textarea id="manager-report-comment" placeholder="Add a decision comment.">' + esc(report.managerComment || '') + '</textarea>' +
+    '<div class="manager-report-validation" role="alert">' + esc(ui.validationMessage || '') + '</div>' +
+    '<div class="manager-report-decision-actions">' +
+      '<button class="btn" data-act="manager-report-decision" data-id="' + esc(report.id) + '" data-decision="revision">Request Revision</button>' +
+      '<button class="btn btn--danger" data-act="manager-report-decision" data-id="' + esc(report.id) + '" data-decision="return">Return Report</button>' +
+      '<button class="btn btn--primary" data-act="manager-report-decision" data-id="' + esc(report.id) + '" data-decision="approve">Approve Report</button>' +
+    '</div></div>';
+}
+
+function managerReportDossier(report, ui) {
+  return '<section class="manager-report-dossier"><div class="manager-report-dossier-head">' +
+    '<div><span>Selected report artifact</span><h2>' + esc(report.id) + ' · ' + esc(report.organization) + '</h2><p>' + esc(report.reportType) + ' · Version ' + esc(report.version) + '</p></div>' +
+    '<div class="manager-report-head-actions">' + managerReportStatusBadge(report.status) + managerReportDownloadMenu(report) + '<button class="btn btn--sm" data-act="manager-report-preview" data-id="' + esc(report.id) + '">Review Full Report</button></div>' +
+    '<dl><div><dt>Audit ID</dt><dd>' + esc(report.auditId) + '</dd></div><div><dt>Lead Inspector</dt><dd>' + esc(report.leadInspector) + '</dd></div><div><dt>Submitted</dt><dd>' + esc(report.submittedAt) + '</dd></div><div><dt>Current Owner</dt><dd>' + esc(managerReportOwnerLabel(report.ownerRole)) + '</dd></div></dl>' +
+  '</div>' + managerReportTabs(ui.tab) + managerReportPanel(report, ui.tab) + managerReportDecisionPanel(report, ui) + '</section>';
+}
+
+function viewManagerReportsApproval() {
+  var ui = managerReportsUiState();
+  var allReports = managerReportRows(state, { query: '', reportType: 'all', status: 'all' });
+  var reports = managerReportRows(state, ui);
+  var selected = reports.filter(function (report) { return report.id === ui.selectedReportId; })[0] || reports[0] || null;
+  if (selected && selected.id !== ui.selectedReportId) ui.selectedReportId = selected.id;
+  var left = '<section class="manager-report-list"><div class="manager-workbench-panel-head"><div><span>Department workspace</span><h2>Report Queue</h2></div><span class="manager-report-demo-label">Demo report artifacts</span></div>' + managerReportFilters(ui) + managerReportCounters(allReports) + managerReportQueue(reports, selected ? selected.id : '') + '</section>';
+  var right = selected ? managerReportDossier(selected, ui) : '<section class="manager-report-dossier manager-report-dossier--empty"><div class="empty">No report dossier is available for the current filters.</div></section>';
+  return pageHead('Reports Approval', 'Review separate Preliminary and Final Report artifacts and record the Department Manager decision.') + '<div class="manager-workbench manager-report-workbench">' + left + right + '</div>';
+}
+
+function modalManagerReportPreview(report) {
+  var findings = managerFindingsForAudit(state, report.auditId);
+  var findingRows = findings.map(function (finding) {
+    return '<li><b>' + esc(finding.id) + '</b> · ' + esc(finding.title) + ' · ' + esc(severityLabel(finding.severity)) + '</li>';
+  }).join('') || '<li>No findings are linked.</li>';
+  var body = '<div class="manager-report-preview"><span>AviaSurveil360 frontend-only demo</span><h2>' + esc(report.reportType) + '</h2><p>' + esc(report.id + ' · ' + report.auditId + ' · Version ' + report.version) + '</p><dl><div><dt>Organization</dt><dd>' + esc(report.organization) + '</dd></div><div><dt>Lead Inspector</dt><dd>' + esc(report.leadInspector) + '</dd></div><div><dt>Status</dt><dd>' + esc(managerReportStatusLabel(report.status)) + '</dd></div></dl><h3>Executive Summary</h3><p>' + esc(report.summary) + '</p><h3>Findings</h3><ul>' + findingRows + '</ul><p class="small muted">Demo preview only. No production reporting, document storage, signature, or records-management service is used.</p></div>';
+  return modalShell('Review Full Report', body, '<button class="btn" data-act="close-modal">Close</button>' + managerReportDownloadMenu(report), true);
+}
+
 /* =========================== Findings list (manager/inspector) =========================== */
 var FILTER_LABELS = {
   all: 'All Findings', open: 'Open Findings', overdue: 'Overdue Findings', critical: 'Critical Findings',
