@@ -760,7 +760,7 @@ function viewRoleHome() {
       ],
       rows: [
         ['CAB-2026-001', 'Potential finding from Cabin Inspection checklist', 'Severity review pending', 'findings'],
-        ['AUD-2026-001', 'Airline XYZ Cabin Inspection', 'Team and checklist execution', 'calendar'],
+        ['AUD-2026-001', 'FlyNamibia Cabin Inspection', 'Team and checklist execution', 'calendar'],
         ['RPT-2026-004', 'Preliminary report package', 'Lead sign-off before Department Manager review', 'audit-reports']
       ]
     },
@@ -778,7 +778,7 @@ function viewRoleHome() {
       ],
       rows: [
         ['PLAN-2026-Q3', 'Quarterly surveillance plan', 'Check scope and budget rationale', 'planning'],
-        ['AUD-2026-001', 'Airline XYZ Operator Audit', 'Release candidate after approvals', 'planning'],
+        ['AUD-2026-001', 'FlyNamibia Cabin Inspection', 'Release candidate after approvals', 'planning'],
         ['RPT-2026-002', 'Final report package', 'GM review before ED approval', 'reports']
       ]
     },
@@ -797,7 +797,7 @@ function viewRoleHome() {
       rows: [
         ['PLAN-2026-Q3', 'Surveillance plan budget', 'Travel and inspector-day review', 'planning'],
         ['AUD-2026-006', 'Maintenance provider inspection', 'Budget rationale returned', 'planning'],
-        ['AUD-2026-001', 'Airline XYZ Operator Audit', 'Finance accepted for ED review', 'planning']
+        ['AUD-2026-001', 'FlyNamibia Cabin Inspection', 'Finance accepted for ED review', 'planning']
       ]
     },
     executiveDirector: {
@@ -4570,7 +4570,7 @@ function viewAuditDetail() {
   });
 
   return '' +
-    pageHead(a.ref + ' — ' + orgName(a.orgId), 'Operator Audit overview and checklist entry point.', actions) +
+    pageHead(a.ref + ' — ' + orgName(a.orgId), 'Inspection overview and checklist entry point.', actions) +
     auditNextActionBar(a) +
     '<div class="dossier-sections">' +
       '<div class="dossier-stack">' +
@@ -6109,13 +6109,13 @@ function leadPreliminaryReportRows() {
     { id: 'PR-2026-012', inspection: 'Ground Handling Inspection', organization: 'Prime Handling', dates: '25 - 26 May 2026', status: 'submitted', updated: '26 May 2026 13:50', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 2, major: 1, observation: 1 } },
     { id: 'PR-2026-011', inspection: 'Wildlife Hazard Inspection', organization: 'GreenAir', dates: '21 - 22 May 2026', status: 'draft', updated: '22 May 2026 08:30', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 1, major: 0, observation: 2 } },
     { id: 'PR-2026-010', inspection: 'Maintenance Oversight Inspection', organization: 'West Air (Pty) Ltd', dates: '18 - 20 May 2026', status: 'submitted', updated: '21 May 2026 10:40', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 2, major: 2, observation: 2 } },
-    { id: 'PR-2026-009', inspection: 'Cabin Inspection', organization: 'Airline XYZ', dates: '14 - 16 May 2026', status: 'approved', updated: '17 May 2026 13:05', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 3, major: 1, observation: 4 } },
+    { id: 'PR-2026-009', inspection: 'Cabin Inspection', organization: 'FlyNamibia', dates: '14 - 16 May 2026', status: 'approved', updated: '17 May 2026 13:05', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 3, major: 1, observation: 4 } },
     { id: 'PR-2026-008', inspection: 'Cabin Safety Inspection', organization: 'National Airways Corp', dates: '10 - 12 May 2026', status: 'released', updated: '13 May 2026 12:35', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 1, major: 2, observation: 3 } },
     { id: 'PR-2026-007', inspection: 'Airport Security Inspection', organization: 'SkyCargo Air', dates: '6 - 8 May 2026', status: 'draft', updated: '9 May 2026 17:20', auditId: 'AUD-2026-005', period: 'may', findings: { critical: 6, major: 3, observation: 2 } },
     { id: 'PR-2026-006', inspection: 'Cargo Facility Inspection', organization: 'Metro Cargo', dates: '1 - 3 May 2026', status: 'submitted', updated: '4 May 2026 09:55', auditId: 'AUD-2026-005', period: 'may', findings: { critical: 4, major: 2, observation: 1 } },
     { id: 'PR-2026-005', inspection: 'Continuing Airworthiness Audit', organization: 'Desert Air Maintenance', dates: '27 - 29 Apr 2026', status: 'approved', updated: '30 Apr 2026 14:10', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 2, major: 2, observation: 3 } },
     { id: 'PR-2026-004', inspection: 'Fuel Safety Inspection', organization: 'BlueWings Airlines', dates: '22 - 24 Apr 2026', status: 'submitted', updated: '25 Apr 2026 10:10', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 3, major: 1, observation: 3 } },
-    { id: 'PR-2026-003', inspection: 'Training Records Audit', organization: 'Airline XYZ', dates: '17 - 19 Apr 2026', status: 'approved', updated: '20 Apr 2026 16:00', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 2, major: 1, observation: 4 } },
+    { id: 'PR-2026-003', inspection: 'Training Records Audit', organization: 'FlyNamibia', dates: '17 - 19 Apr 2026', status: 'approved', updated: '20 Apr 2026 16:00', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 2, major: 1, observation: 4 } },
     { id: 'PR-2026-002', inspection: 'Passenger Handling Inspection', organization: 'Prime Handling', dates: '10 - 12 Apr 2026', status: 'submitted', updated: '13 Apr 2026 11:25', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 2, major: 0, observation: 2 } },
     { id: 'PR-2026-001', inspection: 'Emergency Response Inspection', organization: 'JetFast Aviation', dates: '5 - 7 Apr 2026', status: 'released', updated: '8 Apr 2026 09:20', auditId: 'AUD-2026-005', period: 'apr', findings: { critical: 4, major: 1, observation: 3 } }
   ];
@@ -7769,11 +7769,12 @@ function serviceProviderReportUiState() {
 }
 
 function serviceProviderFinalReportMeta() {
+  var organization = ROLES.auditee.orgName || 'FlyNamibia';
   return {
     reportId: 'FR-2026-014',
     inspectionId: 'INS-2026-014',
     inspection: 'AVSEC Inspection',
-    organization: 'SkyCargo Air',
+    organization: organization,
     dates: '12 - 14 Jun 2026',
     version: '1.0 (Final)',
     finalizedOn: '16 Jun 2026 10:15',
@@ -8054,7 +8055,7 @@ function serviceProviderCommunicationsTab(meta) {
     '<main class="sp-report-main">' +
       '<section class="sp-report-panel">' +
         '<h2>Communications</h2>' +
-        '<div class="sp-message-row"><b>16 Jun 2026 10:15</b><p>Final report issued by Department Manager. Submit CAPs for each Level 1 and Level 2 finding by the listed due dates.</p><span>CAA to SkyCargo Air</span></div>' +
+        '<div class="sp-message-row"><b>16 Jun 2026 10:15</b><p>Final report issued by Department Manager. Submit CAPs for each Level 1 and Level 2 finding by the listed due dates.</p><span>CAA to ' + esc(meta.organization) + '</span></div>' +
       '</section>' +
     '</main>' +
     serviceProviderSidePanel(meta) +
@@ -8479,7 +8480,7 @@ function modalEvidence(f) {
     'Expected: proof the PBE serviceability issue was corrected and the cabin defect record was closed or controlled.</div>' +
     '<div class="form-row"><label>Evidence file <span class="req">*</span></label>' +
       '<div class="filebox" data-act="mock-pick" data-target="ev-file"><div class="filebox__icon">📄</div>' +
-      '<div>Click to select a file (mock)</div><div class="filebox__hint">Suggested: PBE_Serviceability_Record_CAB-2026-001.pdf</div></div>' +
+      '<div>Click to select a file (mock)</div><div class="filebox__hint">Suggested: FlyNamibia_PBE_Serviceability_Record_CAB-2026-001.pdf</div></div>' +
       '<div id="ev-file"></div></div>' +
     '<div class="form-row"><label>Note to CAA (optional)</label>' +
       '<textarea id="ev-note" placeholder="Anything the inspector should know about this evidence."></textarea></div>';
@@ -8622,7 +8623,7 @@ function viewAuditWizard() {
         '<div class="form-row"><label>Mode</label><select id="wz-mode">' +
           ['On-site', 'Remote'].map(function (m) { return '<option' + (w.mode === m ? ' selected' : '') + '>' + esc(m) + '</option>'; }).join('') + '</select></div>' +
       '</div>' +
-      '<div class="form-row"><label>Location <span class="req">*</span></label><input type="text" id="wz-loc" value="' + esc(w.location || '') + '" placeholder="e.g. Airline XYZ HQ"></div>';
+      '<div class="form-row"><label>Location <span class="req">*</span></label><input type="text" id="wz-loc" value="' + esc(w.location || '') + '" placeholder="e.g. FlyNamibia HQ"></div>';
   } else if (step === 3) {
     bodyHtml =
       '<div class="form-row"><label>Lead inspector <span class="req">*</span></label><select id="wz-lead">' +

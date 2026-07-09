@@ -70,7 +70,7 @@ let html = elements.get('app-root').innerHTML;
 assert.match(html, /Final Report/);
 assert.match(html, /FR-2026-014/);
 assert.match(html, /AVSEC Inspection/);
-assert.match(html, /SkyCargo Air/);
+assert.match(html, /FlyNamibia/);
 assert.match(html, /Finalized - Action Required/);
 assert.match(html, /CAP Requirements \(5\)/);
 assert.match(html, /Due Date Information/);
@@ -104,7 +104,7 @@ html = elements.get('app-root').innerHTML;
 assert.match(html, /CAP Evidence Submitted/);
 assert.match(html, /View Evidence/);
 assert.equal(context.state.notifications[0].role, 'inspector');
-assert.match(context.state.notifications[0].text, /SkyCargo Air uploaded CAP closure evidence/);
+assert.match(context.state.notifications[0].text, /FlyNamibia uploaded CAP closure evidence/);
 
 context.state.role = 'inspector';
 context.state.view = 'findings';

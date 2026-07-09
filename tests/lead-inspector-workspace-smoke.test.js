@@ -235,7 +235,7 @@ assert.match(html, /Submitted findings and comments/);
 assert.match(html, /Access control log gaps at cargo gate/);
 assert.match(html, /Submit Preliminary Report/);
 assert.match(html, /Report Approval Queue/);
-assert.match(html, /Airline XYZ Cabin Inspection Preliminary Report/);
+assert.match(html, /FlyNamibia Cabin Inspection Preliminary Report/);
 assert.match(html, /CAP due 24 Jun 2026/);
 
 console.log('lead-inspector-workspace-smoke: ok');

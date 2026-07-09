@@ -30,7 +30,7 @@
 
 Create a new primary demo story:
 
-`CAA Manager sees a Cabin Inspection plan -> CAA Inspector opens Airline XYZ Cabin Inspection -> inspector runs a Cabin Inspection checklist -> inspector marks a critical emergency equipment item Non-Compliant -> system creates Finding CAB-2026-001 -> Airline XYZ submits CAP and mock evidence -> inspector reviews evidence -> finding closes only after evidence acceptance -> manager dashboard updates.`
+`CAA Manager sees a Cabin Inspection plan -> CAA Inspector opens FlyNamibia Cabin Inspection -> inspector runs a Cabin Inspection checklist -> inspector marks a critical emergency equipment item Non-Compliant -> system creates Finding CAB-2026-001 -> FlyNamibia submits CAP and mock evidence -> inspector reviews evidence -> finding closes only after evidence acceptance -> manager dashboard updates.`
 
 The new scenario should make the product feel more aviation-specific and operational by using visible cabin inspection sections, risk categories, severity, expected evidence, and photo/evidence review patterns derived from the reviewed workbook.
 
@@ -100,7 +100,7 @@ Out of scope:
 - The primary live finding is currently created at runtime and should remain created at runtime, not pre-seeded.
 - The demo can use a curated subset of workbook questions for the runner, because a 126-row live checklist would slow the sales/demo path.
 - The admin template preview can communicate the 126-row source coverage without rendering every row in the main execution path.
-- The auditee remains `Airline XYZ` for continuity unless a stakeholder later requests a different operator.
+- The auditee is `FlyNamibia` per stakeholder direction; internal IDs may still reuse existing `ORG-XYZ` demo identifiers where lower-risk.
 - Demo date context remains deterministic; only scenario labels and due dates change.
 
 ## Ownership Boundaries
@@ -155,7 +155,7 @@ Use these canonical demo values:
 
 | Field | Value |
 |---|---|
-| Audit | `2026 Cabin Inspection` |
+| Audit | `2026 Cabin Inspection - FlyNamibia` |
 | Audit ID | reuse existing primary audit ID if lower-risk, otherwise `AUD-2026-CAB-001` |
 | Checklist | `Cabin Inspection` |
 | Template ID | `TPL-CABIN-2026` |
@@ -163,7 +163,7 @@ Use these canonical demo values:
 | Hero question | `Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?` |
 | Finding ID | `CAB-2026-001` |
 | Finding title | `PBE not serviceable or not accessible in cabin emergency equipment check` |
-| Organization | `Airline XYZ` |
+| Organization | `FlyNamibia` |
 | Severity | `Level 1 Critical` |
 | Risk category | `Emergency Preparedness` |
 | Finding type | `Equipment` |
@@ -174,7 +174,7 @@ Use these canonical demo values:
 | CAP corrective action sample | `Replace or service the affected PBE, update the cabin defect record, and confirm serviceability before release.` |
 | CAP preventive action sample | `Add a supervisor review of emergency equipment checks and monthly sampling of PBE serviceability records.` |
 | Target completion date | `2026-07-15` |
-| Mock evidence filename | `PBE_Serviceability_Record_CAB-2026-001.pdf` |
+| Mock evidence filename | `FlyNamibia_PBE_Serviceability_Record_CAB-2026-001.pdf` |
 | Optional mock photo filename | `PBE_Cabin_Position_Photo.jpg` |
 
 ## Phases
@@ -203,7 +203,7 @@ Use these canonical demo values:
 
 - [x] **Step 3: Decide the low-risk audit ID strategy**
 
-  Prefer reusing the current primary audit ID if many route handlers assume it. Use the new display labels to show `2026 Cabin Inspection`. Create a new audit ID only if route/test references are easy to update in one pass.
+  Prefer reusing the current primary audit ID if many route handlers assume it. Use the new display labels to show `2026 Cabin Inspection - FlyNamibia`. Create a new audit ID only if route/test references are easy to update in one pass.
 
   Expected: one audit ID strategy recorded in implementation notes or the final summary.
 
@@ -246,13 +246,13 @@ Use these canonical demo values:
 
 - [x] **Step 4: Update audits and organization risk focus**
 
-  Ensure the primary Airline XYZ audit displays:
+  Ensure the primary FlyNamibia audit displays:
 
-  - `ref: '2026 Cabin Inspection'`
+  - `ref: '2026 Cabin Inspection - FlyNamibia'`
   - `type: 'Cabin Inspection'`
   - `domain: 'Cabin Safety'`
   - `templateId: 'TPL-CABIN-2026'`
-  - `location: 'Airline XYZ aircraft cabin / on-site inspection'`
+  - `location: 'FlyNamibia aircraft cabin / on-site inspection'`
   - manager/dashboard risk focus includes `Emergency equipment serviceability`, `PBE serviceability`, and `Cabin inspection CAP follow-up`.
 
 ### Phase 3 - Live Finding And Controller Defaults
@@ -290,7 +290,7 @@ Use these canonical demo values:
   Replace old intro text with:
 
   ```text
-  Demo scenario: a CAA Inspector raises Finding CAB-2026-001 for Airline XYZ from a Cabin Inspection emergency equipment checklist. CAP acceptance does not close the finding; accepted evidence is required.
+  Demo scenario: a CAA Inspector raises Finding CAB-2026-001 for FlyNamibia from a Cabin Inspection emergency equipment checklist. CAP acceptance does not close the finding; accepted evidence is required.
   ```
 
 - [x] **Step 2: Update checklist runner labels**
@@ -334,7 +334,7 @@ Use these canonical demo values:
 
   Rewrite `docs/product-specs/scenarios/DEMO_SCENARIO_OPERATOR_AUDIT.md` around:
 
-  - Audit: `2026 Cabin Inspection`
+  - Audit: `2026 Cabin Inspection - FlyNamibia`
   - Checklist: `Cabin Inspection`
   - Question: `Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?`
   - Finding: `CAB-2026-001`
@@ -406,11 +406,11 @@ Use these canonical demo values:
   Verify:
 
   - Role select intro names `CAB-2026-001` and Cabin Inspection.
-  - Inspector opens the Airline XYZ Cabin Inspection.
+  - Inspector opens the FlyNamibia Cabin Inspection.
   - Checklist runner shows Cabin Inspection and the `EM EQ / PBE` question.
   - Marking the PBE question `Non-Compliant` opens the finding form with the correct ID/title/severity.
   - Issuing the finding creates `CAB-2026-001`.
-  - Auditee sees only Airline XYZ finding data.
+  - Auditee sees only FlyNamibia finding data.
   - Auditee submits CAP and mock evidence filenames.
   - Inspector accepts CAP; status remains `EVIDENCE_REQUIRED`.
   - Inspector accepts evidence; status becomes `CLOSED`.
@@ -456,7 +456,7 @@ Implement the Cabin Inspection demo scenario in the AviaSurveil360 frontend-only
 
 Use the reviewed workbook as a mock/configured checklist source, not as a live Excel import or legal/regulatory source. Replace the current primary Flight Operations / crew training hero scenario with this Cabin Inspection story:
 
-CAA Manager sees a Cabin Inspection plan. CAA Inspector opens Airline XYZ's 2026 Cabin Inspection, runs a Cabin Inspection checklist, and marks the EM EQ / PBE question Non-Compliant: "Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?" The system creates Finding CAB-2026-001 with severity Level 1 Critical, risk category Emergency Preparedness, finding type Equipment, and expected evidence "PBE replacement/serviceability record, cabin defect rectification reference, and inspector photo filename." Airline XYZ submits root cause, corrective action, preventive action, target completion date, and mock evidence filenames. Inspector accepts CAP, which must leave the finding at EVIDENCE_REQUIRED. Inspector then accepts evidence, which closes the finding. Manager dashboard updates.
+CAA Manager sees a Cabin Inspection plan. CAA Inspector opens the 2026 Cabin Inspection - FlyNamibia audit, runs a Cabin Inspection checklist, and marks the EM EQ / PBE question Non-Compliant: "Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?" The system creates Finding CAB-2026-001 with severity Level 1 Critical, risk category Emergency Preparedness, finding type Equipment, and expected evidence "PBE replacement/serviceability record, cabin defect rectification reference, and inspector photo filename." FlyNamibia submits root cause, corrective action, preventive action, target completion date, and mock evidence filenames. Inspector accepts CAP, which must leave the finding at EVIDENCE_REQUIRED. Inspector then accepts evidence, which closes the finding. Manager dashboard updates.
 
 Update js/data.js, js/views.js, js/app.js, index.html asset tokens, focused tests, docs/product-specs/scenarios/DEMO_SCENARIO_OPERATOR_AUDIT.md, docs/product-specs/scenarios/DEMO_SCENARIO_OPERATOR_AUDIT.turkce.md, docs/demo-evidence/BUILD_SUMMARY.md, docs/demo-evidence/BUILD_SUMMARY.turkce.md, and docs/exec-plans/index.md as needed. Preserve auditee privacy, separate Comment to Auditee from Internal CAA Note, and keep CAP acceptance distinct from finding closure.
 

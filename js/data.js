@@ -51,8 +51,8 @@ var ROLES = {
                       question: 'Is the requested budget and resource justified?' },
   executiveDirector:{ key: 'executiveDirector',name: 'Executive Director', user: 'Ufuk Aslan',   initials: 'UA', color: '#9f1239',
                       question: 'What needs my final approval to proceed?' },
-  auditee:          { key: 'auditee',          name: 'Auditee',            user: 'James Carter', initials: 'JC', color: '#1f9d62',
-                      org: 'ORG-XYZ', orgName: 'Airline XYZ',
+  auditee:          { key: 'auditee',          name: 'Auditee',            user: 'FlyNamibia Quality Manager', initials: 'FN', color: '#1f9d62',
+                      org: 'ORG-XYZ', orgName: 'FlyNamibia',
                       question: 'What does the CAA need from my organization?' },
   admin:            { key: 'admin',            name: 'Admin Preview',      user: 'System Admin', initials: 'AP', color: '#c77700',
                       question: 'Which template or rule must be configured?' }
@@ -103,7 +103,7 @@ var V2_STATUS = {
 
 /* ----------------------------- Organizations ----------------------------- */
 var SEED_ORGS = [
-  { id: 'ORG-XYZ', name: 'Airline XYZ',        type: 'Air Operator (AOC)',        contact: 'James Carter', repeatFindings: 1 },
+  { id: 'ORG-XYZ', name: 'FlyNamibia',        type: 'Air Operator (AOC)',        contact: 'FlyNamibia Quality Manager', repeatFindings: 1 },
   { id: 'ORG-SKY', name: 'SkyCargo Air',       type: 'Air Operator (AOC)',        contact: 'Mara Olsen',   repeatFindings: 2 },
   { id: 'ORG-BLU', name: 'BlueWing Aviation',  type: 'Approved Training Org',     contact: 'Dieter Kraus', repeatFindings: 0 }
 ];
@@ -250,8 +250,8 @@ var SEED_MANAGED_CHECKLISTS = [
 
 /* ----------------------------- Audits (2026 surveillance plan) ----------------------------- */
 var SEED_AUDITS = [
-  { id: 'AUD-2026-001', ref: '2026 Cabin Inspection', orgId: 'ORG-XYZ', type: 'Cabin Inspection', domain: 'Cabin Safety',
-    templateId: 'TPL-CABIN-2026', date: DEMO_TODAY, mode: 'On-site', location: 'Airline XYZ aircraft cabin / on-site inspection',
+  { id: 'AUD-2026-001', ref: '2026 Cabin Inspection - FlyNamibia', orgId: 'ORG-XYZ', type: 'Cabin Inspection', domain: 'Cabin Safety',
+    templateId: 'TPL-CABIN-2026', date: DEMO_TODAY, mode: 'On-site', location: 'FlyNamibia aircraft cabin / on-site inspection',
     lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer'], status: 'Scheduled', checklistStarted: false },
   { id: 'AUD-2026-002', ref: 'Q1 Ramp Inspection', orgId: 'ORG-SKY', type: 'Ramp Inspection', domain: 'Ramp',
     templateId: 'TPL-RAMP-2026', date: '2026-02-12', mode: 'On-site', location: 'Apron 4',
@@ -260,7 +260,7 @@ var SEED_AUDITS = [
     templateId: 'TPL-AWO-2026', date: '2026-03-20', mode: 'On-site', location: 'BlueWing Hangar 2',
     lead: 'Aylin Sezer', team: ['Aylin Sezer'], status: 'Report Issued', checklistStarted: true },
   { id: 'AUD-2026-004', ref: 'Cabin Safety Audit', orgId: 'ORG-XYZ', type: 'Follow-up Inspection', domain: 'Cabin Safety',
-    templateId: 'TPL-CAB-2026', date: '2026-04-15', mode: 'On-site', location: 'Airline XYZ Training Centre',
+    templateId: 'TPL-CAB-2026', date: '2026-04-15', mode: 'On-site', location: 'FlyNamibia Training Centre',
     lead: 'Caner Yildiz', team: ['Caner Yildiz'], status: 'Closed', checklistStarted: true },
   { id: 'AUD-2026-005', ref: 'Security Audit', orgId: 'ORG-SKY', type: 'Special Inspection', domain: 'Security',
     templateId: 'TPL-SEC-2026', date: '2026-05-22', mode: 'On-site', location: 'SkyCargo Terminal',
@@ -367,7 +367,7 @@ var SEED_AUDIT_REPORTS = [
   {
     id: 'RPT-AUD-2026-001',
     auditId: 'AUD-2026-001',
-    title: 'Airline XYZ Cabin Inspection Preliminary Report',
+    title: 'FlyNamibia Cabin Inspection Preliminary Report',
     reportType: 'Preliminary Report',
     status: 'draft',
     approvalType: 'report',
@@ -386,7 +386,7 @@ var SEED_AUDIT_REPORTS = [
     ],
     attachments: ['PBE_Cabin_Position_Photo.jpg (mock filename only)', 'Cabin_Checklist_Response_Summary.pdf (mock)'],
     preliminaryNotice: {
-      recipient: 'Airline XYZ Quality Manager',
+      recipient: 'FlyNamibia Quality Manager',
       capRequired: true,
       capRequiredCount: 1,
       status: 'Pending Department Manager review',
@@ -608,7 +608,7 @@ var SEED_REGULATORY_TRACES = [
     version: '2026 mock edition',
     clauseRef: 'CAB EMEQ PBE',
     effectiveDate: '2026-01-01',
-    applicabilityReason: 'Airline XYZ is an air operator with cabin emergency equipment installed.',
+    applicabilityReason: 'FlyNamibia is an air operator with cabin emergency equipment installed.',
     linkedChecklist: 'Cabin Inspection / EM EQ / PBE serviceability',
     linkedEvidence: 'PBE serviceability record; cabin defect rectification reference; inspector photo filename',
     approvalState: V2_STATUS.published,
@@ -719,7 +719,7 @@ var SEED_FIELD_PACKAGE = {
   checkedOutBy: 'Caner Yildiz',
   checkedOutAt: '2026-06-15T08:30:00',
   status: 'checked_out_demo',
-  packageName: 'Airline XYZ Cabin Inspection field package',
+  packageName: 'FlyNamibia Cabin Inspection field package',
   localItems: ['Checklist questions', 'Expected evidence list', 'Draft field note', 'Mock attachment queue']
 };
 
@@ -834,7 +834,7 @@ var SEED_PLANNING_ITEMS = [
     id: 'PLAN-2026-Q3-CABIN',
     title: 'Q3 Cabin Inspection Surveillance Plan',
     department: 'Cabin Safety',
-    organization: 'Airline XYZ',
+    organization: 'FlyNamibia',
     organizationId: 'ORG-XYZ',
     purpose: 'Focused Q3 cabin inspection plan for emergency equipment serviceability oversight.',
     riskCategory: 'Emergency equipment serviceability',
@@ -884,7 +884,7 @@ var SEED_PLANNING_ITEMS = [
 
 /* ----------------------------- Notifications (in-UI only) ----------------------------- */
 var SEED_NOTIFICATIONS = [
-  { id: 'N1', role: 'inspector', icon: '📋', text: 'Cabin Inspection for Airline XYZ is scheduled for today.', time: 'Today 08:10', unread: true },
+  { id: 'N1', role: 'inspector', icon: '📋', text: 'Cabin Inspection for FlyNamibia is scheduled for today.', time: 'Today 08:10', unread: true },
   { id: 'N2', role: 'inspector', icon: '📎', text: 'Evidence submitted on RAMP-2026-005 is waiting for your review.', time: 'Yesterday', unread: true },
   { id: 'N3', role: 'manager',   icon: '⚠️', text: 'AWO-2026-003 (Level 2 Major) is now Overdue.', time: 'Today 07:55', unread: true },
   { id: 'N5', role: 'gm', icon: '🧾', text: 'Planning item PLAN-2026-Q3-CABIN is waiting for GM review.', time: 'Today 10:30', unread: true },
@@ -907,7 +907,7 @@ var SEED_USERS = [
   { name: 'Caner Yildiz', role: 'Lead Inspector', org: '—',                mfa: 'On',  status: 'Active' },
   { name: 'Aylin Sezer',  role: 'CAA Inspector',  org: '—',                mfa: 'On',  status: 'Active' },
   { name: 'Mehmet Aydin', role: 'CAA Inspector',  org: '—',                mfa: 'On',  status: 'Active' },
-  { name: 'James Carter', role: 'Auditee',        org: 'Airline XYZ',       mfa: 'n/a', status: 'Active' },
+  { name: 'FlyNamibia Quality Manager', role: 'Auditee',        org: 'FlyNamibia',       mfa: 'n/a', status: 'Active' },
   { name: 'Mara Olsen',   role: 'Auditee',        org: 'SkyCargo Air',      mfa: 'n/a', status: 'Active' },
   { name: 'Dieter Kraus', role: 'Auditee',        org: 'BlueWing Aviation', mfa: 'n/a', status: 'Invited' },
   { name: 'System Admin', role: 'Admin',          org: '—',                 mfa: 'On',  status: 'Active' }

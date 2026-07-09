@@ -121,7 +121,7 @@ assert.notEqual(
 );
 
 context.pickedFiles['ev-file'] = {
-  name: 'PBE_Serviceability_Record_CAB-2026-001.pdf',
+  name: 'FlyNamibia_PBE_Serviceability_Record_CAB-2026-001.pdf',
   size: '1.6 MB',
   contents: 'This fake field must not be persisted.'
 };
@@ -131,7 +131,7 @@ const evidenceFinding = context.findingById('AWO-2026-003');
 const latestEvidence = evidenceFinding.evidence[evidenceFinding.evidence.length - 1];
 assert.equal(
   latestEvidence.fileName,
-  'PBE_Serviceability_Record_CAB-2026-001.pdf',
+  'FlyNamibia_PBE_Serviceability_Record_CAB-2026-001.pdf',
   'Product rule violated: Mock evidence should display the selected filename.'
 );
 assert.equal(

@@ -324,10 +324,10 @@ function render() {
   var unread = unreadCount(state.role);
   var serviceProviderReportActive = state.role === 'auditee' && state.view === 'reports' &&
     ((state.params && state.params.filter) || selectedFilter('reports', 'received')) === 'received';
-  var whoName = serviceProviderReportActive ? 'SkyCargo Air' : r.user;
-  var whoInitials = serviceProviderReportActive ? 'SP' : r.initials;
+  var whoName = serviceProviderReportActive ? ROLES.auditee.orgName : r.user;
+  var whoInitials = serviceProviderReportActive ? ROLES.auditee.initials : r.initials;
   var whoRole = serviceProviderReportActive ? 'Service Provider' : (EXPERIENCE_LABEL[state.role] || r.name);
-  var auditeeSuffix = state.role === 'auditee' ? ' · ' + (serviceProviderReportActive ? 'SkyCargo Air' : ROLES.auditee.orgName) : '';
+  var auditeeSuffix = state.role === 'auditee' ? ' · ' + ROLES.auditee.orgName : '';
 
   var roleOptions = ROLE_ORDER.map(function (k) {
     return '<option value="' + k + '"' + (k === state.role ? ' selected' : '') + '>' + esc(EXPERIENCE_LABEL[k] || ROLES[k].name) +
@@ -499,7 +499,7 @@ function renderLogin() {
     var r = ROLES[k];
     return '<button class="role-card" data-act="role" data-role="' + k + '">' +
       '<div class="role-card__icon" style="background:' + r.color + '">' + ROLE_ICON[k] + '</div>' +
-      '<div><div class="role-card__name">' + esc(EXPERIENCE_LABEL[k] || r.name) + (k === 'auditee' ? ' — Airline XYZ' : '') + '</div>' +
+      '<div><div class="role-card__name">' + esc(EXPERIENCE_LABEL[k] || r.name) + (k === 'auditee' ? ' — FlyNamibia' : '') + '</div>' +
       '<div class="role-card__desc">' + esc(ROLE_DESC[k]) + '</div>' +
       '<div class="role-card__q">“' + esc(r.question) + '”</div></div></button>';
   }).join('');
@@ -509,7 +509,7 @@ function renderLogin() {
       '<div class="login__sub">Civil Aviation Authority surveillance &amp; oversight — clickable demo</div></div></div></div>' +
     '<div class="login__body"><div class="login__prompt">Choose a role to enter the demo. You can switch roles at any time from the top bar.</div>' +
       '<div class="role-grid">' + cards + '</div>' +
-      '<div class="login__foot">Demo scenario: a CAA Inspector raises <b>Finding CAB-2026-001</b> for Airline XYZ from a Cabin Inspection emergency equipment checklist. ' +
+      '<div class="login__foot">Demo scenario: a CAA Inspector raises <b>Finding CAB-2026-001</b> for FlyNamibia from a Cabin Inspection emergency equipment checklist. ' +
       'The auditee submits a CAP and evidence; CAP acceptance does not close the finding, accepted evidence is required; the manager dashboard updates. ' +
       'This is a mock prototype — no real authentication, backend, database or integrations. V2 demo actions are saved only in this browser.</div>' +
     '</div></div></div>';
@@ -637,7 +637,7 @@ function closeModal() {
 /* ----------------------------- Mock file pick ----------------------------- */
 function mockPick(targetId) {
   var defaults = {
-    'ev-file': { name: 'PBE_Serviceability_Record_CAB-2026-001.pdf', size: '1.6 MB' },
+    'ev-file': { name: 'FlyNamibia_PBE_Serviceability_Record_CAB-2026-001.pdf', size: '1.6 MB' },
     'cap-file': { name: 'CAP_Supporting_Notes.pdf', size: '0.9 MB' }
   };
   var d = defaults[targetId] || { name: 'Document.pdf', size: '1.0 MB' };
@@ -2166,7 +2166,7 @@ function handleServiceProviderConfirmCap(findingId) {
   var ui = ensureServiceProviderReportUi();
   ui.submittedCaps[row.id] = logTimestamp();
   ui.tab = 'cap';
-  pushNotification('inspector', 'CAP', 'SkyCargo Air uploaded CAP closure evidence for ' + row.id + ' from final report FR-2026-014.');
+  pushNotification('inspector', 'CAP', ROLES.auditee.orgName + ' uploaded CAP closure evidence for ' + row.id + ' from final report FR-2026-014.');
   addLog('Service Provider uploaded CAP evidence', row.id);
   closeModal();
   persistAfterAction();
