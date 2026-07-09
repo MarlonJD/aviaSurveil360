@@ -1302,6 +1302,148 @@ function viewManagerWorkspacePlaceholder(title, message) {
   return pageHead(title, message) + '<section class="manager-dashboard-panel manager-dashboard-placeholder"><div class="empty"><b>' + esc(title) + '</b><span>This route is reserved for the approved frontend-only manager workspace and is not a production service.</span></div></section>';
 }
 
+function managerCapUiState() {
+  if (!state.managerCapUi || typeof state.managerCapUi !== 'object') state.managerCapUi = {};
+  var ui = state.managerCapUi;
+  if (!ui.status) ui.status = 'all';
+  if (!ui.department) ui.department = 'all';
+  if (!ui.inspection) ui.inspection = 'all';
+  if (!ui.due) ui.due = 'all';
+  if (typeof ui.selectedCapId !== 'string') ui.selectedCapId = '';
+  if (typeof ui.drawerOpen !== 'boolean') ui.drawerOpen = false;
+  if (['overview', 'action-plan', 'updates', 'documents', 'history'].indexOf(ui.tab) === -1) ui.tab = 'overview';
+  if (typeof ui.validationMessage !== 'string') ui.validationMessage = '';
+  return ui;
+}
+
+function managerCapOption(value, label, selected) {
+  return '<option value="' + esc(value) + '"' + (value === selected ? ' selected' : '') + '>' + esc(label) + '</option>';
+}
+
+function managerCapStatusBadge(row) {
+  var tone = row.overdue ? 'danger' : (row.statusKey === 'evidence-required' ? 'warn' : (row.statusKey === 'not-submitted' ? 'neutral' : 'info'));
+  return demoBadge(row.overdue ? 'Overdue' : row.status, tone);
+}
+
+function managerCapDaysLabel(row) {
+  if (row.daysLeft === null) return '—';
+  if (row.daysLeft < 0) return Math.abs(row.daysLeft) + ' days overdue';
+  if (row.daysLeft === 0) return 'Due today';
+  return row.daysLeft + ' days left';
+}
+
+function managerCapFilters(ui, allRows) {
+  var departments = Array.from(new Set(allRows.map(function (row) { return row.department; }))).sort();
+  var inspections = Array.from(new Set(allRows.map(function (row) { return row.inspectionId; }))).sort();
+  return '<div class="manager-cap-filters">' +
+    '<label><span>Status</span><select data-field="manager-cap-status">' + managerCapOption('all', 'All Statuses', ui.status) + managerCapOption('not-submitted', 'Not Submitted', ui.status) + managerCapOption('in-progress', 'In Progress', ui.status) + managerCapOption('evidence-required', 'Evidence Required', ui.status) + managerCapOption('overdue', 'Overdue', ui.status) + managerCapOption('completed', 'Completed', ui.status) + '</select></label>' +
+    '<label><span>Department</span><select data-field="manager-cap-department">' + managerCapOption('all', 'All Departments', ui.department) + departments.map(function (item) { return managerCapOption(item, item, ui.department); }).join('') + '</select></label>' +
+    '<label><span>Inspection</span><select data-field="manager-cap-inspection">' + managerCapOption('all', 'All Inspections', ui.inspection) + inspections.map(function (item) { return managerCapOption(item, item, ui.inspection); }).join('') + '</select></label>' +
+    '<label><span>Due Date</span><select data-field="manager-cap-due">' + managerCapOption('all', 'All Due Dates', ui.due) + managerCapOption('overdue', 'Overdue', ui.due) + managerCapOption('next-7', 'Next 7 Days', ui.due) + managerCapOption('next-30', 'Next 30 Days', ui.due) + '</select></label>' +
+    '<button class="btn btn--sm" data-act="manager-cap-filter" data-key="reset">Reset</button>' +
+  '</div>';
+}
+
+function managerCapMetricCards(metrics) {
+  var items = [
+    ['Total CAPs', metrics.total, 'info'],
+    ['Not Submitted', metrics.notSubmitted, 'neutral'],
+    ['In Progress', metrics.inProgress, 'info'],
+    ['Evidence Required', metrics.evidenceRequired, 'warn'],
+    ['Overdue CAPs', metrics.overdue, 'danger'],
+    ['Completed', metrics.completed, 'ok']
+  ];
+  return '<div class="manager-cap-metrics">' + items.map(function (item) {
+    return '<article class="is-' + esc(item[2]) + '"><span>' + esc(item[0]) + '</span><strong>' + esc(String(item[1])) + '</strong></article>';
+  }).join('') + '</div>';
+}
+
+function managerCapTable(rows) {
+  var body = rows.length ? rows.map(function (row) {
+    return '<tr>' +
+      '<td><b>' + esc(row.id) + '</b></td>' +
+      '<td><b>' + esc(row.findingId) + '</b><small>' + esc(row.findingTitle) + '</small></td>' +
+      '<td><b>' + esc(row.inspectionId) + '</b><small>' + esc(row.organization) + '</small></td>' +
+      '<td>' + esc(row.department) + '</td>' +
+      '<td>' + esc(row.findingLevel) + '</td>' +
+      '<td>' + managerCapStatusBadge(row) + '</td>' +
+      '<td>' + esc(row.actionOwner) + '</td>' +
+      '<td><b>' + esc(fmtDate(row.dueDate)) + '</b></td>' +
+      '<td class="' + (row.overdue ? 'is-overdue' : '') + '">' + esc(managerCapDaysLabel(row)) + '</td>' +
+      '<td><div class="manager-cap-progress"><span><i style="width:' + esc(String(row.progress)) + '%"></i></span><b>' + esc(String(row.progress)) + '%</b></div></td>' +
+      '<td>' + esc(row.lastUpdate) + '</td>' +
+      '<td><button class="manager-cap-menu" data-act="manager-cap-menu" data-id="' + esc(row.id) + '" aria-label="Open CAP actions for ' + esc(row.id) + '" aria-expanded="false">⋯</button></td>' +
+    '</tr>';
+  }).join('') : '<tr><td colspan="12"><div class="empty">No CAPs match these filters.</div></td></tr>';
+  return '<div class="manager-cap-table"><table><thead><tr><th>CAP ID</th><th>Related Finding</th><th>Inspection</th><th>Department</th><th>Finding Level</th><th>Status</th><th>Action Owner</th><th>Due Date</th><th>Days Left / Overdue</th><th>Progress</th><th>Last Update</th><th></th></tr></thead><tbody>' + body + '</tbody></table></div>';
+}
+
+function managerCapSummaryPanels(rows) {
+  var metrics = managerCapMetrics(rows);
+  var overdue = rows.filter(function (row) { return row.overdue; });
+  var upcoming = rows.filter(function (row) { return row.daysLeft !== null && row.daysLeft >= 0 && row.daysLeft <= 30; });
+  function miniRows(items, empty) {
+    return items.length ? items.slice(0, 4).map(function (row) {
+      return '<li><div><b>' + esc(row.id) + '</b><span>' + esc(row.findingTitle) + '</span></div><em>' + esc(managerCapDaysLabel(row)) + '</em></li>';
+    }).join('') : '<li class="is-empty">' + esc(empty) + '</li>';
+  }
+  return '<div class="manager-cap-summaries">' +
+    '<section><h3>Status Overview</h3><dl><div><dt>Not Submitted</dt><dd>' + metrics.notSubmitted + '</dd></div><div><dt>In Progress</dt><dd>' + metrics.inProgress + '</dd></div><div><dt>Evidence Required</dt><dd>' + metrics.evidenceRequired + '</dd></div></dl></section>' +
+    '<section><h3>Overdue CAPs</h3><ul>' + miniRows(overdue, 'No overdue CAPs in this view.') + '</ul></section>' +
+    '<section><h3>Upcoming Due Dates</h3><ul>' + miniRows(upcoming, 'No CAPs due in the next 30 days.') + '</ul></section>' +
+  '</div>';
+}
+
+function managerCapDrawerTabs(active) {
+  var tabs = [['overview', 'Overview'], ['action-plan', 'Action Plan'], ['updates', 'Updates'], ['documents', 'Documents'], ['history', 'History']];
+  return '<div class="manager-cap-drawer-tabs" role="tablist" aria-label="CAP detail sections">' + tabs.map(function (tab) {
+    return '<button role="tab" aria-selected="' + (tab[0] === active ? 'true' : 'false') + '" class="' + (tab[0] === active ? 'is-active' : '') + '" data-act="manager-cap-tab" data-tab="' + esc(tab[0]) + '">' + esc(tab[1]) + '</button>';
+  }).join('') + '</div>';
+}
+
+function managerCapOverview(row) {
+  return '<div class="manager-cap-drawer-panel"><dl class="manager-cap-definition">' +
+    '<div><dt>Status</dt><dd>' + managerCapStatusBadge(row) + '</dd></div><div><dt>Action Owner</dt><dd>' + esc(row.actionOwner) + '</dd></div><div><dt>Assignee</dt><dd>' + esc(row.assignee) + '</dd></div><div><dt>Due Date</dt><dd>' + esc(fmtDate(row.dueDate)) + '</dd></div><div><dt>Priority</dt><dd>' + esc(row.priority) + '</dd></div><div><dt>Target Closure Date</dt><dd>' + esc(fmtDate(row.targetClosureDate)) + '</dd></div>' +
+  '</dl><section><h3>Finding Description</h3><p>' + esc(row.findingDescription) + '</p></section><section><h3>Impact / Risk</h3><p>' + esc(row.impactRisk) + '</p></section><section><h3>Root Cause</h3><p>' + esc(row.rootCause || 'Not yet submitted.') + '</p></section><section><h3>Configured Reference</h3><p>' + esc(row.reference) + '</p></section><section><h3>Linked Finding</h3><p>' + esc(row.findingId + ' · ' + row.findingTitle) + '</p></section><div class="manager-cap-drawer-progress"><span><i style="width:' + esc(String(row.progress)) + '%"></i></span><b>' + esc(String(row.progress)) + '% complete</b></div><button class="btn btn--primary btn--sm" data-act="manager-cap-tab" data-tab="updates">Add Update</button><div class="manager-cap-closure-rule"><b>Closure boundary:</b> CAP acceptance is not finding closure. Required evidence and authorized verification remain separate.</div></div>';
+}
+
+function managerCapActionPlan(row) {
+  return '<div class="manager-cap-drawer-panel"><section><h3>Corrective Action</h3><p>' + esc(row.correctiveAction || 'Not yet submitted.') + '</p></section><section><h3>Preventive Action</h3><p>' + esc(row.preventiveAction || 'Not yet submitted.') + '</p></section><section><h3>Target</h3><p>' + esc(row.targetClosureDate ? fmtDate(row.targetClosureDate) : 'Not configured') + '</p></section></div>';
+}
+
+function managerCapUpdates(row, ui) {
+  var items = row.updates.slice().reverse().map(function (update) {
+    return '<li><time>' + esc(update.at) + '</time><div><b>' + esc(update.actor) + '</b><p>' + esc(update.text) + '</p></div></li>';
+  }).join('') || '<li class="is-empty">No CAP updates have been recorded.</li>';
+  return '<div class="manager-cap-drawer-panel"><div class="manager-cap-update-form"><label for="manager-cap-update-text">Add Update</label><textarea id="manager-cap-update-text" placeholder="Record a browser-local CAP update."></textarea><div role="alert">' + esc(ui.validationMessage) + '</div><button class="btn btn--primary btn--sm" data-act="manager-cap-add-update" data-id="' + esc(row.id) + '">Add Update</button></div><ol class="manager-cap-timeline">' + items + '</ol></div>';
+}
+
+function managerCapDocuments(row) {
+  var docs = row.documents.map(function (filename) { return '<li><span>📄</span><div><b>' + esc(filename) + '</b><small>Selected filename only · no file storage</small></div></li>'; }).join('') || '<li class="is-empty">No document filenames are listed.</li>';
+  return '<div class="manager-cap-drawer-panel"><ul class="manager-cap-documents">' + docs + '</ul></div>';
+}
+
+function managerCapHistory(row) {
+  var history = row.history.slice().reverse().map(function (entry) { return '<li><time>' + esc(entry.at) + '</time><div><b>' + esc(entry.action) + '</b><small>' + esc(entry.actor) + '</small></div></li>'; }).join('') || '<li class="is-empty">No history is available.</li>';
+  var notifications = row.notifications.slice().reverse().map(function (entry) { return '<li><time>' + esc(entry.at) + '</time><div><b>' + esc(entry.audience) + '</b><small>' + esc(entry.text) + '</small></div></li>'; }).join('') || '<li class="is-empty">No mock notifications are recorded.</li>';
+  return '<div class="manager-cap-drawer-panel"><h3>CAP History</h3><ol class="manager-cap-timeline">' + history + '</ol><h3>Mock Notification History</h3><ol class="manager-cap-timeline">' + notifications + '</ol></div>';
+}
+
+function managerCapDrawer(row, ui) {
+  var panel = ui.tab === 'action-plan' ? managerCapActionPlan(row) : (ui.tab === 'updates' ? managerCapUpdates(row, ui) : (ui.tab === 'documents' ? managerCapDocuments(row) : (ui.tab === 'history' ? managerCapHistory(row) : managerCapOverview(row))));
+  return '<div class="manager-cap-drawer-backdrop" data-act="manager-cap-close"></div><aside class="manager-cap-drawer" aria-label="CAP Detail"><header><div><span>CAP Detail</span><h2>' + esc(row.id) + '</h2><p>' + esc(row.findingId + ' · ' + row.organization) + '</p></div><button data-act="manager-cap-close" aria-label="Close CAP detail">×</button></header>' + managerCapDrawerTabs(ui.tab) + panel + '</aside>';
+}
+
+function viewManagerCapMonitoring() {
+  var ui = managerCapUiState();
+  var allRows = managerCapRows(state, { status: 'all', department: 'all', inspection: 'all', due: 'all' });
+  var rows = managerCapRows(state, ui);
+  var selected = ui.selectedCapId ? managerCapById(state, ui.selectedCapId) : null;
+  return pageHead('CAP Monitoring', 'Monitor corrective action owners, Due Dates, progress, updates, and expected evidence without closing Findings.') +
+    '<section class="manager-cap-workspace">' + managerCapFilters(ui, allRows) + managerCapMetricCards(managerCapMetrics(rows)) + managerCapTable(rows) + managerCapSummaryPanels(rows) + '</section>' +
+    (ui.drawerOpen && selected ? managerCapDrawer(selected, ui) : '');
+}
+
 function workbenchItem(tone, title, meta, actionLabel, view, id, filter) {
   var act = view ? ' data-act="nav" data-view="' + esc(view) + '"' : '';
   var idAttr = id ? ' data-id="' + esc(id) + '"' : '';

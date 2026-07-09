@@ -988,7 +988,7 @@ push the current branch.
 - Produces: `addManagerCapUpdate(targetState, capId, text, actor) -> Result`.
 - Produces: `viewManagerCapMonitoring() -> string` and `manager-cap-*` actions.
 
-- [ ] **Step 1: Write the failing CAP Monitoring smoke test**
+- [x] **Step 1: Write the failing CAP Monitoring smoke test**
 
 ```js
 const state = context.freshState();
@@ -1007,13 +1007,13 @@ assert.notEqual(context.managerCapById(state, rows[0].id).findingStatus, 'CLOSED
 Assert the rendered route contains the five drawer tabs, row ellipsis,
 `Add Update`, filters, progress, Due Date, days left/overdue, and an empty state.
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run `node tests/manager-cap-monitoring-smoke.test.js`.
 
 Expected: FAIL because the Department Manager CAP projection/route is absent.
 
-- [ ] **Step 3: Add defensive CAP seed enrichment and selectors**
+- [x] **Step 3: Add defensive CAP seed enrichment and selectors**
 
 Enrich representative seeded manager findings with CAP fields required by the
 reference: ID, status, action owner, assignee, Due Date, target closure date,
@@ -1022,13 +1022,13 @@ mock notifications, and history. Repair missing arrays/fields when older saved
 state loads. Derive filters, counters, overdue/upcoming summaries, and progress
 from these shared finding CAP records.
 
-- [ ] **Step 4: Implement update validation without closing findings**
+- [x] **Step 4: Implement update validation without closing findings**
 
 `addManagerCapUpdate` rejects blank text, appends a timestamped update and CAP
 history entry, updates `lastUpdate`, and leaves finding status/closure evidence
 unchanged. No manager CAP action may equate CAP acceptance with finding closure.
 
-- [ ] **Step 5: Render CAP Monitoring and the ellipsis detail drawer**
+- [x] **Step 5: Render CAP Monitoring and the ellipsis detail drawer**
 
 Render reference-style filters, six compact counters, CAP table, status
 overview, overdue list, and upcoming list. The row ellipsis selects the exact
@@ -1036,7 +1036,7 @@ CAP and opens a right drawer with `Overview`, `Action Plan`, `Updates`,
 `Documents`, and `History`. Wire drawer close, tab changes, Add Update, and
 attachment filename display through delegated actions.
 
-- [ ] **Step 6: Verify GREEN and lifecycle regressions**
+- [x] **Step 6: Verify GREEN and lifecycle regressions**
 
 Run:
 
@@ -1052,7 +1052,7 @@ node tests/inspector-nav-smoke.test.js
 
 Expected: all exit 0 and the closure-boundary smoke remains unchanged.
 
-- [ ] **Step 7: Commit and push CAP Monitoring**
+- [x] **Step 7: Commit and push CAP Monitoring**
 
 Run `git diff --check`, stage only Task 6 files/hunks, inspect
 `git diff --cached`, commit with `feat: add department manager cap monitoring`,

@@ -291,11 +291,18 @@ var SEED_MANAGER_FINDINGS = [
     status: 'CAP_SUBMITTED', capRequired: true, evidenceRequired: true,
     issuedDate: '2026-06-15', dueDate: '2026-06-19', closedDate: null,
     closureType: null, responsiblePerson: CANONICAL_SERVICE_PROVIDER_NAME + ' Cabin Safety Manager',
-    cap: { rootCause: 'The equipment register and maintenance record were maintained in separate files.',
+    cap: { id: 'CAP-2026-011', rootCause: 'The equipment register and maintenance record were maintained in separate files.',
            correctiveAction: 'Reconciled the sampled position against the current serviceability register.',
            preventiveAction: 'Added a single register review before each cabin inspection.',
            responsible: CANONICAL_SERVICE_PROVIDER_NAME + ' Cabin Safety Manager',
-           targetDate: '2026-06-18', submittedDate: '2026-06-17', status: 'Submitted' },
+           assignee: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager', dueDate: '2026-06-19',
+           targetClosureDate: '2026-06-28', priority: 'Critical', progress: 60,
+           monitoringStatus: 'In Progress', impactRisk: 'Incomplete serviceability evidence may delay verification of emergency equipment readiness.',
+           targetDate: '2026-06-18', submittedDate: '2026-06-17', status: 'Submitted', lastUpdate: '2026-06-17 14:30',
+           updates: [{ at: '2026-06-17 14:30', actor: CANONICAL_SERVICE_PROVIDER_NAME + ' Cabin Safety Manager', text: 'CAP submitted for CAA review.' }],
+           attachments: ['Emergency_Equipment_Register_Extract.pdf'],
+           notifications: [{ at: '2026-06-17 14:31', audience: 'CAA Inspector', text: 'Mock in-app CAP submission notification recorded.' }],
+           history: [{ at: '2026-06-17 14:30', actor: CANONICAL_SERVICE_PROVIDER_NAME + ' Cabin Safety Manager', action: 'CAP submitted' }] },
     evidence: [],
     commentsToAuditee: [ { author: 'Caner Yildiz', date: '2026-06-15', text: 'Submit the CAP and expected serviceability evidence for authorized review.' } ],
     internalNotes: [ { author: 'Caner Yildiz', date: '2026-06-17', text: 'CAP received; evidence verification remains pending.' } ]
@@ -309,11 +316,18 @@ var SEED_MANAGER_FINDINGS = [
     status: 'EVIDENCE_REQUIRED', capRequired: true, evidenceRequired: true,
     issuedDate: '2026-06-15', dueDate: '2026-06-24', closedDate: null,
     closureType: null, responsiblePerson: CANONICAL_SERVICE_PROVIDER_NAME + ' Training Manager',
-    cap: { rootCause: 'A completed recurrent check was not linked to the central training record.',
+    cap: { id: 'CAP-2026-012', rootCause: 'A completed recurrent check was not linked to the central training record.',
            correctiveAction: 'Linked the completed check to the sampled crew record.',
            preventiveAction: 'Added a monthly exception review for unlinked checks.',
            responsible: CANONICAL_SERVICE_PROVIDER_NAME + ' Training Manager',
-           targetDate: '2026-06-22', submittedDate: '2026-06-18', status: 'Accepted' },
+           assignee: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager', dueDate: '2026-06-24',
+           targetClosureDate: '2026-07-02', priority: 'High', progress: 75,
+           monitoringStatus: 'Evidence Required', impactRisk: 'The accepted CAP remains open until required training-record evidence is accepted.',
+           targetDate: '2026-06-22', submittedDate: '2026-06-18', status: 'Accepted', lastUpdate: '2026-06-19 09:10',
+           updates: [{ at: '2026-06-19 09:10', actor: 'Aylin Sezer', text: 'CAP accepted; evidence remains required before closure.' }],
+           attachments: ['Training_Record_Linkage_Summary.pdf'],
+           notifications: [{ at: '2026-06-19 09:11', audience: 'Fly Namibia Service Provider Portal', text: 'Mock in-app evidence request recorded.' }],
+           history: [{ at: '2026-06-18 16:00', actor: CANONICAL_SERVICE_PROVIDER_NAME + ' Training Manager', action: 'CAP submitted' }, { at: '2026-06-19 09:10', actor: 'Aylin Sezer', action: 'CAP accepted; evidence required' }] },
     evidence: [],
     commentsToAuditee: [ { author: 'Aylin Sezer', date: '2026-06-19', text: 'CAP accepted. Upload the expected evidence; the finding remains open.' } ],
     internalNotes: [ { author: 'Aylin Sezer', date: '2026-06-19', text: 'Verify the linked recurrent check before closure.' } ]
@@ -327,8 +341,15 @@ var SEED_MANAGER_FINDINGS = [
     status: 'WAITING_CAP', capRequired: true, evidenceRequired: true,
     issuedDate: '2026-06-15', dueDate: '2026-06-27', closedDate: null,
     closureType: null, responsiblePerson: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager',
-    cap: { rootCause: '', correctiveAction: '', preventiveAction: '', responsible: '',
-           targetDate: '', submittedDate: '', status: 'Not Submitted' },
+    cap: { id: 'CAP-2026-013', rootCause: '', correctiveAction: '', preventiveAction: '', responsible: '',
+           assignee: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager', dueDate: '2026-06-27',
+           targetClosureDate: '2026-07-08', priority: 'Medium', progress: 15,
+           monitoringStatus: 'Not Submitted', impactRisk: 'An unassigned cabin defect follow-up may delay corrective action accountability.',
+           targetDate: '', submittedDate: '', status: 'Not Submitted', lastUpdate: '2026-06-15 11:45',
+           updates: [{ at: '2026-06-15 11:45', actor: 'Caner Yildiz', text: 'CAP request issued to the Service Provider.' }],
+           attachments: [],
+           notifications: [{ at: '2026-06-15 11:46', audience: 'Fly Namibia Service Provider Portal', text: 'Mock in-app CAP request recorded.' }],
+           history: [{ at: '2026-06-15 11:45', actor: 'Caner Yildiz', action: 'CAP requested' }] },
     evidence: [],
     commentsToAuditee: [ { author: 'Caner Yildiz', date: '2026-06-15', text: 'Provide root cause, corrective action, preventive action, owner, and Target date.' } ],
     internalNotes: []
@@ -1063,6 +1084,7 @@ function freshState() {
     managerFindingsUi: { query: '', status: 'all', dateRange: 'all', selectedAuditId: 'AUD-2026-001', tab: 'overview' },
     inspectionTeamUi: { query: '', department: 'all', status: 'all', dateRange: 'all', selectedAuditId: 'AUD-2026-001', tab: 'overview', openMenuAuditId: '' },
     managerReportsUi: { query: '', reportType: 'all', status: 'all', selectedReportId: 'PR-2026-018', tab: 'summary', validationMessage: '' },
+    managerCapUi: { status: 'all', department: 'all', inspection: 'all', due: 'all', selectedCapId: '', drawerOpen: false, tab: 'overview', validationMessage: '' },
     offline: { simulated: false, lastMessage: null },
     selectedFilters: {
       findings: 'all',
@@ -1296,6 +1318,7 @@ function mergeDemoState(saved) {
   var managerFindingsUiDefault = deepClone(base.managerFindingsUi);
   var inspectionTeamUiDefault = deepClone(base.inspectionTeamUi);
   var managerReportsUiDefault = deepClone(base.managerReportsUi);
+  var managerCapUiDefault = deepClone(base.managerCapUi);
   if (!saved || typeof saved !== 'object') return base;
   Object.keys(saved).forEach(function (key) {
     if (key === 'ui') return;
@@ -1312,8 +1335,16 @@ function mergeDemoState(saved) {
   if (!Array.isArray(base.managerReports)) base.managerReports = deepClone(SEED_MANAGER_REPORTS);
   if (!Array.isArray(base.findings)) base.findings = deepClone(SEED_FINDINGS);
   SEED_MANAGER_FINDINGS.forEach(function (seedFinding) {
-    var exists = base.findings.some(function (finding) { return finding.id === seedFinding.id; });
-    if (!exists) base.findings.push(deepClone(seedFinding));
+    var existing = base.findings.filter(function (finding) { return finding.id === seedFinding.id; })[0] || null;
+    if (!existing) {
+      base.findings.push(deepClone(seedFinding));
+      return;
+    }
+    var existingCap = existing.cap && typeof existing.cap === 'object' ? existing.cap : {};
+    existing.cap = Object.assign({}, deepClone(seedFinding.cap || {}), existingCap);
+    ['updates', 'attachments', 'notifications', 'history'].forEach(function (field) {
+      if (!Array.isArray(existingCap[field])) existing.cap[field] = deepClone((seedFinding.cap && seedFinding.cap[field]) || []);
+    });
   });
   if (!Array.isArray(base.auditLog)) base.auditLog = [];
   SEED_AUDIT_LOG.forEach(function (seedLog) {
@@ -1324,6 +1355,7 @@ function mergeDemoState(saved) {
   base.managerFindingsUi = Object.assign({}, managerFindingsUiDefault, saved.managerFindingsUi || {});
   base.inspectionTeamUi = Object.assign({}, inspectionTeamUiDefault, saved.inspectionTeamUi || {});
   base.managerReportsUi = Object.assign({}, managerReportsUiDefault, saved.managerReportsUi || {});
+  base.managerCapUi = Object.assign({}, managerCapUiDefault, saved.managerCapUi || {});
   if (!Array.isArray(base.potentialFindings)) base.potentialFindings = deepClone(SEED_POTENTIAL_FINDINGS);
   if (!Array.isArray(base.auditReports)) base.auditReports = deepClone(SEED_AUDIT_REPORTS);
   if (!Array.isArray(base.leadAuditReviews) || base.leadAuditReviews.length === 0) base.leadAuditReviews = deepClone(SEED_LEAD_AUDIT_REVIEWS);

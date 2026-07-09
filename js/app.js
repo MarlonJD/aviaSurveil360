@@ -457,7 +457,7 @@ function renderContent() {
     case 'inspection-team': return viewInspectionTeam();
     case 'reports-approval': return viewManagerReportsApproval();
     case 'manager-risk': return viewManagerWorkspacePlaceholder('Risk Dashboard', 'Department risk indicators and exposure views are being prepared in this demo sequence.');
-    case 'cap-monitoring': return viewManagerWorkspacePlaceholder('CAP Monitoring', 'Corrective action plan monitoring is being prepared in this demo sequence.');
+    case 'cap-monitoring': return viewManagerCapMonitoring();
     case 'manager-checklists': return viewManagerWorkspacePlaceholder('Checklist Management', 'Department checklist package management is being prepared in this demo sequence.');
     case 'calendar': return viewCalendar();
     case 'audit-detail': return viewAuditDetail();
@@ -1075,6 +1075,67 @@ function handleManagerReportDownload(reportId, variant) {
   }
 }
 
+function handleManagerCapFilter(key, explicitValue) {
+  var ui = managerCapUiState();
+  if (key === 'reset') {
+    ui.status = 'all';
+    ui.department = 'all';
+    ui.inspection = 'all';
+    ui.due = 'all';
+  } else if (['status', 'department', 'inspection', 'due'].indexOf(key) !== -1) {
+    ui[key] = explicitValue || 'all';
+  } else {
+    return;
+  }
+  var rows = managerCapRows(state, ui);
+  if (ui.drawerOpen && !rows.some(function (row) { return row.id === ui.selectedCapId; })) ui.drawerOpen = false;
+  ui.validationMessage = '';
+  persistAfterAction();
+  render();
+}
+
+function handleManagerCapMenu(capId) {
+  if (!managerCapById(state, capId)) return;
+  var ui = managerCapUiState();
+  ui.selectedCapId = capId;
+  ui.drawerOpen = true;
+  ui.tab = 'overview';
+  ui.validationMessage = '';
+  persistAfterAction();
+  render();
+}
+
+function handleManagerCapClose() {
+  managerCapUiState().drawerOpen = false;
+  persistAfterAction();
+  render();
+}
+
+function handleManagerCapTab(tab) {
+  if (['overview', 'action-plan', 'updates', 'documents', 'history'].indexOf(tab) === -1) return;
+  var ui = managerCapUiState();
+  ui.tab = tab;
+  ui.validationMessage = '';
+  persistAfterAction();
+  render();
+}
+
+function handleManagerCapAddUpdate(capId) {
+  var ui = managerCapUiState();
+  var result = addManagerCapUpdate(state, capId, val('manager-cap-update-text'), ROLES.manager.name);
+  if (!result.ok) {
+    ui.validationMessage = result.message;
+    render();
+    return;
+  }
+  ui.validationMessage = '';
+  ui.tab = 'updates';
+  addLog('Department Manager CAP update added', capId);
+  persistAfterAction();
+  render();
+  toast('CAP update added', result.message, 'ok');
+}
+
 /* ----------------------------- Action dispatch ----------------------------- */
 function handleAction(act, el) {
   var id = el.getAttribute('data-id');
@@ -1145,6 +1206,12 @@ function handleAction(act, el) {
     case 'manager-report-decision': handleManagerReportDecision(id, el.getAttribute('data-decision')); break;
     case 'manager-report-preview': handleManagerReportPreview(id); break;
     case 'manager-report-download': handleManagerReportDownload(id, el.getAttribute('data-variant')); break;
+
+    case 'manager-cap-filter': handleManagerCapFilter(el.getAttribute('data-key'), el.getAttribute('data-value')); break;
+    case 'manager-cap-menu': handleManagerCapMenu(id); break;
+    case 'manager-cap-close': handleManagerCapClose(); break;
+    case 'manager-cap-tab': handleManagerCapTab(tab); break;
+    case 'manager-cap-add-update': handleManagerCapAddUpdate(id); break;
 
     case 'start-checklist': startChecklist(id); break;
     case 'select-checklist-question': state.params.questionId = q; render(); break;
@@ -4621,6 +4688,10 @@ document.addEventListener('change', function (e) {
   if (field === 'manager-report-status') {
     handleManagerReportFilter('status', e.target.value);
   }
+  if (field === 'manager-cap-status') handleManagerCapFilter('status', e.target.value);
+  if (field === 'manager-cap-department') handleManagerCapFilter('department', e.target.value);
+  if (field === 'manager-cap-inspection') handleManagerCapFilter('inspection', e.target.value);
+  if (field === 'manager-cap-due') handleManagerCapFilter('due', e.target.value);
   if (field === 'lead-review-decision') {
     handleLeadReviewDecision(e.target.getAttribute('data-id'), e.target.value);
   }

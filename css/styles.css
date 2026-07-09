@@ -15503,3 +15503,108 @@ td .sp-report-badge {
   .manager-dashboard-tasks > div:last-child { grid-template-columns: 1fr; }
   .manager-dashboard-task { min-height: 88px; }
 }
+
+/* ================= Department Manager CAP Monitoring ================= */
+.manager-cap-workspace {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.manager-cap-filters { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)) auto; gap: 10px; align-items: end; }
+.manager-cap-filters label > span { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.manager-cap-filters select { width: 100%; height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
+.manager-cap-filters .btn { min-height: 38px; }
+.manager-cap-metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 9px; margin: 14px 0; }
+.manager-cap-metrics article { padding: 12px; border: 1px solid var(--line-soft); border-top: 3px solid var(--brand); border-radius: var(--radius-md); background: var(--surface-subtle); }
+.manager-cap-metrics article.is-danger { border-top-color: var(--danger); }
+.manager-cap-metrics article.is-warn { border-top-color: var(--warning); }
+.manager-cap-metrics article.is-ok { border-top-color: var(--ok); }
+.manager-cap-metrics article.is-neutral { border-top-color: var(--text-muted); }
+.manager-cap-metrics span { display: block; color: var(--text-muted); font-size: 10px; }
+.manager-cap-metrics strong { display: block; margin-top: 5px; font-size: 22px; }
+.manager-cap-table { overflow-x: auto; border: 1px solid var(--line-soft); border-radius: var(--radius-md); }
+.manager-cap-table table { width: 100%; min-width: 1320px; border-collapse: collapse; }
+.manager-cap-table th,
+.manager-cap-table td { padding: 10px; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; font-size: 11px; }
+.manager-cap-table th { color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
+.manager-cap-table td small { display: block; max-width: 190px; margin-top: 3px; color: var(--text-muted); }
+.manager-cap-table td.is-overdue { color: var(--danger); font-weight: 800; }
+.manager-cap-progress { display: flex; gap: 7px; align-items: center; min-width: 100px; }
+.manager-cap-progress > span,
+.manager-cap-drawer-progress > span { display: block; overflow: hidden; height: 6px; flex: 1; border-radius: 999px; background: var(--line-soft); }
+.manager-cap-progress i,
+.manager-cap-drawer-progress i { display: block; height: 100%; border-radius: inherit; background: var(--brand); }
+.manager-cap-menu { width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--text); font-size: 18px; cursor: pointer; }
+.manager-cap-menu:hover,
+.manager-cap-menu:focus-visible { border-color: var(--brand); color: var(--brand-strong); }
+.manager-cap-summaries { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.manager-cap-summaries section { min-width: 0; padding: 13px; border: 1px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface-subtle); }
+.manager-cap-summaries h3 { margin: 0 0 9px; font-size: 13px; }
+.manager-cap-summaries dl { display: grid; gap: 6px; margin: 0; }
+.manager-cap-summaries dl > div,
+.manager-cap-summaries li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line-soft); }
+.manager-cap-summaries dl > div:last-child,
+.manager-cap-summaries li:last-child { border-bottom: 0; }
+.manager-cap-summaries dt,
+.manager-cap-summaries dd { margin: 0; font-size: 11px; }
+.manager-cap-summaries ul { margin: 0; padding: 0; list-style: none; }
+.manager-cap-summaries li b,
+.manager-cap-summaries li span { display: block; }
+.manager-cap-summaries li span { margin-top: 2px; color: var(--text-muted); font-size: 10px; }
+.manager-cap-summaries li em { color: var(--text-muted); font-size: 10px; font-style: normal; white-space: nowrap; }
+
+.manager-cap-drawer-backdrop { position: fixed; z-index: 89; inset: 0; background: rgba(15, 23, 42, .35); }
+.manager-cap-drawer { position: fixed; z-index: 90; top: 0; right: 0; bottom: 0; width: min(620px, 92vw); overflow-y: auto; background: var(--surface); box-shadow: -12px 0 34px rgba(15, 23, 42, .2); }
+.manager-cap-drawer > header { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; padding: 18px; border-bottom: 1px solid var(--line-soft); }
+.manager-cap-drawer > header span { color: var(--brand-strong); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.manager-cap-drawer > header h2 { margin: 4px 0; font-size: 21px; }
+.manager-cap-drawer > header p { margin: 0; color: var(--text-muted); }
+.manager-cap-drawer > header > button { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); font-size: 22px; cursor: pointer; }
+.manager-cap-drawer-tabs { display: flex; gap: 2px; overflow-x: auto; padding: 0 14px; border-bottom: 1px solid var(--line-soft); }
+.manager-cap-drawer-tabs button { flex: 0 0 auto; padding: 12px 9px 10px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--text-muted); font-weight: 700; cursor: pointer; }
+.manager-cap-drawer-tabs button.is-active { border-bottom-color: var(--brand); color: var(--brand-strong); }
+.manager-cap-drawer-panel { padding: 18px; }
+.manager-cap-definition { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.manager-cap-definition > div { padding: 10px; border: 1px solid var(--line-soft); border-radius: var(--radius-sm); background: var(--surface-subtle); }
+.manager-cap-definition dt { color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+.manager-cap-definition dd { margin: 4px 0 0; font-size: 12px; font-weight: 700; }
+.manager-cap-drawer-panel section { margin-top: 16px; }
+.manager-cap-drawer-panel section h3,
+.manager-cap-drawer-panel > h3 { margin: 0 0 6px; font-size: 14px; }
+.manager-cap-drawer-panel section p { margin: 0; color: var(--text-secondary); line-height: 1.5; }
+.manager-cap-drawer-progress { display: flex; gap: 10px; align-items: center; margin-top: 16px; }
+.manager-cap-drawer-progress > span { flex: 1; }
+.manager-cap-closure-rule { margin-top: 16px; padding: 11px; border-left: 3px solid var(--warning); background: var(--warning-soft); color: var(--text-secondary); font-size: 12px; }
+.manager-cap-update-form { display: grid; gap: 7px; padding: 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface-subtle); }
+.manager-cap-update-form label { font-weight: 800; }
+.manager-cap-update-form textarea { min-height: 92px; padding: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); resize: vertical; }
+.manager-cap-update-form [role="alert"] { min-height: 18px; color: var(--danger); font-size: 11px; }
+.manager-cap-update-form .btn { justify-self: end; }
+.manager-cap-timeline { margin: 14px 0 0; padding: 0; list-style: none; }
+.manager-cap-timeline li { display: grid; grid-template-columns: 125px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+.manager-cap-timeline time { color: var(--text-muted); font-size: 10px; }
+.manager-cap-timeline p,
+.manager-cap-timeline small { display: block; margin: 3px 0 0; color: var(--text-muted); }
+.manager-cap-documents { margin: 0; padding: 0; list-style: none; }
+.manager-cap-documents li { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+.manager-cap-documents small { display: block; color: var(--text-muted); }
+
+@media (max-width: 1000px) {
+  .manager-cap-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .manager-cap-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .manager-cap-summaries { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .manager-cap-workspace { padding: 14px; }
+  .manager-cap-filters,
+  .manager-cap-metrics,
+  .manager-cap-definition { grid-template-columns: 1fr; }
+  .manager-cap-filters .btn { width: 100%; }
+  .manager-cap-drawer { width: 100vw; }
+  .manager-cap-timeline li { grid-template-columns: 1fr; gap: 3px; }
+  .manager-cap-update-form .btn { justify-self: stretch; width: 100%; }
+}

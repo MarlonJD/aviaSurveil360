@@ -212,9 +212,11 @@ assert.equal(context.NAV.inspector.some((item) => item.view === 'checklist-build
 assert.equal(context.NAV.inspector.some((item) => item.view === 'templates'), false);
 assert.equal(context.NAV.inspector.some((item) => item.view === 'cap-effectiveness'), false);
 assert.equal(context.NAV.inspector.some((item) => item.view === 'offline-field'), false);
-assert.equal(context.NAV.manager.some((item) => item.view === 'checklist-builder' && item.label === 'Checklist Builder'), true);
+assert.equal(context.NAV.manager.some((item) => item.view === 'checklist-builder' && item.label === 'Checklist Builder'), false);
+assert.equal(context.NAV.manager.some((item) => item.view === 'manager-checklists' && item.label === 'Checklist Management'), true);
 assert.equal(context.NAV.admin.some((item) => item.view === 'regulatory-library' && item.label === 'NAMCARS Library'), true);
-assert.equal(context.NAV.manager.some((item) => item.view === 'cap-effectiveness' && item.label === 'Repeat Findings'), true);
+assert.equal(context.NAV.manager.some((item) => item.view === 'cap-effectiveness' && item.label === 'Repeat Findings'), false);
+assert.equal(context.NAV.manager.some((item) => item.view === 'cap-monitoring' && item.label === 'CAP Monitoring'), true);
 
 context.go('cap-verification');
 const legacyCapRedirectHtml = elements.get('app-root').innerHTML;

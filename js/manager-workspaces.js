@@ -331,6 +331,138 @@ function managerDashboardProjection(target) {
   };
 }
 
+function managerCapSeverityLabel(severity) {
+  if (severity === 1) return 'Level 1 Critical';
+  if (severity === 2) return 'Level 2 Major';
+  if (severity === 3) return 'Level 3 Minor';
+  return 'Observation';
+}
+
+function managerCapSourceById(target, capId) {
+  var s = target || state;
+  var findings = Array.isArray(s.findings) ? s.findings : [];
+  for (var i = 0; i < findings.length; i += 1) {
+    if (findings[i].cap && findings[i].cap.id === capId) return { finding: findings[i], cap: findings[i].cap };
+  }
+  return null;
+}
+
+function managerCapRows(target, filters) {
+  var s = target || state;
+  var findings = Array.isArray(s.findings) ? s.findings : [];
+  var orgs = Array.isArray(s.orgs) ? s.orgs : [];
+  var audits = Array.isArray(s.audits) ? s.audits : [];
+  var opts = filters || {};
+  var status = opts.status || 'all';
+  var department = opts.department || 'all';
+  var inspection = opts.inspection || 'all';
+  var due = opts.due || 'all';
+
+  function orgFor(orgId) {
+    return orgs.filter(function (org) { return org.id === orgId; })[0] || null;
+  }
+
+  function auditFor(auditId) {
+    return audits.filter(function (audit) { return audit.id === auditId; })[0] || null;
+  }
+
+  function statusKey(row) {
+    if (row.overdue) return 'overdue';
+    if (row.findingStatus === 'CLOSED' || row.status === 'Completed') return 'completed';
+    if (row.status === 'Not Submitted') return 'not-submitted';
+    if (row.status === 'Evidence Required') return 'evidence-required';
+    return 'in-progress';
+  }
+
+  return findings.filter(function (finding) {
+    return finding.capRequired && finding.cap && finding.cap.id;
+  }).map(function (finding) {
+    var cap = finding.cap;
+    var audit = auditFor(finding.auditId);
+    var organization = orgFor(finding.orgId);
+    var dueDate = cap.dueDate || finding.dueDate || '';
+    var days = dueDate ? daysBetween(DEMO_TODAY, dueDate) : null;
+    var row = {
+      id: cap.id,
+      findingId: finding.id,
+      findingTitle: finding.title,
+      findingDescription: finding.description,
+      findingStatus: finding.status,
+      inspectionId: finding.auditId || '',
+      inspection: audit ? (audit.ref || audit.type || audit.id) : (finding.auditId || '—'),
+      organizationId: finding.orgId,
+      organization: organization ? organization.name : '—',
+      department: finding.department || (audit && audit.domain) || 'Unassigned',
+      findingLevel: managerCapSeverityLabel(finding.severity),
+      severity: finding.severity,
+      status: cap.monitoringStatus || cap.status || 'In Progress',
+      actionOwner: cap.responsible || finding.responsiblePerson || 'Unassigned',
+      assignee: cap.assignee || cap.responsible || finding.responsiblePerson || 'Unassigned',
+      dueDate: dueDate,
+      daysLeft: days,
+      overdue: days !== null && days < 0 && finding.status !== 'CLOSED',
+      progress: Math.max(0, Math.min(100, Number(cap.progress) || 0)),
+      lastUpdate: cap.lastUpdate || cap.submittedDate || finding.issuedDate || '',
+      priority: cap.priority || (finding.severity === 1 ? 'Critical' : (finding.severity === 2 ? 'High' : 'Medium')),
+      targetClosureDate: cap.targetClosureDate || cap.targetDate || '',
+      impactRisk: cap.impactRisk || finding.description || '',
+      rootCause: cap.rootCause || '',
+      correctiveAction: cap.correctiveAction || '',
+      preventiveAction: cap.preventiveAction || '',
+      reference: finding.reference || '',
+      updates: Array.isArray(cap.updates) ? cap.updates.slice() : [],
+      documents: Array.isArray(cap.attachments) ? cap.attachments.slice() : [],
+      notifications: Array.isArray(cap.notifications) ? cap.notifications.slice() : [],
+      history: Array.isArray(cap.history) ? cap.history.slice() : []
+    };
+    row.statusKey = statusKey(row);
+    return row;
+  }).filter(function (row) {
+    if (status !== 'all' && row.statusKey !== status && row.status !== status) return false;
+    if (department !== 'all' && row.department !== department) return false;
+    if (inspection !== 'all' && row.inspectionId !== inspection) return false;
+    if (due === 'overdue' && !row.overdue) return false;
+    if (due === 'next-7' && (row.daysLeft === null || row.daysLeft < 0 || row.daysLeft > 7)) return false;
+    if (due === 'next-30' && (row.daysLeft === null || row.daysLeft < 0 || row.daysLeft > 30)) return false;
+    return true;
+  }).sort(function (left, right) {
+    if (left.overdue !== right.overdue) return left.overdue ? -1 : 1;
+    return (left.dueDate || '9999').localeCompare(right.dueDate || '9999') || left.id.localeCompare(right.id);
+  });
+}
+
+function managerCapById(target, capId) {
+  return managerCapRows(target, { status: 'all', department: 'all', inspection: 'all', due: 'all' }).filter(function (row) {
+    return row.id === capId;
+  })[0] || null;
+}
+
+function managerCapMetrics(rows) {
+  return (rows || []).reduce(function (metrics, row) {
+    metrics.total += 1;
+    if (row.overdue) metrics.overdue += 1;
+    else if (row.statusKey === 'completed') metrics.completed += 1;
+    else if (row.statusKey === 'not-submitted') metrics.notSubmitted += 1;
+    else if (row.statusKey === 'evidence-required') metrics.evidenceRequired += 1;
+    else metrics.inProgress += 1;
+    return metrics;
+  }, { total: 0, notSubmitted: 0, inProgress: 0, evidenceRequired: 0, overdue: 0, completed: 0 });
+}
+
+function addManagerCapUpdate(target, capId, text, actor) {
+  var source = managerCapSourceById(target, capId);
+  if (!source) return { ok: false, message: 'CAP record not found.', cap: null };
+  var clean = String(text || '').trim();
+  if (!clean) return { ok: false, message: 'An update is required.', cap: managerCapById(target, capId) };
+  var at = managerReportDecisionTimestamp();
+  if (!Array.isArray(source.cap.updates)) source.cap.updates = [];
+  if (!Array.isArray(source.cap.history)) source.cap.history = [];
+  source.cap.updates.push({ at: at, actor: actor || 'Department Manager', text: clean });
+  source.cap.history.push({ at: at, actor: actor || 'Department Manager', action: 'CAP update added: ' + clean });
+  source.cap.lastUpdate = at;
+  return { ok: true, message: 'CAP update added.', cap: managerCapById(target, capId) };
+}
+
 function managerTeamByAuditId(target, auditId) {
   var s = ensureManagerWorkspaceState(target);
   return s.inspectionTeams.filter(function (team) { return team.auditId === auditId; })[0] || null;
