@@ -7719,6 +7719,281 @@ function viewFinding() {
     '</div>';
 }
 
+/* =========================== Department Manager findings review =========================== */
+function managerFindingsUiState() {
+  if (!state.managerFindingsUi || typeof state.managerFindingsUi !== 'object') {
+    state.managerFindingsUi = {};
+  }
+  var ui = state.managerFindingsUi;
+  if (typeof ui.query !== 'string') ui.query = '';
+  if (!ui.status) ui.status = 'all';
+  if (!ui.dateRange) ui.dateRange = 'all';
+  if (!ui.selectedAuditId) ui.selectedAuditId = 'AUD-2026-001';
+  if (['overview', 'list', 'department', 'level'].indexOf(ui.tab) === -1) ui.tab = 'overview';
+  return ui;
+}
+
+function managerFindingsOption(value, label, selectedValue) {
+  return '<option value="' + esc(value) + '"' + (value === selectedValue ? ' selected' : '') + '>' + esc(label) + '</option>';
+}
+
+function managerFindingsAuditStatusBadge(status) {
+  var tone = status === 'Closed' || status === 'Report Issued'
+    ? 'ok'
+    : (status === 'In Progress' ? 'warn' : 'info');
+  return demoBadge(status, tone);
+}
+
+function managerFindingsTotalCounts(rows) {
+  return rows.reduce(function (total, row) {
+    Object.keys(total).forEach(function (key) { total[key] += row.counts[key] || 0; });
+    return total;
+  }, { total: 0, critical: 0, major: 0, minor: 0, observations: 0, open: 0, inReview: 0, closed: 0 });
+}
+
+function managerFindingsFilters(ui) {
+  return '<div class="manager-findings-filters">' +
+    '<label class="manager-findings-search"><span>Search inspections</span><div><input id="manager-findings-query" type="search" value="' + esc(ui.query) + '" placeholder="Audit ID, organization, team leader"><button class="btn btn--primary btn--sm" data-act="manager-findings-filter" data-key="query">Search</button></div></label>' +
+    '<label><span>Status</span><select data-field="manager-findings-status">' +
+      managerFindingsOption('all', 'All Statuses', ui.status) +
+      managerFindingsOption('active', 'Active', ui.status) +
+      managerFindingsOption('complete', 'Complete', ui.status) +
+      managerFindingsOption('planned', 'Planned', ui.status) +
+    '</select></label>' +
+    '<label><span>Audit Date</span><select data-field="manager-findings-date-range">' +
+      managerFindingsOption('all', 'All Dates', ui.dateRange) +
+      managerFindingsOption('today', 'Today', ui.dateRange) +
+      managerFindingsOption('past-30', 'Past 30 Days', ui.dateRange) +
+      managerFindingsOption('past-90', 'Past 90 Days', ui.dateRange) +
+      managerFindingsOption('upcoming', 'Upcoming', ui.dateRange) +
+    '</select></label>' +
+    '<button class="btn btn--sm manager-findings-reset" data-act="manager-findings-filter" data-key="reset">Reset</button>' +
+  '</div>';
+}
+
+function managerFindingsKpis(rows) {
+  var counts = managerFindingsTotalCounts(rows);
+  var items = [
+    ['Inspections', rows.length, 'Audits with findings', 'info'],
+    ['Total Findings', counts.total, 'Visible inspections', 'neutral'],
+    ['Open', counts.open, 'Action remains', 'warn'],
+    ['In Review', counts.inReview, 'CAA review queue', 'info'],
+    ['Closed', counts.closed, 'Authorized outcome', 'ok']
+  ];
+  return '<div class="manager-findings-kpis">' + items.map(function (item) {
+    return '<div class="manager-findings-kpi is-' + esc(item[3]) + '"><span>' + esc(item[0]) + '</span><strong>' + esc(String(item[1])) + '</strong><small>' + esc(item[2]) + '</small></div>';
+  }).join('') + '</div>';
+}
+
+function managerFindingsInspectionRows(rows, selectedAuditId) {
+  if (!rows.length) {
+    return '<tr><td colspan="7"><div class="empty">No inspections match these filters.</div></td></tr>';
+  }
+  return rows.map(function (row) {
+    var selected = row.auditId === selectedAuditId;
+    var severity = [
+      row.counts.critical + ' Critical',
+      row.counts.major + ' Major',
+      row.counts.minor + ' Minor',
+      row.counts.observations + ' Observation'
+    ].join(' · ');
+    return '<tr class="manager-findings-inspection-row' + (selected ? ' is-selected' : '') + '">' +
+      '<td><button class="manager-findings-audit-link" data-act="manager-findings-select" data-id="' + esc(row.auditId) + '"' + (selected ? ' aria-current="true"' : '') + '>' + esc(row.auditId) + '</button><small>' + esc(row.type) + '</small></td>' +
+      '<td><b>' + esc(row.organization) + '</b><small>' + esc(row.department) + '</small></td>' +
+      '<td>' + esc(fmtDate(row.auditDate)) + '</td>' +
+      '<td>' + esc(row.teamLeader) + '</td>' +
+      '<td>' + managerFindingsAuditStatusBadge(row.status) + '</td>' +
+      '<td><b>' + esc(String(row.counts.total)) + '</b><small>' + esc(severity) + '</small></td>' +
+      '<td><button class="btn btn--sm' + (selected ? ' btn--primary' : '') + '" data-act="manager-findings-select" data-id="' + esc(row.auditId) + '">' + (selected ? 'Selected' : 'Review') + '</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function managerFindingsInspectionTable(rows, selectedAuditId) {
+  return '<div class="manager-findings-inspection-table"><table><thead><tr>' +
+    '<th>Audit ID</th><th>Organization</th><th>Audit Date</th><th>Team Leader</th><th>Status</th><th>Findings</th><th></th>' +
+    '</tr></thead><tbody>' + managerFindingsInspectionRows(rows, selectedAuditId) + '</tbody></table></div>';
+}
+
+function managerFindingsFocusFinding(findings) {
+  return (findings || []).slice().sort(function (left, right) {
+    var leftClosed = left.status === 'CLOSED' ? 1 : 0;
+    var rightClosed = right.status === 'CLOSED' ? 1 : 0;
+    if (leftClosed !== rightClosed) return leftClosed - rightClosed;
+    var leftSeverity = left.severity === 0 ? 4 : left.severity;
+    var rightSeverity = right.severity === 0 ? 4 : right.severity;
+    return leftSeverity - rightSeverity || (left.dueDate || '').localeCompare(right.dueDate || '');
+  })[0] || null;
+}
+
+function managerFindingsDossierHeader(row) {
+  var report = (state.managerReports || []).filter(function (item) { return item.auditId === row.auditId; })[0] || null;
+  return '<div class="manager-findings-dossier-head">' +
+    '<div><span>Selected inspection</span><h2>' + esc(row.auditId) + ' · ' + esc(row.organization) + '</h2><p>' + esc(row.reference) + '</p></div>' +
+    '<div class="manager-findings-dossier-actions">' + managerFindingsAuditStatusBadge(row.status) +
+      (report ? '<button class="btn" data-act="manager-findings-open-report" data-id="' + esc(row.auditId) + '">View Full Report</button>' : '') +
+    '</div>' +
+    '<dl class="manager-findings-audit-meta">' +
+      '<div><dt>Audit Date</dt><dd>' + esc(fmtDate(row.auditDate)) + '</dd></div>' +
+      '<div><dt>Team Leader</dt><dd>' + esc(row.teamLeader) + '</dd></div>' +
+      '<div><dt>Department</dt><dd>' + esc(row.department) + '</dd></div>' +
+      '<div><dt>Audit Phase</dt><dd>' + esc(row.phase) + '</dd></div>' +
+      '<div><dt>Status</dt><dd>' + esc(row.status) + '</dd></div>' +
+      '<div><dt>Organization Type</dt><dd>Operator / Service Provider</dd></div>' +
+    '</dl>' +
+  '</div>';
+}
+
+function managerFindingsTabs(active) {
+  var tabs = [
+    ['overview', 'Findings Overview'],
+    ['list', 'Findings List'],
+    ['department', 'By Department'],
+    ['level', 'By Level']
+  ];
+  return '<div class="manager-findings-tabs" role="tablist" aria-label="Findings review sections">' + tabs.map(function (tab) {
+    return '<button role="tab" aria-selected="' + (active === tab[0] ? 'true' : 'false') + '" class="' + (active === tab[0] ? 'is-active' : '') + '" data-act="manager-findings-tab" data-tab="' + esc(tab[0]) + '">' + esc(tab[1]) + '</button>';
+  }).join('') + '</div>';
+}
+
+function managerFindingsSummaryCards(row) {
+  var counts = row.counts;
+  var levels = [
+    ['Level 1 Critical', counts.critical, 'danger'],
+    ['Level 2 Major', counts.major, 'warn'],
+    ['Level 3 Minor', counts.minor, 'info'],
+    ['Observations', counts.observations, 'neutral']
+  ];
+  var statuses = [
+    ['Open', counts.open, 'warn'],
+    ['In Review', counts.inReview, 'info'],
+    ['Closed', counts.closed, 'ok']
+  ];
+  function cards(title, items) {
+    return '<section class="manager-findings-summary"><h3>' + esc(title) + '</h3><div>' + items.map(function (item) {
+      return '<article class="is-' + esc(item[2]) + '"><span>' + esc(item[0]) + '</span><strong>' + esc(String(item[1])) + '</strong></article>';
+    }).join('') + '</div></section>';
+  }
+  return '<div class="manager-findings-summary-grid">' + cards('By Level', levels) + cards('By Status', statuses) + '</div>';
+}
+
+function managerFindingsFocusStrip(row) {
+  var finding = managerFindingsFocusFinding(row.findings);
+  if (!finding) return '<div class="empty">No findings are linked to this inspection.</div>';
+  var due = finding.dueDate ? fmtDate(finding.dueDate) : '—';
+  var closureMeta = finding.status === 'CLOSED' && finding.closedDate
+    ? '<small>Closed ' + esc(fmtDate(finding.closedDate)) + '</small>'
+    : '';
+  return '<section class="manager-findings-focus">' +
+    '<div class="manager-findings-focus__title"><span>Management attention</span><b>' + esc(finding.id + ' · ' + finding.title) + '</b></div>' +
+    '<div><span>Current Owner</span><b>' + esc(ownerLabel(finding)) + '</b></div>' +
+    '<div><span>Next Action</span><b>' + esc(nextActionLabel(finding)) + '</b></div>' +
+    '<div><span>Due Date</span><b>' + esc(due) + '</b>' + closureMeta + '</div>' +
+    '<div><span>Status</span>' + statusBadge(finding) + '</div>' +
+    '<div><span>Severity</span>' + severityHtml(finding) + '</div>' +
+    '<div><span>Related Audit</span><b>' + esc(finding.auditId || '—') + '</b></div>' +
+    '<div><span>Organization</span><b>' + esc(row.organization) + '</b></div>' +
+    '<button class="btn btn--primary btn--sm" data-act="manager-findings-open-finding" data-id="' + esc(finding.id) + '">Open Finding</button>' +
+  '</section>';
+}
+
+function managerFindingsOverview(row) {
+  return '<div class="manager-findings-tab-panel" role="tabpanel">' +
+    managerFindingsSummaryCards(row) +
+    managerFindingsFocusStrip(row) +
+    '<div class="manager-findings-guardrail"><b>Closure rule:</b> CAP acceptance is not finding closure. Required evidence remains subject to CAA review, and evidence version history is preserved.</div>' +
+    '<div class="manager-findings-overview-actions"><button class="btn btn--primary" data-act="manager-findings-tab" data-tab="list">View All Findings</button>' +
+      ((state.managerReports || []).some(function (report) { return report.auditId === row.auditId; })
+        ? '<button class="btn" data-act="manager-findings-open-report" data-id="' + esc(row.auditId) + '">View Full Report</button>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+function managerFindingsList(row) {
+  var body = row.findings.length ? row.findings.map(function (finding) {
+    var dueDate = finding.dueDate ? fmtDate(finding.dueDate) : '—';
+    var closureMeta = finding.status === 'CLOSED' && finding.closedDate
+      ? '<small>Closed ' + esc(fmtDate(finding.closedDate)) + '</small>'
+      : '';
+    return '<tr>' +
+      '<td><button class="manager-findings-finding-link" data-act="manager-findings-open-finding" data-id="' + esc(finding.id) + '">' + esc(finding.id) + '</button><small>' + esc(finding.title) + '</small></td>' +
+      '<td>' + esc(ownerLabel(finding)) + '</td>' +
+      '<td><b>' + esc(nextActionLabel(finding)) + '</b></td>' +
+      '<td><b>' + esc(dueDate) + '</b>' + closureMeta + '</td>' +
+      '<td>' + statusBadge(finding) + '</td>' +
+      '<td>' + severityHtml(finding) + '</td>' +
+      '<td>' + esc(finding.auditId || '—') + '</td>' +
+      '<td>' + esc(row.organization) + '</td>' +
+      '<td><button class="btn btn--sm" data-act="manager-findings-open-finding" data-id="' + esc(finding.id) + '">Open</button></td>' +
+    '</tr>';
+  }).join('') : '<tr><td colspan="9"><div class="empty">No findings are linked to this inspection.</div></td></tr>';
+  return '<div class="manager-findings-tab-panel" role="tabpanel">' +
+    '<div class="manager-findings-table-note">CAP acceptance remains distinct from closure. Evidence versions are preserved through CAA review.</div>' +
+    '<div class="manager-findings-list-table"><table><thead><tr><th>Finding</th><th>Current Owner</th><th>Next Action</th><th>Due Date</th><th>Status</th><th>Severity</th><th>Related Audit</th><th>Organization</th><th></th></tr></thead><tbody>' + body + '</tbody></table></div>' +
+  '</div>';
+}
+
+function managerFindingsDepartmentRows(row) {
+  var grouped = {};
+  row.findings.forEach(function (finding) {
+    var department = finding.department || row.department || 'Unassigned';
+    if (!grouped[department]) grouped[department] = [];
+    grouped[department].push(finding);
+  });
+  var keys = Object.keys(grouped).sort();
+  if (!keys.length) return '<tr><td colspan="9"><div class="empty">No department findings to summarize.</div></td></tr>';
+  return keys.map(function (department) {
+    var counts = managerFindingCounts(grouped[department]);
+    return '<tr><td><b>' + esc(department) + '</b></td><td>' + counts.total + '</td><td>' + counts.critical + '</td><td>' + counts.major + '</td><td>' + counts.minor + '</td><td>' + counts.observations + '</td><td>' + counts.open + '</td><td>' + counts.inReview + '</td><td>' + counts.closed + '</td></tr>';
+  }).join('');
+}
+
+function managerFindingsDepartment(row) {
+  return '<div class="manager-findings-tab-panel" role="tabpanel"><h3>Department Breakdown</h3>' +
+    '<div class="manager-findings-breakdown-table"><table><thead><tr><th>Department</th><th>Total</th><th>Critical</th><th>Major</th><th>Minor</th><th>Observations</th><th>Open</th><th>In Review</th><th>Closed</th></tr></thead><tbody>' + managerFindingsDepartmentRows(row) + '</tbody></table></div></div>';
+}
+
+function managerFindingsLevel(row) {
+  var levels = [
+    [1, 'Level 1 Critical'],
+    [2, 'Level 2 Major'],
+    [3, 'Level 3 Minor'],
+    [0, 'Observation']
+  ];
+  var rows = levels.map(function (level) {
+    var findings = row.findings.filter(function (finding) { return finding.severity === level[0]; });
+    var counts = managerFindingCounts(findings);
+    return '<tr><td>' + (findings.length ? severityHtml(findings[0]) : '<span class="sev sev--obs">' + esc(level[1]) + '</span>') + '</td><td>' + counts.total + '</td><td>' + counts.open + '</td><td>' + counts.inReview + '</td><td>' + counts.closed + '</td></tr>';
+  }).join('');
+  return '<div class="manager-findings-tab-panel" role="tabpanel"><h3>Finding Level Breakdown</h3>' +
+    '<div class="manager-findings-breakdown-table"><table><thead><tr><th>Severity</th><th>Total</th><th>Open</th><th>In Review</th><th>Closed</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+}
+
+function managerFindingsDossier(row, tab) {
+  var body = tab === 'list'
+    ? managerFindingsList(row)
+    : (tab === 'department'
+      ? managerFindingsDepartment(row)
+      : (tab === 'level' ? managerFindingsLevel(row) : managerFindingsOverview(row)));
+  return '<section class="manager-findings-dossier">' + managerFindingsDossierHeader(row) + managerFindingsTabs(tab) + body + '</section>';
+}
+
+function viewManagerFindingsReview() {
+  var ui = managerFindingsUiState();
+  var rows = managerInspectionRows(state, ui);
+  var selected = rows.filter(function (row) { return row.auditId === ui.selectedAuditId; })[0] || rows[0] || null;
+  if (selected && selected.auditId !== ui.selectedAuditId) ui.selectedAuditId = selected.auditId;
+  var left = '<section class="manager-findings-inspections">' +
+    '<div class="manager-workbench-panel-head"><div><span>Inspection register</span><h2>Inspections with Findings</h2></div><button class="btn" data-act="manager-findings-export">Export List</button></div>' +
+    managerFindingsFilters(ui) + managerFindingsKpis(rows) + managerFindingsInspectionTable(rows, selected ? selected.auditId : '') +
+  '</section>';
+  var right = selected
+    ? managerFindingsDossier(selected, ui.tab)
+    : '<section class="manager-findings-dossier manager-findings-dossier--empty"><div class="empty">Select an inspection to review its findings.</div></section>';
+  return pageHead('Findings Review', 'Review inspection findings, ownership, next actions, Due Dates, and closure readiness.') +
+    '<div class="manager-workbench manager-findings-workbench">' + left + right + '</div>';
+}
+
 /* =========================== Findings list (manager/inspector) =========================== */
 var FILTER_LABELS = {
   all: 'All Findings', open: 'Open Findings', overdue: 'Overdue Findings', critical: 'Critical Findings',

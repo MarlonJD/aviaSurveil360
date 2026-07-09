@@ -499,7 +499,7 @@ Expected: all exit 0.
 Run `git diff --check`; inspect the diff for duplicated hard-coded audit/finding
 datasets. Do not commit.
 
-- [ ] **Step 9: Commit and push Findings Review**
+- [x] **Step 9: Commit and push Findings Review**
 
 Stage only Task 2 files/hunks, inspect `git diff --cached`, commit with
 `feat: add department manager findings review`, and push the current branch.

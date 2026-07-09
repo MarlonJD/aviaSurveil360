@@ -22,7 +22,7 @@ var NAV = {
     { view: 'organizations', label: 'Operators / Providers', icon: '🏢' },
     { view: 'org-risk', label: 'Risk Profiles', icon: '◇', id: 'ORG-XYZ' },
     { section: 'Findings & CAPs' },
-    { view: 'findings', label: 'Open Findings', icon: '⚑', filter: 'open' },
+    { view: 'findings-review', label: 'Findings Review', icon: '⚑' },
     { view: 'unit-manager-review', label: 'CAP Reviews', icon: '✓' },
     { view: 'cap-effectiveness', label: 'Repeat Findings', icon: '↻' },
     { section: 'USOAP / SSP' },
@@ -101,7 +101,7 @@ var NAV = {
 };
 
 var VIEW_TITLES = {
-  dashboard: 'Dashboard', calendar: 'Audit Work Queue', findings: 'Findings', 'my-findings': 'My Findings',
+  dashboard: 'Dashboard', calendar: 'Audit Work Queue', findings: 'Findings', 'findings-review': 'Findings Review', 'my-findings': 'My Findings',
   reports: 'Reports', report: 'Report', messages: 'Messages', templates: 'Templates',
   'template-preview': 'Template Preview', auditlog: 'Audit Log', 'audit-detail': 'Audit Detail',
   checklist: 'Checklist Runner', finding: 'Finding Detail', wizard: 'New Audit Wizard',
@@ -386,6 +386,7 @@ function isNavActive(navItem) {
   if (view === 'findings' && state.view === 'finding' && state.role !== 'auditee') {
     return navFilter ? selectedFilter('findings', 'open') === navFilter : true;
   }
+  if (view === 'findings-review' && state.view === 'finding' && state.role === 'manager') return true;
   if (view === 'my-findings' && state.view === 'finding' && state.role === 'auditee') return true;
   if (view === 'reports' && state.view === 'report') return true;
   if (view === 'templates' && state.view === 'template-preview') return true;
@@ -471,6 +472,7 @@ function renderContent() {
     case 'audit-reports': return viewAuditReportsApproval();
     case 'final-report-prepare': return viewLeadFinalReportPrepare();
     case 'final-report-view': return viewLeadFinalReportDocument();
+    case 'findings-review': return viewManagerFindingsReview();
     case 'calendar': return viewCalendar();
     case 'audit-detail': return viewAuditDetail();
     case 'checklist': return viewChecklistRunner();
@@ -653,6 +655,107 @@ function mockPick(targetId) {
 
 function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
 
+function handleManagerFindingsSelect(auditId) {
+  var ui = managerFindingsUiState();
+  var exists = managerInspectionRows(state, { query: '', status: 'all', dateRange: 'all' }).some(function (row) {
+    return row.auditId === auditId;
+  });
+  if (!exists) return;
+  ui.selectedAuditId = auditId;
+  persistAfterAction();
+  render();
+}
+
+function handleManagerFindingsFilter(key, explicitValue) {
+  var ui = managerFindingsUiState();
+  if (key === 'reset') {
+    ui.query = '';
+    ui.status = 'all';
+    ui.dateRange = 'all';
+  } else if (key === 'query') {
+    ui.query = explicitValue !== null && explicitValue !== undefined ? explicitValue : val('manager-findings-query');
+  } else if (key === 'status') {
+    ui.status = explicitValue || 'all';
+  } else if (key === 'dateRange') {
+    ui.dateRange = explicitValue || 'all';
+  } else {
+    return;
+  }
+  var rows = managerInspectionRows(state, ui);
+  if (rows.length && !rows.some(function (row) { return row.auditId === ui.selectedAuditId; })) {
+    ui.selectedAuditId = rows[0].auditId;
+  }
+  persistAfterAction();
+  render();
+}
+
+function handleManagerFindingsTab(tab) {
+  if (['overview', 'list', 'department', 'level'].indexOf(tab) === -1) return;
+  managerFindingsUiState().tab = tab;
+  persistAfterAction();
+  render();
+}
+
+function handleManagerFindingsOpenFinding(findingId) {
+  if (!findingById(findingId)) return;
+  go('finding', { findingId: findingId });
+}
+
+function handleManagerFindingsOpenReport(auditId) {
+  var workspace = ensureManagerWorkspaceState(state);
+  var report = workspace.managerReports.filter(function (item) { return item.auditId === auditId; })[0] || null;
+  if (!report) {
+    toast('Report unavailable', 'No report artifact is linked to this inspection in the demo.', 'warn');
+    return;
+  }
+  workspace.managerReportsUi.selectedReportId = report.id;
+  workspace.managerReportsUi.tab = 'summary';
+  state.view = 'reports-approval';
+  state.params = { auditId: auditId, reportId: report.id };
+  state.ui.notifOpen = false;
+  state.ui.menuOpen = false;
+  closeModal();
+  persistAfterAction();
+  render();
+}
+
+function managerFindingsCsvCell(value) {
+  return '"' + String(value === null || value === undefined ? '' : value).replace(/"/g, '""') + '"';
+}
+
+function handleManagerFindingsExport() {
+  var ui = managerFindingsUiState();
+  var rows = managerInspectionRows(state, ui);
+  if (typeof document === 'undefined' || !document.body || typeof Blob === 'undefined' || typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') {
+    toast('Export unavailable', 'This browser cannot create the demo CSV download.', 'warn');
+    return;
+  }
+  var columns = [
+    'Audit ID', 'Organization', 'Audit Date', 'Team Leader', 'Department', 'Audit Phase', 'Status',
+    'Total Findings', 'Level 1 Critical', 'Level 2 Major', 'Level 3 Minor', 'Observations', 'Open', 'In Review', 'Closed'
+  ];
+  var csvRows = [columns].concat(rows.map(function (row) {
+    return [
+      row.auditId, row.organization, row.auditDate, row.teamLeader, row.department, row.phase, row.status,
+      row.counts.total, row.counts.critical, row.counts.major, row.counts.minor, row.counts.observations,
+      row.counts.open, row.counts.inReview, row.counts.closed
+    ];
+  }));
+  var csv = '\uFEFF' + csvRows.map(function (row) { return row.map(managerFindingsCsvCell).join(','); }).join('\r\n');
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = 'Fly_Namibia_Findings_Review.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 0);
+  ui.exportedAt = nowIsoDemo();
+  persistAfterAction();
+  toast('Findings list exported', rows.length + ' inspection row(s) were written to the demo CSV.', 'ok');
+}
+
 /* ----------------------------- Action dispatch ----------------------------- */
 function handleAction(act, el) {
   var id = el.getAttribute('data-id');
@@ -683,6 +786,13 @@ function handleAction(act, el) {
       persistAfterAction();
       render();
       break;
+
+    case 'manager-findings-select': handleManagerFindingsSelect(id); break;
+    case 'manager-findings-filter': handleManagerFindingsFilter(el.getAttribute('data-key'), el.getAttribute('data-value')); break;
+    case 'manager-findings-tab': handleManagerFindingsTab(tab); break;
+    case 'manager-findings-open-finding': handleManagerFindingsOpenFinding(id); break;
+    case 'manager-findings-open-report': handleManagerFindingsOpenReport(id); break;
+    case 'manager-findings-export': handleManagerFindingsExport(); break;
 
     case 'start-checklist': startChecklist(id); break;
     case 'select-checklist-question': state.params.questionId = q; render(); break;
@@ -4128,6 +4238,12 @@ document.addEventListener('change', function (e) {
   }
   if (e.target && e.target.getAttribute && e.target.getAttribute('data-field') === 'inspection-status') {
     handleInspectionSetStatus(e.target.getAttribute('data-id'), e.target.value);
+  }
+  if (field === 'manager-findings-status') {
+    handleManagerFindingsFilter('status', e.target.value);
+  }
+  if (field === 'manager-findings-date-range') {
+    handleManagerFindingsFilter('dateRange', e.target.value);
   }
   if (field === 'lead-review-decision') {
     handleLeadReviewDecision(e.target.getAttribute('data-id'), e.target.value);
