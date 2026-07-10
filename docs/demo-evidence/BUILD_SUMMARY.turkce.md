@@ -539,9 +539,9 @@ export içerir. CAP kabulü Finding'i kapatmaz. Department Manager Final Report
 onayı raporu yalnızca ileri gönderir; issue veya lock etmez.
 
 Doğrulanan General Manager davranışları; kısıtlı Dashboard, Departments ve
-cross-department Risk görünümleri, yorum zorunlu return ve configured final
-authorization içerir. Bu demoda Final Report'u yalnızca başarılı General
-Manager authorization issue ve lock eder.
+cross-department Risk görünümleri, yorum zorunlu return ve Executive Director'a
+intermediate advance içerir. Aşağıdaki remediation, önceki GM-final-authority
+davranışını supersede eder: GM Final Report'u issue, sign veya lock edemez.
 
 Taze doğrulama kanıtı:
 
@@ -561,6 +561,66 @@ Bunlar mock ve tarayıcı-local kontrol/artifact'lardır. Backend, veritabanı,
 API, gerçek authentication/authorization enforcement, gerçek file storage,
 gerçek notification delivery, production reporting engine, e-signature,
 framework migration veya deployment eklenmedi.
+
+### Inspector, report, Service Provider ve governance remediation - 2026-07-10
+
+Kanıt durumu: **demo-only** ve **verified locally**. External production,
+release, real-identity, legal-signature, enforcement-execution ve deployment
+kanıtı: **not run**. **production-readiness not claimed**.
+
+Uygulanan ve lokal doğrulanan kapsam:
+
+- Lead Inspector active internal Inspector ekleyebilir, duplicate engeller,
+  ayrı Cabin question batch'lerini farklı team member'lara atar ve mapping'leri
+  Audit ID/Question ID ile korur; release edilen demo notification assignee'ye
+  gider.
+- Inspector execution selected Fly Namibia Cabin Inspection ve altı
+  source-derived section'ı çözer. İlk submit tek timestamp kaydeder, Inspector
+  rolünde kalır, success/status modal açar, read-only submitted checklist'i
+  korur ve Lead Inspector redirect olmadan My Assignments'a döner.
+- Preliminary Reports mevcut Report ID'leri aynı `Inspection & Findings`
+  workflow'unda açar; Findings Review görünür ve selected identity list/detail/
+  preview navigation boyunca sabit kalır.
+- Service Provider navigation Corrective Actions (CAP), Preliminary Reports,
+  Final Reports, Messages, Documents ve Settings ile sınırlıdır. List/detail/
+  preview/download selector'ları Fly Namibia scope'ta kalır; Internal CAA Note,
+  enforcement deliberation, internal risk, workload, başka kuruluş ve
+  unreleased report render edilmez.
+- Finance tek Finance Review workspace'e açılır ve yalnız Approve Budget ile
+  Return for Revision kararlarını gösterir. Approval Executive Director'a
+  ilerler; return General Manager action'a gider ve plan sign/release edemez.
+- Executive Director Dashboard, Planning, Final Reports, Notifications ve
+  Settings kullanır. Plan approval `Approve & Sign (Demo)` ile çalışır ve next
+  action `GM / Release to Department` kalır. Uygun Final Report'a mock approval
+  mark ekleyip issue/lock edebilen tek rol ED'dir.
+- Final Report review, template, preview, print ve browser-generated demo PDF,
+  selected report/audit/team/Finding state'ini kullanır. Enforcement seçenekleri
+  yalnız recommendation/referral'dır; sanction veya closure side effect yoktur.
+- CAP acceptance Finding closure değildir; report approval gerekli CAP,
+  Evidence veya verification işini bypass etmez.
+
+Doğrulama kanıtı (**verified locally**):
+
+- Her `js/*.js` dosyası için `node --check` geçti.
+- `node --test tests/*.test.js`: 34 test geçti, 0 hata.
+- Focused Service Provider, Finance, Executive Director, assignment, Inspector
+  submission, report identity/authority, PDF, responsive ve demo-boundary
+  testleri geçti.
+- `git diff --check` geçti.
+- In-app Browser QA `1536x864`, `1366x768`, `1024x768` ve `390x844`
+  boyutlarında geçti: console warning/error yok, ölçülen page-level horizontal
+  overflow yok, primary control clipping yok, mobile task order doğru, selected
+  ID'ler stabil ve state/navigation/modal/preview/download aksiyonları çalışıyor.
+- Cleanup kontrolünde leftover temporary HTTP server veya ayrıca başlatılmış
+  test Chrome process bulunmadı.
+
+Açıkça **not run** olan kanıtlar: backend/database integration; gerçek
+authentication/authorization; gerçek signature identity veya legal validity;
+immutable production audit log; gerçek file storage; notification delivery;
+production report service; gerçek enforcement execution; release, deployment,
+penetration, accessibility-certification veya stakeholder-acceptance testi.
+Open production signing/enforcement authority contract
+`docs/exec-plans/tech-debt-tracker.md` içinde izlenir.
 
 ---
 

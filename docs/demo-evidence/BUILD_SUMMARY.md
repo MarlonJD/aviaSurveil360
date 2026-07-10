@@ -534,9 +534,10 @@ filters/CSV export. CAP acceptance does not close a Finding. Department Manager
 Final Report approval only forwards the report and does not issue or lock it.
 
 Verified General Manager behavior includes the restricted Dashboard,
-Departments and cross-department Risk views, required-comment return, and the
-configured final authorization. Only successful General Manager authorization
-issues and locks the Final Report in this demo.
+Departments and cross-department Risk views, required-comment return, and an
+intermediate advance to Executive Director. The later remediation described
+below supersedes the former GM-final-authority behavior: GM cannot issue, sign,
+or lock a Final Report.
 
 Fresh verification evidence:
 
@@ -556,6 +557,66 @@ These are mock, browser-local controls and artifacts. No backend, database,
 API, real authentication/authorization enforcement, real file storage, real
 notification delivery, production reporting engine, e-signature, framework
 migration, or deployment was added.
+
+### Inspector, report, Service Provider, and governance remediation - 2026-07-10
+
+Evidence status: **demo-only** and **verified locally**. External production,
+release, real-identity, legal-signature, enforcement-execution, and deployment
+evidence: **not run**. **production-readiness not claimed**.
+
+Implemented and locally verified:
+
+- Lead Inspector can add active internal Inspectors, prevent duplicates, assign
+  separate Cabin questions to different team members, preserve those mappings
+  by Audit ID and Question ID, and release demo notifications to assignees.
+- Inspector execution resolves the selected Fly Namibia Cabin Inspection and
+  its six source-derived sections. First submission stores one timestamp,
+  remains in the Inspector role, opens the success/status modal, preserves a
+  read-only submitted checklist, and returns to My Assignments without a Lead
+  Inspector redirect.
+- Preliminary Reports open existing Report IDs into the same
+  `Inspection & Findings` workflow, with Findings Review visible and selected
+  identity stable through list, detail, and preview navigation.
+- Service Provider navigation is limited to Corrective Actions (CAP),
+  Preliminary Reports, Final Reports, Messages, Documents, and Settings.
+  List/detail/preview/download selectors remain Fly-Namibia-scoped; Internal
+  CAA Notes, enforcement deliberations, internal risk, workload, other
+  organizations, and unreleased reports do not render.
+- Finance lands on one Finance Review workspace with only Approve Budget and
+  Return for Revision. Approval advances to Executive Director; return goes to
+  General Manager action and cannot sign or release the plan.
+- Executive Director has Dashboard, Planning, Final Reports, Notifications,
+  and Settings. Plan approval uses `Approve & Sign (Demo)` and retains
+  `GM / Release to Department` as the next action. ED is the only role that may
+  apply the mock approval mark and issue/lock an eligible Final Report.
+- Final Report review, template, preview, print, and browser-generated demo PDF
+  resolve the selected report/audit/team/Finding state. Enforcement choices are
+  recommendation/referral-only and have no sanction or closure side effect.
+- CAP acceptance remains distinct from Finding closure; report approval does
+  not bypass required CAP, Evidence, or verification work.
+
+Verification evidence (**verified locally**):
+
+- `node --check` passed for every `js/*.js` file.
+- `node --test tests/*.test.js`: 34 tests passed, 0 failed.
+- Focused Service Provider, Finance, Executive Director, assignment,
+  Inspector submission, report identity/authority, PDF, responsive, and demo
+  boundary tests passed.
+- `git diff --check` passed.
+- In-app Browser QA passed at `1536x864`, `1366x768`, `1024x768`, and
+  `390x844`: no console warnings/errors, no measured page-level horizontal
+  overflow, no clipped primary controls, correct mobile task order, stable
+  selected IDs, and working state/navigation/modal/preview/download actions.
+- Browser/test cleanup found no leftover temporary HTTP server or separately
+  launched test Chrome process.
+
+Evidence explicitly **not run**: a backend or database integration; real
+authentication/authorization; real signature identity or legal validity;
+immutable production audit logging; real file storage; notification delivery;
+production report service; real enforcement execution; release, deployment,
+penetration, accessibility-certification, or stakeholder-acceptance testing.
+The open production signing/enforcement authority contract remains tracked in
+`docs/exec-plans/tech-debt-tracker.md`.
 
 ---
 

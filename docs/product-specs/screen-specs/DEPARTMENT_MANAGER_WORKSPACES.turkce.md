@@ -191,9 +191,13 @@ Final Report:
 1. Lead Inspector configured CAP/Evidence preparation stage sonrasında submit
    eder.
 2. Department Manager approve, request revision veya return kararı verir.
-3. Department Manager onayı Final Report'u Executive Director / GM stage'ine
-   yollar.
-4. Report ancak final authorized approval sonrasında issued ve locked olur.
+3. Department Manager onayı Final Report'u General Manager intermediate review
+   stage'ine yollar.
+4. General Manager report'u return edebilir veya Executive Director'a
+   ilerletebilir; issue, sign veya lock edemez.
+5. Yalnız uygun Executive Director approval mock approval mark ekleyebilir,
+   report'u issue edebilir ve lock edebilir. Department Manager veya GM onayı
+   tek başına bu aksiyonları uygulamaz.
 
 Request Revision ve Return Report için manager comment zorunludur. Kararlar
 visible status, current owner, approval history ve mock in-app notification
@@ -265,13 +269,25 @@ enforcement, certificate veya closure kararı üretmez.
 General Manager Dashboard Pending Final Reports, High Risk Findings, Reports
 Awaiting Your Approval ve Overdue CAP sayaçlarını; department overview; compact
 risk heat map/distribution ve Final Report approval queue gösterir. General
-Manager report'u açabilir, configured final authorized stage'de approve edebilir
-veya zorunlu comment ile return edebilir. Final Report yalnız başarılı final
-authorized approval sonrasında issued ve locked olur.
+Manager report'u açabilir, zorunlu comment ile return edebilir veya Executive
+Director'a ilerletebilir. GM intermediate reviewer'dır; Final Report'u issue,
+sign veya lock edemez.
 
 `Report Approvals` GM queue'yu, `Departments` department özetini, `Risk
 Dashboard` cross-department risk görünümünü açar. General Manager team-editing
 ve checklist-editing kontrollerini görmez.
+
+## Executive Director Final Yetkisi
+
+Final report kararının sahibi Executive Director'dır. Dedicated Final Reports
+workspace uygun report'u approve, return, reject veya configured enforcement
+review'a refer edebilir. Approval açıkça demo olarak etiketlenen mock signature
+kaydeder, selected report'u issue eder ve lock eder. Referral yalnız
+recommendation'dır; sanction uygulayamaz veya Audit, Finding, CAP ya da Evidence
+gereksinimini kapatamaz.
+
+Executive Director Planning approval da mock approval mark'tır. Audit'i
+doğrudan release etmez; next action `GM / Release to Department` olarak kalır.
 
 ## Interaction, Accessibility ve Responsive Kuralları
 
@@ -306,7 +322,10 @@ Implementation test-first yürütülür. Focused smoke testler şunları kanıtl
 - CAP Monitoring filter, ellipsis drawer, update ve history davranışı;
 - Checklist package, version, section ve question değişiklikleri;
 - Department Manager dashboard/risk aggregate ve card navigation davranışı;
-- General Manager department/risk projection ve final authorized approval;
+- General Manager department/risk projection, required-comment return ve
+  Executive Director'a intermediate advance;
+- Yalnız Executive Director'a ait Final Report issue/sign/lock yetkisi ve
+  non-automatic enforcement referral;
 - old saved-state için migration defaults;
 - CAP/Evidence lifecycle ve auditee privacy regresyonlarının korunması.
 
@@ -344,7 +363,9 @@ Department Manager ve General Manager rol demoları:
    yönetebilir;
 9. yalnız onaylı sidebar girişleriyle Department Manager Dashboard ve Risk
    Dashboard'u kullanabilir;
-10. General Manager deneyiminde department/risk özetini inceleyip Final Report
-    için final authorized karar verebilir;
-11. bu akışları desktop ve mobile boyutta console error veya layout overflow
+10. General Manager deneyiminde department/risk özetini inceleyip Final Report'u
+    issue/sign/lock etmeden return veya Executive Director'a advance edebilir;
+11. Executive Director'a geçip final report kararını verebilir ve selected
+    state-backed report'u demo-only approval mark ile preview edebilir;
+12. bu akışları desktop ve mobile boyutta console error veya layout overflow
     olmadan tamamlayabilir.

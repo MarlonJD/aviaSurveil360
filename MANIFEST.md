@@ -49,6 +49,8 @@ There is no `package.json`; do not assume `npm test`.
 - `tests/checklist-management-smoke.test.js`
 - `tests/demo-boundary-smoke.test.js`
 - `tests/department-manager-state-smoke.test.js`
+- `tests/executive-director-workspace-smoke.test.js`
+- `tests/finance-review-workspace-smoke.test.js`
 - `tests/governance-render-smoke.test.js`
 - `tests/harness-docs-smoke.test.js`
 - `tests/inspection-execution-smoke.test.js`
@@ -59,6 +61,7 @@ There is no `package.json`; do not assume `npm test`.
 - `tests/planning-render-smoke.test.js`
 - `tests/planning-workspace-smoke.test.js`
 - `tests/report-approval-smoke.test.js`
+- `tests/service-provider-portal-smoke.test.js`
 - `tests/table-first-workbench-smoke.test.js`
 
 ## Agent Harness

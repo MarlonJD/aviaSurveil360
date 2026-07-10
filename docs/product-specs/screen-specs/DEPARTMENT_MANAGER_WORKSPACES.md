@@ -279,9 +279,12 @@ Final Report:
    preparation stage.
 2. Department Manager approves, requests revision, or returns the report.
 3. Department Manager approval forwards the Final Report to the configured
-   Executive Director / GM approval stage.
-4. The report is issued and locked only after that final authorized approval;
-   Department Manager approval alone does not issue or lock it.
+   General Manager intermediate review stage.
+4. General Manager may return the report or advance it to Executive Director;
+   GM does not issue, sign, or lock it.
+5. Only an eligible Executive Director approval may add the mock approval mark,
+   issue the report, and lock it. Neither Department Manager nor GM approval
+   alone performs those actions.
 
 Request Revision and Return Report require a manager comment. Decisions update
 the visible status, approval history, current owner, and mock in-app
@@ -357,14 +360,26 @@ must not trigger automatic legal, enforcement, certificate, or closure action.
 The General Manager Dashboard provides Pending Final Reports, High Risk
 Findings, Reports Awaiting Your Approval, and Overdue CAP counters; a department
 overview; a compact risk heat map and distribution; and a Final Report approval
-queue. Each queue row can open the report, approve it at the configured final
-authorized stage, or return it with a required comment. Only a successful final
-authorized approval may issue and lock a Final Report.
+queue. Each queue row can open the report, return it with a required comment, or
+advance it to Executive Director. GM is an intermediate reviewer and cannot
+issue, sign, or lock a Final Report.
 
 `Report Approvals` opens the General Manager approval queue, `Departments`
 opens the department overview, and `Risk Dashboard` opens the cross-department
 management risk view. The General Manager does not receive the Department
 Manager's team-editing or checklist-editing controls.
+
+## Executive Director Final Authority
+
+Executive Director owns the final report decision. The dedicated Final Reports
+workspace may approve, return, reject, or refer an eligible report for
+configured enforcement review. Approval records a clearly labelled mock demo
+signature, issues the selected report, and locks it. A referral is a
+recommendation only and cannot execute a sanction or close an Audit, Finding,
+CAP, or Evidence requirement.
+
+Executive Director Planning approval is also a mock approval mark. It does not
+release an audit directly; the next action remains `GM / Release to Department`.
 
 ## Interaction And Error States
 
@@ -411,7 +426,10 @@ prove:
   and closure-boundary wording;
 - Checklist Management package, version, section, and question mutations;
 - Department Manager risk aggregates and navigation from dashboard cards;
-- General Manager department/risk projections and final authorized approval;
+- General Manager department/risk projections, required-comment return, and
+  intermediate advance to Executive Director;
+- Executive Director-only Final Report issue/sign/lock authority and
+  non-automatic enforcement referral;
 - saved-state migration defaults;
 - CAP/evidence lifecycle and auditee privacy regressions remain protected.
 
@@ -451,6 +469,8 @@ demos can:
 9. use the Department Manager Dashboard and Risk Dashboard with only the
    approved sidebar entries;
 10. switch to the General Manager experience, review department/risk summaries,
-    and decide a Final Report at the final authorized stage;
-11. complete these paths at desktop and mobile sizes without console errors or
+    and return or advance a Final Report without issuing/signing/locking it;
+11. switch to Executive Director, make the final report decision, and preview
+    the selected state-backed report with a demo-only approval mark;
+12. complete these paths at desktop and mobile sizes without console errors or
     layout overflow.

@@ -66,9 +66,12 @@ The same Fly Namibia demo data also supports the management-review path:
    automatic legal, enforcement, certificate, or closure action.
 9. General Manager uses only Dashboard, Report Approvals, Departments, Risk
    Dashboard, and Settings. The General Manager can return a Final Report with
-   a required comment or apply the configured final authorization.
-10. Only successful configured General Manager authorization issues and locks
-    the Final Report in this demo.
+   a required comment or advance it to Executive Director; GM cannot issue,
+   sign, or lock it.
+10. Executive Director reviews the selected Final Report and is the only role
+    that may apply the demo approval mark, issue it, and lock it.
+11. Executive Director report approval does not close `CAB-2026-001` while any
+    required CAP, Evidence, or verification work remains open.
 
 ## Demo message
 

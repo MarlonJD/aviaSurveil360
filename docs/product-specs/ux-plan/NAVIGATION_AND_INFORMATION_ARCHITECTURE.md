@@ -2,62 +2,84 @@
 
 ## Inspector IA
 
-Home should not be a general dashboard. It should be a workbench.
+Home is a workbench, not a general dashboard. It prioritizes today's assigned
+Cabin Inspections, checklists in progress, CAP and Evidence reviews, Due Soon,
+and Overdue work. An Inspector cannot enter Lead Inspector assignment routes.
 
-Top queues:
+## Lead Inspector IA
 
-- Today's Inspections
-- Checklists In Progress
-- CAPs Waiting Review
-- Evidence Waiting Review
-- Due Soon
-- Overdue
+Lead Inspector work is audit and report-package based. Assignment Questions
+supports multiple real team members and question-level ownership. Preliminary
+Reports open an existing Report ID directly into `Inspection & Findings`; the
+UI does not create an orphan report shell.
 
-## Auditee IA
+## Service Provider IA
 
-Auditee should see only its own organization and only the actions needed from it.
+Service Provider sees only its own organization and only actions or reports
+released to it. The exact operational navigation is:
 
-Top queues:
+- Corrective Actions (CAP)
+- Preliminary Reports
+- Final Reports
+- Messages
+- Documents
+- Settings
 
-- CAP Required
-- Evidence Required
-- More Information Requested
-- Due Soon
-- Overdue
-- Closed Findings
+The home route is Corrective Actions (CAP). List, detail, preview, message, and
+download selectors enforce organization scope. Internal CAA Notes, enforcement
+deliberations, internal risk, inspector workload, other organizations, and
+unreleased drafts are excluded.
 
-## Manager IA
+## Finance IA
 
-Manager dashboard should show exposure and delay.
+Finance has one operational workspace and lands directly on it:
 
-Top cards:
+- Finance Review
 
-- Oversight Health Index
-- Open Findings
-- Overdue Findings
-- Critical Findings
-- Plan Completion
-- Average Closure Time
+It contains one budget queue, one selected budget dossier, approval history,
+and two decisions: `Approve Budget` and `Return for Revision`. Finance cannot
+edit audit scope, sign or release a plan, issue a report, or bypass Executive
+Director approval. Approval advances to Executive Director; return goes to
+General Manager action.
 
-Needs Attention list:
+## Executive Director IA
 
-- Level 1 findings open
-- Overdue Level 2 findings
-- Repeated findings by organization
-- CAPs rejected multiple times
-- Audits not started as planned
+Executive Director has three decision modules and two utilities:
+
+- Dashboard
+- Planning
+- Final Reports
+- Notifications
+- Settings
+
+Dashboard puts pending plan and Final Report decisions in the first viewport,
+then shows derived department, risk, and overdue context. Planning provides one
+selected plan dossier with preview, `Approve & Sign (Demo)`, and Reject. ED
+plan approval records a mock approval mark but still requires explicit General
+Manager release to the Department.
+
+Final Reports provides a Final-Report-only queue, selected review dossier,
+state-backed preview, and Approve, Return, Reject, or Refer for Enforcement
+Review decisions. Only Executive Director approval can issue, mock-sign, and
+lock an eligible Final Report. Enforcement remains a configured
+recommendation/referral and never applies a sanction automatically.
+
+## Department Manager IA
+
+Department Manager sees exposure, team work, Findings, CAP delay, checklist
+governance, and reports awaiting the department decision. Department Manager
+approval forwards a Final Report; it does not issue, sign, or lock it.
+
+## General Manager IA
+
+General Manager uses Dashboard, Report Approvals, Departments, Risk Dashboard,
+and Settings. GM is an intermediate Final Report reviewer: GM may return a
+report or advance it to Executive Director, but cannot issue, sign, or lock it.
+After ED plan approval, GM performs the separate Release to Department step.
 
 ## Admin IA
 
-Admin should manage configuration but not daily work.
-
-Top areas:
-
-- Checklist Templates
-- Audit Types
-- Organization Types
-- Severity Rules
-- Due-Date Rules
-- Notification Templates
-- Roles & Permissions
-- Audit Log
+Admin manages configuration rather than daily operational decisions. Primary
+areas include Checklist Templates, Audit Types, Organization Types, Severity
+Rules, Due-Date Rules, Notification Templates, Roles & Permissions, and Audit
+Log. Demo configuration is not a production authorization service.

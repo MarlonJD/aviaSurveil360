@@ -66,9 +66,12 @@ Aynı Fly Namibia demo verisi management-review yolunu da destekler:
    enforcement, certificate veya closure aksiyonu tetiklemez.
 9. General Manager yalnızca Dashboard, Report Approvals, Departments, Risk
    Dashboard ve Settings rotalarını kullanır. General Manager gerekli yorumla
-   Final Report'u return edebilir veya configured final authorization uygular.
-10. Bu demoda Final Report'u yalnızca başarılı configured General Manager
-    authorization issue ve lock eder.
+   Final Report'u return edebilir veya Executive Director'a ilerletebilir; GM
+   issue, sign veya lock edemez.
+10. Executive Director selected Final Report'u inceler ve demo approval mark
+    uygulayabilen, report'u issue ve lock edebilen tek roldür.
+11. Executive Director report approval, gerekli CAP, Evidence veya verification
+    işi açıkken `CAB-2026-001` kaydını kapatmaz.
 
 ## Demo mesajı
 
