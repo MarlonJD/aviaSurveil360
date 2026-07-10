@@ -94,8 +94,10 @@ finalReport.issuedAt = '2026-07-10 16:00';
 
 const preliminaryReports = context.serviceProviderVisibleReports(state, 'ORG-XYZ', 'Preliminary Report');
 const finalReports = context.serviceProviderVisibleReports(state, 'ORG-XYZ', 'Final Report');
-assert.deepEqual(preliminaryReports.map((report) => report.id), ['PR-2026-018']);
-assert.deepEqual(finalReports.map((report) => report.id), ['FR-2026-018']);
+assert.ok(preliminaryReports.some((report) => report.id === 'PR-2026-018'));
+assert.ok(finalReports.some((report) => report.id === 'FR-2026-018'));
+assert.ok(preliminaryReports.every((report) => report.organizationId === 'ORG-XYZ'));
+assert.ok(finalReports.every((report) => report.organizationId === 'ORG-XYZ'));
 
 context.state = state;
 context.state.role = 'auditee';

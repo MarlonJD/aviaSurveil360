@@ -80,7 +80,7 @@ const notificationCount = state.notifications.length;
 let result = context.applyGeneralManagerReportDecision(state, finalReport.id, 'return', '', 'General Manager');
 assert.equal(result.ok, false);
 assert.match(result.message, /comment/i);
-assert.equal(finalReport.status, 'submitted_to_executive');
+assert.equal(finalReport.status, 'submitted_to_gm');
 
 result = context.applyGeneralManagerReportDecision(state, finalReport.id, 'approve', 'Reviewed and forwarded to the Executive Director.', 'General Manager');
 assert.equal(result.ok, true);

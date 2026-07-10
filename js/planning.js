@@ -12,6 +12,117 @@ var PLANNING_PREP_STATUS_META = {
   ready_for_execution: { label: 'Ready for Execution', tone: 'ok' }
 };
 
+function planningBudgetTotal(item) {
+  var lines = item && item.budget && Array.isArray(item.budget.lines) ? item.budget.lines : [];
+  return lines.reduce(function (total, line) { return total + Number(line.amount || 0); }, 0);
+}
+
+function validatePlanningBudget(item) {
+  if (!item || !item.budget) return { ok: false, message: 'Planning budget is required.' };
+  if (!Number.isFinite(Number(item.budget.requested))) return { ok: false, message: 'Requested budget must be numeric.' };
+  if (!item.budget.currency) return { ok: false, message: 'Budget currency is required.' };
+  if (!Array.isArray(item.budget.lines) || !item.budget.lines.length) return { ok: false, message: 'Budget breakdown is required.' };
+  var total = planningBudgetTotal(item);
+  if (total !== Number(item.budget.requested)) {
+    return { ok: false, message: 'Budget breakdown must equal the requested total.' };
+  }
+  return { ok: true, total: total };
+}
+
+function planningDecisionResult(ok, message, item) {
+  return { ok: ok, message: message, item: item || null };
+}
+
+function applyFinancePlanningDecision(item, input) {
+  input = input || {};
+  var budget = validatePlanningBudget(item);
+  if (!budget.ok) return planningDecisionResult(false, budget.message, item);
+  if (['approve', 'return'].indexOf(input.decision) === -1) {
+    return planningDecisionResult(false, 'Choose Approve Budget or Return for Revision.', item);
+  }
+  var actor = input.actor || { role: 'finance', name: 'Finance Review' };
+  var comment = String(input.comment || '').trim();
+  if (input.decision === 'return' && !comment) {
+    return planningDecisionResult(false, 'A reason or comment is required to return the budget for revision.', item);
+  }
+  try {
+    applyApprovalDecision(item, {
+      decision: input.decision === 'approve' ? 'approve' : 'finance_not_approved',
+      actor: actor,
+      comment: comment,
+      reason: comment
+    });
+  } catch (error) {
+    return planningDecisionResult(false, error.message, item);
+  }
+  return planningDecisionResult(
+    true,
+    input.decision === 'approve' ? 'Budget approved and advanced to Executive Director.' : 'Budget returned to General Manager action.',
+    item
+  );
+}
+
+function applyExecutivePlanningDecision(item, input) {
+  input = input || {};
+  if (['approve_and_sign', 'reject'].indexOf(input.decision) === -1) {
+    return planningDecisionResult(false, 'Choose Approve & Sign (Demo) or Reject.', item);
+  }
+  var actor = input.actor || { role: 'executiveDirector', name: 'Executive Director' };
+  var comment = String(input.comment || '').trim();
+  if (input.decision === 'reject' && !comment) {
+    return planningDecisionResult(false, 'A reason or comment is required to reject the plan.', item);
+  }
+  try {
+    applyApprovalDecision(item, {
+      decision: input.decision === 'approve_and_sign' ? 'approve' : 'reject',
+      actor: actor,
+      comment: comment,
+      reason: comment
+    });
+  } catch (error) {
+    return planningDecisionResult(false, error.message, item);
+  }
+  var at = typeof approvalDecisionDate === 'function' ? approvalDecisionDate() : DEMO_TODAY + ' 00:00';
+  if (input.decision === 'approve_and_sign') {
+    item.mockApprovalSignature = {
+      label: 'DEMO mock approval mark - not a real e-signature',
+      signer: actor.name,
+      date: at
+    };
+    item.executiveDecision = 'approved';
+    item.executiveDecisionAt = at;
+  } else {
+    item.mockApprovalSignature = null;
+    item.executiveDecision = 'rejected';
+    item.executiveDecisionAt = at;
+    item.releaseBlocked = true;
+  }
+  return planningDecisionResult(
+    true,
+    input.decision === 'approve_and_sign' ? 'Plan approved with a demo approval mark; GM Release to Department is next.' : 'Plan rejected; release and execution remain blocked.',
+    item
+  );
+}
+
+function planningWorkspaceNextAction(item) {
+  if (!item) return { label: 'No planning item selected', ownerRole: null };
+  if (item.approval && item.approval.outcome === 'rejected') return { label: 'Rejected - release blocked', ownerRole: null };
+  if (!item.approval || item.approval.outcome !== 'approved') {
+    var summary = typeof approvalSummary === 'function' ? approvalSummary(item) : { nextAction: 'Review and decide', ownerRole: null };
+    return { label: summary.nextAction, ownerRole: summary.ownerRole };
+  }
+  var status = item.preparation && item.preparation.status ? item.preparation.status : 'not_released';
+  var actions = {
+    not_released: { label: 'GM Release to Department', ownerRole: 'gm' },
+    released_to_department: { label: 'Department Manager accept released audit', ownerRole: 'manager' },
+    accepted_by_department: { label: 'Department Manager assign Lead Inspector', ownerRole: 'manager' },
+    lead_inspector_assigned: { label: 'Lead Inspector propose team, dates, and resources', ownerRole: 'leadInspector' },
+    team_schedule_proposed: { label: 'Department Manager confirm assignment package', ownerRole: 'manager' },
+    ready_for_execution: { label: 'Ready for execution', ownerRole: null }
+  };
+  return actions[status] || { label: 'Review planning preparation', ownerRole: null };
+}
+
 function planningPrepMeta(status) {
   return PLANNING_PREP_STATUS_META[status] || { label: humanStatus(status), tone: statusTone(status) };
 }

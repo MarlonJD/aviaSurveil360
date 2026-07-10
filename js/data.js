@@ -9,7 +9,7 @@ var CANONICAL_SERVICE_PROVIDER_NAME = 'Fly Namibia';
 
 /* Demo persistence boundary. Views must not call localStorage directly. */
 var DEMO_STORAGE_KEY = 'aviasurveil360:v2-demo-state';
-var DEMO_STATE_VERSION = 5;
+var DEMO_STATE_VERSION = 6;
 var DEMO_PERSISTENCE_CONFIG = {
   storageKey: DEMO_STORAGE_KEY,
   label: 'Frontend-only demo - saved in this browser',
@@ -23,8 +23,10 @@ var DEMO_PERSISTENCE_CONFIG = {
     'mock checklist approvals',
     'mock potential findings',
     'inspector assignment filters',
-    'lead inspector review decisions, assignment drafts and report workflow state',
-    'service provider final report CAP actions',
+    'audit-scoped lead inspector assignments and inspection submissions',
+    'report-specific drafts and role-scoped report decisions',
+    'service provider CAP and report workspace state',
+    'Finance Review and Executive Director demo decisions',
     'AI accept/edit/reject decisions',
     'selected filters',
     'simulated offline outbox items'
@@ -509,7 +511,8 @@ var SEED_AUDIT_REPORTS = [
         { role: 'manager', label: 'Department Manager Review', returnToRole: null },
         { role: 'leadInspector', label: 'Lead Inspector Finalization', returnToRole: null },
         { role: 'manager', label: 'Department Manager Final Approval', returnToRole: null },
-        { role: 'executiveDirector', label: 'Executive Director / GM Approval', returnToRole: null }
+        { role: 'gm', label: 'General Manager Review', returnToRole: 'manager' },
+        { role: 'executiveDirector', label: 'Executive Director Final Approval', returnToRole: 'gm' }
       ],
       currentIndex: 0,
       outcome: null,
@@ -561,7 +564,8 @@ var SEED_AUDIT_REPORTS = [
         { role: 'manager', label: 'Department Manager Review', returnToRole: null },
         { role: 'leadInspector', label: 'Lead Inspector Finalization', returnToRole: null },
         { role: 'manager', label: 'Department Manager Final Approval', returnToRole: null },
-        { role: 'executiveDirector', label: 'Executive Director / GM Approval', returnToRole: null }
+        { role: 'gm', label: 'General Manager Review', returnToRole: 'manager' },
+        { role: 'executiveDirector', label: 'Executive Director Final Approval', returnToRole: 'gm' }
       ],
       currentIndex: 0,
       outcome: null,
@@ -947,6 +951,20 @@ var SEED_PLANNING_ITEMS = [
     triggerType: 'Risk based / repeat finding',
     budgetRequired: true,
     requestedBudget: 'USD 12,500',
+    budget: {
+      currency: 'USD',
+      requested: 12500,
+      availableForPlan: 21000,
+      remainingAnnualBudget: 420000,
+      lines: [
+        { category: 'Travel', amount: 5000 },
+        { category: 'Accommodation', amount: 3000 },
+        { category: 'Daily Allowance', amount: 1500 },
+        { category: 'Vehicle', amount: 1000 },
+        { category: 'Equipment / Tools', amount: 1500 },
+        { category: 'Miscellaneous', amount: 500 }
+      ]
+    },
     targetMonth: '2026-09',
     proposedInspectors: ['Caner Yildiz', 'Aylin Sezer'],
     status: 'submitted_to_gm',
@@ -1040,20 +1058,41 @@ var SEED_INSPECTION_TEAMS = [
 
 var SEED_MANAGER_REPORTS = [
   {
-    id: 'PR-2026-018', auditId: 'AUD-2026-001', organization: CANONICAL_SERVICE_PROVIDER_NAME,
+    id: 'PR-2026-018', approvalPackageId: 'RPT-AUD-2026-001', auditId: 'AUD-2026-001', organizationId: 'ORG-XYZ', organization: CANONICAL_SERVICE_PROVIDER_NAME,
     reportType: 'Preliminary Report', version: '1.0', leadInspector: 'Caner Yildiz',
     submittedAt: '2026-07-09 10:30', status: 'pending_manager', ownerRole: 'manager',
+    sharedAt: '', sharedBy: '', responseDueDate: '2026-07-20',
     capRequired: true, managerComment: '', attachments: ['Cabin_Checklist_Response_Summary.pdf'],
     summary: 'Preliminary Cabin Inspection report for authorized review.',
     history: [{ at: '2026-07-09 10:30', actor: 'Caner Yildiz', action: 'Submitted to Department Manager' }]
   },
   {
-    id: 'FR-2026-018', auditId: 'AUD-2026-001', organization: CANONICAL_SERVICE_PROVIDER_NAME,
+    id: 'FR-2026-018', approvalPackageId: 'RPT-AUD-2026-001', auditId: 'AUD-2026-001', organizationId: 'ORG-XYZ', organization: CANONICAL_SERVICE_PROVIDER_NAME,
     reportType: 'Final Report', version: '2.0', leadInspector: 'Caner Yildiz',
     submittedAt: '2026-07-10 14:20', status: 'pending_manager', ownerRole: 'manager',
+    dueDate: '2026-07-17', releasedAt: '', issuedAt: '', issued: false, locked: false,
+    finalAuthorizedBy: '', finalAuthorizedAt: '', mockApprovalSignature: null, enforcementReferral: null,
     capRequired: true, managerComment: '', attachments: ['CAP_Evidence_Summary.pdf'],
     summary: 'Final Cabin Inspection report prepared after the configured CAP/evidence stage.',
     history: [{ at: '2026-07-10 14:20', actor: 'Caner Yildiz', action: 'Final Report submitted to Department Manager' }]
+  },
+  {
+    id: 'PR-2025-009', approvalPackageId: '', auditId: 'AUD-2026-004', organizationId: 'ORG-XYZ', organization: CANONICAL_SERVICE_PROVIDER_NAME,
+    reportType: 'Preliminary Report', version: '1.0', leadInspector: 'Caner Yildiz', submittedAt: '2025-11-12 09:15',
+    status: 'closed', ownerRole: null, sharedAt: '2025-11-14 11:00', sharedBy: 'Mehmet Kaya', responseDueDate: '2025-11-28',
+    capRequired: true, managerComment: '', attachments: ['Cabin_Preliminary_Report_2025.pdf'],
+    summary: 'Historical read-only Cabin Inspection Preliminary Report.',
+    history: [{ at: '2025-11-14 11:00', actor: 'Mehmet Kaya', action: 'Released to Service Provider' }]
+  },
+  {
+    id: 'FR-2025-009', approvalPackageId: '', auditId: 'AUD-2026-004', organizationId: 'ORG-XYZ', organization: CANONICAL_SERVICE_PROVIDER_NAME,
+    reportType: 'Final Report', version: '1.0', leadInspector: 'Caner Yildiz', submittedAt: '2025-12-04 10:40',
+    status: 'issued', ownerRole: 'auditee', dueDate: 'Not configured', releasedAt: '2025-12-05 14:30', issuedAt: '2025-12-05 14:30',
+    issued: true, locked: true, finalAuthorizedBy: 'Ufuk Aslan', finalAuthorizedAt: '2025-12-05 14:30',
+    mockApprovalSignature: { label: 'DEMO mock approval mark - not a real e-signature', signer: 'Ufuk Aslan', date: '2025-12-05 14:30' },
+    enforcementReferral: null, capRequired: true, managerComment: '', attachments: ['Cabin_Final_Report_2025.pdf'],
+    summary: 'Historical issued Cabin Inspection Final Report.',
+    history: [{ at: '2025-12-05 14:30', actor: 'Ufuk Aslan', action: 'Final Report issued with demo approval mark' }]
   }
 ];
 
@@ -1062,6 +1101,138 @@ var SEED_MANAGER_REPORTS = [
 var state = null;
 
 function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
+
+function activeInspectorUserIdForLegacyValue(target, value) {
+  var raw = String(value || '').trim();
+  var aliases = {
+    'Ahmed Ali': 'USR-AYLIN',
+    'Maria Silva': 'USR-MEHMET',
+    'David Kim': 'USR-SELIN',
+    'Fatima Omar': 'USR-AYLIN'
+  };
+  if (aliases[raw]) return aliases[raw];
+  var users = target && Array.isArray(target.users) ? target.users : SEED_USERS;
+  var match = users.filter(function (user) {
+    return user && user.roleKey === 'inspector' && user.status === 'Active' && (user.id === raw || user.name === raw);
+  })[0];
+  return match ? match.id : 'USR-AYLIN';
+}
+
+function ensureReportApprovalAuthorityChain(report) {
+  if (!report || !report.approval || !Array.isArray(report.approval.chain)) return report;
+  var chain = report.approval.chain;
+  var gmIndex = chain.findIndex(function (stage) { return stage.role === 'gm'; });
+  var edIndex = chain.findIndex(function (stage) { return stage.role === 'executiveDirector'; });
+  if (gmIndex === -1 && edIndex !== -1) {
+    chain.splice(edIndex, 0, { role: 'gm', label: 'General Manager Review', returnToRole: 'manager' });
+    if (report.approval.currentIndex >= edIndex) report.approval.currentIndex += 1;
+    edIndex += 1;
+  }
+  if (edIndex !== -1) {
+    chain[edIndex].label = 'Executive Director Final Approval';
+    chain[edIndex].returnToRole = 'gm';
+  }
+  return report;
+}
+
+function mergeRemediationState(base, saved) {
+  var source = saved || {};
+  var leadDefaults = freshState().leadAssignmentsByAudit;
+  base.leadAssignmentsByAudit = Object.assign({}, deepClone(leadDefaults), source.leadAssignmentsByAudit || {});
+  Object.keys(base.leadAssignmentsByAudit).forEach(function (auditId) {
+    var defaults = deepClone(leadDefaults[auditId] || leadDefaults['AUD-2026-001']);
+    var record = Object.assign(defaults, base.leadAssignmentsByAudit[auditId] || {});
+    record.selectedQuestionIds = Object.assign({}, defaults.selectedQuestionIds, record.selectedQuestionIds || {});
+    record.assignmentsByQuestionId = Object.assign({}, record.assignmentsByQuestionId || {});
+    base.leadAssignmentsByAudit[auditId] = record;
+  });
+  if (!source.leadAssignmentsByAudit && source.leadAssignmentUi) {
+    var legacyLead = source.leadAssignmentUi;
+    var migratedLead = base.leadAssignmentsByAudit['AUD-2026-001'];
+    migratedLead.activeInspectorUserId = activeInspectorUserIdForLegacyValue(base, legacyLead.assignee);
+    migratedLead.selectedQuestionIds = Object.assign({}, legacyLead.selectedQuestions || migratedLead.selectedQuestionIds);
+    migratedLead.dueDate = legacyLead.dueDate || migratedLead.dueDate;
+    migratedLead.priority = legacyLead.priority || migratedLead.priority;
+    migratedLead.instructions = legacyLead.note || migratedLead.instructions;
+    migratedLead.department = legacyLead.department || migratedLead.department;
+    migratedLead.section = legacyLead.section || migratedLead.section;
+    migratedLead.risk = legacyLead.risk || migratedLead.risk;
+    migratedLead.status = legacyLead.status || migratedLead.status;
+    migratedLead.query = legacyLead.query || migratedLead.query;
+    migratedLead.assignedAt = legacyLead.assignedAt || migratedLead.assignedAt;
+    migratedLead.draftSavedAt = legacyLead.draftSavedAt || migratedLead.draftSavedAt;
+    migratedLead.releasedAt = legacyLead.releasedAt || migratedLead.releasedAt;
+    migratedLead.downloadedAt = legacyLead.downloadedAt || migratedLead.downloadedAt;
+    if (legacyLead.assignedAt && !Object.keys(migratedLead.assignmentsByQuestionId).length) {
+      Object.keys(migratedLead.selectedQuestionIds).filter(function (questionId) {
+        return migratedLead.selectedQuestionIds[questionId];
+      }).forEach(function (questionId) {
+        migratedLead.assignmentsByQuestionId[questionId] = {
+          inspectorUserId: migratedLead.activeInspectorUserId,
+          dueDate: migratedLead.dueDate,
+          priority: migratedLead.priority,
+          instructions: migratedLead.instructions,
+          assignedAt: legacyLead.assignedAt
+        };
+      });
+    }
+  }
+
+  var workspaceDefaults = freshState().inspectionWorkspaces;
+  base.inspectionWorkspaces = Object.assign({}, deepClone(workspaceDefaults), source.inspectionWorkspaces || {});
+  Object.keys(base.inspectionWorkspaces).forEach(function (auditId) {
+    var defaults = deepClone(workspaceDefaults[auditId] || workspaceDefaults['AUD-2026-001']);
+    var record = Object.assign(defaults, base.inspectionWorkspaces[auditId] || {});
+    record.answersByQuestionId = Object.assign({}, record.answersByQuestionId || {});
+    record.downloadedAttachmentIds = Object.assign({}, record.downloadedAttachmentIds || {});
+    base.inspectionWorkspaces[auditId] = record;
+  });
+  if (!source.inspectionWorkspaces && (source.inspectionWorkspaceAnswers || source.inspectionWorkspaceSubmittedAt)) {
+    var legacyAuditId = source.params && source.params.auditId ? source.params.auditId : 'AUD-2026-005';
+    if (!base.inspectionWorkspaces[legacyAuditId]) base.inspectionWorkspaces[legacyAuditId] = deepClone(workspaceDefaults['AUD-2026-001']);
+    var migratedWorkspace = base.inspectionWorkspaces[legacyAuditId];
+    migratedWorkspace.answersByQuestionId = Object.assign({}, source.inspectionWorkspaceAnswers || {});
+    migratedWorkspace.selectedSectionKey = source.inspectionWorkspaceSection || migratedWorkspace.selectedSectionKey;
+    migratedWorkspace.downloadedAt = source.inspectionWorkspaceDownloadedAt || '';
+    migratedWorkspace.downloadedAttachmentIds = Object.assign({}, source.inspectionWorkspaceDownloadedAttachments || {});
+    migratedWorkspace.draftSavedAt = source.inspectionWorkspaceDraftSavedAt || '';
+    migratedWorkspace.submittedAt = source.inspectionWorkspaceSubmittedAt || '';
+    migratedWorkspace.allSectionsCompletedAt = source.inspectionWorkspaceAllSectionsCompletedAt || '';
+  }
+
+  var draftDefaults = freshState().preliminaryReportDrafts;
+  base.preliminaryReportDrafts = Object.assign({}, deepClone(draftDefaults), source.preliminaryReportDrafts || {});
+  if (!source.preliminaryReportDrafts && source.leadPreliminaryReportsUi) {
+    var legacyReportUi = source.leadPreliminaryReportsUi;
+    var reportId = legacyReportUi.selectedReportId || 'PR-2026-018';
+    var migratedDraft = Object.assign(deepClone(draftDefaults['PR-2026-018']), base.preliminaryReportDrafts[reportId] || {});
+    migratedDraft.step = legacyReportUi.step || migratedDraft.step;
+    migratedDraft.content = legacyReportUi.reportContent || migratedDraft.content;
+    migratedDraft.includedFindingIds = Object.assign({}, legacyReportUi.includedFindings || {});
+    migratedDraft.findingLevel = legacyReportUi.findingLevel || migratedDraft.findingLevel;
+    migratedDraft.findingQuery = legacyReportUi.findingQuery || migratedDraft.findingQuery;
+    migratedDraft.mockAttachmentNames = legacyReportUi.mockUploadName ? [legacyReportUi.mockUploadName] : migratedDraft.mockAttachmentNames;
+    migratedDraft.declarations = Object.assign({}, migratedDraft.declarations, legacyReportUi.declarations || {});
+    migratedDraft.draftSavedAt = legacyReportUi.draftSavedAt || migratedDraft.draftSavedAt;
+    migratedDraft.submittedAt = legacyReportUi.submittedAt || migratedDraft.submittedAt;
+    base.preliminaryReportDrafts[reportId] = migratedDraft;
+  }
+
+  var fresh = freshState();
+  base.serviceProviderUi = Object.assign({}, deepClone(fresh.serviceProviderUi), source.serviceProviderUi || {});
+  ['cap', 'preliminaryReports', 'finalReports', 'reportPreview'].forEach(function (key) {
+    base.serviceProviderUi[key] = Object.assign({}, deepClone(fresh.serviceProviderUi[key]), (source.serviceProviderUi && source.serviceProviderUi[key]) || {});
+  });
+  base.financeUi = Object.assign({}, deepClone(fresh.financeUi), source.financeUi || {});
+  base.executiveDirectorUi = Object.assign({}, deepClone(fresh.executiveDirectorUi), source.executiveDirectorUi || {});
+  if (!base.planningItems.some(function (item) { return item.id === base.financeUi.selectedPlanId; })) base.financeUi.selectedPlanId = base.planningItems[0] ? base.planningItems[0].id : '';
+  if (!base.planningItems.some(function (item) { return item.id === base.executiveDirectorUi.selectedPlanId; })) base.executiveDirectorUi.selectedPlanId = base.planningItems[0] ? base.planningItems[0].id : '';
+  if (!base.managerReports.some(function (report) { return report.id === base.executiveDirectorUi.selectedReportId && report.reportType === 'Final Report'; })) {
+    var firstFinal = base.managerReports.filter(function (report) { return report.reportType === 'Final Report'; })[0];
+    base.executiveDirectorUi.selectedReportId = firstFinal ? firstFinal.id : '';
+  }
+  return base;
+}
 
 function freshState() {
   return {
@@ -1097,6 +1268,74 @@ function freshState() {
     managerFindingsUi: { query: '', status: 'all', dateRange: 'all', selectedAuditId: 'AUD-2026-001', tab: 'overview' },
     inspectionTeamUi: { query: '', department: 'all', status: 'all', dateRange: 'all', selectedAuditId: 'AUD-2026-001', tab: 'overview', openMenuAuditId: '' },
     managerReportsUi: { query: '', reportType: 'all', status: 'all', selectedReportId: 'PR-2026-018', tab: 'summary', validationMessage: '' },
+    leadAssignmentsByAudit: {
+      'AUD-2026-001': {
+        activeInspectorUserId: 'USR-AYLIN',
+        selectedQuestionIds: { 'CAB-Q001': true, 'CAB-Q002': true, 'CAB-Q003': true, 'CAB-Q004': true },
+        assignmentsByQuestionId: {},
+        dueDate: '2026-06-15',
+        priority: 'Normal',
+        instructions: '',
+        department: 'Cabin Safety',
+        section: 'emergency-equipment',
+        risk: 'all',
+        status: 'all',
+        query: '',
+        assignedAt: '',
+        draftSavedAt: '',
+        releasedAt: '',
+        downloadedAt: ''
+      }
+    },
+    inspectionWorkspaces: {
+      'AUD-2026-001': {
+        selectedSectionKey: 'em-eq',
+        answersByQuestionId: {},
+        downloadedAt: '',
+        downloadedAttachmentIds: {},
+        draftSavedAt: '',
+        allSectionsCompletedAt: '',
+        submittedAt: '',
+        submittedByUserId: ''
+      },
+      'AUD-2026-005': {
+        selectedSectionKey: '8.',
+        answersByQuestionId: {},
+        downloadedAt: '',
+        downloadedAttachmentIds: {},
+        draftSavedAt: '',
+        allSectionsCompletedAt: '',
+        submittedAt: '',
+        submittedByUserId: ''
+      }
+    },
+    preliminaryReportDrafts: {
+      'PR-2026-018': {
+        step: 'inspection',
+        content: '',
+        includedFindingIds: {},
+        findingLevel: 'all',
+        findingQuery: '',
+        mockAttachmentNames: [],
+        declarations: { accurate: true, evidenceBased: true, readyForReview: true },
+        draftSavedAt: '',
+        submittedAt: ''
+      }
+    },
+    serviceProviderUi: {
+      cap: { group: 'all', auditId: 'all', level: 'all', status: 'all', query: '', selectedFindingId: 'CAB-2026-001' },
+      preliminaryReports: { auditId: 'all', status: 'all', query: '', selectedReportId: 'PR-2026-018' },
+      finalReports: { auditId: 'all', year: 'all', capRequirement: 'all', query: '', selectedReportId: 'FR-2026-018' },
+      reportPreview: { reportId: '', zoom: 100, downloadedAt: '' }
+    },
+    financeUi: { query: '', status: 'pending', selectedPlanId: 'PLAN-2026-Q3-CABIN', decision: '', comment: '', openActionPlanId: '' },
+    executiveDirectorUi: {
+      dashboardRange: 'current',
+      planningQuery: '', planningDepartment: 'all', planningRisk: 'all', planningDate: 'all', planningStatus: 'all',
+      selectedPlanId: 'PLAN-2026-Q3-CABIN', openPlanActionId: '', planDecision: '', planComment: '', planTab: 'overview',
+      reportQuery: '', reportOrganization: 'all', reportType: 'Final Report', reportStatus: 'all',
+      selectedReportId: 'FR-2026-018', reportTab: 'summary', reportDecision: '', enforcementCategory: '', reportComment: '', previewZoom: 100
+    },
     managerCapUi: { status: 'all', department: 'all', inspection: 'all', due: 'all', selectedCapId: '', drawerOpen: false, tab: 'overview', validationMessage: '' },
     managerChecklistUi: { status: 'Active', selectedPackageId: 'CL-CABIN', selectedSectionId: 'CL-CABIN-SEC-EMERGENCY', selectedQuestionId: 'cab-em-eq-pbe', panel: 'question', validationMessage: '' },
     offline: { simulated: false, lastMessage: null },
@@ -1348,6 +1587,18 @@ function mergeDemoState(saved) {
   if (!Array.isArray(base.users)) base.users = deepClone(SEED_USERS);
   if (!Array.isArray(base.inspectionTeams)) base.inspectionTeams = deepClone(SEED_INSPECTION_TEAMS);
   if (!Array.isArray(base.managerReports)) base.managerReports = deepClone(SEED_MANAGER_REPORTS);
+  SEED_MANAGER_REPORTS.forEach(function (seedReport) {
+    var existingReport = base.managerReports.filter(function (report) { return report.id === seedReport.id; })[0];
+    if (!existingReport) {
+      base.managerReports.push(deepClone(seedReport));
+      return;
+    }
+    var existingHistory = Array.isArray(existingReport.history) ? existingReport.history : [];
+    var existingAttachments = Array.isArray(existingReport.attachments) ? existingReport.attachments : [];
+    Object.assign(existingReport, Object.assign({}, deepClone(seedReport), existingReport));
+    existingReport.history = existingHistory.length ? existingHistory : deepClone(seedReport.history || []);
+    existingReport.attachments = existingAttachments.length ? existingAttachments : deepClone(seedReport.attachments || []);
+  });
   if (!Array.isArray(base.findings)) base.findings = deepClone(SEED_FINDINGS);
   SEED_MANAGER_FINDINGS.forEach(function (seedFinding) {
     var existing = base.findings.filter(function (finding) { return finding.id === seedFinding.id; })[0] || null;
@@ -1374,17 +1625,24 @@ function mergeDemoState(saved) {
   base.managerChecklistUi = Object.assign({}, managerChecklistUiDefault, saved.managerChecklistUi || {});
   if (!Array.isArray(base.potentialFindings)) base.potentialFindings = deepClone(SEED_POTENTIAL_FINDINGS);
   if (!Array.isArray(base.auditReports)) base.auditReports = deepClone(SEED_AUDIT_REPORTS);
+  SEED_AUDIT_REPORTS.forEach(function (seedReport) {
+    var existingReport = base.auditReports.filter(function (report) { return report.id === seedReport.id; })[0];
+    if (!existingReport) base.auditReports.push(deepClone(seedReport));
+  });
+  base.auditReports.forEach(ensureReportApprovalAuthorityChain);
   if (!Array.isArray(base.leadAuditReviews) || base.leadAuditReviews.length === 0) base.leadAuditReviews = deepClone(SEED_LEAD_AUDIT_REVIEWS);
   if (!Array.isArray(base.aiSuggestions)) base.aiSuggestions = deepClone(SEED_AI_SUGGESTIONS);
   if (!Array.isArray(base.regulatoryDocuments)) base.regulatoryDocuments = deepClone(SEED_REGULATORY_DOCUMENTS);
   if (!Array.isArray(base.regulatoryTraces)) base.regulatoryTraces = deepClone(SEED_REGULATORY_TRACES);
   if (!Array.isArray(base.planningItems)) base.planningItems = deepClone(SEED_PLANNING_ITEMS);
   base.planningItems.forEach(function (item) {
+    var seed = SEED_PLANNING_ITEMS.filter(function (candidate) { return candidate.id === item.id; })[0] || SEED_PLANNING_ITEMS[0];
     if (!item.preparation) {
-      var seed = SEED_PLANNING_ITEMS.filter(function (s) { return s.id === item.id; })[0] || SEED_PLANNING_ITEMS[0];
       item.preparation = deepClone(seed.preparation);
     }
     if (!Array.isArray(item.preparation.history)) item.preparation.history = [];
+    item.budget = Object.assign({}, deepClone(seed.budget), item.budget || {});
+    if (!Array.isArray(item.budget.lines)) item.budget.lines = deepClone(seed.budget.lines);
   });
   if (!Array.isArray(base.managedChecklists)) base.managedChecklists = deepClone(SEED_MANAGED_CHECKLISTS);
   SEED_MANAGED_CHECKLISTS.forEach(function (seedPackage) {
@@ -1635,6 +1893,7 @@ function mergeDemoState(saved) {
   if (!base.serviceProviderReportUi.tab) base.serviceProviderReportUi.tab = 'cap';
   if (!base.serviceProviderReportUi.submittedCaps || typeof base.serviceProviderReportUi.submittedCaps !== 'object') base.serviceProviderReportUi.submittedCaps = {};
   if (!base.serviceProviderReportUi.downloadedAt) base.serviceProviderReportUi.downloadedAt = '';
+  mergeRemediationState(base, saved);
   if (!base.questionSeq) base.questionSeq = 7;
   if (!base.potentialSeq) base.potentialSeq = 1;
   if (!base.questionTraces) base.questionTraces = deepClone(SEED_QUESTION_TRACES);

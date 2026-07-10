@@ -125,9 +125,9 @@ var MANAGER_REPORT_TRANSITIONS = {
   },
   'Final Report': {
     approve: {
-      status: 'submitted_to_executive',
-      ownerRole: 'executiveDirector',
-      action: 'Department Manager approved and forwarded for final authorized approval'
+      status: 'submitted_to_gm',
+      ownerRole: 'gm',
+      action: 'Department Manager approved and forwarded to General Manager'
     }
   }
 };
@@ -633,7 +633,7 @@ function generalManagerProjection(target) {
   var reports = Array.isArray(s.managerReports) ? s.managerReports : [];
   var audits = Array.isArray(s.audits) ? s.audits : [];
   var approvalRows = reports.filter(function (report) {
-    return report.reportType === 'Final Report' && report.status === 'submitted_to_executive' && report.locked !== true;
+    return report.reportType === 'Final Report' && report.status === 'submitted_to_gm' && report.locked !== true;
   }).map(function (report) {
     var audit = audits.filter(function (candidate) { return candidate.id === report.auditId; })[0] || null;
     return {
@@ -692,9 +692,9 @@ function applyGeneralManagerReportDecision(target, reportId, decision, comment, 
   var s = target || state;
   var report = managerReportById(s, reportId);
   if (!report) return generalManagerDecisionResult(false, 'Final Report artifact not found.', null);
-  if (report.reportType !== 'Final Report') return generalManagerDecisionResult(false, 'Only a Final Report can receive final authorized approval.', report);
-  if (report.status !== 'submitted_to_executive' || report.locked === true) {
-    return generalManagerDecisionResult(false, 'This Final Report is not at the unlocked final authorized approval stage.', report);
+  if (report.reportType !== 'Final Report') return generalManagerDecisionResult(false, 'Only a Final Report can receive General Manager review.', report);
+  if (report.status !== 'submitted_to_gm' || report.ownerRole !== 'gm' || report.locked === true) {
+    return generalManagerDecisionResult(false, 'This Final Report is not at the unlocked General Manager review stage.', report);
   }
   if (['approve', 'return'].indexOf(decision) === -1) return generalManagerDecisionResult(false, 'Choose approve or return.', report);
   var cleanComment = String(comment || '').trim();
@@ -704,15 +704,17 @@ function applyGeneralManagerReportDecision(target, reportId, decision, comment, 
   var at = managerReportDecisionTimestamp();
   if (!Array.isArray(report.history)) report.history = [];
   if (decision === 'approve') {
-    report.status = 'issued';
-    report.ownerRole = 'auditee';
-    report.locked = true;
-    report.finalAuthorizedBy = actorName;
-    report.finalAuthorizedAt = at;
-    report.issuedAt = at;
+    report.status = 'submitted_to_executive';
+    report.ownerRole = 'executiveDirector';
+    report.locked = false;
+    report.issued = false;
+    delete report.finalAuthorizedBy;
+    delete report.finalAuthorizedAt;
+    delete report.mockApprovalSignature;
+    report.issuedAt = '';
     report.generalManagerDecision = 'approve';
     report.generalManagerComment = cleanComment;
-    report.history.push({ at: at, actor: actorName, action: 'Final Report received final authorized approval and was issued', comment: cleanComment });
+    report.history.push({ at: at, actor: actorName, action: 'General Manager reviewed and forwarded Final Report to Executive Director', comment: cleanComment });
   } else {
     report.status = 'pending_manager';
     report.ownerRole = 'manager';
@@ -726,20 +728,121 @@ function applyGeneralManagerReportDecision(target, reportId, decision, comment, 
   if (!Array.isArray(s.auditLog)) s.auditLog = [];
   var logId = 'L' + (Number(s.logSeq) || (s.auditLog.length + 1));
   if (Number.isFinite(Number(s.logSeq))) s.logSeq += 1;
-  s.auditLog.unshift({ id: logId, time: at, actor: actorName + ' (General Manager)', action: decision === 'approve' ? 'Final Report issued after final authorized approval' : 'Final Report returned to Department Manager', target: report.id, system: false });
+  s.auditLog.unshift({ id: logId, time: at, actor: actorName + ' (General Manager)', action: decision === 'approve' ? 'Final Report forwarded to Executive Director' : 'Final Report returned to Department Manager', target: report.id, system: false });
 
   if (!Array.isArray(s.notifications)) s.notifications = [];
   var notificationId = 'N' + (Number(s.notifSeq) || (s.notifications.length + 1));
   if (Number.isFinite(Number(s.notifSeq))) s.notifSeq += 1;
   s.notifications.unshift({
     id: notificationId,
-    role: decision === 'approve' ? 'auditee' : 'manager',
-    icon: decision === 'approve' ? 'RPT' : 'REV',
-    text: decision === 'approve' ? report.id + ' was issued after final authorized approval.' : report.id + ' was returned with a General Manager comment.',
+    role: decision === 'approve' ? 'executiveDirector' : 'manager',
+    icon: decision === 'approve' ? 'APR' : 'REV',
+    text: decision === 'approve' ? report.id + ' is ready for Executive Director final approval.' : report.id + ' was returned with a General Manager comment.',
     time: 'Just now',
     unread: true
   });
-  return generalManagerDecisionResult(true, decision === 'approve' ? 'Final Report issued after final authorized approval.' : 'Final Report returned to Department Manager.', report);
+  return generalManagerDecisionResult(true, decision === 'approve' ? 'Final Report forwarded to Executive Director.' : 'Final Report returned to Department Manager.', report);
+}
+
+function executiveFinalReportProjection(target, filters) {
+  var s = target || state;
+  var opts = filters || {};
+  var query = String(opts.query || '').trim().toLowerCase();
+  var organization = opts.organization || 'all';
+  var status = opts.status || 'all';
+  var reports = Array.isArray(s.managerReports) ? s.managerReports : [];
+  var eligibleStatuses = ['submitted_to_executive', 'issued', 'returned_to_manager', 'rejected', 'enforcement_review_referred'];
+  var rows = reports.filter(function (report) {
+    if (report.reportType !== 'Final Report' || eligibleStatuses.indexOf(report.status) === -1) return false;
+    if (organization !== 'all' && report.organizationId !== organization && report.organization !== organization) return false;
+    if (status !== 'all') {
+      if (status === 'pending' && report.status !== 'submitted_to_executive') return false;
+      if (status === 'approved' && report.status !== 'issued') return false;
+      if (status === 'returned' && ['returned_to_manager', 'rejected'].indexOf(report.status) === -1) return false;
+      if (['pending', 'approved', 'returned'].indexOf(status) === -1 && report.status !== status) return false;
+    }
+    var haystack = [report.id, report.auditId, report.organization, report.reportType, report.status, report.leadInspector, report.summary].join(' ').toLowerCase();
+    return !query || haystack.indexOf(query) !== -1;
+  }).sort(function (left, right) {
+    return (right.submittedAt || '').localeCompare(left.submittedAt || '') || left.id.localeCompare(right.id);
+  });
+  return {
+    rows: rows,
+    total: rows.length,
+    pending: rows.filter(function (report) { return report.status === 'submitted_to_executive'; }).length,
+    approved: rows.filter(function (report) { return report.status === 'issued'; }).length,
+    returnedOrRejected: rows.filter(function (report) { return ['returned_to_manager', 'rejected'].indexOf(report.status) !== -1; }).length
+  };
+}
+
+function executiveReportDecisionResult(ok, message, report) {
+  return { ok: ok, message: message, report: report || null };
+}
+
+function applyExecutiveFinalReportDecision(target, reportId, input) {
+  var s = target || state;
+  input = input || {};
+  var report = managerReportById(s, reportId);
+  if (!report) return executiveReportDecisionResult(false, 'Final Report artifact not found.', null);
+  if (report.reportType !== 'Final Report') return executiveReportDecisionResult(false, 'Only Final Reports can receive an Executive Director decision.', report);
+  if (report.status !== 'submitted_to_executive' || report.ownerRole !== 'executiveDirector' || report.locked === true) {
+    return executiveReportDecisionResult(false, 'This Final Report is not eligible for an Executive Director decision.', report);
+  }
+  var decision = input.decision;
+  if (['approve', 'enforcement_referral', 'reject', 'return'].indexOf(decision) === -1) {
+    return executiveReportDecisionResult(false, 'Choose a supported Final Report decision.', report);
+  }
+  var rationale = String(input.rationale || input.comment || '').trim();
+  var category = String(input.category || '').trim();
+  if (decision === 'enforcement_referral' && !category) return executiveReportDecisionResult(false, 'An enforcement review category is required.', report);
+  if (decision !== 'approve' && !rationale) return executiveReportDecisionResult(false, 'A rationale is required for this decision.', report);
+  var actorName = input.actor && input.actor.name ? input.actor.name : 'Executive Director';
+  var at = managerReportDecisionTimestamp();
+  if (!Array.isArray(report.history)) report.history = [];
+
+  if (decision === 'approve') {
+    report.status = 'issued';
+    report.ownerRole = 'auditee';
+    report.issued = true;
+    report.locked = true;
+    report.issuedAt = at;
+    report.releasedAt = at;
+    report.finalAuthorizedBy = actorName;
+    report.finalAuthorizedAt = at;
+    report.mockApprovalSignature = { label: 'DEMO mock approval mark - not a real e-signature', signer: actorName, date: at };
+    report.history.push({ at: at, actor: actorName, action: 'Executive Director approved and issued Final Report with demo approval mark', comment: rationale });
+    var audit = Array.isArray(s.audits) ? s.audits.filter(function (candidate) { return candidate.id === report.auditId; })[0] : null;
+    var openFindings = Array.isArray(s.findings) ? s.findings.filter(function (finding) { return finding.auditId === report.auditId && finding.status !== 'CLOSED'; }) : [];
+    if (audit) audit.status = openFindings.length ? 'Follow-up Open' : 'Closed';
+  } else if (decision === 'enforcement_referral') {
+    report.status = 'enforcement_review_referred';
+    report.ownerRole = 'authorizedEnforcementReview';
+    report.enforcementReferral = {
+      category: category,
+      rationale: rationale,
+      recommendationOnly: true,
+      status: 'pending_authorized_review',
+      referredBy: actorName,
+      referredAt: at
+    };
+    report.history.push({ at: at, actor: actorName, action: 'Referred for separate enforcement review (recommendation only)', comment: category + ': ' + rationale });
+  } else if (decision === 'return') {
+    report.status = 'returned_to_manager';
+    report.ownerRole = 'manager';
+    report.returnedAt = at;
+    report.history.push({ at: at, actor: actorName, action: 'Executive Director returned Final Report for revision', comment: rationale });
+  } else {
+    report.status = 'rejected';
+    report.ownerRole = null;
+    report.rejectedAt = at;
+    report.history.push({ at: at, actor: actorName, action: 'Executive Director rejected Final Report', comment: rationale });
+  }
+
+  if (!Array.isArray(s.auditLog)) s.auditLog = [];
+  s.auditLog.unshift({ id: 'L' + ((Number(s.logSeq) || s.auditLog.length) + 1), time: at, actor: actorName + ' (Executive Director)', action: report.history[report.history.length - 1].action, target: report.id, system: false });
+  if (!Array.isArray(s.notifications)) s.notifications = [];
+  s.notifications.unshift({ id: 'N' + ((Number(s.notifSeq) || s.notifications.length) + 1), role: decision === 'approve' ? 'auditee' : (decision === 'return' ? 'manager' : 'executiveDirector'), icon: 'RPT', text: report.id + ' decision recorded: ' + decision.replace(/_/g, ' ') + '.', time: 'Just now', unread: true });
+  return executiveReportDecisionResult(true, 'Executive Director Final Report decision recorded.', report);
 }
 
 function managerChecklistTimestamp() {
