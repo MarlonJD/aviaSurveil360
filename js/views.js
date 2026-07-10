@@ -791,7 +791,7 @@ function executiveFinalReportTabs(active) {
 }
 
 function executiveFinalReportFindings(report) {
-  return managerFindingsForAudit(state, report.auditId);
+  return finalReportLinkedFindings(state, report);
 }
 
 function executiveFinalReportTabBody(report, active) {
@@ -850,7 +850,18 @@ function viewExecutiveNotifications() {
 }
 
 function viewExecutiveReportPreview() {
-  return '<div class="executive-workspace-page">' + pageHead('Final Report Preview', 'Select a Final Report from the review workspace to open its state-backed document preview.') + '<div class="executive-empty"><b>No report selected for preview.</b><span>Use Final Reports to select a report record.</span><button class="btn btn--primary" data-act="nav" data-view="executive-final-reports">Return to Final Reports</button></div></div>';
+  var reportId = state.params && state.params.reportId ? state.params.reportId : state.executiveDirectorUi.selectedReportId;
+  var eligible = executiveFinalReportProjection(state, { status: 'all' }).rows;
+  var report = eligible.filter(function (candidate) { return candidate.id === reportId; })[0] || null;
+  if (!report) return '<div class="executive-workspace-page">' + pageHead('Final Report Preview', 'Open an eligible Final Report from the Executive Director review workspace.') + '<div class="executive-empty"><b>No eligible report selected.</b><span>Only GM-forwarded or already decided Final Reports can be previewed here.</span><button class="btn btn--primary" data-act="executive-report-return">Return to Final Reports</button></div></div>';
+  var audit = state.audits.filter(function (candidate) { return candidate.id === report.auditId; })[0] || null;
+  var findings = finalReportLinkedFindings(state, report);
+  var team = state.inspectionTeams.filter(function (candidate) { return candidate.auditId === report.auditId; })[0] || null;
+  var zoom = Number(state.executiveDirectorUi.previewZoom || 100);
+  return '<div class="executive-report-preview-page">' +
+    '<header class="executive-report-preview-head"><div><button class="inspection-back" data-act="executive-report-return">&larr; Return to Final Report review</button><span>Selected report · ' + esc(report.id) + '</span><h1>Final Report Preview</h1><p>State-backed browser preview · Sample page 1 · ' + esc(String(findings.length)) + ' linked Findings</p></div><div class="executive-preview-actions"><div class="executive-zoom-control" aria-label="Preview zoom"><span>Zoom</span>' + [75, 90, 100, 110].map(function (value) { return '<button data-act="executive-report-zoom" data-zoom="' + value + '" aria-pressed="' + (zoom === value ? 'true' : 'false') + '" class="' + (zoom === value ? 'is-active' : '') + '">' + value + '%</button>'; }).join('') + '</div><button class="btn" data-act="executive-report-print">Print</button><button class="btn btn--primary" data-act="executive-report-download" data-id="' + esc(report.id) + '">Download PDF</button></div></header>' +
+    '<div class="executive-report-preview-layout"><aside class="executive-report-contents"><span>Contents</span><a href="#report-summary">1. Executive Summary</a><a href="#report-overview">2. Inspection Overview</a><a href="#report-findings">3. Findings Overview</a><a href="#report-conclusion">4. Conclusion</a><a href="#report-next">5. Next Steps</a><div><b>Document facts</b><small>' + esc(report.id + ' · Version ' + report.version) + '</small><small>' + esc(String(findings.length) + ' linked Findings') + '</small><small>Sample page 1</small></div></aside><main class="executive-report-canvas"><div class="executive-report-zoom-stage" style="--report-zoom:' + esc(String(zoom / 100)) + '">' + finalReportDocumentHtml(report, audit, findings, team, state) + '</div></main></div>' +
+  '</div>';
 }
 
 function activeChecklistApproval() {
@@ -7552,95 +7563,14 @@ function finalReadySummaryCard(label, value, detail, tone) {
   return '<article class="final-ready-card is-' + esc(tone || 'neutral') + '"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong><small>' + esc(detail || '') + '</small></article>';
 }
 
-function finalReportPdfLines() {
-  return [
-    'Final Report - Approved',
-    'Inspection ID: INS-2026-014',
-    'Organization: SkyCargo Air',
-    'Inspection Type: Routine (Announced)',
-    'Inspection Dates: 12 - 14 Jun 2026',
-    'Report Version: 2.0 (Final Report)',
-    'Final Report Date: 30 Jun 2026',
-    '',
-    '1. Executive Summary',
-    'This inspection was conducted between 12 - 14 Jun 2026 at SkyCargo Air (Service Provider) in accordance with applicable regulations and standards. A total of 9 findings were identified across 5 organizations.',
-    'Overall, the security system is effective; however, certain areas require improvement to ensure full compliance with applicable regulations.',
-    '',
-    '2. Inspection Overview',
-    'Scope: Physical Security',
-    'Organizations Included: 5',
-    'Inspection Team: Aylin Sezer (Lead Inspector) and 3 Inspectors',
-    'Inspection Method: Interviews, Document Review, Observation',
-    'Regulatory Basis: ICAO Annex 17, National Regulations',
-    'Inspection Plan: INS-2026-014 / Rev. 1',
-    'Inspection Duration: 3 Days',
-    'Inspection Locations: Head Office, Cargo Terminal, Ramp Area, Warehouse, Access Control Points',
-    '',
-    '3. Findings Summary',
-    'Level 1 Critical: 2 findings, 22 percent',
-    'Level 2 Major: 3 findings, 33 percent',
-    'Level 3 Observation: 4 findings, 45 percent',
-    'Total Findings: 9',
-    '',
-    '4. CAP Implementation Summary',
-    'Total CAPs: 9',
-    'Closed: 2 (22 percent)',
-    'In Progress: 5 (56 percent)',
-    'Not Started: 2 (22 percent)',
-    'Overdue: 0',
-    'All corrective actions must be completed by the due dates defined in the CAP plan. The organization is responsible for providing evidence of implementation and closure.',
-    '',
-    '5. Conclusions',
-    'SkyCargo Air has an effective security management system. Implementation of the outstanding corrective actions will further enhance compliance and overall security performance.',
-    '',
-    '6. Recommendations',
-    'Ensure all Level 1 and Level 2 findings are addressed within the defined due dates.',
-    'Strengthen training and awareness programs for access control procedures.',
-    'Improve documentation and record keeping for security equipment maintenance.',
-    '',
-    '7. Appendices & Attachments',
-    'Appendix A - Inspection Plan - PDF - 12 pages',
-    'Appendix B - Inspection Team - PDF - 3 pages',
-    'Appendix C - Evidence Photos - ZIP',
-    'Appendix D - CAP Plan - PDF - 7 pages',
-    '',
-    'Report Prepared By: Aylin Sezer, Lead Inspector, 30 Jun 2026',
-    'Reviewed By: Department Manager, 30 Jun 2026',
-    'Approved By: General Manager, 30 Jun 2026'
-  ];
-}
-
-function finalReportIcon(name) {
-  if (typeof navIconSvg !== 'function') return '';
-  return '<svg viewBox="0 0 24 24" focusable="false">' + navIconSvg(name || 'file-text') + '</svg>';
-}
-
-function finalReportOverviewItem(icon, label, value) {
-  return '<div class="final-report-overview-item"><span>' + finalReportIcon(icon) + '</span><p><b>' + esc(label) + '</b><strong>' + esc(value) + '</strong></p></div>';
-}
-
-function finalReportFindingRows() {
-  var rows = [
-    ['Level 1 (Critical)', 'Non-compliance with critical requirements', '2', '22%', 'l1'],
-    ['Level 2 (Major)', 'Non-compliance with important requirements', '3', '33%', 'l2'],
-    ['Level 3 (Observation)', 'Opportunities for improvement', '4', '45%', 'l3'],
-    ['Total', '', '9', '100%', 'total']
-  ];
-  return rows.map(function (row) {
-    return '<tr><td><span class="final-report-level-dot is-' + esc(row[4]) + '"></span>' + esc(row[0]) + '</td><td>' + esc(row[1]) + '</td><td>' + esc(row[2]) + '</td><td>' + esc(row[3]) + '</td></tr>';
-  }).join('');
-}
-
-function finalReportAttachmentRows() {
-  var rows = [
-    ['Appendix A - Inspection Plan', 'Inspection plan and schedule', 'PDF', '12'],
-    ['Appendix B - Inspection Team', 'Team members and roles', 'PDF', '3'],
-    ['Appendix C - Evidence Photos', 'Photos collected during inspection', 'ZIP', '-'],
-    ['Appendix D - CAP Plan', 'Corrective Action Plan', 'PDF', '7']
-  ];
-  return rows.map(function (row) {
-    return '<tr><td>' + esc(row[0]) + '</td><td>' + esc(row[1]) + '</td><td>' + esc(row[2]) + '</td><td>' + esc(row[3]) + '</td></tr>';
-  }).join('');
+function leadFinalReportPdfLines() {
+  var reportId = state.params && state.params.reportId ? state.params.reportId : 'FR-2026-018';
+  var report = state.managerReports.filter(function (candidate) { return candidate.id === reportId && candidate.reportType === 'Final Report'; })[0] || state.managerReports.filter(function (candidate) { return candidate.reportType === 'Final Report'; })[0] || null;
+  if (!report) return ['AviaSurveil360 - Final Report', 'Demo-only browser-generated document - report unavailable.'];
+  var audit = state.audits.filter(function (candidate) { return candidate.id === report.auditId; })[0] || null;
+  var findings = finalReportLinkedFindings(state, report);
+  var team = state.inspectionTeams.filter(function (candidate) { return candidate.auditId === report.auditId; })[0] || null;
+  return finalReportPdfLines(report, audit, findings, team, state);
 }
 
 function leadFinalReportRows() {
@@ -7772,46 +7702,13 @@ function viewLeadFinalReports() {
 }
 
 function viewLeadFinalReportDocument() {
-  return '<div class="final-report-view-page">' +
-    '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><span>INS-2026-014</span><span>›</span><span>Final Reports</span><span>›</span><b>Final Report</b></div>' +
-    '<div class="final-report-view-head">' +
-      '<div><h1>Final Report ' + demoBadge('Approved', 'ok') + '</h1></div>' +
-      '<div class="final-report-actions"><button class="btn" data-act="final-report-export-pdf"><span>↓</span>Export PDF</button><button class="btn btn--primary" data-act="final-report-print"><span>▦</span>Print Report</button></div>' +
-    '</div>' +
-    '<article class="final-report-doc">' +
-      '<section class="final-report-hero">' +
-        '<div class="final-report-brand"><span>' + finalReportIcon('send') + '</span><b>SkyCargo Air</b></div>' +
-        '<div class="final-report-meta-grid">' +
-          '<div><span>Inspection ID</span><b>INS-2026-014</b></div>' +
-          '<div><span>Organization</span><b>SkyCargo Air</b></div>' +
-          '<div><span>Inspection Type</span><b>Routine (Announced)</b></div>' +
-          '<div><span>Inspection Dates</span><b>12 - 14 Jun 2026</b></div>' +
-          '<div><span>Report Version</span><b>2.0 (Final Report)</b></div>' +
-          '<div><span>Final Report Date</span><b>30 Jun 2026</b></div>' +
-        '</div>' +
-      '</section>' +
-      '<section class="final-report-section"><h2>1. Executive Summary</h2><p>This inspection was conducted between 12 - 14 Jun 2026 at SkyCargo Air (Service Provider) in accordance with applicable regulations and standards. A total of 9 findings were identified across 5 organizations.</p><p>Overall, the security system is effective; however, certain areas require improvement to ensure full compliance with applicable regulations.</p></section>' +
-      '<section class="final-report-section"><h2>2. Inspection Overview</h2><div class="final-report-overview-grid">' +
-        finalReportOverviewItem('file-text', 'Scope', 'Physical Security') +
-        finalReportOverviewItem('shield-alert', 'Regulatory Basis', 'ICAO Annex 17, National Regulations') +
-        finalReportOverviewItem('building', 'Organizations Included', '5') +
-        finalReportOverviewItem('clipboard-list', 'Inspection Plan', 'INS-2026-014 / Rev. 1') +
-        finalReportOverviewItem('users', 'Inspection Team', 'Aylin Sezer (Lead Inspector) and 3 Inspectors') +
-        finalReportOverviewItem('history', 'Inspection Duration', '3 Days') +
-        finalReportOverviewItem('circle-help', 'Inspection Method', 'Interviews, Document Review, Observation') +
-        finalReportOverviewItem('target', 'Inspection Locations', 'Head Office, Cargo Terminal, Ramp Area, Warehouse, Access Control Points') +
-      '</div></section>' +
-      '<section class="final-report-section"><h2>3. Findings Summary</h2><div class="final-report-findings">' +
-        '<aside class="final-report-severity-list"><div><span class="is-l1">×</span><b>Level 1 (Critical)</b><strong>2</strong></div><div><span class="is-l2">!</span><b>Level 2 (Major)</b><strong>3</strong></div><div><span class="is-l3">i</span><b>Level 3 (Observation)</b><strong>4</strong></div><div><b>Total Findings</b><strong>9</strong></div></aside>' +
-        '<div class="final-ready-table-wrap"><table class="final-ready-table final-report-table"><thead><tr><th>Level</th><th>Description</th><th>Count</th><th>Percentage</th></tr></thead><tbody>' + finalReportFindingRows() + '</tbody></table></div>' +
-      '</div></section>' +
-      '<section class="final-report-section"><h2>4. CAP Implementation Summary</h2><div class="final-report-cap-grid"><div><span>Total CAPs</span><b>9</b></div><div><span>Closed</span><b class="is-ok">2 (22%)</b></div><div><span>In Progress</span><b class="is-warn">5 (56%)</b></div><div><span>Not Started</span><b>2 (22%)</b></div><div><span>Overdue</span><b class="is-danger">0</b></div></div><p>All corrective actions must be completed by the due dates defined in the CAP plan. The organization is responsible for providing evidence of implementation and closure.</p></section>' +
-      '<section class="final-report-section"><h2>5. Conclusions</h2><p>SkyCargo Air has an effective security management system. Implementation of the outstanding corrective actions will further enhance compliance and overall security performance.</p></section>' +
-      '<section class="final-report-section"><h2>6. Recommendations</h2><ul><li>Ensure all Level 1 and Level 2 findings are addressed within the defined due dates.</li><li>Strengthen training and awareness programs for access control procedures.</li><li>Improve documentation and record keeping for security equipment maintenance.</li></ul></section>' +
-      '<section class="final-report-section"><h2>7. Appendices & Attachments</h2><div class="final-ready-table-wrap"><table class="final-ready-table final-report-table"><thead><tr><th>File Name</th><th>Description</th><th>File Type</th><th>Pages</th></tr></thead><tbody>' + finalReportAttachmentRows() + '</tbody></table></div><small>Total Attachments: 4</small></section>' +
-      '<section class="final-report-signatures"><div><span class="final-report-signature-mark">Aylin</span><b>Report Prepared By</b><p>Aylin Sezer<br>Lead Inspector<br>30 Jun 2026</p></div><div><span class="final-report-signature-mark">Selin</span><b>Reviewed By</b><p>Department Manager<br>30 Jun 2026</p></div><div><span class="final-report-signature-mark">Baran</span><b>Approved By</b><p>General Manager<br>30 Jun 2026</p></div><div class="final-report-stamp"><strong>APPROVED</strong><span>30 JUN 2026</span></div></section>' +
-    '</article>' +
-  '</div>';
+  var reportId = state.params && state.params.reportId ? state.params.reportId : 'FR-2026-018';
+  var report = state.managerReports.filter(function (candidate) { return candidate.id === reportId && candidate.reportType === 'Final Report'; })[0] || state.managerReports.filter(function (candidate) { return candidate.reportType === 'Final Report'; })[0] || null;
+  if (!report) return pageHead('Final Report', 'State-backed report preview.') + '<div class="empty">No Final Report record is available.</div>';
+  var audit = state.audits.filter(function (candidate) { return candidate.id === report.auditId; })[0] || null;
+  var findings = finalReportLinkedFindings(state, report);
+  var team = state.inspectionTeams.filter(function (candidate) { return candidate.auditId === report.auditId; })[0] || null;
+  return '<div class="final-report-view-page"><div class="cap-review-crumb"><span>My Assignments</span><span>›</span><span>Final Reports</span><span>›</span><b>' + esc(report.id) + '</b></div><div class="final-report-view-head"><div><h1>Final Report ' + managerReportStatusBadge(report.status) + '</h1><p>' + esc(report.id + ' · ' + report.organization) + '</p></div><div class="final-report-actions"><button class="btn" data-act="executive-report-download" data-id="' + esc(report.id) + '"><span>↓</span>Export PDF</button><button class="btn btn--primary" data-act="final-report-print"><span>▦</span>Print Report</button></div></div>' + finalReportDocumentHtml(report, audit, findings, team, state) + '</div>';
 }
 
 function viewLeadFinalReportReady() {

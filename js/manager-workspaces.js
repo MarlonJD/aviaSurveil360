@@ -234,8 +234,9 @@ function applyManagerReportDecision(target, reportId, decision, comment, actor) 
 
 function managerReportPdfFilename(report, variant) {
   var type = report && report.reportType === 'Final Report' ? 'Final_Report' : 'Preliminary_Report';
-  if (variant === 'executive') return 'Fly_Namibia_Executive_Summary_' + report.id + '.pdf';
-  return 'Fly_Namibia_' + type + '_' + report.id + '.pdf';
+  var organization = String(report && report.organization || 'Organization').replace(/[^0-9A-Za-z]+/g, '_').replace(/^_+|_+$/g, '') || 'Organization';
+  if (variant === 'executive') return organization + '_Executive_Summary_' + report.id + '.pdf';
+  return organization + '_' + type + '_' + report.id + '.pdf';
 }
 
 function managerReportPdfLines(report, variant, target) {

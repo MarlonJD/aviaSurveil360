@@ -324,3 +324,121 @@ function applyReportApprovalDecision(report, input) {
   if (report.approval.outcome === 'approved') finalizeApprovedReport(report, input.actor);
   return report;
 }
+
+/* ------------------- Reusable state-backed Final Report document ------------------- */
+
+function finalReportLinkedFindings(targetState, report) {
+  var target = targetState || state;
+  if (!report || !target || !Array.isArray(target.findings)) return [];
+  return target.findings.filter(function (finding) { return finding.auditId === report.auditId; });
+}
+
+function finalReportTeamNames(targetState, audit, team) {
+  var target = targetState || state;
+  if (team && Array.isArray(team.memberIds) && target && Array.isArray(target.users)) {
+    return team.memberIds.map(function (userId) {
+      var user = target.users.filter(function (candidate) { return candidate.id === userId; })[0];
+      return user ? user.name : userId;
+    });
+  }
+  return audit && Array.isArray(audit.team) ? audit.team.slice() : [];
+}
+
+function finalReportPlainStatus(status) {
+  var labels = {
+    submitted_to_executive: 'Pending Final Authorized Approval',
+    issued: 'Issued',
+    returned_to_manager: 'Returned to Department Manager',
+    rejected: 'Rejected',
+    enforcement_review_referred: 'Referred for Separate Enforcement Review'
+  };
+  return labels[status] || String(status || 'Unknown').replace(/_/g, ' ');
+}
+
+function finalReportFindingLevel(finding) {
+  return typeof SEVERITY !== 'undefined' && SEVERITY[finding.severity]
+    ? SEVERITY[finding.severity].label
+    : 'Level ' + String(finding.severity);
+}
+
+function finalReportFindingStatus(finding) {
+  return typeof FINDING_STATUS !== 'undefined' && FINDING_STATUS[finding.status]
+    ? FINDING_STATUS[finding.status].label
+    : String(finding.status || 'Open').replace(/_/g, ' ');
+}
+
+function finalReportDocumentHtml(report, audit, findings, team, targetState) {
+  if (!report) return '<div class="final-report-document-empty">Final Report record unavailable.</div>';
+  var target = targetState || (typeof state !== 'undefined' ? state : null);
+  var rows = Array.isArray(findings) ? findings : finalReportLinkedFindings(target, report);
+  var teamNames = finalReportTeamNames(target, audit, team);
+  var open = rows.filter(function (finding) { return finding.status !== 'CLOSED'; });
+  var critical = rows.filter(function (finding) { return finding.severity === 1; }).length;
+  var major = rows.filter(function (finding) { return finding.severity === 2; }).length;
+  var minor = rows.filter(function (finding) { return finding.severity === 3; }).length;
+  var observations = rows.length - critical - major - minor;
+  var findingRows = rows.length ? rows.map(function (finding) {
+    return '<tr><td><b>' + esc(finding.id) + '</b><small>' + esc(finding.title) + '</small></td><td>' + esc(finalReportFindingLevel(finding)) + '</td><td>' + esc(finalReportFindingStatus(finding)) + '</td><td>' + esc(finding.dueDate ? fmtDate(finding.dueDate) : 'Not configured') + '</td></tr>';
+  }).join('') : '<tr><td colspan="4">No Findings are linked to this report.</td></tr>';
+  var signature = report.mockApprovalSignature
+    ? '<div class="state-report-signature is-recorded"><span>DEMO APPROVAL MARK</span><b>' + esc(report.mockApprovalSignature.signer) + '</b><small>' + esc(report.mockApprovalSignature.date) + '</small><em>' + esc(report.mockApprovalSignature.label) + '</em></div>'
+    : '<div class="state-report-signature"><span>FINAL AUTHORIZED APPROVAL</span><b>Pending</b><small>No approval mark is recorded.</small><em>Any future demo mark is not a real e-signature.</em></div>';
+  return '<article class="state-final-report-doc" data-report-id="' + esc(report.id) + '">' +
+    '<header class="state-report-cover"><div class="state-report-brand"><div>' + (typeof renderBrandMark === 'function' ? renderBrandMark('brand-mark--report') : '<b>AS360</b>') + '<span>AviaSurveil360</span></div><strong>FINAL REPORT</strong></div><div class="state-report-classification">CAA controlled demo copy · ' + esc(report.organization) + ' · Demo-only</div><h1>' + esc((audit ? audit.type : 'Inspection') + ' Final Report') + '</h1><p>' + esc(report.id + ' · Version ' + report.version) + '</p><div class="state-report-cover-meta"><div><span>Report ID</span><b>' + esc(report.id) + '</b></div><div><span>Report Date</span><b>' + esc(report.issuedAt || report.submittedAt || 'Not recorded') + '</b></div><div><span>Organization</span><b>' + esc(report.organization) + '</b></div><div><span>Audit ID</span><b>' + esc(report.auditId) + '</b></div><div><span>Inspection Type</span><b>' + esc(audit ? audit.type : 'Inspection') + '</b></div><div><span>Inspection Date</span><b>' + esc(audit && audit.date ? fmtDate(audit.date) : 'Not recorded') + '</b></div><div><span>Submitted By</span><b>' + esc(report.leadInspector) + '</b></div><div><span>Submitted On</span><b>' + esc(report.submittedAt || 'Not recorded') + '</b></div><div><span>Current Status</span><b>' + esc(finalReportPlainStatus(report.status)) + '</b></div></div></header>' +
+    '<section class="state-report-section" id="report-summary"><h2>1. Executive Summary</h2><p>' + esc(report.summary || 'No executive summary is available.') + '</p></section>' +
+    '<section class="state-report-section" id="report-overview"><h2>2. Inspection Overview</h2><div class="state-report-overview"><div><span>Department / Domain</span><b>' + esc(audit ? audit.domain : 'Not recorded') + '</b></div><div><span>Inspection Mode</span><b>' + esc(audit ? audit.mode : 'Not recorded') + '</b></div><div><span>Location</span><b>' + esc(audit ? audit.location : 'Not recorded') + '</b></div><div><span>Audit Team</span><b>' + esc(teamNames.join(', ') || report.leadInspector) + '</b></div></div></section>' +
+    '<section class="state-report-section" id="report-findings"><h2>3. Findings Overview</h2><div class="state-report-finding-cards"><div><span>Total</span><b>' + esc(String(rows.length)) + '</b></div><div class="is-critical"><span>Level 1 Critical</span><b>' + esc(String(critical)) + '</b></div><div class="is-major"><span>Level 2 Major</span><b>' + esc(String(major)) + '</b></div><div><span>Level 3 Minor</span><b>' + esc(String(minor)) + '</b></div><div><span>Observations</span><b>' + esc(String(observations)) + '</b></div><div><span>Open Follow-up</span><b>' + esc(String(open.length)) + '</b></div></div><div class="state-report-table-wrap"><table><thead><tr><th>Finding</th><th>Level</th><th>Status</th><th>Due Date</th></tr></thead><tbody>' + findingRows + '</tbody></table></div></section>' +
+    '<section class="state-report-section" id="report-conclusion"><h2>4. Conclusion</h2><p>This Final Report records the selected inspection and its linked Findings. ' + esc(open.length ? open.length + ' Finding' + (open.length === 1 ? '' : 's') + ' remain open for configured CAP, Evidence, verification, or authorized closure steps.' : 'No linked Finding remains open in the current browser-local state.') + '</p></section>' +
+    '<section class="state-report-section" id="report-next"><h2>5. Next Steps</h2><ul><li>Service Provider continues the configured Corrective Action Plan and Evidence response for every open Finding.</li><li>CAA Inspector reviews submitted CAP/Evidence; acceptance does not by itself close a Finding.</li><li>Finding closure requires accepted evidence and verification, or an explicitly authorized and audit-logged closure path.</li></ul></section>' +
+    '<footer class="state-report-approval"><div><span>Prepared by</span><b>' + esc(report.leadInspector) + '</b><small>' + esc(report.submittedAt || 'Not recorded') + '</small></div><div><span>Final authorized by</span><b>' + esc(report.finalAuthorizedBy || 'Pending Executive Director decision') + '</b><small>' + esc(report.finalAuthorizedAt || 'Not recorded') + '</small></div>' + signature + '</footer>' +
+    '<div class="state-report-demo-boundary">Demo-only browser-local report. No production reporting engine, real electronic signature, real document storage, enforcement execution, or records-management service is used.</div>' +
+  '</article>';
+}
+
+function finalReportPdfFilename(report) {
+  var org = String(report && report.organization || 'Organization').replace(/[^0-9A-Za-z]+/g, '_').replace(/^_+|_+$/g, '');
+  return (org || 'Organization') + '_Final_Report_' + String(report && report.id || 'Report').replace(/[^0-9A-Za-z_-]+/g, '_') + '.pdf';
+}
+
+function finalReportPdfLines(report, audit, findings, team, targetState) {
+  if (!report) return ['AviaSurveil360 - Final Report', 'Demo-only browser-generated document - report unavailable.'];
+  var target = targetState || (typeof state !== 'undefined' ? state : null);
+  var rows = Array.isArray(findings) ? findings : finalReportLinkedFindings(target, report);
+  var teamNames = finalReportTeamNames(target, audit, team);
+  var open = rows.filter(function (finding) { return finding.status !== 'CLOSED'; });
+  var lines = [
+    'AviaSurveil360 - Final Report',
+    'Demo-only browser-generated document - not a production authority record',
+    '',
+    'Report ID: ' + report.id,
+    'Version: ' + report.version,
+    'Organization: ' + report.organization,
+    'Audit ID: ' + report.auditId,
+    'Inspection Type: ' + (audit ? audit.type : 'Inspection'),
+    'Inspection Date: ' + (audit && audit.date ? audit.date : 'Not recorded'),
+    'Audit Team: ' + (teamNames.join(', ') || report.leadInspector),
+    'Submitted By: ' + report.leadInspector,
+    'Submitted On: ' + (report.submittedAt || 'Not recorded'),
+    'Status: ' + finalReportPlainStatus(report.status),
+    '',
+    'Executive Summary',
+    report.summary || 'No executive summary is available.',
+    '',
+    'Findings Overview',
+    'Total Findings: ' + rows.length + ' | Open Follow-up: ' + open.length,
+    '',
+    'Detailed Findings Summary'
+  ];
+  rows.forEach(function (finding) {
+    lines.push(finding.id + ' | ' + finalReportFindingLevel(finding) + ' | ' + finalReportFindingStatus(finding) + ' | Due Date ' + (finding.dueDate || 'Not configured') + ' | ' + finding.title);
+  });
+  lines.push('', 'Conclusion', open.length ? open.length + ' linked Finding(s) remain open for configured follow-up.' : 'No linked Finding remains open in the current browser-local state.');
+  lines.push('', 'Next Steps', 'CAP acceptance does not close a Finding. Required evidence acceptance, verification, or an authorized audit-logged closure path is still required.');
+  if (report.mockApprovalSignature) {
+    lines.push('', 'DEMO APPROVAL MARK - not a real e-signature', 'Signer: ' + report.mockApprovalSignature.signer, 'Date: ' + report.mockApprovalSignature.date);
+  } else {
+    lines.push('', 'Final authorized approval: Pending - no approval mark recorded.');
+  }
+  lines.push('', 'Demo-only browser-generated document. No real electronic signature, file storage, enforcement execution, or records-management service.');
+  return lines;
+}

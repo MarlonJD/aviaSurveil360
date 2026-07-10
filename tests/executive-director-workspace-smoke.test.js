@@ -46,6 +46,8 @@ assert.equal(context.homeView('executiveDirector'), 'executive-dashboard');
 assert.equal(typeof context.applyExecutivePlanningDecision, 'function');
 assert.equal(typeof context.executiveFinalReportProjection, 'function');
 assert.equal(typeof context.applyExecutiveFinalReportDecision, 'function');
+assert.equal(typeof context.finalReportDocumentHtml, 'function');
+assert.equal(typeof context.finalReportPdfLines, 'function');
 
 const planningState = context.freshState();
 const plan = planningState.planningItems[0];
@@ -291,5 +293,52 @@ reportHtml = context.viewExecutiveFinalReportsWorkspace();
 assert.match(reportHtml, /Terminal actions are disabled after a recorded decision/i);
 assert.match(reportHtml, /not a real e-signature/i);
 assert.doesNotMatch(reportHtml, /data-act="executive-report-confirm"/);
+
+const approvalAudit = approvalState.audits.find((audit) => audit.id === approvalReport.auditId);
+const approvalFindings = context.finalReportLinkedFindings(approvalState, approvalReport);
+const approvalTeam = approvalState.inspectionTeams.find((team) => team.auditId === approvalReport.auditId);
+const documentHtml = context.finalReportDocumentHtml(approvalReport, approvalAudit, approvalFindings, approvalTeam, approvalState);
+[
+  approvalReport.id,
+  approvalReport.organization,
+  approvalAudit.type,
+  'CAA controlled demo copy',
+  'Executive Summary',
+  'Inspection Overview',
+  'Findings Overview',
+  'Conclusion',
+  'Next Steps',
+  'DEMO APPROVAL MARK',
+  'not a real e-signature',
+  'acceptance does not by itself close a Finding'
+].forEach((text) => assert.match(documentHtml, new RegExp(text, 'i')));
+assert.equal((documentHtml.match(/<tr>/g) || []).length - 1, approvalFindings.length, 'document table uses the selected report Finding selector');
+assert.doesNotMatch(documentHtml, /SkyCargo Air|INS-2026-014|1 \/ 56/);
+
+const pdfLines = context.finalReportPdfLines(approvalReport, approvalAudit, approvalFindings, approvalTeam, approvalState);
+const pdf = context.buildAviaPdfDocument(pdfLines);
+assert.match(pdf, /^%PDF-1\.4/);
+assert.match(pdf, new RegExp(approvalReport.id));
+assert.match(pdf, new RegExp(approvalReport.organization));
+assert.match(pdf, /Demo-only browser-generated document/);
+assert.match(pdf, /CAP acceptance does not close a Finding/i);
+assert.equal(context.finalReportPdfFilename(approvalReport), 'Fly_Namibia_Final_Report_FR-2026-018.pdf');
+
+approvalState.view = 'executive-report-preview';
+approvalState.params = { reportId: approvalReport.id, returnView: 'executive-final-reports' };
+approvalState.executiveDirectorUi.previewZoom = 100;
+const previewHtml = context.viewExecutiveReportPreview();
+assert.match(previewHtml, /Return to Final Report review/);
+assert.match(previewHtml, /Sample page 1/);
+assert.match(previewHtml, /Contents/);
+assert.match(previewHtml, /75%/);
+assert.match(previewHtml, /110%/);
+assert.match(previewHtml, /Download PDF/);
+assert.match(previewHtml, new RegExp(approvalReport.id));
+assert.doesNotMatch(previewHtml, /1 \/ 56|SkyCargo Air|INS-2026-014/);
+const leadDocumentHtml = context.viewLeadFinalReportDocument();
+assert.match(leadDocumentHtml, new RegExp(approvalReport.id));
+assert.match(leadDocumentHtml, new RegExp(approvalReport.organization));
+assert.doesNotMatch(leadDocumentHtml, /SkyCargo Air|INS-2026-014/);
 
 console.log('executive-director-workspace-smoke: ok');

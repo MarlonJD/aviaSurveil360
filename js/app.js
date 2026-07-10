@@ -1681,6 +1681,10 @@ function handleAction(act, el) {
     case 'executive-report-confirm': handleExecutiveReportConfirm(id); break;
     case 'executive-report-preview': handleExecutiveReportPreview(id); break;
     case 'executive-report-document': handleExecutiveReportDocument(id, el.getAttribute('data-file')); break;
+    case 'executive-report-return': handleExecutiveReportReturn(); break;
+    case 'executive-report-zoom': handleExecutiveReportZoom(el.getAttribute('data-zoom')); break;
+    case 'executive-report-print': handleExecutiveReportPrint(); break;
+    case 'executive-report-download': handleExecutiveReportDownload(id); break;
     case 'report-approval': handleReportApproval(id, el.getAttribute('data-decision')); break;
     case 'inspection-status-cycle': handleInspectionStatusCycle(id); break;
     case 'inspection-download-checklist': handleInspectionDownload(id); break;
@@ -3749,6 +3753,48 @@ function handleExecutiveReportDocument(reportId, fileName) {
   openModal(modalShell('Report Document', '<div class="lead-assigned-modal"><p><b>' + esc(fileName) + '</b></p><p>' + esc(report.id + ' · ' + report.organization) + '</p><p class="small muted">Mock filename only. No real document storage or external document service is used.</p></div>', '<button class="btn btn--primary" data-act="close-modal">Close</button>', false));
 }
 
+function handleExecutiveReportReturn() {
+  state.view = 'executive-final-reports';
+  state.params = { reportId: state.executiveDirectorUi.selectedReportId };
+  persistAfterAction();
+  render();
+}
+
+function handleExecutiveReportZoom(value) {
+  var zoom = Number(value);
+  if ([75, 90, 100, 110].indexOf(zoom) === -1) zoom = 100;
+  state.executiveDirectorUi.previewZoom = zoom;
+  persistAfterAction();
+  render();
+}
+
+function handleExecutiveReportPrint() {
+  if (typeof window !== 'undefined' && typeof window.print === 'function') {
+    window.print();
+    toast('Print opened', 'Use the browser print dialog for the selected demo Final Report.', 'info');
+    return;
+  }
+  toast('Print unavailable', 'This environment does not expose a browser print dialog.', 'warn');
+}
+
+function handleExecutiveReportDownload(reportId) {
+  var report = executiveSelectedReport(reportId);
+  if (!report) return;
+  var audit = state.audits.filter(function (candidate) { return candidate.id === report.auditId; })[0] || null;
+  var findings = finalReportLinkedFindings(state, report);
+  var team = state.inspectionTeams.filter(function (candidate) { return candidate.auditId === report.auditId; })[0] || null;
+  var result = null;
+  try {
+    result = downloadAviaPdf(finalReportPdfFilename(report), finalReportPdfLines(report, audit, findings, team, state));
+  } catch (error) {
+    result = { ok: false };
+  }
+  state.executiveDirectorUi.selectedReportId = report.id;
+  state.executiveDirectorUi.previewDownloadedAt = logTimestamp();
+  persistAfterAction();
+  toast(result && result.ok ? 'Final Report downloaded' : 'PDF download unavailable', result && result.ok ? finalReportPdfFilename(report) + ' was generated in this browser.' : 'The selected report remains available in the state-backed preview.', result && result.ok ? 'ok' : 'warn');
+}
+
 function leadReviewChecklistDownloadText(auditId) {
   var rows = typeof leadReviewAllRows === 'function' ? leadReviewAllRows() : [];
   var lines = [
@@ -4866,11 +4912,12 @@ function handleFinalReportPrepareConfirmSubmit() {
 function handleFinalReportExportPdf() {
   var ui = ensureCapTrackingUi();
   ui.finalReportPdfExportedAt = logTimestamp();
-  addLog('Lead Inspector exported Final Report PDF', 'INS-2026-014');
+  var report = executiveSelectedReport(state.params && state.params.reportId ? state.params.reportId : 'FR-2026-018');
+  addLog('Lead Inspector exported Final Report PDF', report ? report.id : 'Final Report');
   persistAfterAction();
   var downloaded = downloadFinalReportPdf();
   toast(downloaded ? 'PDF downloaded' : 'PDF export unavailable',
-    downloaded ? 'INS-2026-014 Final Report PDF was downloaded from this browser.' : 'This browser does not support client-side PDF download.',
+    downloaded ? (report ? report.id : 'Selected Final Report') + ' PDF was downloaded from this browser.' : 'This browser does not support client-side PDF download.',
     downloaded ? 'ok' : 'warn');
 }
 
@@ -4920,7 +4967,7 @@ function finalReportPdfWrap(text, maxChars) {
 }
 
 function buildFinalReportPdfDocument() {
-  var sourceLines = typeof finalReportPdfLines === 'function' ? finalReportPdfLines() : ['AviaSurveil360 Final Report'];
+  var sourceLines = typeof leadFinalReportPdfLines === 'function' ? leadFinalReportPdfLines() : ['AviaSurveil360 Final Report'];
   var printableLines = [];
   sourceLines.forEach(function (line) {
     finalReportPdfWrap(line, 96).forEach(function (wrapped) { printableLines.push(wrapped); });
@@ -4987,12 +5034,14 @@ function buildFinalReportPdfDocument() {
 
 function downloadFinalReportPdf() {
   if (typeof document === 'undefined' || typeof Blob === 'undefined' || typeof URL === 'undefined') return false;
+  var report = executiveSelectedReport(state.params && state.params.reportId ? state.params.reportId : 'FR-2026-018');
+  if (!report) return false;
   var pdf = buildFinalReportPdfDocument();
   var blob = new Blob([pdf], { type: 'application/pdf' });
   var url = URL.createObjectURL(blob);
   var link = document.createElement('a');
   link.href = url;
-  link.download = 'INS-2026-014_Final_Report_SkyCargo_Air.pdf';
+  link.download = finalReportPdfFilename(report);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
