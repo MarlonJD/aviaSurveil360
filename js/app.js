@@ -70,10 +70,11 @@ var NAV = {
     { view: 'finance-review', label: 'Finance Review', icon: '▤' }
   ],
   executiveDirector: [
-    { section: 'Workspace' },
-    { view: 'planning', label: 'Planning', icon: '▤' },
-    { view: 'audit-reports', label: 'Audit Reports', icon: '📄' },
-    { view: 'reports', label: 'Reports', icon: '📄' }
+    { view: 'executive-dashboard', label: 'Dashboard', icon: '▦' },
+    { view: 'executive-planning', label: 'Planning', icon: '▤' },
+    { view: 'executive-final-reports', label: 'Final Reports', icon: '📄' },
+    { view: 'executive-notifications', label: 'Notifications', icon: '✉' },
+    { view: 'settings', label: 'Settings', icon: '⚙' }
   ]
 };
 
@@ -99,7 +100,9 @@ var VIEW_TITLES = {
   'gm-dashboard': 'General Manager Dashboard', 'gm-report-approvals': 'Report Approvals',
   'gm-departments': 'Departments', 'gm-risk': 'Risk Dashboard', 'finance-review': 'Finance Review',
   'service-provider-cap': 'Corrective Actions (CAP)', 'service-provider-preliminary-reports': 'Preliminary Reports',
-  'service-provider-final-reports': 'Final Reports', 'service-provider-report-preview': 'Report Preview'
+  'service-provider-final-reports': 'Final Reports', 'service-provider-report-preview': 'Report Preview',
+  'executive-dashboard': 'Executive Director Dashboard', 'executive-planning': 'Planning',
+  'executive-final-reports': 'Final Reports', 'executive-notifications': 'Notifications', 'executive-report-preview': 'Final Report Preview'
 };
 
 var ROLE_DESC = {
@@ -139,7 +142,7 @@ function homeView(role) {
   if (role === 'admin') return 'templates';
   if (role === 'gm') return 'gm-dashboard';
   if (role === 'finance') return 'finance-review';
-  if (role === 'executiveDirector') return 'planning';
+  if (role === 'executiveDirector') return 'executive-dashboard';
   if (role === 'leadInspector') return 'lead-review';
   if (role === 'inspector') return 'inspector-assignments';
   return 'dashboard';
@@ -195,6 +198,14 @@ var AUDITEE_ALLOWED_VIEWS = {
 };
 
 var FINANCE_ALLOWED_VIEWS = { 'finance-review': true };
+var EXECUTIVE_DIRECTOR_ALLOWED_VIEWS = {
+  'executive-dashboard': true,
+  'executive-planning': true,
+  'executive-final-reports': true,
+  'executive-notifications': true,
+  'executive-report-preview': true,
+  settings: true
+};
 
 function normalizeViewForRole() {
   if (state.role === 'inspector' && INSPECTOR_LEGACY_CAP_VIEWS[state.view]) {
@@ -223,6 +234,13 @@ function normalizeViewForRole() {
       state.view = 'finance-review';
       state.params = {};
     }
+  }
+  if (state.role === 'executiveDirector') {
+    var edRedirected = false;
+    if (state.view === 'planning') { state.view = 'executive-planning'; edRedirected = true; }
+    else if (state.view === 'audit-reports' || state.view === 'reports') { state.view = 'executive-final-reports'; edRedirected = true; }
+    else if (!EXECUTIVE_DIRECTOR_ALLOWED_VIEWS[state.view]) { state.view = homeView(state.role); edRedirected = true; }
+    if (edRedirected) state.params = {};
   }
 }
 
@@ -479,6 +497,11 @@ function renderContent() {
     case 'ssp-nasp': return viewSspNaspDashboard();
     case 'planning': return viewPlanningWorkspace();
     case 'finance-review': return viewFinanceReviewWorkspace();
+    case 'executive-dashboard': return viewExecutiveDirectorDashboard();
+    case 'executive-planning': return viewExecutivePlanningWorkspace();
+    case 'executive-final-reports': return viewExecutiveFinalReportsWorkspace();
+    case 'executive-notifications': return viewExecutiveNotifications();
+    case 'executive-report-preview': return viewExecutiveReportPreview();
     case 'planning-approvals': return viewPlanningApprovals();
     case 'checklist-approvals': return viewChecklistApprovals();
     case 'question-bank': return viewQuestionBank();
@@ -1640,6 +1663,9 @@ function handleAction(act, el) {
     case 'finance-review-choice': handleFinanceReviewChoice(el.getAttribute('data-decision')); break;
     case 'finance-review-confirm': handleFinanceReviewConfirm(id); break;
     case 'finance-review-document': handleFinanceReviewDocument(id); break;
+    case 'executive-open-plan': handleExecutiveOpenPlan(id); break;
+    case 'executive-open-report': handleExecutiveOpenReport(id); break;
+    case 'executive-dashboard-kpi': handleExecutiveDashboardKpi(el.getAttribute('data-target'), el.getAttribute('data-status')); break;
     case 'report-approval': handleReportApproval(id, el.getAttribute('data-decision')); break;
     case 'inspection-status-cycle': handleInspectionStatusCycle(id); break;
     case 'inspection-download-checklist': handleInspectionDownload(id); break;
@@ -3448,6 +3474,40 @@ function handleFinanceReviewDocument(documentId) {
   var names = { request: 'Budget_Request_' + plan.id + '.pdf', travel: 'Travel_Estimate_' + plan.id + '.xlsx', scope: 'Inspection_Scope_' + plan.id + '.pdf' };
   var name = names[documentId] || String(documentId || 'Supporting_Document');
   openModal(modalShell('Supporting Document', '<div class="lead-assigned-modal"><p><b>' + esc(name) + '</b></p><p class="small muted">Mock filename only. No real finance document storage or download service is included.</p></div>', '<button class="btn btn--primary" data-act="close-modal">Close</button>', false));
+}
+
+function handleExecutiveOpenPlan(planId) {
+  var plan = state.planningItems.filter(function (item) { return item.id === planId; })[0];
+  if (!plan) return;
+  state.executiveDirectorUi.selectedPlanId = plan.id;
+  state.executiveDirectorUi.openPlanActionId = '';
+  state.view = 'executive-planning';
+  state.params = { planId: plan.id };
+  persistAfterAction();
+  render();
+}
+
+function handleExecutiveOpenReport(reportId) {
+  var report = state.managerReports.filter(function (item) { return item.id === reportId && item.reportType === 'Final Report'; })[0];
+  if (!report) return;
+  state.executiveDirectorUi.selectedReportId = report.id;
+  state.view = 'executive-final-reports';
+  state.params = { reportId: report.id };
+  persistAfterAction();
+  render();
+}
+
+function handleExecutiveDashboardKpi(target, status) {
+  if (target === 'planning') {
+    state.executiveDirectorUi.planningStatus = status || 'all';
+    state.view = 'executive-planning';
+  } else {
+    state.executiveDirectorUi.reportStatus = status || 'all';
+    state.view = 'executive-final-reports';
+  }
+  state.params = { status: status || 'all' };
+  persistAfterAction();
+  render();
 }
 
 function leadReviewChecklistDownloadText(auditId) {

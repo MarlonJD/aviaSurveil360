@@ -16432,3 +16432,88 @@ td .sp-report-badge {
   .inspection-submit-stage:first-child::before { top: 14px; }
   .inspection-submit-stage:last-child::before { bottom: 14px; }
 }
+
+/* ======================= Executive Director workspace ======================= */
+.executive-dashboard-page,
+.executive-workspace-page { display: flex; flex-direction: column; gap: 16px; }
+.executive-kpi-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.executive-kpi { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); color: var(--ink); text-align: left; cursor: pointer; }
+.executive-kpi:hover { border-color: var(--blue-400); transform: translateY(-1px); }
+.executive-kpi:focus-visible { outline: 3px solid rgba(47, 111, 214, .24); outline-offset: 2px; }
+.executive-kpi > span { display: block; min-height: 34px; color: var(--ink-soft); font-size: 11px; font-weight: 700; }
+.executive-kpi > b { display: block; margin: 5px 0 3px; font-size: 26px; line-height: 1; color: var(--navy-800); }
+.executive-kpi > small { display: block; color: var(--muted); font-size: 9px; line-height: 1.35; }
+.executive-kpi.is-warn { border-top: 3px solid var(--warn); }
+.executive-kpi.is-danger { border-top: 3px solid var(--danger); }
+.executive-kpi.is-ok { border-top: 3px solid var(--ok); }
+.executive-kpi.is-info { border-top: 3px solid var(--info); }
+.executive-decision-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.executive-lower-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(260px, .7fr); gap: 14px; align-items: stretch; }
+.executive-panel { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); }
+.executive-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line-soft); }
+.executive-panel > header span,
+.executive-risk-guardrail > span { display: block; color: var(--blue-500); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.executive-panel > header h2,
+.executive-risk-guardrail h2 { margin-top: 2px; font-size: 14px; }
+.executive-decision-list article { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--line-soft); }
+.executive-decision-list article:last-child { border-bottom: 0; }
+.executive-decision-list article > div:first-child { min-width: 0; }
+.executive-decision-list article > div:first-child > span,
+.executive-decision-list article b,
+.executive-decision-list article small { display: block; }
+.executive-decision-list article > div:first-child > span { color: var(--blue-500); font-size: 9px; font-weight: 800; }
+.executive-decision-list article b { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.executive-decision-list article small { color: var(--muted); font-size: 9px; }
+.executive-decision-list article > div:last-child { display: flex; align-items: center; justify-content: flex-end; gap: 7px; flex: 0 0 auto; }
+.executive-department-list > div,
+.executive-overdue-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px; align-items: center; padding: 11px 16px; border-bottom: 1px solid var(--line-soft); }
+.executive-overdue-list > div { grid-template-columns: minmax(0, 1fr) auto; }
+.executive-department-list > div:last-child,
+.executive-overdue-list > div:last-child { border-bottom: 0; }
+.executive-department-list span,
+.executive-overdue-list span { min-width: 0; }
+.executive-department-list b,
+.executive-department-list small,
+.executive-overdue-list b,
+.executive-overdue-list small { display: block; }
+.executive-department-list b,
+.executive-overdue-list b { font-size: 10px; }
+.executive-department-list small,
+.executive-overdue-list small { color: var(--muted); font-size: 9px; }
+.executive-overdue-list > div > span:last-child { text-align: right; }
+.executive-risk-guardrail { padding: 18px; border: 1px solid #ead7aa; border-radius: var(--radius); background: linear-gradient(145deg, #fffaf0, #fff); }
+.executive-risk-guardrail p { margin-top: 10px; color: var(--ink-soft); font-size: 10px; line-height: 1.55; }
+.executive-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 22px 16px; color: var(--ink-soft); }
+.executive-empty b { font-size: 11px; }
+.executive-empty span { color: var(--muted); font-size: 10px; }
+.executive-empty .btn { margin-top: 8px; }
+.executive-notification-list article { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line-soft); }
+.executive-notification-list article:last-child { border-bottom: 0; }
+.executive-notification-list article b,
+.executive-notification-list article small { display: block; }
+.executive-notification-list article b { font-size: 11px; }
+.executive-notification-list article small { color: var(--muted); font-size: 9px; }
+
+@media (max-width: 1240px) {
+  .executive-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .executive-lower-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .executive-risk-guardrail { grid-column: 1 / -1; }
+}
+
+@media (max-width: 900px) {
+  .executive-decision-grid,
+  .executive-lower-grid { grid-template-columns: 1fr; }
+  .executive-risk-guardrail { grid-column: auto; }
+}
+
+@media (max-width: 620px) {
+  .executive-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .executive-decision-list article { align-items: flex-start; flex-direction: column; }
+  .executive-decision-list article > div:last-child { width: 100%; justify-content: space-between; }
+  .executive-department-list > div { grid-template-columns: minmax(0, 1fr) auto; }
+  .executive-department-list > div > span:last-child { grid-column: 2; }
+}
+
+@media (max-width: 420px) {
+  .executive-kpi-grid { grid-template-columns: 1fr; }
+}

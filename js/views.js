@@ -571,6 +571,112 @@ function viewFinanceReviewWorkspace() {
   return '<div class="finance-review-page">' + pageHead('Finance Review', 'Approve the requested budget or return it to General Manager action for revision.') + guardrailStrip([{ label: 'Budget approval only', tone: 'info' }, { label: 'No plan signature or release', tone: 'warn' }, { label: 'Frontend-only demo' }]) + '<div class="finance-summary-strip"><div><span>Pending Finance Review</span><b>' + esc(String(pending.length)) + '</b></div><div><span>Total Requested Budget</span><b>' + financeMoney(totalBudget, selected.budget.currency) + '</b></div><div><span>Approval path</span><b>Department Manager → GM → Finance Review → Executive Director</b></div></div><div class="finance-filter-row"><label>Search<input type="search" data-field="finance-review-query" value="' + esc(ui.query) + '" placeholder="Plan, department, organization"></label><label>Status<select data-field="finance-review-status"><option value="pending"' + (ui.status === 'pending' ? ' selected' : '') + '>Pending</option><option value="approved"' + (ui.status === 'approved' ? ' selected' : '') + '>Approved</option><option value="returned"' + (ui.status === 'returned' ? ' selected' : '') + '>Returned</option><option value="all"' + (ui.status === 'all' ? ' selected' : '') + '>All</option></select></label></div><div class="finance-review-layout"><main><section class="finance-review-queue"><h2>Review Queue</h2><div class="responsive-table-shell"><table><thead><tr><th>Plan</th><th>Department</th><th>Requested</th><th>Current Owner</th><th>Status</th><th>Action</th></tr></thead><tbody>' + rowHtml + '</tbody></table></div></section><section class="finance-review-detail"><div class="finance-review-title"><div><span>Selected Plan</span><h2>' + esc(selected.title) + '</h2><p>' + esc(selected.id + ' · ' + selected.organization) + '</p></div>' + demoBadge(financeReviewStatus(selected).label, financeReviewStatus(selected).tone) + '</div>' + financeReviewTabs(activeTab) + financeReviewTabBody(selected, activeTab) + '</section></main><aside><section class="finance-review-rail"><h2>Approval Flow</h2>' + approvalProgressHtml(selected) + '</section>' + financeReviewDecisionPanel(selected, ui) + '</aside></div></div>';
 }
 
+/* ======================= Executive Director workspace ======================= */
+
+function executivePendingPlanningItems() {
+  return state.planningItems.filter(function (item) {
+    return approvalSummary(item).ownerRole === 'executiveDirector';
+  });
+}
+
+function executiveDashboardMetrics() {
+  var pendingPlans = executivePendingPlanningItems();
+  var pendingReports = executiveFinalReportProjection(state, { status: 'pending' }).rows;
+  var openFindings = state.findings.filter(function (finding) { return finding.status !== 'CLOSED'; });
+  var closedAudits = state.audits.filter(function (audit) { return audit.status === 'Closed'; });
+  return {
+    pendingPlans: pendingPlans,
+    pendingReports: pendingReports,
+    auditsInProgress: state.audits.filter(function (audit) { return ['Scheduled', 'In Progress', 'Follow-up Open'].indexOf(audit.status) !== -1; }).length,
+    finalReports: state.managerReports.filter(function (report) { return report.reportType === 'Final Report'; }).length,
+    overdueActions: openFindings.filter(function (finding) { return dueInfo(finding).overdue; }),
+    closedThisPeriod: closedAudits.length + state.findings.filter(function (finding) { return finding.status === 'CLOSED'; }).length
+  };
+}
+
+function executiveKpiButton(label, value, foot, target, status, tone) {
+  return '<button class="executive-kpi' + (tone ? ' is-' + esc(tone) : '') + '" data-act="executive-dashboard-kpi" data-target="' + esc(target) + '" data-status="' + esc(status || 'all') + '">' +
+    '<span>' + esc(label) + '</span><b>' + esc(String(value)) + '</b><small>' + esc(foot) + '</small></button>';
+}
+
+function executivePlanningQueueHtml(items) {
+  if (!items.length) return '<div class="executive-empty"><b>No plans require an Executive Director decision.</b><span>Approved or returned items remain available in Planning.</span></div>';
+  return '<div class="executive-decision-list">' + items.map(function (item) {
+    var summary = approvalSummary(item);
+    return '<article><div><span>' + esc(item.id + ' · ' + item.department) + '</span><b>' + esc(item.title) + '</b><small>' + esc(item.organization + ' · Target ' + item.targetMonth) + '</small></div><div>' + demoBadge(summary.statusLabel, summary.statusTone) + '<button class="btn btn--sm btn--primary" data-act="executive-open-plan" data-id="' + esc(item.id) + '">Review plan</button></div></article>';
+  }).join('') + '</div>';
+}
+
+function executiveReportQueueHtml(items) {
+  if (!items.length) return '<div class="executive-empty"><b>No Final Reports require an Executive Director decision.</b><span>Issued and returned reports remain available in Final Reports.</span></div>';
+  return '<div class="executive-decision-list">' + items.map(function (report) {
+    return '<article><div><span>' + esc(report.id + ' · ' + report.auditId) + '</span><b>' + esc(report.organization) + '</b><small>' + esc(report.leadInspector + ' · Submitted ' + report.submittedAt) + '</small></div><div>' + managerReportStatusBadge(report.status) + '<button class="btn btn--sm btn--primary" data-act="executive-open-report" data-id="' + esc(report.id) + '">Review report</button></div></article>';
+  }).join('') + '</div>';
+}
+
+function executiveDepartmentOverviewHtml() {
+  var grouped = {};
+  state.audits.forEach(function (audit) {
+    var key = audit.domain || 'Other';
+    if (!grouped[key]) grouped[key] = { total: 0, active: 0, openFindings: 0 };
+    grouped[key].total += 1;
+    if (['Closed', 'Report Issued'].indexOf(audit.status) === -1) grouped[key].active += 1;
+    grouped[key].openFindings += state.findings.filter(function (finding) { return finding.auditId === audit.id && finding.status !== 'CLOSED'; }).length;
+  });
+  return '<div class="executive-department-list">' + Object.keys(grouped).sort().map(function (name) {
+    var row = grouped[name];
+    return '<div><span><b>' + esc(name) + '</b><small>' + esc(row.total + ' audits') + '</small></span><span><b>' + esc(String(row.active)) + '</b><small>active</small></span><span><b>' + esc(String(row.openFindings)) + '</b><small>open Findings</small></span></div>';
+  }).join('') + '</div>';
+}
+
+function executiveOverdueActionsHtml(items) {
+  if (!items.length) return '<div class="executive-empty"><b>No overdue actions.</b><span>Due Date monitoring remains informational.</span></div>';
+  return '<div class="executive-overdue-list">' + items.slice(0, 5).map(function (finding) {
+    var audit = state.audits.filter(function (candidate) { return candidate.id === finding.auditId; })[0];
+    return '<div><span><b>' + esc(finding.id) + '</b><small>' + esc(finding.title) + '</small></span><span>' + severityHtml(finding) + '<small>' + esc(dueInfo(finding).label + (audit ? ' · ' + audit.domain : '')) + '</small></span></div>';
+  }).join('') + '</div>';
+}
+
+function viewExecutiveDirectorDashboard() {
+  var metrics = executiveDashboardMetrics();
+  return '<div class="executive-dashboard-page">' +
+    pageHead('Executive Director Dashboard', 'Final decision workbench for surveillance plans and Final Reports.') +
+    guardrailStrip([{ label: 'Final authorized demo approval', tone: 'info' }, { label: 'Mock approval mark — no real e-signature', tone: 'warn' }, { label: 'No automatic enforcement or closure decision', tone: 'neutral' }]) +
+    '<section class="executive-kpi-grid" aria-label="Executive overview">' +
+      executiveKpiButton('Total Audits', state.audits.length, 'Current demo portfolio', 'reports', 'all', 'neutral') +
+      executiveKpiButton('Audits in Progress', metrics.auditsInProgress, 'Scheduled, active, or follow-up', 'reports', 'pending', 'info') +
+      executiveKpiButton('Pending Approval', metrics.pendingPlans.length + metrics.pendingReports.length, metrics.pendingPlans.length + ' plans · ' + metrics.pendingReports.length + ' reports', 'planning', 'pending', 'warn') +
+      executiveKpiButton('Final Reports', metrics.finalReports, 'All visible Final Report records', 'reports', 'all', 'ok') +
+      executiveKpiButton('Overdue Actions', metrics.overdueActions.length, 'Open Finding Due Dates', 'reports', 'all', metrics.overdueActions.length ? 'danger' : 'ok') +
+      executiveKpiButton('Closed This Period', metrics.closedThisPeriod, 'Closed audits and Findings', 'reports', 'approved', 'ok') +
+    '</section>' +
+    '<section class="executive-decision-grid"><div class="executive-panel"><header><div><span>Decision queue</span><h2>Planning approvals</h2></div><button class="btn btn--sm" data-act="executive-dashboard-kpi" data-target="planning" data-status="all">View all</button></header>' + executivePlanningQueueHtml(metrics.pendingPlans) + '</div>' +
+    '<div class="executive-panel"><header><div><span>Decision queue</span><h2>Final Report approvals</h2></div><button class="btn btn--sm" data-act="executive-dashboard-kpi" data-target="reports" data-status="all">View all</button></header>' + executiveReportQueueHtml(metrics.pendingReports) + '</div></section>' +
+    '<section class="executive-lower-grid"><div class="executive-panel"><header><div><span>Portfolio context</span><h2>Department overview</h2></div></header>' + executiveDepartmentOverviewHtml() + '</div>' +
+    '<div class="executive-panel"><header><div><span>Due Date attention</span><h2>Overdue actions</h2></div></header>' + executiveOverdueActionsHtml(metrics.overdueActions) + '</div>' +
+    '<aside class="executive-risk-guardrail"><span>Oversight Health context</span><h2>Management indicator only</h2><p>Risk and workload summaries are informational only. They do not make an automatic legal, enforcement, certificate suspension, Finding closure, or audit closure decision.</p></aside></section>' +
+  '</div>';
+}
+
+function viewExecutivePlanningWorkspace() {
+  var rows = state.planningItems;
+  return '<div class="executive-workspace-page">' + pageHead('Planning', 'Review surveillance plans that have completed Department, GM, and Finance stages.') + guardrailStrip([{ label: 'Executive Director final plan approval', tone: 'info' }, { label: 'GM release remains a separate next step', tone: 'warn' }]) + '<section class="executive-panel"><header><div><span>Planning register</span><h2>Surveillance plans</h2></div></header>' + executivePlanningQueueHtml(rows) + '</section></div>';
+}
+
+function viewExecutiveFinalReportsWorkspace() {
+  var projection = executiveFinalReportProjection(state, { query: state.executiveDirectorUi.reportQuery, organization: state.executiveDirectorUi.reportOrganization, status: state.executiveDirectorUi.reportStatus });
+  return '<div class="executive-workspace-page">' + pageHead('Final Reports', 'Review Final Reports forwarded by the General Manager.') + guardrailStrip([{ label: 'Executive Director is the final report authority', tone: 'info' }, { label: 'Approval does not bypass CAP or Finding closure', tone: 'warn' }]) + '<section class="executive-panel"><header><div><span>Final Report register</span><h2>Authorized review queue</h2></div></header>' + executiveReportQueueHtml(projection.rows) + '</section></div>';
+}
+
+function viewExecutiveNotifications() {
+  var notifications = state.notifications.filter(function (notification) { return notification.role === 'executiveDirector'; });
+  return '<div class="executive-workspace-page">' + pageHead('Notifications', 'In-app Executive Director notices; no real email, SMS, or external service is used.') + '<section class="executive-panel"><div class="executive-notification-list">' + (notifications.length ? notifications.map(function (notification) { return '<article><span>' + esc(notification.icon || 'RPT') + '</span><div><b>' + esc(notification.text) + '</b><small>' + esc(notification.time) + '</small></div></article>'; }).join('') : '<div class="executive-empty"><b>No Executive Director notifications.</b><span>New planning and Final Report submissions appear here.</span></div>') + '</div></section></div>';
+}
+
+function viewExecutiveReportPreview() {
+  return '<div class="executive-workspace-page">' + pageHead('Final Report Preview', 'Select a Final Report from the review workspace to open its state-backed document preview.') + '<div class="executive-empty"><b>No report selected for preview.</b><span>Use Final Reports to select a report record.</span><button class="btn btn--primary" data-act="nav" data-view="executive-final-reports">Return to Final Reports</button></div></div>';
+}
+
 function activeChecklistApproval() {
   var checklist = state.managedChecklists && state.managedChecklists.length ? state.managedChecklists[0] : null;
   if (!checklist) return null;

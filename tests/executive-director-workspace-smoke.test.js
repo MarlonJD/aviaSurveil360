@@ -46,7 +46,6 @@ assert.equal(context.homeView('executiveDirector'), 'executive-dashboard');
 assert.equal(typeof context.applyExecutivePlanningDecision, 'function');
 assert.equal(typeof context.executiveFinalReportProjection, 'function');
 assert.equal(typeof context.applyExecutiveFinalReportDecision, 'function');
-assert.equal(typeof context.finalReportDocumentHtml, 'function');
 
 const planningState = context.freshState();
 const plan = planningState.planningItems[0];
@@ -153,5 +152,52 @@ assert.notEqual(
   'Closed',
   'open follow-up work prevents audit closure'
 );
+
+const dashboardState = context.freshState();
+const dashboardPlan = dashboardState.planningItems[0];
+context.applyApprovalDecision(dashboardPlan, {
+  decision: 'forward',
+  actor: { role: 'gm', name: context.ROLES.gm.user },
+  comment: 'Forwarded for Finance Review.'
+});
+context.applyFinancePlanningDecision(dashboardPlan, {
+  decision: 'approve',
+  actor: { role: 'finance', name: context.ROLES.finance.user },
+  comment: 'Budget approved.'
+});
+const dashboardReport = dashboardState.managerReports.find((item) => item.id === 'FR-2026-018');
+dashboardReport.status = 'submitted_to_executive';
+dashboardReport.ownerRole = 'executiveDirector';
+dashboardState.role = 'executiveDirector';
+dashboardState.view = 'executive-dashboard';
+dashboardState.params = {};
+context.state = dashboardState;
+
+const dashboardHtml = context.viewExecutiveDirectorDashboard();
+[
+  'Executive Director Dashboard',
+  'Total Audits',
+  'Audits in Progress',
+  'Pending Approval',
+  'Final Reports',
+  'Overdue Actions',
+  'Closed This Period',
+  'Planning approvals',
+  'Final Report approvals',
+  dashboardPlan.id,
+  dashboardReport.id,
+  'Department overview',
+  'informational only'
+].forEach((text) => assert.match(dashboardHtml, new RegExp(text, 'i')));
+assert.match(dashboardHtml, /data-act="executive-open-plan"/);
+assert.match(dashboardHtml, /data-act="executive-open-report"/);
+assert.match(dashboardHtml, /data-act="executive-dashboard-kpi"/);
+assert.match(dashboardHtml, /do not make an automatic legal, enforcement, certificate suspension, Finding closure, or audit closure decision/i);
+
+dashboardState.view = 'finding';
+dashboardState.params = { findingId: 'SEC-2026-002' };
+context.normalizeViewForRole();
+assert.equal(dashboardState.view, 'executive-dashboard');
+assert.deepEqual(JSON.parse(JSON.stringify(dashboardState.params)), {});
 
 console.log('executive-director-workspace-smoke: ok');
