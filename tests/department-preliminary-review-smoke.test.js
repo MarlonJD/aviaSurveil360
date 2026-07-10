@@ -68,7 +68,8 @@ context.render();
 
 let html = elements.get('app-root').innerHTML;
 assert.match(html, /Preliminary Report/);
-assert.match(html, /AVSEC Inspection/);
+assert.match(html, /Cabin Inspection/);
+assert.match(html, /Fly Namibia/);
 assert.match(html, /Pending Your Approval/);
 assert.match(html, /Submission & Next Steps/);
 assert.match(html, /If CAP Required/);
@@ -80,14 +81,14 @@ assert.match(html, /Request Changes/);
 context.handleAction('department-prelim-tab', dataEl({ 'data-tab': 'findings' }));
 html = elements.get('app-root').innerHTML;
 assert.match(html, /Inspection & Findings/);
-assert.match(html, /SEC-2026-002/);
+assert.match(html, /CAB-2026-011/);
 assert.match(html, /Required/);
 
 context.handleAction('department-prelim-approve', dataEl({ 'data-path': 'service_provider' }));
 assert.equal(context.state.departmentPreliminaryReviewUi.approvedPath, 'service_provider');
 assert.equal(context.state.notifications[0].role, 'auditee');
 assert.match(context.state.notifications[0].text, /Service Provider portal/);
-assert.equal(context.reportForAudit('AUD-2026-005').status, 'released_to_service_provider');
+assert.equal(context.reportForAudit('AUD-2026-001').status, 'released_to_service_provider');
 html = elements.get('app-root').innerHTML;
 assert.match(html, /Sent to Service Provider/);
 
@@ -102,7 +103,7 @@ context.handleAction('department-prelim-approve', dataEl({ 'data-path': 'gm' }))
 assert.equal(context.state.departmentPreliminaryReviewUi.approvedPath, 'gm');
 assert.equal(context.state.notifications[0].role, 'gm');
 assert.match(context.state.notifications[0].text, /General Manager approval/);
-assert.equal(context.reportForAudit('AUD-2026-005').status, 'submitted_to_gm');
+assert.equal(context.reportForAudit('AUD-2026-001').status, 'submitted_to_gm');
 html = elements.get('app-root').innerHTML;
 assert.match(html, /Sent to General Manager/);
 

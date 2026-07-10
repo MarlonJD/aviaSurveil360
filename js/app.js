@@ -568,6 +568,7 @@ function go(view, opts) {
   }
   if (view === 'lead-review' && !opts.auditId) delete state.params.auditId;
   if (view === 'audit-reports' && !opts.auditId) delete state.params.auditId;
+  if (view === 'audit-reports' && !opts.auditId && opts.filter === 'preliminary') delete state.params.reportId;
   if (view === 'audit-reports' && !opts.finalReportId) delete state.params.finalReportId;
   if (opts.auditId !== undefined && opts.auditId !== null && opts.auditId !== '') state.params.auditId = opts.auditId;
   if (opts.finalReportId !== undefined && opts.finalReportId !== null && opts.finalReportId !== '') state.params.finalReportId = opts.finalReportId;
@@ -1653,7 +1654,8 @@ function handleAction(act, el) {
     case 'lead-assignment-preview': handleLeadAssignmentPreview(); break;
     case 'lead-assignment-release': handleLeadAssignmentRelease(); break;
     case 'lead-assignment-bulk': handleLeadAssignmentBulk(el.getAttribute('data-mode')); break;
-    case 'preliminary-report-new': handlePreliminaryReportNew(); break;
+    case 'preliminary-report-open-package': handlePreliminaryReportOpenPackage(); break;
+    case 'preliminary-report-new': handlePreliminaryReportOpenPackage(); break;
     case 'preliminary-report-open': handlePreliminaryReportOpen(id); break;
     case 'preliminary-report-actions': handlePreliminaryReportActions(id); break;
     case 'preliminary-report-step': handlePreliminaryReportStep(el.getAttribute('data-step')); break;
@@ -2154,41 +2156,20 @@ function ensureLeadPreliminaryReportsUi() {
     organization: 'all',
     period: 'all',
     mode: 'list',
-    selectedReportId: 'PR-2026-018',
-    step: 'inspection',
-    draftSavedAt: '',
-    submittedAt: '',
-    mockUploadName: '',
-    includedFindings: {},
-    findingLevel: 'all',
-    findingQuery: '',
-    declarations: {
-      accurate: true,
-      evidenceBased: true,
-      readyForReview: true
-    },
-    reportContent: ''
+    selectedReportId: 'PR-2026-018'
   }, state.leadPreliminaryReportsUi || {});
-  state.leadPreliminaryReportsUi.declarations = Object.assign({
-    accurate: true,
-    evidenceBased: true,
-    readyForReview: true
-  }, state.leadPreliminaryReportsUi.declarations || {});
-  if (!state.leadPreliminaryReportsUi.includedFindings || typeof state.leadPreliminaryReportsUi.includedFindings !== 'object') state.leadPreliminaryReportsUi.includedFindings = {};
   if (!state.leadPreliminaryReportsUi.query) state.leadPreliminaryReportsUi.query = '';
   if (!state.leadPreliminaryReportsUi.status) state.leadPreliminaryReportsUi.status = 'all';
   if (!state.leadPreliminaryReportsUi.organization) state.leadPreliminaryReportsUi.organization = 'all';
   if (!state.leadPreliminaryReportsUi.period) state.leadPreliminaryReportsUi.period = 'all';
   if (!state.leadPreliminaryReportsUi.mode) state.leadPreliminaryReportsUi.mode = 'list';
   if (!state.leadPreliminaryReportsUi.selectedReportId) state.leadPreliminaryReportsUi.selectedReportId = 'PR-2026-018';
-  if (!state.leadPreliminaryReportsUi.step) state.leadPreliminaryReportsUi.step = 'inspection';
-  if (!state.leadPreliminaryReportsUi.draftSavedAt) state.leadPreliminaryReportsUi.draftSavedAt = '';
-  if (!state.leadPreliminaryReportsUi.submittedAt) state.leadPreliminaryReportsUi.submittedAt = '';
-  if (!state.leadPreliminaryReportsUi.mockUploadName) state.leadPreliminaryReportsUi.mockUploadName = '';
-  if (!state.leadPreliminaryReportsUi.findingLevel) state.leadPreliminaryReportsUi.findingLevel = 'all';
-  if (!state.leadPreliminaryReportsUi.findingQuery) state.leadPreliminaryReportsUi.findingQuery = '';
-  if (!state.leadPreliminaryReportsUi.reportContent) state.leadPreliminaryReportsUi.reportContent = '';
   return state.leadPreliminaryReportsUi;
+}
+
+function activeLeadPreliminaryDraft() {
+  var ui = ensureLeadPreliminaryReportsUi();
+  return preliminaryReportDraftById(ui.selectedReportId || 'PR-2026-018', state);
 }
 
 function ensureDepartmentPreliminaryReviewUi() {
@@ -2845,65 +2826,55 @@ function handleLeadAssignmentBulk(mode) {
 
 function handleLeadPreliminaryReportFieldChange(field, target) {
   var ui = ensureLeadPreliminaryReportsUi();
+  var draft = activeLeadPreliminaryDraft();
   var value = target && target.value !== undefined ? target.value : '';
   if (field === 'preliminary-report-query') ui.query = value;
   if (field === 'preliminary-report-status') ui.status = value || 'all';
   if (field === 'preliminary-report-organization') ui.organization = value || 'all';
   if (field === 'preliminary-report-period') ui.period = value || 'all';
-  if (field === 'preliminary-report-content') ui.reportContent = value;
-  if (field === 'preliminary-report-finding-level') ui.findingLevel = value || 'all';
-  if (field === 'preliminary-report-finding-query') ui.findingQuery = value || '';
+  if (field === 'preliminary-report-content') draft.content = value;
+  if (field === 'preliminary-report-finding-level') draft.findingLevel = value || 'all';
+  if (field === 'preliminary-report-finding-query') draft.findingQuery = value || '';
   if (field === 'preliminary-report-finding') {
     var findingId = target && target.getAttribute ? target.getAttribute('data-id') : '';
-    if (findingId) ui.includedFindings[findingId] = !!target.checked;
+    if (findingId) draft.includedFindingIds[findingId] = !!target.checked;
   }
   if (field === 'preliminary-report-declaration') {
     var declaration = target && target.getAttribute ? target.getAttribute('data-id') : '';
-    if (declaration) ui.declarations[declaration] = !!target.checked;
+    if (declaration) draft.declarations[declaration] = !!target.checked;
   }
   persistAfterAction();
   if (field !== 'preliminary-report-content') render();
 }
 
-function handlePreliminaryReportNew() {
-  openModal(modalShell('New preliminary report',
-    '<div class="lead-assigned-modal">' +
-      '<p><b>Draft preliminary report package</b></p>' +
-      '<div class="metaline">' +
-        metaItem('Inspection', 'AVSEC Inspection') +
-        metaItem('Organization', 'SkyCargo Air') +
-        metaItem('Lead Inspector', ROLES.leadInspector.user) +
-        metaItem('Status', 'Draft') +
-      '</div>' +
-      '<p class="small muted mt-12">Demo only: this creates a mock report shell in the browser. No backend, real report engine, storage, or notification is used.</p>' +
-    '</div>',
-    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="preliminary-report-open" data-id="PR-2026-018">Open Existing Report</button>',
-    false));
+function handlePreliminaryReportOpenPackage() {
+  var rows = typeof leadPreliminaryReportRows === 'function' ? leadPreliminaryReportRows().filter(function (row) { return row.completePackage; }) : [];
+  var body = rows.length ? '<div class="report-package-selector">' + rows.map(function (row) {
+    return '<button data-act="preliminary-report-open" data-id="' + esc(row.id) + '"><span><b>' + esc(row.id) + '</b><small>' + esc(row.auditId + ' · ' + row.organization) + '</small></span><span><b>' + esc(row.statusLabel) + '</b><small>Owner: ' + esc(row.owner) + ' · Next: ' + esc(row.nextAction) + '</small></span></button>';
+  }).join('') + '</div>' : '<div class="empty">No editable Preliminary Report package is available.</div>';
+  openModal(modalShell('Open Report Package', body, '<button class="btn" data-act="close-modal">Close</button>', false));
 }
 
 function handlePreliminaryReportOpen(reportId) {
   var row = typeof leadPreliminaryReportById === 'function' ? leadPreliminaryReportById(reportId) : null;
-  if (!row || !row.auditId) {
-    toast('Report unavailable', 'This mock report does not have a detail package in the demo.', 'warn');
+  var result = openLeadPreliminaryReport(reportId);
+  if (!row || !result.ok) {
+    if (row && result.reason === 'historical_read_only') {
+      openModal(modalShell('Historical Preliminary Report',
+        '<div class="lead-assigned-modal"><p><b>' + esc(row.id) + '</b> is a read-only historical record.</p><div class="metaline">' + metaItem('Audit ID', row.auditId) + metaItem('Organization', row.organization) + metaItem('Status', row.statusLabel) + metaItem('Last updated', row.updated) + '</div><p class="small muted mt-12">No editable approval package is linked to this historical projection.</p></div>',
+        '<button class="btn btn--primary" data-act="close-modal">Close</button>', false));
+      return;
+    }
+    toast('Report unavailable', 'The selected Report ID does not have a linked Preliminary Report package.', 'warn');
     return;
   }
   closeModal();
-  go('audit-reports', { auditId: row.auditId, filter: 'preliminary' });
+  persistAfterAction();
+  render();
 }
 
 function handlePreliminaryReportActions(reportId) {
-  var row = typeof leadPreliminaryReportById === 'function' ? leadPreliminaryReportById(reportId) : null;
-  if (!row) return;
-  var ui = ensureLeadPreliminaryReportsUi();
-  ui.mode = 'workflow';
-  ui.selectedReportId = row.id;
-  ui.step = 'inspection';
-  state.view = 'audit-reports';
-  state.params = { filter: 'preliminary' };
-  if (state.selectedFilters) state.selectedFilters['audit-reports'] = 'preliminary';
-  closeModal();
-  persistAfterAction();
-  render();
+  handlePreliminaryReportOpen(reportId);
 }
 
 function preliminaryReportStepOrder() {
@@ -2914,40 +2885,42 @@ function handlePreliminaryReportStep(step) {
   var order = preliminaryReportStepOrder();
   if (order.indexOf(step) === -1) return;
   var ui = ensureLeadPreliminaryReportsUi();
+  var draft = activeLeadPreliminaryDraft();
   ui.mode = 'workflow';
-  ui.step = step;
+  draft.step = step;
   persistAfterAction();
   render();
 }
 
 function handlePreliminaryReportNext() {
   var ui = ensureLeadPreliminaryReportsUi();
+  var draft = activeLeadPreliminaryDraft();
   var order = preliminaryReportStepOrder();
-  var index = order.indexOf(ui.step || 'inspection');
+  var index = order.indexOf(draft.step || 'inspection');
   ui.mode = 'workflow';
-  ui.step = order[Math.min(order.length - 1, index + 1)] || 'inspection';
+  draft.step = order[Math.min(order.length - 1, index + 1)] || 'inspection';
   persistAfterAction();
   render();
 }
 
 function handlePreliminaryReportBack() {
   var ui = ensureLeadPreliminaryReportsUi();
+  var draft = activeLeadPreliminaryDraft();
   var order = preliminaryReportStepOrder();
-  var index = order.indexOf(ui.step || 'inspection');
+  var index = order.indexOf(draft.step || 'inspection');
   if (index <= 0) {
     ui.mode = 'list';
-    ui.step = 'inspection';
   } else {
     ui.mode = 'workflow';
-    ui.step = order[index - 1];
+    draft.step = order[index - 1];
   }
   persistAfterAction();
   render();
 }
 
 function handlePreliminaryReportSave() {
-  var ui = ensureLeadPreliminaryReportsUi();
-  ui.draftSavedAt = logTimestamp();
+  var draft = activeLeadPreliminaryDraft();
+  draft.draftSavedAt = logTimestamp();
   persistAfterAction();
   render();
   toast('Draft saved', 'Preliminary report draft was saved in this browser.', 'ok');
@@ -2955,8 +2928,17 @@ function handlePreliminaryReportSave() {
 
 function handlePreliminaryReportSubmit() {
   var ui = ensureLeadPreliminaryReportsUi();
-  ui.submittedAt = logTimestamp();
-  ui.step = 'review';
+  var draft = activeLeadPreliminaryDraft();
+  draft.submittedAt = logTimestamp();
+  draft.step = 'review';
+  var projection = preliminaryReportProjectionById(ui.selectedReportId, state);
+  var artifact = reportArtifactById(ui.selectedReportId, state);
+  if (projection) {
+    projection.status = 'pending_manager';
+    projection.ownerRole = 'manager';
+    projection.submittedAt = draft.submittedAt;
+  }
+  if (artifact) artifact.status = 'pending_manager';
   pushNotification('manager', 'RPT', 'Preliminary report ' + (ui.selectedReportId || 'PR-2026-018') + ' is ready for Department Manager review.');
   addLog('Preliminary report submitted to Department Manager', ui.selectedReportId || 'PR-2026-018');
   persistAfterAction();
@@ -2977,8 +2959,8 @@ function handlePreliminaryReportPreview() {
 }
 
 function handlePreliminaryReportBrowseFile() {
-  var ui = ensureLeadPreliminaryReportsUi();
-  ui.mockUploadName = 'Additional_CAP_Evidence_Summary.pdf';
+  var draft = activeLeadPreliminaryDraft();
+  if (draft.mockAttachmentNames.indexOf('Additional_CAP_Evidence_Summary.pdf') === -1) draft.mockAttachmentNames.push('Additional_CAP_Evidence_Summary.pdf');
   persistAfterAction();
   render();
   toast('File selected', 'Additional_CAP_Evidence_Summary.pdf was added as a mock attachment name.', 'ok');
@@ -2995,14 +2977,18 @@ function handlePreliminaryReportNewFolder() {
 }
 
 function handlePreliminaryReportAttachmentAction(fileId) {
-  toast('Attachment action', (fileId || 'Attachment') + ' action is simulated in this frontend demo.', 'info');
+  openModal(modalShell('Attachment Details',
+    '<div class="lead-assigned-modal"><p><b>' + esc(fileId || 'Attachment') + '</b></p><p class="small muted">This is a filename-only supporting record in the frontend demo. No real file content or storage is available.</p></div>',
+    '<button class="btn btn--primary" data-act="close-modal">Close</button>', false));
 }
 
 function handlePreliminaryReportViewFinding(findingId) {
+  var finding = findingById(findingId);
   openModal(modalShell('Finding included in report',
     '<div class="lead-assigned-modal">' +
-      '<p><b>' + esc(findingId || 'SEC-2026-002') + '</b></p>' +
-      '<p class="small muted">This finding remains selected for the preliminary report package.</p>' +
+      '<p><b>' + esc(findingId || 'Finding') + '</b></p>' +
+      '<div class="metaline">' + metaItem('Status', finding && FINDING_STATUS[finding.status] ? FINDING_STATUS[finding.status].label : 'Potential / report finding') + metaItem('Due Date', finding && finding.dueDate ? fmtDate(finding.dueDate) : 'Not configured') + metaItem('Related Audit', finding ? finding.auditId : activeInspectionAuditId()) + '</div>' +
+      '<p class="small muted">' + esc(finding ? finding.title : 'This report-linked finding remains selected for the Preliminary Report package.') + '</p>' +
     '</div>',
     '<button class="btn btn--primary" data-act="close-modal">Close</button>',
     false));

@@ -6464,26 +6464,40 @@ function preliminaryNoticeCardHtml(report) {
 }
 
 function leadPreliminaryReportRows() {
-  return [
-    { id: 'PR-2026-018', inspection: 'AVSEC Inspection', organization: 'SkyCargo Air', dates: '12 - 14 Jun 2026', status: 'submitted', updated: '15 Jun 2026 14:32', auditId: 'AUD-2026-005', period: 'jun', findings: { critical: 6, major: 2, observation: 3 } },
-    { id: 'PR-2026-017', inspection: 'Ramp Safety Inspection', organization: 'AirMove Ground', dates: '10 - 11 Jun 2026', status: 'approved', updated: '14 Jun 2026 09:15', auditId: 'AUD-2026-005', period: 'jun', findings: { critical: 4, major: 1, observation: 3 } },
-    { id: 'PR-2026-016', inspection: 'SMS Audit', organization: 'BlueWings Airlines', dates: '5 - 7 Jun 2026', status: 'draft', updated: '13 Jun 2026 16:45', auditId: 'AUD-2026-001', period: 'jun', findings: { critical: 8, major: 2, observation: 4 } },
-    { id: 'PR-2026-015', inspection: 'Dangerous Goods Inspection', organization: 'TransAir Cargo', dates: '2 - 3 Jun 2026', status: 'draft', updated: '12 Jun 2026 11:20', auditId: 'AUD-2026-001', period: 'jun', findings: { critical: 3, major: 1, observation: 2 } },
-    { id: 'PR-2026-014', inspection: 'Security Inspection', organization: 'JetFast Aviation', dates: '1 - 2 Jun 2026', status: 'released', updated: '10 Jun 2026 10:05', auditId: 'AUD-2026-005', period: 'jun', findings: { critical: 5, major: 1, observation: 3 } },
-    { id: 'PR-2026-013', inspection: 'Air Cargo Security Audit', organization: 'NorthSky Logistics', dates: '28 - 30 May 2026', status: 'approved', updated: '30 May 2026 15:10', auditId: 'AUD-2026-005', period: 'may', findings: { critical: 7, major: 2, observation: 5 } },
-    { id: 'PR-2026-012', inspection: 'Ground Handling Inspection', organization: 'Prime Handling', dates: '25 - 26 May 2026', status: 'submitted', updated: '26 May 2026 13:50', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 2, major: 1, observation: 1 } },
-    { id: 'PR-2026-011', inspection: 'Wildlife Hazard Inspection', organization: 'GreenAir', dates: '21 - 22 May 2026', status: 'draft', updated: '22 May 2026 08:30', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 1, major: 0, observation: 2 } },
-    { id: 'PR-2026-010', inspection: 'Maintenance Oversight Inspection', organization: 'West Air (Pty) Ltd', dates: '18 - 20 May 2026', status: 'submitted', updated: '21 May 2026 10:40', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 2, major: 2, observation: 2 } },
-    { id: 'PR-2026-009', inspection: 'Cabin Inspection', organization: 'Fly Namibia', dates: '14 - 16 May 2026', status: 'approved', updated: '17 May 2026 13:05', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 3, major: 1, observation: 4 } },
-    { id: 'PR-2026-008', inspection: 'Cabin Safety Inspection', organization: 'National Airways Corp', dates: '10 - 12 May 2026', status: 'released', updated: '13 May 2026 12:35', auditId: 'AUD-2026-001', period: 'may', findings: { critical: 1, major: 2, observation: 3 } },
-    { id: 'PR-2026-007', inspection: 'Airport Security Inspection', organization: 'SkyCargo Air', dates: '6 - 8 May 2026', status: 'draft', updated: '9 May 2026 17:20', auditId: 'AUD-2026-005', period: 'may', findings: { critical: 6, major: 3, observation: 2 } },
-    { id: 'PR-2026-006', inspection: 'Cargo Facility Inspection', organization: 'Metro Cargo', dates: '1 - 3 May 2026', status: 'submitted', updated: '4 May 2026 09:55', auditId: 'AUD-2026-005', period: 'may', findings: { critical: 4, major: 2, observation: 1 } },
-    { id: 'PR-2026-005', inspection: 'Continuing Airworthiness Audit', organization: 'Desert Air Maintenance', dates: '27 - 29 Apr 2026', status: 'approved', updated: '30 Apr 2026 14:10', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 2, major: 2, observation: 3 } },
-    { id: 'PR-2026-004', inspection: 'Fuel Safety Inspection', organization: 'BlueWings Airlines', dates: '22 - 24 Apr 2026', status: 'submitted', updated: '25 Apr 2026 10:10', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 3, major: 1, observation: 3 } },
-    { id: 'PR-2026-003', inspection: 'Training Records Audit', organization: 'Fly Namibia', dates: '17 - 19 Apr 2026', status: 'approved', updated: '20 Apr 2026 16:00', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 2, major: 1, observation: 4 } },
-    { id: 'PR-2026-002', inspection: 'Passenger Handling Inspection', organization: 'Prime Handling', dates: '10 - 12 Apr 2026', status: 'submitted', updated: '13 Apr 2026 11:25', auditId: 'AUD-2026-001', period: 'apr', findings: { critical: 2, major: 0, observation: 2 } },
-    { id: 'PR-2026-001', inspection: 'Emergency Response Inspection', organization: 'JetFast Aviation', dates: '5 - 7 Apr 2026', status: 'released', updated: '8 Apr 2026 09:20', auditId: 'AUD-2026-005', period: 'apr', findings: { critical: 4, major: 1, observation: 3 } }
-  ];
+  return state.managerReports.filter(function (report) {
+    return normalizeReportType(report.reportType) === 'Preliminary Report';
+  }).map(function (report) {
+    var audit = auditById(report.auditId);
+    var artifact = reportArtifactById(report.id, state);
+    var linkedFindings = state.findings.filter(function (finding) { return finding.auditId === report.auditId; });
+    var counts = linkedFindings.reduce(function (summary, finding) {
+      if (finding.severity === 1) summary.critical += 1;
+      else if (finding.severity === 2) summary.major += 1;
+      else summary.observation += 1;
+      return summary;
+    }, { critical: 0, major: 0, observation: 0 });
+    var statusMeta = leadPreliminaryStatusMeta(report.status);
+    var updated = report.sharedAt || report.submittedAt || (report.history && report.history.length ? report.history[report.history.length - 1].at : '');
+    var month = audit && audit.date ? MONTHS[parseInt(audit.date.split('-')[1], 10) - 1].toLowerCase() : 'all';
+    return {
+      id: report.id,
+      auditId: report.auditId,
+      approvalPackageId: report.approvalPackageId || '',
+      completePackage: !!artifact && !!report.approvalPackageId,
+      inspection: audit ? audit.type : report.reportType,
+      organization: report.organization,
+      dates: audit ? fmtDate(audit.date) : 'Not configured',
+      status: report.status,
+      statusLabel: statusMeta.label,
+      owner: report.ownerRole ? roleName(report.ownerRole) : 'Read-only history',
+      nextAction: report.ownerRole === 'leadInspector' ? 'Continue report' : (report.ownerRole === 'manager' ? 'Waiting for Department Manager' : 'View history'),
+      updated: updated || 'Not recorded',
+      period: month,
+      findings: counts,
+      projection: report,
+      artifact: artifact
+    };
+  }).sort(function (left, right) { return right.updated.localeCompare(left.updated) || left.id.localeCompare(right.id); });
 }
 
 function leadPreliminaryReportById(id) {
@@ -6502,8 +6516,11 @@ function leadPreliminaryStatusMeta(status) {
   var map = {
     draft: { label: 'Draft', tone: 'draft' },
     submitted: { label: 'Submitted', tone: 'submitted' },
+    pending_manager: { label: 'Department Review', tone: 'submitted' },
     approved: { label: 'Approved', tone: 'approved' },
-    released: { label: 'Released', tone: 'released' }
+    released: { label: 'Released', tone: 'released' },
+    released_to_service_provider: { label: 'Released to Service Provider', tone: 'released' },
+    closed: { label: 'Closed', tone: 'approved' }
   };
   return map[status] || { label: humanStatus(status), tone: 'draft' };
 }
@@ -6530,14 +6547,14 @@ function leadPreliminaryMetricCard(label, value, tone, iconName) {
 }
 
 function leadPreliminaryMetricsHtml(rows) {
-  function count(status) {
-    return rows.filter(function (row) { return row.status === status; }).length;
+  function count(statuses) {
+    return rows.filter(function (row) { return statuses.indexOf(row.status) !== -1; }).length;
   }
   return '<div class="prelim-report-metrics">' +
-    leadPreliminaryMetricCard('Draft', count('draft'), 'draft', 'file-text') +
-    leadPreliminaryMetricCard('Submitted', count('submitted'), 'submitted', 'mail') +
-    leadPreliminaryMetricCard('Approved', count('approved'), 'approved', 'clipboard-check') +
-    leadPreliminaryMetricCard('Released', count('released'), 'released', 'calendar') +
+    leadPreliminaryMetricCard('Draft', count(['draft']), 'draft', 'file-text') +
+    leadPreliminaryMetricCard('In Review', count(['submitted', 'pending_manager']), 'submitted', 'mail') +
+    leadPreliminaryMetricCard('Approved', count(['approved']), 'approved', 'clipboard-check') +
+    leadPreliminaryMetricCard('Released / Closed', count(['released', 'released_to_service_provider', 'closed']), 'released', 'calendar') +
     leadPreliminaryMetricCard('Total', rows.length, 'total', 'file-text') +
   '</div>';
 }
@@ -6549,9 +6566,9 @@ function leadPreliminaryFiltersHtml(ui) {
   var statusOptions = [
     ['all', 'All Status'],
     ['draft', 'Draft'],
-    ['submitted', 'Submitted'],
-    ['approved', 'Approved'],
-    ['released', 'Released']
+    ['pending_manager', 'Department Review'],
+    ['released_to_service_provider', 'Released to Service Provider'],
+    ['closed', 'Closed']
   ].map(function (option) {
     return '<option value="' + esc(option[0]) + '"' + (ui.status === option[0] ? ' selected' : '') + '>' + esc(option[1]) + '</option>';
   }).join('');
@@ -6559,12 +6576,8 @@ function leadPreliminaryFiltersHtml(ui) {
     organizations.map(function (org) {
       return '<option value="' + esc(org) + '"' + (ui.organization === org ? ' selected' : '') + '>' + esc(org) + '</option>';
     }).join('');
-  var periodOptions = [
-    ['all', 'Date Range'],
-    ['jun', 'June 2026'],
-    ['may', 'May 2026'],
-    ['apr', 'April 2026']
-  ].map(function (option) {
+  var periods = leadPreliminaryReportRows().map(function (row) { return row.period; }).filter(function (period, index, list) { return period !== 'all' && list.indexOf(period) === index; });
+  var periodOptions = [['all', 'Date Range']].concat(periods.map(function (period) { return [period, period.toUpperCase()]; })).map(function (option) {
     return '<option value="' + esc(option[0]) + '"' + (ui.period === option[0] ? ' selected' : '') + '>' + esc(option[1]) + '</option>';
   }).join('');
   return '<div class="prelim-report-filters responsive-filter-row">' +
@@ -6572,7 +6585,7 @@ function leadPreliminaryFiltersHtml(ui) {
     '<label><span>Status</span><select data-field="preliminary-report-status">' + statusOptions + '</select></label>' +
     '<label><span>Organization</span><select data-field="preliminary-report-organization">' + orgOptions + '</select></label>' +
     '<label><span>Date</span><select data-field="preliminary-report-period">' + periodOptions + '</select></label>' +
-    '<button class="btn btn--primary prelim-report-new" data-act="preliminary-report-new">+ New Preliminary Report</button>' +
+    '<button class="btn btn--primary prelim-report-new" data-act="preliminary-report-open-package">Open Report Package</button>' +
   '</div>';
 }
 
@@ -6596,7 +6609,7 @@ function leadPreliminaryTableHtml(rows, totalCount) {
       '<td><span class="prelim-status is-' + esc(status.tone) + '">' + esc(status.label) + '</span></td>' +
       '<td>' + leadPreliminaryFindingCountsHtml(row.findings) + '</td>' +
       '<td>' + esc(row.updated) + '</td>' +
-      '<td><button class="prelim-row-action" data-act="preliminary-report-actions" data-id="' + esc(row.id) + '" aria-label="Actions for ' + esc(row.id) + '">⋮</button></td>' +
+      '<td><button class="btn btn--sm" data-act="preliminary-report-actions" data-id="' + esc(row.id) + '">' + esc(row.completePackage ? 'Continue Existing Report' : 'View History') + '</button></td>' +
     '</tr>';
   }).join('') : '<tr><td colspan="8"><div class="empty">No preliminary reports match the current filters.</div></td></tr>';
   return '<section class="prelim-report-table-panel">' +
@@ -6605,7 +6618,7 @@ function leadPreliminaryTableHtml(rows, totalCount) {
     '</tr></thead><tbody>' + body + '</tbody></table></div>' +
     '<div class="prelim-report-table-foot">' +
       '<span>Showing ' + (visibleRows.length ? '1' : '0') + ' to ' + esc(String(visibleRows.length)) + ' of ' + esc(String(totalCount)) + ' reports</span>' +
-      '<div class="prelim-report-pager"><button disabled>‹</button><button class="is-active">1</button><button>2</button><button>3</button><button>›</button></div>' +
+      '<div class="prelim-report-pager"><button disabled>‹</button><button class="is-active">1</button><button disabled>›</button></div>' +
     '</div>' +
   '</section>';
 }
@@ -6624,39 +6637,47 @@ function viewLeadPreliminaryReports() {
   '</div>';
 }
 
-function leadPreliminaryWorkflowFindings() {
-  return [
-    { id: 'SEC-2026-002', level: 'L1', levelLabel: 'Level 1 (Critical)', title: 'Access control log gaps at cargo gate', area: 'Access Control', reviewed: true },
-    { id: 'SEC-2026-003', level: 'L1', levelLabel: 'Level 1 (Critical)', title: 'Inadequate CCTV retention period', area: 'Surveillance (CCTV)', reviewed: true },
-    { id: 'SEC-2026-004', level: 'L2', levelLabel: 'Level 2 (Major)', title: 'Perimeter fencing damaged', area: 'Perimeter Security', reviewed: true },
-    { id: 'SEC-2026-005', level: 'L2', levelLabel: 'Level 2 (Major)', title: 'Visitor ID not always recorded', area: 'Access Control', reviewed: true },
-    { id: 'SEC-2026-006', level: 'L2', levelLabel: 'Level 2 (Major)', title: 'Security awareness training records incomplete', area: 'Security Awareness', reviewed: true },
-    { id: 'SEC-2026-007', level: 'L3', levelLabel: 'Level 3 (Observation)', title: 'Blasting cap storage procedure not documented', area: 'Cargo Operations', reviewed: true },
-    { id: 'SEC-2026-008', level: 'L3', levelLabel: 'Level 3 (Observation)', title: 'Some access doors without signage', area: 'Access Control', reviewed: true },
-    { id: 'SEC-2026-009', level: 'L3', levelLabel: 'Level 3 (Observation)', title: 'Housekeeping in screening area', area: 'Screening', reviewed: true },
-    { id: 'SEC-2026-010', level: 'L3', levelLabel: 'Level 3 (Observation)', title: 'SOP review period exceeded', area: 'Quality & Documentation', reviewed: true }
-  ];
+function leadPreliminaryActiveRow() {
+  var ui = leadPreliminaryReportsUiState();
+  return leadPreliminaryReportById(ui.selectedReportId) || leadPreliminaryReportRows()[0] || null;
+}
+
+function leadPreliminaryWorkflowFindings(row) {
+  var selectedRow = row || leadPreliminaryActiveRow();
+  if (!selectedRow) return [];
+  return state.findings.filter(function (finding) { return finding.auditId === selectedRow.auditId; }).map(function (finding) {
+    var level = finding.severity === 1 ? 'L1' : (finding.severity === 2 ? 'L2' : (finding.severity === 3 ? 'L3' : 'OBS'));
+    var levelLabel = finding.severity === 1 ? 'Level 1 Critical' : (finding.severity === 2 ? 'Level 2 Major' : (finding.severity === 3 ? 'Level 3 Minor' : 'Observation'));
+    return {
+      id: finding.id,
+      level: level,
+      levelLabel: levelLabel,
+      title: finding.title,
+      area: finding.department || finding.riskCategory || 'Cabin Safety',
+      status: FINDING_STATUS[finding.status] ? FINDING_STATUS[finding.status].label : humanStatus(finding.status),
+      statusKey: finding.status,
+      dueDate: finding.dueDate || 'Not configured',
+      reviewed: finding.status !== 'WAITING_CAP'
+    };
+  });
 }
 
 function leadPreliminaryWorkflowAttachments(ui) {
-  var rows = [
-    { id: 'file-plan', name: 'Inspection_Plan_INS-2026-014.pdf', description: 'Approved inspection plan', by: 'Aylin Sezer', date: '15 Jun 2026 09:15', size: '245 KB', type: 'doc' },
-    { id: 'file-minutes', name: 'Opening_Meeting_Minutes.pdf', description: 'Opening meeting minutes', by: 'Mehmet Kaya', date: '15 Jun 2026 09:45', size: '180 KB', type: 'doc' },
-    { id: 'file-procedure', name: 'Access_Control_Procedure_V3.pdf', description: 'Access control procedures', by: 'Mehmet Kaya', date: '15 Jun 2026 10:10', size: '512 KB', type: 'doc' },
-    { id: 'file-photo-gate', name: 'Photo_Cargo_Gate_01.jpg', description: 'Cargo gate access control', by: 'John Smith', date: '15 Jun 2026 11:05', size: '1.2 MB', type: 'image' },
-    { id: 'file-photo-cctv', name: 'Photo_CCTV_Monitoring.jpg', description: 'CCTV monitoring at cargo area', by: 'Fatma Yilmaz', date: '15 Jun 2026 11:20', size: '1.5 MB', type: 'image' },
-    { id: 'file-interview', name: 'Interview_Summary.pdf', description: 'Interviews with staff', by: 'Fatma Yilmaz', date: '15 Jun 2026 12:30', size: '300 KB', type: 'doc' },
-    { id: 'file-log', name: 'Evidence_Log.xlsx', description: 'Evidence and records log', by: 'Aylin Sezer', date: '15 Jun 2026 13:00', size: '78 KB', type: 'doc' }
-  ];
-  if (ui && ui.mockUploadName) {
-    rows.push({ id: 'file-mock-upload', name: ui.mockUploadName, description: 'Additional supporting evidence', by: 'Aylin Sezer', date: '15 Jun 2026 14:40', size: '420 KB', type: 'doc' });
-  }
+  var row = leadPreliminaryActiveRow();
+  var sourceFiles = row && row.artifact && Array.isArray(row.artifact.attachments) ? row.artifact.attachments : [];
+  var rows = sourceFiles.map(function (file, index) {
+    var name = String(file).replace(/ \(mock.*\)$/i, '');
+    return { id: 'artifact-' + index, name: name, description: 'Report-linked supporting record', by: row && row.projection ? row.projection.leadInspector : 'Lead Inspector', date: row ? row.updated : 'Not recorded', size: 'Filename only', type: /\.(jpg|jpeg|png)$/i.test(name) ? 'image' : 'doc' };
+  });
+  (ui && Array.isArray(ui.mockAttachmentNames) ? ui.mockAttachmentNames : []).forEach(function (name, index) {
+    rows.push({ id: 'file-mock-upload-' + index, name: name, description: 'Additional supporting evidence', by: 'Caner Yildiz', date: logTimestamp(), size: 'Filename only', type: 'doc' });
+  });
   return rows;
 }
 
 function leadPreliminarySelectedFindings(ui) {
   return leadPreliminaryWorkflowFindings().filter(function (finding) {
-    return ui.includedFindings[finding.id] !== false;
+    return ui.includedFindingIds[finding.id] !== false;
   });
 }
 
@@ -6665,7 +6686,7 @@ function leadPreliminaryFindingCounts(findings) {
     counts[finding.level] = (counts[finding.level] || 0) + 1;
     counts.all += 1;
     return counts;
-  }, { all: 0, L1: 0, L2: 0, L3: 0 });
+  }, { all: 0, L1: 0, L2: 0, L3: 0, OBS: 0 });
 }
 
 function leadPreliminaryFilteredFindings(ui) {
@@ -6691,7 +6712,7 @@ function leadPreliminaryWorkflowStepMeta(step) {
 function leadPreliminaryWorkflowHeader(row, ui) {
   var step = ui.step || 'inspection';
   var meta = leadPreliminaryWorkflowStepMeta(step);
-  var statusText = ui.submittedAt ? 'Pending Department Manager Review' : 'Draft';
+  var statusText = ui.submittedAt ? 'Pending Department Manager Review' : row.statusLabel;
   var nextAction = step === 'review'
     ? '<button class="btn btn--primary" data-act="preliminary-report-submit"' + (ui.submittedAt ? ' disabled' : '') + '>' + esc(ui.submittedAt ? 'Submitted to Department Manager' : meta.next) + ' →</button>'
     : '<button class="btn btn--primary" data-act="preliminary-report-next">' + esc(meta.next) + ' →</button>';
@@ -6702,11 +6723,11 @@ function leadPreliminaryWorkflowHeader(row, ui) {
       '<div class="prelim-workflow-actions"><button class="btn" data-act="preliminary-report-save">Save Draft</button><button class="btn" data-act="preliminary-report-preview">Preview PDF</button>' + nextAction + '</div>' +
     '</div>' +
     '<div class="prelim-workflow-meta">' +
-      leadPreliminaryMetaItem('Inspection', row.inspection + '<br><a>INS-2026-014</a>') +
+      leadPreliminaryMetaItem('Inspection', row.inspection + '<br><a>' + esc(row.auditId) + '</a>') +
       leadPreliminaryMetaItem('Organization', row.organization) +
       leadPreliminaryMetaItem('Inspection Dates', row.dates) +
-      leadPreliminaryMetaItem('Lead Inspector', 'Aylin Sezer') +
-      leadPreliminaryMetaItem('Report Version', '1.0 (Draft)') +
+      leadPreliminaryMetaItem('Lead Inspector', row.projection.leadInspector) +
+      leadPreliminaryMetaItem('Report Version', row.projection.version + ' (' + (ui.submittedAt ? 'Submitted' : 'Working') + ')') +
       leadPreliminaryMetaItem('Status', statusText) +
     '</div>' +
   '</div>';
@@ -6745,7 +6766,8 @@ function leadPreliminaryFindingsSidePanel(ui, compact) {
     ['all', 'All Levels (' + counts.all + ')'],
     ['L1', 'Level 1 Critical (' + counts.L1 + ')'],
     ['L2', 'Level 2 Major (' + counts.L2 + ')'],
-    ['L3', 'Level 3 Observation (' + counts.L3 + ')']
+    ['L3', 'Level 3 Minor (' + counts.L3 + ')'],
+    ['OBS', 'Observation (' + counts.OBS + ')']
   ].map(function (option) {
     return '<option value="' + esc(option[0]) + '"' + ((ui.findingLevel || 'all') === option[0] ? ' selected' : '') + '>' + esc(option[1]) + '</option>';
   }).join('');
@@ -6756,13 +6778,13 @@ function leadPreliminaryFindingsSidePanel(ui, compact) {
       '<label class="prelim-finding-search"><span>Search</span><input type="search" data-field="preliminary-report-finding-query" value="' + esc(ui.findingQuery || '') + '" placeholder="Search findings..." aria-label="Search findings"></label>' +
     '</div>' +
     '<div class="prelim-finding-list">' + (filteredFindings.length ? filteredFindings.map(function (finding) {
-      var checked = ui.includedFindings[finding.id] !== false;
+      var checked = ui.includedFindingIds[finding.id] !== false;
       return '<div class="prelim-finding-item is-' + esc(finding.level.toLowerCase()) + '">' +
         '<label aria-label="Include ' + esc(finding.id) + ' in report"><input type="checkbox" data-field="preliminary-report-finding" data-id="' + esc(finding.id) + '"' + (checked ? ' checked' : '') + '></label>' +
         '<span class="prelim-finding-level">' + esc(finding.level) + '</span>' +
         '<span><small>' + esc(finding.id) + '</small><b>' + esc(finding.title) + '</b></span>' +
         '<em>' + esc(finding.area) + '</em>' +
-        '<i>Reviewed</i>' +
+        '<i>' + esc(finding.status) + '</i>' +
         '<button type="button" class="btn btn--sm" data-act="preliminary-report-view-finding" data-id="' + esc(finding.id) + '">View</button>' +
       '</div>';
     }).join('') : '<div class="empty">No findings match this filter.</div>') + '</div>' +
@@ -6770,40 +6792,49 @@ function leadPreliminaryFindingsSidePanel(ui, compact) {
 }
 
 function leadPreliminaryInspectionStep(row, ui) {
+  var audit = auditById(row.auditId);
+  var team = state.inspectionTeams.filter(function (item) { return item.auditId === row.auditId; })[0];
+  var teamNames = team ? team.memberIds.map(function (userId) {
+    var user = state.users.filter(function (item) { return item.id === userId; })[0];
+    return user ? user.name : userId;
+  }).join(', ') : (audit && audit.team ? audit.team.join(', ') : 'Not assigned');
+  var findings = leadPreliminaryWorkflowFindings(row);
+  var counts = leadPreliminaryFindingCounts(findings);
+  var percent = function (value) { return findings.length ? Math.round((value / findings.length) * 100) : 0; };
+  var statusRows = findings.map(function (finding) {
+    return '<tr><td>' + esc(finding.id) + '</td><td>' + esc(finding.levelLabel) + '</td><td>' + esc(finding.status) + '</td><td>' + esc(fmtDate(finding.dueDate)) + '</td><td><button class="btn btn--sm" data-act="preliminary-report-view-finding" data-id="' + esc(finding.id) + '">Review</button></td></tr>';
+  }).join('');
   return '<div class="prelim-workflow-grid">' +
     '<section class="prelim-workflow-card">' +
       '<h2>Inspection Overview</h2>' +
-      '<div class="prelim-subtabs"><button class="is-active">Inspection Details</button><button>Team & Participants</button><button>Scope & Objectives</button><button>Documents</button></div>' +
       '<table class="prelim-detail-table"><tbody>' +
-        '<tr><th>Inspection ID</th><td>INS-2026-014</td><th>Lead Inspector</th><td>Aylin Sezer</td></tr>' +
-        '<tr><th>Inspection Type</th><td>Announced</td><th>Inspection Team</th><td>Mehmet Kaya, John Smith, Fatma Yilmaz</td></tr>' +
-        '<tr><th>Organization</th><td>' + esc(row.organization) + '</td><th>Reference</th><td>ICAO Annex 17, Doc 8973</td></tr>' +
-        '<tr><th>Location</th><td>Main Cargo Terminal</td><th>Last Updated</th><td>' + esc(row.updated) + '</td></tr>' +
+        '<tr><th>Audit ID</th><td>' + esc(row.auditId) + '</td><th>Lead Inspector</th><td>' + esc(row.projection.leadInspector) + '</td></tr>' +
+        '<tr><th>Inspection Type</th><td>' + esc(row.inspection) + '</td><th>Inspection Team</th><td>' + esc(teamNames) + '</td></tr>' +
+        '<tr><th>Organization</th><td>' + esc(row.organization) + '</td><th>Checklist Template</th><td>' + esc(audit ? audit.templateId : 'Not linked') + '</td></tr>' +
+        '<tr><th>Location</th><td>' + esc(audit ? audit.location : 'Not configured') + '</td><th>Last Updated</th><td>' + esc(row.updated) + '</td></tr>' +
         '<tr><th>Inspection Dates</th><td>' + esc(row.dates) + '</td><th></th><td></td></tr>' +
       '</tbody></table>' +
       '<h2 class="mt-24">Findings Summary</h2>' +
       '<div class="prelim-summary-cards">' +
-        '<div class="is-l1"><span>Level 1 (Critical)</span><b>2</b><em>22%</em></div>' +
-        '<div class="is-l2"><span>Level 2 (Major)</span><b>3</b><em>33%</em></div>' +
-        '<div class="is-l3"><span>Level 3 (Observation)</span><b>4</b><em>45%</em></div>' +
-        '<div><span>Total Findings</span><b>9</b></div>' +
+        '<div class="is-l1"><span>Level 1 Critical</span><b>' + esc(String(counts.L1)) + '</b><em>' + esc(String(percent(counts.L1))) + '%</em></div>' +
+        '<div class="is-l2"><span>Level 2 Major</span><b>' + esc(String(counts.L2)) + '</b><em>' + esc(String(percent(counts.L2))) + '%</em></div>' +
+        '<div class="is-l3"><span>Level 3 Minor</span><b>' + esc(String(counts.L3)) + '</b><em>' + esc(String(percent(counts.L3))) + '%</em></div>' +
+        '<div><span>Observation</span><b>' + esc(String(counts.OBS)) + '</b><em>' + esc(String(percent(counts.OBS))) + '%</em></div>' +
+        '<div><span>Total Findings</span><b>' + esc(String(counts.all)) + '</b></div>' +
       '</div>' +
-      '<h2 class="mt-24">Findings by Area</h2>' +
-      '<table class="prelim-area-table"><thead><tr><th>Area</th><th>L1 (Critical)</th><th>L2 (Major)</th><th>L3 (Observation)</th><th>Total</th></tr></thead><tbody>' +
-        '<tr><td>Access Control</td><td>1</td><td>1</td><td>1</td><td>3</td></tr>' +
-        '<tr><td>Surveillance (CCTV)</td><td>1</td><td>-</td><td>1</td><td>2</td></tr>' +
-        '<tr><td>Perimeter Security</td><td>-</td><td>1</td><td>1</td><td>2</td></tr>' +
-        '<tr><td>Security Awareness</td><td>-</td><td>1</td><td>1</td><td>2</td></tr>' +
-        '<tr><td><b>Total</b></td><td>2</td><td>3</td><td>4</td><td>9</td></tr>' +
-      '</tbody></table>' +
+      '<h2 class="mt-24">Findings Review</h2>' +
+      '<div class="prelim-report-table-wrap"><table class="prelim-area-table"><thead><tr><th>Finding</th><th>Level</th><th>Status</th><th>Due Date</th><th>Action</th></tr></thead><tbody>' + statusRows + '</tbody></table></div>' +
     '</section>' +
     leadPreliminaryFindingsSidePanel(ui, false) +
   '</div>';
 }
 
 function leadPreliminaryReportBody(ui) {
-  if (ui.reportContent) return ui.reportContent;
-  return '1. EXECUTIVE SUMMARY\nThe AVSEC inspection was conducted from 12 to 14 Jun 2026 at SkyCargo Air. A total of 9 findings were identified, including 2 Level 1 Critical findings, 3 Level 2 Major findings, and 4 Level 3 Observation findings.\n\nImmediate corrective action is required for issues related to access control logging at the cargo gate and inadequate CCTV retention period.\n\n2. OVERALL ASSESSMENT\nThe security controls implemented by SkyCargo Air are generally effective. However, critical and major deficiencies were identified in access control logging and CCTV retention. Department Manager attention is required before any release to the Service Provider.\n\n3. SCOPE OF INSPECTION\n- Access control\n- CCTV and surveillance\n- Perimeter security\n- Security awareness\n- Screening operations\n\n4. INSPECTION OBJECTIVE\nTo evaluate the effectiveness of AVSEC measures and compliance with applicable configured references and expected evidence.';
+  if (ui.content) return ui.content;
+  var row = leadPreliminaryActiveRow();
+  var artifact = row && row.artifact;
+  var findings = leadPreliminaryWorkflowFindings(row);
+  return '1. EXECUTIVE SUMMARY\n' + (artifact && artifact.executiveSummaryDraft ? artifact.executiveSummaryDraft : 'Preliminary Report draft for authorized review.') + '\n\n2. INSPECTION CONTEXT\nReport ID: ' + (row ? row.id : 'Not selected') + '\nAudit ID: ' + (row ? row.auditId : 'Not selected') + '\nOrganization: ' + (row ? row.organization : 'Not selected') + '\n\n3. FINDINGS REVIEW\n' + findings.map(function (finding) { return '- ' + finding.id + ' · ' + finding.levelLabel + ' · ' + finding.status + ': ' + finding.title; }).join('\n') + '\n\n4. REVIEW BOUNDARY\nThis browser-local draft requires Department Manager authorization before any configured release to the Service Provider.';
 }
 
 function leadPreliminaryContentStep(row, ui) {
@@ -6817,9 +6848,9 @@ function leadPreliminaryContentStep(row, ui) {
         '<div class="prelim-report-logo">' + renderBrandMark('brand-mark--report') + '<b>AviaSurveil360</b></div>' +
         '<h2>PRELIMINARY INSPECTION REPORT</h2>' +
         '<table><tbody>' +
-          '<tr><th>Inspection:</th><td>' + esc(row.inspection) + ' – ' + esc(row.organization) + '</td><th>Inspection ID:</th><td>INS-2026-014</td></tr>' +
+          '<tr><th>Inspection:</th><td>' + esc(row.inspection) + ' – ' + esc(row.organization) + '</td><th>Audit ID:</th><td>' + esc(row.auditId) + '</td></tr>' +
           '<tr><th>Organization:</th><td>' + esc(row.organization) + '</td><th>Inspection Dates:</th><td>' + esc(row.dates) + '</td></tr>' +
-          '<tr><th>Lead Inspector:</th><td>Aylin Sezer</td><th>Report Version:</th><td>1.0 (Draft)</td></tr>' +
+          '<tr><th>Lead Inspector:</th><td>' + esc(row.projection.leadInspector) + '</td><th>Report Version:</th><td>' + esc(row.projection.version) + ' (Working)</td></tr>' +
           '<tr><th>Report Status:</th><td>' + esc(ui.submittedAt ? 'Pending Department Manager Review' : 'Draft') + '</td><th>Date of Report:</th><td>15 June 2026</td></tr>' +
         '</tbody></table>' +
         '<textarea data-field="preliminary-report-content" aria-label="Preliminary report content">' + esc(leadPreliminaryReportBody(ui)) + '</textarea>' +
@@ -6847,7 +6878,7 @@ function leadPreliminaryAttachmentsStep(row, ui) {
     '</section>' +
     '<aside class="prelim-attachment-side">' +
       '<h2>Attachment Summary</h2>' +
-      '<div class="prelim-attachment-stats"><div><span>Total Files</span><b>' + esc(String(files.length)) + '</b><em>100%</em></div><div><span>Total Size</span><b>' + esc(ui.mockUploadName ? '4.4 MB' : '4.0 MB') + '</b></div><div><span>Documents</span><b>' + esc(String(documents)) + '</b><em>57%</em></div><div><span>Images</span><b>' + esc(String(images)) + '</b><em>43%</em></div></div>' +
+      '<div class="prelim-attachment-stats"><div><span>Total Files</span><b>' + esc(String(files.length)) + '</b><em>Filename records</em></div><div><span>Storage</span><b>Browser-local names</b></div><div><span>Documents</span><b>' + esc(String(documents)) + '</b></div><div><span>Images</span><b>' + esc(String(images)) + '</b></div></div>' +
       '<h2 class="mt-24">Quick Tips</h2>' +
       '<ul><li>Upload files that support your findings and observations.</li><li>Ensure all evidence is relevant and properly referenced.</li><li>You can organize files using folders for better structure.</li></ul>' +
     '</aside>' +
@@ -6857,6 +6888,7 @@ function leadPreliminaryAttachmentsStep(row, ui) {
 function leadPreliminaryReviewStep(row, ui) {
   var files = leadPreliminaryWorkflowAttachments(ui);
   var selected = leadPreliminarySelectedFindings(ui);
+  var counts = leadPreliminaryFindingCounts(selected);
   var submitted = !!ui.submittedAt;
   return '<div class="prelim-review-layout">' +
     '<section class="prelim-workflow-card">' +
@@ -6872,7 +6904,7 @@ function leadPreliminaryReviewStep(row, ui) {
       '<label class="prelim-declaration"><input type="checkbox" data-field="preliminary-report-declaration" data-id="accurate"' + (ui.declarations.accurate ? ' checked' : '') + '> The information contained in this report is accurate and complete to the best of my knowledge.</label>' +
       '<label class="prelim-declaration"><input type="checkbox" data-field="preliminary-report-declaration" data-id="evidenceBased"' + (ui.declarations.evidenceBased ? ' checked' : '') + '> The findings are based on verified evidence and observations collected during the inspection.</label>' +
       '<label class="prelim-declaration"><input type="checkbox" data-field="preliminary-report-declaration" data-id="readyForReview"' + (ui.declarations.readyForReview ? ' checked' : '') + '> This report is ready for review and approval by the relevant authority.</label>' +
-      '<div class="prelim-signature-grid"><label>Lead Inspector Name<input value="Aylin Sezer" readonly></label><label>Date<input value="15 Jun 2026" readonly></label><label>Signature<div class="prelim-signature">Aylin Sezer <span>Signed</span></div></label></div>' +
+      '<div class="prelim-signature-grid"><label>Lead Inspector Name<input value="' + esc(row.projection.leadInspector) + '" readonly></label><label>Date<input value="' + esc(fmtDate(DEMO_TODAY)) + '" readonly></label><label>Approval mark<div class="prelim-signature">' + esc(row.projection.leadInspector) + ' <span>Demo acknowledgment</span></div></label></div>' +
       '<div class="prelim-next-step">' +
         '<div class="prelim-next-step__intro"><h3>Next Step</h3><p>After Lead Inspector signature, the preliminary report is always forwarded to Department Manager Review. If CAP is required, the Department Manager releases it to the Service Provider; if no CAP is required, the Department Manager continues the approval path.</p></div>' +
         '<div class="prelim-flow-card is-current"><b>Department Manager</b><span>Review & Sign</span></div>' +
@@ -6882,9 +6914,9 @@ function leadPreliminaryReviewStep(row, ui) {
     '</section>' +
     '<aside class="prelim-review-side">' +
       '<h2>Report Summary</h2>' +
-      '<dl><dt>Inspection ID</dt><dd>INS-2026-014</dd><dt>Organization</dt><dd>' + esc(row.organization) + '</dd><dt>Inspection Dates</dt><dd>' + esc(row.dates) + '</dd><dt>Lead Inspector</dt><dd>Aylin Sezer</dd><dt>Report Version</dt><dd>1.0 (Draft)</dd><dt>Total Findings</dt><dd>' + esc(String(selected.length)) + ' selected</dd><dt>Attachments</dt><dd>' + esc(String(files.length)) + ' Files</dd></dl>' +
+      '<dl><dt>Report ID</dt><dd>' + esc(row.id) + '</dd><dt>Audit ID</dt><dd>' + esc(row.auditId) + '</dd><dt>Organization</dt><dd>' + esc(row.organization) + '</dd><dt>Inspection Dates</dt><dd>' + esc(row.dates) + '</dd><dt>Lead Inspector</dt><dd>' + esc(row.projection.leadInspector) + '</dd><dt>Report Version</dt><dd>' + esc(row.projection.version) + ' (Working)</dd><dt>Total Findings</dt><dd>' + esc(String(selected.length)) + ' selected</dd><dt>Attachments</dt><dd>' + esc(String(files.length)) + ' filename records</dd></dl>' +
       '<h2 class="mt-24">Findings Summary</h2>' +
-      '<div class="prelim-review-findings"><span>Level 1 (Critical)<b>2</b></span><span>Level 2 (Major)<b>3</b></span><span>Level 3 (Observation)<b>4</b></span><span>Total Findings<b>9</b></span></div>' +
+      '<div class="prelim-review-findings"><span>Level 1 Critical<b>' + esc(String(counts.L1)) + '</b></span><span>Level 2 Major<b>' + esc(String(counts.L2)) + '</b></span><span>Level 3 Minor<b>' + esc(String(counts.L3)) + '</b></span><span>Observation<b>' + esc(String(counts.OBS)) + '</b></span><span>Total Findings<b>' + esc(String(counts.all)) + '</b></span></div>' +
       '<h2 class="mt-24">Submission Flow</h2>' +
       '<ol class="prelim-submit-flow"><li><b>Lead Inspector</b><span>' + (submitted ? 'Completed' : 'Current') + '</span><em>Submit for Review</em></li><li><b>Department Manager</b><span>' + (submitted ? 'Current' : 'Pending') + '</span><em>Review & Sign</em></li><li><b>Release to Service Provider (if CAP required)</b><span>Pending</span><em>Department Manager sends if needed</em></li><li><b>Department Manager Approval (if no CAP required)</b><span>Pending</span><em>Continues approval path</em></li></ol>' +
     '</aside>' +
@@ -6911,18 +6943,20 @@ function preliminaryReportPreviousStep(step) {
 }
 
 function viewLeadPreliminaryWorkflow() {
-  var ui = leadPreliminaryReportsUiState();
-  var row = leadPreliminaryReportById(ui.selectedReportId) || leadPreliminaryReportRows()[0];
-  var step = ui.step || 'inspection';
-  var body = step === 'content' ? leadPreliminaryContentStep(row, ui)
-    : step === 'attachments' ? leadPreliminaryAttachmentsStep(row, ui)
-    : step === 'review' ? leadPreliminaryReviewStep(row, ui)
-    : leadPreliminaryInspectionStep(row, ui);
+  var listUi = leadPreliminaryReportsUiState();
+  var row = leadPreliminaryReportById(listUi.selectedReportId) || leadPreliminaryReportRows()[0];
+  if (!row || !row.completePackage) return viewLeadPreliminaryReports();
+  var draft = preliminaryReportDraftById(row.id, state);
+  var step = draft.step || 'inspection';
+  var body = step === 'content' ? leadPreliminaryContentStep(row, draft)
+    : step === 'attachments' ? leadPreliminaryAttachmentsStep(row, draft)
+    : step === 'review' ? leadPreliminaryReviewStep(row, draft)
+    : leadPreliminaryInspectionStep(row, draft);
   return '<div class="prelim-workflow-page">' +
-    leadPreliminaryWorkflowHeader(row, ui) +
+    leadPreliminaryWorkflowHeader(row, draft) +
     leadPreliminaryWorkflowStepper(step) +
     body +
-    leadPreliminaryWorkflowBottom(ui) +
+    leadPreliminaryWorkflowBottom(draft) +
   '</div>';
 }
 
@@ -7854,10 +7888,10 @@ function viewAuditReportsApproval() {
   if (!requestedAuditId && state.role === 'manager' && requestedFilter === 'preliminary') {
     return viewDepartmentPreliminaryReview();
   }
-  if (!requestedAuditId && state.role === 'leadInspector' && requestedFilter === 'preliminary') {
+  if (state.role === 'leadInspector' && requestedFilter === 'preliminary') {
     var preliminaryUi = leadPreliminaryReportsUiState();
-    if (preliminaryUi.mode === 'workflow') return viewLeadPreliminaryWorkflow();
-    return viewLeadPreliminaryReports();
+    if (preliminaryUi.mode === 'workflow' && state.params && state.params.reportId) return viewLeadPreliminaryWorkflow();
+    if (!requestedAuditId) return viewLeadPreliminaryReports();
   }
   if (!requestedAuditId && state.role === 'leadInspector' && requestedFilter === 'final' && state.params && state.params.finalReportId) {
     return viewLeadFinalReportReady();

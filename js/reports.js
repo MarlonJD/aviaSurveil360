@@ -54,6 +54,59 @@ function reportForAudit(auditId) {
   return null;
 }
 
+function preliminaryReportProjectionById(reportId, targetState) {
+  var target = targetState || state;
+  var reports = target && Array.isArray(target.managerReports) ? target.managerReports : [];
+  return reports.filter(function (report) {
+    return report.id === reportId && normalizeReportType(report.reportType) === 'Preliminary Report';
+  })[0] || null;
+}
+
+function preliminaryReportDraftDefaults() {
+  return {
+    step: 'inspection',
+    content: '',
+    includedFindingIds: {},
+    findingLevel: 'all',
+    findingQuery: '',
+    mockAttachmentNames: [],
+    declarations: { accurate: true, evidenceBased: true, readyForReview: true },
+    draftSavedAt: '',
+    submittedAt: ''
+  };
+}
+
+function preliminaryReportDraftById(reportId, targetState) {
+  var target = targetState || state;
+  if (!target.preliminaryReportDrafts) target.preliminaryReportDrafts = {};
+  var defaults = preliminaryReportDraftDefaults();
+  var draft = Object.assign(defaults, target.preliminaryReportDrafts[reportId] || {});
+  draft.includedFindingIds = Object.assign({}, draft.includedFindingIds || {});
+  draft.declarations = Object.assign({}, defaults.declarations, draft.declarations || {});
+  draft.mockAttachmentNames = Array.isArray(draft.mockAttachmentNames) ? draft.mockAttachmentNames.slice() : [];
+  target.preliminaryReportDrafts[reportId] = draft;
+  return draft;
+}
+
+function openLeadPreliminaryReport(reportId) {
+  var projection = preliminaryReportProjectionById(reportId, state);
+  var artifact = projection ? reportArtifactById(reportId, state) : null;
+  if (!projection) return { ok: false, reason: 'not_found', report: null, artifact: null };
+  if (!artifact || !projection.approvalPackageId) {
+    return { ok: false, reason: 'historical_read_only', report: projection, artifact: null };
+  }
+  if (!state.leadPreliminaryReportsUi) state.leadPreliminaryReportsUi = {};
+  state.leadPreliminaryReportsUi.mode = 'workflow';
+  state.leadPreliminaryReportsUi.selectedReportId = reportId;
+  var draft = preliminaryReportDraftById(reportId, state);
+  draft.step = 'inspection';
+  state.view = 'audit-reports';
+  state.params = { filter: 'preliminary', reportId: reportId, auditId: projection.auditId };
+  if (!state.selectedFilters) state.selectedFilters = {};
+  state.selectedFilters['audit-reports'] = 'preliminary';
+  return { ok: true, reason: '', report: projection, artifact: artifact, draft: draft };
+}
+
 function reportOpenFollowUpFindings(targetState, auditId) {
   var target = targetState || state;
   var findings = target && Array.isArray(target.findings) ? target.findings : [];

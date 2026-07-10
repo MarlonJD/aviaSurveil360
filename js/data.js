@@ -1458,20 +1458,7 @@ function freshState() {
       organization: 'all',
       period: 'all',
       mode: 'list',
-      selectedReportId: 'PR-2026-018',
-      step: 'inspection',
-      draftSavedAt: '',
-      submittedAt: '',
-      mockUploadName: '',
-      includedFindings: {},
-      findingLevel: 'all',
-      findingQuery: '',
-      declarations: {
-        accurate: true,
-        evidenceBased: true,
-        readyForReview: true
-      },
-      reportContent: ''
+      selectedReportId: 'PR-2026-018'
     },
     departmentPreliminaryReviewUi: {
       tab: 'summary',
@@ -1837,40 +1824,14 @@ function mergeDemoState(saved) {
     organization: 'all',
     period: 'all',
     mode: 'list',
-    selectedReportId: 'PR-2026-018',
-    step: 'inspection',
-    draftSavedAt: '',
-    submittedAt: '',
-    mockUploadName: '',
-    includedFindings: {},
-    findingLevel: 'all',
-    findingQuery: '',
-    declarations: {
-      accurate: true,
-      evidenceBased: true,
-      readyForReview: true
-    },
-    reportContent: ''
+    selectedReportId: 'PR-2026-018'
   }, saved.leadPreliminaryReportsUi || {});
-  base.leadPreliminaryReportsUi.declarations = Object.assign({
-    accurate: true,
-    evidenceBased: true,
-    readyForReview: true
-  }, base.leadPreliminaryReportsUi.declarations || {});
-  if (!base.leadPreliminaryReportsUi.includedFindings || typeof base.leadPreliminaryReportsUi.includedFindings !== 'object') base.leadPreliminaryReportsUi.includedFindings = {};
   if (!base.leadPreliminaryReportsUi.query) base.leadPreliminaryReportsUi.query = '';
   if (!base.leadPreliminaryReportsUi.status) base.leadPreliminaryReportsUi.status = 'all';
   if (!base.leadPreliminaryReportsUi.organization) base.leadPreliminaryReportsUi.organization = 'all';
   if (!base.leadPreliminaryReportsUi.period) base.leadPreliminaryReportsUi.period = 'all';
   if (!base.leadPreliminaryReportsUi.mode) base.leadPreliminaryReportsUi.mode = 'list';
   if (!base.leadPreliminaryReportsUi.selectedReportId) base.leadPreliminaryReportsUi.selectedReportId = 'PR-2026-018';
-  if (!base.leadPreliminaryReportsUi.step) base.leadPreliminaryReportsUi.step = 'inspection';
-  if (!base.leadPreliminaryReportsUi.draftSavedAt) base.leadPreliminaryReportsUi.draftSavedAt = '';
-  if (!base.leadPreliminaryReportsUi.submittedAt) base.leadPreliminaryReportsUi.submittedAt = '';
-  if (!base.leadPreliminaryReportsUi.mockUploadName) base.leadPreliminaryReportsUi.mockUploadName = '';
-  if (!base.leadPreliminaryReportsUi.findingLevel) base.leadPreliminaryReportsUi.findingLevel = 'all';
-  if (!base.leadPreliminaryReportsUi.findingQuery) base.leadPreliminaryReportsUi.findingQuery = '';
-  if (!base.leadPreliminaryReportsUi.reportContent) base.leadPreliminaryReportsUi.reportContent = '';
   base.departmentPreliminaryReviewUi = Object.assign({
     tab: 'summary',
     selectedReportId: 'PR-2026-018',

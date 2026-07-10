@@ -7560,6 +7560,38 @@ button { font-family: inherit; }
   outline: 3px solid rgba(47, 111, 214, .18);
   border-color: var(--blue-500);
 }
+.report-package-selector {
+  display: grid;
+  gap: 10px;
+}
+.report-package-selector > button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  gap: 16px;
+  align-items: center;
+  padding: 13px 14px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+.report-package-selector > button:hover,
+.report-package-selector > button:focus-visible {
+  background: var(--blue-50);
+  border-color: var(--blue-500);
+  outline: none;
+}
+.report-package-selector span,
+.report-package-selector b,
+.report-package-selector small { display: block; min-width: 0; }
+.report-package-selector small {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  line-height: 1.35;
+}
 
 .lead-assignment-page,
 .lead-assignment-question-page {
