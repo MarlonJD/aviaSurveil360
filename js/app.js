@@ -1666,6 +1666,14 @@ function handleAction(act, el) {
     case 'executive-open-plan': handleExecutiveOpenPlan(id); break;
     case 'executive-open-report': handleExecutiveOpenReport(id); break;
     case 'executive-dashboard-kpi': handleExecutiveDashboardKpi(el.getAttribute('data-target'), el.getAttribute('data-status')); break;
+    case 'executive-planning-stage': handleExecutivePlanningStage(el.getAttribute('data-status')); break;
+    case 'executive-plan-actions-toggle': handleExecutivePlanActionsToggle(id); break;
+    case 'executive-plan-quick-action': handleExecutivePlanQuickAction(id, el.getAttribute('data-mode')); break;
+    case 'executive-plan-tab': handleExecutivePlanTab(tab); break;
+    case 'executive-plan-decision-choice': handleExecutivePlanDecisionChoice(el.getAttribute('data-decision')); break;
+    case 'executive-plan-confirm': handleExecutivePlanConfirm(id); break;
+    case 'executive-plan-preview': handleExecutivePlanPreview(id); break;
+    case 'executive-plan-download': handleExecutivePlanDownload(id); break;
     case 'report-approval': handleReportApproval(id, el.getAttribute('data-decision')); break;
     case 'inspection-status-cycle': handleInspectionStatusCycle(id); break;
     case 'inspection-download-checklist': handleInspectionDownload(id); break;
@@ -3508,6 +3516,137 @@ function handleExecutiveDashboardKpi(target, status) {
   state.params = { status: status || 'all' };
   persistAfterAction();
   render();
+}
+
+function executiveSelectedPlan(planId) {
+  var id = planId || (state.executiveDirectorUi && state.executiveDirectorUi.selectedPlanId);
+  return state.planningItems.filter(function (item) { return item.id === id; })[0] || null;
+}
+
+function handleExecutivePlanningFieldChange(field, target) {
+  var ui = state.executiveDirectorUi;
+  var value = target && target.value !== undefined ? target.value : '';
+  if (field === 'executive-planning-query') ui.planningQuery = value || '';
+  if (field === 'executive-planning-department') ui.planningDepartment = value || 'all';
+  if (field === 'executive-planning-risk') ui.planningRisk = value || 'all';
+  if (field === 'executive-planning-date') ui.planningDate = value || 'all';
+  if (field === 'executive-planning-status') ui.planningStatus = value || 'all';
+  if (field === 'executive-planning-comment') ui.planComment = value || '';
+  persistAfterAction();
+  if (field !== 'executive-planning-comment') render();
+}
+
+function handleExecutivePlanningStage(status) {
+  var allowed = ['draft', 'department', 'gm', 'finance', 'executive', 'rejected'];
+  state.executiveDirectorUi.planningStatus = allowed.indexOf(status) !== -1 && state.executiveDirectorUi.planningStatus !== status ? status : 'all';
+  state.executiveDirectorUi.openPlanActionId = '';
+  persistAfterAction();
+  render();
+}
+
+function handleExecutivePlanActionsToggle(planId) {
+  var plan = executiveSelectedPlan(planId);
+  if (!plan) return;
+  state.executiveDirectorUi.selectedPlanId = plan.id;
+  state.executiveDirectorUi.openPlanActionId = state.executiveDirectorUi.openPlanActionId === plan.id ? '' : plan.id;
+  state.executiveDirectorUi.planDecision = '';
+  state.executiveDirectorUi.planComment = '';
+  persistAfterAction();
+  render();
+}
+
+function handleExecutivePlanQuickAction(planId, mode) {
+  var plan = executiveSelectedPlan(planId);
+  if (!plan) return;
+  state.executiveDirectorUi.selectedPlanId = plan.id;
+  state.executiveDirectorUi.openPlanActionId = '';
+  if (mode === 'preview') {
+    handleExecutivePlanPreview(plan.id);
+    return;
+  }
+  state.executiveDirectorUi.planTab = 'overview';
+  state.executiveDirectorUi.planDecision = mode === 'approve' ? 'approve_and_sign' : '';
+  state.executiveDirectorUi.planComment = '';
+  persistAfterAction();
+  render();
+}
+
+function handleExecutivePlanTab(tab) {
+  var allowed = ['overview', 'plan-info', 'scope', 'budget', 'history', 'documents'];
+  state.executiveDirectorUi.planTab = allowed.indexOf(tab) !== -1 ? tab : 'overview';
+  persistAfterAction();
+  render();
+}
+
+function handleExecutivePlanDecisionChoice(decision) {
+  if (['approve_and_sign', 'reject'].indexOf(decision) === -1) return;
+  state.executiveDirectorUi.planDecision = decision;
+  state.executiveDirectorUi.planComment = '';
+  persistAfterAction();
+  render();
+}
+
+function handleExecutivePlanConfirm(planId) {
+  var plan = executiveSelectedPlan(planId);
+  if (!plan) return;
+  var commentInput = document.getElementById('executive-plan-comment');
+  if (commentInput && commentInput.value !== undefined) state.executiveDirectorUi.planComment = commentInput.value || '';
+  var decision = state.executiveDirectorUi.planDecision;
+  var result = applyExecutivePlanningDecision(plan, {
+    decision: decision,
+    actor: { role: 'executiveDirector', name: ROLES.executiveDirector.user },
+    comment: state.executiveDirectorUi.planComment
+  });
+  if (!result.ok) {
+    toast('Planning decision not recorded', result.message, 'warn');
+    return;
+  }
+  state.notifications.unshift({ id: 'N' + state.notifSeq++, role: 'gm', icon: '▤', text: result.message + ' ' + plan.id, time: 'Just now', unread: true });
+  addLog(decision === 'approve_and_sign' ? 'Executive Director approved planning item with demo mark' : 'Executive Director rejected planning item', plan.id);
+  state.executiveDirectorUi.planDecision = '';
+  state.executiveDirectorUi.planComment = '';
+  state.executiveDirectorUi.openPlanActionId = '';
+  persistAfterAction();
+  render();
+  toast('Planning decision recorded', result.message, 'ok');
+}
+
+function executivePlanDownloadText(plan) {
+  var summary = approvalSummary(plan);
+  return [
+    'AviaSurveil360 - Surveillance Plan (Demo)',
+    'Plan ID: ' + plan.id,
+    'Title: ' + plan.title,
+    'Department: ' + plan.department,
+    'Organization: ' + plan.organization,
+    'Target: ' + plan.targetMonth,
+    'Risk Category: ' + plan.riskCategory,
+    'Purpose: ' + plan.purpose,
+    'Requested Budget: ' + plan.budget.currency + ' ' + plan.budget.requested,
+    'Approval Status: ' + summary.statusLabel,
+    'Next Action: ' + planningWorkspaceNextAction(plan).label,
+    '',
+    'Demo-only browser-generated document. No real signature, release, scheduling, or document service.'
+  ].join('\n');
+}
+
+function handleExecutivePlanPreview(planId) {
+  var plan = executiveSelectedPlan(planId);
+  if (!plan) return;
+  state.executiveDirectorUi.selectedPlanId = plan.id;
+  var summary = approvalSummary(plan);
+  var body = '<div class="executive-plan-preview"><span>AviaSurveil360 · Demo plan</span><h2>' + esc(plan.title) + '</h2><p>' + esc(plan.id + ' · ' + plan.department + ' · Target ' + plan.targetMonth) + '</p><dl><div><dt>Organization</dt><dd>' + esc(plan.organization) + '</dd></div><div><dt>Risk Category</dt><dd>' + esc(plan.riskCategory) + '</dd></div><div><dt>Requested Budget</dt><dd>' + esc(plan.budget.currency + ' ' + Number(plan.budget.requested).toLocaleString('en-US')) + '</dd></div><div><dt>Approval status</dt><dd>' + esc(summary.statusLabel) + '</dd></div></dl><h3>Purpose and scope</h3><p>' + esc(plan.purpose) + '</p><div class="executive-signature-notice"><b>Demo boundary</b><span>Preview generated from selected plan ' + esc(plan.id) + '. No real document storage, release, or e-signature is used.</span></div></div>';
+  persistAfterAction();
+  openModal(modalShell('Preview Full Plan · ' + plan.id, body, '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="executive-plan-download" data-id="' + esc(plan.id) + '">Download Plan</button>', true));
+}
+
+function handleExecutivePlanDownload(planId) {
+  var plan = executiveSelectedPlan(planId);
+  if (!plan) return;
+  state.executiveDirectorUi.selectedPlanId = plan.id;
+  var downloaded = downloadPlainTextFile(plan.id + '_Surveillance_Plan_Demo.txt', executivePlanDownloadText(plan));
+  persistAfterAction();
+  toast(downloaded ? 'Plan downloaded' : 'Plan prepared', downloaded ? plan.id + ' browser-local demo plan was generated.' : 'Download is unavailable in this test environment.', downloaded ? 'ok' : 'info');
 }
 
 function leadReviewChecklistDownloadText(auditId) {
@@ -5482,6 +5621,7 @@ document.addEventListener('change', function (e) {
   if (field === 'manager-risk-inspection') handleManagerRiskFilter('inspection', e.target.value);
   if (field === 'manager-risk-level') handleManagerRiskFilter('risk', e.target.value);
   if (field === 'finance-review-status' || field === 'finance-review-comment') handleFinanceReviewFieldChange(field, e.target);
+  if (field && field.indexOf('executive-planning-') === 0) handleExecutivePlanningFieldChange(field, e.target);
   if (field === 'lead-review-decision') {
     handleLeadReviewDecision(e.target.getAttribute('data-id'), e.target.value);
   }
@@ -5550,6 +5690,7 @@ document.addEventListener('input', function (e) {
     handleServiceProviderFieldChange(field, e.target);
   }
   if (field === 'finance-review-query' || field === 'finance-review-comment') handleFinanceReviewFieldChange(field, e.target);
+  if (field === 'executive-planning-query' || field === 'executive-planning-comment') handleExecutivePlanningFieldChange(field, e.target);
   if (field === 'final-report-content') {
     handleFinalReportPrepareFieldChange(field, e.target);
   }

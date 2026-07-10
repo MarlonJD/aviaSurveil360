@@ -658,9 +658,110 @@ function viewExecutiveDirectorDashboard() {
   '</div>';
 }
 
+function executivePlanningStage(item) {
+  var summary = approvalSummary(item);
+  var status = String(item.status || '').toLowerCase();
+  if (summary.outcome === 'rejected' || status.indexOf('return') !== -1 || status.indexOf('revision') !== -1) return 'rejected';
+  if (status === 'draft') return 'draft';
+  if (summary.ownerRole === 'manager') return 'department';
+  if (summary.ownerRole === 'gm') return 'gm';
+  if (summary.ownerRole === 'finance') return 'finance';
+  if (summary.ownerRole === 'executiveDirector') return 'executive';
+  if (summary.outcome === 'approved') return 'approved';
+  return 'draft';
+}
+
+function executivePlanningStageCards(items, active) {
+  var stages = [
+    ['draft', 'Draft'], ['department', 'Department Review'], ['gm', 'GM Review'],
+    ['finance', 'Finance Review'], ['executive', 'ED Final Approval'], ['rejected', 'Rejected / Returned']
+  ];
+  return '<section class="executive-stage-grid" aria-label="Planning approval stages">' + stages.map(function (stage) {
+    var count = items.filter(function (item) { return executivePlanningStage(item) === stage[0]; }).length;
+    return '<button class="executive-stage-card' + (active === stage[0] ? ' is-active' : '') + '" data-act="executive-planning-stage" data-status="' + stage[0] + '" aria-pressed="' + (active === stage[0] ? 'true' : 'false') + '"><span>' + esc(stage[1]) + '</span><b>' + esc(String(count)) + '</b></button>';
+  }).join('') + '</section>';
+}
+
+function executivePlanningFilteredRows(ui) {
+  var query = String(ui.planningQuery || '').trim().toLowerCase();
+  return state.planningItems.filter(function (item) {
+    if (ui.planningDepartment !== 'all' && item.department !== ui.planningDepartment) return false;
+    if (ui.planningRisk !== 'all' && item.riskCategory !== ui.planningRisk) return false;
+    if (ui.planningDate !== 'all' && item.targetMonth !== ui.planningDate) return false;
+    if (ui.planningStatus !== 'all' && executivePlanningStage(item) !== ui.planningStatus) return false;
+    return !query || [item.id, item.title, item.department, item.organization, item.riskCategory, item.targetMonth].join(' ').toLowerCase().indexOf(query) !== -1;
+  });
+}
+
+function executiveUniqueOptions(items, field, selected, allLabel) {
+  var values = [];
+  items.forEach(function (item) { if (item[field] && values.indexOf(item[field]) === -1) values.push(item[field]); });
+  return '<option value="all"' + (selected === 'all' ? ' selected' : '') + '>' + esc(allLabel) + '</option>' + values.sort().map(function (value) {
+    return '<option value="' + esc(value) + '"' + (selected === value ? ' selected' : '') + '>' + esc(value) + '</option>';
+  }).join('');
+}
+
+function executivePlanningRowsHtml(rows, selected, ui) {
+  if (!rows.length) return '<tr><td colspan="8"><div class="executive-empty"><b>No plans match these filters.</b><span>Clear a filter or choose another approval stage.</span></div></td></tr>';
+  return rows.map(function (item) {
+    var summary = approvalSummary(item);
+    var eligible = summary.ownerRole === 'executiveDirector' && !summary.outcome;
+    var open = ui.openPlanActionId === item.id;
+    return '<tr class="' + (selected && selected.id === item.id ? 'is-selected' : '') + '"><td><button class="service-link" data-act="executive-open-plan" data-id="' + esc(item.id) + '">' + esc(item.id) + '</button><small>' + esc(item.title) + '</small></td><td>' + esc(item.department) + '</td><td>' + esc(item.organization) + '</td><td>' + esc(item.riskCategory) + '</td><td>' + esc(item.targetMonth) + '</td><td>' + esc(summary.ownerLabel) + '</td><td>' + demoBadge(summary.statusLabel, summary.statusTone) + '</td><td><div class="executive-row-action"><button class="btn btn--sm" data-act="executive-plan-actions-toggle" data-id="' + esc(item.id) + '" aria-expanded="' + (open ? 'true' : 'false') + '">Review / Take Action</button>' + (open ? '<div class="executive-row-menu"><button data-act="executive-plan-quick-action" data-id="' + esc(item.id) + '" data-mode="review">Review Plan</button><button data-act="executive-plan-quick-action" data-id="' + esc(item.id) + '" data-mode="preview">Preview Full Plan</button>' + (eligible ? '<button data-act="executive-plan-quick-action" data-id="' + esc(item.id) + '" data-mode="approve">Approve &amp; Sign (Demo)</button>' : '') + '</div>' : '') + '</div></td></tr>';
+  }).join('');
+}
+
+function executivePlanningTabs(active) {
+  return '<div class="executive-detail-tabs" role="tablist">' + [
+    ['overview', 'Overview'], ['plan-info', 'Plan Information'], ['scope', 'Departments & Scope'],
+    ['budget', 'Budget & Resources'], ['history', 'Approval History'], ['documents', 'Documents & Notes']
+  ].map(function (tab) { return '<button role="tab" aria-selected="' + (active === tab[0] ? 'true' : 'false') + '" class="' + (active === tab[0] ? 'is-active' : '') + '" data-act="executive-plan-tab" data-tab="' + tab[0] + '">' + esc(tab[1]) + '</button>'; }).join('') + '</div>';
+}
+
+function executivePlanningTabBody(item, active) {
+  if (active === 'plan-info') {
+    return '<div class="executive-detail-body"><dl class="executive-definition-grid"><div><dt>Plan ID</dt><dd>' + esc(item.id) + '</dd></div><div><dt>Target</dt><dd>' + esc(item.targetMonth) + '</dd></div><div><dt>Trigger</dt><dd>' + esc(item.triggerType) + '</dd></div><div><dt>Risk Category</dt><dd>' + esc(item.riskCategory) + '</dd></div><div><dt>Organization</dt><dd>' + esc(item.organization) + '</dd></div><div><dt>Current status</dt><dd>' + esc(approvalSummary(item).statusLabel) + '</dd></div></dl></div>';
+  }
+  if (active === 'scope') {
+    return '<div class="executive-detail-body"><h3>Department and scope</h3><p>' + esc(item.purpose) + '</p><dl class="executive-definition-grid"><div><dt>Lead department</dt><dd>' + esc(item.department) + '</dd></div><div><dt>Proposed inspectors</dt><dd>' + esc((item.proposedInspectors || []).join(', ') || 'Not proposed') + '</dd></div><div><dt>Organization</dt><dd>' + esc(item.organization) + '</dd></div><div><dt>Execution state</dt><dd>' + esc(item.preparation && item.preparation.status === 'not_released' ? 'Not released' : item.preparation.status) + '</dd></div></dl></div>';
+  }
+  if (active === 'budget') {
+    var lines = item.budget && item.budget.lines ? item.budget.lines : [];
+    return '<div class="executive-detail-body"><div class="executive-budget-summary"><span><small>Requested</small><b>' + financeMoney(item.budget.requested, item.budget.currency) + '</b></span><span><small>Available for plan</small><b>' + financeMoney(item.budget.availableForPlan, item.budget.currency) + '</b></span><span><small>Reconciled</small><b>' + financeMoney(planningBudgetTotal(item), item.budget.currency) + '</b></span></div><div class="responsive-table-shell"><table><thead><tr><th>Resource</th><th>Amount</th></tr></thead><tbody>' + lines.map(function (line) { return '<tr><td>' + esc(line.category) + '</td><td>' + financeMoney(line.amount, item.budget.currency) + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+  }
+  if (active === 'history') return '<div class="executive-detail-body">' + approvalHistoryHtml(item) + '</div>';
+  if (active === 'documents') {
+    return '<div class="executive-detail-body"><h3>Documents &amp; Notes</h3><div class="executive-document-list"><button data-act="executive-plan-preview" data-id="' + esc(item.id) + '">Plan brief · ' + esc(item.id) + '.pdf</button><button data-act="executive-plan-preview" data-id="' + esc(item.id) + '">Budget review · ' + esc(item.id) + '.pdf</button></div><p class="small muted">Mock filenames and a browser-generated demo plan only; no real document storage is used.</p></div>';
+  }
+  return '<div class="executive-detail-body"><h3>Executive overview</h3><p>' + esc(item.purpose) + '</p><div class="executive-overview-callout"><b>Decision boundary</b><span>Executive approval records a mock approval mark. It does not release, schedule, or execute the plan. GM Release to Department remains a separate next action.</span></div>' + approvalProgressHtml(item) + '</div>';
+}
+
+function executivePlanningDecisionPanel(item, ui) {
+  var summary = approvalSummary(item);
+  var eligible = summary.ownerRole === 'executiveDirector' && !summary.outcome;
+  var next = planningWorkspaceNextAction(item);
+  if (!eligible) {
+    return '<section class="executive-decision-panel is-complete"><span>Decision status</span><h2>' + esc(summary.statusLabel) + '</h2>' + (item.mockApprovalSignature ? '<div class="executive-demo-signature"><b>' + esc(item.mockApprovalSignature.signer) + '</b><span>' + esc(item.mockApprovalSignature.label) + '</span><small>' + esc(item.mockApprovalSignature.date) + '</small></div>' : '') + '<div class="executive-next-action"><span>Next action</span><b>' + esc(next.label) + '</b></div></section>';
+  }
+  var selected = ui.planDecision;
+  return '<section class="executive-decision-panel"><span>Executive Director decision</span><h2>Final plan approval</h2><div class="executive-decision-choices"><button class="btn btn--primary" data-act="executive-plan-decision-choice" data-decision="approve_and_sign">Approve &amp; Sign (Demo)</button><button class="btn" data-act="executive-plan-decision-choice" data-decision="reject">Reject</button></div>' +
+    (selected ? '<div class="executive-decision-form"><div class="executive-signature-notice"><b>' + esc(selected === 'approve_and_sign' ? 'Demo approval mark' : 'Rejection stops release') + '</b><span>' + esc(selected === 'approve_and_sign' ? 'This is not a real e-signature. Confirmation records a browser-local mock mark, actor, time, and history only.' : 'A clear reason is required and plan release/execution will remain blocked.') + '</span></div><label>' + esc(selected === 'reject' ? 'Rejection rationale *' : 'Approval note (optional)') + '<textarea id="executive-plan-comment" data-field="executive-planning-comment" placeholder="' + esc(selected === 'reject' ? 'Required: explain why this plan is rejected.' : 'Optional approval note.') + '">' + esc(ui.planComment || '') + '</textarea></label><button class="btn btn--primary btn--block" data-act="executive-plan-confirm" data-id="' + esc(item.id) + '">' + esc(selected === 'approve_and_sign' ? 'Confirm Approve & Sign (Demo)' : 'Confirm Rejection') + '</button></div>' : '') + '</section>';
+}
+
 function viewExecutivePlanningWorkspace() {
-  var rows = state.planningItems;
-  return '<div class="executive-workspace-page">' + pageHead('Planning', 'Review surveillance plans that have completed Department, GM, and Finance stages.') + guardrailStrip([{ label: 'Executive Director final plan approval', tone: 'info' }, { label: 'GM release remains a separate next step', tone: 'warn' }]) + '<section class="executive-panel"><header><div><span>Planning register</span><h2>Surveillance plans</h2></div></header>' + executivePlanningQueueHtml(rows) + '</section></div>';
+  var ui = state.executiveDirectorUi;
+  var all = state.planningItems;
+  var rows = executivePlanningFilteredRows(ui);
+  var selected = all.filter(function (item) { return item.id === ui.selectedPlanId; })[0] || rows[0] || all[0] || null;
+  if (!selected) return pageHead('Planning', 'Executive Director planning approvals.') + '<div class="empty">No planning records.</div>';
+  var activeTab = ['overview', 'plan-info', 'scope', 'budget', 'history', 'documents'].indexOf(ui.planTab) !== -1 ? ui.planTab : 'overview';
+  return '<div class="executive-workspace-page executive-planning-page">' +
+    pageHead('Planning', 'Review and decide surveillance plans after Department, GM, and Finance review.', '<button class="btn" data-act="executive-plan-preview" data-id="' + esc(selected.id) + '">Preview Full Plan</button><button class="btn" data-act="executive-plan-download" data-id="' + esc(selected.id) + '">Download Plan</button>') +
+    guardrailStrip([{ label: 'Executive Director final plan approval', tone: 'info' }, { label: 'Approve & Sign is demo-only', tone: 'warn' }, { label: 'GM release remains a separate next step' }]) +
+    executivePlanningStageCards(all, ui.planningStatus) +
+    '<section class="executive-planning-filter"><label>Search<input type="search" data-field="executive-planning-query" value="' + esc(ui.planningQuery) + '" placeholder="Plan ID, title, organization"></label><label>Department<select data-field="executive-planning-department">' + executiveUniqueOptions(all, 'department', ui.planningDepartment, 'All departments') + '</select></label><label>Risk Category<select data-field="executive-planning-risk">' + executiveUniqueOptions(all, 'riskCategory', ui.planningRisk, 'All risk categories') + '</select></label><label>Target<select data-field="executive-planning-date">' + executiveUniqueOptions(all, 'targetMonth', ui.planningDate, 'All dates') + '</select></label><label>Status<select data-field="executive-planning-status"><option value="all"' + (ui.planningStatus === 'all' ? ' selected' : '') + '>All statuses</option><option value="draft"' + (ui.planningStatus === 'draft' ? ' selected' : '') + '>Draft</option><option value="department"' + (ui.planningStatus === 'department' ? ' selected' : '') + '>Department Review</option><option value="gm"' + (ui.planningStatus === 'gm' ? ' selected' : '') + '>GM Review</option><option value="finance"' + (ui.planningStatus === 'finance' ? ' selected' : '') + '>Finance Review</option><option value="executive"' + (ui.planningStatus === 'executive' ? ' selected' : '') + '>ED Final Approval</option><option value="rejected"' + (ui.planningStatus === 'rejected' ? ' selected' : '') + '>Rejected / Returned</option></select></label></section>' +
+    '<div class="executive-planning-layout"><main><section class="executive-panel executive-planning-queue"><header><div><span>Planning register</span><h2>' + esc(rows.length + ' visible plan' + (rows.length === 1 ? '' : 's')) + '</h2></div></header><div class="responsive-table-shell"><table><thead><tr><th>Plan</th><th>Department</th><th>Organization</th><th>Risk Category</th><th>Target</th><th>Owner</th><th>Status</th><th>Action</th></tr></thead><tbody>' + executivePlanningRowsHtml(rows, selected, ui) + '</tbody></table></div></section>' +
+    '<section class="executive-plan-detail"><header><div><span>Selected plan</span><h2>' + esc(selected.title) + '</h2><p>' + esc(selected.id + ' · ' + selected.organization) + '</p></div>' + demoBadge(approvalSummary(selected).statusLabel, approvalSummary(selected).statusTone) + '</header>' + executivePlanningTabs(activeTab) + executivePlanningTabBody(selected, activeTab) + '</section></main><aside><section class="executive-plan-summary"><span>Selected plan</span><h2>' + esc(selected.id) + '</h2><dl><div><dt>Department</dt><dd>' + esc(selected.department) + '</dd></div><div><dt>Target</dt><dd>' + esc(selected.targetMonth) + '</dd></div><div><dt>Risk</dt><dd>' + esc(selected.riskCategory) + '</dd></div><div><dt>Requested Budget</dt><dd>' + financeMoney(selected.budget.requested, selected.budget.currency) + '</dd></div></dl><h3>Approval flow</h3>' + approvalProgressHtml(selected) + '</section>' + executivePlanningDecisionPanel(selected, ui) + '</aside></div></div>';
 }
 
 function viewExecutiveFinalReportsWorkspace() {

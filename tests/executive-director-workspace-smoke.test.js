@@ -200,4 +200,40 @@ context.normalizeViewForRole();
 assert.equal(dashboardState.view, 'executive-dashboard');
 assert.deepEqual(JSON.parse(JSON.stringify(dashboardState.params)), {});
 
+dashboardState.view = 'executive-planning';
+dashboardState.executiveDirectorUi.selectedPlanId = dashboardPlan.id;
+dashboardState.executiveDirectorUi.openPlanActionId = dashboardPlan.id;
+dashboardState.executiveDirectorUi.planDecision = 'approve_and_sign';
+let planningHtml = context.viewExecutivePlanningWorkspace();
+[
+  'Draft',
+  'Department Review',
+  'GM Review',
+  'Finance Review',
+  'ED Final Approval',
+  'Rejected / Returned',
+  'Risk Category',
+  'Review / Take Action',
+  'Preview Full Plan',
+  'Overview',
+  'Plan Information',
+  'Departments &amp; Scope',
+  'Budget &amp; Resources',
+  'Approval History',
+  'Documents &amp; Notes',
+  'This is not a real e-signature',
+  'GM release remains a separate next step'
+].forEach((text) => assert.match(planningHtml, new RegExp(text, 'i')));
+assert.ok(planningHtml.includes('Approve &amp; Sign (Demo)'));
+assert.equal((planningHtml.match(/Review \/ Take Action/g) || []).length, 1, 'each plan row has one action trigger');
+assert.match(planningHtml, new RegExp(dashboardPlan.id));
+assert.match(context.executivePlanDownloadText(dashboardPlan), new RegExp(dashboardPlan.id));
+assert.match(context.executivePlanDownloadText(dashboardPlan), /Demo-only browser-generated document/);
+
+dashboardState.executiveDirectorUi.planDecision = 'reject';
+dashboardState.executiveDirectorUi.planComment = '';
+planningHtml = context.viewExecutivePlanningWorkspace();
+assert.match(planningHtml, /Rejection rationale \*/);
+assert.match(planningHtml, /Rejection stops release/);
+
 console.log('executive-director-workspace-smoke: ok');
