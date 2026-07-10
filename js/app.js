@@ -1639,6 +1639,8 @@ function handleAction(act, el) {
     case 'lead-assignment-preview-checklist': handleLeadAssignmentPreviewChecklist(); break;
     case 'lead-assignment-view-details': handleLeadAssignmentViewDetails(); break;
     case 'lead-assignment-view-team': handleLeadAssignmentViewTeam(); break;
+    case 'lead-assignment-add-inspector': handleLeadAssignmentAddInspector(); break;
+    case 'lead-assignment-confirm-add-inspector': handleLeadAssignmentConfirmAddInspector(); break;
     case 'lead-assignment-guide': handleLeadAssignmentGuide(); break;
     case 'lead-assignment-download': handleLeadAssignmentDownload(); break;
     case 'lead-assignment-pick-inspector': handleLeadAssignmentPickInspector(id); break;
@@ -2507,10 +2509,77 @@ function handleLeadAssignedRowMenu(auditId) {
     false));
 }
 
+function leadAssignmentTeamForAudit(target, auditId) {
+  var teams = target && Array.isArray(target.inspectionTeams) ? target.inspectionTeams : [];
+  return teams.filter(function (team) { return team.auditId === auditId; })[0] || null;
+}
+
+function activeInternalInspectorById(target, userId) {
+  var users = target && Array.isArray(target.users) ? target.users : [];
+  return users.filter(function (user) {
+    return user.id === userId && user.roleKey === 'inspector' && user.status === 'Active' && user.org === '—';
+  })[0] || null;
+}
+
+function addInspectorToAuditTeam(target, auditId, userId) {
+  var team = leadAssignmentTeamForAudit(target, auditId);
+  if (!team) return { ok: false, message: 'Inspection team not found.', team: null };
+  var inspector = activeInternalInspectorById(target, userId);
+  if (!inspector) return { ok: false, message: 'Choose an active internal Inspector.', team: team };
+  if (!Array.isArray(team.memberIds)) team.memberIds = [];
+  if (team.memberIds.indexOf(userId) !== -1) return { ok: false, message: 'Inspector is already assigned to this audit team.', team: team, inspector: inspector };
+  team.memberIds.push(userId);
+  if (!Array.isArray(team.history)) team.history = [];
+  team.history.push({ at: nowIsoDemo(), actor: currentActorLabel(), action: 'Inspector added to audit team: ' + inspector.name });
+  return { ok: true, message: 'Inspector added to audit team.', team: team, inspector: inspector };
+}
+
+function assignLeadQuestionsToInspector(target, auditId, questionIds, inspectorUserId, input) {
+  var team = leadAssignmentTeamForAudit(target, auditId);
+  var inspector = activeInternalInspectorById(target, inspectorUserId);
+  if (!team) return { ok: false, message: 'Inspection team not found.', assignment: null };
+  if (!inspector || !Array.isArray(team.memberIds) || team.memberIds.indexOf(inspectorUserId) === -1) {
+    return { ok: false, message: 'Choose an active Inspector who belongs to this audit team.', assignment: null };
+  }
+  var ids = Array.from(new Set((questionIds || []).filter(Boolean)));
+  if (!ids.length) return { ok: false, message: 'Select at least one checklist question.', assignment: null };
+  if (!target.leadAssignmentsByAudit) target.leadAssignmentsByAudit = {};
+  var assignment = target.leadAssignmentsByAudit[auditId];
+  if (!assignment) {
+    assignment = {
+      activeInspectorUserId: inspectorUserId,
+      selectedQuestionIds: {},
+      assignmentsByQuestionId: {},
+      dueDate: '2026-06-15',
+      priority: 'Normal',
+      instructions: '',
+      assignedAt: '', draftSavedAt: '', releasedAt: '', downloadedAt: ''
+    };
+    target.leadAssignmentsByAudit[auditId] = assignment;
+  }
+  if (!assignment.assignmentsByQuestionId || typeof assignment.assignmentsByQuestionId !== 'object') assignment.assignmentsByQuestionId = {};
+  input = input || {};
+  var assignedAt = input.assignedAt || nowIsoDemo();
+  ids.forEach(function (questionId) {
+    assignment.assignmentsByQuestionId[questionId] = {
+      inspectorUserId: inspectorUserId,
+      dueDate: input.dueDate || assignment.dueDate || '2026-06-15',
+      priority: input.priority || assignment.priority || 'Normal',
+      instructions: input.instructions || assignment.instructions || '',
+      assignedAt: assignedAt
+    };
+  });
+  assignment.activeInspectorUserId = inspectorUserId;
+  assignment.assignedAt = assignedAt;
+  return { ok: true, message: ids.length + ' questions assigned to ' + inspector.name + '.', assignment: assignment, inspector: inspector, questionIds: ids };
+}
+
 function ensureLeadAssignmentUi() {
   if (typeof leadAssignmentUiState === 'function') return leadAssignmentUiState();
-  if (!state.leadAssignmentUi) state.leadAssignmentUi = {};
-  return state.leadAssignmentUi;
+  var auditId = (state.params && state.params.auditId) || 'AUD-2026-001';
+  if (!state.leadAssignmentsByAudit) state.leadAssignmentsByAudit = {};
+  if (!state.leadAssignmentsByAudit[auditId]) state.leadAssignmentsByAudit[auditId] = {};
+  return state.leadAssignmentsByAudit[auditId];
 }
 
 function handleLeadAssignmentFieldChange(field, target) {
@@ -2518,7 +2587,7 @@ function handleLeadAssignmentFieldChange(field, target) {
   var value = target && target.value !== undefined ? target.value : '';
   if (field === 'lead-assignment-question') {
     var questionId = target && target.getAttribute ? target.getAttribute('data-id') : '';
-    if (questionId) ui.selectedQuestions[questionId] = !!target.checked;
+    if (questionId) ui.selectedQuestionIds[questionId] = !!target.checked;
     persistAfterAction();
     render();
     return;
@@ -2526,16 +2595,16 @@ function handleLeadAssignmentFieldChange(field, target) {
   if (field === 'lead-assignment-select-visible') {
     var selected = !!(target && target.checked);
     if (typeof leadAssignmentFilteredQuestions === 'function') {
-      leadAssignmentFilteredQuestions(ui).forEach(function (row) { ui.selectedQuestions[row.id] = selected; });
+      leadAssignmentFilteredQuestions(ui).forEach(function (row) { ui.selectedQuestionIds[row.id] = selected; });
     }
     persistAfterAction();
     render();
     return;
   }
-  if (field === 'lead-assignment-assignee') ui.assignee = value || 'Ahmed Ali';
+  if (field === 'lead-assignment-assignee') ui.activeInspectorUserId = value || 'USR-AYLIN';
   if (field === 'lead-assignment-due') ui.dueDate = value || '2026-06-15';
   if (field === 'lead-assignment-priority') ui.priority = value || 'Normal';
-  if (field === 'lead-assignment-note') ui.note = value || '';
+  if (field === 'lead-assignment-note') ui.instructions = value || '';
   if (field === 'lead-assignment-department') ui.department = value || 'Cabin Safety';
   if (field === 'lead-assignment-section') ui.section = value || 'emergency-equipment';
   if (field === 'lead-assignment-risk') ui.risk = value || 'all';
@@ -2544,42 +2613,51 @@ function handleLeadAssignmentFieldChange(field, target) {
   persistAfterAction();
   if (field === 'lead-assignment-note') {
     var counter = target.parentElement && target.parentElement.parentElement && target.parentElement.parentElement.querySelector ? target.parentElement.parentElement.querySelector('.lead-assignment-note-count') : null;
-    if (counter) counter.textContent = String(ui.note.length);
+    if (counter) counter.textContent = String(ui.instructions.length);
   } else {
     render();
   }
 }
 
-function handleLeadAssignmentPickInspector(name) {
-  if (!name) return;
+function handleLeadAssignmentPickInspector(userId) {
+  if (!userId) return;
   var ui = ensureLeadAssignmentUi();
-  ui.assignee = name;
+  ui.activeInspectorUserId = userId;
   persistAfterAction();
   render();
 }
 
 function handleLeadAssignmentClearSelection() {
   var ui = ensureLeadAssignmentUi();
-  ui.selectedQuestions = {};
+  ui.selectedQuestionIds = {};
   persistAfterAction();
   render();
 }
 
 function handleLeadAssignmentAssign() {
   var ui = ensureLeadAssignmentUi();
-  var selected = typeof leadAssignmentSelectedQuestionIds === 'function' ? leadAssignmentSelectedQuestionIds(ui) : Object.keys(ui.selectedQuestions || {});
+  var selected = typeof leadAssignmentSelectedQuestionIds === 'function' ? leadAssignmentSelectedQuestionIds(ui) : Object.keys(ui.selectedQuestionIds || {});
   if (!selected.length) {
     toast('No checklist questions selected', 'Select at least one question before assigning.', 'warn');
     return;
   }
-  ui.assignedAt = nowIsoDemo();
+  var auditId = (state.params && state.params.auditId) || 'AUD-2026-001';
+  var result = assignLeadQuestionsToInspector(state, auditId, selected, ui.activeInspectorUserId, {
+    dueDate: ui.dueDate,
+    priority: ui.priority,
+    instructions: ui.instructions
+  });
+  if (!result.ok) {
+    toast('Questions not assigned', result.message, 'warn');
+    return;
+  }
   persistAfterAction();
   render();
   if (state.role === 'inspector') {
     toast('Questions marked', selected.length + ' questions marked for inspector review in this demo.', 'ok');
     return;
   }
-  toast('Checklist questions assigned', selected.length + ' questions assigned to ' + ui.assignee + ' with ' + ui.priority + ' priority.', 'ok');
+  toast('Checklist questions assigned', result.message + ' Priority: ' + ui.priority + '.', 'ok');
 }
 
 function handleLeadAssignmentSave() {
@@ -2592,6 +2670,13 @@ function handleLeadAssignmentSave() {
 
 function handleLeadAssignmentRelease() {
   var ui = ensureLeadAssignmentUi();
+  var assignedUserIds = Array.from(new Set(Object.keys(ui.assignmentsByQuestionId || {}).map(function (questionId) {
+    return ui.assignmentsByQuestionId[questionId].inspectorUserId;
+  }).filter(Boolean)));
+  if (state.role !== 'inspector' && !assignedUserIds.length) {
+    toast('Assignments not released', 'Assign at least one checklist question before release.', 'warn');
+    return;
+  }
   ui.releasedAt = nowIsoDemo();
   if (!ui.assignedAt) ui.assignedAt = ui.releasedAt;
   if (state.role === 'inspector') {
@@ -2600,13 +2685,15 @@ function handleLeadAssignmentRelease() {
     toast('Inspector review confirmed', 'Submitted checklist package remains available in the Inspector workspace.', 'ok');
     return;
   }
-  state.notifications.unshift({
-    id: 'n-lead-assignment-' + state.notifSeq++,
-    role: 'leadInspector',
-    icon: '▣',
-    text: 'Cabin Inspection checklist assignments released to inspectors.',
-    time: 'Now',
-    unread: false
+  assignedUserIds.forEach(function (userId) {
+    var inspector = activeInternalInspectorById(state, userId);
+    var count = Object.keys(ui.assignmentsByQuestionId).filter(function (questionId) {
+      return ui.assignmentsByQuestionId[questionId].inspectorUserId === userId;
+    }).length;
+    state.notifications.unshift({
+      id: 'n-lead-assignment-' + state.notifSeq++, role: 'inspector', userId: userId, icon: '▣',
+      text: 'Cabin Inspection assignment released to ' + (inspector ? inspector.name : 'assigned Inspector') + ': ' + count + ' questions.', time: 'Now', unread: true
+    });
   });
   persistAfterAction();
   render();
@@ -2624,16 +2711,17 @@ function handleLeadAssignmentDownload() {
 function handleLeadAssignmentPreview() {
   var ui = ensureLeadAssignmentUi();
   var selected = typeof leadAssignmentSelectedQuestionIds === 'function' ? leadAssignmentSelectedQuestionIds(ui).length : 0;
+  var inspector = activeInternalInspectorById(state, ui.activeInspectorUserId);
   openModal(modalShell('Assignment preview',
     '<div class="lead-assigned-modal">' +
       '<p><b>Cabin Inspection</b> checklist assignment draft for Fly Namibia</p>' +
       '<div class="metaline">' +
-        metaItem('Assignee', ui.assignee) +
+        metaItem('Assignee', inspector ? inspector.name : 'Not selected') +
         metaItem('Selected questions', String(selected)) +
         metaItem('Due date', ui.dueDate) +
         metaItem('Priority', ui.priority) +
       '</div>' +
-      '<p class="small muted mt-12">' + esc(ui.note || 'No special inspector instructions added.') + '</p>' +
+      '<p class="small muted mt-12">' + esc(ui.instructions || 'No special inspector instructions added.') + '</p>' +
     '</div>',
     '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="lead-assignment-release">Release to Inspectors</button>',
     false));
@@ -2678,6 +2766,40 @@ function handleLeadAssignmentViewTeam() {
     false));
 }
 
+function handleLeadAssignmentAddInspector() {
+  var candidates = typeof leadAssignmentAvailableInspectors === 'function' ? leadAssignmentAvailableInspectors() : [];
+  var options = candidates.map(function (inspector) {
+    return '<option value="' + esc(inspector.id) + '">' + esc(inspector.name + ' — ' + inspector.unit + ' · ' + inspector.assigned + ' assigned') + '</option>';
+  }).join('');
+  var body = candidates.length
+    ? '<div class="lead-assigned-modal lead-assignment-add-modal"><p>Select an available inspector to add to this audit team.</p><label><span>Available Inspector</span><select id="lead-assignment-new-inspector">' + options + '</select></label><p class="small muted">Frontend-only demo: the team update is saved in this browser.</p></div>'
+    : '<div class="lead-assigned-modal"><p>All available demo inspectors are already part of this audit team.</p></div>';
+  var footer = '<button class="btn" data-act="close-modal">Cancel</button>' + (candidates.length ? '<button class="btn btn--primary" data-act="lead-assignment-confirm-add-inspector">Add Inspector</button>' : '');
+  openModal(modalShell('Add Inspector', body, footer, false));
+}
+
+function handleLeadAssignmentConfirmAddInspector() {
+  var userId = val('lead-assignment-new-inspector');
+  var candidates = typeof leadAssignmentAvailableInspectors === 'function' ? leadAssignmentAvailableInspectors() : [];
+  var inspector = candidates.filter(function (item) { return item.id === userId; })[0];
+  if (!inspector) {
+    toast('Inspector not added', 'Select an available inspector before continuing.', 'warn');
+    return;
+  }
+  var auditId = (state.params && state.params.auditId) || 'AUD-2026-001';
+  var result = addInspectorToAuditTeam(state, auditId, userId);
+  if (!result.ok) {
+    toast('Inspector not added', result.message, 'warn');
+    return;
+  }
+  var ui = ensureLeadAssignmentUi();
+  ui.activeInspectorUserId = userId;
+  persistAfterAction();
+  closeModal();
+  render();
+  toast('Inspector added', inspector.name + ' added to this audit team and selected for assignment.', 'ok');
+}
+
 function handleLeadAssignmentGuide() {
   openModal(modalShell('Assignment guide',
     '<div class="lead-assigned-modal">' +
@@ -2691,26 +2813,23 @@ function handleLeadAssignmentGuide() {
 function handleLeadAssignmentBulk(mode) {
   var ui = ensureLeadAssignmentUi();
   if (mode === 'assign-section' && typeof leadAssignmentFilteredQuestions === 'function') {
-    leadAssignmentFilteredQuestions(ui).forEach(function (row) { ui.selectedQuestions[row.id] = true; });
+    leadAssignmentFilteredQuestions(ui).forEach(function (row) { ui.selectedQuestionIds[row.id] = true; });
     persistAfterAction();
     render();
     toast('Section selected', 'Visible checklist questions are ready for assignment.', 'ok');
     return;
   }
   if (mode === 'reassign') {
-    ui.assignee = 'Maria Silva';
-    ui.assignedAt = nowIsoDemo();
-    persistAfterAction();
-    render();
-    toast('Questions reassigned', 'Selected questions are reassigned to Maria Silva in the demo.', 'ok');
+    handleLeadAssignmentAssign();
     return;
   }
   if (mode === 'remove') {
-    ui.selectedQuestions = {};
-    ui.assignedAt = '';
+    var ids = typeof leadAssignmentSelectedQuestionIds === 'function' ? leadAssignmentSelectedQuestionIds(ui) : [];
+    ids.forEach(function (questionId) { delete ui.assignmentsByQuestionId[questionId]; });
+    ui.assignedAt = Object.keys(ui.assignmentsByQuestionId || {}).length ? ui.assignedAt : '';
     persistAfterAction();
     render();
-    toast('Selection cleared', 'Selected assignment rows were cleared from the working draft.', 'warn');
+    toast('Assignments removed', ids.length + ' selected question assignments were removed.', 'warn');
     return;
   }
   if (mode === 'export') {

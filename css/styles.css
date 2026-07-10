@@ -7452,6 +7452,27 @@ button { font-family: inherit; }
   display: grid;
   gap: 12px;
 }
+.lead-assignment-add-modal label > span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+.lead-assignment-add-modal select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 11px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+}
+.lead-assignment-add-modal select:focus {
+  outline: 3px solid rgba(47, 111, 214, .18);
+  border-color: var(--blue-500);
+}
 
 .lead-assignment-page,
 .lead-assignment-question-page {

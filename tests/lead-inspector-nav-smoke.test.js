@@ -114,6 +114,43 @@ assert.equal(leadNavItems.some((item) => item.label === 'Findings Review'), fals
 assert.equal(context.NAV.leadInspector.some((item) => item.view === 'planning'), false);
 assert.equal(context.NAV.leadInspector.some((item) => item.view === 'reports'), false);
 
+assert.equal(typeof context.addInspectorToAuditTeam, 'function');
+assert.equal(typeof context.assignLeadQuestionsToInspector, 'function');
+const assignmentState = context.freshState();
+let assignmentResult = context.addInspectorToAuditTeam(assignmentState, 'AUD-2026-001', 'USR-NADIA');
+assert.equal(assignmentResult.ok, true);
+assert.ok(assignmentState.inspectionTeams[0].memberIds.includes('USR-NADIA'));
+assignmentResult = context.addInspectorToAuditTeam(assignmentState, 'AUD-2026-001', 'USR-NADIA');
+assert.equal(assignmentResult.ok, false);
+assert.match(assignmentResult.message, /already/i);
+assignmentResult = context.addInspectorToAuditTeam(assignmentState, 'AUD-2026-001', 'USR-UFUK');
+assert.equal(assignmentResult.ok, false);
+assert.match(assignmentResult.message, /active internal Inspector/i);
+
+assignmentResult = context.assignLeadQuestionsToInspector(
+  assignmentState,
+  'AUD-2026-001',
+  ['CAB-Q001', 'CAB-Q002'],
+  'USR-AYLIN',
+  { dueDate: '2026-06-15', priority: 'High', instructions: 'Emergency equipment batch.' }
+);
+assert.equal(assignmentResult.ok, true);
+assignmentResult = context.assignLeadQuestionsToInspector(
+  assignmentState,
+  'AUD-2026-001',
+  ['CAB-Q003', 'CAB-Q004'],
+  'USR-MEHMET',
+  { dueDate: '2026-06-16', priority: 'Normal', instructions: 'Cabin condition batch.' }
+);
+assert.equal(assignmentResult.ok, true);
+assert.equal(assignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q001'].inspectorUserId, 'USR-AYLIN');
+assert.equal(assignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q002'].inspectorUserId, 'USR-AYLIN');
+assert.equal(assignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q003'].inspectorUserId, 'USR-MEHMET');
+assert.equal(assignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q004'].inspectorUserId, 'USR-MEHMET');
+const restoredAssignmentState = context.mergeDemoState(JSON.parse(JSON.stringify(assignmentState)));
+assert.equal(restoredAssignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q001'].inspectorUserId, 'USR-AYLIN');
+assert.equal(restoredAssignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q004'].inspectorUserId, 'USR-MEHMET');
+
 context.handleAction('nav', dataEl({ 'data-view': 'audit-reports', 'data-filter': 'preliminary' }));
 assert.equal(context.state.view, 'audit-reports');
 assert.equal(context.state.params.filter, 'preliminary');
@@ -206,33 +243,35 @@ assert.match(elements.get('app-root').innerHTML, /Assign Selected \(4\)/);
 assert.match(elements.get('app-root').innerHTML, /data-field="lead-assignment-due"/);
 assert.match(elements.get('app-root').innerHTML, /data-act="lead-assignment-add-inspector"/);
 
-context.handleAction('lead-assignment-pick-inspector', dataEl({ 'data-id': 'Maria Silva' }));
-assert.equal(context.state.leadAssignmentUi.assignee, 'Maria Silva');
-assert.match(elements.get('app-root').innerHTML, /class="lead-assignment-inspector is-active"[^>]*data-id="Maria Silva"[^>]*aria-pressed="true"/);
-assert.match(elements.get('app-root').innerHTML, /class="lead-assignment-inspector"[^>]*data-id="Ahmed Ali"[^>]*aria-pressed="false"/);
+context.handleAction('lead-assignment-pick-inspector', dataEl({ 'data-id': 'USR-MEHMET' }));
+assert.equal(context.state.leadAssignmentsByAudit['AUD-2026-001'].activeInspectorUserId, 'USR-MEHMET');
+assert.match(elements.get('app-root').innerHTML, /class="lead-assignment-inspector is-active"[^>]*data-id="USR-MEHMET"[^>]*aria-pressed="true"/);
+assert.match(elements.get('app-root').innerHTML, /class="lead-assignment-inspector"[^>]*data-id="USR-AYLIN"[^>]*aria-pressed="false"/);
 
 context.handleAction('lead-assignment-add-inspector', dataEl({}));
 assert.equal(elements.get('modal-host').hidden, false);
 assert.match(elements.get('modal-host').innerHTML, /Add Inspector/);
-assert.match(elements.get('modal-host').innerHTML, /Elena Rossi/);
-context.document.getElementById('lead-assignment-new-inspector').value = 'Elena Rossi';
+assert.match(elements.get('modal-host').innerHTML, /Nadia Amutenya/);
+context.document.getElementById('lead-assignment-new-inspector').value = 'USR-NADIA';
 context.handleAction('lead-assignment-confirm-add-inspector', dataEl({}));
-assert.equal(context.state.leadAssignmentUi.addedInspectors.length, 1);
-assert.equal(context.state.leadAssignmentUi.addedInspectors[0].name, 'Elena Rossi');
-assert.equal(context.state.leadAssignmentUi.assignee, 'Elena Rossi');
+assert.ok(context.state.inspectionTeams[0].memberIds.includes('USR-NADIA'));
+assert.equal(context.state.leadAssignmentsByAudit['AUD-2026-001'].activeInspectorUserId, 'USR-NADIA');
 assert.equal(elements.get('modal-host').hidden, true);
-assert.match(elements.get('app-root').innerHTML, /Inspectors[\s\S]*5[\s\S]*Team Members/);
-assert.match(elements.get('app-root').innerHTML, /class="lead-assignment-inspector is-active"[^>]*data-id="Elena Rossi"[^>]*aria-pressed="true"/);
-assert.match(elements.get('app-root').innerHTML, /<option value="Elena Rossi" selected>Elena Rossi<\/option>/);
+assert.match(elements.get('app-root').innerHTML, /Inspectors[\s\S]*4[\s\S]*Team Members/);
+assert.match(elements.get('app-root').innerHTML, /class="lead-assignment-inspector is-active"[^>]*data-id="USR-NADIA"[^>]*aria-pressed="true"/);
+assert.match(elements.get('app-root').innerHTML, /<option value="USR-NADIA" selected>Nadia Amutenya<\/option>/);
 context.handleLeadAssignmentFieldChange('lead-assignment-due', { value: '2026-06-15' });
 context.handleLeadAssignmentFieldChange('lead-assignment-priority', { value: 'High' });
 context.handleLeadAssignmentFieldChange('lead-assignment-note', { value: 'Prioritize emergency equipment checks.', parentElement: null });
 context.handleAction('lead-assignment-assign', dataEl({}));
-assert.ok(context.state.leadAssignmentUi.assignedAt);
+assert.ok(context.state.leadAssignmentsByAudit['AUD-2026-001'].assignedAt);
+assert.equal(context.state.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q001'].inspectorUserId, 'USR-NADIA');
 assert.match(elements.get('app-root').innerHTML, /Assignment Draft/);
-assert.match(elements.get('app-root').innerHTML, /Maria Silva/);
+assert.match(elements.get('app-root').innerHTML, /Nadia Amutenya/);
 context.handleAction('lead-assignment-release', dataEl({}));
-assert.ok(context.state.leadAssignmentUi.releasedAt);
+assert.ok(context.state.leadAssignmentsByAudit['AUD-2026-001'].releasedAt);
+assert.equal(context.state.notifications[0].role, 'inspector');
+assert.equal(context.state.notifications[0].userId, 'USR-NADIA');
 assert.match(elements.get('app-root').innerHTML, /Released/);
 
 context.handleAction('nav', dataEl({ 'data-view': 'lead-review', 'data-id': 'AUD-2026-005' }));

@@ -6100,18 +6100,23 @@ function leadAssignedTableHtml(rows, filteredCount) {
   '</section>';
 }
 
+function leadAssignmentAuditId() {
+  return (state.params && state.params.auditId) || 'AUD-2026-001';
+}
+
 function leadAssignmentDefaultUi() {
   return {
-    selectedQuestions: {
+    activeInspectorUserId: 'USR-AYLIN',
+    selectedQuestionIds: {
       'CAB-Q001': true,
       'CAB-Q002': true,
       'CAB-Q003': true,
       'CAB-Q004': true
     },
-    assignee: 'Ahmed Ali',
+    assignmentsByQuestionId: {},
     dueDate: '2026-06-15',
     priority: 'Normal',
-    note: '',
+    instructions: '',
     department: 'Cabin Safety',
     section: 'emergency-equipment',
     risk: 'all',
@@ -6125,56 +6130,63 @@ function leadAssignmentDefaultUi() {
 }
 
 function leadAssignmentUiState() {
-  if (!state.leadAssignmentUi) state.leadAssignmentUi = {};
-  state.leadAssignmentUi = Object.assign(leadAssignmentDefaultUi(), state.leadAssignmentUi || {});
-  if (!state.leadAssignmentUi.selectedQuestions || typeof state.leadAssignmentUi.selectedQuestions !== 'object') {
-    state.leadAssignmentUi.selectedQuestions = leadAssignmentDefaultUi().selectedQuestions;
-  }
-  if (Object.keys(state.leadAssignmentUi.selectedQuestions).some(function (id) { return id.indexOf('AVSEC-') === 0; })) {
-    state.leadAssignmentUi.selectedQuestions = leadAssignmentDefaultUi().selectedQuestions;
-  }
-  if (!state.leadAssignmentUi.assignee) state.leadAssignmentUi.assignee = 'Ahmed Ali';
-  if (!state.leadAssignmentUi.dueDate) state.leadAssignmentUi.dueDate = '2026-06-15';
-  if (!state.leadAssignmentUi.priority) state.leadAssignmentUi.priority = 'Normal';
-  if (state.leadAssignmentUi.note === undefined || state.leadAssignmentUi.note === null) state.leadAssignmentUi.note = '';
-  if (!state.leadAssignmentUi.department) state.leadAssignmentUi.department = 'Cabin Safety';
-  if (!state.leadAssignmentUi.section) state.leadAssignmentUi.section = 'emergency-equipment';
-  if (!state.leadAssignmentUi.risk) state.leadAssignmentUi.risk = 'all';
-  if (!state.leadAssignmentUi.status) state.leadAssignmentUi.status = 'all';
-  if (!state.leadAssignmentUi.query) state.leadAssignmentUi.query = '';
-  if (!state.leadAssignmentUi.assignedAt) state.leadAssignmentUi.assignedAt = '';
-  if (!state.leadAssignmentUi.draftSavedAt) state.leadAssignmentUi.draftSavedAt = '';
-  if (!state.leadAssignmentUi.releasedAt) state.leadAssignmentUi.releasedAt = '';
-  if (!state.leadAssignmentUi.downloadedAt) state.leadAssignmentUi.downloadedAt = '';
-  return state.leadAssignmentUi;
+  var auditId = leadAssignmentAuditId();
+  if (!state.leadAssignmentsByAudit) state.leadAssignmentsByAudit = {};
+  state.leadAssignmentsByAudit[auditId] = Object.assign(leadAssignmentDefaultUi(), state.leadAssignmentsByAudit[auditId] || {});
+  var ui = state.leadAssignmentsByAudit[auditId];
+  if (!ui.selectedQuestionIds || typeof ui.selectedQuestionIds !== 'object') ui.selectedQuestionIds = {};
+  if (!ui.assignmentsByQuestionId || typeof ui.assignmentsByQuestionId !== 'object') ui.assignmentsByQuestionId = {};
+  if (!ui.activeInspectorUserId) ui.activeInspectorUserId = 'USR-AYLIN';
+  return ui;
+}
+
+function leadAssignmentTeam() {
+  var auditId = leadAssignmentAuditId();
+  return (state.inspectionTeams || []).filter(function (team) { return team.auditId === auditId; })[0] || null;
 }
 
 function leadAssignmentInspectors() {
-  return [
-    { name: 'Ahmed Ali', initials: 'AA', unit: 'Cabin Safety', assigned: 28, tone: 'blue' },
-    { name: 'Maria Silva', initials: 'MS', unit: 'Emergency Equipment', assigned: 32, tone: 'green' },
-    { name: 'David Kim', initials: 'DK', unit: 'Cabin Condition', assigned: 24, tone: 'amber' },
-    { name: 'Fatima Omar', initials: 'FO', unit: 'Cabin Exits', assigned: 0, tone: 'purple' }
-  ];
+  var team = leadAssignmentTeam();
+  var memberIds = team && Array.isArray(team.memberIds) ? team.memberIds : [];
+  var assignment = leadAssignmentUiState();
+  var tones = ['blue', 'green', 'amber', 'purple', 'teal'];
+  return (state.users || []).filter(function (user) {
+    return memberIds.indexOf(user.id) !== -1 && user.roleKey === 'inspector' && user.status === 'Active' && user.org === '—';
+  }).map(function (user, index) {
+    var assigned = Object.keys(assignment.assignmentsByQuestionId).filter(function (questionId) {
+      return assignment.assignmentsByQuestionId[questionId].inspectorUserId === user.id;
+    }).length;
+    return { id: user.id, name: user.name, initials: user.name.split(/\s+/).map(function (part) { return part.charAt(0); }).join('').slice(0, 2), unit: user.department, assigned: assigned, tone: tones[index % tones.length] };
+  });
+}
+
+function leadAssignmentAvailableInspectors() {
+  var team = leadAssignmentTeam();
+  var memberIds = team && Array.isArray(team.memberIds) ? team.memberIds : [];
+  return (state.users || []).filter(function (user) {
+    return user.roleKey === 'inspector' && user.status === 'Active' && user.org === '—' && memberIds.indexOf(user.id) === -1;
+  }).map(function (user) {
+    return { id: user.id, name: user.name, initials: user.name.split(/\s+/).map(function (part) { return part.charAt(0); }).join('').slice(0, 2), unit: user.department, assigned: 0, tone: 'teal' };
+  });
 }
 
 function leadAssignmentQuestions() {
   return [
-    { id: 'CAB-Q001', no: 1, text: 'Is PBE serviceable and accessible in the required cabin position?', risk: 'High', riskKey: 'high', assignedTo: 'Ahmed Ali', status: 'assigned', section: 'Emergency Equipment', sectionKey: 'emergency-equipment' },
-    { id: 'CAB-Q002', no: 2, text: 'Are fire extinguishers within inspection date and correctly secured?', risk: 'High', riskKey: 'high', assignedTo: 'Ahmed Ali', status: 'assigned', section: 'Emergency Equipment', sectionKey: 'emergency-equipment' },
-    { id: 'CAB-Q003', no: 3, text: 'Are oxygen bottles serviceable, secured, and pressure checked?', risk: 'Medium', riskKey: 'medium', assignedTo: 'Ahmed Ali', status: 'assigned', section: 'Emergency Equipment', sectionKey: 'emergency-equipment' },
-    { id: 'CAB-Q004', no: 4, text: 'Are emergency lights and exit signs serviceable?', risk: 'Medium', riskKey: 'medium', assignedTo: 'Ahmed Ali', status: 'assigned', section: 'Emergency Equipment', sectionKey: 'emergency-equipment' },
-    { id: 'CAB-Q005', no: 5, text: 'Are galley latches, carts, and stowage areas secured?', risk: 'Low', riskKey: 'low', assignedTo: '', status: 'unassigned', section: 'Galley', sectionKey: 'galley' },
-    { id: 'CAB-Q006', no: 6, text: 'Are lavatory smoke detectors and placards serviceable?', risk: 'High', riskKey: 'high', assignedTo: '', status: 'unassigned', section: 'Lavatories', sectionKey: 'lavatories' },
-    { id: 'CAB-Q007', no: 7, text: 'Are passenger seats, belts, and placards in acceptable condition?', risk: 'Medium', riskKey: 'medium', assignedTo: '', status: 'unassigned', section: 'Passenger Seats', sectionKey: 'passenger-seats' },
-    { id: 'CAB-Q008', no: 8, text: 'Are crew seats and restraints serviceable?', risk: 'Low', riskKey: 'low', assignedTo: '', status: 'unassigned', section: 'Video + Crew Seat', sectionKey: 'video-crew-seat' },
-    { id: 'CAB-Q009', no: 9, text: 'Are exits unobstructed and correctly placarded?', risk: 'High', riskKey: 'high', assignedTo: '', status: 'unassigned', section: 'Cockpit, Cabin Condition + Exits', sectionKey: 'cockpit-cabin-exits' },
-    { id: 'CAB-Q010', no: 10, text: 'Is general cabin condition acceptable for the inspection scope?', risk: 'Medium', riskKey: 'medium', assignedTo: '', status: 'unassigned', section: 'Cockpit, Cabin Condition + Exits', sectionKey: 'cockpit-cabin-exits' }
+    { id: 'CAB-Q001', no: 1, text: 'Is PBE serviceable and accessible in the required cabin position?', risk: 'High', riskKey: 'high', section: 'Emergency Equipment', sectionKey: 'emergency-equipment' },
+    { id: 'CAB-Q002', no: 2, text: 'Are fire extinguishers within inspection date and correctly secured?', risk: 'High', riskKey: 'high', section: 'Emergency Equipment', sectionKey: 'emergency-equipment' },
+    { id: 'CAB-Q003', no: 3, text: 'Are oxygen bottles serviceable, secured, and pressure checked?', risk: 'Medium', riskKey: 'medium', section: 'Emergency Equipment', sectionKey: 'emergency-equipment' },
+    { id: 'CAB-Q004', no: 4, text: 'Are emergency lights and exit signs serviceable?', risk: 'Medium', riskKey: 'medium', section: 'Emergency Equipment', sectionKey: 'emergency-equipment' },
+    { id: 'CAB-Q005', no: 5, text: 'Are galley latches, carts, and stowage areas secured?', risk: 'Low', riskKey: 'low', section: 'Galley', sectionKey: 'galley' },
+    { id: 'CAB-Q006', no: 6, text: 'Are lavatory smoke detectors and placards serviceable?', risk: 'High', riskKey: 'high', section: 'Lavatories', sectionKey: 'lavatories' },
+    { id: 'CAB-Q007', no: 7, text: 'Are passenger seats, belts, and placards in acceptable condition?', risk: 'Medium', riskKey: 'medium', section: 'Passenger Seats', sectionKey: 'passenger-seats' },
+    { id: 'CAB-Q008', no: 8, text: 'Are crew seats and restraints serviceable?', risk: 'Low', riskKey: 'low', section: 'Video + Crew Seat', sectionKey: 'video-crew-seat' },
+    { id: 'CAB-Q009', no: 9, text: 'Are exits unobstructed and correctly placarded?', risk: 'High', riskKey: 'high', section: 'Cockpit, Cabin Condition + Exits', sectionKey: 'cockpit-cabin-exits' },
+    { id: 'CAB-Q010', no: 10, text: 'Is general cabin condition acceptable for the inspection scope?', risk: 'Medium', riskKey: 'medium', section: 'Cockpit, Cabin Condition + Exits', sectionKey: 'cockpit-cabin-exits' }
   ];
 }
 
 function leadAssignmentSelectedQuestionIds(ui) {
-  return Object.keys(ui.selectedQuestions || {}).filter(function (id) { return !!ui.selectedQuestions[id]; });
+  return Object.keys(ui.selectedQuestionIds || {}).filter(function (id) { return !!ui.selectedQuestionIds[id]; });
 }
 
 function leadAssignmentOptions(options, selected) {
@@ -6227,16 +6239,40 @@ function leadAssignmentMetricCard(title, value, sub, tone, icon) {
   '</article>';
 }
 
-function leadAssignmentInspectorAvatar(name) {
-  var inspector = leadAssignmentInspectors().filter(function (item) { return item.name === name; })[0];
+function leadAssignmentInspectorAvatar(userId) {
+  var inspector = leadAssignmentInspectors().filter(function (item) { return item.id === userId; })[0];
   if (!inspector) return '<span class="lead-assignment-avatar is-muted">-</span>';
   return '<span class="lead-assignment-avatar is-' + esc(inspector.tone) + '">' + esc(inspector.initials) + '</span>';
+}
+
+function leadAssignmentInspectorName(userId) {
+  var inspector = (state.users || []).filter(function (user) { return user.id === userId; })[0];
+  return inspector ? inspector.name : 'Unassigned';
+}
+
+function leadAssignmentMetrics(ui) {
+  var total = leadAssignmentQuestions().length;
+  var assigned = Object.keys(ui.assignmentsByQuestionId || {}).filter(function (questionId) {
+    return leadAssignmentQuestions().some(function (row) { return row.id === questionId; });
+  }).length;
+  var inspectors = leadAssignmentInspectors();
+  var workloads = inspectors.map(function (inspector) { return inspector.assigned; });
+  var spread = workloads.length ? Math.max.apply(Math, workloads) - Math.min.apply(Math, workloads) : 0;
+  return {
+    total: total,
+    assigned: assigned,
+    unassigned: Math.max(0, total - assigned),
+    assignedPercent: total ? Math.round((assigned / total) * 100) : 0,
+    inspectorCount: inspectors.length,
+    workload: spread <= 2 ? 'Balanced' : 'Review balance'
+  };
 }
 
 function viewLeadAssignmentWorkspace() {
   var ui = leadAssignmentUiState();
   var auditId = (state.params && state.params.auditId) || 'AUD-2026-001';
   var assignmentLabel = leadAssignmentStatusLabel(ui);
+  var metrics = leadAssignmentMetrics(ui);
   return '<div class="lead-assignment-page">' +
     '<button class="lead-assignment-back" data-act="nav" data-view="lead-review">&larr; Back to Assigned Audits</button>' +
     '<div class="lead-assignment-titlebar">' +
@@ -6253,18 +6289,19 @@ function viewLeadAssignmentWorkspace() {
     '<div class="lead-assignment-grid">' +
       '<section class="lead-assignment-card lead-assignment-card--wide">' +
         '<h2>Assignment Overview</h2><p>Review audit details and manage team assignment.</p>' +
-        leadAssignmentOverviewRow('▣', 'Checklist', 'Cabin Inspection Checklist', '126 Questions', '<button class="btn btn--sm" data-act="lead-assignment-preview-checklist">Preview Checklist</button>') +
+        leadAssignmentOverviewRow('▣', 'Checklist', 'Cabin Inspection Checklist', '126 source rows / 10 runnable questions', '<button class="btn btn--sm" data-act="lead-assignment-preview-checklist">Preview Checklist</button>') +
         leadAssignmentOverviewRow('▦', 'Sections in Scope', '6 Sections', 'Galley, lavatories, seats, emergency equipment and exits', '<button class="btn btn--sm" data-act="lead-assignment-view-details">View Details</button>') +
-        leadAssignmentOverviewRow('☷', 'Team Size', '4 Inspectors', '1 Lead Inspector', '<button class="btn btn--sm" data-act="lead-assignment-view-team">View Team</button>') +
+        leadAssignmentOverviewRow('☷', 'Team Size', metrics.inspectorCount + ' Inspectors', '1 Lead Inspector', '<button class="btn btn--sm" data-act="lead-assignment-view-team">View Team</button>') +
         leadAssignmentOverviewRow('!', 'Assignment Status', assignmentLabel, leadAssignmentSummaryStatus(ui), '<button class="btn btn--sm btn--primary" data-act="nav" data-view="lead-assignment-questions" data-id="' + esc(auditId) + '">' + esc(ui.assignedAt ? 'Continue Assignment' : 'Start Assignment') + '</button>') +
       '</section>' +
       '<section class="lead-assignment-card">' +
         '<h2>Inspection Scope</h2>' +
         '<div class="lead-assignment-scope-row"><span>Sections</span><b>6</b></div>' +
         '<div class="lead-assignment-scope-row"><span>Locations</span><b>1</b></div>' +
-        '<div class="lead-assignment-scope-row"><span>Checklists</span><b>126 Questions</b></div>' +
+        '<div class="lead-assignment-scope-row"><span>Checklist Source</span><b>126 source rows</b></div>' +
+        '<div class="lead-assignment-scope-row"><span>Runnable Subset</span><b>10 runnable questions</b></div>' +
         '<div class="lead-assignment-scope-row"><span>Estimated Duration</span><b>1 Day</b></div>' +
-        '<div class="lead-assignment-scope-row"><span>Inspectors</span><b>4</b></div>' +
+        '<div class="lead-assignment-scope-row"><span>Inspectors</span><b>' + esc(String(metrics.inspectorCount)) + '</b></div>' +
         '<div class="lead-assignment-scope-row"><span>Lead Inspector</span><b>John Lead Inspector</b></div>' +
       '</section>' +
       '<section class="lead-assignment-card lead-assignment-next">' +
@@ -6292,8 +6329,9 @@ function viewLeadAssignmentWorkspace() {
 function leadAssignmentFilteredQuestions(ui) {
   var query = (ui.query || '').toLowerCase().trim();
   return leadAssignmentQuestions().filter(function (row) {
-    var assigned = ui.assignedAt && ui.selectedQuestions[row.id] ? ui.assignee : row.assignedTo;
-    var status = assigned ? 'assigned' : 'unassigned';
+    var assignedRecord = ui.assignmentsByQuestionId[row.id] || null;
+    var assigned = assignedRecord ? leadAssignmentInspectorName(assignedRecord.inspectorUserId) : '';
+    var status = assignedRecord ? 'assigned' : 'unassigned';
     if (ui.section !== 'all' && row.sectionKey !== ui.section) return false;
     if (ui.risk !== 'all' && row.riskKey !== ui.risk) return false;
     if (ui.status !== 'all' && status !== ui.status) return false;
@@ -6305,10 +6343,11 @@ function leadAssignmentFilteredQuestions(ui) {
 function leadAssignmentQuestionRowsHtml(ui) {
   var rows = leadAssignmentFilteredQuestions(ui);
   return rows.map(function (row) {
-    var selected = !!ui.selectedQuestions[row.id];
-    var assignedTo = ui.assignedAt && selected ? ui.assignee : row.assignedTo;
-    var assignedHtml = assignedTo ?
-      '<span class="lead-assignment-assignee">' + leadAssignmentInspectorAvatar(assignedTo) + esc(assignedTo) + '</span>' :
+    var selected = !!ui.selectedQuestionIds[row.id];
+    var assignedRecord = ui.assignmentsByQuestionId[row.id] || null;
+    var assignedTo = assignedRecord ? leadAssignmentInspectorName(assignedRecord.inspectorUserId) : '';
+    var assignedHtml = assignedRecord ?
+      '<span class="lead-assignment-assignee">' + leadAssignmentInspectorAvatar(assignedRecord.inspectorUserId) + esc(assignedTo) + '</span>' :
       '<span class="lead-assignment-unassigned">-</span>';
     return '<tr' + (selected ? ' class="is-selected"' : '') + '>' +
       '<td><input type="checkbox" data-field="lead-assignment-question" data-id="' + esc(row.id) + '"' + (selected ? ' checked' : '') + ' aria-label="Select question ' + esc(String(row.no)) + '"></td>' +
@@ -6325,9 +6364,11 @@ function viewLeadAssignmentQuestions() {
   var auditId = (state.params && state.params.auditId) || 'AUD-2026-001';
   var inspectorMode = state.role === 'inspector';
   var selectedCount = leadAssignmentSelectedQuestionIds(ui).length;
-  var inspectorOptions = leadAssignmentOptions(leadAssignmentInspectors().map(function (inspector) {
-    return { value: inspector.name, label: inspector.name };
-  }), ui.assignee);
+  var inspectors = leadAssignmentInspectors();
+  var metrics = leadAssignmentMetrics(ui);
+  var inspectorOptions = leadAssignmentOptions(inspectors.map(function (inspector) {
+    return { value: inspector.id, label: inspector.name };
+  }), ui.activeInspectorUserId);
   var priorityOptions = leadAssignmentOptions([
     { value: 'Low', label: 'Low' },
     { value: 'Normal', label: 'Normal' },
@@ -6358,7 +6399,8 @@ function viewLeadAssignmentQuestions() {
     { value: 'assigned', label: 'Assigned' },
     { value: 'unassigned', label: 'Unassigned' }
   ], ui.status);
-  var noteLength = (ui.note || '').length;
+  var noteLength = (ui.instructions || '').length;
+  var activeInspectorName = leadAssignmentInspectorName(ui.activeInspectorUserId);
   return '<div class="lead-assignment-question-page">' +
     '<div class="lead-assignment-question-head">' +
       '<div><button class="lead-assignment-back" data-act="nav" data-view="' + esc(inspectorMode ? 'audit-detail' : 'lead-assignment') + '" data-id="' + esc(auditId) + '">&larr; ' + esc(inspectorMode ? 'Back to Inspection' : 'Back to Assignment Overview') + '</button><h1>' + esc(inspectorMode ? 'Inspector Question Workspace' : 'Assign Checklist Questions') + '</h1><p>' + esc(inspectorMode ? 'Review the submitted checklist package and assigned questions without routing every row through the Lead Inspector.' : 'Assign checklist questions to inspectors for this audit.') + '</p></div>' +
@@ -6373,17 +6415,18 @@ function viewLeadAssignmentQuestions() {
       '<div><small>Status</small><span class="lead-assignment-status">' + esc(ui.releasedAt ? 'Released' : (ui.assignedAt ? 'Assignment Draft' : 'Planning')) + '</span></div>' +
     '</section>' +
     '<div class="lead-assignment-metrics">' +
-      leadAssignmentMetricCard('Checklist Items', '126', 'Total Questions', 'blue', '▣') +
-      leadAssignmentMetricCard('Assigned', '42', '33.3%', 'green', '✓') +
-      leadAssignmentMetricCard('Unassigned', '84', '66.7%', 'orange', '⌁') +
-      leadAssignmentMetricCard('Inspectors', '4', 'Team Members', 'purple', '☷') +
+      leadAssignmentMetricCard('Checklist Items', String(metrics.total), 'Curated runnable questions', 'blue', '▣') +
+      leadAssignmentMetricCard('Assigned', String(metrics.assigned), String(metrics.assignedPercent) + '%', 'green', '✓') +
+      leadAssignmentMetricCard('Unassigned', String(metrics.unassigned), String(100 - metrics.assignedPercent) + '%', 'orange', '⌁') +
+      leadAssignmentMetricCard('Inspectors', String(metrics.inspectorCount), 'Team Members', 'purple', '☷') +
       leadAssignmentMetricCard('Sections', '6', 'In Scope', 'teal', '▤') +
     '</div>' +
     '<div class="lead-assignment-workspace">' +
-      '<aside class="lead-assignment-inspectors"><div class="lead-assignment-panel-head"><h2>Inspectors</h2><button data-act="lead-assignment-view-team">+ Add Inspector</button></div>' +
-        leadAssignmentInspectors().map(function (inspector, index) {
-          return '<button class="lead-assignment-inspector' + (index === 0 ? ' is-active' : '') + '" data-act="lead-assignment-pick-inspector" data-id="' + esc(inspector.name) + '">' +
-            leadAssignmentInspectorAvatar(inspector.name) +
+      '<aside class="lead-assignment-inspectors"><div class="lead-assignment-panel-head"><h2>Inspectors</h2>' + (inspectorMode ? '' : '<button data-act="lead-assignment-add-inspector">+ Add Inspector</button>') + '</div>' +
+        inspectors.map(function (inspector) {
+          var isActive = inspector.id === ui.activeInspectorUserId;
+          return '<button class="lead-assignment-inspector' + (isActive ? ' is-active' : '') + '" data-act="lead-assignment-pick-inspector" data-id="' + esc(inspector.id) + '" aria-pressed="' + (isActive ? 'true' : 'false') + '">' +
+            leadAssignmentInspectorAvatar(inspector.id) +
             '<span><b>' + esc(inspector.name) + '</b><small>' + esc(inspector.unit) + '</small><em>Assigned: ' + esc(String(inspector.assigned)) + ' questions</em><i style="width:' + esc(String(Math.max(8, inspector.assigned))) + '%"></i></span>' +
           '</button>';
         }).join('') +
@@ -6404,14 +6447,14 @@ function viewLeadAssignmentQuestions() {
         '<label><span>Assign To</span><select data-field="lead-assignment-assignee">' + inspectorOptions + '</select></label>' +
         '<label><span>Due Date</span><input type="date" data-field="lead-assignment-due" value="' + esc(ui.dueDate) + '"></label>' +
         '<label><span>Priority</span><select data-field="lead-assignment-priority">' + priorityOptions + '</select></label>' +
-        '<label><span>Instructions <small>(Optional)</small></span><textarea maxlength="500" data-field="lead-assignment-note" placeholder="Add any specific instructions for the inspector...">' + esc(ui.note || '') + '</textarea></label>' +
+        '<label><span>Instructions <small>(Optional)</small></span><textarea maxlength="500" data-field="lead-assignment-note" placeholder="Add any specific instructions for the inspector...">' + esc(ui.instructions || '') + '</textarea></label>' +
         '<p>Characters: <span class="lead-assignment-note-count">' + esc(String(noteLength)) + '</span>/500</p>' +
-        '<div class="lead-assignment-side-summary">' + (inspectorMode ? esc(String(selectedCount)) + ' questions selected for inspector review.' : esc(String(selectedCount)) + ' questions will be assigned to <b>' + esc(ui.assignee) + '</b>') + '</div>' +
+        '<div class="lead-assignment-side-summary">' + (inspectorMode ? esc(String(selectedCount)) + ' questions selected for inspector review.' : esc(String(selectedCount)) + ' questions will be assigned to <b>' + esc(activeInspectorName) + '</b>') + '</div>' +
         '<button class="btn btn--primary btn--block" data-act="lead-assignment-assign"' + (selectedCount ? '' : ' disabled') + '>➤ ' + esc(inspectorMode ? 'Mark Selected for Review' : 'Assign Questions') + '</button>' +
       '</aside>' +
     '</div>' +
     '<div class="lead-assignment-bottom">' +
-      '<section><h3>Assignment Summary</h3><div><span>Inspectors <b>4</b></span><span>Assigned <b>42</b></span><span>Unassigned <b>84</b></span><span>Total <b>126</b></span><span>Workload <b>Balanced</b></span></div></section>' +
+      '<section><h3>Assignment Summary</h3><div><span>Inspectors <b>' + esc(String(metrics.inspectorCount)) + '</b></span><span>Assigned <b>' + esc(String(metrics.assigned)) + '</b></span><span>Unassigned <b>' + esc(String(metrics.unassigned)) + '</b></span><span>Total <b>' + esc(String(metrics.total)) + '</b></span><span>Workload <b>' + esc(metrics.workload) + '</b></span></div></section>' +
       '<section><h3>Bulk Actions</h3><div class="lead-assignment-bulk"><button data-act="lead-assignment-bulk" data-mode="assign-section">Assign Section</button><button data-act="lead-assignment-bulk" data-mode="reassign">Reassign</button><button class="is-danger" data-act="lead-assignment-bulk" data-mode="remove">Remove Assignment</button><button data-act="lead-assignment-bulk" data-mode="export">Export Assignment</button></div></section>' +
       '<section class="lead-assignment-bottom-actions"><button class="btn" data-act="lead-assignment-save">Save Draft</button><button class="btn" data-act="lead-assignment-preview">◎ ' + esc(inspectorMode ? 'Preview Submitted Package' : 'Preview Assignment') + '</button><button class="btn btn--primary" data-act="lead-assignment-release">➤ ' + esc(inspectorMode ? 'Confirm Inspector Review' : 'Release to Inspectors') + '</button><p>' + esc(inspectorMode ? 'Inspector review remains in this workspace; Lead Inspector does not need to inspect each row one by one.' : 'Inspectors will be notified and can start working.') + '</p></section>' +
     '</div>' +
