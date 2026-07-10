@@ -236,4 +236,60 @@ planningHtml = context.viewExecutivePlanningWorkspace();
 assert.match(planningHtml, /Rejection rationale \*/);
 assert.match(planningHtml, /Rejection stops release/);
 
+dashboardState.view = 'executive-final-reports';
+dashboardState.executiveDirectorUi.selectedReportId = dashboardReport.id;
+dashboardState.executiveDirectorUi.reportStatus = 'all';
+dashboardState.executiveDirectorUi.reportTab = 'summary';
+dashboardState.executiveDirectorUi.reportDecision = 'enforcement_referral';
+dashboardState.executiveDirectorUi.enforcementCategory = 'Conditional Approval';
+dashboardState.executiveDirectorUi.reportComment = 'Separate authorized review requested.';
+let reportHtml = context.viewExecutiveFinalReportsWorkspace();
+[
+  'Total',
+  'Pending Approval',
+  'Approved',
+  'Returned / Rejected',
+  'Report ID',
+  'Organization',
+  'Audit Type',
+  'Submitted By',
+  'Submitted On',
+  'Due Date',
+  'Executive Summary',
+  'Findings Summary',
+  'Documents',
+  'History',
+  'Approve Report',
+  'Refer for Enforcement Review',
+  'Reject Report',
+  'Return for Revision',
+  'Referral / recommendation only',
+  'Administrative Fee',
+  'Partial Suspension',
+  'Full Suspension',
+  'Certificate/License Revocation',
+  'Conditional Approval',
+  'Other',
+  'does not apply a sanction',
+  'open Findings are never closed by report approval'
+].forEach((text) => assert.match(reportHtml, new RegExp(text, 'i')));
+assert.match(reportHtml, new RegExp(dashboardReport.id));
+assert.match(reportHtml, /data-act="executive-report-preview"/);
+assert.equal((reportHtml.match(/>Review<\/button>/g) || []).length, 1, 'each unselected report row exposes one Review action');
+
+dashboardState.executiveDirectorUi.reportTab = 'findings';
+reportHtml = context.viewExecutiveFinalReportsWorkspace();
+assert.match(reportHtml, /Final Report approval does not accept CAP evidence or close any Finding/i);
+assert.match(reportHtml, /CAB-2026-011/);
+
+approvalState.role = 'executiveDirector';
+approvalState.view = 'executive-final-reports';
+approvalState.executiveDirectorUi.selectedReportId = approvalReport.id;
+approvalState.executiveDirectorUi.reportStatus = 'all';
+context.state = approvalState;
+reportHtml = context.viewExecutiveFinalReportsWorkspace();
+assert.match(reportHtml, /Terminal actions are disabled after a recorded decision/i);
+assert.match(reportHtml, /not a real e-signature/i);
+assert.doesNotMatch(reportHtml, /data-act="executive-report-confirm"/);
+
 console.log('executive-director-workspace-smoke: ok');

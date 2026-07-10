@@ -764,9 +764,84 @@ function viewExecutivePlanningWorkspace() {
     '<section class="executive-plan-detail"><header><div><span>Selected plan</span><h2>' + esc(selected.title) + '</h2><p>' + esc(selected.id + ' · ' + selected.organization) + '</p></div>' + demoBadge(approvalSummary(selected).statusLabel, approvalSummary(selected).statusTone) + '</header>' + executivePlanningTabs(activeTab) + executivePlanningTabBody(selected, activeTab) + '</section></main><aside><section class="executive-plan-summary"><span>Selected plan</span><h2>' + esc(selected.id) + '</h2><dl><div><dt>Department</dt><dd>' + esc(selected.department) + '</dd></div><div><dt>Target</dt><dd>' + esc(selected.targetMonth) + '</dd></div><div><dt>Risk</dt><dd>' + esc(selected.riskCategory) + '</dd></div><div><dt>Requested Budget</dt><dd>' + financeMoney(selected.budget.requested, selected.budget.currency) + '</dd></div></dl><h3>Approval flow</h3>' + approvalProgressHtml(selected) + '</section>' + executivePlanningDecisionPanel(selected, ui) + '</aside></div></div>';
 }
 
+function executiveFinalReportSummaryCards(projection, active) {
+  var cards = [
+    ['all', 'Total', projection.total],
+    ['pending', 'Pending Approval', projection.pending],
+    ['approved', 'Approved', projection.approved],
+    ['returned', 'Returned / Rejected', projection.returnedOrRejected]
+  ];
+  return '<section class="executive-report-summary" aria-label="Final Report status summary">' + cards.map(function (card) {
+    return '<button class="' + (active === card[0] ? 'is-active' : '') + '" data-act="executive-report-status" data-status="' + card[0] + '" aria-pressed="' + (active === card[0] ? 'true' : 'false') + '"><span>' + esc(card[1]) + '</span><b>' + esc(String(card[2])) + '</b></button>';
+  }).join('') + '</section>';
+}
+
+function executiveFinalReportRows(rows, selectedId) {
+  if (!rows.length) return '<tr><td colspan="8"><div class="executive-empty"><b>No Final Reports match these filters.</b><span>Only Final Reports forwarded to, or already decided by, the Executive Director appear here.</span></div></td></tr>';
+  return rows.map(function (report) {
+    var audit = state.audits.filter(function (candidate) { return candidate.id === report.auditId; })[0];
+    return '<tr class="' + (selectedId === report.id ? 'is-selected' : '') + '"><td><button class="service-link" data-act="executive-report-select" data-id="' + esc(report.id) + '">' + esc(report.id) + '</button><small>Version ' + esc(report.version) + '</small></td><td>' + esc(report.organization) + '</td><td>' + esc(audit ? audit.type : report.auditId) + '</td><td>' + esc(report.leadInspector) + '</td><td>' + esc(report.submittedAt || 'Not recorded') + '</td><td>' + managerReportStatusBadge(report.status) + '</td><td>' + esc(report.dueDate && report.dueDate !== 'Not configured' ? fmtDate(report.dueDate) : 'Not configured') + '</td><td><button class="btn btn--sm' + (selectedId === report.id ? ' btn--primary' : '') + '" data-act="executive-report-select" data-id="' + esc(report.id) + '">' + esc(selectedId === report.id ? 'Selected' : 'Review') + '</button></td></tr>';
+  }).join('');
+}
+
+function executiveFinalReportTabs(active) {
+  return '<div class="executive-detail-tabs" role="tablist" aria-label="Final Report review sections">' + [
+    ['summary', 'Executive Summary'], ['findings', 'Findings Summary'], ['documents', 'Documents'], ['history', 'History']
+  ].map(function (tab) { return '<button role="tab" aria-selected="' + (active === tab[0] ? 'true' : 'false') + '" class="' + (active === tab[0] ? 'is-active' : '') + '" data-act="executive-report-tab" data-tab="' + tab[0] + '">' + esc(tab[1]) + '</button>'; }).join('') + '</div>';
+}
+
+function executiveFinalReportFindings(report) {
+  return managerFindingsForAudit(state, report.auditId);
+}
+
+function executiveFinalReportTabBody(report, active) {
+  var findings = executiveFinalReportFindings(report);
+  if (active === 'findings') {
+    var rows = findings.length ? findings.map(function (finding) { return '<tr><td><b>' + esc(finding.id) + '</b><small>' + esc(finding.title) + '</small></td><td>' + severityHtml(finding) + '</td><td>' + statusBadge(finding) + '</td><td>' + esc(ownerLabel(finding)) + '</td><td>' + esc(nextActionLabel(finding)) + '</td><td>' + esc(finding.dueDate ? fmtDate(finding.dueDate) : '—') + '</td></tr>'; }).join('') : '<tr><td colspan="6"><div class="empty">No Findings are linked to this report.</div></td></tr>';
+    return '<div class="executive-report-tab-body"><div class="responsive-table-shell"><table><thead><tr><th>Finding</th><th>Severity</th><th>Status</th><th>Current Owner</th><th>Next Action</th><th>Due Date</th></tr></thead><tbody>' + rows + '</tbody></table></div><div class="executive-report-boundary"><b>Closure boundary:</b> Final Report approval does not accept CAP evidence or close any Finding. Each Finding remains in its current lifecycle state.</div></div>';
+  }
+  if (active === 'documents') {
+    var files = (report.attachments || []).map(function (file) { return '<button data-act="executive-report-document" data-id="' + esc(report.id) + '" data-file="' + esc(file) + '">' + esc(file) + '<span>Mock filename · no real file storage</span></button>'; }).join('');
+    return '<div class="executive-report-tab-body"><div class="executive-document-list">' + (files || '<p class="muted small">No document filenames are listed.</p>') + '</div></div>';
+  }
+  if (active === 'history') {
+    var history = (report.history || []).slice().reverse().map(function (entry) { return '<li><time>' + esc(entry.at || '—') + '</time><div><b>' + esc(entry.action || 'Report updated') + '</b><small>' + esc(entry.actor || 'System') + '</small>' + (entry.comment ? '<p>' + esc(entry.comment) + '</p>' : '') + '</div></li>'; }).join('') || '<li>No report history.</li>';
+    return '<div class="executive-report-tab-body"><ol class="manager-report-history">' + history + '</ol></div>';
+  }
+  var open = findings.filter(function (finding) { return finding.status !== 'CLOSED'; });
+  return '<div class="executive-report-tab-body"><div class="executive-report-summary-copy"><h3>Executive Summary</h3><p>' + esc(report.summary) + '</p></div><div class="executive-report-finding-kpis"><span><small>Total Findings</small><b>' + esc(String(findings.length)) + '</b></span><span><small>Open Findings</small><b>' + esc(String(open.length)) + '</b></span><span><small>CAP Required</small><b>' + esc(report.capRequired ? 'Yes' : 'No') + '</b></span><span><small>Report Version</small><b>' + esc(report.version) + '</b></span></div><div class="executive-report-boundary"><b>Authority boundary:</b> Executive Director approval issues and locks this selected Final Report with a demo approval mark. Audit closure is computed from remaining follow-up work; open Findings are never closed by report approval.</div></div>';
+}
+
+function executiveFinalReportDecisionPanel(report, ui) {
+  var eligible = report.status === 'submitted_to_executive' && report.ownerRole === 'executiveDirector' && report.locked !== true;
+  if (!eligible) {
+    return '<section class="executive-report-decision is-complete"><span>Decision status</span><h2>' + esc(managerReportStatusLabel(report.status)) + '</h2>' + (report.mockApprovalSignature ? '<div class="executive-demo-signature"><b>' + esc(report.mockApprovalSignature.signer) + '</b><span>' + esc(report.mockApprovalSignature.label) + '</span><small>' + esc(report.mockApprovalSignature.date) + '</small></div>' : '') + (report.enforcementReferral ? '<div class="executive-referral-result"><b>Separate review referral</b><span>' + esc(report.enforcementReferral.category + ' · ' + report.enforcementReferral.rationale) + '</span><small>Recommendation only · no sanction applied</small></div>' : '') + '<p>Terminal actions are disabled after a recorded decision. History remains available.</p></section>';
+  }
+  var decision = ui.reportDecision;
+  var labels = { approve: 'Approve Report', enforcement_referral: 'Refer for Enforcement Review', reject: 'Reject Report', return: 'Return for Revision' };
+  var categories = ['Administrative Fee', 'Partial Suspension', 'Full Suspension', 'Certificate/License Revocation', 'Conditional Approval', 'Other'];
+  return '<section class="executive-report-decision"><span>Executive Director decision</span><h2>Final Report authority</h2><div class="executive-report-decision-choices"><button class="btn btn--primary" data-act="executive-report-decision-choice" data-decision="approve">Approve Report</button><button class="btn" data-act="executive-report-decision-choice" data-decision="enforcement_referral">Refer for Enforcement Review</button><button class="btn" data-act="executive-report-decision-choice" data-decision="reject">Reject Report</button><button class="btn" data-act="executive-report-decision-choice" data-decision="return">Return for Revision</button></div>' +
+    (decision ? '<div class="executive-report-decision-form"><div class="executive-signature-notice"><b>' + esc(decision === 'approve' ? 'Demo approval mark' : decision === 'enforcement_referral' ? 'Referral / recommendation only' : 'Rationale required') + '</b><span>' + esc(decision === 'approve' ? 'Approval issues and locks this report with a mock mark that is not a real e-signature. Open Findings remain open.' : decision === 'enforcement_referral' ? 'This demo records a recommendation for a separate authorized review. It does not apply a sanction, suspend a certificate, or close any record.' : 'This decision does not close Findings or execute enforcement.') + '</span></div>' +
+      (decision === 'enforcement_referral' ? '<label>Referral category *<select data-field="executive-report-enforcement-category"><option value="">Choose a configured demo category</option>' + categories.map(function (category) { return '<option value="' + esc(category) + '"' + (ui.enforcementCategory === category ? ' selected' : '') + '>' + esc(category) + '</option>'; }).join('') + '</select></label>' : '') +
+      '<label>' + esc(decision === 'approve' ? 'Approval note (optional)' : 'Decision rationale *') + '<textarea id="executive-report-comment" data-field="executive-report-comment" placeholder="' + esc(decision === 'approve' ? 'Optional approval note.' : 'Required: record the reason for this decision.') + '">' + esc(ui.reportComment || '') + '</textarea></label><button class="btn btn--primary btn--block" data-act="executive-report-confirm" data-id="' + esc(report.id) + '">Confirm ' + esc(labels[decision]) + '</button></div>' : '') + '</section>';
+}
+
 function viewExecutiveFinalReportsWorkspace() {
-  var projection = executiveFinalReportProjection(state, { query: state.executiveDirectorUi.reportQuery, organization: state.executiveDirectorUi.reportOrganization, status: state.executiveDirectorUi.reportStatus });
-  return '<div class="executive-workspace-page">' + pageHead('Final Reports', 'Review Final Reports forwarded by the General Manager.') + guardrailStrip([{ label: 'Executive Director is the final report authority', tone: 'info' }, { label: 'Approval does not bypass CAP or Finding closure', tone: 'warn' }]) + '<section class="executive-panel"><header><div><span>Final Report register</span><h2>Authorized review queue</h2></div></header>' + executiveReportQueueHtml(projection.rows) + '</section></div>';
+  var ui = state.executiveDirectorUi;
+  var unfiltered = executiveFinalReportProjection(state, { status: 'all' });
+  var projection = executiveFinalReportProjection(state, { query: ui.reportQuery, organization: ui.reportOrganization, status: ui.reportStatus });
+  var selected = unfiltered.rows.filter(function (report) { return report.id === ui.selectedReportId; })[0] || projection.rows[0] || unfiltered.rows[0] || null;
+  var organizations = unfiltered.rows.map(function (report) { return report.organization; }).filter(function (organization, index, list) { return list.indexOf(organization) === index; }).sort();
+  if (!selected) return '<div class="executive-workspace-page">' + pageHead('Final Reports', 'Review Final Reports forwarded by the General Manager.') + guardrailStrip([{ label: 'Executive Director is the final report authority', tone: 'info' }, { label: 'Only GM-forwarded Final Reports enter this workspace', tone: 'warn' }]) + executiveFinalReportSummaryCards(unfiltered, ui.reportStatus) + '<div class="executive-empty"><b>No eligible Final Reports.</b><span>A General Manager must forward a reviewed Final Report before an Executive Director decision.</span></div></div>';
+  var activeTab = ['summary', 'findings', 'documents', 'history'].indexOf(ui.reportTab) !== -1 ? ui.reportTab : 'summary';
+  var audit = state.audits.filter(function (candidate) { return candidate.id === selected.auditId; })[0];
+  return '<div class="executive-workspace-page executive-final-report-page">' +
+    pageHead('Final Reports', 'Review and decide Final Reports forwarded by the General Manager.', '<button class="btn btn--primary" data-act="executive-report-preview" data-id="' + esc(selected.id) + '">Preview Full Report</button>') +
+    guardrailStrip([{ label: 'Executive Director final report authority', tone: 'info' }, { label: 'Mock approval mark — no real e-signature', tone: 'warn' }, { label: 'No automatic enforcement, CAP acceptance, or Finding closure' }]) +
+    executiveFinalReportSummaryCards(unfiltered, ui.reportStatus) +
+    '<section class="executive-report-filter"><label>Search<input type="search" data-field="executive-report-query" value="' + esc(ui.reportQuery) + '" placeholder="Report ID, audit, organization"></label><label>Organization<select data-field="executive-report-organization"><option value="all"' + (ui.reportOrganization === 'all' ? ' selected' : '') + '>All organizations</option>' + organizations.map(function (organization) { return '<option value="' + esc(organization) + '"' + (ui.reportOrganization === organization ? ' selected' : '') + '>' + esc(organization) + '</option>'; }).join('') + '</select></label><label>Report Type<input value="Final Report" disabled aria-label="Report type fixed to Final Report"></label><label>Status<select data-field="executive-report-status"><option value="all"' + (ui.reportStatus === 'all' ? ' selected' : '') + '>All statuses</option><option value="pending"' + (ui.reportStatus === 'pending' ? ' selected' : '') + '>Pending Approval</option><option value="approved"' + (ui.reportStatus === 'approved' ? ' selected' : '') + '>Approved</option><option value="returned"' + (ui.reportStatus === 'returned' ? ' selected' : '') + '>Returned / Rejected</option><option value="enforcement_review_referred"' + (ui.reportStatus === 'enforcement_review_referred' ? ' selected' : '') + '>Enforcement Review Referred</option></select></label></section>' +
+    '<section class="executive-panel executive-report-queue"><header><div><span>Final Report register</span><h2>' + esc(projection.rows.length + ' visible report' + (projection.rows.length === 1 ? '' : 's')) + '</h2></div></header><div class="responsive-table-shell"><table><thead><tr><th>Report ID</th><th>Organization</th><th>Audit Type</th><th>Submitted By</th><th>Submitted On</th><th>Status</th><th>Due Date</th><th>Action</th></tr></thead><tbody>' + executiveFinalReportRows(projection.rows, selected.id) + '</tbody></table></div></section>' +
+    '<div class="executive-report-review-layout"><main><section class="executive-plan-detail"><header><div><span>Selected Final Report</span><h2>' + esc(selected.id + ' · ' + selected.organization) + '</h2><p>' + esc((audit ? audit.type : selected.auditId) + ' · Version ' + selected.version) + '</p></div>' + managerReportStatusBadge(selected.status) + '</header>' + executiveFinalReportTabs(activeTab) + executiveFinalReportTabBody(selected, activeTab) + '</section></main><aside><section class="executive-plan-summary"><span>Selected report</span><h2>' + esc(selected.id) + '</h2><dl><div><dt>Audit ID</dt><dd>' + esc(selected.auditId) + '</dd></div><div><dt>Organization</dt><dd>' + esc(selected.organization) + '</dd></div><div><dt>Submitted by</dt><dd>' + esc(selected.leadInspector) + '</dd></div><div><dt>Submitted on</dt><dd>' + esc(selected.submittedAt) + '</dd></div><div><dt>Current owner</dt><dd>' + esc(managerReportOwnerLabel(selected.ownerRole)) + '</dd></div><div><dt>Due Date</dt><dd>' + esc(selected.dueDate ? fmtDate(selected.dueDate) : 'Not configured') + '</dd></div></dl><button class="btn btn--block" data-act="executive-report-preview" data-id="' + esc(selected.id) + '">Preview Full Report</button></section>' + executiveFinalReportDecisionPanel(selected, ui) + '</aside></div></div>';
 }
 
 function viewExecutiveNotifications() {

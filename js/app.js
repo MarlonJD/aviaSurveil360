@@ -1674,6 +1674,13 @@ function handleAction(act, el) {
     case 'executive-plan-confirm': handleExecutivePlanConfirm(id); break;
     case 'executive-plan-preview': handleExecutivePlanPreview(id); break;
     case 'executive-plan-download': handleExecutivePlanDownload(id); break;
+    case 'executive-report-status': handleExecutiveReportStatus(status); break;
+    case 'executive-report-select': handleExecutiveReportSelect(id); break;
+    case 'executive-report-tab': handleExecutiveReportTab(tab); break;
+    case 'executive-report-decision-choice': handleExecutiveReportDecisionChoice(el.getAttribute('data-decision')); break;
+    case 'executive-report-confirm': handleExecutiveReportConfirm(id); break;
+    case 'executive-report-preview': handleExecutiveReportPreview(id); break;
+    case 'executive-report-document': handleExecutiveReportDocument(id, el.getAttribute('data-file')); break;
     case 'report-approval': handleReportApproval(id, el.getAttribute('data-decision')); break;
     case 'inspection-status-cycle': handleInspectionStatusCycle(id); break;
     case 'inspection-download-checklist': handleInspectionDownload(id); break;
@@ -3649,6 +3656,99 @@ function handleExecutivePlanDownload(planId) {
   toast(downloaded ? 'Plan downloaded' : 'Plan prepared', downloaded ? plan.id + ' browser-local demo plan was generated.' : 'Download is unavailable in this test environment.', downloaded ? 'ok' : 'info');
 }
 
+function executiveSelectedReport(reportId) {
+  var id = reportId || (state.executiveDirectorUi && state.executiveDirectorUi.selectedReportId);
+  return state.managerReports.filter(function (report) { return report.id === id && report.reportType === 'Final Report'; })[0] || null;
+}
+
+function handleExecutiveReportFieldChange(field, target) {
+  var ui = state.executiveDirectorUi;
+  var value = target && target.value !== undefined ? target.value : '';
+  if (field === 'executive-report-query') ui.reportQuery = value || '';
+  if (field === 'executive-report-organization') ui.reportOrganization = value || 'all';
+  if (field === 'executive-report-status') ui.reportStatus = value || 'all';
+  if (field === 'executive-report-enforcement-category') ui.enforcementCategory = value || '';
+  if (field === 'executive-report-comment') ui.reportComment = value || '';
+  persistAfterAction();
+  if (field !== 'executive-report-comment') render();
+}
+
+function handleExecutiveReportStatus(status) {
+  var allowed = ['all', 'pending', 'approved', 'returned', 'enforcement_review_referred'];
+  state.executiveDirectorUi.reportStatus = allowed.indexOf(status) !== -1 ? status : 'all';
+  persistAfterAction();
+  render();
+}
+
+function handleExecutiveReportSelect(reportId) {
+  var report = executiveSelectedReport(reportId);
+  if (!report) return;
+  state.executiveDirectorUi.selectedReportId = report.id;
+  state.executiveDirectorUi.reportTab = 'summary';
+  state.executiveDirectorUi.reportDecision = '';
+  state.executiveDirectorUi.enforcementCategory = '';
+  state.executiveDirectorUi.reportComment = '';
+  state.params = { reportId: report.id };
+  persistAfterAction();
+  render();
+}
+
+function handleExecutiveReportTab(tab) {
+  var allowed = ['summary', 'findings', 'documents', 'history'];
+  state.executiveDirectorUi.reportTab = allowed.indexOf(tab) !== -1 ? tab : 'summary';
+  persistAfterAction();
+  render();
+}
+
+function handleExecutiveReportDecisionChoice(decision) {
+  if (['approve', 'enforcement_referral', 'reject', 'return'].indexOf(decision) === -1) return;
+  state.executiveDirectorUi.reportDecision = decision;
+  state.executiveDirectorUi.enforcementCategory = '';
+  state.executiveDirectorUi.reportComment = '';
+  persistAfterAction();
+  render();
+}
+
+function handleExecutiveReportConfirm(reportId) {
+  var report = executiveSelectedReport(reportId);
+  if (!report) return;
+  var commentInput = document.getElementById('executive-report-comment');
+  if (commentInput && commentInput.value !== undefined) state.executiveDirectorUi.reportComment = commentInput.value || '';
+  var ui = state.executiveDirectorUi;
+  var result = applyExecutiveFinalReportDecision(state, report.id, {
+    decision: ui.reportDecision,
+    actor: { role: 'executiveDirector', name: ROLES.executiveDirector.user },
+    category: ui.enforcementCategory,
+    rationale: ui.reportComment
+  });
+  if (!result.ok) {
+    toast('Final Report decision not recorded', result.message, 'warn');
+    return;
+  }
+  ui.reportDecision = '';
+  ui.enforcementCategory = '';
+  ui.reportComment = '';
+  persistAfterAction();
+  render();
+  toast('Final Report decision recorded', result.message, 'ok');
+}
+
+function handleExecutiveReportPreview(reportId) {
+  var report = executiveSelectedReport(reportId);
+  if (!report) return;
+  state.executiveDirectorUi.selectedReportId = report.id;
+  state.view = 'executive-report-preview';
+  state.params = { reportId: report.id, returnView: 'executive-final-reports' };
+  persistAfterAction();
+  render();
+}
+
+function handleExecutiveReportDocument(reportId, fileName) {
+  var report = executiveSelectedReport(reportId);
+  if (!report || (report.attachments || []).indexOf(fileName) === -1) return;
+  openModal(modalShell('Report Document', '<div class="lead-assigned-modal"><p><b>' + esc(fileName) + '</b></p><p>' + esc(report.id + ' · ' + report.organization) + '</p><p class="small muted">Mock filename only. No real document storage or external document service is used.</p></div>', '<button class="btn btn--primary" data-act="close-modal">Close</button>', false));
+}
+
 function leadReviewChecklistDownloadText(auditId) {
   var rows = typeof leadReviewAllRows === 'function' ? leadReviewAllRows() : [];
   var lines = [
@@ -5622,6 +5722,7 @@ document.addEventListener('change', function (e) {
   if (field === 'manager-risk-level') handleManagerRiskFilter('risk', e.target.value);
   if (field === 'finance-review-status' || field === 'finance-review-comment') handleFinanceReviewFieldChange(field, e.target);
   if (field && field.indexOf('executive-planning-') === 0) handleExecutivePlanningFieldChange(field, e.target);
+  if (field && field.indexOf('executive-report-') === 0) handleExecutiveReportFieldChange(field, e.target);
   if (field === 'lead-review-decision') {
     handleLeadReviewDecision(e.target.getAttribute('data-id'), e.target.value);
   }
@@ -5691,6 +5792,7 @@ document.addEventListener('input', function (e) {
   }
   if (field === 'finance-review-query' || field === 'finance-review-comment') handleFinanceReviewFieldChange(field, e.target);
   if (field === 'executive-planning-query' || field === 'executive-planning-comment') handleExecutivePlanningFieldChange(field, e.target);
+  if (field === 'executive-report-query' || field === 'executive-report-comment') handleExecutiveReportFieldChange(field, e.target);
   if (field === 'final-report-content') {
     handleFinalReportPrepareFieldChange(field, e.target);
   }
