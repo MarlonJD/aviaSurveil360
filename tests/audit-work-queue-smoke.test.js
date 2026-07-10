@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '..');
 const context = { console, window: undefined, document: undefined, setTimeout, clearTimeout };
 vm.createContext(context);
 
-['js/data.js', 'js/helpers.js', 'js/approval.js', 'js/work-items.js', 'js/views.js'].forEach((file) => {
+['js/data.js', 'js/helpers.js', 'js/approval.js', 'js/inspection.js', 'js/work-items.js', 'js/views.js'].forEach((file) => {
   vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
 });
 

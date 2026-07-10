@@ -146,6 +146,9 @@ function homeView(role) {
 }
 
 var INSPECTOR_RESTRICTED_VIEWS = {
+  'lead-assignment': true,
+  'lead-assignment-questions': true,
+  'lead-review': true,
   'checklist-approvals': true,
   'checklist-builder': true,
   'checklist-versions': true,
@@ -1754,20 +1757,32 @@ function setChecklistComment(q, comment) {
   persistAfterAction();
 }
 
-function inspectionWorkspaceRow(rowId) {
-  var rows = typeof inspectionExecutionAllItems === 'function' ? inspectionExecutionAllItems() : (typeof INSPECTOR_EXECUTION_ITEMS === 'undefined' ? [] : INSPECTOR_EXECUTION_ITEMS);
+function activeInspectionAuditId(auditId) {
+  return auditId || (state.params && state.params.auditId) || 'AUD-2026-001';
+}
+
+function activeInspectionWorkspace(auditId) {
+  return inspectionWorkspaceForAudit(state, activeInspectionAuditId(auditId));
+}
+
+function inspectionWorkspaceRow(rowId, auditId) {
+  var targetAuditId = activeInspectionAuditId(auditId);
+  var pkg = inspectionExecutionPackageForAudit(state, targetAuditId);
+  var rows = pkg ? pkg.questions : [];
   return rows.filter(function (row) { return row.id === rowId; })[0] || null;
 }
 
 function handleInspectionStatusCycle(rowId) {
   var row = inspectionWorkspaceRow(rowId);
   if (!row) return;
-  if (!state.inspectionWorkspaceAnswers) state.inspectionWorkspaceAnswers = {};
-  var current = (state.inspectionWorkspaceAnswers[rowId] && state.inspectionWorkspaceAnswers[rowId].status) || row.status;
+  var workspace = activeInspectionWorkspace();
+  if (workspace.submittedAt) return;
+  var current = (workspace.answersByQuestionId[rowId] && workspace.answersByQuestionId[rowId].status) || row.status;
+  if (current === 'observed') current = 'observation';
   var idx = INSPECTOR_EXECUTION_STATUS_FLOW.indexOf(current);
   var next = INSPECTOR_EXECUTION_STATUS_FLOW[(idx + 1) % INSPECTOR_EXECUTION_STATUS_FLOW.length];
-  if (!state.inspectionWorkspaceAnswers[rowId]) state.inspectionWorkspaceAnswers[rowId] = {};
-  state.inspectionWorkspaceAnswers[rowId].status = next;
+  if (!workspace.answersByQuestionId[rowId]) workspace.answersByQuestionId[rowId] = {};
+  workspace.answersByQuestionId[rowId].status = next;
   persistAfterAction();
   render();
 }
@@ -1775,86 +1790,37 @@ function handleInspectionStatusCycle(rowId) {
 function setInspectionStatus(rowId, next) {
   var row = inspectionWorkspaceRow(rowId);
   if (!row || !INSPECTOR_EXECUTION_STATUS_META[next]) return false;
-  if (!state.inspectionWorkspaceAnswers) state.inspectionWorkspaceAnswers = {};
-  if (!state.inspectionWorkspaceAnswers[rowId]) state.inspectionWorkspaceAnswers[rowId] = {};
-  state.inspectionWorkspaceAnswers[rowId].status = next;
-  if (next === 'noncompliant') ensureInspectionFindingForRow(row);
+  var workspace = activeInspectionWorkspace();
+  if (workspace.submittedAt) return false;
+  if (!workspace.answersByQuestionId[rowId]) workspace.answersByQuestionId[rowId] = {};
+  workspace.answersByQuestionId[rowId].status = next;
+  syncInspectionPotentialFinding(row, workspace);
   persistAfterAction();
   return true;
 }
 
-function inspectionFindingId(row) {
-  var safeNo = String(row && row.no ? row.no : row.id).replace(/[^0-9A-Za-z]+/g, '-').replace(/^-+|-+$/g, '');
-  return 'SMS-2026-' + safeNo;
-}
-
-function inspectionFindingSeverity(row) {
-  if (!row) return 2;
-  if (/critical|access|owner|target/i.test(row.item || '')) return 2;
-  return 3;
-}
-
-function ensureInspectionFindingForRow(row) {
-  if (!row) return null;
-  var id = inspectionFindingId(row);
-  var existing = findingById(id);
-  var answer = state.inspectionWorkspaceAnswers && state.inspectionWorkspaceAnswers[row.id] ? state.inspectionWorkspaceAnswers[row.id] : {};
-  var comment = answer.comment !== undefined ? answer.comment : (row.comment || '');
-  var file = answer.file !== undefined ? answer.file : (row.file || '');
-  var title = (row.item || 'Checklist non-compliance').replace(/\?$/, '');
-  if (existing) {
-    existing.title = title;
-    existing.description = comment || ('Checklist item ' + row.no + ' was marked Non-Compliant during SMS Oversight Audit.');
-    existing.status = existing.status === 'CLOSED' ? 'WAITING_CAP' : existing.status;
-    existing.internalNotes = existing.internalNotes || [];
-    if (file && !existing.internalNotes.some(function (note) { return (note.text || '').indexOf(file) !== -1; })) {
-      existing.internalNotes.push({ author: currentActorLabel(), date: DEMO_TODAY, text: 'Checklist attachment referenced: ' + file });
-    }
-    if (state.inspectionWorkspaceAnswers[row.id]) state.inspectionWorkspaceAnswers[row.id].findingId = id;
-    return existing;
-  }
-  var finding = {
-    id: id,
-    title: title,
-    description: comment || ('Checklist item ' + row.no + ' was marked Non-Compliant during SMS Oversight Audit.'),
-    orgId: 'ORG-SKY',
-    auditId: 'AUD-2026-005',
-    severity: inspectionFindingSeverity(row),
-    reference: 'SMS Oversight Audit checklist item ' + row.no,
-    basis: 'Checklist item answered Non-Compliant',
-    status: 'WAITING_CAP',
-    capRequired: true,
-    evidenceRequired: true,
-    issuedDate: DEMO_TODAY,
-    dueDate: '2026-07-15',
-    closedDate: null,
-    closureType: null,
-    responsiblePerson: 'Service Provider CAP Owner',
-    cap: null,
-    capRevisions: [],
-    evidence: [],
-    commentsToAuditee: [],
-    internalNotes: [
-      {
-        author: currentActorLabel(),
-        date: DEMO_TODAY,
-        text: 'Auto-created from Inspector checklist workspace' + (file ? '. Checklist attachment referenced: ' + file : '.')
-      }
-    ]
-  };
-  state.findings.push(finding);
-  if (state.inspectionWorkspaceAnswers[row.id]) state.inspectionWorkspaceAnswers[row.id].findingId = id;
-  addLog('Finding created from checklist non-compliance', id);
-  pushNotification('auditee', 'CAP', 'New finding ' + id + ' requires CAP response from SkyCargo Air.');
-  return finding;
+function syncInspectionPotentialFinding(row, workspace) {
+  if (!row || !workspace) return null;
+  var answer = workspace.answersByQuestionId[row.id] || {};
+  var result = answer.status === 'observed' ? 'observation' : answer.status;
+  var comment = normalizeApprovalText(answer.comment || '');
+  var files = answer.file ? [answer.file] : [];
+  if ((result === 'noncompliant' || result === 'observation') && !comment) return null;
+  recordChecklistResult(activeInspectionAuditId(), row.id, result, comment, files);
+  if (result !== 'noncompliant' && result !== 'observation') return null;
+  var potential = createPotentialFinding(activeInspectionAuditId(), row.id, { actorName: currentActorLabel() });
+  answer.potentialFindingId = potential.id;
+  return potential;
 }
 
 function setInspectionComment(rowId, comment) {
   var row = inspectionWorkspaceRow(rowId);
   if (!row) return;
-  if (!state.inspectionWorkspaceAnswers) state.inspectionWorkspaceAnswers = {};
-  if (!state.inspectionWorkspaceAnswers[rowId]) state.inspectionWorkspaceAnswers[rowId] = {};
-  state.inspectionWorkspaceAnswers[rowId].comment = comment || '';
+  var workspace = activeInspectionWorkspace();
+  if (workspace.submittedAt) return;
+  if (!workspace.answersByQuestionId[rowId]) workspace.answersByQuestionId[rowId] = {};
+  workspace.answersByQuestionId[rowId].comment = comment || '';
+  syncInspectionPotentialFinding(row, workspace);
   persistAfterAction();
 }
 
@@ -1871,9 +1837,10 @@ function handleInspectionRowMenu(rowId) {
       metaItem('Attached file', file) +
       metaItem('Comment', comment) +
     '</div>';
-  var foot = '<button class="btn" data-act="close-modal">Close</button>' +
-    '<button class="btn" data-act="inspection-set-status" data-id="' + esc(row.id) + '" data-status="observed">Mark Observed</button>' +
-    '<button class="btn btn--danger" data-act="inspection-set-status" data-id="' + esc(row.id) + '" data-status="noncompliant">Mark Non-Compliant</button>';
+  var submitted = !!activeInspectionWorkspace().submittedAt;
+  var foot = '<button class="btn" data-act="close-modal">Close</button>' + (submitted ? '' :
+    '<button class="btn" data-act="inspection-set-status" data-id="' + esc(row.id) + '" data-status="observation">Mark Observation</button>' +
+    '<button class="btn btn--danger" data-act="inspection-set-status" data-id="' + esc(row.id) + '" data-status="noncompliant">Mark Non-Compliant</button>');
   openModal(modalShell('Checklist row actions', body, foot));
 }
 
@@ -1884,7 +1851,7 @@ function handleInspectionFileOpen(rowId) {
   var body = '<div class="modal__intro"><b>' + esc(row.no) + '</b> ' + esc(row.item) + '</div>' +
     '<div class="metaline">' +
       metaItem('Attached file', file || 'No file attached') +
-      metaItem('Checklist section', (state.inspectionWorkspaceSection || '1.')) +
+      metaItem('Checklist section', row.sectionLabel || row.sectionKey) +
       metaItem('Demo storage', 'File name only') +
     '</div>' +
     '<p class="small muted mt-12">Demo only: this previews the attachment record. No real document is uploaded, stored, or downloaded.</p>';
@@ -1892,7 +1859,7 @@ function handleInspectionFileOpen(rowId) {
     (file
       ? '<button class="btn" data-act="inspection-row-menu" data-id="' + esc(row.id) + '">View Row Details</button>' +
         '<button class="btn btn--primary" data-act="inspection-file-download" data-id="' + esc(row.id) + '">Download Mock File</button>'
-      : '<button class="btn btn--primary" data-act="inspection-file-attach" data-id="' + esc(row.id) + '">Attach Mock File</button>');
+      : (activeInspectionWorkspace().submittedAt ? '' : '<button class="btn btn--primary" data-act="inspection-file-attach" data-id="' + esc(row.id) + '">Attach Mock File</button>'));
   openModal(modalShell(file ? 'Attached file preview' : 'Attach checklist evidence', body, foot));
 }
 
@@ -1921,15 +1888,16 @@ function downloadPlainTextFile(fileName, text) {
 }
 
 function inspectionAttachmentDownloadText(row, fileName) {
+  var pkg = currentInspectionExecutionPackage();
   var meta = INSPECTOR_EXECUTION_STATUS_META[inspectionExecutionStatus(row)] || INSPECTOR_EXECUTION_STATUS_META.na;
   var comment = inspectionExecutionComment(row) || 'No comment entered.';
   return [
     'AviaSurveil360 - Mock Attachment Download',
     '',
     'Original file name: ' + fileName,
-    'Inspection: INS-2026-015',
-    'Audit: SMS Oversight Audit',
-    'Organization: SkyCargo Air',
+    'Inspection: ' + (pkg ? pkg.inspectionId : activeInspectionAuditId()),
+    'Audit: ' + (pkg ? pkg.title : activeInspectionAuditId()),
+    'Organization: ' + (pkg ? pkg.organization : 'Unknown organization'),
     'Checklist item: ' + row.no + ' - ' + row.item,
     'Compliance: ' + meta.label,
     'Inspector comment: ' + comment,
@@ -1949,8 +1917,8 @@ function handleInspectionFileDownload(rowId) {
     return;
   }
   var downloaded = downloadPlainTextFile(mockAttachmentDownloadFileName(file), inspectionAttachmentDownloadText(row, file));
-  if (!state.inspectionWorkspaceDownloadedAttachments) state.inspectionWorkspaceDownloadedAttachments = {};
-  state.inspectionWorkspaceDownloadedAttachments[row.id] = new Date().toISOString();
+  var workspace = activeInspectionWorkspace();
+  workspace.downloadedAttachmentIds[row.id] = new Date().toISOString();
   addLog('Checklist attachment download simulated', file);
   persistAfterAction();
   render();
@@ -1962,10 +1930,12 @@ function handleInspectionFileDownload(rowId) {
 function handleInspectionFileAttach(rowId) {
   var row = inspectionWorkspaceRow(rowId);
   if (!row) return;
-  if (!state.inspectionWorkspaceAnswers) state.inspectionWorkspaceAnswers = {};
-  if (!state.inspectionWorkspaceAnswers[row.id]) state.inspectionWorkspaceAnswers[row.id] = {};
+  var workspace = activeInspectionWorkspace();
+  if (workspace.submittedAt) return;
+  if (!workspace.answersByQuestionId[row.id]) workspace.answersByQuestionId[row.id] = {};
   var safeNo = String(row.no || row.id).replace(/[^0-9A-Za-z]+/g, '_').replace(/^_+|_+$/g, '');
-  state.inspectionWorkspaceAnswers[row.id].file = 'inspection_' + safeNo + '_evidence.pdf';
+  workspace.answersByQuestionId[row.id].file = 'inspection_' + safeNo + '_evidence.pdf';
+  syncInspectionPotentialFinding(row, workspace);
   addLog('Mock checklist attachment selected', row.id);
   persistAfterAction();
   closeModal();
@@ -1974,16 +1944,27 @@ function handleInspectionFileAttach(rowId) {
 }
 
 function handleInspectionSubmittedPackage(auditId) {
-  openModal(modalShell('Submitted checklist package',
-    '<div class="modal__intro"><b>SMS Oversight Audit</b> has already been submitted to the Lead Inspector.</div>' +
-      '<div class="metaline">' +
-        metaItem('Inspection ID', 'INS-2026-015') +
-        metaItem('Submitted on', state.inspectionWorkspaceSubmittedAt ? logTimestamp() : 'Submitted') +
-        metaItem('Package status', 'Available to Inspector workspace') +
-      '</div>' +
-      '<p class="small muted mt-12">The submitted checklist package stays active in the demo so the Inspector can open the question workspace or review attached evidence without waiting for Lead Inspector to inspect every row one by one.</p>',
-    '<button class="btn" data-act="close-modal">Close</button>' +
-      '<button class="btn btn--primary" data-act="nav" data-view="lead-assignment-questions" data-id="' + esc(auditId || 'AUD-2026-005') + '">Open Inspector Question Workspace</button>',
+  var targetAuditId = activeInspectionAuditId(auditId);
+  var pkg = inspectionExecutionPackageForAudit(state, targetAuditId);
+  var workspace = activeInspectionWorkspace(targetAuditId);
+  var stages = [
+    { label: 'Checklist Completed', state: 'done' },
+    { label: 'Submitted', state: 'done' },
+    { label: 'Lead Inspector Review', state: 'current' },
+    { label: 'Final Report Preparation', state: 'pending' },
+    { label: 'Department Approval', state: 'pending' }
+  ];
+  var timeline = stages.map(function (stage, index) {
+    return '<li class="inspection-submit-stage is-' + stage.state + '"><span>' + (index + 1) + '</span><b>' + esc(stage.label) + '</b></li>';
+  }).join('');
+  openModal(modalShell('Checklist Submitted Successfully',
+    '<div class="inspection-submit-success"><div class="modal__intro"><b>' + esc(pkg ? pkg.title : targetAuditId) + '</b> is available in the Inspector workspace as a read-only submission.</div>' +
+      '<div class="metaline">' + metaItem('Inspection ID', pkg ? pkg.inspectionId : targetAuditId) + metaItem('Submitted on', workspace.submittedAt || 'Submitted') + metaItem('Status', 'Waiting for Lead Inspector Review') + '</div>' +
+      '<h3>Next step</h3><p>The Lead Inspector reviews the submitted package and its Potential Findings. You remain in your Inspector workspace.</p>' +
+      '<ol class="inspection-submit-timeline">' + timeline + '</ol>' +
+      '<p class="small muted mt-12">Demo only: this records browser-local workflow state. No backend submission or real notification service is used.</p></div>',
+    '<button class="btn" data-act="nav" data-view="inspector-assignments">Return to My Assignments</button>' +
+      '<button class="btn btn--primary" data-act="nav" data-view="audit-detail" data-id="' + esc(targetAuditId) + '">View Submitted Checklist</button>',
     false));
 }
 
@@ -1993,44 +1974,57 @@ function handleInspectionSetStatus(rowId, next) {
   persistAfterAction();
   closeModal();
   render();
-  if (next === 'noncompliant') {
-    toast('Finding added', inspectionFindingId(inspectionWorkspaceRow(rowId)) + ' is now visible in Findings.', 'warn');
+  if (next === 'noncompliant' || next === 'observation') {
+    var row = inspectionWorkspaceRow(rowId);
+    var potential = row ? activeInspectionWorkspace().answersByQuestionId[row.id].potentialFindingId : '';
+    toast(potential ? 'Potential Finding recorded' : 'Comment required', potential ? potential + ' is waiting for Lead Inspector review.' : 'Add the required comment to create a Potential Finding.', potential ? 'warn' : 'info');
   }
 }
 
 function handleInspectionDownload(auditId) {
-  state.inspectionWorkspaceDownloadedAt = new Date().toISOString();
-  addLog('Checklist download simulated', auditId || 'SMS Oversight Audit');
+  var targetAuditId = activeInspectionAuditId(auditId);
+  activeInspectionWorkspace(targetAuditId).downloadedAt = new Date().toISOString();
+  addLog('Checklist download simulated', targetAuditId);
   persistAfterAction();
-  downloadInspectionChecklist(auditId || 'AUD-2026-005');
+  downloadInspectionChecklist(targetAuditId);
   render();
   toast('Checklist downloaded', 'Checklist file generated in this browser.', 'ok');
 }
 
 function handleInspectionSaveDraft(auditId) {
-  state.inspectionWorkspaceDraftSavedAt = new Date().toISOString();
-  addLog('Inspection draft saved', auditId || 'SMS Oversight Audit');
+  var targetAuditId = activeInspectionAuditId(auditId);
+  var workspace = activeInspectionWorkspace(targetAuditId);
+  if (workspace.submittedAt) return;
+  workspace.draftSavedAt = new Date().toISOString();
+  addLog('Inspection draft saved', targetAuditId);
   persistAfterAction();
   render();
   toast('Draft saved', 'Checklist answers and comments are saved in this browser.', 'ok');
 }
 
 function handleInspectionSubmitLead(auditId) {
-  if (state.inspectionWorkspaceSubmittedAt) {
-    handleInspectionSubmittedPackage(auditId);
-    return;
+  var targetAuditId = activeInspectionAuditId(auditId);
+  var pkg = inspectionExecutionPackageForAudit(state, targetAuditId);
+  if (!pkg) return;
+  var workspace = activeInspectionWorkspace(targetAuditId);
+  if (!workspace.submittedAt) {
+    workspace.submittedAt = new Date().toISOString();
+    workspace.submittedByUserId = 'USR-AYLIN';
+    if (!workspace.allSectionsCompletedAt) workspace.allSectionsCompletedAt = workspace.submittedAt;
+    addLog('Inspection submitted to Lead Inspector', targetAuditId);
+    pushNotification('leadInspector', '▦', pkg.title + ' submitted by CAA Inspector for Lead Inspector review.');
+    persistAfterAction();
+    render();
   }
-  state.inspectionWorkspaceSubmittedAt = new Date().toISOString();
-  addLog('Inspection submitted to Lead Inspector', auditId || 'SMS Oversight Audit');
-  pushNotification('leadInspector', '▦', 'SMS Oversight Audit submitted by John Inspector for lead review.');
-  persistAfterAction();
-  render();
-  toast('Submitted', 'SMS Oversight Audit is marked submitted to the Lead Inspector.', 'ok');
+  handleInspectionSubmittedPackage(targetAuditId);
 }
 
 function handleInspectionCompleteSections(auditId) {
-  state.inspectionWorkspaceAllSectionsCompletedAt = new Date().toISOString();
-  addLog('Inspector marked all checklist sections complete', auditId || 'SMS Oversight Audit');
+  var targetAuditId = activeInspectionAuditId(auditId);
+  var workspace = activeInspectionWorkspace(targetAuditId);
+  if (workspace.submittedAt) return;
+  workspace.allSectionsCompletedAt = new Date().toISOString();
+  addLog('Inspector marked all checklist sections complete', targetAuditId);
   persistAfterAction();
   render();
   toast('All sections complete', 'The checklist sections are marked complete. Submit to Lead Inspector when ready.', 'ok');
@@ -2039,30 +2033,34 @@ function handleInspectionCompleteSections(auditId) {
 function handleInspectionSectionPreview(sectionId) {
   var section = typeof inspectionExecutionResolveSection === 'function' ? inspectionExecutionResolveSection(sectionId) : null;
   if (!section) return;
-  state.inspectionWorkspaceSection = section.no;
+  activeInspectionWorkspace().selectedSectionKey = section.key;
   if (state.ui) state.ui.inspectionStatusMenu = null;
   persistAfterAction();
   render();
 }
 
 function inspectionChecklistDownloadText(auditId) {
+  var pkg = inspectionExecutionPackageForAudit(state, activeInspectionAuditId(auditId));
+  if (!pkg) return 'AviaSurveil360 - Checklist unavailable';
   var lines = [
-    'AviaSurveil360 - SMS Oversight Audit Checklist',
-    'Inspection: ' + auditId,
-    'Organization: SkyCargo Air',
-    'Type: Routine Inspection',
+    'AviaSurveil360 - ' + pkg.templateName + ' Checklist',
+    'Inspection: ' + pkg.inspectionId,
+    'Audit: ' + pkg.title,
+    'Organization: ' + pkg.organization,
+    'Type: ' + pkg.inspectionType,
+    'Template: ' + pkg.templateId + ' ' + pkg.templateVersion,
     ''
   ];
-  var sections = typeof INSPECTOR_EXECUTION_SECTIONS !== 'undefined' ? INSPECTOR_EXECUTION_SECTIONS : [];
-  sections.forEach(function (section) {
-    lines.push(section.no + ' ' + section.title + ' (' + section.done + ' / ' + section.total + ' completed)');
-    var rows = typeof inspectionExecutionItemsForSection === 'function' ? inspectionExecutionItemsForSection(section.no) : [];
+  pkg.sections.forEach(function (section) {
+    lines.push(section.order + '. ' + section.label + ' (' + section.completed + ' / ' + section.total + ' completed)');
+    var rows = section.questions;
     rows.forEach(function (row) {
       var meta = INSPECTOR_EXECUTION_STATUS_META[inspectionExecutionStatus(row)] || INSPECTOR_EXECUTION_STATUS_META.na;
       lines.push('  ' + row.no + ' [' + meta.label + '] ' + row.item);
       var comment = inspectionExecutionComment(row);
       if (comment) lines.push('      Comment: ' + comment);
-      if (row.file) lines.push('      File: ' + row.file);
+      var file = inspectionExecutionFileName(row);
+      if (file) lines.push('      File: ' + file);
     });
     lines.push('');
   });
@@ -2076,7 +2074,8 @@ function downloadInspectionChecklist(auditId) {
   var url = URL.createObjectURL(blob);
   var link = document.createElement('a');
   link.href = url;
-  link.download = 'SMS_Oversight_Audit_Checklist.txt';
+  var safeAuditId = String(auditId || 'inspection').replace(/[^0-9A-Za-z_-]+/g, '_');
+  link.download = safeAuditId + '_Cabin_Inspection_Checklist.txt';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -2087,7 +2086,7 @@ function ensureLeadReviewUi() {
   if (!state.leadReviewUi) {
     state.leadReviewUi = {
       tab: 'report',
-      section: '1.',
+      section: 'galley',
       downloadedAt: '',
       finalizedAt: '',
       reportGeneratedAt: '',
@@ -2114,7 +2113,7 @@ function ensureLeadReviewUi() {
   }
   state.leadReviewUi.workflowVersion = 8;
   if (!state.leadReviewUi.tab || state.leadReviewUi.tab === 'workflow') state.leadReviewUi.tab = 'report';
-  if (!state.leadReviewUi.section) state.leadReviewUi.section = '1.';
+  if (!state.leadReviewUi.section || /^\d+\.$/.test(state.leadReviewUi.section)) state.leadReviewUi.section = 'galley';
   if (!state.leadReviewUi.rowReviews || typeof state.leadReviewUi.rowReviews !== 'object') state.leadReviewUi.rowReviews = {};
   if (state.leadReviewUi.overallComment === undefined || state.leadReviewUi.overallComment === null) state.leadReviewUi.overallComment = '';
   if (!state.leadReviewUi.downloadedAt) state.leadReviewUi.downloadedAt = '';
@@ -2228,23 +2227,30 @@ function ensureServiceProviderReportUi() {
   return state.serviceProviderReportUi;
 }
 
-function leadReviewSectionIndex(sectionNo) {
-  var sections = typeof INSPECTOR_EXECUTION_SECTIONS !== 'undefined' ? INSPECTOR_EXECUTION_SECTIONS : [];
+function leadReviewExecutionPackage() {
+  var requestedAuditId = state.params && state.params.auditId;
+  return inspectionExecutionPackageForAudit(state, requestedAuditId || 'AUD-2026-001') || inspectionExecutionPackageForAudit(state, 'AUD-2026-001');
+}
+
+function leadReviewSectionIndex(sectionKey) {
+  var pkg = leadReviewExecutionPackage();
+  var sections = pkg ? pkg.sections : [];
   for (var i = 0; i < sections.length; i++) {
-    if (sections[i].no === sectionNo) return i;
+    if (sections[i].key === sectionKey) return i;
   }
   return 0;
 }
 
 function leadReviewResolveSection(sectionId) {
-  var sections = typeof INSPECTOR_EXECUTION_SECTIONS !== 'undefined' ? INSPECTOR_EXECUTION_SECTIONS : [];
+  var pkg = leadReviewExecutionPackage();
+  var sections = pkg ? pkg.sections : [];
   if (!sections.length) return null;
   var ui = ensureLeadReviewUi();
-  var index = leadReviewSectionIndex(ui.section || sections[0].no);
+  var index = leadReviewSectionIndex(ui.section || sections[0].key);
   if (sectionId === 'previous') return sections[Math.max(index - 1, 0)];
   if (sectionId === 'next') return sections[Math.min(index + 1, sections.length - 1)];
   for (var i = 0; i < sections.length; i++) {
-    if (sections[i].no === sectionId) return sections[i];
+    if (sections[i].key === sectionId) return sections[i];
   }
   return sections[0];
 }
@@ -2286,7 +2292,7 @@ function handleLeadReviewSection(sectionId) {
   var section = leadReviewResolveSection(sectionId);
   if (!section) return;
   var ui = ensureLeadReviewUi();
-  ui.section = section.no;
+  ui.section = section.key;
   ui.tab = 'checklist';
   persistAfterAction();
   render();

@@ -10,6 +10,140 @@ var CHECKLIST_RESULTS = {
   na: 'Not Applicable'
 };
 
+var CABIN_EXECUTION_SECTIONS = [
+  { key: 'galley', label: 'Galley', questionIds: ['cab-galley-oven'] },
+  { key: 'lavatories', label: 'Lavatories', questionIds: ['cab-lav-oxygen-compartment'] },
+  { key: 'passenger-seats', label: 'Passenger Seats', questionIds: ['cab-seat-oxygen-mask'] },
+  { key: 'em-eq', label: 'Emergency Equipment', questionIds: ['cab-em-eq-pbe'] },
+  { key: 'video-crew-seat', label: 'Video + Crew Seat', questionIds: ['cab-em-eq-first-aid-oxygen'] },
+  { key: 'cockpit-cabin-exits', label: 'Cockpit, Cabin General Condition + Exits', questionIds: ['cab-exit-safety-strap'] }
+];
+
+function inspectionWorkspaceForAudit(target, auditId) {
+  if (!target.inspectionWorkspaces) target.inspectionWorkspaces = {};
+  if (!target.inspectionWorkspaces[auditId]) {
+    target.inspectionWorkspaces[auditId] = {
+      selectedSectionKey: 'galley',
+      answersByQuestionId: {},
+      downloadedAt: '',
+      downloadedAttachmentIds: {},
+      draftSavedAt: '',
+      allSectionsCompletedAt: '',
+      submittedAt: '',
+      submittedByUserId: ''
+    };
+  }
+  var workspace = target.inspectionWorkspaces[auditId];
+  if (!workspace.answersByQuestionId || typeof workspace.answersByQuestionId !== 'object') workspace.answersByQuestionId = {};
+  if (!workspace.downloadedAttachmentIds || typeof workspace.downloadedAttachmentIds !== 'object') workspace.downloadedAttachmentIds = {};
+  return workspace;
+}
+
+function inspectionExecutionAudit(target, auditId) {
+  var audits = target && Array.isArray(target.audits) ? target.audits : [];
+  return audits.filter(function (audit) { return audit.id === auditId; })[0] || null;
+}
+
+function inspectionExecutionTemplate(target, templateId) {
+  if (target && target.checklist && target.checklist.id === templateId) return target.checklist;
+  var packages = target && Array.isArray(target.managedChecklists) ? target.managedChecklists : [];
+  for (var i = 0; i < packages.length; i++) {
+    var versions = Array.isArray(packages[i].versions) ? packages[i].versions : [];
+    for (var j = 0; j < versions.length; j++) {
+      if (versions[j].templateId === templateId && versions[j].status === 'Published') return versions[j];
+    }
+  }
+  return null;
+}
+
+function inspectionExecutionOrganizationName(target, orgId) {
+  var orgs = target && Array.isArray(target.orgs) ? target.orgs : [];
+  var org = orgs.filter(function (item) { return item.id === orgId; })[0];
+  return org ? org.name : orgId;
+}
+
+function inspectionExecutionQuestionMeta(target, questionId) {
+  var bank = target && Array.isArray(target.questionBank) ? target.questionBank : [];
+  return bank.filter(function (item) { return item.id === questionId; })[0] || null;
+}
+
+function inspectionExecutionPackageForAudit(target, auditId) {
+  var audit = inspectionExecutionAudit(target, auditId);
+  if (!audit) return null;
+  var template = inspectionExecutionTemplate(target, audit.templateId);
+  if (!template || !Array.isArray(template.items)) return null;
+  var workspace = inspectionWorkspaceForAudit(target, auditId);
+  var sectionDefinitions = audit.templateId === 'TPL-CABIN-2026'
+    ? CABIN_EXECUTION_SECTIONS
+    : [{ key: 'checklist', label: template.name || audit.type || 'Checklist', questionIds: template.items.map(function (item) { return item.id; }) }];
+  var itemById = {};
+  template.items.forEach(function (item) { itemById[item.id] = item; });
+  var questions = [];
+  var sections = sectionDefinitions.map(function (definition, sectionIndex) {
+    var sectionQuestions = definition.questionIds.map(function (questionId, questionIndex) {
+      var item = itemById[questionId];
+      if (!item) return null;
+      var answer = workspace.answersByQuestionId[questionId] || {};
+      var bankMeta = inspectionExecutionQuestionMeta(target, questionId);
+      var status = answer.status === 'observed' ? 'observation' : (answer.status || 'na');
+      var row = {
+        id: item.id,
+        no: String(sectionIndex + 1) + '.' + String(questionIndex + 1),
+        item: item.text,
+        text: item.text,
+        reference: item.ref || '',
+        expectedEvidence: item.evidence || '',
+        sectionKey: definition.key,
+        sectionLabel: definition.label,
+        status: status,
+        comment: answer.comment || '',
+        file: answer.file || '',
+        commentRequired: !!(bankMeta && bankMeta.commentRequired)
+      };
+      questions.push(row);
+      return row;
+    }).filter(Boolean);
+    var completed = sectionQuestions.filter(function (question) {
+      return !!(workspace.answersByQuestionId[question.id] && workspace.answersByQuestionId[question.id].status);
+    }).length;
+    return {
+      key: definition.key,
+      label: definition.label,
+      order: sectionIndex + 1,
+      questions: sectionQuestions,
+      completed: completed,
+      total: sectionQuestions.length
+    };
+  });
+  if (!sections.some(function (section) { return section.key === workspace.selectedSectionKey; })) {
+    workspace.selectedSectionKey = sections.length ? sections[0].key : '';
+  }
+  var answered = questions.filter(function (question) {
+    return !!(workspace.answersByQuestionId[question.id] && workspace.answersByQuestionId[question.id].status);
+  }).length;
+  var numericId = String(audit.id || '').match(/(\d+)$/);
+  return {
+    auditId: audit.id,
+    inspectionId: 'INS-2026-' + String(numericId ? numericId[1] : '001').padStart(3, '0'),
+    title: audit.ref,
+    organizationId: audit.orgId,
+    organization: inspectionExecutionOrganizationName(target, audit.orgId),
+    inspectionType: audit.type,
+    startDate: audit.date,
+    endDate: audit.endDate || audit.date,
+    templateId: template.id || audit.templateId,
+    templateName: template.name || audit.type,
+    templateVersion: template.version || '',
+    sections: sections,
+    questions: questions,
+    answered: answered,
+    total: questions.length,
+    progressPercent: questions.length ? Math.round((answered / questions.length) * 100) : 0,
+    workspace: workspace,
+    potentialFindings: (target.potentialFindings || []).filter(function (finding) { return finding.auditId === audit.id; })
+  };
+}
+
 function checklistResultRequiresComment(result) {
   return result === 'noncompliant' || result === 'observation';
 }

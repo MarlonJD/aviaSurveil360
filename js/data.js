@@ -1405,7 +1405,7 @@ function freshState() {
     },
     leadReviewUi: {
       tab: 'report',
-      section: '1.',
+      section: 'galley',
       downloadedAt: '',
       finalizedAt: '',
       reportGeneratedAt: '',
@@ -1722,7 +1722,7 @@ function mergeDemoState(saved) {
   if (['details', 'history', 'communications', 'documents', 'enforcement'].indexOf(base.capTrackingUi.detailTab) === -1) base.capTrackingUi.detailTab = 'details';
   base.leadReviewUi = Object.assign({
     tab: 'report',
-    section: '1.',
+    section: 'galley',
     downloadedAt: '',
     finalizedAt: '',
     reportGeneratedAt: '',
@@ -1737,6 +1737,7 @@ function mergeDemoState(saved) {
     overallComment: '',
     rowReviews: {}
   }, saved.leadReviewUi || {});
+  if (!base.leadReviewUi.section || /^\d+\.$/.test(base.leadReviewUi.section)) base.leadReviewUi.section = 'galley';
   if (!base.leadReviewUi.rowReviews || typeof base.leadReviewUi.rowReviews !== 'object') base.leadReviewUi.rowReviews = {};
   if (!base.leadReviewUi.workflowVersion || base.leadReviewUi.workflowVersion < 8) {
     base.leadReviewUi.tab = 'report';
