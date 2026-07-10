@@ -16,6 +16,24 @@ const auditId = 'AUD-2026-001';
 const questionId = 'cab-em-eq-pbe';
 
 assert.ok(Array.isArray(context.state.potentialFindings), 'potential findings collection exists');
+assert.equal(typeof context.inspectionExecutionPackageForAudit, 'function');
+const executionPackage = context.inspectionExecutionPackageForAudit(context.state, auditId);
+assert.equal(executionPackage.auditId, auditId);
+assert.equal(executionPackage.title, '2026 Cabin Inspection - Fly Namibia');
+assert.equal(executionPackage.templateId, 'TPL-CABIN-2026');
+assert.deepEqual(
+  JSON.parse(JSON.stringify(executionPackage.sections.map((section) => section.label))),
+  [
+    'Galley',
+    'Lavatories',
+    'Passenger Seats',
+    'Emergency Equipment',
+    'Video + Crew Seat',
+    'Cockpit, Cabin General Condition + Exits'
+  ]
+);
+assert.ok(executionPackage.questions.some((question) => question.id === questionId));
+assert.doesNotMatch(JSON.stringify(executionPackage), /SMS Oversight|Safety Policy and Objectives/);
 
 assert.throws(
   () => context.recordChecklistResult(auditId, questionId, 'noncompliant', '', []),

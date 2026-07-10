@@ -26,6 +26,17 @@ context.state.role = 'leadInspector';
 context.state.view = 'lead-review';
 context.state.params = {};
 
+assert.ok(context.state.leadAssignmentsByAudit, 'audit-scoped Lead assignment state exists');
+assert.ok(context.state.leadAssignmentsByAudit['AUD-2026-001']);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(context.state.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId)),
+  {}
+);
+assert.equal(context.state.leadAssignmentsByAudit['AUD-2026-001'].activeInspectorUserId, 'USR-AYLIN');
+const activeInternalInspectors = context.state.users.filter((user) => user.roleKey === 'inspector' && user.status === 'Active');
+assert.ok(activeInternalInspectors.some((user) => user.id === 'USR-AYLIN'));
+assert.ok(activeInternalInspectors.some((user) => user.id === 'USR-MEHMET'));
+
 let html = context.viewLeadReviewQueue();
 
 assert.match(html, /Assigned Audits/);
@@ -114,6 +125,9 @@ assert.match(html, /data-field="lead-assignment-priority"/);
 assert.match(html, /data-field="lead-assignment-note"/);
 assert.match(html, /Assign Questions/);
 assert.match(html, /Release to Inspectors/);
+assert.match(html, /data-act="lead-assignment-add-inspector"/);
+assert.match(html, /data-id="USR-AYLIN"[^>]*aria-pressed="true"/);
+assert.match(html, /data-id="USR-MEHMET"[^>]*aria-pressed="false"/);
 
 context.state.view = 'lead-review';
 context.state.params = { auditId: 'AUD-2026-005' };

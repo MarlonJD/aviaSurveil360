@@ -120,7 +120,8 @@ assert.equal(context.state.params.filter, 'preliminary');
 let preliminaryHtml = elements.get('app-root').innerHTML;
 assert.match(preliminaryHtml, /Preliminary Reports/);
 assert.match(preliminaryHtml, /View and manage all preliminary inspection reports/);
-assert.match(preliminaryHtml, /New Preliminary Report/);
+assert.match(preliminaryHtml, /Open Report Package|Continue Existing Report/);
+assert.doesNotMatch(preliminaryHtml, /New Preliminary Report/);
 assert.match(preliminaryHtml, /PR-2026-018/);
 assert.match(preliminaryHtml, /AVSEC Inspection/);
 assert.match(preliminaryHtml, /SkyCargo Air/);
@@ -142,10 +143,12 @@ context.handleAction('preliminary-report-actions', dataEl({ 'data-id': 'PR-2026-
 assert.equal(elements.get('modal-host').hidden, true);
 assert.equal(context.state.leadPreliminaryReportsUi.mode, 'workflow');
 assert.equal(context.state.leadPreliminaryReportsUi.step, 'inspection');
+assert.equal(context.state.leadPreliminaryReportsUi.selectedReportId, 'PR-2026-018');
 preliminaryHtml = elements.get('app-root').innerHTML;
 assert.match(preliminaryHtml, /Inspection &amp; Findings/);
-assert.match(preliminaryHtml, /Findings from Inspection \(9\)/);
-assert.match(preliminaryHtml, /SEC-2026-002/);
+assert.match(preliminaryHtml, /Findings Review/);
+assert.match(preliminaryHtml, /PR-2026-018/);
+assert.match(preliminaryHtml, /CAB-2026-011/);
 assert.match(preliminaryHtml, /Next: Report Content/);
 
 context.handleAction('preliminary-report-next', dataEl({}));
@@ -201,9 +204,26 @@ context.handleAction('nav', dataEl({ 'data-view': 'lead-assignment-questions', '
 assert.equal(context.state.view, 'lead-assignment-questions');
 assert.match(elements.get('app-root').innerHTML, /Assign Selected \(4\)/);
 assert.match(elements.get('app-root').innerHTML, /data-field="lead-assignment-due"/);
+assert.match(elements.get('app-root').innerHTML, /data-act="lead-assignment-add-inspector"/);
 
 context.handleAction('lead-assignment-pick-inspector', dataEl({ 'data-id': 'Maria Silva' }));
 assert.equal(context.state.leadAssignmentUi.assignee, 'Maria Silva');
+assert.match(elements.get('app-root').innerHTML, /class="lead-assignment-inspector is-active"[^>]*data-id="Maria Silva"[^>]*aria-pressed="true"/);
+assert.match(elements.get('app-root').innerHTML, /class="lead-assignment-inspector"[^>]*data-id="Ahmed Ali"[^>]*aria-pressed="false"/);
+
+context.handleAction('lead-assignment-add-inspector', dataEl({}));
+assert.equal(elements.get('modal-host').hidden, false);
+assert.match(elements.get('modal-host').innerHTML, /Add Inspector/);
+assert.match(elements.get('modal-host').innerHTML, /Elena Rossi/);
+context.document.getElementById('lead-assignment-new-inspector').value = 'Elena Rossi';
+context.handleAction('lead-assignment-confirm-add-inspector', dataEl({}));
+assert.equal(context.state.leadAssignmentUi.addedInspectors.length, 1);
+assert.equal(context.state.leadAssignmentUi.addedInspectors[0].name, 'Elena Rossi');
+assert.equal(context.state.leadAssignmentUi.assignee, 'Elena Rossi');
+assert.equal(elements.get('modal-host').hidden, true);
+assert.match(elements.get('app-root').innerHTML, /Inspectors[\s\S]*5[\s\S]*Team Members/);
+assert.match(elements.get('app-root').innerHTML, /class="lead-assignment-inspector is-active"[^>]*data-id="Elena Rossi"[^>]*aria-pressed="true"/);
+assert.match(elements.get('app-root').innerHTML, /<option value="Elena Rossi" selected>Elena Rossi<\/option>/);
 context.handleLeadAssignmentFieldChange('lead-assignment-due', { value: '2026-06-15' });
 context.handleLeadAssignmentFieldChange('lead-assignment-priority', { value: 'High' });
 context.handleLeadAssignmentFieldChange('lead-assignment-note', { value: 'Prioritize emergency equipment checks.', parentElement: null });

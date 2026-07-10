@@ -42,23 +42,30 @@ assert.match(html, /Start checklist/);
 
 context.state.params = { auditId: 'AUD-2026-001' };
 html = context.viewAuditDetail();
-assert.match(html, /SMS Oversight Audit/);
+assert.match(html, /2026 Cabin Inspection - Fly Namibia/);
+assert.match(html, /Cabin Inspection/);
 assert.match(html, /Back to Inspections/);
 assert.match(html, /Checklist Sections/);
-assert.match(html, /Safety Policy and Objectives/);
+[
+  'Galley',
+  'Lavatories',
+  'Passenger Seats',
+  'Emergency Equipment',
+  'Video + Crew Seat',
+  'Cockpit, Cabin General Condition + Exits'
+].forEach((section) => assert.match(html, new RegExp(section.replace(/[+]/g, '\\+'))));
+assert.match(html, /EM EQ \/ PBE/);
 assert.match(html, /Download Checklist/);
 assert.match(html, /Submit to Lead Inspector/);
-assert.match(html, /45 \/ 60 \(75%\)/);
-assert.match(html, /safety_policy\.pdf/);
+assert.doesNotMatch(html, /SMS Oversight Audit|Safety Policy and Objectives|Safety Risk Management/);
 assert.match(html, /data-field="inspection-status"/);
 assert.doesNotMatch(html, /inspection-status-cycle/);
 assert.doesNotMatch(html, /Next action:/);
 
-context.state.inspectionWorkspaceSection = '2.';
+context.state.inspectionWorkspaces['AUD-2026-001'].selectedSectionKey = 'em-eq';
 html = context.viewAuditDetail();
-assert.match(html, /2\. Safety Risk Management/);
-assert.match(html, /2\.1/);
-assert.match(html, /Are operational hazards formally identified\?/);
-assert.doesNotMatch(html, /1\.1[\s\S]*Is there an established safety policy\?/);
+assert.match(html, /Emergency Equipment/);
+assert.match(html, /Is the PBE installed, serviceable, accessible/);
+assert.doesNotMatch(html, /Are operational hazards formally identified\?/);
 
 console.log('audit-work-queue-smoke: ok');

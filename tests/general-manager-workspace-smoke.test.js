@@ -72,8 +72,8 @@ const preliminaryReport = state.managerReports.find((report) => report.reportTyp
 assert.ok(finalReport);
 assert.ok(preliminaryReport);
 
-finalReport.status = 'submitted_to_executive';
-finalReport.ownerRole = 'executiveDirector';
+finalReport.status = 'submitted_to_gm';
+finalReport.ownerRole = 'gm';
 const logCount = state.auditLog.length;
 const notificationCount = state.notifications.length;
 
@@ -82,17 +82,18 @@ assert.equal(result.ok, false);
 assert.match(result.message, /comment/i);
 assert.equal(finalReport.status, 'submitted_to_executive');
 
-result = context.applyGeneralManagerReportDecision(state, finalReport.id, 'approve', 'Final authorized approval.', 'General Manager');
+result = context.applyGeneralManagerReportDecision(state, finalReport.id, 'approve', 'Reviewed and forwarded to the Executive Director.', 'General Manager');
 assert.equal(result.ok, true);
-assert.equal(result.report.status, 'issued');
-assert.equal(result.report.locked, true);
-assert.equal(result.report.finalAuthorizedBy, 'General Manager');
-assert.ok(result.report.finalAuthorizedAt);
-assert.ok(result.report.history.some((entry) => /issued/i.test(entry.action)));
+assert.equal(result.report.status, 'submitted_to_executive');
+assert.equal(result.report.ownerRole, 'executiveDirector');
+assert.notEqual(result.report.locked, true);
+assert.equal(result.report.finalAuthorizedBy, undefined);
+assert.equal(result.report.finalAuthorizedAt, undefined);
+assert.ok(result.report.history.some((entry) => /Executive Director/i.test(entry.action)));
 assert.equal(state.auditLog.length, logCount + 1);
 assert.equal(state.notifications.length, notificationCount + 1);
 
-preliminaryReport.status = 'submitted_to_executive';
+preliminaryReport.status = 'submitted_to_gm';
 const preliminaryResult = context.applyGeneralManagerReportDecision(
   state,
   preliminaryReport.id,
@@ -101,7 +102,7 @@ const preliminaryResult = context.applyGeneralManagerReportDecision(
   'General Manager'
 );
 assert.equal(preliminaryResult.ok, false);
-assert.notEqual(preliminaryReport.status, 'issued');
+assert.notEqual(preliminaryReport.status, 'submitted_to_executive');
 
 const wrongStageState = context.freshState();
 const wrongStageFinal = wrongStageState.managerReports.find((report) => report.reportType === 'Final Report');
@@ -118,8 +119,8 @@ assert.notEqual(wrongStageFinal.locked, true);
 
 const returnState = context.freshState();
 const returnedFinal = returnState.managerReports.find((report) => report.reportType === 'Final Report');
-returnedFinal.status = 'submitted_to_executive';
-returnedFinal.ownerRole = 'executiveDirector';
+returnedFinal.status = 'submitted_to_gm';
+returnedFinal.ownerRole = 'gm';
 const returned = context.applyGeneralManagerReportDecision(
   returnState,
   returnedFinal.id,
@@ -134,8 +135,8 @@ assert.notEqual(returned.report.locked, true);
 
 const projectionState = context.freshState();
 const projectionFinal = projectionState.managerReports.find((report) => report.reportType === 'Final Report');
-projectionFinal.status = 'submitted_to_executive';
-projectionFinal.ownerRole = 'executiveDirector';
+projectionFinal.status = 'submitted_to_gm';
+projectionFinal.ownerRole = 'gm';
 const projection = context.generalManagerProjection(projectionState);
 assert.equal(projection.pendingFinalReports, 1);
 assert.equal(projection.reportsAwaitingApproval, 1);

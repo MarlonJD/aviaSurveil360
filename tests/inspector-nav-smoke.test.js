@@ -304,26 +304,36 @@ context.render();
 
 context.handleAction('inspection-submit-lead', dataEl({ 'data-id': 'AUD-2026-005' }));
 auditExecutionHtml = elements.get('app-root').innerHTML;
-assert.ok(context.state.inspectionWorkspaceSubmittedAt);
+assert.ok(context.state.inspectionWorkspaces, 'audit-scoped Inspector execution state exists');
+assert.ok(context.state.inspectionWorkspaces['AUD-2026-005'], 'opened audit execution state exists');
+assert.ok(context.state.inspectionWorkspaces['AUD-2026-005'].submittedAt);
+const submittedAt = context.state.inspectionWorkspaces['AUD-2026-005'].submittedAt;
+assert.equal(context.state.role, 'inspector');
+assert.equal(context.state.view, 'audit-detail');
+assert.equal(context.state.params.auditId, 'AUD-2026-005');
 assert.match(auditExecutionHtml, /Submitted to Lead Inspector/);
 assert.match(auditExecutionHtml, />Submitted<\/button>/);
 assert.doesNotMatch(auditExecutionHtml, /data-act="inspection-submit-lead"[^>]*disabled/);
+assert.match(elements.get('modal-host').innerHTML, /Checklist Submitted Successfully/);
+assert.match(elements.get('modal-host').innerHTML, /Waiting for Lead Inspector Review/);
+assert.match(elements.get('modal-host').innerHTML, /Checklist Completed/);
+assert.match(elements.get('modal-host').innerHTML, /Lead Inspector Review/);
+assert.match(elements.get('modal-host').innerHTML, /Final Report Preparation/);
+assert.match(elements.get('modal-host').innerHTML, /Department Approval/);
+assert.match(elements.get('modal-host').innerHTML, /View Submitted Checklist/);
+assert.match(elements.get('modal-host').innerHTML, /Return to My Assignments/);
+assert.doesNotMatch(elements.get('modal-host').innerHTML, /Open Inspector Question Workspace|lead-assignment-questions/);
+
 context.handleAction('inspection-submit-lead', dataEl({ 'data-id': 'AUD-2026-005' }));
-assert.match(elements.get('modal-host').innerHTML, /Submitted checklist package/);
-assert.match(elements.get('modal-host').innerHTML, /Open Inspector Question Workspace/);
+assert.equal(context.state.inspectionWorkspaces['AUD-2026-005'].submittedAt, submittedAt);
+assert.match(elements.get('modal-host').innerHTML, /Checklist Submitted Successfully/);
 
 context.handleAction('nav', dataEl({ 'data-view': 'lead-assignment-questions', 'data-id': 'AUD-2026-005' }));
 const inspectorQuestionWorkspaceHtml = elements.get('app-root').innerHTML;
 assert.equal(context.state.role, 'inspector');
-assert.equal(context.state.view, 'lead-assignment-questions');
-assert.match(inspectorQuestionWorkspaceHtml, /Inspector Question Workspace/);
-assert.match(inspectorQuestionWorkspaceHtml, /responsive-filter-row/);
-assert.match(inspectorQuestionWorkspaceHtml, /responsive-table-shell/);
-assert.match(inspectorQuestionWorkspaceHtml, /assignment-question-table/);
-assert.match(inspectorQuestionWorkspaceHtml, /without routing every row through the Lead Inspector/);
-assert.match(inspectorQuestionWorkspaceHtml, /Checklist Item/);
-assert.match(inspectorQuestionWorkspaceHtml, /Mark Selected for Review/);
-assert.doesNotMatch(inspectorQuestionWorkspaceHtml, /colspan="2"/);
+assert.equal(context.state.view, 'inspector-assignments');
+assert.match(inspectorQuestionWorkspaceHtml, /My Assignments/);
+assert.doesNotMatch(inspectorQuestionWorkspaceHtml, /Inspector Question Workspace|Assign Checklist Questions/);
 
 context.state.view = 'regulatory-library';
 context.state.params = {};

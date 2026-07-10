@@ -47,7 +47,15 @@ assert.equal(report.status, 'submitted_to_dm_final');
 context.applyReportApprovalDecision(report, {
   decision: 'approve',
   actor: { role: 'manager', name: context.ROLES.manager.user },
-  comment: 'Department Manager final approval completed for Executive Director / GM approval.'
+  comment: 'Department Manager final review completed for General Manager review.'
+});
+assert.equal(context.approvalSummary(report).ownerRole, 'gm');
+assert.equal(report.status, 'submitted_to_gm');
+
+context.applyReportApprovalDecision(report, {
+  decision: 'approve',
+  actor: { role: 'gm', name: context.ROLES.gm.user },
+  comment: 'General Manager reviewed and forwarded the Final Report.'
 });
 assert.equal(context.approvalSummary(report).ownerRole, 'executiveDirector');
 assert.equal(report.status, 'submitted_to_ed');
@@ -62,6 +70,8 @@ assert.equal(context.approvalSummary(report).ownerRole, null);
 assert.equal(report.finalLocked, true);
 assert.equal(report.status, 'final_report_generated');
 assert.match(report.mockDigitalSignature.label, /DEMO/);
-assert.equal(context.auditById(report.auditId).status, 'Closed');
+assert.notEqual(context.auditById(report.auditId).status, 'Closed');
+assert.match(context.auditById(report.auditId).status, /Report Issued|Follow-up Open/);
+assert.ok(context.state.findings.some((finding) => finding.auditId === report.auditId && finding.status !== 'CLOSED'));
 
 console.log('report-approval-smoke: ok');

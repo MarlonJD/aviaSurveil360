@@ -122,11 +122,11 @@ result = context.applyManagerReportDecision(
   { role: 'manager', name: 'Mehmet Kaya' }
 );
 assert.equal(result.ok, true);
-assert.equal(result.report.status, 'submitted_to_executive');
-assert.equal(result.report.ownerRole, 'executiveDirector');
+assert.equal(result.report.status, 'submitted_to_gm');
+assert.equal(result.report.ownerRole, 'gm');
 assert.notEqual(result.report.status, 'issued');
 assert.notEqual(result.report.locked, true);
-assert.match(result.report.history.at(-1).action, /final authorized approval/);
+assert.match(result.report.history.at(-1).action, /General Manager/);
 assert.equal(
   JSON.stringify(context.managerReportById(finalState, 'PR-2026-018')),
   preliminaryBeforeFinalDecision,
@@ -241,8 +241,8 @@ context.handleAction('manager-report-decision', dataEl({
   'data-id': 'FR-2026-018',
   'data-decision': 'approve'
 }));
-assert.equal(context.managerReportById(context.state, 'FR-2026-018').status, 'submitted_to_executive');
+assert.equal(context.managerReportById(context.state, 'FR-2026-018').status, 'submitted_to_gm');
 assert.notEqual(context.managerReportById(context.state, 'FR-2026-018').locked, true);
-assert.ok(context.state.notifications.some((item) => item.role === 'executiveDirector'));
+assert.ok(context.state.notifications.some((item) => item.role === 'gm'));
 
 console.log('manager-reports-approval-smoke: ok');
