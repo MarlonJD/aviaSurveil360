@@ -1345,7 +1345,7 @@ and push the current branch.
 - Produces: desktop/mobile render evidence and `design-qa.md` with
   `final result: passed` or a literal blocker.
 
-- [ ] **Step 1: Run all focused tests before browser work**
+- [x] **Step 1: Run all focused tests before browser work**
 
 Run:
 
@@ -1364,7 +1364,7 @@ node tests/general-manager-workspace-smoke.test.js
 
 Expected: all pass.
 
-- [ ] **Step 2: Start an isolated local preview**
+- [x] **Step 2: Start an isolated local preview**
 
 Run the static server on an available localhost port and use an isolated browser
 profile. Preferred command:
@@ -1376,7 +1376,7 @@ python3 -m http.server 4360 --bind 127.0.0.1
 Open the demo through the in-app Browser. Reset demo state before each approval
 branch.
 
-- [ ] **Step 3: Verify the desktop interaction path at 1536x864**
+- [x] **Step 3: Verify the desktop interaction path at 1536x864**
 
 Verify visible behavior:
 
@@ -1399,13 +1399,13 @@ Verify visible behavior:
    dashboard, departments, risk, and Final Report approve/return paths work.
 9. Browser console has zero warnings/errors for changed paths.
 
-- [ ] **Step 4: Verify mobile at 390x844**
+- [x] **Step 4: Verify mobile at 390x844**
 
 Confirm no page-level horizontal overflow, clipped primary decisions, overlap,
 or inaccessible detail content. Master-detail panes stack with list first and
 selected detail second. Ellipsis menus remain within the viewport.
 
-- [ ] **Step 5: Capture and compare visual evidence**
+- [x] **Step 5: Capture and compare visual evidence**
 
 Capture the Department Manager Dashboard, Findings Review, Inspection Team,
 Reports Approval, CAP Monitoring drawer, Checklist Management editor, Department
@@ -1425,12 +1425,12 @@ pass. Record at least these comparison points in `design-qa.md`:
 Fix all P0/P1/P2 mismatches, recapture, and set `final result: passed` only when
 the comparison passes. Remaining P3 polish may be documented.
 
-- [ ] **Step 6: Inspect downloaded PDFs**
+- [x] **Step 6: Inspect downloaded PDFs**
 
 For each downloaded file, run `/usr/bin/file` and bundled `pdfinfo`. Expected:
 PDF document identification, at least one page, and no parser error.
 
-- [ ] **Step 7: Run boundary and full regression suite**
+- [x] **Step 7: Run boundary and full regression suite**
 
 Run:
 
@@ -1444,13 +1444,13 @@ git diff --check
 Expected: all JavaScript parses, all smoke tests pass, demo boundary passes,
 and no whitespace errors appear.
 
-- [ ] **Step 8: Clean up browser/test processes**
+- [x] **Step 8: Clean up browser/test processes**
 
 Inspect for leftover local server, test Chrome/Chrome Helper, webdriver,
 Playwright, Puppeteer, or headless browser processes. Stop only processes
 started by this task. Preserve the user's everyday browser profile and data.
 
-- [ ] **Step 9: Commit and push integrated QA fixes/evidence**
+- [x] **Step 9: Commit and push integrated QA fixes/evidence**
 
 Stage only Task 10 fixes and `design-qa.md`, inspect `git diff --cached`, commit
 with `test: verify manager workspace flows`, and push the current branch.
