@@ -1472,7 +1472,7 @@ with `test: verify manager workspace flows`, and push the current branch.
 - Consumes: fresh verification output and browser/PDF evidence from Task 10.
 - Produces: truthful bilingual demo evidence and synchronized plan status.
 
-- [ ] **Step 1: Update current canonical naming and build evidence**
+- [x] **Step 1: Update current canonical naming and build evidence**
 
 Use `Fly Namibia` in the active scenario and build summaries. Add a concise
 section covering:
@@ -1489,7 +1489,7 @@ section covering:
 - exact local test/browser/PDF verification actually performed;
 - explicit demo-only and production-readiness-not-claimed boundaries.
 
-- [ ] **Step 2: Synchronize this plan and active index**
+- [x] **Step 2: Synchronize this plan and active index**
 
 If all required checks pass, mark task checkboxes complete and set the index
 row to `ready-for-verification` with one next todo: stakeholder review/sign-off.
@@ -1497,7 +1497,7 @@ Do not move the plan to `completed/` without explicit stakeholder/user
 sign-off. If a required check is unavailable, leave the plan `active` or
 `blocked` as appropriate and record the exact gap.
 
-- [ ] **Step 3: Run docs/content checks**
+- [x] **Step 3: Run docs/content checks**
 
 Run:
 
@@ -1509,14 +1509,14 @@ rg -n "Department Manager Workspaces|department-manager-workspaces-plan|Findings
 Expected: no broken relative plan/spec references and status/next todo match the
 actual result.
 
-- [ ] **Step 4: Final evidence review**
+- [x] **Step 4: Final evidence review**
 
 Re-read the approved design acceptance criteria, this plan's objective,
 `docs/exec-plans/index.md`, `design-qa.md`, and the bilingual build summaries.
 Report only literal `verified locally`, `not run`, `blocked`, `demo-only`, and
 `production-readiness not claimed` evidence labels supported by this turn.
 
-- [ ] **Step 5: Commit and push evidence/plan closure**
+- [x] **Step 5: Commit and push evidence/plan closure**
 
 Stage only Task 11 documentation and plan-tracking files, inspect
 `git diff --cached`, commit with `docs: record manager workspace verification`,

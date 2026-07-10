@@ -33,16 +33,17 @@ başlangıç verisine döndürür.
 
 | Dosya | Amaç |
 |---|---|
-| `index.html` | Demo şeridi artık tarayıcıya kayıtlı frontend-only demo olduğunu belirtir; Cabin Inspection senaryosu için asset query token güncellendi. |
-| `css/styles.css` | Rol bazlı çalışma alanları, sadeleştirilmiş Inspector My Inspections ana ekranı, sade Inspector chrome, SMS checklist çalışma alanı, Regulatory Trace, offline outbox, AI taslak kontrolleri ve 390px mobil düzeni. |
-| `js/data.js` | Backend'e yakın sahte kayıtlar, workbook-derived Cabin Inspection seed checklist, açık status değerleri ve izole `localStorage` demo saklama yardımcıları. |
+| `index.html` | Demo şeridi frontend-only tarayıcı kalıcılığını belirtir; asset query token doğrulanmış manager-workspace UI'ını kapsar. |
+| `css/styles.css` | Kısıtlı Department/General Manager workbench'leri, split pane'ler, sticky satır aksiyonları, sınırlandırılmış menü/drawer'lar ve 390px mobil davranış dahil rol bazlı responsive UI. |
+| `js/data.js` | Backend'e yakın sahte kayıtlar, workbook-derived Cabin Inspection verisi, manager/GM demo kayıtları, açık status değerleri ve izole `localStorage` yardımcıları. |
 | `js/helpers.js` | Seçiciler, status yardımcıları, Cabin/PBE regulatory trace lookup, outbox yardımcıları ve demo badge yardımcıları. |
 | `js/work-items.js` | Audit, finding, CAP/evidence alt satırları, approval, planning ve admin kuyrukları için ortak table-first iş öğesi hazırlama katmanı. |
-| `js/views.js` | Mevcut ekranlar, Cabin Inspection checklist runner metinleri, Lead Inspector potential finding kararları, Service Provider Portal çerçevesi, yeniden kullanılabilir Regulatory Trace görünümü ve table-first iş kuyrukları. |
-| `js/app.js` | Rol bazlı deneyim navigasyonu, merkezi kalıcılık çağrıları, Cabin Inspection finding/CAP/evidence geçişleri, simüle offline geçişleri, AI karar geçişleri, stabil ID üretimi ve checklist satır seçimi. |
+| `js/manager-workspaces.js` | Saf Department/General Manager projection ve mutation'ları, ayrı rapor kararları, CAP/checklist/risk yardımcıları ve bağımlılıksız demo PDF üretimi. |
+| `js/views.js` | Mevcut ekranlara ek olarak Cabin Inspection akışı, kısıtlı manager/GM dashboard'ları, Findings Review, Inspection Team, Reports Approval, CAP Monitoring, Checklist Management ve Risk Dashboard'ları. |
+| `js/app.js` | Rol bazlı navigasyon, merkezi kalıcılık, manager/GM etkileşim dispatch'i, PDF/CSV indirmeleri, Cabin Inspection lifecycle geçişleri ve stabil ID üretimi. |
 | `docs/demo-evidence/BUILD_SUMMARY.md` | İngilizce kanonik özet. |
 | `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Bu Türkçe paydaş özeti. |
-| `tests/*.test.js` | Cabin Inspection hero path, checklist management, lifecycle geçişleri, demo sınırları ve mevcut workbench/governance yüzeyleri için güncellenmiş smoke kapsamı. |
+| `tests/*.test.js` | Cabin Inspection yolu, Department/General Manager workspaces, lifecycle/yetkilendirme sınırları, geçerli PDF üretimi, responsive kontratlar ve demo sınırları için smoke kapsamı. |
 
 Backend, veritabanı, API, framework geçişi, gerçek dosya saklama, gerçek AI
 servisi, gerçek regülasyon içe aktarma veya gerçek bildirim servisi eklenmedi.
@@ -518,6 +519,48 @@ Bilinen kalan UX notları (blocker değil): özel admin/config tabloları
 yerine hâlâ yatay kaydırma kullanıyor; kapalı satırlarda hem `Closed`
 priority pill hem `Closed` status badge görünüyor — bilinçli ama hafif
 tekrarlı.
+
+### Department ve General Manager workspaces - 2026-07-10
+
+Durum: frontend-only demo için **lokal olarak doğrulandı**; üretime hazır olma
+iddiası yoktur.
+
+Department Manager tam sekiz rotaya sahiptir: Dashboard, Audits, Reports
+Approval, Risk Dashboard, Inspection Team, Findings Review, CAP Monitoring ve
+Checklist Management. General Manager tam beş rotaya sahiptir: Dashboard,
+Report Approvals, Departments, Risk Dashboard ve Settings.
+
+Doğrulanan Department Manager davranışları; Fly Namibia Findings Review,
+manager-scope team/member/schedule/message aksiyonları, ayrı Preliminary ve
+Final Report kararları, tarayıcıda üretilen Final Report, Executive Summary ve
+Team Assignment PDF'leri, beş sekmeli ellipsis CAP drawer'ı, tarayıcı-local
+checklist package/version/section/question yönetimi ve risk filtreleri/CSV
+export içerir. CAP kabulü Finding'i kapatmaz. Department Manager Final Report
+onayı raporu yalnızca ileri gönderir; issue veya lock etmez.
+
+Doğrulanan General Manager davranışları; kısıtlı Dashboard, Departments ve
+cross-department Risk görünümleri, yorum zorunlu return ve configured final
+authorization içerir. Bu demoda Final Report'u yalnızca başarılı General
+Manager authorization issue ve lock eder.
+
+Taze doğrulama kanıtı:
+
+- Responsive ve PDF testleri dahil 11 odaklı manager smoke testi geçti.
+- `node --test tests/*.test.js`: 31 test geçti, 0 hata.
+- Tüm üst seviye `js/*.js` dosyaları için `node --check` geçti.
+- `node tests/demo-boundary-smoke.test.js` ve `git diff --check` geçti.
+- In-app Browser etkileşimleri `1536x864` ve `390x844` boyutlarında geçti;
+  değişen yollarda console warning/error yoktu ve ölçülen page-level mobil
+  yatay taşma yoktu.
+- Referans/current görsel karşılaştırmaları açık P0/P1/P2 bulgusu olmadan
+  geçti; kanıt defteri `design-qa.md` içinde `final result: passed` durumunda.
+- Üç taze indirme PDF 1.4, tek A4 sayfa, şifresiz ve `/usr/bin/file`, bundled
+  `pdfinfo`, sequential render ve görsel inceleme altında temizdi.
+
+Bunlar mock ve tarayıcı-local kontrol/artifact'lardır. Backend, veritabanı,
+API, gerçek authentication/authorization enforcement, gerçek file storage,
+gerçek notification delivery, production reporting engine, e-signature,
+framework migration veya deployment eklenmedi.
 
 ---
 

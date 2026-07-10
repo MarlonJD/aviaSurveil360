@@ -42,6 +42,34 @@ Fly Namibia için Cabin Inspection: PBE serviceability ve accessibility doğrula
 13. Finding yalnızca evidence kabulünden sonra kapanır.
 14. Manager dashboard güncellenir.
 
+## Department ve General Manager oversight uzantısı
+
+Aynı Fly Namibia demo verisi management-review yolunu da destekler:
+
+1. Department Manager yalnızca Dashboard, Audits, Reports Approval, Risk
+   Dashboard, Inspection Team, Findings Review, CAP Monitoring ve Checklist
+   Management rotalarını kullanır.
+2. Findings Review, ana `CAB-2026-001` lifecycle'ını değiştirmeden Fly Namibia
+   inspection finding'lerini ve ilgili raporu açar.
+3. Inspection Team aksiyonları yalnızca manager-scope demo member, schedule,
+   note, message, history ve indirilebilir Team Assignment PDF'ini günceller.
+4. Preliminary ve Final Report ayrı artifact'lardır. Department Manager ilgili
+   artifact için revision isteyebilir, return veya approve kararı verebilir ve
+   Final Report ile Executive Summary PDF'lerini indirebilir.
+5. Department Manager Final Report onayı raporu configured final authorized
+   stage'e iletir; raporu issue veya lock etmez.
+6. CAP Monitoring filtre, beş sekmeli detay incelemesi ve görünür update sağlar.
+   CAP kabulü veya update, Finding'i kapatmaz.
+7. Checklist Management published version'ları korur; tarayıcı-local demo
+   package, section ve question değişiklikleri draft/yeni version oluşturur.
+8. Risk Dashboard değerleri yalnızca management indicator'dır; otomatik legal,
+   enforcement, certificate veya closure aksiyonu tetiklemez.
+9. General Manager yalnızca Dashboard, Report Approvals, Departments, Risk
+   Dashboard ve Settings rotalarını kullanır. General Manager gerekli yorumla
+   Final Report'u return edebilir veya configured final authorization uygular.
+10. Bu demoda Final Report'u yalnızca başarılı configured General Manager
+    authorization issue ve lock eder.
+
 ## Demo mesajı
 
 Sistem, cabin emergency equipment checklist exception'ını izlenebilir CAA-auditee CAP ve evidence workflow'una dönüştürür. Workbook'tan türetilen checklist yalnızca demo/mock configuration verisidir; yasal veya düzenleyici kaynak değildir.

@@ -31,17 +31,18 @@ and return to seed data.
 
 | File | Purpose |
 |---|---|
-| `index.html` | Demo ribbon now states frontend-only browser persistence and the asset query token was bumped for the Cabin Inspection scenario update. |
-| `css/styles.css` | V2 responsive UI for role-based workspaces, simplified Inspector My Inspections home, simplified Inspector chrome, SMS checklist workspace, regulatory trace ribbons, governance panels, offline outbox, AI draft controls, and 390px mobile behavior. |
-| `js/data.js` | Backend-ready mock records, the workbook-derived Cabin Inspection seed checklist, status values, and isolated `localStorage` demo storage helpers. |
+| `index.html` | Demo ribbon states frontend-only browser persistence and the asset query token covers the verified manager-workspace UI. |
+| `css/styles.css` | V2 responsive UI for role-based workspaces, including the restricted Department/General Manager workbenches, split panes, sticky row actions, bounded menus/drawers, and 390px mobile behavior. |
+| `js/data.js` | Backend-ready mock records, workbook-derived Cabin Inspection data, manager/GM demo records, explicit status values, and isolated `localStorage` demo storage helpers. |
 | `js/helpers.js` | Selectors, status helpers, Cabin/PBE regulatory trace lookups, outbox helpers, and demo badge helpers. |
 | `js/work-items.js` | Shared table-first work-item shaping for audits, findings, CAP/evidence child rows, approvals, planning items, and admin queues. |
-| `js/views.js` | Existing screens plus Cabin Inspection checklist runner copy, Lead Inspector potential finding decisions, Service Provider Portal framing, reusable Regulatory Trace display, and table-first work queues. |
-| `js/app.js` | Role-based experience navigation, centralized persistence calls, Cabin Inspection finding/CAP/evidence transitions, simulated offline transitions, AI decision transitions, stable ID generation, and checklist row selection. |
+| `js/manager-workspaces.js` | Pure Department/General Manager projections and mutations, separate report decisions, CAP/checklist/risk helpers, and dependency-free demo PDF generation. |
+| `js/views.js` | Existing screens plus Cabin Inspection flow, restricted manager/GM dashboards, Findings Review, Inspection Team, Reports Approval, CAP Monitoring, Checklist Management, Risk Dashboards, and table-first work queues. |
+| `js/app.js` | Role-based navigation, centralized persistence, manager/GM interaction dispatch, PDF/CSV downloads, Cabin Inspection lifecycle transitions, simulated offline transitions, and stable ID generation. |
 | `docs/demo-evidence/BUILD_SUMMARY.md` | This English canonical build summary. |
 | `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Turkish companion summary for stakeholder handoff. |
 | `docs/exec-plans/index.md` | Updated only if the active plan status / next todo changes. |
-| `tests/*.test.js` | Focused smoke coverage updated for the Cabin Inspection hero path, checklist management, lifecycle transitions, demo boundaries, and existing workbench/governance surfaces. |
+| `tests/*.test.js` | Focused smoke coverage for the Cabin Inspection path, Department/General Manager workspaces, lifecycle and authorization boundaries, valid PDF construction, responsive contracts, and demo boundaries. |
 
 No backend, database, API, framework migration, real file storage, real AI
 service, real regulatory ingestion, or real notification service was added.
@@ -513,6 +514,48 @@ Known remaining UX notes (not blockers): bespoke admin/config tables
 scrolling on mobile rather than stacked rows; closed rows show a `Closed`
 priority pill and a `Closed` status badge, which is intentional but slightly
 repetitive.
+
+### Department and General Manager workspaces - 2026-07-10
+
+Status: **verified locally** for the frontend-only demo; production readiness
+is not claimed.
+
+The Department Manager now has exactly eight routes: Dashboard, Audits,
+Reports Approval, Risk Dashboard, Inspection Team, Findings Review, CAP
+Monitoring, and Checklist Management. The General Manager has exactly five:
+Dashboard, Report Approvals, Departments, Risk Dashboard, and Settings.
+
+Verified Department Manager behavior includes Fly Namibia Findings Review,
+manager-scoped team/member/schedule/message actions, separate Preliminary and
+Final Report decisions, browser-generated Final Report, Executive Summary, and
+Team Assignment PDFs, CAP Monitoring with a five-tab ellipsis drawer,
+browser-local checklist package/version/section/question management, and risk
+filters/CSV export. CAP acceptance does not close a Finding. Department Manager
+Final Report approval only forwards the report and does not issue or lock it.
+
+Verified General Manager behavior includes the restricted Dashboard,
+Departments and cross-department Risk views, required-comment return, and the
+configured final authorization. Only successful General Manager authorization
+issues and locks the Final Report in this demo.
+
+Fresh verification evidence:
+
+- 11 focused manager smoke tests passed, including responsive and PDF tests.
+- `node --test tests/*.test.js`: 31 tests passed, 0 failed.
+- `node --check` passed for every top-level `js/*.js` file.
+- `node tests/demo-boundary-smoke.test.js` and `git diff --check` passed.
+- In-app Browser interaction passed at `1536x864` and `390x844`; changed paths
+  had zero console warnings/errors and no measured page-level mobile overflow.
+- Reference/current visual comparisons passed with no open P0/P1/P2 finding;
+  the evidence ledger is `design-qa.md` with `final result: passed`.
+- The three fresh downloads were PDF 1.4, one A4 page, unencrypted, and clean
+  under `/usr/bin/file`, bundled `pdfinfo`, sequential render, and visual
+  inspection.
+
+These are mock, browser-local controls and artifacts. No backend, database,
+API, real authentication/authorization enforcement, real file storage, real
+notification delivery, production reporting engine, e-signature, framework
+migration, or deployment was added.
 
 ---
 

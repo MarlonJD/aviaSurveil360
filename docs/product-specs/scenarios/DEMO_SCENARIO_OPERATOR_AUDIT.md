@@ -42,6 +42,34 @@ Cabin Inspection for Fly Namibia: PBE serviceability and accessibility not confi
 13. Finding closes only after evidence acceptance.
 14. Manager dashboard updates.
 
+## Department and General Manager oversight extension
+
+The same Fly Namibia demo data also supports the management-review path:
+
+1. Department Manager uses only Dashboard, Audits, Reports Approval, Risk
+   Dashboard, Inspection Team, Findings Review, CAP Monitoring, and Checklist
+   Management.
+2. Findings Review opens Fly Namibia inspection findings and their related
+   report without replacing the primary `CAB-2026-001` lifecycle.
+3. Inspection Team actions update only manager-scoped demo members, schedules,
+   notes, messages, history, and the downloadable Team Assignment PDF.
+4. Preliminary and Final Reports are separate artifacts. Department Manager
+   may request revision, return, or approve the applicable artifact and may
+   download Final Report and Executive Summary PDFs.
+5. Department Manager Final Report approval forwards the report to the
+   configured final authorized stage; it does not issue or lock the report.
+6. CAP Monitoring allows filters, five-tab detail review, and visible updates.
+   CAP acceptance or an update does not close a Finding.
+7. Checklist Management preserves published versions while browser-local demo
+   package, section, and question changes create a draft/new version.
+8. Risk Dashboard values are management indicators only and do not trigger an
+   automatic legal, enforcement, certificate, or closure action.
+9. General Manager uses only Dashboard, Report Approvals, Departments, Risk
+   Dashboard, and Settings. The General Manager can return a Final Report with
+   a required comment or apply the configured final authorization.
+10. Only successful configured General Manager authorization issues and locks
+    the Final Report in this demo.
+
 ## Demo message
 
 The system turns a cabin emergency equipment checklist exception into a traceable CAA-auditee CAP and evidence workflow. The workbook-derived checklist is demo/mock configuration data and is not a legal or regulatory source.
