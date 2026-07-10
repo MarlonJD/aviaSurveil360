@@ -67,8 +67,7 @@ var NAV = {
     { view: 'settings', label: 'Settings', icon: '⚙' }
   ],
   finance: [
-    { section: 'Review' },
-    { view: 'planning', label: 'Planning', icon: '▤' }
+    { view: 'finance-review', label: 'Finance Review', icon: '▤' }
   ],
   executiveDirector: [
     { section: 'Workspace' },
@@ -98,8 +97,8 @@ var VIEW_TITLES = {
   'final-report-view': 'Final Report',
   'unit-manager-review': 'Department Manager Approval',
   'gm-dashboard': 'General Manager Dashboard', 'gm-report-approvals': 'Report Approvals',
-  'gm-departments': 'Departments', 'gm-risk': 'Risk Dashboard'
-  , 'service-provider-cap': 'Corrective Actions (CAP)', 'service-provider-preliminary-reports': 'Preliminary Reports',
+  'gm-departments': 'Departments', 'gm-risk': 'Risk Dashboard', 'finance-review': 'Finance Review',
+  'service-provider-cap': 'Corrective Actions (CAP)', 'service-provider-preliminary-reports': 'Preliminary Reports',
   'service-provider-final-reports': 'Final Reports', 'service-provider-report-preview': 'Report Preview'
 };
 
@@ -139,7 +138,8 @@ function homeView(role) {
   if (role === 'auditee') return 'service-provider-cap';
   if (role === 'admin') return 'templates';
   if (role === 'gm') return 'gm-dashboard';
-  if (role === 'finance' || role === 'executiveDirector') return 'planning';
+  if (role === 'finance') return 'finance-review';
+  if (role === 'executiveDirector') return 'planning';
   if (role === 'leadInspector') return 'lead-review';
   if (role === 'inspector') return 'inspector-assignments';
   return 'dashboard';
@@ -194,6 +194,8 @@ var AUDITEE_ALLOWED_VIEWS = {
   settings: true
 };
 
+var FINANCE_ALLOWED_VIEWS = { 'finance-review': true };
+
 function normalizeViewForRole() {
   if (state.role === 'inspector' && INSPECTOR_LEGACY_CAP_VIEWS[state.view]) {
     state.view = 'findings';
@@ -215,6 +217,12 @@ function normalizeViewForRole() {
   if (state.role === 'auditee' && !AUDITEE_ALLOWED_VIEWS[state.view]) {
     state.view = homeView(state.role);
     state.params = {};
+  }
+  if (state.role === 'finance') {
+    if (state.view === 'planning' || !FINANCE_ALLOWED_VIEWS[state.view]) {
+      state.view = 'finance-review';
+      state.params = {};
+    }
   }
 }
 
@@ -470,6 +478,7 @@ function renderContent() {
     case 'ai-assistant': return viewAiAssistant();
     case 'ssp-nasp': return viewSspNaspDashboard();
     case 'planning': return viewPlanningWorkspace();
+    case 'finance-review': return viewFinanceReviewWorkspace();
     case 'planning-approvals': return viewPlanningApprovals();
     case 'checklist-approvals': return viewChecklistApprovals();
     case 'question-bank': return viewQuestionBank();
@@ -1626,6 +1635,11 @@ function handleAction(act, el) {
     case 'planning-assign-lead': handlePlanningAssignLead(id); break;
     case 'planning-propose-team': handlePlanningProposeTeam(id); break;
     case 'planning-confirm-prep': handlePlanningConfirmPrep(id); break;
+    case 'finance-review-select': handleFinanceReviewSelect(id); break;
+    case 'finance-review-tab': handleFinanceReviewTab(tab); break;
+    case 'finance-review-choice': handleFinanceReviewChoice(el.getAttribute('data-decision')); break;
+    case 'finance-review-confirm': handleFinanceReviewConfirm(id); break;
+    case 'finance-review-document': handleFinanceReviewDocument(id); break;
     case 'report-approval': handleReportApproval(id, el.getAttribute('data-decision')); break;
     case 'inspection-status-cycle': handleInspectionStatusCycle(id); break;
     case 'inspection-download-checklist': handleInspectionDownload(id); break;
@@ -3360,6 +3374,80 @@ function handleServiceProviderDownloadAll(reportId) {
   downloadPlainTextFile(report.id + '_mock-package.txt', text);
   persistAfterAction();
   render();
+}
+
+function financeReviewSelectedPlan() {
+  var ui = state.financeUi || {};
+  return state.planningItems.filter(function (item) { return item.id === ui.selectedPlanId; })[0] || state.planningItems[0] || null;
+}
+
+function handleFinanceReviewFieldChange(field, target) {
+  var value = target && target.value !== undefined ? target.value : '';
+  if (field === 'finance-review-query') state.financeUi.query = value || '';
+  if (field === 'finance-review-status') state.financeUi.status = value || 'pending';
+  if (field === 'finance-review-comment') state.financeUi.comment = value || '';
+  persistAfterAction();
+  if (field !== 'finance-review-comment') render();
+}
+
+function handleFinanceReviewSelect(planId) {
+  var plan = state.planningItems.filter(function (item) { return item.id === planId; })[0];
+  if (!plan || !plan.budgetRequired) return;
+  state.financeUi.selectedPlanId = plan.id;
+  state.financeUi.openActionPlanId = plan.id;
+  state.financeUi.decision = '';
+  state.financeUi.comment = '';
+  persistAfterAction();
+  render();
+}
+
+function handleFinanceReviewTab(tab) {
+  var allowed = ['summary', 'breakdown', 'documents', 'history'];
+  state.params.tab = allowed.indexOf(tab) === -1 ? 'summary' : tab;
+  persistAfterAction();
+  render();
+}
+
+function handleFinanceReviewChoice(decision) {
+  if (['approve', 'return'].indexOf(decision) === -1) return;
+  state.financeUi.decision = decision;
+  state.financeUi.openActionPlanId = state.financeUi.selectedPlanId;
+  persistAfterAction();
+  render();
+}
+
+function handleFinanceReviewConfirm(planId) {
+  var plan = state.planningItems.filter(function (item) { return item.id === (planId || state.financeUi.selectedPlanId); })[0];
+  if (!plan) return;
+  var commentInput = document.getElementById('finance-review-comment');
+  var comment = commentInput && commentInput.value !== undefined ? commentInput.value : state.financeUi.comment;
+  state.financeUi.comment = comment || '';
+  var result = applyFinancePlanningDecision(plan, {
+    decision: state.financeUi.decision,
+    actor: { role: 'finance', name: ROLES.finance.user },
+    comment: state.financeUi.comment
+  });
+  if (!result.ok) {
+    toast('Finance decision not recorded', result.message, 'warn');
+    return;
+  }
+  var targetRole = state.financeUi.decision === 'approve' ? 'executiveDirector' : 'gm';
+  state.notifications.unshift({ id: 'N' + state.notifSeq++, role: targetRole, icon: '▤', text: result.message + ' ' + plan.id, time: 'Just now', unread: true });
+  addLog(state.financeUi.decision === 'approve' ? 'Finance approved planning budget' : 'Finance returned planning budget for revision', plan.id);
+  state.financeUi.decision = '';
+  state.financeUi.comment = '';
+  state.financeUi.openActionPlanId = '';
+  persistAfterAction();
+  render();
+  toast('Finance Review updated', result.message, 'ok');
+}
+
+function handleFinanceReviewDocument(documentId) {
+  var plan = financeReviewSelectedPlan();
+  if (!plan) return;
+  var names = { request: 'Budget_Request_' + plan.id + '.pdf', travel: 'Travel_Estimate_' + plan.id + '.xlsx', scope: 'Inspection_Scope_' + plan.id + '.pdf' };
+  var name = names[documentId] || String(documentId || 'Supporting_Document');
+  openModal(modalShell('Supporting Document', '<div class="lead-assigned-modal"><p><b>' + esc(name) + '</b></p><p class="small muted">Mock filename only. No real finance document storage or download service is included.</p></div>', '<button class="btn btn--primary" data-act="close-modal">Close</button>', false));
 }
 
 function leadReviewChecklistDownloadText(auditId) {
@@ -5333,6 +5421,7 @@ document.addEventListener('change', function (e) {
   if (field === 'manager-risk-department') handleManagerRiskFilter('department', e.target.value);
   if (field === 'manager-risk-inspection') handleManagerRiskFilter('inspection', e.target.value);
   if (field === 'manager-risk-level') handleManagerRiskFilter('risk', e.target.value);
+  if (field === 'finance-review-status' || field === 'finance-review-comment') handleFinanceReviewFieldChange(field, e.target);
   if (field === 'lead-review-decision') {
     handleLeadReviewDecision(e.target.getAttribute('data-id'), e.target.value);
   }
@@ -5400,6 +5489,7 @@ document.addEventListener('input', function (e) {
   if (field === 'service-provider-cap-query' || field === 'service-provider-preliminary-query' || field === 'service-provider-final-query') {
     handleServiceProviderFieldChange(field, e.target);
   }
+  if (field === 'finance-review-query' || field === 'finance-review-comment') handleFinanceReviewFieldChange(field, e.target);
   if (field === 'final-report-content') {
     handleFinalReportPrepareFieldChange(field, e.target);
   }

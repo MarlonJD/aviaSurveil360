@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const elements = new Map();
 function stubElement(id) {
-  if (!elements.has(id)) elements.set(id, { id, value: '', innerHTML: '', hidden: false, style: {}, addEventListener() {} });
+  if (!elements.has(id)) elements.set(id, { id, value: '', innerHTML: '', hidden: false, style: {}, addEventListener() {}, appendChild() {} });
   return elements.get(id);
 }
 const context = {
@@ -105,10 +105,18 @@ assert.equal(result.ok, true);
 assert.equal(context.approvalSummary(returnPlan).ownerRole, 'gm');
 assert.equal(returnPlan.preparation.status, 'not_released');
 
-context.state = state;
+const uiState = context.freshState();
+const uiPlan = uiState.planningItems[0];
+context.applyApprovalDecision(uiPlan, {
+  decision: 'forward',
+  actor: { role: 'gm', name: context.ROLES.gm.user },
+  comment: 'Forwarded for budget review.'
+});
+context.state = uiState;
 context.state.role = 'finance';
 context.state.view = 'finance-review';
-const html = context.routeView();
+context.state.params = {};
+let html = context.renderContent();
 assert.match(html, /Finance Review/);
 assert.match(html, /Budget Summary/);
 assert.match(html, /Budget Breakdown/);
@@ -117,5 +125,23 @@ assert.match(html, /Comments &amp; History/);
 assert.match(html, /Approve Budget/);
 assert.match(html, /Return for Revision/);
 assert.doesNotMatch(html, /Finance Dashboard|Approve &amp; Sign|Release to Department/);
+
+context.handleAction('finance-review-tab', { getAttribute(name) { return name === 'data-tab' ? 'breakdown' : ''; } });
+html = context.document.getElementById('app-root').innerHTML;
+assert.match(html, /Travel/);
+assert.match(html, /USD 12,500/);
+
+context.handleAction('finance-review-choice', { getAttribute(name) { return name === 'data-decision' ? 'approve' : ''; } });
+assert.equal(context.state.financeUi.decision, 'approve');
+context.document.getElementById('finance-review-comment').value = 'Budget is available for the requested scope.';
+context.handleAction('finance-review-confirm', { getAttribute(name) { return name === 'data-id' ? uiPlan.id : ''; } });
+assert.equal(context.approvalSummary(uiPlan).ownerRole, 'executiveDirector');
+assert.equal(uiPlan.preparation.status, 'not_released');
+assert.equal(uiPlan.mockApprovalSignature, undefined);
+assert.equal(context.state.notifications[0].role, 'executiveDirector');
+
+context.state.view = 'planning';
+context.normalizeViewForRole();
+assert.equal(context.state.view, 'finance-review', 'legacy Finance planning route redirects to the focused workspace');
 
 console.log('finance-review-workspace-smoke: ok');

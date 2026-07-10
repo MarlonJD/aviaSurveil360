@@ -509,6 +509,68 @@ function viewPlanningBoard() {
   return viewPlanningWorkspace('preparation');
 }
 
+function financeReviewStatus(item) {
+  var summary = approvalSummary(item);
+  if (item.financeReview && item.financeReview.decision === 'not_approved') return { key: 'returned', label: 'Returned for Revision', tone: 'warn' };
+  if (item.financeReview && /^approved/.test(item.financeReview.decision || '')) return { key: 'approved', label: 'Budget Approved', tone: 'ok' };
+  if (summary.ownerRole === 'finance') return { key: 'pending', label: 'Pending Finance Review', tone: 'warn' };
+  return { key: 'waiting', label: 'Waiting for ' + summary.ownerLabel, tone: 'neutral' };
+}
+
+function financeReviewRows(ui) {
+  var query = (ui.query || '').trim().toLowerCase();
+  return state.planningItems.filter(function (item) {
+    if (!item.budgetRequired) return false;
+    var status = financeReviewStatus(item);
+    if (ui.status !== 'all' && ui.status !== status.key) return false;
+    return !query || [item.id, item.title, item.department, item.organization, item.riskCategory].join(' ').toLowerCase().indexOf(query) !== -1;
+  });
+}
+
+function financeMoney(amount, currency) {
+  return esc((currency || 'USD') + ' ' + Number(amount || 0).toLocaleString('en-US'));
+}
+
+function financeReviewTabs(active) {
+  return '<div class="finance-review-tabs">' + [
+    ['summary', 'Budget Summary'], ['breakdown', 'Budget Breakdown'], ['documents', 'Supporting Documents'], ['history', 'Comments & History']
+  ].map(function (tab) { return '<button class="' + (active === tab[0] ? 'is-active' : '') + '" data-act="finance-review-tab" data-tab="' + tab[0] + '">' + esc(tab[1]) + '</button>'; }).join('') + '</div>';
+}
+
+function financeReviewTabBody(item, active) {
+  if (active === 'breakdown') {
+    return '<section class="finance-review-panel"><h2>Budget Breakdown</h2><div class="responsive-table-shell"><table class="finance-budget-table"><thead><tr><th>Category</th><th>Amount</th><th>Share</th></tr></thead><tbody>' + item.budget.lines.map(function (line) { return '<tr><td>' + esc(line.category) + '</td><td>' + financeMoney(line.amount, item.budget.currency) + '</td><td>' + esc(String(Math.round((line.amount / item.budget.requested) * 100))) + '%</td></tr>'; }).join('') + '<tr class="is-total"><td>Total Requested</td><td>' + financeMoney(planningBudgetTotal(item), item.budget.currency) + '</td><td>100%</td></tr></tbody></table></div></section>';
+  }
+  if (active === 'documents') {
+    return '<section class="finance-review-panel"><h2>Supporting Documents</h2><p>Mock filenames only; no real finance document storage is used.</p><div class="finance-document-list"><button data-act="finance-review-document" data-id="request">Budget Request · ' + esc(item.id) + '</button><button data-act="finance-review-document" data-id="travel">Travel Estimate · ' + esc(item.id) + '</button><button data-act="finance-review-document" data-id="scope">Inspection Scope · ' + esc(item.id) + '</button></div></section>';
+  }
+  if (active === 'history') {
+    return '<section class="finance-review-panel"><h2>Comments &amp; History</h2>' + approvalHistoryHtml(item) + '</section>';
+  }
+  return '<section class="finance-review-panel"><h2>Budget Summary</h2><div class="finance-summary-grid"><div><span>Requested Budget</span><b>' + financeMoney(item.budget.requested, item.budget.currency) + '</b></div><div><span>Available for Plan</span><b>' + financeMoney(item.budget.availableForPlan, item.budget.currency) + '</b></div><div><span>Remaining Annual Budget</span><b>' + financeMoney(item.budget.remainingAnnualBudget, item.budget.currency) + '</b></div><div><span>Budget Reconciliation</span><b>' + financeMoney(planningBudgetTotal(item), item.budget.currency) + ' / ' + financeMoney(item.budget.requested, item.budget.currency) + '</b></div></div><h3>Resource justification</h3><p>' + esc(item.purpose) + '</p><div class="callout"><b>Finance boundary:</b> Finance reviews budget and resource justification only. It cannot sign or release the plan, change inspection scope, close a Finding, or make a regulatory decision.</div></section>';
+}
+
+function financeReviewDecisionPanel(item, ui) {
+  var summary = approvalSummary(item);
+  var eligible = summary.ownerRole === 'finance' && !summary.outcome;
+  var selected = ui.decision;
+  return '<section class="finance-review-decision"><div><span>Current owner</span><b>' + esc(summary.ownerLabel) + '</b><small>' + esc(summary.nextAction) + '</small></div><div class="finance-decision-buttons"><button class="btn btn--primary" data-act="finance-review-choice" data-decision="approve"' + (eligible ? '' : ' disabled') + '>Approve Budget</button><button class="btn" data-act="finance-review-choice" data-decision="return"' + (eligible ? '' : ' disabled') + '>Return for Revision</button></div>' +
+    (selected ? '<div class="finance-decision-form"><h3>' + esc(selected === 'approve' ? 'Approve Budget' : 'Return for Revision') + '</h3><label>Decision note' + (selected === 'return' ? ' <span class="req">*</span>' : ' (optional)') + '<textarea id="finance-review-comment" data-field="finance-review-comment" placeholder="' + esc(selected === 'return' ? 'Required: explain what must be revised.' : 'Optional finance note.') + '">' + esc(ui.comment || '') + '</textarea></label><button class="btn btn--primary" data-act="finance-review-confirm" data-id="' + esc(item.id) + '">Confirm Finance Decision</button></div>' : '') + '</section>';
+}
+
+function viewFinanceReviewWorkspace() {
+  var ui = state.financeUi;
+  var all = state.planningItems.filter(function (item) { return item.budgetRequired; });
+  var rows = financeReviewRows(ui);
+  var selected = all.filter(function (item) { return item.id === ui.selectedPlanId; })[0] || rows[0] || all[0] || null;
+  if (!selected) return pageHead('Finance Review', 'Budget and resource review queue.') + '<div class="empty">No budget-required plans.</div>';
+  var activeTab = state.params && ['summary', 'breakdown', 'documents', 'history'].indexOf(state.params.tab) !== -1 ? state.params.tab : 'summary';
+  var pending = all.filter(function (item) { return approvalSummary(item).ownerRole === 'finance'; });
+  var totalBudget = all.reduce(function (total, item) { return total + Number(item.budget && item.budget.requested || 0); }, 0);
+  var rowHtml = rows.length ? rows.map(function (item) { var status = financeReviewStatus(item); return '<tr class="' + (selected.id === item.id ? 'is-selected' : '') + '"><td><button class="service-link" data-act="finance-review-select" data-id="' + esc(item.id) + '">' + esc(item.id) + '</button><small>' + esc(item.title) + '</small></td><td>' + esc(item.department) + '</td><td>' + financeMoney(item.budget.requested, item.budget.currency) + '</td><td>' + esc(approvalSummary(item).ownerLabel) + '</td><td>' + demoBadge(status.label, status.tone) + '</td><td><button class="btn btn--sm" data-act="finance-review-select" data-id="' + esc(item.id) + '">Review</button></td></tr>'; }).join('') : '<tr><td colspan="6"><div class="empty">No plans match the Finance filters.</div></td></tr>';
+  return '<div class="finance-review-page">' + pageHead('Finance Review', 'Approve the requested budget or return it to General Manager action for revision.') + guardrailStrip([{ label: 'Budget approval only', tone: 'info' }, { label: 'No plan signature or release', tone: 'warn' }, { label: 'Frontend-only demo' }]) + '<div class="finance-summary-strip"><div><span>Pending Finance Review</span><b>' + esc(String(pending.length)) + '</b></div><div><span>Total Requested Budget</span><b>' + financeMoney(totalBudget, selected.budget.currency) + '</b></div><div><span>Approval path</span><b>Department Manager → GM → Finance Review → Executive Director</b></div></div><div class="finance-filter-row"><label>Search<input type="search" data-field="finance-review-query" value="' + esc(ui.query) + '" placeholder="Plan, department, organization"></label><label>Status<select data-field="finance-review-status"><option value="pending"' + (ui.status === 'pending' ? ' selected' : '') + '>Pending</option><option value="approved"' + (ui.status === 'approved' ? ' selected' : '') + '>Approved</option><option value="returned"' + (ui.status === 'returned' ? ' selected' : '') + '>Returned</option><option value="all"' + (ui.status === 'all' ? ' selected' : '') + '>All</option></select></label></div><div class="finance-review-layout"><main><section class="finance-review-queue"><h2>Review Queue</h2><div class="responsive-table-shell"><table><thead><tr><th>Plan</th><th>Department</th><th>Requested</th><th>Current Owner</th><th>Status</th><th>Action</th></tr></thead><tbody>' + rowHtml + '</tbody></table></div></section><section class="finance-review-detail"><div class="finance-review-title"><div><span>Selected Plan</span><h2>' + esc(selected.title) + '</h2><p>' + esc(selected.id + ' · ' + selected.organization) + '</p></div>' + demoBadge(financeReviewStatus(selected).label, financeReviewStatus(selected).tone) + '</div>' + financeReviewTabs(activeTab) + financeReviewTabBody(selected, activeTab) + '</section></main><aside><section class="finance-review-rail"><h2>Approval Flow</h2>' + approvalProgressHtml(selected) + '</section>' + financeReviewDecisionPanel(selected, ui) + '</aside></div></div>';
+}
+
 function activeChecklistApproval() {
   var checklist = state.managedChecklists && state.managedChecklists.length ? state.managedChecklists[0] : null;
   if (!checklist) return null;
