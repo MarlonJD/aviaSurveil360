@@ -157,12 +157,14 @@ function serviceProviderCapRows(targetState, organizationId, filters) {
   var query = String(opts.query || '').trim().toLowerCase();
   var rows = serviceProviderVisibleFindings(target, organizationId).map(function (finding) {
     var audit = target.audits && target.audits.filter(function (candidate) { return candidate.id === finding.auditId; })[0];
+    var rawAuditId = String(finding.auditId || '').trim();
+    var auditId = rawAuditId && ['null', 'undefined'].indexOf(rawAuditId.toLowerCase()) === -1 ? rawAuditId : 'Not configured';
     var meta = typeof FINDING_STATUS !== 'undefined' ? FINDING_STATUS[finding.status] : null;
     var progress = serviceProviderCapProgress(finding);
     return {
       id: finding.id,
-      auditId: finding.auditId,
-      audit: audit ? (audit.ref || audit.type || audit.id) : finding.auditId,
+      auditId: auditId,
+      audit: audit ? (audit.ref || audit.type || audit.id) : auditId,
       title: finding.title,
       level: typeof SEVERITY !== 'undefined' && SEVERITY[finding.severity] ? SEVERITY[finding.severity].label : String(finding.severity),
       severity: finding.severity,

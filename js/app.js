@@ -681,15 +681,25 @@ function setRole(roleKey) {
 }
 
 /* ----------------------------- Modals ----------------------------- */
+var modalReturnFocus = null;
 function openModal(html) {
   var host = document.getElementById('modal-host');
+  modalReturnFocus = document.activeElement && typeof document.activeElement.focus === 'function' ? document.activeElement : null;
   host.innerHTML = html;
   host.hidden = false;
+  if (host.setAttribute) host.setAttribute('aria-hidden', 'false');
+  if (host.querySelector) {
+    var first = host.querySelector('[autofocus], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex="0"]');
+    if (first && typeof first.focus === 'function') setTimeout(function () { first.focus(); }, 0);
+  }
 }
 function closeModal() {
   var host = document.getElementById('modal-host');
   host.hidden = true;
   host.innerHTML = '';
+  if (host.setAttribute) host.setAttribute('aria-hidden', 'true');
+  if (modalReturnFocus && typeof modalReturnFocus.focus === 'function') modalReturnFocus.focus();
+  modalReturnFocus = null;
 }
 
 /* ----------------------------- Mock file pick ----------------------------- */
@@ -5720,12 +5730,37 @@ document.addEventListener('click', function (e) {
       state.inspectionTeamUi.openMenuAuditId = '';
       transientChanged = true;
     }
+    if (state && state.executiveDirectorUi && state.executiveDirectorUi.openPlanActionId) {
+      state.executiveDirectorUi.openPlanActionId = '';
+      transientChanged = true;
+    }
     if (transientChanged) render();
     return;
   }
   var act = el.getAttribute('data-act');
   e.preventDefault();
   handleAction(act, el);
+});
+
+document.addEventListener('keydown', function (e) {
+  if (!e || e.key !== 'Escape') return;
+  var modalHost = document.getElementById('modal-host');
+  if (modalHost && !modalHost.hidden) {
+    e.preventDefault();
+    closeModal();
+    return;
+  }
+  var changed = false;
+  if (state && state.ui && (state.ui.notifOpen || state.ui.menuOpen)) {
+    state.ui.notifOpen = false;
+    state.ui.menuOpen = false;
+    changed = true;
+  }
+  if (state && state.executiveDirectorUi && state.executiveDirectorUi.openPlanActionId) {
+    state.executiveDirectorUi.openPlanActionId = '';
+    changed = true;
+  }
+  if (changed) render();
 });
 
 document.addEventListener('change', function (e) {

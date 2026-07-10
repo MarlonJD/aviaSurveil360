@@ -16796,3 +16796,37 @@ td .sp-report-badge {
   .executive-report-canvas { display: block !important; width: auto !important; margin: 0 !important; padding: 0 !important; border: 0 !important; background: #fff !important; }
   .state-final-report-doc { zoom: 1 !important; width: 100% !important; min-height: 0; margin: 0; border: 0; box-shadow: none; }
 }
+
+/* Final remediation accessibility and small-screen control reachability */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid rgba(47, 111, 214, .34);
+  outline-offset: 2px;
+}
+.executive-planning-queue .executive-row-menu { position: static; width: 100%; min-width: 180px; margin-top: 6px; box-shadow: none; }
+
+@media (max-width: 640px) {
+  .modal-host { place-items: stretch; padding: 0; }
+  .modal,
+  .modal--wide,
+  .modal--final-submit { width: 100%; max-width: none; height: 100dvh; max-height: none; border-radius: 0; }
+  .modal__body { flex: 1; }
+  .modal__foot { align-items: stretch; flex-direction: column-reverse; }
+  .modal__foot .btn { width: 100%; }
+  .executive-planning-layout,
+  .executive-report-review-layout { display: flex; flex-direction: column; }
+  .executive-planning-layout > main,
+  .executive-report-review-layout > main { display: contents; }
+  .executive-planning-queue { order: 1; }
+  .executive-plan-detail,
+  .executive-report-review-layout .executive-plan-detail { order: 3; }
+  .executive-planning-layout > aside,
+  .executive-report-review-layout > aside { display: contents; }
+  .executive-plan-summary { order: 2; }
+  .executive-decision-panel,
+  .executive-report-decision { order: 4; }
+}
