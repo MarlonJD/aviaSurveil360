@@ -23,12 +23,10 @@ var NAV = {
     { view: 'reports', label: 'Reports', icon: '□' }
   ],
   auditee: [
-    { section: 'Service Provider Portal' },
-    { view: 'reports', label: 'Received Reports', icon: '□', filter: 'received', badge: '1' },
-    { view: 'my-findings', label: 'My CAPs', icon: '✓', badge: '5' },
-    { view: 'messages', label: 'Communications', icon: '✉', badge: '1' },
-    { section: 'Workspace' },
-    { view: 'my-findings', label: 'CAP Management', icon: '▤' },
+    { view: 'service-provider-cap', label: 'Corrective Actions (CAP)', icon: '✓', badge: '4' },
+    { view: 'service-provider-preliminary-reports', label: 'Preliminary Reports', icon: '□' },
+    { view: 'service-provider-final-reports', label: 'Final Reports', icon: '□' },
+    { view: 'messages', label: 'Messages', icon: '✉', badge: '1' },
     { view: 'reports', label: 'Documents', icon: '□', filter: 'documents' },
     { view: 'settings', label: 'Settings', icon: '⚙' }
   ],
@@ -101,6 +99,8 @@ var VIEW_TITLES = {
   'unit-manager-review': 'Department Manager Approval',
   'gm-dashboard': 'General Manager Dashboard', 'gm-report-approvals': 'Report Approvals',
   'gm-departments': 'Departments', 'gm-risk': 'Risk Dashboard'
+  , 'service-provider-cap': 'Corrective Actions (CAP)', 'service-provider-preliminary-reports': 'Preliminary Reports',
+  'service-provider-final-reports': 'Final Reports', 'service-provider-report-preview': 'Report Preview'
 };
 
 var ROLE_DESC = {
@@ -136,7 +136,7 @@ var ROLE_ORDER = ['inspector', 'leadInspector', 'manager', 'gm', 'finance', 'exe
 var pickedFiles = {};
 
 function homeView(role) {
-  if (role === 'auditee') return 'reports';
+  if (role === 'auditee') return 'service-provider-cap';
   if (role === 'admin') return 'templates';
   if (role === 'gm') return 'gm-dashboard';
   if (role === 'finance' || role === 'executiveDirector') return 'planning';
@@ -184,6 +184,16 @@ var GENERAL_MANAGER_ALLOWED_VIEWS = {
   settings: true
 };
 
+var AUDITEE_ALLOWED_VIEWS = {
+  'service-provider-cap': true,
+  'service-provider-preliminary-reports': true,
+  'service-provider-final-reports': true,
+  'service-provider-report-preview': true,
+  messages: true,
+  reports: true,
+  settings: true
+};
+
 function normalizeViewForRole() {
   if (state.role === 'inspector' && INSPECTOR_LEGACY_CAP_VIEWS[state.view]) {
     state.view = 'findings';
@@ -199,6 +209,10 @@ function normalizeViewForRole() {
     state.params = {};
   }
   if (state.role === 'gm' && !GENERAL_MANAGER_ALLOWED_VIEWS[state.view]) {
+    state.view = homeView(state.role);
+    state.params = {};
+  }
+  if (state.role === 'auditee' && !AUDITEE_ALLOWED_VIEWS[state.view]) {
     state.view = homeView(state.role);
     state.params = {};
   }
@@ -480,6 +494,10 @@ function renderContent() {
     case 'gm-report-approvals': return viewGeneralManagerReportApprovals();
     case 'gm-departments': return viewGeneralManagerDepartments();
     case 'gm-risk': return viewGeneralManagerRiskDashboard();
+    case 'service-provider-cap': return viewServiceProviderCapWorkspace();
+    case 'service-provider-preliminary-reports': return viewServiceProviderPreliminaryReports();
+    case 'service-provider-final-reports': return viewServiceProviderFinalReports();
+    case 'service-provider-report-preview': return viewServiceProviderReportPreview();
     case 'calendar': return viewCalendar();
     case 'audit-detail': return viewAuditDetail();
     case 'checklist': return viewChecklistRunner();
@@ -623,9 +641,7 @@ function setRole(roleKey) {
     ensureInspectorAssignmentsUi().status = 'all';
   }
   if (roleKey === 'auditee') {
-    ensureServiceProviderReportUi();
-    state.selectedFilters.reports = 'received';
-    state.params.filter = 'received';
+    ensureServiceProviderUiState();
   }
   closeModal();
   persistAfterAction();
@@ -1569,9 +1585,15 @@ function handleAction(act, el) {
     case 'open': go('finding', { findingId: id }); break;
     case 'report': go('report', { findingId: id }); break;
 
-    case 'cap': openModal(modalCapForm(findingById(id))); break;
+    case 'cap':
+      var capFinding = state.role === 'auditee' ? serviceProviderScopedFinding(id) : findingById(id);
+      if (capFinding) openModal(modalCapForm(capFinding));
+      break;
     case 'submit-cap': submitCap(id); break;
-    case 'evidence': openModal(modalEvidence(findingById(id))); break;
+    case 'evidence':
+      var evidenceFinding = state.role === 'auditee' ? serviceProviderScopedFinding(id) : findingById(id);
+      if (evidenceFinding) openModal(modalEvidence(evidenceFinding));
+      break;
     case 'submit-evidence': submitEvidence(id); break;
 
     case 'reviewcap': openModal(modalReviewCap(findingById(id))); break;
@@ -1680,6 +1702,15 @@ function handleAction(act, el) {
     case 'service-report-confirm-cap': handleServiceProviderConfirmCap(id); break;
     case 'service-report-view-finding': handleServiceProviderViewFinding(id); break;
     case 'service-report-document': handleServiceProviderDocument(id); break;
+    case 'service-provider-cap-group': handleServiceProviderCapGroup(el.getAttribute('data-group')); break;
+    case 'service-provider-cap-select': handleServiceProviderCapSelect(id); break;
+    case 'service-provider-cap-respond': handleServiceProviderCapRespond(id); break;
+    case 'service-provider-report-select': handleServiceProviderReportSelect(id, el.getAttribute('data-report-type')); break;
+    case 'service-provider-report-view': handleServiceProviderReportView(id); break;
+    case 'service-provider-message': handleServiceProviderMessage(id); break;
+    case 'service-provider-message-send': handleServiceProviderMessageSend(id); break;
+    case 'service-provider-document': handleServiceProviderSafeDocument(id, el.getAttribute('data-file')); break;
+    case 'service-provider-download-all': handleServiceProviderDownloadAll(id); break;
     case 'cap-review-provider': handleCapReviewProvider(id); break;
     case 'cap-review-row': handleCapReviewRow(id); break;
     case 'cap-review-tab': handleCapReviewTab(id, tab); break;
@@ -2206,6 +2237,35 @@ function ensureServiceProviderReportUi() {
   }
   if (!state.serviceProviderReportUi.downloadedAt) state.serviceProviderReportUi.downloadedAt = '';
   return state.serviceProviderReportUi;
+}
+
+function serviceProviderOrganizationId() {
+  return ROLES.auditee.org;
+}
+
+function ensureServiceProviderUiState() {
+  if (!state.serviceProviderUi) state.serviceProviderUi = {};
+  var defaults = {
+    cap: { group: 'all', auditId: 'all', level: 'all', status: 'all', query: '', selectedFindingId: 'CAB-2026-001' },
+    preliminaryReports: { auditId: 'all', status: 'all', query: '', selectedReportId: 'PR-2026-018' },
+    finalReports: { auditId: 'all', year: 'all', capRequirement: 'all', query: '', selectedReportId: 'FR-2026-018' },
+    reportPreview: { reportId: '', zoom: 100, downloadedAt: '', downloadedDocumentIds: {}, messageSentAt: '', messageText: '' }
+  };
+  Object.keys(defaults).forEach(function (key) {
+    state.serviceProviderUi[key] = Object.assign({}, defaults[key], state.serviceProviderUi[key] || {});
+  });
+  if (!state.serviceProviderUi.reportPreview.downloadedDocumentIds || typeof state.serviceProviderUi.reportPreview.downloadedDocumentIds !== 'object') {
+    state.serviceProviderUi.reportPreview.downloadedDocumentIds = {};
+  }
+  return state.serviceProviderUi;
+}
+
+function serviceProviderScopedFinding(findingId) {
+  return serviceProviderFindingById(state, serviceProviderOrganizationId(), findingId);
+}
+
+function serviceProviderScopedReport(reportId) {
+  return serviceProviderReportById(state, serviceProviderOrganizationId(), reportId);
 }
 
 function leadReviewExecutionPackage() {
@@ -3171,7 +3231,135 @@ function handleServiceProviderViewFinding(findingId) {
 }
 
 function handleServiceProviderDocument(documentId) {
-  toast('Document action', (documentId || 'Document') + ' is available as a mock item in this frontend demo. No real file was downloaded.', 'info');
+  handleServiceProviderSafeDocument('', documentId || 'Document');
+}
+
+function handleServiceProviderFieldChange(field, target) {
+  var ui = ensureServiceProviderUiState();
+  var value = target && target.value !== undefined ? target.value : '';
+  if (field === 'service-provider-cap-audit') ui.cap.auditId = value || 'all';
+  if (field === 'service-provider-cap-level') ui.cap.level = value || 'all';
+  if (field === 'service-provider-cap-status') ui.cap.status = value || 'all';
+  if (field === 'service-provider-cap-query') ui.cap.query = value || '';
+  if (field === 'service-provider-preliminary-audit') ui.preliminaryReports.auditId = value || 'all';
+  if (field === 'service-provider-preliminary-status') ui.preliminaryReports.status = value || 'all';
+  if (field === 'service-provider-preliminary-query') ui.preliminaryReports.query = value || '';
+  if (field === 'service-provider-final-audit') ui.finalReports.auditId = value || 'all';
+  if (field === 'service-provider-final-year') ui.finalReports.year = value || 'all';
+  if (field === 'service-provider-final-cap') ui.finalReports.capRequirement = value || 'all';
+  if (field === 'service-provider-final-query') ui.finalReports.query = value || '';
+  persistAfterAction();
+  render();
+}
+
+function handleServiceProviderCapGroup(group) {
+  var allowed = ['all', 'open', 'in-progress', 'awaiting-review', 'closed'];
+  var ui = ensureServiceProviderUiState();
+  ui.cap.group = allowed.indexOf(group) === -1 ? 'all' : group;
+  persistAfterAction();
+  render();
+}
+
+function handleServiceProviderCapSelect(findingId) {
+  var finding = serviceProviderScopedFinding(findingId);
+  if (!finding) return;
+  ensureServiceProviderUiState().cap.selectedFindingId = finding.id;
+  persistAfterAction();
+  render();
+}
+
+function handleServiceProviderCapRespond(findingId) {
+  var finding = serviceProviderScopedFinding(findingId);
+  if (!finding) {
+    toast('Record unavailable', 'This Finding is not available to your organization.', 'warn');
+    return;
+  }
+  ensureServiceProviderUiState().cap.selectedFindingId = finding.id;
+  if (finding.status === 'WAITING_CAP' || finding.status === 'CAP_MORE_INFO') {
+    openModal(modalCapForm(finding));
+    return;
+  }
+  if (finding.status === 'EVIDENCE_REQUIRED' || finding.status === 'EVIDENCE_MORE_INFO') {
+    openModal(modalEvidence(finding));
+    return;
+  }
+  var meta = FINDING_STATUS[finding.status] || FINDING_STATUS.WAITING_CAP;
+  openModal(modalShell('Corrective Action Status',
+    '<div class="lead-assigned-modal"><p><b>' + esc(finding.id + ' · ' + finding.title) + '</b></p><div class="metaline">' + metaItem('Status', meta.label) + metaItem('Current owner', roleName(meta.ownerRole)) + metaItem('Next action', meta.next) + metaItem('Due Date', finding.dueDate ? fmtDate(finding.dueDate) : 'Not configured') + '</div><p class="small muted mt-12">Submitted CAP or Evidence remains open until the CAA accepts the required evidence or records an authorized closure.</p></div>',
+    '<button class="btn btn--primary" data-act="close-modal">Close</button>', false));
+}
+
+function handleServiceProviderReportSelect(reportId, reportType) {
+  var report = serviceProviderScopedReport(reportId);
+  if (!report) return;
+  var ui = ensureServiceProviderUiState();
+  if (normalizeReportType(reportType || report.reportType) === 'Final Report') ui.finalReports.selectedReportId = report.id;
+  else ui.preliminaryReports.selectedReportId = report.id;
+  persistAfterAction();
+  render();
+}
+
+function handleServiceProviderReportView(reportId) {
+  var report = serviceProviderScopedReport(reportId);
+  if (!report) {
+    toast('Report unavailable', 'This Report ID is not released to your organization.', 'warn');
+    return;
+  }
+  var ui = ensureServiceProviderUiState();
+  ui.reportPreview.reportId = report.id;
+  state.view = 'service-provider-report-preview';
+  state.params = { reportId: report.id };
+  persistAfterAction();
+  render();
+}
+
+function handleServiceProviderMessage(reportId) {
+  var report = serviceProviderScopedReport(reportId);
+  if (!report) return;
+  openModal(modalShell('Message CAA Inspector',
+    '<div class="lead-assigned-modal"><p><b>' + esc(report.id + ' · ' + report.organization) + '</b></p><label><span>Message</span><textarea id="service-provider-message-text" rows="5" placeholder="Ask a report or corrective-action question."></textarea></label><p class="small muted mt-12">This creates an in-UI demo message only. No email, SMS, or external notification is sent.</p></div>',
+    '<button class="btn" data-act="close-modal">Cancel</button><button class="btn btn--primary" data-act="service-provider-message-send" data-id="' + esc(report.id) + '">Send Message</button>', false));
+}
+
+function handleServiceProviderMessageSend(reportId) {
+  var report = serviceProviderScopedReport(reportId);
+  var message = normalizeApprovalText(val('service-provider-message-text'));
+  if (!report || !message) {
+    toast('Message required', 'Enter a message before sending.', 'warn');
+    return;
+  }
+  var preview = ensureServiceProviderUiState().reportPreview;
+  preview.messageText = message;
+  preview.messageSentAt = logTimestamp();
+  state.notifications.unshift({ id: 'N' + state.notifSeq++, role: 'inspector', icon: '✉', text: 'Service Provider message on ' + report.id + ': ' + message, time: 'Just now', unread: true });
+  addLog('Service Provider sent in-UI report message', report.id);
+  closeModal();
+  persistAfterAction();
+  render();
+}
+
+function handleServiceProviderSafeDocument(reportId, fileName) {
+  var report = reportId ? serviceProviderScopedReport(reportId) : null;
+  if (reportId && !report) return;
+  var safeName = fileName || (report && report.attachments && report.attachments[0]) || 'Shared_Report_Document.txt';
+  var preview = ensureServiceProviderUiState().reportPreview;
+  preview.downloadedDocumentIds[safeName] = logTimestamp();
+  var text = ['AviaSurveil360 - Service Provider mock document', '', 'Report ID: ' + (report ? report.id : 'Shared documents'), 'Organization: ' + ROLES.auditee.orgName, 'Document: ' + safeName, '', 'Demo boundary: filename and auditee-safe metadata only; no real document storage.'].join('\n');
+  var downloaded = downloadPlainTextFile(mockAttachmentDownloadFileName(safeName), text);
+  persistAfterAction();
+  openModal(modalShell('Document Preview', '<div class="lead-assigned-modal"><p><b>' + esc(safeName) + '</b></p><p class="small muted">' + esc(downloaded ? 'A browser-local mock text download was generated.' : 'The auditee-safe filename record is displayed; this environment did not generate a download.') + '</p></div>', '<button class="btn btn--primary" data-act="close-modal">Close</button>', false));
+}
+
+function handleServiceProviderDownloadAll(reportId) {
+  var report = serviceProviderScopedReport(reportId);
+  if (!report) return;
+  var preview = ensureServiceProviderUiState().reportPreview;
+  preview.downloadedAt = logTimestamp();
+  (report.attachments || []).forEach(function (file) { preview.downloadedDocumentIds[file] = preview.downloadedAt; });
+  var text = ['AviaSurveil360 - Mock report package download', 'Report ID: ' + report.id, 'Organization: ' + report.organization, '', 'Files:', (report.attachments || []).join('\n') || 'No shared attachments'].join('\n');
+  downloadPlainTextFile(report.id + '_mock-package.txt', text);
+  persistAfterAction();
+  render();
 }
 
 function leadReviewChecklistDownloadText(auditId) {
@@ -3537,7 +3725,7 @@ function issueFinding(auditId, q) {
 }
 
 function submitCap(id) {
-  var f = findingById(id);
+  var f = state.role === 'auditee' ? serviceProviderScopedFinding(id) : findingById(id);
   if (!f) return;
   var root = val('cap-root'), corr = val('cap-corr'), prev = val('cap-prev'), resp = val('cap-resp'), date = val('cap-date');
   if (!root || !corr || !prev || !resp || !date) {
@@ -4543,7 +4731,7 @@ function handleCapTrackingQuickAction(action) {
 }
 
 function submitEvidence(id) {
-  var f = findingById(id);
+  var f = state.role === 'auditee' ? serviceProviderScopedFinding(id) : findingById(id);
   if (!f) return;
   var file = pickedFiles['ev-file'];
   if (!file) { toast('No file selected', 'Please attach an evidence file (mock) before uploading.', 'warn'); return; }
@@ -5163,6 +5351,9 @@ document.addEventListener('change', function (e) {
   if (field && field.indexOf('preliminary-report-') === 0) {
     handleLeadPreliminaryReportFieldChange(field, e.target);
   }
+  if (field && field.indexOf('service-provider-') === 0) {
+    handleServiceProviderFieldChange(field, e.target);
+  }
   if (field && field.indexOf('final-report-') === 0) {
     handleFinalReportPrepareFieldChange(field, e.target);
   }
@@ -5205,6 +5396,9 @@ document.addEventListener('input', function (e) {
   }
   if (field === 'preliminary-report-content') {
     handleLeadPreliminaryReportFieldChange(field, e.target);
+  }
+  if (field === 'service-provider-cap-query' || field === 'service-provider-preliminary-query' || field === 'service-provider-final-query') {
+    handleServiceProviderFieldChange(field, e.target);
   }
   if (field === 'final-report-content') {
     handleFinalReportPrepareFieldChange(field, e.target);

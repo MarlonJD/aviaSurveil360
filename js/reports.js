@@ -131,6 +131,12 @@ function serviceProviderVisibleFindings(targetState, organizationId) {
   });
 }
 
+function serviceProviderFindingById(targetState, organizationId, findingId) {
+  return serviceProviderVisibleFindings(targetState, organizationId).filter(function (finding) {
+    return finding.id === findingId;
+  })[0] || null;
+}
+
 function serviceProviderCapProgress(finding) {
   var status = finding && finding.status;
   var progress = {
@@ -155,11 +161,10 @@ function serviceProviderCapRows(targetState, organizationId, filters) {
     var progress = serviceProviderCapProgress(finding);
     return {
       id: finding.id,
-      finding: finding,
       auditId: finding.auditId,
       audit: audit ? (audit.ref || audit.type || audit.id) : finding.auditId,
       title: finding.title,
-      level: typeof severityLabel === 'function' ? severityLabel(finding.severity) : String(finding.severity),
+      level: typeof SEVERITY !== 'undefined' && SEVERITY[finding.severity] ? SEVERITY[finding.severity].label : String(finding.severity),
       severity: finding.severity,
       status: meta ? meta.label : String(finding.status || 'Open'),
       statusKey: finding.status,
@@ -181,6 +186,63 @@ function serviceProviderCapRows(targetState, organizationId, filters) {
     var haystack = [row.id, row.auditId, row.audit, row.title, row.level, row.status, row.dueDate, row.nextAction].join(' ').toLowerCase();
     return !query || haystack.indexOf(query) !== -1;
   });
+}
+
+function serviceProviderReportById(targetState, organizationId, reportId) {
+  var target = targetState || state;
+  var reports = target && Array.isArray(target.managerReports) ? target.managerReports : [];
+  var report = reports.filter(function (item) { return item.id === reportId && item.organizationId === organizationId; })[0] || null;
+  if (!report) return null;
+  var type = normalizeReportType(report.reportType);
+  return serviceProviderVisibleReports(target, organizationId, type).some(function (item) { return item.id === reportId; }) ? report : null;
+}
+
+function serviceProviderReportFindings(targetState, organizationId, report) {
+  if (!report || report.organizationId !== organizationId) return [];
+  return serviceProviderVisibleFindings(targetState, organizationId).filter(function (finding) { return finding.auditId === report.auditId; });
+}
+
+function serviceProviderFinalReportIsClosed(targetState, organizationId, report) {
+  var findings = serviceProviderReportFindings(targetState, organizationId, report);
+  return findings.length > 0 && findings.every(function (finding) { return finding.status === 'CLOSED'; });
+}
+
+function serviceProviderSafeReportProjection(targetState, organizationId, reportId) {
+  var target = targetState || state;
+  var report = serviceProviderReportById(target, organizationId, reportId);
+  if (!report) return null;
+  var audit = target.audits && target.audits.filter(function (item) { return item.id === report.auditId; })[0];
+  var findings = serviceProviderReportFindings(target, organizationId, report);
+  return {
+    id: report.id,
+    reportType: normalizeReportType(report.reportType),
+    auditId: report.auditId,
+    audit: audit ? audit.ref : report.auditId,
+    inspectionType: audit ? audit.type : 'Inspection',
+    inspectionDate: audit ? audit.date : '',
+    organizationId: report.organizationId,
+    organization: report.organization,
+    leadInspector: report.leadInspector,
+    version: report.version,
+    dateShared: report.sharedAt || report.releasedAt || report.issuedAt || '',
+    sharedBy: report.sharedBy || report.finalAuthorizedBy || 'CAA authorized role',
+    responseDueDate: report.responseDueDate || 'Not configured',
+    issuedAt: report.issuedAt || report.releasedAt || '',
+    classification: 'Service Provider visible / controlled demo copy',
+    summary: report.summary || 'Authorized report package shared by the CAA.',
+    attachments: Array.isArray(report.attachments) ? report.attachments.slice() : [],
+    findingCount: findings.length,
+    findings: findings.map(function (finding) {
+      return {
+        id: finding.id,
+        title: finding.title,
+        level: typeof SEVERITY !== 'undefined' && SEVERITY[finding.severity] ? SEVERITY[finding.severity].label : String(finding.severity),
+        status: typeof FINDING_STATUS !== 'undefined' && FINDING_STATUS[finding.status] ? FINDING_STATUS[finding.status].label : finding.status,
+        dueDate: finding.dueDate || 'Not configured'
+      };
+    }),
+    closed: normalizeReportType(report.reportType) === 'Final Report' ? serviceProviderFinalReportIsClosed(target, organizationId, report) : report.status === 'closed'
+  };
 }
 
 function serviceProviderVisibleReports(targetState, organizationId, reportType) {

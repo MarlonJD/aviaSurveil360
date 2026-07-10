@@ -8888,6 +8888,134 @@ function viewFindings() {
 }
 
 /* =========================== Reports list =========================== */
+function serviceProviderUiState() {
+  return typeof ensureServiceProviderUiState === 'function' ? ensureServiceProviderUiState() : state.serviceProviderUi;
+}
+
+function serviceProviderScopeNote() {
+  return '<div class="scope-note">🔒 Organization scope: ' + esc(ROLES.auditee.orgName) + '. This portal shows only records explicitly released to your organization.</div>';
+}
+
+function serviceProviderWorkspaceMetrics(items) {
+  return '<div class="service-workspace-metrics">' + items.map(function (item) {
+    return '<article class="is-' + esc(item.tone || 'neutral') + '"><span>' + esc(item.label) + '</span><b>' + esc(String(item.value)) + '</b><small>' + esc(item.detail || '') + '</small></article>';
+  }).join('') + '</div>';
+}
+
+function serviceProviderAuditOptions(selected, rows) {
+  var ids = rows.map(function (row) { return row.auditId; }).filter(function (value, index, list) { return value && list.indexOf(value) === index; });
+  return '<option value="all"' + (selected === 'all' ? ' selected' : '') + '>All Audits / Inspections</option>' + ids.map(function (id) {
+    return '<option value="' + esc(id) + '"' + (selected === id ? ' selected' : '') + '>' + esc(id) + '</option>';
+  }).join('');
+}
+
+function serviceProviderCapGroupCounts(rows) {
+  return {
+    all: rows.length,
+    open: rows.filter(function (row) { return row.statusKey !== 'CLOSED'; }).length,
+    'in-progress': rows.filter(function (row) { return ['CAP_SUBMITTED', 'EVIDENCE_REQUIRED', 'CAP_MORE_INFO', 'EVIDENCE_MORE_INFO'].indexOf(row.statusKey) !== -1; }).length,
+    'awaiting-review': rows.filter(function (row) { return ['CAP_SUBMITTED', 'EVIDENCE_SUBMITTED'].indexOf(row.statusKey) !== -1; }).length,
+    closed: rows.filter(function (row) { return row.statusKey === 'CLOSED'; }).length
+  };
+}
+
+function serviceProviderCapDossier(finding) {
+  if (!finding) return '<aside class="service-dossier"><div class="empty">Select a Corrective Action record.</div></aside>';
+  var status = FINDING_STATUS[finding.status] || FINDING_STATUS.WAITING_CAP;
+  var progress = serviceProviderCapProgress(finding);
+  var evidence = Array.isArray(finding.evidence) ? finding.evidence : [];
+  var comments = Array.isArray(finding.commentsToAuditee) ? finding.commentsToAuditee : [];
+  var responseLabel = ['WAITING_CAP', 'CAP_MORE_INFO', 'EVIDENCE_REQUIRED', 'EVIDENCE_MORE_INFO'].indexOf(finding.status) !== -1 ? 'Respond' : 'View Status';
+  return '<aside class="service-dossier"><div class="service-dossier__head"><div><span>Selected Finding</span><h2>' + esc(finding.id) + '</h2></div>' + demoBadge(status.label, finding.status === 'CLOSED' ? 'ok' : 'info') + '</div>' +
+    '<h3>' + esc(finding.title) + '</h3><p>' + esc(finding.description) + '</p>' +
+    '<dl><dt>Finding ID</dt><dd>' + esc(finding.id) + '</dd><dt>Level</dt><dd>' + esc(SEVERITY[finding.severity] ? SEVERITY[finding.severity].label : String(finding.severity)) + '</dd><dt>Audit / Inspection</dt><dd>' + esc(finding.auditId || 'Not configured') + '</dd><dt>Due Date</dt><dd>' + esc(finding.dueDate ? fmtDate(finding.dueDate) : 'Not configured') + '</dd><dt>Current owner</dt><dd>' + esc(roleName(status.ownerRole)) + '</dd><dt>Next action</dt><dd>' + esc(status.next) + '</dd></dl>' +
+    '<div class="service-progress"><span><b>Lifecycle progress</b><em>' + esc(progress.label) + '</em></span><div><i style="width:' + esc(String(progress.percent)) + '%"></i></div></div>' +
+    '<h3>CAP / Evidence timeline</h3><ol class="service-mini-timeline"><li class="is-done">Finding issued</li><li class="' + (finding.cap ? 'is-done' : 'is-current') + '">CAP submitted / reviewed</li><li class="' + (evidence.length ? 'is-done' : (finding.cap ? 'is-current' : '')) + '">Evidence submitted / reviewed</li><li class="' + (finding.status === 'CLOSED' ? 'is-done' : '') + '">Authorized closure</li></ol>' +
+    '<h3>CAA-visible comments</h3>' + (comments.length ? '<div class="service-comment-list">' + comments.map(function (comment) { return '<p><b>' + esc(comment.author) + '</b><span>' + esc(comment.date) + '</span>' + esc(comment.text) + '</p>'; }).join('') + '</div>' : '<p class="muted small">No CAA-visible comments.</p>') +
+    '<h3>Evidence versions</h3>' + (evidence.length ? '<div class="service-evidence-list">' + evidence.map(function (item) { return '<p><b>v' + esc(String(item.version)) + ' · ' + esc(item.fileName) + '</b><span>' + esc(item.status + ' · ' + item.uploadedDate) + '</span></p>'; }).join('') + '</div>' : '<p class="muted small">No evidence versions submitted.</p>') +
+    '<button class="btn btn--primary btn--block" data-act="service-provider-cap-respond" data-id="' + esc(finding.id) + '">' + esc(responseLabel) + '</button>' +
+    '<p class="small muted">CAP acceptance does not close this Finding. Required evidence must be accepted or an authorized closure must be recorded.</p></aside>';
+}
+
+function viewServiceProviderCapWorkspace() {
+  var ui = serviceProviderUiState().cap;
+  var organizationId = ROLES.auditee.org;
+  var allRows = serviceProviderCapRows(state, organizationId, { group: 'all', auditId: 'all', level: 'all', status: 'all', query: '' });
+  var counts = serviceProviderCapGroupCounts(allRows);
+  var rows = serviceProviderCapRows(state, organizationId, ui);
+  var selected = serviceProviderFindingById(state, organizationId, ui.selectedFindingId);
+  if (!selected && rows.length) selected = serviceProviderFindingById(state, organizationId, rows[0].id);
+  var groupLabels = { all: 'Total', open: 'Open', 'in-progress': 'In Progress', 'awaiting-review': 'Awaiting Review', closed: 'Closed' };
+  var groups = ['all', 'open', 'in-progress', 'awaiting-review', 'closed'].map(function (key) {
+    return '<button class="' + (ui.group === key ? 'is-active' : '') + '" data-act="service-provider-cap-group" data-group="' + key + '">' + esc(groupLabels[key]) + ' <b>' + esc(String(counts[key])) + '</b></button>';
+  }).join('');
+  var body = rows.length ? rows.map(function (row) {
+    return '<tr class="' + (selected && selected.id === row.id ? 'is-selected' : '') + '"><td><button class="service-link" data-act="service-provider-cap-select" data-id="' + esc(row.id) + '">' + esc(row.id) + '</button></td><td>' + esc(row.auditId + ' · ' + row.audit) + '</td><td>' + esc(row.title) + '</td><td>' + esc(row.level) + '</td><td>' + esc(row.status) + '</td><td>' + esc(row.dueDate === 'Not configured' ? row.dueDate : fmtDate(row.dueDate)) + '</td><td><span class="service-table-progress"><i style="width:' + esc(String(row.progressPercent)) + '%"></i></span>' + esc(row.progress) + '</td><td><button class="btn btn--sm" data-act="service-provider-cap-respond" data-id="' + esc(row.id) + '">' + esc(row.statusKey === 'CLOSED' ? 'View' : 'Respond') + '</button></td></tr>';
+  }).join('') : '<tr><td colspan="8"><div class="empty">No Corrective Actions match these filters.</div></td></tr>';
+  return '<div class="service-workspace">' + pageHead('Corrective Actions (CAP)', 'Review exactly what the CAA needs from ' + ROLES.auditee.orgName + ', the configured Due Date, and the next lifecycle action.') + serviceProviderScopeNote() +
+    serviceProviderWorkspaceMetrics([{ label: 'Total', value: counts.all }, { label: 'Open', value: counts.open, tone: 'warn' }, { label: 'In Progress', value: counts['in-progress'], tone: 'info' }, { label: 'Awaiting Review', value: counts['awaiting-review'], tone: 'info' }, { label: 'Closed', value: counts.closed, tone: 'ok' }]) +
+    '<div class="service-workspace-tabs">' + groups + '</div><div class="service-filter-row"><label>Audit / Inspection<select data-field="service-provider-cap-audit">' + serviceProviderAuditOptions(ui.auditId, allRows) + '</select></label><label>Level<select data-field="service-provider-cap-level"><option value="all">All Levels</option><option value="1"' + (ui.level === '1' ? ' selected' : '') + '>Level 1 Critical</option><option value="2"' + (ui.level === '2' ? ' selected' : '') + '>Level 2 Major</option><option value="3"' + (ui.level === '3' ? ' selected' : '') + '>Level 3 Minor</option><option value="0"' + (ui.level === '0' ? ' selected' : '') + '>Observation</option></select></label><label>Status<select data-field="service-provider-cap-status"><option value="all">All Statuses</option>' + Object.keys(FINDING_STATUS).map(function (key) { return '<option value="' + esc(key) + '"' + (ui.status === key ? ' selected' : '') + '>' + esc(FINDING_STATUS[key].label) + '</option>'; }).join('') + '</select></label><label class="is-search">Search<input type="search" data-field="service-provider-cap-query" value="' + esc(ui.query) + '" placeholder="Finding, audit, status..."></label></div>' +
+    '<div class="service-workspace-layout"><section class="service-table-card"><div class="responsive-table-shell"><table class="service-table"><thead><tr><th>Finding ID</th><th>Audit/Inspection</th><th>Finding Title</th><th>Level</th><th>Status</th><th>Due Date</th><th>Progress</th><th>Action</th></tr></thead><tbody>' + body + '</tbody></table></div></section>' + serviceProviderCapDossier(selected) + '</div></div>';
+}
+
+function serviceProviderReportStatus(report, findings) {
+  if (report.status === 'closed' || (findings.length && findings.every(function (finding) { return finding.status === 'CLOSED'; }))) return 'closed';
+  if (findings.some(function (finding) { return ['CAP_SUBMITTED', 'EVIDENCE_SUBMITTED'].indexOf(finding.status) !== -1; })) return 'under-review';
+  return 'pending-response';
+}
+
+function serviceProviderPreliminaryDossier(report) {
+  var safe = report ? serviceProviderSafeReportProjection(state, ROLES.auditee.org, report.id) : null;
+  if (!safe) return '<aside class="service-dossier"><div class="empty">Select a shared Preliminary Report.</div></aside>';
+  return '<aside class="service-dossier"><div class="service-dossier__head"><div><span>Selected Report</span><h2>' + esc(safe.id) + '</h2></div>' + demoBadge('Service Provider visible', 'ok') + '</div><h3>' + esc(safe.audit) + '</h3><p>' + esc(safe.summary) + '</p><dl><dt>Status</dt><dd>' + esc(serviceProviderReportStatus(report, serviceProviderReportFindings(state, ROLES.auditee.org, report))) + '</dd><dt>Date Shared</dt><dd>' + esc(safe.dateShared || 'Not recorded') + '</dd><dt>Shared By</dt><dd>' + esc(safe.sharedBy) + '</dd><dt>Total Findings</dt><dd>' + esc(String(safe.findingCount)) + '</dd><dt>Response Due Date</dt><dd>' + esc(safe.responseDueDate === 'Not configured' ? safe.responseDueDate : fmtDate(safe.responseDueDate)) + '</dd><dt>Classification</dt><dd>' + esc(safe.classification) + '</dd></dl><h3>Shared attachments</h3>' + (safe.attachments.length ? '<div class="service-document-list">' + safe.attachments.map(function (file) { return '<button data-act="service-provider-document" data-id="' + esc(safe.id) + '" data-file="' + esc(file) + '">' + esc(file) + '</button>'; }).join('') + '</div>' : '<p class="muted small">No attachments shared.</p>') + '<div class="service-dossier-actions"><button class="btn btn--primary" data-act="service-provider-report-view" data-id="' + esc(safe.id) + '">View Report</button><button class="btn" data-act="service-provider-message" data-id="' + esc(safe.id) + '">Send Message to Inspector</button></div></aside>';
+}
+
+function viewServiceProviderPreliminaryReports() {
+  var ui = serviceProviderUiState().preliminaryReports;
+  var organizationId = ROLES.auditee.org;
+  var reports = serviceProviderVisibleReports(state, organizationId, 'Preliminary Report');
+  var rows = reports.map(function (report) { var findings = serviceProviderReportFindings(state, organizationId, report); return { report: report, auditId: report.auditId, status: serviceProviderReportStatus(report, findings), findings: findings }; });
+  var filtered = rows.filter(function (row) { if (ui.auditId !== 'all' && row.auditId !== ui.auditId) return false; if (ui.status !== 'all' && row.status !== ui.status) return false; var query = (ui.query || '').toLowerCase(); return !query || (row.report.id + ' ' + row.auditId + ' ' + row.report.organization).toLowerCase().indexOf(query) !== -1; });
+  var selected = serviceProviderReportById(state, organizationId, ui.selectedReportId);
+  if (!selected || normalizeReportType(selected.reportType) !== 'Preliminary Report') selected = filtered.length ? filtered[0].report : null;
+  var body = filtered.length ? filtered.map(function (row) { return '<tr><td><button class="service-link" data-act="service-provider-report-select" data-id="' + esc(row.report.id) + '" data-report-type="preliminary">' + esc(row.report.id) + '</button></td><td>' + esc(row.auditId + ' · ' + (auditById(row.auditId) ? auditById(row.auditId).type : 'Inspection')) + '</td><td>' + esc(row.report.sharedAt || row.report.releasedAt || 'Not recorded') + '</td><td>' + esc(String(row.findings.length)) + '</td><td>' + esc(row.report.responseDueDate ? fmtDate(row.report.responseDueDate) : 'Not configured') + '</td><td><button class="btn btn--sm" data-act="service-provider-report-view" data-id="' + esc(row.report.id) + '">View Report</button></td></tr>'; }).join('') : '<tr><td colspan="6"><div class="empty">No shared Preliminary Reports match these filters.</div></td></tr>';
+  return '<div class="service-workspace">' + pageHead('Preliminary Reports', 'Only report packages explicitly released to ' + ROLES.auditee.orgName + ' are visible.') + serviceProviderScopeNote() + serviceProviderWorkspaceMetrics([{ label: 'Total', value: rows.length }, { label: 'Pending Your Response', value: rows.filter(function (row) { return row.status === 'pending-response'; }).length, tone: 'warn' }, { label: 'Under Review by Authority', value: rows.filter(function (row) { return row.status === 'under-review'; }).length, tone: 'info' }, { label: 'Closed', value: rows.filter(function (row) { return row.status === 'closed'; }).length, tone: 'ok' }]) + '<div class="service-filter-row"><label>Audit / Inspection<select data-field="service-provider-preliminary-audit">' + serviceProviderAuditOptions(ui.auditId, rows) + '</select></label><label>Status<select data-field="service-provider-preliminary-status"><option value="all">All Statuses</option><option value="pending-response"' + (ui.status === 'pending-response' ? ' selected' : '') + '>Pending Your Response</option><option value="under-review"' + (ui.status === 'under-review' ? ' selected' : '') + '>Under Review by Authority</option><option value="closed"' + (ui.status === 'closed' ? ' selected' : '') + '>Closed</option></select></label><label class="is-search">Search<input type="search" data-field="service-provider-preliminary-query" value="' + esc(ui.query) + '" placeholder="Report ID or Audit ID"></label></div><div class="service-workspace-layout"><section class="service-table-card"><div class="responsive-table-shell"><table class="service-table"><thead><tr><th>Report ID</th><th>Audit/Inspection</th><th>Date Shared</th><th>Findings</th><th>Due Date</th><th>Action</th></tr></thead><tbody>' + body + '</tbody></table></div></section>' + serviceProviderPreliminaryDossier(selected) + '</div></div>';
+}
+
+function serviceProviderFinalDossier(report) {
+  var safe = report ? serviceProviderSafeReportProjection(state, ROLES.auditee.org, report.id) : null;
+  if (!safe) return '<aside class="service-dossier"><div class="empty">Select an issued Final Report.</div></aside>';
+  return '<aside class="service-dossier"><div class="service-dossier__head"><div><span>Selected Final Report</span><h2>' + esc(safe.id) + '</h2></div>' + demoBadge('Issued / locked', 'ok') + '</div><h3>' + esc(safe.audit) + '</h3><p>' + esc(safe.summary) + '</p><dl><dt>Report ID</dt><dd>' + esc(safe.id) + '</dd><dt>Audit / Inspection</dt><dd>' + esc(safe.auditId + ' · ' + safe.inspectionType) + '</dd><dt>Date / Period</dt><dd>' + esc(safe.inspectionDate ? fmtDate(safe.inspectionDate) : 'Not configured') + '</dd><dt>Lead Inspector</dt><dd>' + esc(safe.leadInspector) + '</dd><dt>Version</dt><dd>' + esc(safe.version) + '</dd><dt>Findings</dt><dd>' + esc(String(safe.findingCount)) + '</dd><dt>Classification</dt><dd>' + esc(safe.classification) + '</dd></dl><h3>Objective & Scope</h3><p>Auditee-safe final record of the configured inspection scope, findings, corrective-action status, and authorized report result.</p><h3>Shared attachments</h3>' + (safe.attachments.length ? '<div class="service-document-list">' + safe.attachments.map(function (file) { return '<button data-act="service-provider-document" data-id="' + esc(safe.id) + '" data-file="' + esc(file) + '">' + esc(file) + '</button>'; }).join('') + '</div>' : '<p class="muted small">No attachments shared.</p>') + '<div class="service-dossier-actions"><button class="btn btn--primary" data-act="service-provider-report-view" data-id="' + esc(safe.id) + '">View Report</button><button class="btn" data-act="service-provider-download-all" data-id="' + esc(safe.id) + '">Download All</button></div></aside>';
+}
+
+function viewServiceProviderFinalReports() {
+  var ui = serviceProviderUiState().finalReports;
+  var organizationId = ROLES.auditee.org;
+  var reports = serviceProviderVisibleReports(state, organizationId, 'Final Report');
+  var rows = reports.map(function (report) { return { report: report, auditId: report.auditId, findings: serviceProviderReportFindings(state, organizationId, report), closed: serviceProviderFinalReportIsClosed(state, organizationId, report) }; });
+  var filtered = rows.filter(function (row) { if (ui.auditId !== 'all' && row.auditId !== ui.auditId) return false; if (ui.year !== 'all' && String(row.report.issuedAt || '').indexOf(ui.year) !== 0) return false; if (ui.capRequirement === 'required' && !row.report.capRequired) return false; if (ui.capRequirement === 'not-required' && row.report.capRequired) return false; var query = (ui.query || '').toLowerCase(); return !query || (row.report.id + ' ' + row.auditId + ' ' + row.report.organization).toLowerCase().indexOf(query) !== -1; });
+  var selected = serviceProviderReportById(state, organizationId, ui.selectedReportId);
+  if (!selected || normalizeReportType(selected.reportType) !== 'Final Report') selected = filtered.length ? filtered[0].report : null;
+  var body = filtered.length ? filtered.map(function (row) { return '<tr><td><button class="service-link" data-act="service-provider-report-select" data-id="' + esc(row.report.id) + '" data-report-type="final">' + esc(row.report.id) + '</button></td><td>' + esc(row.auditId + ' · ' + (auditById(row.auditId) ? auditById(row.auditId).type : 'Inspection')) + '</td><td>' + esc(row.report.issuedAt || row.report.releasedAt || 'Not recorded') + '</td><td>' + esc(String(row.findings.length)) + '</td><td><button class="btn btn--sm" data-act="service-provider-report-view" data-id="' + esc(row.report.id) + '">View Report</button></td></tr>'; }).join('') : '<tr><td colspan="5"><div class="empty">No issued Final Reports match these filters.</div></td></tr>';
+  return '<div class="service-workspace">' + pageHead('Final Reports', 'Only Executive Director-issued and locked Final Reports for ' + ROLES.auditee.orgName + ' are visible.') + serviceProviderScopeNote() + serviceProviderWorkspaceMetrics([{ label: 'Total Final Reports', value: rows.length }, { label: 'Reports Requiring CAP', value: rows.filter(function (row) { return row.report.capRequired; }).length, tone: 'warn' }, { label: 'Closed Reports', value: rows.filter(function (row) { return row.closed; }).length, tone: 'ok' }, { label: 'This Year', value: rows.filter(function (row) { return String(row.report.issuedAt || '').indexOf('2026') === 0; }).length, tone: 'info' }]) + '<div class="service-filter-row"><label>Audit / Inspection<select data-field="service-provider-final-audit">' + serviceProviderAuditOptions(ui.auditId, rows) + '</select></label><label>Year<select data-field="service-provider-final-year"><option value="all">All Years</option><option value="2026"' + (ui.year === '2026' ? ' selected' : '') + '>2026</option><option value="2025"' + (ui.year === '2025' ? ' selected' : '') + '>2025</option></select></label><label>CAP<select data-field="service-provider-final-cap"><option value="all">All Reports</option><option value="required"' + (ui.capRequirement === 'required' ? ' selected' : '') + '>Requires CAP</option><option value="not-required"' + (ui.capRequirement === 'not-required' ? ' selected' : '') + '>No CAP Required</option></select></label><label class="is-search">Search<input type="search" data-field="service-provider-final-query" value="' + esc(ui.query) + '" placeholder="Report ID or Audit ID"></label></div><div class="service-workspace-layout"><section class="service-table-card"><div class="responsive-table-shell"><table class="service-table"><thead><tr><th>Report ID</th><th>Audit/Inspection</th><th>Date Released</th><th>Findings</th><th>Action</th></tr></thead><tbody>' + body + '</tbody></table></div></section>' + serviceProviderFinalDossier(selected) + '</div></div>';
+}
+
+function viewServiceProviderReportPreview() {
+  var ui = serviceProviderUiState();
+  var reportId = state.params && state.params.reportId ? state.params.reportId : ui.reportPreview.reportId;
+  var safe = serviceProviderSafeReportProjection(state, ROLES.auditee.org, reportId);
+  if (!safe) return pageHead('Report not available', 'This Report ID is not released to your organization.') + serviceProviderScopeNote();
+  var backView = safe.reportType === 'Final Report' ? 'service-provider-final-reports' : 'service-provider-preliminary-reports';
+  var findings = safe.findings.map(function (finding) { return '<tr><td>' + esc(finding.id) + '</td><td>' + esc(finding.level) + '</td><td>' + esc(finding.status) + '</td><td>' + esc(finding.dueDate === 'Not configured' ? finding.dueDate : fmtDate(finding.dueDate)) + '</td></tr>'; }).join('');
+  return '<div class="service-report-preview"><button class="inspection-back" data-act="nav" data-view="' + backView + '">&larr; Back to ' + esc(safe.reportType === 'Final Report' ? 'Final Reports' : 'Preliminary Reports') + '</button>' + serviceProviderScopeNote() + '<article class="service-report-paper"><header><div>' + renderBrandMark('brand-mark--report') + '<span>AviaSurveil360</span></div><p>' + esc(safe.classification) + '</p></header><h1>' + esc(safe.reportType) + '</h1><h2>' + esc(safe.id + ' · ' + safe.organization) + '</h2><div class="service-report-paper__meta"><span><b>Audit ID</b>' + esc(safe.auditId) + '</span><span><b>Inspection</b>' + esc(safe.inspectionType) + '</span><span><b>Lead Inspector</b>' + esc(safe.leadInspector) + '</span><span><b>Version</b>' + esc(safe.version) + '</span><span><b>Released / Shared</b>' + esc(safe.dateShared || 'Not recorded') + '</span></div><h3>Authorized Service Provider Summary</h3><p>' + esc(safe.summary) + '</p><h3>Objective & Scope</h3><p>This auditee-safe copy summarizes the configured inspection, the Findings communicated to the Service Provider, and the required Corrective Action / Evidence lifecycle. It excludes all internal CAA working information.</p><h3>Findings</h3><table><thead><tr><th>Finding</th><th>Level</th><th>Status</th><th>Due Date</th></tr></thead><tbody>' + findings + '</tbody></table><h3>Shared attachments</h3><div class="service-document-list">' + safe.attachments.map(function (file) { return '<button data-act="service-provider-document" data-id="' + esc(safe.id) + '" data-file="' + esc(file) + '">' + esc(file) + '</button>'; }).join('') + '</div><footer>Demo-only browser-local report viewer. No real electronic signature, file storage, or reporting engine.</footer></article><div class="service-preview-actions"><button class="btn" data-act="service-provider-message" data-id="' + esc(safe.id) + '">Send Message to Inspector</button><button class="btn btn--primary" data-act="service-provider-download-all" data-id="' + esc(safe.id) + '">Download Shared Package</button></div></div>';
+}
+
+function viewServiceProviderDocuments() {
+  var reports = serviceProviderVisibleReports(state, ROLES.auditee.org, 'Preliminary Report').concat(serviceProviderVisibleReports(state, ROLES.auditee.org, 'Final Report'));
+  var rows = reports.reduce(function (items, report) { (report.attachments || []).forEach(function (file) { items.push({ reportId: report.id, file: file, type: normalizeReportType(report.reportType) }); }); return items; }, []);
+  return pageHead('Documents', 'Filename-only documents explicitly shared with ' + ROLES.auditee.orgName + '.') + serviceProviderScopeNote() + '<div class="service-document-catalog">' + (rows.length ? rows.map(function (row) { return '<button data-act="service-provider-document" data-id="' + esc(row.reportId) + '" data-file="' + esc(row.file) + '"><span><b>' + esc(row.file) + '</b><small>' + esc(row.reportId + ' · ' + row.type) + '</small></span><em>Preview / Mock Download</em></button>'; }).join('') : '<div class="empty">No shared documents.</div>') + '</div>';
+}
+
 function serviceProviderReportUiState() {
   if (typeof ensureServiceProviderReportUi === 'function') return ensureServiceProviderReportUi();
   if (!state.serviceProviderReportUi) state.serviceProviderReportUi = { tab: 'cap', submittedCaps: {}, downloadedAt: '' };
@@ -9311,7 +9439,8 @@ function viewAdminReportCatalog() {
 function viewReports() {
   if (state.role === 'auditee') {
     var reportFilter = state.params && state.params.filter ? state.params.filter : selectedFilter('reports', 'received');
-    if (reportFilter === 'received') return viewServiceProviderFinalReport();
+    if (reportFilter === 'documents') return viewServiceProviderDocuments();
+    return viewServiceProviderFinalReports();
   }
   if (state.role === 'admin') return viewAdminReportCatalog();
   var closed = visibleFindings().filter(function (f) { return f.status === 'CLOSED'; });
@@ -9394,6 +9523,7 @@ function viewReport() {
 /* =========================== Auditee Messages =========================== */
 function viewMessages() {
   var msgs = state.notifications.filter(function (n) { return n.role === 'auditee'; });
+  var serviceUi = state.role === 'auditee' ? serviceProviderUiState().reportPreview : null;
   var rows = msgs.length ? msgs.map(function (n) {
     return '<tr>' +
       '<td><div class="ops-cell-title">' + esc(n.text) + '</div><div class="ops-cell-sub">' + esc(n.id) + ' · related CAA request where applicable</div></td>' +
@@ -9404,7 +9534,8 @@ function viewMessages() {
   }).join('') : '';
   return pageHead('Messages from the CAA', 'In-app notifications (mock — no real email or SMS is sent).') +
     '<div class="scope-note">🔒 Messages are limited to ' + esc(ROLES.auditee.orgName) + '.</div>' +
-    (rows ? '<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Message</th><th>Organization</th><th>Date</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<div class="empty">No messages.</div>');
+    (serviceUi && serviceUi.messageSentAt ? '<div class="card mb-16"><div class="card__head"><h3>Latest message to CAA Inspector</h3>' + demoBadge('Sent in UI', 'ok') + '</div><div class="card__body"><p>' + esc(serviceUi.messageText) + '</p><span class="small muted">' + esc(serviceUi.messageSentAt) + ' · browser-local demo thread</span></div></div>' : '') +
+    (rows ? '<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Message</th><th>Organization</th><th>Date</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<div class="empty">No incoming messages.</div>');
 }
 
 /* =========================== Admin — Templates =========================== */

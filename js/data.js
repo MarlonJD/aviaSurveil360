@@ -1327,7 +1327,7 @@ function freshState() {
       cap: { group: 'all', auditId: 'all', level: 'all', status: 'all', query: '', selectedFindingId: 'CAB-2026-001' },
       preliminaryReports: { auditId: 'all', status: 'all', query: '', selectedReportId: 'PR-2026-018' },
       finalReports: { auditId: 'all', year: 'all', capRequirement: 'all', query: '', selectedReportId: 'FR-2026-018' },
-      reportPreview: { reportId: '', zoom: 100, downloadedAt: '' }
+      reportPreview: { reportId: '', zoom: 100, downloadedAt: '', downloadedDocumentIds: {}, messageSentAt: '', messageText: '' }
     },
     financeUi: { query: '', status: 'pending', selectedPlanId: 'PLAN-2026-Q3-CABIN', decision: '', comment: '', openActionPlanId: '' },
     executiveDirectorUi: {
