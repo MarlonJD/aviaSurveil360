@@ -42,6 +42,8 @@ assert.match(html, /Decision needed/);
 assert.match(html, /cap-track-head-actions/);
 assert.match(styles, /\.workbench-command--lead-cap[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(220px,\s*auto\)/);
 assert.match(styles, /\.shell--inspector\s+\.cap-detail-head[\s\S]*?padding-right:\s*0/);
+assert.match(styles, /\.inspection-status-readonly\s*\{[^}]*box-shadow:\s*inset 3px 0 0 currentColor/s);
+assert.match(styles, /\.inspection-status-readonly\s*\{[^}]*cursor:\s*default/s);
 
 context.state.role = 'inspector';
 context.state.view = 'inspector-assignments';

@@ -5122,15 +5122,22 @@ function inspectionExecutionFileName(row) {
   return answer.file !== undefined ? answer.file : (row.file || '');
 }
 
-function inspectionExecutionStatusButton(row, readOnly) {
+function inspectionExecutionStatusButton(row, readOnlyReason) {
   var status = inspectionExecutionStatus(row);
   var meta = INSPECTOR_EXECUTION_STATUS_META[status] || INSPECTOR_EXECUTION_STATUS_META.na;
+  var normalizedReadOnlyReason = readOnlyReason === true ? 'Locked after submission' : readOnlyReason;
+  if (normalizedReadOnlyReason) {
+    var detailLabel = normalizedReadOnlyReason === 'Locked after submission' ? 'Recorded result' : normalizedReadOnlyReason;
+    return '<div class="inspection-status-readonly inspection-status--' + esc(meta.cls) + '" role="status" aria-label="Compliance for ' + esc(row.no) + ': ' + esc(meta.label) + '. ' + esc(normalizedReadOnlyReason) + '">' +
+      '<span class="inspection-status__icon">' + meta.icon + '</span><span><b>' + esc(meta.label) + '</b><small>' + esc(detailLabel) + '</small></span>' +
+    '</div>';
+  }
   var options = INSPECTOR_EXECUTION_STATUS_FLOW.map(function (key) {
     var optionMeta = INSPECTOR_EXECUTION_STATUS_META[key];
     return '<option value="' + esc(key) + '"' + (key === status ? ' selected' : '') + '>' + esc(optionMeta.label) + '</option>';
   }).join('');
   return '<select class="inspection-status-select inspection-status-select--' + esc(meta.cls) +
-    '" data-field="inspection-status" data-id="' + esc(row.id) + '" aria-label="Compliance for ' + esc(row.no) + '"' + (readOnly ? ' disabled' : '') + '>' +
+    '" data-field="inspection-status" data-id="' + esc(row.id) + '" aria-label="Compliance for ' + esc(row.no) + '">' +
     options +
   '</select>';
 }

@@ -62,6 +62,15 @@ assert.match(html, /data-field="inspection-status"/);
 assert.doesNotMatch(html, /inspection-status-cycle/);
 assert.doesNotMatch(html, /Next action:/);
 
+context.state.inspectionWorkspaces['AUD-2026-001'].submittedAt = '2026-07-11T09:31:42.154Z';
+html = context.viewAuditDetail();
+assert.match(html, /Submitted checklist — read-only/);
+assert.match(html, /inspection-status-readonly/);
+assert.match(html, /Locked after submission/);
+assert.match(html, /Recorded result/);
+assert.doesNotMatch(html, /<select[^>]+data-field="inspection-status"/);
+context.state.inspectionWorkspaces['AUD-2026-001'].submittedAt = '';
+
 context.state.inspectionWorkspaces['AUD-2026-001'].selectedSectionKey = 'em-eq';
 html = context.viewAuditDetail();
 assert.match(html, /Emergency Equipment/);
