@@ -1700,6 +1700,7 @@ function handleAction(act, el) {
     case 'inspection-download-checklist': handleInspectionDownload(id); break;
     case 'inspection-save-draft': handleInspectionSaveDraft(id); break;
     case 'inspection-submit-lead': handleInspectionSubmitLead(id); break;
+    case 'inspection-reopen-editing': handleInspectionReopenEditing(id); break;
     case 'inspection-section-preview': handleInspectionSectionPreview(id); break;
     case 'inspection-complete-sections': handleInspectionCompleteSections(id); break;
     case 'inspection-file-open': handleInspectionFileOpen(id); break;
@@ -2119,6 +2120,20 @@ function handleInspectionSubmitLead(auditId) {
     render();
   }
   handleInspectionSubmittedPackage(targetAuditId);
+}
+
+function handleInspectionReopenEditing(auditId) {
+  var targetAuditId = activeInspectionAuditId(auditId);
+  var reopened = reopenInspectionChecklistForEditing(state, targetAuditId, {
+    at: new Date().toISOString(),
+    userId: state.inspectorUserId || 'USR-AYLIN'
+  });
+  if (!reopened) return;
+  if (state.ui) state.ui.inspectionStatusMenu = null;
+  addLog('Inspection reopened for editing', targetAuditId);
+  persistAfterAction();
+  render();
+  toast('Checklist reopened', 'Existing answers were preserved. Compliance selections are editable again.', 'ok');
 }
 
 function handleInspectionCompleteSections(auditId) {

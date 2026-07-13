@@ -5172,6 +5172,7 @@ function viewInspectorAuditExecution(audit) {
   var draftNote = workspace.draftSavedAt ? '<span class="inspection-save-state">Draft saved</span>' : '';
   var completeNote = allSectionsComplete ? '<span class="inspection-save-state inspection-save-state--submitted">All sections complete</span>' : '';
   var submitNote = submitted ? '<span class="inspection-save-state inspection-save-state--submitted">Submitted to Lead Inspector</span>' : '';
+  var reopenNote = !submitted && workspace.reopenedAt ? '<span class="inspection-save-state">Reopened for editing</span>' : '';
   var sectionRows = pkg.sections.map(function (section) {
     return '<button class="inspection-section' + (section.key === activeSection.key ? ' is-active' : '') + '" data-act="inspection-section-preview" data-id="' + esc(section.key) + '">' +
       '<span>' + esc(String(section.order) + '. ' + section.label) + (section.key === 'em-eq' ? '<small>EM EQ / PBE</small>' : '') + '</span><b>' + esc(section.completed + ' / ' + section.total) + '</b></button>';
@@ -5191,11 +5192,13 @@ function viewInspectorAuditExecution(audit) {
     '<button class="inspection-back" data-act="nav" data-view="inspector-assignments">&larr; Back to Inspections</button>' +
     '<div class="inspection-exec__head"><div><h1>' + esc(pkg.title) + '</h1>' +
       '<div class="inspection-title-meta"><span>' + esc(pkg.organization) + '</span><span>' + esc(pkg.inspectionType) + '</span><span>' + esc(pkg.templateName + ' ' + pkg.templateVersion) + '</span></div>' +
-      '<div class="inspection-status-line">' + demoBadge(submitted ? 'Submitted' : (allSectionsComplete ? 'Ready to Submit' : 'In Progress'), submitted || allSectionsComplete ? 'ok' : 'info') + downloadNote + attachmentDownloadNote + draftNote + completeNote + submitNote + '</div></div>' +
+      '<div class="inspection-status-line">' + demoBadge(submitted ? 'Submitted' : (allSectionsComplete ? 'Ready to Submit' : 'In Progress'), submitted || allSectionsComplete ? 'ok' : 'info') + downloadNote + attachmentDownloadNote + draftNote + completeNote + submitNote + reopenNote + '</div></div>' +
       '<div class="inspection-exec__actions">' +
         '<button class="btn" data-act="inspection-download-checklist" data-id="' + esc(audit.id) + '"><span>&#8681;</span>Download Checklist</button>' +
         '<button class="btn" data-act="inspection-save-draft" data-id="' + esc(audit.id) + '"' + (submitted ? ' disabled' : '') + '><span>&#128190;</span>Save Draft</button>' +
-        '<button class="btn btn--primary inspection-submit-action" data-act="inspection-submit-lead" data-id="' + esc(audit.id) + '"><span>&#10148;</span>' + (submitted ? 'Submitted' : 'Submit to Lead Inspector') + '</button>' +
+        (submitted
+          ? '<button class="btn btn--primary inspection-reopen-action" data-act="inspection-reopen-editing" data-id="' + esc(audit.id) + '"><span>&#8635;</span>Reopen for Editing</button>'
+          : '<button class="btn btn--primary inspection-submit-action" data-act="inspection-submit-lead" data-id="' + esc(audit.id) + '"><span>&#10148;</span>Submit to Lead Inspector</button>') +
       '</div></div>' +
     '<div class="inspection-summary-card">' +
       '<div class="inspection-summary-item"><span class="inspection-summary-icon">&#128197;</span><div><span>Inspection ID</span><b>' + esc(pkg.inspectionId) + '</b></div></div>' +
@@ -5203,7 +5206,7 @@ function viewInspectorAuditExecution(audit) {
       '<div class="inspection-summary-item"><span class="inspection-summary-icon">&#128197;</span><div><span>End Date</span><b>' + esc(fmtDate(pkg.endDate)) + '</b></div></div>' +
       '<div class="inspection-summary-item inspection-summary-item--wide"><div><span>Checklist Progress</span><b>' + esc(pkg.answered + ' / ' + pkg.total + ' (' + pkg.progressPercent + '%)') + '</b></div><div class="inspection-progress"><span style="width:' + esc(String(pkg.progressPercent)) + '%"></span></div></div>' +
     '</div>' +
-    (submitted ? '<div class="inspection-readonly-banner"><b>Submitted checklist — read-only</b><span>Waiting for Lead Inspector Review. Submission timestamp: ' + esc(workspace.submittedAt) + '</span></div>' : '') +
+    (submitted ? '<div class="inspection-readonly-banner"><b>Submitted checklist — read-only</b><span>Waiting for Lead Inspector Review. Use Reopen for Editing before changing recorded results. Submission timestamp: ' + esc(workspace.submittedAt) + '</span></div>' : '') +
     '<div class="inspection-workspace"><aside class="inspection-side"><div class="inspection-panel"><h2>Checklist Sections</h2><div class="inspection-sections">' + sectionRows + '</div></div>' +
       '<div class="inspection-panel inspection-legend"><h2>Legend</h2>' + inspectionExecutionLegendItem('compliant') + inspectionExecutionLegendItem('noncompliant') + inspectionExecutionLegendItem('observation') + inspectionExecutionLegendItem('na') + '</div></aside>' +
       '<section class="inspection-card"><div class="inspection-card__head"><h2>' + esc(String(activeSection.order) + '. ' + activeSection.label) + '</h2><div class="inspection-card__meta">' + esc(activeSection.completed + ' / ' + activeSection.total) + ' Completed <span>&#8963;</span></div></div>' +

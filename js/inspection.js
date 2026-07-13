@@ -30,13 +30,32 @@ function inspectionWorkspaceForAudit(target, auditId) {
       draftSavedAt: '',
       allSectionsCompletedAt: '',
       submittedAt: '',
-      submittedByUserId: ''
+      submittedByUserId: '',
+      lastSubmittedAt: '',
+      lastSubmittedByUserId: '',
+      reopenedAt: '',
+      reopenedByUserId: ''
     };
   }
   var workspace = target.inspectionWorkspaces[auditId];
   if (!workspace.answersByQuestionId || typeof workspace.answersByQuestionId !== 'object') workspace.answersByQuestionId = {};
   if (!workspace.downloadedAttachmentIds || typeof workspace.downloadedAttachmentIds !== 'object') workspace.downloadedAttachmentIds = {};
   return workspace;
+}
+
+function reopenInspectionChecklistForEditing(target, auditId, metadata) {
+  if (!inspectionExecutionAudit(target, auditId)) return false;
+  var workspace = inspectionWorkspaceForAudit(target, auditId);
+  if (!workspace.submittedAt) return false;
+  metadata = metadata || {};
+  workspace.lastSubmittedAt = workspace.submittedAt;
+  workspace.lastSubmittedByUserId = workspace.submittedByUserId || '';
+  workspace.submittedAt = '';
+  workspace.submittedByUserId = '';
+  workspace.allSectionsCompletedAt = '';
+  workspace.reopenedAt = metadata.at || new Date().toISOString();
+  workspace.reopenedByUserId = metadata.userId || '';
+  return true;
 }
 
 function inspectionExecutionAudit(target, auditId) {

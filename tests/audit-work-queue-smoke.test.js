@@ -62,14 +62,50 @@ assert.match(html, /data-field="inspection-status"/);
 assert.doesNotMatch(html, /inspection-status-cycle/);
 assert.doesNotMatch(html, /Next action:/);
 
-context.state.inspectionWorkspaces['AUD-2026-001'].submittedAt = '2026-07-11T09:31:42.154Z';
+const submittedWorkspace = context.state.inspectionWorkspaces['AUD-2026-001'];
+submittedWorkspace.selectedSectionKey = 'galley';
+submittedWorkspace.answersByQuestionId['cab-galley-oven'] = {
+  status: 'compliant',
+  comment: 'Recorded before submission.',
+  file: 'galley-check.pdf'
+};
+submittedWorkspace.allSectionsCompletedAt = '2026-07-11T09:30:00.000Z';
+submittedWorkspace.submittedAt = '2026-07-11T09:31:42.154Z';
+submittedWorkspace.submittedByUserId = 'USR-AYLIN';
+const answersBeforeReopen = JSON.stringify(submittedWorkspace.answersByQuestionId);
 html = context.viewAuditDetail();
 assert.match(html, /Submitted checklist — read-only/);
+assert.match(html, /data-act="inspection-reopen-editing"/);
+assert.match(html, /Reopen for Editing/);
 assert.match(html, /inspection-status-readonly/);
 assert.match(html, /Locked after submission/);
 assert.match(html, /Recorded result/);
 assert.doesNotMatch(html, /<select[^>]+data-field="inspection-status"/);
-context.state.inspectionWorkspaces['AUD-2026-001'].submittedAt = '';
+
+assert.equal(typeof context.reopenInspectionChecklistForEditing, 'function');
+assert.equal(context.reopenInspectionChecklistForEditing(context.state, 'AUD-2026-001', {
+  at: '2026-07-11T10:05:00.000Z',
+  userId: 'USR-AYLIN'
+}), true);
+assert.equal(submittedWorkspace.submittedAt, '');
+assert.equal(submittedWorkspace.submittedByUserId, '');
+assert.equal(submittedWorkspace.allSectionsCompletedAt, '');
+assert.equal(submittedWorkspace.lastSubmittedAt, '2026-07-11T09:31:42.154Z');
+assert.equal(submittedWorkspace.lastSubmittedByUserId, 'USR-AYLIN');
+assert.equal(submittedWorkspace.reopenedAt, '2026-07-11T10:05:00.000Z');
+assert.equal(submittedWorkspace.reopenedByUserId, 'USR-AYLIN');
+assert.equal(JSON.stringify(submittedWorkspace.answersByQuestionId), answersBeforeReopen);
+
+html = context.viewAuditDetail();
+assert.doesNotMatch(html, /Submitted checklist — read-only/);
+assert.match(html, /Reopened for editing/);
+assert.match(html, /<select[^>]+data-field="inspection-status"/);
+assert.match(html, /<option value="compliant" selected>Compliant<\/option>/);
+assert.match(html, /Submit to Lead Inspector/);
+
+const appSource = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+assert.match(appSource, /case 'inspection-reopen-editing': handleInspectionReopenEditing\(id\); break;/);
+assert.match(appSource, /reopenInspectionChecklistForEditing\(state, targetAuditId/);
 
 context.state.inspectionWorkspaces['AUD-2026-001'].selectedSectionKey = 'em-eq';
 html = context.viewAuditDetail();
