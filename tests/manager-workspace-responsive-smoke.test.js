@@ -37,9 +37,9 @@ assert.match(
 );
 
 assert.equal(
-  (indexHtml.match(/\?v=20260710-workflow-remediation-v12/g) || []).length,
+  (indexHtml.match(/\?v=20260713-presentation-details-v15/g) || []).length,
   12,
-  'Task 12 cache-busts the stylesheet and eleven frontend scripts together'
+  'The presentation-detail update cache-busts the stylesheet and eleven frontend scripts together'
 );
 
 console.log('manager-workspace-responsive-smoke: ok');

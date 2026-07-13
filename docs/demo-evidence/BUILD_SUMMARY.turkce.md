@@ -81,12 +81,21 @@ Bu ana yüzeyde guardrail pill satırı, attention strip ve hızlı aksiyon buto
 satırı saklanır. İlk görünüm dört KPI kartına ve üç sade tabloya odaklanır:
 Assigned Inspections, CAP Reviews ve Draft Reports.
 
-**My Inspections** içindeki **Open** aksiyonu artık Inspector'a özel sade
-**SMS Oversight Audit** çalışma alanına gider. Bu ekran audit başlığını,
-SkyCargo tarzı SMS checklist özetini, checklist bölümlerini, compliance
-kontrollerini, yorum kutularını, sahte attached-file adlarını ve checklist
-indirme, draft kaydetme, Lead Inspector'a gönderme demo aksiyonlarını gösterir.
-Bu aksiyonlar frontend-only kalır; yalnızca demo state / ekran içi mesaj üretir.
+**My Inspections** içindeki canonical scenario **Open** aksiyonu Fly Namibia
+**Cabin Inspection** execution workspace'ine gider. Ekran altı source-derived
+Cabin section'ı, exact assignment/execution Question ID'lerini, per-Inspector
+assignment scope'u, compliance kontrolü, yorum kutusu, mock attachment adı ve
+download/draft save/one-time Lead Inspector submission browser-local
+aksiyonlarını gösterir.
+
+Lead Inspector assignment overview sunuma hazırdır: **Preview Checklist**,
+**View Details** ve **View Team** seçili Cabin Inspection paketinden beslenen
+birbirinden farklı modallar açar. Checklist modalı altı runnable sorunun ve
+configured reference'ların tamamını; kapsam modalı altı bölümü, konumu, süreyi
+ve `126 source rows / 6 runnable questions` sınırını; ekip modalı ise Lead
+Inspector ile güncel Inspector workload'unu gösterir. Ortak asset sürümü
+yenilendiği için normal sayfa yenilemesi eski tek bölümlü Flight Operations
+yüzeyi yerine bu durumu yükler.
 
 Table-first desen; audit work queue, bulgu ve CAP/evidence review kuyrukları,
 auditee talepleri, yönetici attention listeleri, planning, checklist approvals,

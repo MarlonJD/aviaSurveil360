@@ -263,6 +263,40 @@ assert.match(elements.get('app-root').innerHTML, /Assignment Overview/);
 assert.match(elements.get('app-root').innerHTML, /Assign Checklist Questions/);
 assert.doesNotMatch(elements.get('app-root').innerHTML, /Preliminary Report - Routine Inspection/);
 
+context.handleAction('lead-assignment-preview-checklist', dataEl({}));
+let assignmentModalHtml = elements.get('modal-host').innerHTML;
+assert.match(assignmentModalHtml, /Cabin Inspection Checklist/);
+[
+  'Galley',
+  'Lavatories',
+  'Passenger Seats',
+  'Emergency Equipment',
+  'Video + Crew Seat',
+  'Cockpit, Cabin General Condition + Exits'
+].forEach((section) => assert.match(assignmentModalHtml, new RegExp(section.replace(/[+]/g, '\\+'))));
+assert.match(assignmentModalHtml, /Is the oven installed, serviceable/);
+assert.match(assignmentModalHtml, /PBE installed, serviceable, accessible/);
+context.closeModal();
+
+context.handleAction('lead-assignment-view-details', dataEl({}));
+assignmentModalHtml = elements.get('modal-host').innerHTML;
+assert.match(assignmentModalHtml, /Sections in scope/);
+assert.match(assignmentModalHtml, /126 source rows/);
+assert.match(assignmentModalHtml, /6 runnable questions/);
+assert.match(assignmentModalHtml, /Fly Namibia aircraft cabin/);
+assert.match(assignmentModalHtml, /Cockpit, Cabin General Condition \+ Exits/);
+context.closeModal();
+
+context.handleAction('lead-assignment-view-team', dataEl({}));
+assignmentModalHtml = elements.get('modal-host').innerHTML;
+assert.match(assignmentModalHtml, /Inspection team/);
+assert.match(assignmentModalHtml, /Caner Yildiz/);
+assert.match(assignmentModalHtml, /Lead Inspector/);
+assert.match(assignmentModalHtml, /Aylin Sezer/);
+assert.match(assignmentModalHtml, /Mehmet Aydin/);
+assert.match(assignmentModalHtml, /Current assignment/);
+context.closeModal();
+
 context.handleAction('nav', dataEl({ 'data-view': 'lead-assignment-questions', 'data-id': 'AUD-2026-001' }));
 assert.equal(context.state.view, 'lead-assignment-questions');
 assert.match(elements.get('app-root').innerHTML, /Assign Selected \(4\)/);

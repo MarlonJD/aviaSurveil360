@@ -82,12 +82,21 @@ It removes the guardrail pill row, attention strip, and quick-action button row
 from the primary surface. The first viewport now focuses on four KPI cards and
 three plain tables: Assigned Inspections, CAP Reviews, and Draft Reports.
 
-From **My Inspections**, the **Open** action now leads to a simplified
-Inspector-only **SMS Oversight Audit** workspace. It shows the audit title,
-SkyCargo-style SMS checklist summary, checklist sections, compliance controls,
-comment boxes, attached-file names, and demo-only actions for downloading the
-checklist, saving a draft, and submitting to the Lead Inspector. These actions
-remain frontend-only and record only demo state / in-UI messages.
+From **My Inspections**, the **Open** action for the canonical scenario leads to
+the Fly Namibia **Cabin Inspection** execution workspace. It shows the six
+source-derived Cabin sections, exact assignment/execution Question IDs,
+per-Inspector assignment scope, compliance controls, comment boxes, mock
+attachment names, and browser-local actions for download, draft save, and
+one-time submission to Lead Inspector review.
+
+The Lead Inspector assignment overview is presentation-ready: **Preview
+Checklist**, **View Details**, and **View Team** open distinct modals backed by
+the selected Cabin Inspection package. The checklist modal lists all six
+runnable questions and configured references; scope shows the six sections,
+location, duration, and the `126 source rows / 6 runnable questions` boundary;
+team shows the Lead Inspector plus current Inspector workload. The shared asset
+version was refreshed so an ordinary reload receives this state instead of the
+older one-section Flight Operations surface.
 
 The table-first pattern is also used for the audit work queue, findings and
 CAP/evidence review queues, auditee requests, manager attention lists,

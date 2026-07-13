@@ -2847,39 +2847,67 @@ function handleLeadAssignmentPreviewReport() {
   go('lead-review', { auditId: (state.params && state.params.auditId) || 'AUD-2026-001' });
 }
 
+function leadAssignmentPresentationContext() {
+  var auditId = (state.params && state.params.auditId) || 'AUD-2026-001';
+  var pkg = typeof inspectionExecutionPackageForAudit === 'function' ? inspectionExecutionPackageForAudit(state, auditId) : null;
+  var audit = (state.audits || []).filter(function (item) { return item.id === auditId; })[0] || null;
+  return { auditId: auditId, pkg: pkg, audit: audit };
+}
+
+function leadAssignmentSectionPresentationRows(pkg, includeQuestions) {
+  if (!pkg || !Array.isArray(pkg.sections)) return '<p class="empty">Checklist sections are unavailable.</p>';
+  return '<div class="lead-assignment-modal-list">' + pkg.sections.map(function (section) {
+    var question = section.questions && section.questions[0] || null;
+    return '<div class="lead-assignment-modal-row">' +
+      '<span class="lead-assignment-modal-index">' + esc(String(section.order)) + '</span>' +
+      '<div><b>' + esc(section.label) + '</b>' +
+        (includeQuestions && question ? '<p>' + esc(question.item) + '</p><small>' + esc(question.reference) + '</small>' : '<p>Included in scope · ' + esc(String(section.total)) + ' runnable demo question</p>') +
+      '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
 function handleLeadAssignmentPreviewChecklist() {
+  var context = leadAssignmentPresentationContext();
+  var pkg = context.pkg;
   openModal(modalShell('Cabin Inspection Checklist',
     '<div class="lead-assigned-modal">' +
-      '<p><b>126 questions</b> across cabin sections and emergency equipment checks.</p>' +
-      '<div class="list-mini"><span>Galley</span><span>Lavatories</span><span>Passenger seats</span><span>Emergency equipment</span></div>' +
+      '<div class="lead-assignment-modal-summary"><span><small>Checklist source</small><b>126 source rows</b></span><span><small>Runnable subset</small><b>' + esc(pkg ? String(pkg.total) : '6') + ' runnable questions</b></span><span><small>Sections</small><b>' + esc(pkg ? String(pkg.sections.length) : '6') + '</b></span></div>' +
+      leadAssignmentSectionPresentationRows(pkg, true) +
       '<p class="small muted mt-12">Demo only: checklist preview uses mock content and does not open a production checklist engine.</p>' +
     '</div>',
     '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="nav" data-view="lead-assignment-questions" data-id="' + esc((state.params && state.params.auditId) || 'AUD-2026-001') + '">Assign Questions</button>',
-    false));
+    true));
 }
 
 function handleLeadAssignmentViewDetails() {
+  var context = leadAssignmentPresentationContext();
+  var pkg = context.pkg;
+  var audit = context.audit;
   openModal(modalShell('Sections in scope',
     '<div class="lead-assigned-modal">' +
-      '<div class="metaline">' +
-        metaItem('Emergency Equipment', '22 questions') +
-        metaItem('Cabin Condition + Exits', '21 questions') +
-        metaItem('Galley / Lavatories / Seats', '83 questions') +
-      '</div>' +
-      '<p class="small muted mt-12">Scope is fixed for this frontend demo and can be reviewed before assignment release.</p>' +
+      '<div class="lead-assignment-modal-summary"><span><small>Location</small><b>' + esc(audit ? audit.location : 'Fly Namibia aircraft cabin') + '</b></span><span><small>Duration</small><b>1 Day</b></span><span><small>Coverage</small><b>126 source rows / ' + esc(pkg ? String(pkg.total) : '6') + ' runnable questions</b></span></div>' +
+      leadAssignmentSectionPresentationRows(pkg, false) +
+      '<p class="small muted mt-12">The six-section scope is fixed for this frontend demo and can be reviewed before assignment release.</p>' +
     '</div>',
     '<button class="btn" data-act="close-modal">Close</button>',
-    false));
+    true));
 }
 
 function handleLeadAssignmentViewTeam() {
+  var context = leadAssignmentPresentationContext();
+  var team = typeof leadAssignmentTeam === 'function' ? leadAssignmentTeam() : null;
+  var lead = team ? (state.users || []).filter(function (user) { return user.id === team.leadUserId; })[0] : null;
   var rows = typeof leadAssignmentInspectors === 'function' ? leadAssignmentInspectors() : [];
   openModal(modalShell('Inspection team',
-    '<div class="lead-assigned-modal">' + rows.map(function (row) {
-      return '<div class="metaline">' + metaItem(row.name, row.unit + ' - ' + row.assigned + ' questions') + '</div>';
-    }).join('') + '<p class="small muted mt-12">Team workload is balanced before release to inspectors.</p></div>',
+    '<div class="lead-assigned-modal">' +
+      '<div class="lead-assignment-team-lead"><small>Lead Inspector</small><b>' + esc(lead ? lead.name : 'Caner Yildiz') + '</b><span>' + esc(lead ? lead.department : 'Cabin Safety') + ' · Owns review and release</span></div>' +
+      '<div class="lead-assignment-modal-list">' + rows.map(function (row) {
+        return '<div class="lead-assignment-modal-row"><span class="lead-assignment-avatar is-' + esc(row.tone) + '">' + esc(row.initials) + '</span><div><b>' + esc(row.name) + '</b><p>CAA Inspector · ' + esc(row.unit) + '</p><small>Current assignment: ' + esc(String(row.assigned)) + ' of ' + esc(context.pkg ? String(context.pkg.total) : '6') + ' runnable questions</small></div></div>';
+      }).join('') + '</div>' +
+      '<p class="small muted mt-12">Workload counts update when checklist questions are assigned in this browser-only demo.</p></div>',
     '<button class="btn" data-act="close-modal">Close</button>',
-    false));
+    true));
 }
 
 function handleLeadAssignmentAddInspector() {
