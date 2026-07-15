@@ -22,29 +22,29 @@ context.state = context.freshState();
 
 assert.equal(typeof context.viewPlanningWorkspace, 'function', 'canonical Planning workspace renderer exists');
 
-context.state.role = 'gm';
+context.state.role = 'finance';
 context.state.view = 'planning';
 let html = context.viewPlanningWorkspace();
 assert.match(html, /Planning/);
-assert.match(html, /Department Manager[\s\S]*GM Review[\s\S]*Finance Review[\s\S]*Executive Director Approval/);
-assert.match(html, /Send to Finance Review/);
-assert.doesNotMatch(html, /Phase 0B|thin planning approval slice/i);
-
-context.applyApprovalDecision(context.state.planningItems[0], {
-  decision: 'forward',
-  actor: { role: 'gm', name: context.ROLES.gm.user },
-  comment: 'Scope accepted for finance review.'
-});
-
-context.state.role = 'finance';
-html = context.viewPlanningWorkspace();
+assert.match(html, /Department Manager[\s\S]*Finance Review[\s\S]*GM Review[\s\S]*Executive Director Approval/);
 assert.match(html, /Approve Budget/);
-assert.match(html, /Finance Review/);
+assert.doesNotMatch(html, /Phase 0B|thin planning approval slice/i);
 
 context.applyApprovalDecision(context.state.planningItems[0], {
   decision: 'approve',
   actor: { role: 'finance', name: context.ROLES.finance.user },
   comment: 'Budget accepted.'
+});
+
+context.state.role = 'gm';
+html = context.viewPlanningWorkspace();
+assert.match(html, /Forward to Executive Director/);
+assert.match(html, /Return to Department Manager/);
+
+context.applyApprovalDecision(context.state.planningItems[0], {
+  decision: 'forward',
+  actor: { role: 'gm', name: context.ROLES.gm.user },
+  comment: 'Finance-reviewed plan forwarded to Executive Director.'
 });
 
 context.state.role = 'executiveDirector';

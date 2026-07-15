@@ -24,6 +24,8 @@ const context = {
 };
 vm.createContext(context);
 
+const css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+
 [
   'js/data.js',
   'js/helpers.js',
@@ -45,6 +47,21 @@ assert.deepEqual(
   'Finance exposes one operational workspace'
 );
 assert.equal(context.homeView('finance'), 'finance-review');
+assert.match(
+  css,
+  /@media \(max-width: 1400px\)\s*\{[^}]*\.finance-review-layout\s*\{[^}]*grid-template-columns:\s*1fr/s,
+  'Finance must stack before its queue requires horizontal scrolling'
+);
+assert.match(
+  css,
+  /@media \(max-width: 1050px\)[\s\S]*?\.finance-review-queue table\s*\{[^}]*min-width:\s*0[^}]*table-layout:\s*fixed/s,
+  'Finance must collapse duplicated queue columns before tablet actions are clipped'
+);
+assert.match(
+  css,
+  /@media \(max-width: 640px\)[\s\S]*?\.finance-review-queue th:nth-child\(4\)[\s\S]*?\.finance-review-queue td:nth-child\(5\)\s*\{\s*display:\s*none;\s*\}/s,
+  'Finance must hide redundant owner and status columns so the mobile plan and Review action remain readable'
+);
 
 const state = context.freshState();
 assert.deepEqual(JSON.parse(JSON.stringify(state.financeUi)), {
@@ -67,28 +84,18 @@ assert.equal(
 );
 assert.equal(typeof context.applyFinancePlanningDecision, 'function');
 
-context.applyApprovalDecision(plan, {
-  decision: 'forward',
-  actor: { role: 'gm', name: context.ROLES.gm.user },
-  comment: 'Forwarded for budget review.'
-});
 let result = context.applyFinancePlanningDecision(plan, {
   decision: 'approve',
   actor: { role: 'finance', name: context.ROLES.finance.user },
   comment: 'Budget is available.'
 });
 assert.equal(result.ok, true);
-assert.equal(context.approvalSummary(plan).ownerRole, 'executiveDirector');
+assert.equal(context.approvalSummary(plan).ownerRole, 'gm');
 assert.equal(plan.mockApprovalSignature, undefined, 'Finance cannot sign the plan');
 assert.equal(plan.preparation.status, 'not_released', 'Finance cannot release the plan');
 
 const returnState = context.freshState();
 const returnPlan = returnState.planningItems[0];
-context.applyApprovalDecision(returnPlan, {
-  decision: 'forward',
-  actor: { role: 'gm', name: context.ROLES.gm.user },
-  comment: 'Forwarded for budget review.'
-});
 result = context.applyFinancePlanningDecision(returnPlan, {
   decision: 'return',
   actor: { role: 'finance', name: context.ROLES.finance.user },
@@ -102,16 +109,11 @@ result = context.applyFinancePlanningDecision(returnPlan, {
   comment: 'Reconcile the travel estimate.'
 });
 assert.equal(result.ok, true);
-assert.equal(context.approvalSummary(returnPlan).ownerRole, 'gm');
+assert.equal(context.approvalSummary(returnPlan).ownerRole, 'manager');
 assert.equal(returnPlan.preparation.status, 'not_released');
 
 const uiState = context.freshState();
 const uiPlan = uiState.planningItems[0];
-context.applyApprovalDecision(uiPlan, {
-  decision: 'forward',
-  actor: { role: 'gm', name: context.ROLES.gm.user },
-  comment: 'Forwarded for budget review.'
-});
 context.state = uiState;
 context.state.role = 'finance';
 context.state.view = 'finance-review';
@@ -135,10 +137,10 @@ context.handleAction('finance-review-choice', { getAttribute(name) { return name
 assert.equal(context.state.financeUi.decision, 'approve');
 context.document.getElementById('finance-review-comment').value = 'Budget is available for the requested scope.';
 context.handleAction('finance-review-confirm', { getAttribute(name) { return name === 'data-id' ? uiPlan.id : ''; } });
-assert.equal(context.approvalSummary(uiPlan).ownerRole, 'executiveDirector');
+assert.equal(context.approvalSummary(uiPlan).ownerRole, 'gm');
 assert.equal(uiPlan.preparation.status, 'not_released');
 assert.equal(uiPlan.mockApprovalSignature, undefined);
-assert.equal(context.state.notifications[0].role, 'executiveDirector');
+assert.equal(context.state.notifications[0].role, 'gm');
 
 context.state.view = 'planning';
 context.normalizeViewForRole();

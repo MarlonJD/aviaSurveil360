@@ -42,6 +42,9 @@ assert.match(html, /Decision needed/);
 assert.match(html, /cap-track-head-actions/);
 assert.match(styles, /\.workbench-command--lead-cap[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(220px,\s*auto\)/);
 assert.match(styles, /\.shell--inspector\s+\.cap-detail-head[\s\S]*?padding-right:\s*0/);
+assert.match(styles, /\.prelim-finding-item\s*\{[^}]*grid-template-columns:\s*28px\s+44px\s+minmax\(0,\s*1fr\)\s+minmax\(92px,\s*auto\)\s+58px/s);
+assert.match(styles, /\.prelim-finding-item\s+em\s*\{[^}]*grid-column:\s*4/s);
+assert.match(styles, /\.prelim-finding-item\s+\.btn\s*\{[^}]*grid-column:\s*5/s);
 assert.match(styles, /\.inspection-status-readonly\s*\{[^}]*box-shadow:\s*inset 3px 0 0 currentColor/s);
 assert.match(styles, /\.inspection-status-readonly\s*\{[^}]*cursor:\s*default/s);
 
@@ -49,9 +52,8 @@ context.state.role = 'inspector';
 context.state.view = 'inspector-assignments';
 context.state.params = {};
 html = context.viewInspectorAssignments();
-assert.match(html, /inspector-next-dossier/);
-assert.match(html, /Continue Work/);
-assert.match(html, /Next inspection/);
+assert.doesNotMatch(html, /inspector-next-dossier|Next inspection/);
+assert.match(html, /inspector-assignment-kpis/);
 assert.match(html, /inspector-assignment-table/);
 
 context.state.role = 'inspector';

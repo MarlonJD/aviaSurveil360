@@ -5,6 +5,11 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const styles = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
 const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const mobileReportRules = styles.slice(styles.indexOf('@media screen and (max-width: 980px)'));
+
+assert.doesNotMatch(mobileReportRules, /\.state-final-report-doc\s*\{[^}]*width:\s*700px/s);
+assert.match(mobileReportRules, /\.executive-report-canvas\s*\{[^}]*min-width:\s*0[^}]*overflow-x:\s*hidden/s);
+assert.match(mobileReportRules, /\.executive-report-zoom-stage\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0/s);
 
 assert.match(
   styles,
@@ -37,9 +42,9 @@ assert.match(
 );
 
 assert.equal(
-  (indexHtml.match(/\?v=20260713-presentation-details-v15/g) || []).length,
+  (indexHtml.match(/\?v=20260713-checklist-reopen-v16/g) || []).length,
   12,
-  'The presentation-detail update cache-busts the stylesheet and eleven frontend scripts together'
+  'The current UI update cache-busts the stylesheet and eleven frontend scripts together'
 );
 
 console.log('manager-workspace-responsive-smoke: ok');

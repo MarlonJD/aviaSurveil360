@@ -98,3 +98,9 @@ internal admin permissions.
   preview, message, or browser-local file result.
 - This remains frontend-only, browser-local, and demo-only; production
   auditability and authorization are not claimed.
+
+## Stakeholder Readiness Privacy Evidence — 2026-07-10
+
+Organization scope now applies consistently to Messages, Settings, unread counts, documents, Preliminary and Final Reports, CAP, Evidence, and notifications. Direct legacy `reports` navigation resolves to the organization-scoped Documents projection. Cross-organization fixtures are unavailable and do not contribute identifying copy or counts.
+
+Status: **demo-only**; focused regressions and fresh isolated-browser checks of Messages, Documents, Final Reports, and Settings at all four required viewports are **verified locally**. Production authentication, authorization enforcement, storage, notification delivery, and privacy certification are **not run**; **production-readiness not claimed**.

@@ -339,8 +339,9 @@ Desktop browser click-through ile şu governance yolları yerelde doğrulandı:
 - Department Manager, General Manager, Finance Review ve Executive Director
   planlama onay zinciri, final `Approved` durumuna kadar.
 - `CL-FOPS-v2.4` için General Manager checklist approval.
-- Lead Inspector -> Department Manager -> Executive Director / GM rapor onay
-  zinciri, `Final Report Issued` ve `Final Report Locked` durumuna kadar.
+- Lead Inspector -> Department Manager -> General Manager intermediate review
+  -> Executive Director final decision zinciri, `Final Report Issued` ve
+  `Final Report Locked` durumuna kadar.
 - Inspector `Audit Work Queue` ve `Offline Field Inspection` demo sınırı.
 - Auditee portal izolasyonu: görünür `Internal CAA Note` veya `Inspector
   Workload` yok.
@@ -394,8 +395,10 @@ panelinde toplandı. Eski Planning Board ve Planning Approvals ayrımı yalnızc
 mevcut link/test uyumluluğu için wrapper olarak korunur; ayrı top-level
 kullanıcı navigasyonu olarak gösterilmez.
 
-`Department Manager -> GM -> Finance Review -> Executive Director` onay zinciri
-korundu. Executive Director onayından sonra Planning paneli görünür biçimde `GM
+Güncel planning onay zinciri `Department Manager -> Finance Review -> GM Review
+-> Executive Director` şeklindedir. Finance ve GM revision return kararları
+Department Manager'a gider; düzeltilen kayıt Finance aşamasından yeniden geçer.
+Executive Director onayından sonra Planning paneli görünür biçimde `GM
 Release to Department`, Department Manager kabulü, Lead Inspector ataması,
 team/date/resource önerisi, Department Manager confirmation ve `Ready for
 Execution` adımlarına devam eder.
@@ -596,8 +599,9 @@ Uygulanan ve lokal doğrulanan kapsam:
   enforcement deliberation, internal risk, workload, başka kuruluş ve
   unreleased report render edilmez.
 - Finance tek Finance Review workspace'e açılır ve yalnız Approve Budget ile
-  Return for Revision kararlarını gösterir. Approval Executive Director'a
-  ilerler; return General Manager action'a gider ve plan sign/release edemez.
+  Return for Revision kararlarını gösterir. Güncel düzeltilmiş contract altında
+  approval GM Review'a ilerler; return Department Manager'a gider ve Finance
+  planı sign/release edemez.
 - Executive Director Dashboard, Planning, Final Reports, Notifications ve
   Settings kullanır. Plan approval `Approve & Sign (Demo)` ile çalışır ve next
   action `GM / Release to Department` kalır. Uygun Final Report'a mock approval
@@ -630,6 +634,85 @@ production report service; gerçek enforcement execution; release, deployment,
 penetration, accessibility-certification veya stakeholder-acceptance testi.
 Open production signing/enforcement authority contract
 `docs/exec-plans/tech-debt-tracker.md` içinde izlenir.
+
+### Stakeholder readiness final remediation checkpoint — 2026-07-10
+
+Bu checkpoint durumu: **demo-only**. Canonical report identity, GM/ED authority, Service Provider organization privacy, state-backed Lead Final yolları, exact Preliminary decision, exact assignment/execution ID'leri, responsive static containment, modal focus containment ve changed visible-control behavior focused Node/static kontrollerle **verified locally**. Exact assignment package altı Cabin execution Question ID'sini kullanır; başka Inspector'a atanmış question read-only render edilir. `PR-2026-018` ve `FR-2026-018` distinct canonical artifact'lardır; report decision yalnız selected artifact'ı mutate eder.
+
+Fresh final gate'ler **verified locally**: tüm top-level `js/*.js` dosyaları `node --check` kontrolünü geçti; Tasks 1-8 altında adı geçen 18 focused komut ayrı ayrı geçti; `node --test tests/*.test.js` 44/44 geçti ve failed/cancelled/skipped/todo sayıları sıfırdı; `git diff --check` geçti.
+
+Bu remediation checkpoint'i için fresh isolated rendered QA `1536x864`, `1366x768`, `1024x768` ve `390x844` boyutlarında **verified locally**. Page width her viewport ile eşleşti; remediated report container'larında ölçülen nested horizontal overflow ve primary-action clipping yoktu; console warning/error sayısı sıfırdı. Rendered akış Department Manager -> GM -> Executive Director handoff, GM return validation ve forward-only authority, ED preview/referral/reject/return validation ve issue, open-Finding preservation, exact altı-question multi-Inspector assignment/release, Inspector scoped execution/submission ve altı Service Provider route'unun tamamını kapsadı. `FR-2026-018`, Lead list/readiness/preview boyunca selected kaldı ve browser PDF action `Fly_Namibia_Final_Report_FR-2026-018.pdf` sonucunu bildirdi. Generated PDF lines ve canonical selected content ayrıca focused Node testleriyle doğrulandı. Attachment modal focus'u içeride kaldı, Escape modalı kapattı ve focus `Manage Attachments` kontrolüne döndü. İzole browser tab'ları ve local QA server doğrulama sonrasında kapatıldı; cleanup process araması ayrıca başlatılmış QA process kalıntısı bulmadı.
+
+External production, release, identity, legal-signature, enforcement, deployment, real-device ve external stakeholder-acceptance kanıtı **not run** kalır. Kapsam **demo-only**; **production-readiness not claimed**.
+
+### Stakeholder feedback remediation checkpoint — 2026-07-15
+
+Kanıt durumu: **demo-only** ve **verified locally**. Bu checkpoint production
+readiness iddiasında bulunmaz.
+
+Dokuz stakeholder maddesinin tamamı frontend-only demo içinde uygulandı:
+
+1. Inspector My Assignments artık operational KPI, filtre ve assignment table
+   ile başlıyor; tekrar eden Next Inspection dossier kaldırıldı.
+2. Lead Preliminary Inspection & Findings; desktop, tablet ve mobile
+   genişliklerde workflow frame içinde kalıyor.
+3. Preliminary Finding içeriğinde CAP/lifecycle status kaldırıldı; report-level
+   Draft/Review status görünür kalıyor.
+4. Preliminary attachment filename ve description metinleri overlap olmadan
+   satır kırıyor.
+5. Final Report organization/CAP ve key-Finding metric'leri compact overview
+   kullanıyor.
+6. Reset state, `AUD-2026-002` / SkyCargo Air için decision-ready GM report
+   `FR-2026-021` kaydını seçiyor; open, return validation ve forward çalışıyor.
+7. Reset state, `AUD-2026-003` / BlueWing Aviation için decision-ready ED report
+   `FR-2026-022` kaydını seçiyor; Approve, Return, Reject ve recommendation-only
+   Enforcement Review referral seçenekleri görünür.
+8. Planning zinciri `Department Manager -> Finance Review -> GM Review ->
+   Executive Director` olarak çalışıyor. Finance ve GM revision return kararları
+   Department Manager'a gidiyor; düzeltilen plan Finance'tan yeniden geçiyor.
+9. Reset state Finance Review içinde reconciled USD 12,500 sample budget ile
+   `PLAN-2026-Q3-CABIN` gösteriyor. Finance approval GM'e, GM forward ED'ye
+   ilerliyor; ED approval sonrasında next action `GM Release to Department`
+   kalıyor.
+
+Identity ve authority sınırları korundu. GM forward bir Final Report'u issue,
+mock-sign veya lock etmez. ED approval yalnız exact selected `FR-2026-022`
+artifact'ını demo mock approval mark ile issue/lock etti; tek open Finding açık
+kaldı ve owner `BlueWing Aviation Service Provider Portal` oldu. CAP acceptance
+Finding closure değildir; report approval CAP, Evidence, verification veya
+authorized closure yolunu bypass etmez. Enforcement referral
+recommendation-only kalır. Pre-v9 browser-local state migration, ilgisiz saved
+record'ları overwrite etmeden Finance aşamasını ekler ve unreviewed budget'ı
+Finance ötesine atlatmaz.
+
+Fresh automated kanıt (**verified locally**):
+
+- 11 `js/*.js` dosyasının tamamı `node --check` kontrolünden geçti.
+- Task 7 kapsamındaki 15 focused komut ayrı ayrı geçti. Direct stakeholder
+  regression komutu 21/21 geçti.
+- `node --test tests/*.test.js` 55/55 geçti; failed, cancelled, skipped ve todo
+  sayıları sıfırdı.
+- `git diff --check` geçti.
+
+Fresh isolated in-app Browser QA `1536x864`, `1366x768`, `1024x768` ve
+`390x844` boyutlarında **verified locally**. Inspector, Lead Preliminary/Final,
+GM, ED, Finance ve Service Provider akışları meaningful content render etti;
+decision ve state change boyunca exact ID'ler stabil kaldı. Page width viewport
+ile eşleşti; ilgili nested table/card horizontal overflow üretmedi; primary
+control, status, filename, description ve decision panel clipping/overlap
+göstermedi; framework overlay yoktu; ilgili console warning/error sayısı
+sıfırdı. Finance return planı Department Manager'a taşıdı; Finance approval,
+GM forward, ED approval ve post-ED GM Release uygulandı. Service Provider DOM
+Fly Namibia scope'ta kaldı; SkyCargo Air, BlueWing Aviation, `FR-2026-021`,
+`FR-2026-022`, Internal CAA Note, Inspector workload veya internal risk
+göstermedi. Browser tab'ları ve isolated server kapatıldı; cleanup kontrolünde
+task-owned test process kalıntısı bulunmadı.
+
+External production, release, deployment, real-device, real identity/signature,
+real authorization, backend/database, real upload/storage, real notification,
+production reporting/audit-log, enforcement-execution, legal/regulatory ve
+stakeholder sign-off kanıtı **not run**. Kapsam **demo-only**;
+**production-readiness not claimed**.
 
 ---
 

@@ -41,6 +41,8 @@ const context = {
 };
 vm.createContext(context);
 
+const css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+
 [
   'js/data.js',
   'js/helpers.js',
@@ -59,16 +61,51 @@ vm.createContext(context);
 
 assert.deepEqual(
   JSON.parse(JSON.stringify(context.NAV.gm.map((item) => item.label))),
-  ['Dashboard', 'Report Approvals', 'Departments', 'Risk Dashboard', 'Settings']
+  ['Dashboard', 'Planning', 'Report Approvals', 'Departments', 'Risk Dashboard', 'Settings']
+);
+assert.equal(context.GENERAL_MANAGER_ALLOWED_VIEWS.planning, true);
+assert.match(
+  css,
+  /@media \(max-width: 1600px\)\s*\{[^}]*\.gm-approval-workspace\s*\{[^}]*grid-template-columns:\s*1fr/s,
+  'the GM approval queue must stack before its row actions require horizontal scrolling'
+);
+assert.match(
+  css,
+  /@media \(max-width: 1100px\)[\s\S]*?\.gm-approval-table table\s*\{[^}]*min-width:\s*0[^}]*table-layout:\s*fixed/s,
+  'the GM approval queue must collapse duplicated columns before tablet row actions are clipped'
+);
+assert.match(
+  css,
+  /@media \(max-width: 480px\)[\s\S]*?\.gm-table\s*\{[^}]*overflow-x:\s*hidden[^}]*\}[\s\S]*?\.gm-table table\s*\{[^}]*min-width:\s*0[^}]*table-layout:\s*fixed/s,
+  'the GM dashboard tables must fit inside their cards at phone widths'
+);
+assert.match(
+  css,
+  /@media \(max-width: 480px\)[\s\S]*?\.gm-report-actions\s*\{[^}]*min-width:\s*0[^}]*flex-direction:\s*column/s,
+  'the GM report decision controls must stack without widening the phone queue'
 );
 assert.equal(context.homeView('gm'), 'gm-dashboard');
-assert.match(context.ROLE_DESC.gm, /final report/i);
+assert.match(context.ROLE_DESC.gm, /intermediate|review|forward/i);
+assert.doesNotMatch(context.ROLE_DESC.gm, /final report authorization/i);
 assert.doesNotMatch(context.ROLE_DESC.gm, /planning|budget/i);
 assert.match(context.ROLES.gm.question, /Final Reports/);
 
+const defaultState = context.freshState();
+const defaultGmReport = context.reportArtifactById('FR-2026-021', defaultState);
+assert.ok(defaultGmReport);
+assert.equal(defaultState.generalManagerUi.selectedReportId, 'FR-2026-021');
+assert.ok(context.generalManagerProjection(defaultState).approvalRows.some((row) => row.id === 'FR-2026-021'));
+context.state = defaultState;
+context.state.role = 'gm';
+let defaultHtml = context.viewGeneralManagerReportApprovals();
+assert.match(defaultHtml, /FR-2026-021/);
+assert.match(defaultHtml, /Open Report/);
+assert.match(defaultHtml, /Return Report/);
+assert.match(defaultHtml, /Forward to Executive Director/);
+
 const state = context.freshState();
-const finalReport = state.managerReports.find((report) => report.reportType === 'Final Report');
-const preliminaryReport = state.managerReports.find((report) => report.reportType === 'Preliminary Report');
+const finalReport = context.reportArtifactById('FR-2026-018', state);
+const preliminaryReport = context.reportArtifactById('PR-2026-018', state);
 assert.ok(finalReport);
 assert.ok(preliminaryReport);
 
@@ -77,12 +114,24 @@ finalReport.ownerRole = 'gm';
 const logCount = state.auditLog.length;
 const notificationCount = state.notifications.length;
 
-let result = context.applyGeneralManagerReportDecision(state, finalReport.id, 'return', '', 'General Manager');
+const wrongActorBefore = JSON.stringify(state);
+let wrongActorResult = context.applyGeneralManagerReportDecision(
+  state,
+  finalReport.id,
+  'approve',
+  'Wrong actor attempt.',
+  { role: 'manager', name: 'Mehmet Kaya' }
+);
+assert.equal(wrongActorResult.ok, false);
+assert.match(wrongActorResult.message, /only the general manager/i);
+assert.equal(JSON.stringify(state), wrongActorBefore);
+
+let result = context.applyGeneralManagerReportDecision(state, finalReport.id, 'return', '', { role: 'gm', name: 'General Manager' });
 assert.equal(result.ok, false);
 assert.match(result.message, /comment/i);
 assert.equal(finalReport.status, 'submitted_to_gm');
 
-result = context.applyGeneralManagerReportDecision(state, finalReport.id, 'approve', 'Reviewed and forwarded to the Executive Director.', 'General Manager');
+result = context.applyGeneralManagerReportDecision(state, finalReport.id, 'approve', 'Reviewed and forwarded to the Executive Director.', { role: 'gm', name: 'General Manager' });
 assert.equal(result.ok, true);
 assert.equal(result.report.status, 'submitted_to_executive');
 assert.equal(result.report.ownerRole, 'executiveDirector');
@@ -99,26 +148,26 @@ const preliminaryResult = context.applyGeneralManagerReportDecision(
   preliminaryReport.id,
   'approve',
   'Not permitted.',
-  'General Manager'
+  { role: 'gm', name: 'General Manager' }
 );
 assert.equal(preliminaryResult.ok, false);
 assert.notEqual(preliminaryReport.status, 'submitted_to_executive');
 
 const wrongStageState = context.freshState();
-const wrongStageFinal = wrongStageState.managerReports.find((report) => report.reportType === 'Final Report');
+const wrongStageFinal = context.reportArtifactById('FR-2026-018', wrongStageState);
 const wrongStageResult = context.applyGeneralManagerReportDecision(
   wrongStageState,
   wrongStageFinal.id,
   'approve',
   'Too early.',
-  'General Manager'
+  { role: 'gm', name: 'General Manager' }
 );
 assert.equal(wrongStageResult.ok, false);
 assert.equal(wrongStageFinal.status, 'pending_manager');
 assert.notEqual(wrongStageFinal.locked, true);
 
 const returnState = context.freshState();
-const returnedFinal = returnState.managerReports.find((report) => report.reportType === 'Final Report');
+const returnedFinal = context.reportArtifactById('FR-2026-018', returnState);
 returnedFinal.status = 'submitted_to_gm';
 returnedFinal.ownerRole = 'gm';
 const returned = context.applyGeneralManagerReportDecision(
@@ -126,7 +175,7 @@ const returned = context.applyGeneralManagerReportDecision(
   returnedFinal.id,
   'return',
   'Clarify the evidence verification summary.',
-  'General Manager'
+  { role: 'gm', name: 'General Manager' }
 );
 assert.equal(returned.ok, true);
 assert.equal(returned.report.status, 'pending_manager');
@@ -134,15 +183,16 @@ assert.equal(returned.report.ownerRole, 'manager');
 assert.notEqual(returned.report.locked, true);
 
 const projectionState = context.freshState();
-const projectionFinal = projectionState.managerReports.find((report) => report.reportType === 'Final Report');
+const projectionFinal = context.reportArtifactById('FR-2026-018', projectionState);
 projectionFinal.status = 'submitted_to_gm';
 projectionFinal.ownerRole = 'gm';
 const projection = context.generalManagerProjection(projectionState);
-assert.equal(projection.pendingFinalReports, 1);
-assert.equal(projection.reportsAwaitingApproval, 1);
+assert.equal(projection.pendingFinalReports, 2);
+assert.equal(projection.reportsAwaitingApproval, 2);
 assert.ok(Array.isArray(projection.departments));
 assert.ok(Array.isArray(projection.approvalRows));
-assert.equal(projection.approvalRows[0].id, projectionFinal.id);
+assert.ok(projection.approvalRows.some((row) => row.id === projectionFinal.id));
+assert.ok(projection.approvalRows.some((row) => row.id === 'FR-2026-021'));
 assert.equal(projection.riskMatrix.length, 25);
 
 context.state = projectionState;
@@ -159,14 +209,15 @@ let html = elements.get('app-root').innerHTML;
   'Overdue CAPs',
   'Department Overview',
   'Risk Heat Map',
-  'Final Report Approval Queue'
+  'Final Report Review Queue'
 ].forEach((label) => assert.match(html, new RegExp(label)));
 
 context.state.view = 'gm-report-approvals';
 context.render();
 html = elements.get('app-root').innerHTML;
 assert.match(html, /Report Approvals/);
-assert.match(html, /Approve Final Report/);
+assert.match(html, /Forward to Executive Director/);
+assert.doesNotMatch(html, /Approve &amp; Issue|final authorization|issues and locks/i);
 assert.match(html, /Return Report/);
 assert.match(html, /Open Report/);
 assert.doesNotMatch(html, /Add Inspector|Create Package|Publish New Version|manager-checklist-/);
@@ -185,6 +236,21 @@ assert.match(html, /Cross-Department Risk Dashboard/);
 assert.match(html, /Risk Exposure Matrix/);
 assert.match(html, /management indicator/i);
 assert.doesNotMatch(html, /Create Package|Save Question|Edit Team/);
+
+const planningState = context.freshState();
+context.applyFinancePlanningDecision(planningState.planningItems[0], {
+  decision: 'approve',
+  actor: { role: 'finance', name: context.ROLES.finance.user }
+});
+context.state = planningState;
+context.state.role = 'gm';
+context.state.view = 'planning';
+context.state.params = {};
+context.render();
+html = elements.get('app-root').innerHTML;
+assert.equal(context.state.view, 'planning');
+assert.match(html, /Forward to Executive Director/);
+assert.match(html, /Return to Department Manager/);
 
 context.state.view = 'manager-checklists';
 context.render();

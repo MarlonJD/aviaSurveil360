@@ -394,13 +394,49 @@ function logTimestamp() {
   return DEMO_TODAY + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
 }
 
-function pushNotification(role, icon, text) {
-  state.notifications.unshift({ id: 'N' + (state.notifSeq++), role: role, icon: icon, text: text, time: 'Just now', unread: true });
-  if (role === state.role) toast(icon + ' Notification', text, 'info');
+function pushNotification(role, icon, text, options) {
+  options = options || {};
+  var notification = {
+    id: 'N' + (state.notifSeq++),
+    role: role,
+    organizationId: options.organizationId || '',
+    userId: options.userId || '',
+    icon: icon,
+    text: text,
+    time: 'Just now',
+    unread: true
+  };
+  state.notifications.unshift(notification);
+  if (notificationVisibleToSession(notification, state)) toast(icon + ' Notification', text, 'info');
+  return notification;
 }
 
-function unreadCount(role) {
-  return state.notifications.filter(function (n) { return n.role === role && n.unread; }).length;
+function notificationVisibleToSession(notification, targetState) {
+  var target = targetState || state;
+  if (!notification || !target || notification.role !== target.role) return false;
+  if (target.role === 'auditee') {
+    var organizationId = target.auditeeOrganizationId || (typeof ROLES !== 'undefined' && ROLES.auditee ? ROLES.auditee.org : '');
+    return !!organizationId && notification.organizationId === organizationId;
+  }
+  if (target.role === 'inspector' && notification.userId) {
+    return notification.userId === (target.inspectorUserId || 'USR-AYLIN');
+  }
+  return true;
+}
+
+function notificationOrganizationIdForFinding(findingId, targetState) {
+  var target = targetState || state;
+  var findings = target && Array.isArray(target.findings) ? target.findings : [];
+  var finding = findings.filter(function (item) { return item.id === findingId; })[0] || null;
+  return finding ? (finding.orgId || finding.organizationId || '') : '';
+}
+
+function unreadCount(role, targetState) {
+  var target = targetState || state;
+  var session = Object.assign({}, target, { role: role || target.role });
+  return (target.notifications || []).filter(function (notification) {
+    return notification.unread && notificationVisibleToSession(notification, session);
+  }).length;
 }
 
 /* ----------------------------- Toast ----------------------------- */

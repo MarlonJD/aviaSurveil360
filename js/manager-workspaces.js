@@ -107,6 +107,10 @@ function managerInspectionRows(target, filters) {
 
 function managerReportById(target, reportId) {
   var s = ensureManagerWorkspaceState(target);
+  if (typeof reportArtifactById === 'function') {
+    var artifact = reportArtifactById(reportId, s);
+    if (artifact) return artifact;
+  }
   return s.managerReports.filter(function (report) { return report.id === reportId; })[0] || null;
 }
 
@@ -158,7 +162,8 @@ function managerReportRows(target, filters) {
     return report.status === status;
   }
 
-  return s.managerReports.filter(function (report) {
+  var reports = typeof reportReadModels === 'function' ? reportReadModels(s) : s.managerReports;
+  return reports.filter(function (report) {
     if (reportType !== 'all' && report.reportType !== reportType) return false;
     if (!matchesStatus(report)) return false;
     var haystack = [
@@ -294,7 +299,7 @@ function managerDashboardProjection(target) {
   var s = target || state;
   var audits = Array.isArray(s.audits) ? s.audits : [];
   var findings = Array.isArray(s.findings) ? s.findings : [];
-  var reports = Array.isArray(s.managerReports) ? s.managerReports : [];
+  var reports = typeof reportReadModels === 'function' ? reportReadModels(s) : (Array.isArray(s.managerReports) ? s.managerReports : []);
   var teams = Array.isArray(s.inspectionTeams) ? s.inspectionTeams : [];
   var users = Array.isArray(s.users) ? s.users : [];
   var openFindings = findings.filter(function (finding) { return finding.status !== 'CLOSED'; });
@@ -631,7 +636,7 @@ function managerRiskCsv(projection) {
 function generalManagerProjection(target) {
   var s = target || state;
   var risk = managerRiskProjection(s, { dateRange: 'all', department: 'all', inspection: 'all', risk: 'all' });
-  var reports = Array.isArray(s.managerReports) ? s.managerReports : [];
+  var reports = typeof reportReadModels === 'function' ? reportReadModels(s) : (Array.isArray(s.managerReports) ? s.managerReports : []);
   var audits = Array.isArray(s.audits) ? s.audits : [];
   var approvalRows = reports.filter(function (report) {
     return report.reportType === 'Final Report' && report.status === 'submitted_to_gm' && report.locked !== true;
@@ -691,6 +696,9 @@ function generalManagerDecisionResult(ok, message, report) {
 
 function applyGeneralManagerReportDecision(target, reportId, decision, comment, actor) {
   var s = target || state;
+  if (!actor || actor.role !== 'gm') {
+    return generalManagerDecisionResult(false, 'Only the General Manager may record this intermediate review.', null);
+  }
   var report = managerReportById(s, reportId);
   if (!report) return generalManagerDecisionResult(false, 'Final Report artifact not found.', null);
   if (report.reportType !== 'Final Report') return generalManagerDecisionResult(false, 'Only a Final Report can receive General Manager review.', report);
@@ -701,7 +709,7 @@ function applyGeneralManagerReportDecision(target, reportId, decision, comment, 
   var cleanComment = String(comment || '').trim();
   if (decision === 'return' && !cleanComment) return generalManagerDecisionResult(false, 'A General Manager comment is required to return the Final Report.', report);
 
-  var actorName = actor && actor.name ? actor.name : String(actor || 'General Manager');
+  var actorName = actor.name || 'General Manager';
   var at = managerReportDecisionTimestamp();
   if (!Array.isArray(report.history)) report.history = [];
   if (decision === 'approve') {
@@ -751,7 +759,7 @@ function executiveFinalReportProjection(target, filters) {
   var query = String(opts.query || '').trim().toLowerCase();
   var organization = opts.organization || 'all';
   var status = opts.status || 'all';
-  var reports = Array.isArray(s.managerReports) ? s.managerReports : [];
+  var reports = typeof reportReadModels === 'function' ? reportReadModels(s) : (Array.isArray(s.managerReports) ? s.managerReports : []);
   var eligibleStatuses = ['submitted_to_executive', 'issued', 'returned_to_manager', 'rejected', 'enforcement_review_referred'];
   var rows = reports.filter(function (report) {
     if (report.reportType !== 'Final Report' || eligibleStatuses.indexOf(report.status) === -1) return false;
@@ -783,6 +791,9 @@ function executiveReportDecisionResult(ok, message, report) {
 function applyExecutiveFinalReportDecision(target, reportId, input) {
   var s = target || state;
   input = input || {};
+  if (!input.actor || input.actor.role !== 'executiveDirector') {
+    return executiveReportDecisionResult(false, 'Only the Executive Director may issue, mock-sign, or lock a Final Report.', null);
+  }
   var report = managerReportById(s, reportId);
   if (!report) return executiveReportDecisionResult(false, 'Final Report artifact not found.', null);
   if (report.reportType !== 'Final Report') return executiveReportDecisionResult(false, 'Only Final Reports can receive an Executive Director decision.', report);
@@ -842,7 +853,16 @@ function applyExecutiveFinalReportDecision(target, reportId, input) {
   if (!Array.isArray(s.auditLog)) s.auditLog = [];
   s.auditLog.unshift({ id: 'L' + ((Number(s.logSeq) || s.auditLog.length) + 1), time: at, actor: actorName + ' (Executive Director)', action: report.history[report.history.length - 1].action, target: report.id, system: false });
   if (!Array.isArray(s.notifications)) s.notifications = [];
-  s.notifications.unshift({ id: 'N' + ((Number(s.notifSeq) || s.notifications.length) + 1), role: decision === 'approve' ? 'auditee' : (decision === 'return' ? 'manager' : 'executiveDirector'), icon: 'RPT', text: report.id + ' decision recorded: ' + decision.replace(/_/g, ' ') + '.', time: 'Just now', unread: true });
+  s.notifications.unshift({
+    id: 'N' + ((Number(s.notifSeq) || s.notifications.length) + 1),
+    role: decision === 'approve' ? 'auditee' : (decision === 'return' ? 'manager' : 'executiveDirector'),
+    organizationId: decision === 'approve' ? (report.organizationId || '') : '',
+    userId: '',
+    icon: 'RPT',
+    text: report.id + ' decision recorded: ' + decision.replace(/_/g, ' ') + '.',
+    time: 'Just now',
+    unread: true
+  });
   return executiveReportDecisionResult(true, 'Executive Director Final Report decision recorded.', report);
 }
 

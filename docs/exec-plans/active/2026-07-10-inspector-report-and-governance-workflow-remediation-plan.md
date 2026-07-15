@@ -25,6 +25,9 @@
 **Date:** 2026-07-10
 **Status:** ready-for-verification
 **Owner:** Codex implementation owner; stakeholder/product owner approves the final screen direction and policy wording.
+**Verification boundary:** The independent review blockers are remediated and the corrective [Stakeholder Readiness Final Remediation](2026-07-10-stakeholder-readiness-final-remediation-plan.md) returned a local demo GO after focused/full automated checks and fresh four-viewport rendered QA. Stakeholder acceptance remains the next gate.
+
+**2026-07-10 final remediation checkpoint:** The follow-up plan's Tasks 1-9 are implemented and **verified locally** for the frontend-only, **demo-only** surface. Canonical report identity, authority, organization privacy, exact IDs, assignment/execution integration, visible controls, responsive containment, selected PDF content, and keyboard/modal behavior passed focused/full checks and fresh rendered QA at `1536x864`, `1366x768`, `1024x768`, and `390x844`. Production signing/enforcement authority and all production/external surfaces remain **not run**; **production-readiness not claimed**.
 
 ## Objective
 
@@ -684,6 +687,14 @@ After browser/GUI automation, inspect and clean up leftover Chrome, Chrome Helpe
 - No backend, API, database, framework, real notification delivery, or production audit log was added.
 
 ## Implementation Evidence — 2026-07-10
+
+> **Independent final-review override — 2026-07-10:** The implementation-era
+> evidence below is not sufficient for final acceptance. A fresh independent
+> review reproduced Blocking report lifecycle, GM/ED authority, Service Provider
+> privacy, stale Lead Final Report, responsive nested-overflow, visible-control,
+> and product-truth defects. This plan remains `blocked` until
+> [Stakeholder Readiness Final Remediation](2026-07-10-stakeholder-readiness-final-remediation-plan.md)
+> completes and receives an independent GO verdict.
 
 **Scope status:** Tasks 1-13 implemented in order. Each implementation task was
 committed and pushed separately on the existing `main` branch as explicitly

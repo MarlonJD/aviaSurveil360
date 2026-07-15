@@ -40,8 +40,17 @@ Finance tek operational workspace'e sahiptir ve doğrudan buraya açılır:
 Bir budget queue, bir selected budget dossier, approval history ve iki karar
 içerir: `Approve Budget` ile `Return for Revision`. Finance audit scope edit
 edemez, plan sign/release edemez, report issue edemez veya Executive Director
-approval'ını bypass edemez. Approval Executive Director'a ilerler; return
-General Manager action'a döner.
+approval'ını bypass edemez. Finance approval GM Review'a ilerler; `Return for
+Revision` Department Manager'a döner.
+
+Planlama onay sırası: Department Manager -> Finance Review -> GM Review ->
+Executive Director. Finance onayı planı GM Review'a ilerletir. Finance Return
+for Revision kararı planı Department Manager'a döndürür.
+GM, Finance review'u
+tamamlanmış planı Executive Director'a ilerletebilir veya Department Manager'a
+döndürebilir; düzeltilen submission tekrar Finance aşamasından geçmelidir.
+Executive Director onayı planı doğrudan release etmez; GM Release to Department
+ayrı bir sonraki adım olarak kalır.
 
 ## Executive Director IA
 
@@ -73,11 +82,13 @@ approval Final Report'u ileri gönderir; issue, sign veya lock etmez.
 
 ## General Manager IA
 
-General Manager Dashboard, Report Approvals, Departments, Risk Dashboard ve
-Settings kullanır. GM intermediate Final Report reviewer'dır: report'u return
-edebilir veya Executive Director'a ilerletebilir fakat issue, sign veya lock
-edemez. ED plan approval sonrasında ayrı Release to Department adımını GM
-uygular.
+General Manager Dashboard, Planning, Report Approvals, Departments, Risk
+Dashboard ve Settings kullanır. Planning, Finance-approved planları GM Review
+için erişilebilir kılar: GM planı Department Manager'a return edebilir veya
+Executive Director'a ilerletebilir. GM ayrıca intermediate Final Report
+reviewer'dır: report'u return edebilir veya Executive Director'a ilerletebilir
+fakat issue, sign veya lock edemez. ED plan approval sonrasında ayrı Release to
+Department adımını GM uygular.
 
 ## Admin IA
 
@@ -85,3 +96,9 @@ Admin günlük operational decision yerine configuration yönetir. Primary
 alanlar Checklist Templates, Audit Types, Organization Types, Severity Rules,
 Due-Date Rules, Notification Templates, Roles & Permissions ve Audit Log'dur.
 Demo configuration production authorization service değildir.
+
+## Stakeholder Readiness IA Kanıtı — 2026-07-10
+
+Selected Fly Namibia Cabin Inspection assignment, altı-section Inspector execution, canonical Preliminary/Final Reports ve Service Provider portal boyunca tek identity kullanır. Assignment key'leri exact execution Question ID'leridir; başka Inspector'a atanmış question audit context için görünür fakat read-only kalır. Lead Final action'ları exact Report ID taşır. GM navigation yalnız intermediate review destekler; final issue/mock-sign/lock ED yetkisidir.
+
+Durum: **demo-only**; focused/static kontroller ile fresh isolated-browser selected-ID, visible-control, responsive ve keyboard/modal kontrolleri **verified locally**. External stakeholder acceptance ve production authorization **not run**; **production-readiness not claimed**.

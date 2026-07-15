@@ -21,27 +21,44 @@ function normalizeReportType(value) {
 
 function reportArtifactById(reportId, targetState) {
   var target = targetState || state;
-  var direct = auditReportById(reportId, target);
-  if (direct) return direct;
+  return auditReportById(reportId, target);
+}
+
+function reportProjectionById(reportId, targetState) {
+  var target = targetState || state;
   var projections = target && Array.isArray(target.managerReports) ? target.managerReports : [];
-  var projection = projections.filter(function (report) { return report.id === reportId; })[0] || null;
-  if (!projection || !projection.approvalPackageId) return null;
-  return auditReportById(projection.approvalPackageId, target);
+  return projections.filter(function (report) { return report.id === reportId; })[0] || null;
+}
+
+function reportReadModelById(reportId, targetState) {
+  var target = targetState || state;
+  var artifact = reportArtifactById(reportId, target);
+  var projection = reportProjectionById(reportId, target);
+  if (!artifact) return projection ? Object.assign({}, projection) : null;
+  return Object.assign({}, projection || {}, artifact, {
+    id: artifact.id,
+    approvalPackageId: artifact.id,
+    reportType: normalizeReportType(artifact.reportType)
+  });
+}
+
+function reportReadModels(targetState) {
+  var target = targetState || state;
+  var projections = target && Array.isArray(target.managerReports) ? target.managerReports : [];
+  return projections.map(function (projection) {
+    return reportReadModelById(projection.id, target);
+  }).filter(Boolean);
 }
 
 function reportForAuditAndType(auditId, reportType, targetState) {
   var target = targetState || state;
   if (!target) return null;
   var normalizedType = normalizeReportType(reportType);
-  var projections = Array.isArray(target.managerReports) ? target.managerReports : [];
-  var projection = projections.filter(function (report) {
-    return report.auditId === auditId && normalizeReportType(report.reportType) === normalizedType && !!report.approvalPackageId;
-  })[0] || null;
-  if (projection) return reportArtifactById(projection.id, target);
   var artifacts = Array.isArray(target.auditReports) ? target.auditReports : [];
-  return artifacts.filter(function (report) {
+  var matches = artifacts.filter(function (report) {
     return report.auditId === auditId && normalizeReportType(report.reportType) === normalizedType;
-  })[0] || null;
+  });
+  return matches.length === 1 ? matches[0] : null;
 }
 
 function reportForAudit(auditId) {
@@ -55,11 +72,8 @@ function reportForAudit(auditId) {
 }
 
 function preliminaryReportProjectionById(reportId, targetState) {
-  var target = targetState || state;
-  var reports = target && Array.isArray(target.managerReports) ? target.managerReports : [];
-  return reports.filter(function (report) {
-    return report.id === reportId && normalizeReportType(report.reportType) === 'Preliminary Report';
-  })[0] || null;
+  var report = reportProjectionById(reportId, targetState);
+  return report && normalizeReportType(report.reportType) === 'Preliminary Report' ? report : null;
 }
 
 function preliminaryReportDraftDefaults() {
@@ -116,11 +130,7 @@ function reportOpenFollowUpFindings(targetState, auditId) {
 }
 
 function reportProjectionForArtifact(targetState, report) {
-  var target = targetState || state;
-  var projections = target && Array.isArray(target.managerReports) ? target.managerReports : [];
-  return projections.filter(function (item) {
-    return item.approvalPackageId === report.id && normalizeReportType(item.reportType) === 'Final Report';
-  })[0] || null;
+  return report ? reportProjectionById(report.id, targetState) : null;
 }
 
 function serviceProviderVisibleFindings(targetState, organizationId) {
@@ -192,8 +202,8 @@ function serviceProviderCapRows(targetState, organizationId, filters) {
 
 function serviceProviderReportById(targetState, organizationId, reportId) {
   var target = targetState || state;
-  var reports = target && Array.isArray(target.managerReports) ? target.managerReports : [];
-  var report = reports.filter(function (item) { return item.id === reportId && item.organizationId === organizationId; })[0] || null;
+  var report = reportReadModelById(reportId, target);
+  if (report && report.organizationId !== organizationId) report = null;
   if (!report) return null;
   var type = normalizeReportType(report.reportType);
   return serviceProviderVisibleReports(target, organizationId, type).some(function (item) { return item.id === reportId; }) ? report : null;
@@ -250,7 +260,7 @@ function serviceProviderSafeReportProjection(targetState, organizationId, report
 function serviceProviderVisibleReports(targetState, organizationId, reportType) {
   var target = targetState || state;
   var type = normalizeReportType(reportType);
-  var reports = target && Array.isArray(target.managerReports) ? target.managerReports : [];
+  var reports = reportReadModels(target);
   return reports.filter(function (report) {
     if (report.organizationId !== organizationId || normalizeReportType(report.reportType) !== type) return false;
     if (type === 'Preliminary Report') {
@@ -297,18 +307,6 @@ function finalizeApprovedReport(report, actor) {
     signer: report.approvedBy,
     date: at
   };
-  var projection = reportProjectionForArtifact(state, report);
-  if (projection) {
-    projection.status = 'issued';
-    projection.ownerRole = 'auditee';
-    projection.issued = true;
-    projection.locked = true;
-    projection.issuedAt = at;
-    projection.releasedAt = at;
-    projection.finalAuthorizedBy = signer;
-    projection.finalAuthorizedAt = at;
-    projection.mockApprovalSignature = deepClone(report.mockDigitalSignature);
-  }
   if (audit) audit.status = reportOpenFollowUpFindings(state, report.auditId).length ? 'Follow-up Open' : 'Closed';
   return report;
 }

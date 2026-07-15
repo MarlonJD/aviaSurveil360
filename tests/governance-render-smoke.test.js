@@ -30,18 +30,13 @@ function resetPlanning(role) {
   return context.state.planningItems[0];
 }
 
-let item = resetPlanning('gm');
+let item = resetPlanning('finance');
 let html = context.viewPlanningWorkspace();
 assert.match(html, /Planning/);
-assert.match(html, /Send to Finance Review/);
+assert.match(html, /Approve Budget/);
 assert.doesNotMatch(html, /Planning Board|Planning Approvals/);
 
 item = resetPlanning('finance');
-context.applyApprovalDecision(item, {
-  decision: 'forward',
-  actor: { role: 'gm', name: context.ROLES.gm.user },
-  comment: 'Send to Finance.'
-});
 html = context.viewPlanningWorkspace();
 assert.match(html, /Planning/);
 assert.match(html, /Approve Budget/);
@@ -49,14 +44,14 @@ assert.match(html, /Finance Review/);
 
 item = resetPlanning('executiveDirector');
 context.applyApprovalDecision(item, {
-  decision: 'forward',
-  actor: { role: 'gm', name: context.ROLES.gm.user },
-  comment: 'Send to Finance.'
-});
-context.applyApprovalDecision(item, {
   decision: 'approve',
   actor: { role: 'finance', name: context.ROLES.finance.user },
   comment: 'Budget accepted.'
+});
+context.applyApprovalDecision(item, {
+  decision: 'forward',
+  actor: { role: 'gm', name: context.ROLES.gm.user },
+  comment: 'Forward to Executive Director.'
 });
 html = context.viewPlanningWorkspace();
 assert.match(html, /Planning/);
@@ -65,14 +60,14 @@ assert.match(html, /Executive Director Approval/);
 
 item = resetPlanning('leadInspector');
 context.applyApprovalDecision(item, {
-  decision: 'forward',
-  actor: { role: 'gm', name: context.ROLES.gm.user },
-  comment: 'Send to Finance.'
-});
-context.applyApprovalDecision(item, {
   decision: 'approve',
   actor: { role: 'finance', name: context.ROLES.finance.user },
   comment: 'Budget accepted.'
+});
+context.applyApprovalDecision(item, {
+  decision: 'forward',
+  actor: { role: 'gm', name: context.ROLES.gm.user },
+  comment: 'Forward to Executive Director.'
 });
 context.applyApprovalDecision(item, {
   decision: 'approve',

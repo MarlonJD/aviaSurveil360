@@ -27,6 +27,8 @@ const context = {
 };
 vm.createContext(context);
 
+const css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+
 [
   'js/data.js',
   'js/helpers.js',
@@ -50,11 +52,22 @@ assert.equal(typeof context.serviceProviderVisibleFindings, 'function');
 assert.equal(typeof context.serviceProviderCapRows, 'function');
 assert.equal(typeof context.serviceProviderVisibleReports, 'function');
 assert.equal(typeof context.serviceProviderRequiredAction, 'function');
+assert.equal(typeof context.notificationVisibleToSession, 'function');
+assert.match(
+  css,
+  /@media \(max-width: 640px\)[\s\S]*?\.service-workspace-tabs\s*\{[^}]*flex-wrap:\s*wrap[^}]*overflow-x:\s*hidden/s,
+  'Service Provider status tabs must wrap without clipping at the mobile breakpoint'
+);
 
 const state = context.freshState();
 assert.equal(state.serviceProviderUi.cap.selectedFindingId, 'CAB-2026-001');
 assert.equal(state.serviceProviderUi.preliminaryReports.selectedReportId, 'PR-2026-018');
 assert.equal(state.serviceProviderUi.finalReports.selectedReportId, 'FR-2026-018');
+
+state.notifications.unshift({
+  id: 'N-PRIVATE-SKY', role: 'auditee', organizationId: 'ORG-SKY',
+  icon: 'CAP', text: 'SkyCargo confidential CAP message', time: 'Just now', unread: true
+});
 
 state.findings.push({
   id: 'PRIVATE-OTHER-ORG',
@@ -82,13 +95,13 @@ capRows.forEach((row) => {
   assert.ok(row.nextAction, 'CAP rows expose a real next action');
 });
 
-const preliminary = state.managerReports.find((report) => report.id === 'PR-2026-018');
+const preliminary = context.reportArtifactById('PR-2026-018', state);
 preliminary.organizationId = 'ORG-XYZ';
 preliminary.status = 'released_to_service_provider';
 preliminary.sharedAt = '2026-07-10 15:00';
 preliminary.sharedBy = 'Mehmet Kaya';
 preliminary.responseDueDate = '2026-07-20';
-const finalReport = state.managerReports.find((report) => report.id === 'FR-2026-018');
+const finalReport = context.reportArtifactById('FR-2026-018', state);
 finalReport.organizationId = 'ORG-XYZ';
 finalReport.status = 'issued';
 finalReport.issued = true;
@@ -118,6 +131,27 @@ assert.match(html, /Progress/);
 assert.match(html, /CAB-2026-011/);
 assert.match(html, /CAP acceptance does not close this Finding/);
 assert.doesNotMatch(html, /PRIVATE-OTHER-ORG|Internal CAA Note|Other organization private finding/);
+
+context.state.view = 'messages';
+html = context.renderContent();
+assert.doesNotMatch(html, /SkyCargo confidential CAP message|ORG-SKY/);
+assert.equal(context.notificationVisibleToSession(state.notifications.find((item) => item.id === 'N-PRIVATE-SKY'), state), false);
+
+context.state.view = 'settings';
+html = context.renderContent();
+assert.match(html, /Service Provider|Fly Namibia/);
+assert.doesNotMatch(html, /Inspector Workload Balance|Oversight Health Index weights|internal risk/i);
+
+context.state.view = 'reports';
+context.state.params = {};
+context.normalizeViewForRole();
+assert.equal(context.state.params.filter, 'documents');
+html = context.renderContent();
+assert.match(html, /Documents/);
+assert.doesNotMatch(html, /SkyCargo confidential CAP message|ORG-SKY|Internal CAA Note|enforcement deliberation|Inspector Workload|internal risk/i);
+
+context.state.view = 'service-provider-cap';
+html = context.renderContent();
 
 context.handleAction('service-provider-cap-select', dataEl({ 'data-id': 'CAB-2026-013' }));
 assert.equal(context.state.serviceProviderUi.cap.selectedFindingId, 'CAB-2026-013');

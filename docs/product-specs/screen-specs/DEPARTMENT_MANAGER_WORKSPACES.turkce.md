@@ -369,3 +369,9 @@ Department Manager ve General Manager rol demoları:
     state-backed report'u demo-only approval mark ile preview edebilir;
 12. bu akışları desktop ve mobile boyutta console error veya layout overflow
     olmadan tamamlayabilir.
+
+## Stakeholder Readiness Remediation Kanıtı — 2026-07-10
+
+Distinct canonical `PR-2026-018` ve `FR-2026-018` artifact'ları Department Manager decision ile Lead Final list, preparation, preview, attachments, inspection record, submission ve mock PDF yollarında exact selected identity'yi korur. GM intermediate return/forward reviewer olarak kalır; uygun Final Report'u issue edip demo mock approval mark ekleyebilen ve lock edebilen tek rol Executive Director'dır. Report approval open Finding'leri `Follow-up Open` durumunda bırakır; CAP acceptance, Evidence verification ve Finding closure'dan ayrıdır.
+
+Durum: **demo-only**; focused/static kontroller ile dört required viewport'taki fresh isolated-browser report/authority/PDF/responsive kontrolleri **verified locally**. Production authorization, signature validity, enforcement execution, release ve external stakeholder acceptance **not run**; **production-readiness not claimed**.

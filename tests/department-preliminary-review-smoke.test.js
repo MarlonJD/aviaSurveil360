@@ -75,7 +75,7 @@ assert.match(html, /Submission & Next Steps/);
 assert.match(html, /If CAP Required/);
 assert.match(html, /Send to Service Provider/);
 assert.match(html, /If No CAP Required/);
-assert.match(html, /Send to General Manager for Approval/);
+assert.match(html, /Send to General Manager for Review/);
 assert.match(html, /Request Changes/);
 
 context.handleAction('department-prelim-tab', dataEl({ 'data-tab': 'findings' }));
@@ -102,9 +102,30 @@ context.render();
 context.handleAction('department-prelim-approve', dataEl({ 'data-path': 'gm' }));
 assert.equal(context.state.departmentPreliminaryReviewUi.approvedPath, 'gm');
 assert.equal(context.state.notifications[0].role, 'gm');
-assert.match(context.state.notifications[0].text, /General Manager approval/);
+assert.match(context.state.notifications[0].text, /General Manager review/);
 assert.equal(context.reportForAudit('AUD-2026-001').status, 'submitted_to_gm');
 html = elements.get('app-root').innerHTML;
 assert.match(html, /Sent to General Manager/);
+
+Object.assign(context.state, context.freshState());
+const secondProjection = JSON.parse(JSON.stringify(
+  context.state.managerReports.find((report) => report.id === 'PR-2026-018')
+));
+secondProjection.id = 'PR-ISOLATION-CHECK';
+secondProjection.approvalPackageId = 'PR-ISOLATION-CHECK';
+context.state.managerReports.push(secondProjection);
+const secondArtifact = JSON.parse(JSON.stringify(context.reportArtifactById('PR-2026-018', context.state)));
+secondArtifact.id = 'PR-ISOLATION-CHECK';
+context.state.auditReports.push(secondArtifact);
+context.state.role = 'manager';
+context.state.view = 'audit-reports';
+context.state.params = { filter: 'preliminary', reportId: 'PR-ISOLATION-CHECK' };
+context.state.departmentPreliminaryReviewUi.selectedReportId = 'PR-ISOLATION-CHECK';
+const originalPreliminaryBefore = JSON.stringify(context.reportArtifactById('PR-2026-018', context.state));
+context.handleDepartmentPreliminaryApprove('service_provider');
+assert.match(context.state.notifications[0].text, /PR-ISOLATION-CHECK/);
+assert.equal(context.state.auditLog[0].target, 'PR-ISOLATION-CHECK');
+assert.equal(context.reportArtifactById('PR-ISOLATION-CHECK', context.state).status, 'released_to_service_provider');
+assert.equal(JSON.stringify(context.reportArtifactById('PR-2026-018', context.state)), originalPreliminaryBefore);
 
 console.log('department-preliminary-review-smoke: ok');

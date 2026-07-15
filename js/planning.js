@@ -57,7 +57,7 @@ function applyFinancePlanningDecision(item, input) {
   }
   return planningDecisionResult(
     true,
-    input.decision === 'approve' ? 'Budget approved and advanced to Executive Director.' : 'Budget returned to General Manager action.',
+    input.decision === 'approve' ? 'Budget approved and advanced to General Manager review.' : 'Budget returned to Department Manager for revision.',
     item
   );
 }

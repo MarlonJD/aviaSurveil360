@@ -558,6 +558,12 @@ closed, manager dashboards update.
 
 ---
 
+## Erratum — 2026-07-10
+
+Executive Director Final Report approval does not automatically close an audit when any Finding, CAP, Evidence, verification, or authorized closure work remains open. Issuing the report may move the audit to `Follow-up Open`; CAP acceptance is not Finding closure. GM review is intermediate only, and Executive Director alone owns demo issue/mock-sign/lock authority. This erratum supersedes any earlier wording that implied ED/GM approval itself completed audit closure.
+
+Status: **demo-only** contract correction **verified locally** by focused report/authority regressions. Production authority and legal effect are **not run**; **production-readiness not claimed**.
+
 ## Execution Prompt
 
 ```text

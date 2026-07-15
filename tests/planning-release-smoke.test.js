@@ -14,8 +14,8 @@ vm.createContext(context);
 context.state = context.freshState();
 const item = context.state.planningItems[0];
 
-context.applyApprovalDecision(item, { decision: 'forward', actor: { role: 'gm', name: context.ROLES.gm.user }, comment: 'Send to Finance.' });
 context.applyApprovalDecision(item, { decision: 'approve', actor: { role: 'finance', name: context.ROLES.finance.user }, comment: 'Budget accepted.' });
+context.applyApprovalDecision(item, { decision: 'forward', actor: { role: 'gm', name: context.ROLES.gm.user }, comment: 'Forward to Executive Director.' });
 context.applyApprovalDecision(item, { decision: 'approve', actor: { role: 'executiveDirector', name: context.ROLES.executiveDirector.user }, comment: 'ED approved.' });
 assert.equal(item.status, 'approved');
 

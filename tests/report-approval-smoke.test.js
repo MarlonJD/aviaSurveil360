@@ -7,71 +7,58 @@ const root = path.resolve(__dirname, '..');
 const context = { console, window: undefined, document: undefined, setTimeout, clearTimeout };
 vm.createContext(context);
 
-['js/data.js', 'js/helpers.js', 'js/approval.js', 'js/reports.js'].forEach((file) => {
+['js/data.js', 'js/helpers.js', 'js/approval.js', 'js/reports.js', 'js/manager-workspaces.js'].forEach((file) => {
   vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
 });
 
 context.state = context.freshState();
-const report = context.state.auditReports[0];
+const preliminary = context.reportArtifactById('PR-2026-018', context.state);
+const finalReport = context.reportArtifactById('FR-2026-018', context.state);
+assert.ok(preliminary);
+assert.ok(finalReport);
+assert.notEqual(preliminary, finalReport);
 
-assert.equal(report.approvalType, 'report');
-assert.equal(context.approvalSummary(report).ownerRole, 'leadInspector');
-assert.equal(report.finalLocked, false);
+const finalBeforePreliminary = JSON.stringify(finalReport);
+let result = context.applyManagerReportDecision(
+  context.state,
+  preliminary.id,
+  'approve',
+  'Department Manager released the Preliminary Report to the Service Provider.',
+  { role: 'manager', name: context.ROLES.manager.user }
+);
+assert.equal(result.ok, true);
+assert.equal(preliminary.status, 'released_to_service_provider');
+assert.equal(JSON.stringify(finalReport), finalBeforePreliminary);
 
-context.applyReportApprovalDecision(report, {
-  decision: 'forward',
-  actor: { role: 'leadInspector', name: context.ROLES.leadInspector.user },
-  comment: 'Preliminary report submitted.'
-});
-assert.equal(context.approvalSummary(report).ownerRole, 'manager');
-
-context.applyReportApprovalDecision(report, {
+const preliminaryBeforeFinal = JSON.stringify(preliminary);
+result = context.applyManagerReportDecision(
+  context.state,
+  finalReport.id,
+  'approve',
+  'Department Manager completed Final Report review.',
+  { role: 'manager', name: context.ROLES.manager.user }
+);
+assert.equal(result.ok, true);
+assert.equal(finalReport.status, 'submitted_to_gm');
+result = context.applyGeneralManagerReportDecision(
+  context.state,
+  finalReport.id,
+  'approve',
+  'General Manager reviewed and forwarded the Final Report.',
+  { role: 'gm', name: context.ROLES.gm.user }
+);
+assert.equal(result.ok, true);
+assert.equal(finalReport.status, 'submitted_to_executive');
+result = context.applyExecutiveFinalReportDecision(context.state, finalReport.id, {
   decision: 'approve',
-  actor: { role: 'manager', name: context.ROLES.manager.user },
-  comment: 'Department Manager released the preliminary report to the Service Provider.',
-  enforcementRecommendation: { type: 'Warning', reason: 'Repeated training-record issue; human review required.' }
+  actor: { role: 'executiveDirector', name: context.ROLES.executiveDirector.user }
 });
-assert.equal(report.enforcementRecommendation.type, 'Warning');
-assert.equal(context.approvalSummary(report).ownerRole, 'leadInspector');
-assert.equal(report.finalLocked, false);
-assert.equal(report.status, 'released_to_service_provider');
-
-context.applyReportApprovalDecision(report, {
-  decision: 'forward',
-  actor: { role: 'leadInspector', name: context.ROLES.leadInspector.user },
-  comment: 'Service Provider CAP completion window closed; prepare Final Report.'
-});
-assert.equal(context.approvalSummary(report).ownerRole, 'manager');
-assert.equal(report.status, 'submitted_to_dm_final');
-
-context.applyReportApprovalDecision(report, {
-  decision: 'approve',
-  actor: { role: 'manager', name: context.ROLES.manager.user },
-  comment: 'Department Manager final review completed for General Manager review.'
-});
-assert.equal(context.approvalSummary(report).ownerRole, 'gm');
-assert.equal(report.status, 'submitted_to_gm');
-
-context.applyReportApprovalDecision(report, {
-  decision: 'approve',
-  actor: { role: 'gm', name: context.ROLES.gm.user },
-  comment: 'General Manager reviewed and forwarded the Final Report.'
-});
-assert.equal(context.approvalSummary(report).ownerRole, 'executiveDirector');
-assert.equal(report.status, 'submitted_to_ed');
-
-context.applyReportApprovalDecision(report, {
-  decision: 'approve',
-  actor: { role: 'executiveDirector', name: context.ROLES.executiveDirector.user },
-  comment: 'Executive Director / GM approval completed; final report issued.'
-});
-assert.equal(context.approvalSummary(report).ownerRole, null);
-
-assert.equal(report.finalLocked, true);
-assert.equal(report.status, 'final_report_generated');
-assert.match(report.mockDigitalSignature.label, /DEMO/);
-assert.notEqual(context.auditById(report.auditId).status, 'Closed');
-assert.match(context.auditById(report.auditId).status, /Report Issued|Follow-up Open/);
-assert.ok(context.state.findings.some((finding) => finding.auditId === report.auditId && finding.status !== 'CLOSED'));
+assert.equal(result.ok, true);
+assert.equal(finalReport.status, 'issued');
+assert.equal(finalReport.locked, true);
+assert.match(finalReport.mockApprovalSignature.label, /DEMO mock approval mark - not a real e-signature/);
+assert.equal(JSON.stringify(preliminary), preliminaryBeforeFinal);
+assert.equal(context.auditById(finalReport.auditId).status, 'Follow-up Open');
+assert.ok(context.state.findings.some((finding) => finding.auditId === finalReport.auditId && finding.status !== 'CLOSED'));
 
 console.log('report-approval-smoke: ok');

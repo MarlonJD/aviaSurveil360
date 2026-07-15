@@ -339,8 +339,9 @@ Desktop browser click-through verified these governance paths locally:
 - Department Manager, General Manager, Finance Review, and Executive Director
   planning approval chain through final `Approved` state.
 - General Manager checklist approval for `CL-FOPS-v2.4`.
-- Lead Inspector -> Department Manager -> Executive Director / GM report
-  approval chain through `Final Report Issued` and `Final Report Locked`.
+- Lead Inspector -> Department Manager -> General Manager intermediate review
+  -> Executive Director final decision through `Final Report Issued` and
+  `Final Report Locked`.
 - Inspector `Audit Work Queue` and `Offline Field Inspection` demo boundary.
 - Auditee portal isolation: no visible `Internal CAA Note` or `Inspector
   Workload`.
@@ -393,8 +394,10 @@ preparation work. The prior split between Planning Board and Planning Approvals
 is kept only as compatibility wrappers for existing links/tests; it is no
 longer exposed as separate top-level user-facing navigation.
 
-The `Department Manager -> GM -> Finance Review -> Executive Director` planning
-approval chain is preserved. After Executive Director approval, the Planning
+The current planning approval chain is `Department Manager -> Finance Review ->
+GM Review -> Executive Director`. Finance and GM revision returns go to
+Department Manager, and a corrected submission must pass Finance again. After
+Executive Director approval, the Planning
 panel visibly continues to `GM Release to Department`, Department Manager
 acceptance, Lead Inspector assignment, team/date/resource proposal, Department
 Manager confirmation, and `Ready for Execution`.
@@ -592,8 +595,9 @@ Implemented and locally verified:
   CAA Notes, enforcement deliberations, internal risk, workload, other
   organizations, and unreleased reports do not render.
 - Finance lands on one Finance Review workspace with only Approve Budget and
-  Return for Revision. Approval advances to Executive Director; return goes to
-  General Manager action and cannot sign or release the plan.
+  Return for Revision. Under the current corrected contract, approval advances
+  to GM Review; return goes to Department Manager, and Finance cannot sign or
+  release the plan.
 - Executive Director has Dashboard, Planning, Final Reports, Notifications,
   and Settings. Plan approval uses `Approve & Sign (Demo)` and retains
   `GM / Release to Department` as the next action. ED is the only role that may
@@ -626,6 +630,82 @@ production report service; real enforcement execution; release, deployment,
 penetration, accessibility-certification, or stakeholder-acceptance testing.
 The open production signing/enforcement authority contract remains tracked in
 `docs/exec-plans/tech-debt-tracker.md`.
+
+### Stakeholder readiness final remediation checkpoint — 2026-07-10
+
+Status at this checkpoint: **demo-only**. Canonical report identity, GM/ED authority, Service Provider organization privacy, state-backed Lead Final paths, exact Preliminary decisions, exact assignment/execution IDs, responsive static containment, modal focus containment, and changed visible-control behavior are **verified locally** by focused Node/static checks. The exact assignment package now uses all six Cabin execution Question IDs, and another Inspector's assigned question renders read-only. `PR-2026-018` and `FR-2026-018` are distinct canonical artifacts; report decisions mutate only the selected artifact.
+
+Fresh final gates are **verified locally**: all top-level `js/*.js` files passed `node --check`; all 18 focused commands named by Tasks 1-8 passed individually; `node --test tests/*.test.js` passed 44/44 with 0 failed, cancelled, skipped, or todo; and `git diff --check` passed.
+
+Fresh isolated rendered QA for this remediation checkpoint is **verified locally** at `1536x864`, `1366x768`, `1024x768`, and `390x844`. Page width matched each viewport, the remediated report containers had no measured nested horizontal overflow, primary actions were not clipped, and console warnings/errors were zero. The rendered flow exercised Department Manager -> GM -> Executive Director handoff, GM return validation and forward-only authority, ED preview/referral/reject/return validation and issue, open-Finding preservation, exact six-question multi-Inspector assignment/release, Inspector scoped execution/submission, and all six Service Provider routes. `FR-2026-018` remained selected through Lead list/readiness/preview and the browser PDF action reported `Fly_Namibia_Final_Report_FR-2026-018.pdf`. The generated PDF lines and canonical selected content are also covered by focused Node tests. Attachment-modal focus stayed trapped, Escape closed it, and focus returned to `Manage Attachments`. The isolated browser tabs and local QA server were closed after verification; the cleanup process search found no separately launched QA process residue.
+
+External production, release, identity, legal-signature, enforcement, deployment, real-device, and external stakeholder-acceptance evidence remains **not run**. This is **demo-only**; **production-readiness not claimed**.
+
+### Stakeholder feedback remediation checkpoint — 2026-07-15
+
+Evidence status: **demo-only** and **verified locally**. This checkpoint does
+not claim production readiness.
+
+All nine stakeholder items are implemented in the frontend-only demo:
+
+1. Inspector My Assignments now begins with operational KPIs, filters, and the
+   assignment table; the redundant Next Inspection dossier is removed.
+2. Lead Preliminary Inspection & Findings stays inside its workflow frame at
+   desktop, tablet, and mobile widths.
+3. Preliminary Finding content no longer shows CAP/lifecycle status, while the
+   report-level Draft/Review status remains visible.
+4. Preliminary attachment filenames and descriptions wrap without overlap.
+5. Final Report organization/CAP and key-Finding metrics use a compact overview.
+6. Reset state selects decision-ready GM report `FR-2026-021` for
+   `AUD-2026-002` / SkyCargo Air; open, return validation, and forward work.
+7. Reset state selects decision-ready ED report `FR-2026-022` for
+   `AUD-2026-003` / BlueWing Aviation and exposes Approve, Return, Reject, and
+   recommendation-only Enforcement Review referral.
+8. Planning now follows `Department Manager -> Finance Review -> GM Review ->
+   Executive Director`. Finance and GM revision returns go to Department
+   Manager, and a corrected plan must pass Finance again.
+9. Reset state shows `PLAN-2026-Q3-CABIN` with a reconciled USD 12,500 sample
+   budget in Finance Review. Finance approval advances to GM, GM forwards to
+   ED, and ED approval leaves `GM Release to Department` as the next action.
+
+Identity and authority boundaries remained intact. GM forwarding does not
+issue, mock-sign, or lock a Final Report. ED approval issued and locked only
+the exact selected `FR-2026-022` artifact with a demo mock approval mark, kept
+its one open Finding open, and returned ownership to `BlueWing Aviation Service
+Provider Portal`. CAP acceptance remains separate from Finding closure;
+report approval does not bypass CAP, Evidence, verification, or an authorized
+closure path. Enforcement referral remains recommendation-only. Pre-v9
+browser-local state migration inserts the Finance stage without overwriting
+unrelated saved records or advancing an unreviewed budget past Finance.
+
+Fresh automated evidence (**verified locally**):
+
+- All 11 `js/*.js` files passed `node --check`.
+- All 15 focused Task 7 commands passed individually. The direct stakeholder
+  regression command passed 21/21.
+- `node --test tests/*.test.js` passed 55/55 with 0 failed, cancelled, skipped,
+  or todo tests.
+- `git diff --check` passed.
+
+Fresh isolated in-app Browser QA is **verified locally** at `1536x864`,
+`1366x768`, `1024x768`, and `390x844`. The Inspector, Lead Preliminary and
+Final, GM, ED, Finance, and Service Provider flows rendered meaningful content
+with exact IDs stable through decisions and state changes. Page width matched
+the viewport; relevant nested tables/cards had no horizontal overflow; primary
+controls, status, filenames, descriptions, and decision panels were not
+clipped or overlapping; no framework overlay appeared; and relevant console
+warning/error count was zero. Finance return moved the plan to Department
+Manager; Finance approval, GM forward, ED approval, and post-ED GM Release were
+exercised. Service Provider DOM remained Fly Namibia-scoped and did not expose
+SkyCargo Air, BlueWing Aviation, `FR-2026-021`, `FR-2026-022`, Internal CAA
+Notes, Inspector workload, or internal risk. Browser tabs and the isolated
+server were closed; cleanup found no task-owned test process residue.
+
+External production, release, deployment, real-device, real identity/signature,
+real authorization, backend/database, real upload/storage, real notification,
+production reporting/audit-log, enforcement-execution, legal/regulatory, and
+stakeholder sign-off evidence is **not run**. This remains **demo-only**;
+**production-readiness not claimed**.
 
 ---
 

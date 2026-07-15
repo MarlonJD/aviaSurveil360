@@ -18,6 +18,30 @@ const questionId = 'cab-em-eq-pbe';
 assert.ok(Array.isArray(context.state.potentialFindings), 'potential findings collection exists');
 assert.equal(typeof context.inspectionExecutionPackageForAudit, 'function');
 const executionPackage = context.inspectionExecutionPackageForAudit(context.state, auditId);
+const executionQuestionIds = executionPackage.questions.map((question) => question.id);
+const assignmentQuestionIds = Object.keys(context.state.leadAssignmentsByAudit[auditId].selectedQuestionIds);
+assert.deepEqual(JSON.parse(JSON.stringify(assignmentQuestionIds)), JSON.parse(JSON.stringify(executionQuestionIds)));
+const legacyState = context.freshState();
+legacyState.demoStateVersion = 7;
+legacyState.leadAssignmentsByAudit[auditId].selectedQuestionIds = { 'CAB-Q001': true, 'CAB-Q002': true };
+legacyState.leadAssignmentsByAudit[auditId].assignmentsByQuestionId = {
+  'CAB-Q001': { inspectorUserId: 'USR-AYLIN' },
+  'CAB-Q002': { inspectorUserId: 'USR-MEHMET' }
+};
+const migratedState = context.mergeDemoState(legacyState);
+assert.equal(migratedState.leadAssignmentsByAudit[auditId].assignmentsByQuestionId['cab-em-eq-pbe'].inspectorUserId, 'USR-AYLIN');
+assert.equal(Object.prototype.hasOwnProperty.call(migratedState.leadAssignmentsByAudit[auditId].assignmentsByQuestionId, 'CAB-Q002'), false);
+assert.equal(Object.values(migratedState.leadAssignmentsByAudit[auditId].assignmentsByQuestionId).some((record) => record.inspectorUserId === 'USR-MEHMET'), false);
+context.state.leadAssignmentsByAudit[auditId].assignmentsByQuestionId = {
+  'cab-galley-oven': { inspectorUserId: 'USR-AYLIN' },
+  'cab-lav-oxygen-compartment': { inspectorUserId: 'USR-MEHMET' }
+};
+const aylinScope = context.inspectionExecutionQuestionsForInspector(context.state, auditId, 'USR-AYLIN');
+const mehmetScope = context.inspectionExecutionQuestionsForInspector(context.state, auditId, 'USR-MEHMET');
+assert.equal(aylinScope.find((row) => row.id === 'cab-galley-oven').assignmentScope, 'mine');
+assert.equal(aylinScope.find((row) => row.id === 'cab-lav-oxygen-compartment').assignmentScope, 'other');
+assert.equal(mehmetScope.find((row) => row.id === 'cab-galley-oven').assignmentScope, 'other');
+assert.equal(mehmetScope.find((row) => row.id === 'cab-lav-oxygen-compartment').assignmentScope, 'mine');
 assert.equal(executionPackage.auditId, auditId);
 assert.equal(executionPackage.title, '2026 Cabin Inspection - Fly Namibia');
 assert.equal(executionPackage.templateId, 'TPL-CABIN-2026');
@@ -34,6 +58,35 @@ assert.deepEqual(
 );
 assert.ok(executionPackage.questions.some((question) => question.id === questionId));
 assert.doesNotMatch(JSON.stringify(executionPackage), /SMS Oversight|Safety Policy and Objectives/);
+
+const legacySavedState = context.freshState();
+legacySavedState.demoStateVersion = 7;
+legacySavedState.checklist = {
+  id: 'TPL-FOPS-2026',
+  name: 'Flight Operations Audit',
+  version: 'v3.2 (2026)',
+  items: [
+    { id: 'legacy-fops-1', text: 'Is the Operations Manual current and approved?', ref: 'Configured rule FOPS-OM-01' }
+  ]
+};
+legacySavedState.audits.find((audit) => audit.id === auditId).templateId = 'TPL-FOPS-2026';
+legacySavedState.audits.find((audit) => audit.id === auditId).type = 'Continued Surveillance';
+legacySavedState.inspectionWorkspaces[auditId].selectedSectionKey = 'checklist';
+const migratedCanonicalState = context.mergeDemoState(legacySavedState);
+const migratedExecutionPackage = context.inspectionExecutionPackageForAudit(migratedCanonicalState, auditId);
+assert.equal(migratedExecutionPackage.templateId, 'TPL-CABIN-2026', 'legacy browser state is migrated to the canonical runnable checklist');
+assert.equal(migratedExecutionPackage.sections.length, 6, 'legacy browser state cannot collapse the canonical checklist to one section');
+assert.deepEqual(
+  JSON.parse(JSON.stringify(migratedExecutionPackage.sections.map((section) => section.label))),
+  [
+    'Galley',
+    'Lavatories',
+    'Passenger Seats',
+    'Emergency Equipment',
+    'Video + Crew Seat',
+    'Cockpit, Cabin General Condition + Exits'
+  ]
+);
 
 assert.throws(
   () => context.recordChecklistResult(auditId, questionId, 'noncompliant', '', []),

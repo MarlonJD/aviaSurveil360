@@ -61,7 +61,7 @@ vm.createContext(context);
 
 Object.assign(context.state, context.freshState());
 context.state.role = 'auditee';
-const currentFinalReport = context.state.managerReports.find((report) => report.id === 'FR-2026-018');
+const currentFinalReport = context.reportArtifactById('FR-2026-018', context.state);
 currentFinalReport.status = 'issued';
 currentFinalReport.issued = true;
 currentFinalReport.locked = true;

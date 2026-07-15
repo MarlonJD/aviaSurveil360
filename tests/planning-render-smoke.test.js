@@ -19,35 +19,25 @@ vm.createContext(context);
 });
 
 context.state = context.freshState();
-context.state.role = 'gm';
+context.state.role = 'finance';
 context.state.view = 'planning-approvals';
 
 let html = context.viewPlanningApprovals();
 assert.match(html, /Planning/);
 assert.match(html, /Single planning panel for approval, release, and audit preparation/);
-assert.match(html, /Send to Finance Review/);
+assert.match(html, /Approve Budget/);
 assert.doesNotMatch(html, /Forward to ED/);
 assert.doesNotMatch(html, /Phase 0B|thin planning approval slice/i);
-
-context.applyApprovalDecision(context.state.planningItems[0], {
-  decision: 'forward',
-  actor: { role: 'gm', name: context.ROLES.gm.user },
-  comment: 'Scope and risk rationale accepted.'
-});
-context.state.role = 'finance';
-html = context.viewPlanningApprovals();
-assert.match(html, /Finance Review/);
-assert.match(html, /Approve with Adjustment/);
-assert.match(html, /Finance Not Approved/);
 
 context.applyApprovalDecision(context.state.planningItems[0], {
   decision: 'finance_not_approved',
   actor: { role: 'finance', name: context.ROLES.finance.user },
   reason: 'Travel amount needs narrower scope.'
 });
-context.state.role = 'gm';
+context.state.role = 'manager';
 html = context.viewPlanningApprovals();
-assert.match(html, /Returned to GM Action/);
+assert.match(html, /Returned to Department Manager/);
+assert.match(html, /Submit to Finance Review/);
 assert.match(html, /Travel amount needs narrower scope/);
 
 context.state.view = 'planning-board';

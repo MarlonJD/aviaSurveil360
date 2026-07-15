@@ -29,9 +29,40 @@ assert.ok(
 );
 
 const migrated = context.mergeDemoState({ demoStateVersion: 4, findings: [] });
-assert.equal(migrated.demoStateVersion, 6);
+assert.equal(migrated.demoStateVersion, 9);
 assert.equal(migrated.managerFindingsUi.selectedAuditId, 'AUD-2026-001');
 assert.ok(migrated.managerReports.length >= 2);
+
+const splitSaved = context.freshState();
+splitSaved.demoStateVersion = 6;
+splitSaved.auditReports = [{
+  id: 'RPT-AUD-2026-001',
+  auditId: 'AUD-2026-001',
+  reportType: 'Preliminary Report',
+  title: 'Fly Namibia shared legacy report',
+  attachments: ['Legacy_Preliminary_Safe_Attachment.pdf'],
+  approval: { chain: [], currentIndex: 0, outcome: null, history: [{ action: 'legacy history' }] }
+}];
+splitSaved.managerReports.find((report) => report.id === 'PR-2026-018').approvalPackageId = 'RPT-AUD-2026-001';
+splitSaved.managerReports.find((report) => report.id === 'PR-2026-018').status = 'released_to_service_provider';
+splitSaved.managerReports.find((report) => report.id === 'FR-2026-018').approvalPackageId = 'RPT-AUD-2026-001';
+splitSaved.managerReports.find((report) => report.id === 'FR-2026-018').status = 'submitted_to_executive';
+splitSaved.managerReports.find((report) => report.id === 'FR-2026-018').ownerRole = 'executiveDirector';
+const migratedSplit = context.mergeDemoState(splitSaved);
+const migratedPreliminary = migratedSplit.auditReports.find((report) => report.id === 'PR-2026-018');
+const migratedFinal = migratedSplit.auditReports.find((report) => report.id === 'FR-2026-018');
+assert.ok(migratedPreliminary);
+assert.ok(migratedFinal);
+assert.notEqual(migratedPreliminary, migratedFinal);
+assert.equal(migratedPreliminary.status, 'released_to_service_provider');
+assert.equal(migratedFinal.status, 'submitted_to_executive');
+assert.equal(migratedFinal.ownerRole, 'executiveDirector');
+assert.notEqual(migratedFinal.issued, true);
+assert.notEqual(migratedFinal.locked, true);
+assert.equal(migratedPreliminary.attachments[0], 'Legacy_Preliminary_Safe_Attachment.pdf');
+assert.equal(migratedSplit.auditReports.some((report) => report.id === 'RPT-AUD-2026-001'), false);
+assert.equal(migratedSplit.managerReports.find((report) => report.id === 'PR-2026-018').approvalPackageId, 'PR-2026-018');
+assert.equal(migratedSplit.managerReports.find((report) => report.id === 'FR-2026-018').approvalPackageId, 'FR-2026-018');
 
 const legacySaved = {
   demoStateVersion: 4,

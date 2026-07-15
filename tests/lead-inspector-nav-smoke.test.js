@@ -132,7 +132,7 @@ assert.match(assignmentResult.message, /active internal Inspector/i);
 assignmentResult = context.assignLeadQuestionsToInspector(
   assignmentState,
   'AUD-2026-001',
-  ['CAB-Q001', 'CAB-Q002'],
+  ['cab-galley-oven', 'cab-lav-oxygen-compartment'],
   'USR-AYLIN',
   { dueDate: '2026-06-15', priority: 'High', instructions: 'Emergency equipment batch.' }
 );
@@ -140,18 +140,18 @@ assert.equal(assignmentResult.ok, true);
 assignmentResult = context.assignLeadQuestionsToInspector(
   assignmentState,
   'AUD-2026-001',
-  ['CAB-Q003', 'CAB-Q004'],
+  ['cab-seat-oxygen-mask', 'cab-em-eq-pbe'],
   'USR-MEHMET',
   { dueDate: '2026-06-16', priority: 'Normal', instructions: 'Cabin condition batch.' }
 );
 assert.equal(assignmentResult.ok, true);
-assert.equal(assignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q001'].inspectorUserId, 'USR-AYLIN');
-assert.equal(assignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q002'].inspectorUserId, 'USR-AYLIN');
-assert.equal(assignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q003'].inspectorUserId, 'USR-MEHMET');
-assert.equal(assignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q004'].inspectorUserId, 'USR-MEHMET');
+assert.equal(assignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['cab-galley-oven'].inspectorUserId, 'USR-AYLIN');
+assert.equal(assignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['cab-lav-oxygen-compartment'].inspectorUserId, 'USR-AYLIN');
+assert.equal(assignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['cab-seat-oxygen-mask'].inspectorUserId, 'USR-MEHMET');
+assert.equal(assignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['cab-em-eq-pbe'].inspectorUserId, 'USR-MEHMET');
 const restoredAssignmentState = context.mergeDemoState(JSON.parse(JSON.stringify(assignmentState)));
-assert.equal(restoredAssignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q001'].inspectorUserId, 'USR-AYLIN');
-assert.equal(restoredAssignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q004'].inspectorUserId, 'USR-MEHMET');
+assert.equal(restoredAssignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['cab-galley-oven'].inspectorUserId, 'USR-AYLIN');
+assert.equal(restoredAssignmentState.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['cab-em-eq-pbe'].inspectorUserId, 'USR-MEHMET');
 
 context.handleAction('nav', dataEl({ 'data-view': 'audit-reports', 'data-filter': 'preliminary' }));
 assert.equal(context.state.view, 'audit-reports');
@@ -188,6 +188,9 @@ assert.match(preliminaryHtml, /Inspection &amp; Findings/);
 assert.match(preliminaryHtml, /Findings Review/);
 assert.match(preliminaryHtml, /PR-2026-018/);
 assert.match(preliminaryHtml, /CAB-2026-011/);
+assert.match(preliminaryHtml, /<th>Finding<\/th><th>Level<\/th><th>Due Date<\/th><th>Action<\/th>/);
+assert.match(preliminaryHtml, />Review<\/button>/);
+assert.doesNotMatch(preliminaryHtml, /<th>Status<\/th>|CAP Submitted|CAP Accepted|Waiting for CAP/);
 assert.match(preliminaryHtml, /Next: Report Content/);
 const isolatedDraft = context.preliminaryReportDraftById('PR-ISOLATION-CHECK', context.state);
 isolatedDraft.content = 'Independent draft content';
@@ -222,6 +225,7 @@ preliminaryHtml = elements.get('app-root').innerHTML;
 assert.match(preliminaryHtml, /Attachments/);
 assert.match(preliminaryHtml, /Browse Files/);
 assert.match(preliminaryHtml, /Attachment Summary/);
+assert.match(preliminaryHtml, /prelim-attachment-table-wrap/);
 assert.match(preliminaryHtml, /Next: Review &amp; Submit/);
 
 context.handleAction('preliminary-report-browse-file', dataEl({}));
@@ -299,7 +303,7 @@ context.closeModal();
 
 context.handleAction('nav', dataEl({ 'data-view': 'lead-assignment-questions', 'data-id': 'AUD-2026-001' }));
 assert.equal(context.state.view, 'lead-assignment-questions');
-assert.match(elements.get('app-root').innerHTML, /Assign Selected \(4\)/);
+assert.match(elements.get('app-root').innerHTML, /Assign Selected \(6\)/);
 assert.match(elements.get('app-root').innerHTML, /data-field="lead-assignment-due"/);
 assert.match(elements.get('app-root').innerHTML, /data-act="lead-assignment-add-inspector"/);
 
@@ -325,7 +329,7 @@ context.handleLeadAssignmentFieldChange('lead-assignment-priority', { value: 'Hi
 context.handleLeadAssignmentFieldChange('lead-assignment-note', { value: 'Prioritize emergency equipment checks.', parentElement: null });
 context.handleAction('lead-assignment-assign', dataEl({}));
 assert.ok(context.state.leadAssignmentsByAudit['AUD-2026-001'].assignedAt);
-assert.equal(context.state.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['CAB-Q001'].inspectorUserId, 'USR-NADIA');
+assert.equal(context.state.leadAssignmentsByAudit['AUD-2026-001'].assignmentsByQuestionId['cab-galley-oven'].inspectorUserId, 'USR-NADIA');
 assert.match(elements.get('app-root').innerHTML, /Assignment Draft/);
 assert.match(elements.get('app-root').innerHTML, /Nadia Amutenya/);
 context.handleAction('lead-assignment-release', dataEl({}));
@@ -352,8 +356,8 @@ context.render();
 const capTrackingHtml = elements.get('app-root').innerHTML;
 assert.match(capTrackingHtml, /CAP Tracking - Service Provider/);
 assert.match(capTrackingHtml, /Final Report Issued/);
-assert.match(capTrackingHtml, /Executive Director \/ GM approval completed/);
-assert.match(capTrackingHtml, /sent to the service provider on 22 Jun 2026/);
+assert.match(capTrackingHtml, /Executive Director approval completed/);
+assert.match(capTrackingHtml, /sent to the Service Provider on 22 Jun 2026/);
 assert.match(capTrackingHtml, /Send Reminder/);
 assert.match(capTrackingHtml, /CAP Process Overview/);
 assert.match(capTrackingHtml, /CAP Process Starts/);
@@ -460,5 +464,29 @@ const leadCalendarHtml = elements.get('app-root').innerHTML;
 assert.match(leadCalendarHtml, /Lead Inspector/);
 assert.match(leadCalendarHtml, /Audit Work Queue/);
 assert.doesNotMatch(leadCalendarHtml, /Preliminary Report - Routine Inspection/);
+
+Object.assign(context.state, context.freshState());
+context.state.role = 'leadInspector';
+context.state.view = 'audit-reports';
+context.state.params = { filter: 'final', reportId: 'FR-2026-018' };
+const leadFinalRows = context.leadFinalReportRows();
+const leadFinalHtml = context.viewLeadFinalReports();
+assert.ok(leadFinalRows.some((row) => row.reportId === 'FR-2026-018'));
+assert.ok(leadFinalRows.every((row) => context.reportArtifactById(row.reportId, context.state)));
+assert.match(leadFinalHtml, /FR-2026-018/);
+assert.doesNotMatch(leadFinalHtml, /FR-2026-014|INS-2026-014/);
+assert.match(leadFinalHtml, /data-act="final-report-ready-action"[^>]*data-id="FR-2026-018"/);
+
+context.state.params = { filter: 'preliminary', reportId: 'PR-2026-018' };
+context.go('audit-reports', { filter: 'final' });
+assert.equal(context.state.params.reportId, undefined, 'switching from Preliminary workflow to Final list clears the stale Preliminary Report ID');
+assert.match(context.viewAuditReportsApproval(), /FR-2026-018/);
+assert.doesNotMatch(context.viewAuditReportsApproval(), /selected Final Report is unavailable/i);
+
+const exactExecutionIds = context.inspectionExecutionPackageForAudit(context.state, 'AUD-2026-001').questions.map((question) => question.id);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(context.leadAssignmentQuestions().map((question) => question.id))),
+  JSON.parse(JSON.stringify(exactExecutionIds))
+);
 
 console.log('lead-inspector-nav-smoke: ok');

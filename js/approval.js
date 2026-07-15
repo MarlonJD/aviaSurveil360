@@ -9,7 +9,7 @@ var PLANNING_STATUS_META = {
   under_gm_review: { label: 'Under GM Review', tone: 'info' },
   returned_to_department_manager: { label: 'Returned to Department Manager', tone: 'warn' },
   sent_to_finance: { label: 'Finance Review', tone: 'warn' },
-  finance_not_approved: { label: 'Returned to GM Action', tone: 'warn' },
+  finance_not_approved: { label: 'Returned to Department Manager', tone: 'warn' },
   finance_reviewed: { label: 'Finance Reviewed', tone: 'info' },
   pending_ed_approval: { label: 'Pending ED Approval', tone: 'info' },
   approved: { label: 'Approved', tone: 'ok' },
@@ -34,7 +34,7 @@ var REPORT_STATUS_META = {
   returned_to_lead: { label: 'Returned to Lead Inspector', tone: 'warn' },
   submitted_to_gm: { label: 'Submitted to GM', tone: 'info' },
   returned_to_dm: { label: 'Returned to Department Manager', tone: 'warn' },
-  submitted_to_ed: { label: 'Submitted to Executive Director / GM', tone: 'info' },
+  submitted_to_ed: { label: 'Submitted to Executive Director', tone: 'info' },
   returned_to_gm: { label: 'Returned to GM', tone: 'warn' },
   final_report_generated: { label: 'Final Report Issued', tone: 'ok' },
   report_rejected: { label: 'Rejected', tone: 'danger' }
@@ -123,16 +123,18 @@ function approvalNextAction(record, stage) {
     var stageLabel = stage.label || '';
     if (stage.role === 'leadInspector' && /Finalization/i.test(stageLabel)) return 'Prepare Final Report after Service Provider CAP completion';
     if (stage.role === 'leadInspector') return 'Submit preliminary report to Department Manager';
-    if (stage.role === 'manager' && /Final Approval/i.test(stageLabel)) return 'Approve final report to Executive Director / GM or return to Lead Inspector';
+    if (stage.role === 'manager' && /Final Approval/i.test(stageLabel)) return 'Forward Final Report to General Manager review or return to Lead Inspector';
     if (stage.role === 'manager') return 'Release preliminary report to Service Provider if CAP is required, or return to Lead Inspector';
     if (stage.role === 'executiveDirector') return 'Issue final report or return to Department Manager';
     if (stage.role === 'gm') return 'Approve to Executive Director or return to Department Manager';
   }
-  if (stage.role === 'manager') return 'Revise and submit to GM';
-  if (stage.role === 'gm') {
-    return record.budgetRequired ? 'Send to Finance Review' : 'Forward to Executive Director';
+  if (record.approvalType === 'checklist') {
+    if (stage.role === 'manager') return 'Revise and submit to GM';
+    if (stage.role === 'gm') return 'Approve checklist or return to Department Manager';
   }
-  if (stage.role === 'finance') return 'Review budget: approve, adjust, or not approve';
+  if (stage.role === 'manager') return 'Submit to Finance Review';
+  if (stage.role === 'finance') return 'Review budget: approve or return to Department Manager';
+  if (stage.role === 'gm') return 'Forward to Executive Director or return to Department Manager';
   if (stage.role === 'executiveDirector') return 'Final approval or return to GM';
   return 'Review and decide';
 }
@@ -273,8 +275,8 @@ function setApprovalStatusFromChain(record, action) {
     return;
   }
   if (summary.ownerRole === 'manager') record.status = 'returned_to_department_manager';
-  else if (summary.ownerRole === 'gm') record.status = action === 'finance_not_approved' ? 'finance_not_approved' : 'under_gm_review';
   else if (summary.ownerRole === 'finance') record.status = 'sent_to_finance';
+  else if (summary.ownerRole === 'gm') record.status = 'under_gm_review';
   else if (summary.ownerRole === 'executiveDirector') record.status = 'pending_ed_approval';
 }
 
@@ -321,7 +323,7 @@ function financeNotApproved(record, actor, reason) {
     date: approvalDecisionDate(),
     reason: normalizeApprovalText(reason)
   };
-  record.approval.currentIndex = approvalReturnIndex(record, stage.notApprovedReturnToRole || 'gm');
+  record.approval.currentIndex = approvalReturnIndex(record, stage.notApprovedReturnToRole || 'manager');
   record.approval.outcome = null;
   appendApprovalHistory(record, actor, 'finance_not_approved', reason);
   setApprovalStatusFromChain(record, 'finance_not_approved');
@@ -379,7 +381,7 @@ function applyApprovalDecision(record, input) {
   }
 
   if (decision === 'forward') {
-    var action = stage && stage.role === 'gm' ? 'sent_to_finance' : 'forwarded';
+    var action = stage && stage.role === 'manager' ? 'submitted' : 'forwarded';
     return advanceApproval(record, actor, comment, action);
   }
 

@@ -39,25 +39,12 @@ assert.equal(initialState.planningItems.length, 1, 'one thin-slice planning item
 const item = clone(initialState.planningItems[0]);
 assert.equal(item.id, 'PLAN-2026-Q3-CABIN');
 assert.equal(item.budgetRequired, true);
-assert.equal(context.approvalSummary(item).ownerRole, 'gm');
-assert.match(context.approvalSummary(item).nextAction, /Finance/);
-
-assert.throws(
-  () => context.applyApprovalDecision(item, { decision: 'return', actor: actor('gm'), reason: '' }),
-  /reason required/i,
-  'GM return requires a reason'
+assert.deepEqual(
+  clone(item.approval.chain.map((stage) => stage.role)),
+  ['manager', 'finance', 'gm', 'executiveDirector']
 );
-
-assert.throws(
-  () => context.applyApprovalDecision(item, { decision: 'forward_ed', actor: actor('gm'), comment: 'Trying to bypass finance.' }),
-  /finance review is mandatory/i,
-  'GM cannot bypass Finance when budgetRequired=true'
-);
-
-const originalHistoryFirstAction = item.approval.history[0].action;
-context.applyApprovalDecision(item, { decision: 'forward', actor: actor('gm'), comment: 'Scope and risk rationale accepted.' });
 assert.equal(context.approvalSummary(item).ownerRole, 'finance');
-assert.equal(item.approval.history[0].action, originalHistoryFirstAction, 'approval history keeps prior entries unchanged');
+assert.match(context.approvalSummary(item).nextAction, /approve|return to Department Manager/i);
 
 assert.throws(
   () => context.applyApprovalDecision(item, { decision: 'finance_not_approved', actor: actor('finance'), reason: '' }),
@@ -65,14 +52,31 @@ assert.throws(
   'Finance Not Approved requires a reason'
 );
 
+const originalHistoryFirstAction = item.approval.history[0].action;
 context.applyApprovalDecision(item, { decision: 'finance_not_approved', actor: actor('finance'), reason: 'Travel amount needs narrower scope.' });
-assert.equal(context.approvalSummary(item).ownerRole, 'gm');
-assert.match(context.approvalSummary(item).statusLabel, /GM/);
+assert.equal(context.approvalSummary(item).ownerRole, 'manager');
+assert.match(context.approvalSummary(item).statusLabel, /Department Manager/);
 
-context.applyApprovalDecision(item, { decision: 'forward', actor: actor('gm'), comment: 'Scope narrowed for finance re-review.' });
+context.applyApprovalDecision(item, { decision: 'forward', actor: actor('manager'), comment: 'Scope narrowed for finance re-review.' });
 assert.equal(context.approvalSummary(item).ownerRole, 'finance');
+assert.equal(item.approval.history[0].action, originalHistoryFirstAction, 'approval history keeps prior entries unchanged');
 
 context.applyApprovalDecision(item, { decision: 'approve_with_adjustment', actor: actor('finance'), comment: 'Approved with reduced travel allowance.' });
+assert.equal(context.approvalSummary(item).ownerRole, 'gm');
+
+assert.throws(
+  () => context.applyApprovalDecision(item, { decision: 'return', actor: actor('gm'), reason: '' }),
+  /reason required/i,
+  'GM return requires a reason'
+);
+
+context.applyApprovalDecision(item, { decision: 'return', actor: actor('gm'), reason: 'Clarify department scope.' });
+assert.equal(context.approvalSummary(item).ownerRole, 'manager', 'GM Return goes to Department Manager');
+
+context.applyApprovalDecision(item, { decision: 'forward', actor: actor('manager'), comment: 'Department scope clarified.' });
+context.applyApprovalDecision(item, { decision: 'approve', actor: actor('finance'), comment: 'Finance approval remains valid after resubmission.' });
+assert.equal(context.approvalSummary(item).ownerRole, 'gm');
+context.applyApprovalDecision(item, { decision: 'forward', actor: actor('gm'), comment: 'Finance-reviewed plan forwarded.' });
 assert.equal(context.approvalSummary(item).ownerRole, 'executiveDirector');
 
 assert.throws(
@@ -85,7 +89,6 @@ context.applyApprovalDecision(item, { decision: 'return', actor: actor('executiv
 assert.equal(context.approvalSummary(item).ownerRole, 'gm', 'ED Return goes to GM');
 
 context.applyApprovalDecision(item, { decision: 'forward', actor: actor('gm'), comment: 'Inspector-day allocation clarified.' });
-context.applyApprovalDecision(item, { decision: 'approve_with_adjustment', actor: actor('finance'), comment: 'Finance adjustment remains accepted.' });
 context.applyApprovalDecision(item, { decision: 'approve', actor: actor('executiveDirector'), comment: 'Approved for the Q3 plan.' });
 
 const approved = context.approvalSummary(item);
@@ -93,6 +96,6 @@ assert.equal(approved.outcome, 'approved');
 assert.equal(approved.ownerRole, null);
 assert.equal(approved.statusLabel, 'Approved');
 assert.equal(item.status, 'approved');
-assert.ok(item.approval.history.length >= 8, 'history is append-only across the full approval path');
+assert.ok(item.approval.history.length >= 10, 'history is append-only across the full approval path');
 
 console.log('approval-smoke: ok');

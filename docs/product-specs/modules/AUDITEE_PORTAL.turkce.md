@@ -97,3 +97,9 @@ internal admin permission arkasında kalır.
   browser-local file sonucu üretir.
 - Uygulama frontend-only, browser-local ve demo-only kalır; production
   auditability veya authorization iddia edilmez.
+
+## Stakeholder Readiness Privacy Kanıtı — 2026-07-10
+
+Organization scope Messages, Settings, unread counts, documents, Preliminary/Final Reports, CAP, Evidence ve notifications yüzeylerinde tutarlı uygulanır. Direct legacy `reports` navigation organization-scoped Documents projection'a gider. Cross-organization fixture'lar unavailable kabul edilir ve identifying copy veya count üretmez.
+
+Durum: **demo-only**; focused regressions ile Messages, Documents, Final Reports ve Settings için dört required viewport'taki fresh isolated-browser kontrolleri **verified locally**. Production authentication, authorization enforcement, storage, notification delivery ve privacy certification **not run**; **production-readiness not claimed**.

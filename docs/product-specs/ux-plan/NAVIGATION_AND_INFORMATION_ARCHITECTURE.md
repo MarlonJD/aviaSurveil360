@@ -39,8 +39,16 @@ Finance has one operational workspace and lands directly on it:
 It contains one budget queue, one selected budget dossier, approval history,
 and two decisions: `Approve Budget` and `Return for Revision`. Finance cannot
 edit audit scope, sign or release a plan, issue a report, or bypass Executive
-Director approval. Approval advances to Executive Director; return goes to
-General Manager action.
+Director approval. Finance approval advances to GM Review; `Return for
+Revision` goes to Department Manager.
+
+Planning approval order: Department Manager -> Finance Review -> GM Review ->
+Executive Director. Finance approval advances to GM Review. Finance Return for
+Revision goes to Department Manager.
+GM may forward a Finance-reviewed plan to
+Executive Director or return it to Department Manager; a corrected submission
+must pass Finance again. Executive Director approval does not release the plan
+directly; GM Release to Department remains a separate next action.
 
 ## Executive Director IA
 
@@ -72,10 +80,12 @@ approval forwards a Final Report; it does not issue, sign, or lock it.
 
 ## General Manager IA
 
-General Manager uses Dashboard, Report Approvals, Departments, Risk Dashboard,
-and Settings. GM is an intermediate Final Report reviewer: GM may return a
-report or advance it to Executive Director, but cannot issue, sign, or lock it.
-After ED plan approval, GM performs the separate Release to Department step.
+General Manager uses Dashboard, Planning, Report Approvals, Departments, Risk
+Dashboard, and Settings. Planning exposes Finance-approved plans for GM Review:
+GM may return a plan to Department Manager or advance it to Executive Director.
+GM is also an intermediate Final Report reviewer: GM may return a report or
+advance it to Executive Director, but cannot issue, sign, or lock it. After ED
+plan approval, GM performs the separate Release to Department step.
 
 ## Admin IA
 
@@ -83,3 +93,9 @@ Admin manages configuration rather than daily operational decisions. Primary
 areas include Checklist Templates, Audit Types, Organization Types, Severity
 Rules, Due-Date Rules, Notification Templates, Roles & Permissions, and Audit
 Log. Demo configuration is not a production authorization service.
+
+## Stakeholder Readiness IA Evidence — 2026-07-10
+
+The selected Fly Namibia Cabin Inspection keeps one identity across assignment, six-section Inspector execution, canonical Preliminary/Final Reports, and the Service Provider portal. Assignment keys are the exact execution Question IDs; another Inspector's assigned question remains visible for audit context but read-only. Lead Final actions carry the exact Report ID. GM navigation supports intermediate review only, and ED owns final issue/mock-sign/lock.
+
+Status: **demo-only**; focused/static checks plus fresh isolated-browser selected-ID, visible-control, responsive, and keyboard/modal checks are **verified locally**. External stakeholder acceptance and production authorization are **not run**; **production-readiness not claimed**.

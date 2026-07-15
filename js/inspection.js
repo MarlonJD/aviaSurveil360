@@ -163,6 +163,20 @@ function inspectionExecutionPackageForAudit(target, auditId) {
   };
 }
 
+function inspectionExecutionQuestionsForInspector(target, auditId, inspectorUserId) {
+  var pkg = inspectionExecutionPackageForAudit(target, auditId);
+  if (!pkg) return [];
+  var assignment = target && target.leadAssignmentsByAudit ? target.leadAssignmentsByAudit[auditId] : null;
+  var assignments = assignment && assignment.assignmentsByQuestionId ? assignment.assignmentsByQuestionId : {};
+  return pkg.questions.map(function (question) {
+    var record = assignments[question.id] || null;
+    return Object.assign({}, question, {
+      assignedInspectorUserId: record ? record.inspectorUserId : '',
+      assignmentScope: !record ? 'unassigned' : (record.inspectorUserId === inspectorUserId ? 'mine' : 'other')
+    });
+  });
+}
+
 function checklistResultRequiresComment(result) {
   return result === 'noncompliant' || result === 'observation';
 }

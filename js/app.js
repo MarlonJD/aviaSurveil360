@@ -61,6 +61,7 @@ var NAV = {
   ],
   gm: [
     { view: 'gm-dashboard', label: 'Dashboard', icon: '▦' },
+    { view: 'planning', label: 'Planning', icon: '▤' },
     { view: 'gm-report-approvals', label: 'Report Approvals', icon: '📄' },
     { view: 'gm-departments', label: 'Departments', icon: '▤' },
     { view: 'gm-risk', label: 'Risk Dashboard', icon: '⌁' },
@@ -109,7 +110,7 @@ var ROLE_DESC = {
   inspector: 'Inspector Workspace — daily operations, findings review, CAP verification and field work.',
   leadInspector: 'Lead Inspector — assigned audits and preliminary/final reports.',
   manager: 'Department Manager — planning items, approvals, scheduling and department oversight.',
-  gm: 'General Manager — final report authorization, department oversight and cross-department risk review.',
+  gm: 'General Manager — intermediate Final Report review, Executive Director forwarding, department oversight and cross-department risk review.',
   finance: 'Finance Review — budget and resource review for planned audits.',
   executiveDirector: 'Executive Director — final approval of plans and audit reports.',
   auditee: 'Service Provider Portal — findings, CAP uploads, responses and shared documents.',
@@ -181,6 +182,7 @@ var LEAD_INSPECTOR_RESTRICTED_VIEWS = {
 
 var GENERAL_MANAGER_ALLOWED_VIEWS = {
   'gm-dashboard': true,
+  planning: true,
   'gm-report-approvals': true,
   'gm-departments': true,
   'gm-risk': true,
@@ -228,6 +230,10 @@ function normalizeViewForRole() {
   if (state.role === 'auditee' && !AUDITEE_ALLOWED_VIEWS[state.view]) {
     state.view = homeView(state.role);
     state.params = {};
+  }
+  if (state.role === 'auditee' && state.view === 'reports') {
+    state.params = Object.assign({}, state.params || {}, { filter: 'documents' });
+    if (state.selectedFilters) state.selectedFilters.reports = 'documents';
   }
   if (state.role === 'finance') {
     if (state.view === 'planning' || !FINANCE_ALLOWED_VIEWS[state.view]) {
@@ -575,7 +581,7 @@ function renderLogin() {
 }
 
 function renderNotifPanel() {
-  var list = state.notifications.filter(function (n) { return n.role === state.role; });
+  var list = state.notifications.filter(function (notification) { return notificationVisibleToSession(notification, state); });
   var rows = list.length ? list.map(function (n) {
     return '<div class="notif-item ' + (n.unread ? 'unread' : '') + '"><div class="notif-item__icon">' + n.icon + '</div>' +
       '<div><div class="notif-item__txt">' + esc(n.text) + '</div><div class="notif-item__time">' + esc(n.time) + '</div></div></div>';
@@ -618,10 +624,11 @@ function go(view, opts) {
   }
   if (view === 'lead-review' && !opts.auditId) delete state.params.auditId;
   if (view === 'audit-reports' && !opts.auditId) delete state.params.auditId;
-  if (view === 'audit-reports' && !opts.auditId && opts.filter === 'preliminary') delete state.params.reportId;
+  if (view === 'audit-reports' && !opts.auditId && !opts.reportId && (opts.filter === 'preliminary' || opts.filter === 'final')) delete state.params.reportId;
   if (view === 'audit-reports' && !opts.finalReportId) delete state.params.finalReportId;
   if (opts.auditId !== undefined && opts.auditId !== null && opts.auditId !== '') state.params.auditId = opts.auditId;
   if (opts.finalReportId !== undefined && opts.finalReportId !== null && opts.finalReportId !== '') state.params.finalReportId = opts.finalReportId;
+  if (opts.reportId !== undefined && opts.reportId !== null && opts.reportId !== '') state.params.reportId = opts.reportId;
   if (opts.findingId !== undefined && opts.findingId !== null && opts.findingId !== '') state.params.findingId = opts.findingId;
   if (opts.orgId !== undefined && opts.orgId !== null && opts.orgId !== '') state.params.orgId = opts.orgId;
   if (view === 'org-risk' && !state.params.orgId) state.params.orgId = 'ORG-XYZ';
@@ -769,7 +776,7 @@ function handleManagerFindingsOpenFinding(findingId) {
 
 function handleManagerFindingsOpenReport(auditId) {
   var workspace = ensureManagerWorkspaceState(state);
-  var report = workspace.managerReports.filter(function (item) { return item.auditId === auditId; })[0] || null;
+  var report = reportForAuditAndType(auditId, 'Preliminary Report', workspace) || reportForAuditAndType(auditId, 'Final Report', workspace);
   if (!report) {
     toast('Report unavailable', 'No report artifact is linked to this inspection in the demo.', 'warn');
     return;
@@ -1100,7 +1107,7 @@ function handleManagerReportTab(tab) {
 
 function managerReportNotificationText(report) {
   if (report.status === 'released_to_service_provider') return report.id + ' was released to the Fly Namibia Service Provider Portal for CAP response.';
-  if (report.status === 'submitted_to_gm') return report.id + ' was forwarded to the General Manager approval stage.';
+  if (report.status === 'submitted_to_gm') return report.id + ' was forwarded to the General Manager review stage.';
   if (report.status === 'submitted_to_executive') return report.id + ' was forwarded for configured final authorized approval.';
   if (report.status === 'revision_requested') return report.id + ' requires revision before manager approval.';
   return report.id + ' was returned to the Lead Inspector.';
@@ -1277,7 +1284,7 @@ function handleGeneralManagerDecisionOpen(reportId, decision) {
 }
 
 function handleGeneralManagerDecisionConfirm(reportId, decision) {
-  var result = applyGeneralManagerReportDecision(state, reportId, decision, val('gm-report-comment'), ROLES.gm.user);
+  var result = applyGeneralManagerReportDecision(state, reportId, decision, val('gm-report-comment'), { role: 'gm', name: ROLES.gm.user });
   if (!result.ok) {
     var validation = document.getElementById('gm-report-validation');
     if (validation) validation.innerHTML = esc(result.message);
@@ -1288,7 +1295,7 @@ function handleGeneralManagerDecisionConfirm(reportId, decision) {
   closeModal();
   persistAfterAction();
   render();
-  toast(decision === 'approve' ? 'Final Report issued' : 'Final Report returned', result.message, 'ok');
+  toast(decision === 'approve' ? 'Final Report forwarded' : 'Final Report returned', result.message, 'ok');
 }
 
 function managerChecklistActor() {
@@ -1536,7 +1543,7 @@ function handleAction(act, el) {
     case 'notif-toggle':
       state.ui.notifOpen = !state.ui.notifOpen;
       if (state.ui.notifOpen) {
-        state.notifications.forEach(function (n) { if (n.role === state.role) n.unread = false; });
+        state.notifications.forEach(function (notification) { if (notificationVisibleToSession(notification, state)) notification.unread = false; });
       }
       persistAfterAction();
       render();
@@ -1810,7 +1817,8 @@ function handleAction(act, el) {
     case 'inspector-cap-package-revision': handleInspectorCapPackageDecision(id, 'revision'); break;
     case 'inspector-cap-package-reject': handleInspectorCapPackageDecision(id, 'reject'); break;
     case 'final-report-list-open': handleFinalReportListOpen(id); break;
-    case 'final-report-ready-action': handleFinalReportReadyAction(el.getAttribute('data-final-action')); break;
+    case 'final-report-ready-action': handleFinalReportReadyAction(el.getAttribute('data-final-action'), id); break;
+    case 'final-report-attachment-download': handleFinalReportAttachmentDownload(id, el.getAttribute('data-file')); break;
     case 'final-report-prepare-step': handleFinalReportPrepareStep(el.getAttribute('data-step')); break;
     case 'final-report-prepare-next': handleFinalReportPrepareNext(); break;
     case 'final-report-prepare-back': handleFinalReportPrepareBack(); break;
@@ -1875,9 +1883,21 @@ function inspectionWorkspaceRow(rowId, auditId) {
   return rows.filter(function (row) { return row.id === rowId; })[0] || null;
 }
 
+function currentInspectorUserId() {
+  return state.inspectorUserId || 'USR-AYLIN';
+}
+
+function currentInspectorCanEditQuestion(rowId, auditId) {
+  if (state.role !== 'inspector') return true;
+  var targetAuditId = activeInspectionAuditId(auditId);
+  var scoped = inspectionExecutionQuestionsForInspector(state, targetAuditId, currentInspectorUserId());
+  var row = scoped.filter(function (question) { return question.id === rowId; })[0] || null;
+  return !!row && row.assignmentScope !== 'other';
+}
+
 function handleInspectionStatusCycle(rowId) {
   var row = inspectionWorkspaceRow(rowId);
-  if (!row) return;
+  if (!row || !currentInspectorCanEditQuestion(rowId)) return;
   var workspace = activeInspectionWorkspace();
   if (workspace.submittedAt) return;
   var current = (workspace.answersByQuestionId[rowId] && workspace.answersByQuestionId[rowId].status) || row.status;
@@ -1892,7 +1912,7 @@ function handleInspectionStatusCycle(rowId) {
 
 function setInspectionStatus(rowId, next) {
   var row = inspectionWorkspaceRow(rowId);
-  if (!row || !INSPECTOR_EXECUTION_STATUS_META[next]) return false;
+  if (!row || !currentInspectorCanEditQuestion(rowId) || !INSPECTOR_EXECUTION_STATUS_META[next]) return false;
   var workspace = activeInspectionWorkspace();
   if (workspace.submittedAt) return false;
   if (!workspace.answersByQuestionId[rowId]) workspace.answersByQuestionId[rowId] = {};
@@ -1918,7 +1938,7 @@ function syncInspectionPotentialFinding(row, workspace) {
 
 function setInspectionComment(rowId, comment) {
   var row = inspectionWorkspaceRow(rowId);
-  if (!row) return;
+  if (!row || !currentInspectorCanEditQuestion(rowId)) return;
   var workspace = activeInspectionWorkspace();
   if (workspace.submittedAt) return;
   if (!workspace.answersByQuestionId[rowId]) workspace.answersByQuestionId[rowId] = {};
@@ -1940,8 +1960,8 @@ function handleInspectionRowMenu(rowId) {
       metaItem('Attached file', file) +
       metaItem('Comment', comment) +
     '</div>';
-  var submitted = !!activeInspectionWorkspace().submittedAt;
-  var foot = '<button class="btn" data-act="close-modal">Close</button>' + (submitted ? '' :
+  var readOnly = !!activeInspectionWorkspace().submittedAt || !currentInspectorCanEditQuestion(rowId);
+  var foot = '<button class="btn" data-act="close-modal">Close</button>' + (readOnly ? '' :
     '<button class="btn" data-act="inspection-set-status" data-id="' + esc(row.id) + '" data-status="observation">Mark Observation</button>' +
     '<button class="btn btn--danger" data-act="inspection-set-status" data-id="' + esc(row.id) + '" data-status="noncompliant">Mark Non-Compliant</button>');
   openModal(modalShell('Checklist row actions', body, foot));
@@ -1962,7 +1982,7 @@ function handleInspectionFileOpen(rowId) {
     (file
       ? '<button class="btn" data-act="inspection-row-menu" data-id="' + esc(row.id) + '">View Row Details</button>' +
         '<button class="btn btn--primary" data-act="inspection-file-download" data-id="' + esc(row.id) + '">Download Mock File</button>'
-      : (activeInspectionWorkspace().submittedAt ? '' : '<button class="btn btn--primary" data-act="inspection-file-attach" data-id="' + esc(row.id) + '">Attach Mock File</button>'));
+      : (activeInspectionWorkspace().submittedAt || !currentInspectorCanEditQuestion(rowId) ? '' : '<button class="btn btn--primary" data-act="inspection-file-attach" data-id="' + esc(row.id) + '">Attach Mock File</button>'));
   openModal(modalShell(file ? 'Attached file preview' : 'Attach checklist evidence', body, foot));
 }
 
@@ -2032,7 +2052,7 @@ function handleInspectionFileDownload(rowId) {
 
 function handleInspectionFileAttach(rowId) {
   var row = inspectionWorkspaceRow(rowId);
-  if (!row) return;
+  if (!row || !currentInspectorCanEditQuestion(rowId)) return;
   var workspace = activeInspectionWorkspace();
   if (workspace.submittedAt) return;
   if (!workspace.answersByQuestionId[row.id]) workspace.answersByQuestionId[row.id] = {};
@@ -2112,7 +2132,7 @@ function handleInspectionSubmitLead(auditId) {
   var workspace = activeInspectionWorkspace(targetAuditId);
   if (!workspace.submittedAt) {
     workspace.submittedAt = new Date().toISOString();
-    workspace.submittedByUserId = 'USR-AYLIN';
+    workspace.submittedByUserId = currentInspectorUserId();
     if (!workspace.allSectionsCompletedAt) workspace.allSectionsCompletedAt = workspace.submittedAt;
     addLog('Inspection submitted to Lead Inspector', targetAuditId);
     pushNotification('leadInspector', '▦', pkg.title + ' submitted by CAA Inspector for Lead Inspector review.');
@@ -2672,7 +2692,9 @@ function assignLeadQuestionsToInspector(target, auditId, questionIds, inspectorU
   if (!inspector || !Array.isArray(team.memberIds) || team.memberIds.indexOf(inspectorUserId) === -1) {
     return { ok: false, message: 'Choose an active Inspector who belongs to this audit team.', assignment: null };
   }
-  var ids = Array.from(new Set((questionIds || []).filter(Boolean)));
+  var pkg = typeof inspectionExecutionPackageForAudit === 'function' ? inspectionExecutionPackageForAudit(target, auditId) : null;
+  var validIds = pkg ? pkg.questions.map(function (question) { return question.id; }) : [];
+  var ids = Array.from(new Set((questionIds || []).filter(function (questionId) { return validIds.indexOf(questionId) !== -1; })));
   if (!ids.length) return { ok: false, message: 'Select at least one checklist question.', assignment: null };
   if (!target.leadAssignmentsByAudit) target.leadAssignmentsByAudit = {};
   var assignment = target.leadAssignmentsByAudit[auditId];
@@ -2737,7 +2759,7 @@ function handleLeadAssignmentFieldChange(field, target) {
   if (field === 'lead-assignment-priority') ui.priority = value || 'Normal';
   if (field === 'lead-assignment-note') ui.instructions = value || '';
   if (field === 'lead-assignment-department') ui.department = value || 'Cabin Safety';
-  if (field === 'lead-assignment-section') ui.section = value || 'emergency-equipment';
+  if (field === 'lead-assignment-section') ui.section = value || 'em-eq';
   if (field === 'lead-assignment-risk') ui.risk = value || 'all';
   if (field === 'lead-assignment-status') ui.status = value || 'all';
   if (field === 'lead-assignment-query') ui.query = value || '';
@@ -2822,7 +2844,7 @@ function handleLeadAssignmentRelease() {
       return ui.assignmentsByQuestionId[questionId].inspectorUserId === userId;
     }).length;
     state.notifications.unshift({
-      id: 'n-lead-assignment-' + state.notifSeq++, role: 'inspector', userId: userId, icon: '▣',
+      id: 'n-lead-assignment-' + state.notifSeq++, role: 'inspector', organizationId: 'ORG-XYZ', userId: userId, icon: '▣',
       text: 'Cabin Inspection assignment released to ' + (inspector ? inspector.name : 'assigned Inspector') + ': ' + count + ' questions.', time: 'Now', unread: true
     });
   });
@@ -2833,10 +2855,29 @@ function handleLeadAssignmentRelease() {
 
 function handleLeadAssignmentDownload() {
   var ui = ensureLeadAssignmentUi();
+  var auditId = (state.params && state.params.auditId) || 'AUD-2026-001';
+  var pkg = inspectionExecutionPackageForAudit(state, auditId);
+  var lines = [
+    'AviaSurveil360 - Mock Assignment Plan',
+    '',
+    'Audit: ' + auditId,
+    'Inspection: ' + (pkg ? pkg.inspectionId : auditId),
+    'Organization: ' + (pkg ? pkg.organization : 'Organization unavailable'),
+    'Generated: ' + nowIsoDemo(),
+    '',
+    'Assignments'
+  ];
+  leadAssignmentQuestions().forEach(function (question) {
+    var assignment = ui.assignmentsByQuestionId[question.id];
+    lines.push(question.no + ' | ' + question.id + ' | ' + question.text + ' | ' + (assignment ? leadAssignmentInspectorName(assignment.inspectorUserId) : 'Unassigned'));
+  });
+  lines.push('', 'Demo only: browser-local assignment plan; no backend or document repository.');
+  var downloaded = downloadPlainTextFile('AviaSurveil360_' + auditId + '_assignment-plan.txt', lines.join('\n'));
   ui.downloadedAt = nowIsoDemo();
+  addLog('Lead Inspector downloaded mock assignment plan', auditId);
   persistAfterAction();
   render();
-  toast('Assignment plan prepared', 'Mock assignment plan is ready for the demo. No real file was generated.', 'ok');
+  toast(downloaded ? 'Assignment plan downloaded' : 'Download unavailable', downloaded ? 'Browser-local mock assignment plan generated.' : 'This browser does not support client-side downloads.', downloaded ? 'ok' : 'warn');
 }
 
 function handleLeadAssignmentPreview() {
@@ -3182,15 +3223,19 @@ function handleDepartmentPreliminaryToggleMenu() {
   render();
 }
 
-function departmentPreliminaryReportRecord() {
-  var row = typeof leadPreliminaryReportById === 'function'
-    ? leadPreliminaryReportById(ensureDepartmentPreliminaryReviewUi().selectedReportId)
-    : null;
-  return row && row.auditId && typeof reportForAudit === 'function' ? reportForAudit(row.auditId) : null;
+function departmentPreliminaryReportRecord(reportId) {
+  reportId = reportId || ensureDepartmentPreliminaryReviewUi().selectedReportId;
+  var report = typeof reportArtifactById === 'function' ? reportArtifactById(reportId, state) : null;
+  return report && normalizeReportType(report.reportType) === 'Preliminary Report' ? report : null;
 }
 
 function handleDepartmentPreliminaryApprove(path) {
   var ui = ensureDepartmentPreliminaryReviewUi();
+  var report = departmentPreliminaryReportRecord(ui.selectedReportId);
+  if (!report) {
+    toast('Preliminary Report unavailable', 'The selected exact Preliminary Report could not be found.', 'warn');
+    return;
+  }
   var approvalPath = path === 'gm' ? 'gm' : (path === 'service_provider' ? 'service_provider' : (ui.capRequired ? 'service_provider' : 'gm'));
   ui.capRequired = approvalPath === 'service_provider';
   ui.approvedPath = approvalPath;
@@ -3198,32 +3243,30 @@ function handleDepartmentPreliminaryApprove(path) {
   ui.returnedAt = '';
   ui.approveMenuOpen = false;
 
-  var report = departmentPreliminaryReportRecord();
-  if (report) {
-    if (!report.preliminaryNotice) report.preliminaryNotice = {};
-    report.preliminaryNotice.capRequired = approvalPath === 'service_provider';
-    report.status = approvalPath === 'service_provider' ? 'released_to_service_provider' : 'submitted_to_gm';
-    if (report.approval && Array.isArray(report.approval.history)) {
-      report.approval.history.push({
-        actor: ROLES.manager.user,
-        role: 'manager',
-        action: approvalPath === 'service_provider' ? 'sent_to_service_provider' : 'sent_to_general_manager',
-        date: ui.approvedAt,
-        comment: approvalPath === 'service_provider'
-          ? 'Department Manager approved the preliminary report and sent it to the Service Provider because CAP is required.'
-          : 'Department Manager approved the preliminary report and sent it to the General Manager for approval because no CAP is required.'
-      });
-    }
+  var reportId = report.id;
+  if (!report.preliminaryNotice) report.preliminaryNotice = {};
+  report.preliminaryNotice.capRequired = approvalPath === 'service_provider';
+  report.status = approvalPath === 'service_provider' ? 'released_to_service_provider' : 'submitted_to_gm';
+  if (report.approval && Array.isArray(report.approval.history)) {
+    report.approval.history.push({
+      actor: ROLES.manager.user,
+      role: 'manager',
+      action: approvalPath === 'service_provider' ? 'sent_to_service_provider' : 'sent_to_general_manager',
+      date: ui.approvedAt,
+      comment: approvalPath === 'service_provider'
+        ? 'Department Manager approved the Preliminary Report and sent it to the Service Provider because CAP is required.'
+        : 'Department Manager approved the Preliminary Report and sent it to the General Manager for review because no CAP is required.'
+    });
   }
 
   if (approvalPath === 'service_provider') {
-    pushNotification('auditee', 'RPT', 'Preliminary report PR-2026-018 was released to your Service Provider portal for CAP response.');
-    addLog('Department Manager sent preliminary report to Service Provider', 'PR-2026-018');
+    pushNotification('auditee', 'RPT', 'Preliminary Report ' + reportId + ' was released to your Service Provider portal for CAP response.', { organizationId: report.organizationId });
+    addLog('Department Manager sent Preliminary Report to Service Provider', reportId);
     toast('Sent to Service Provider', 'CAP is required, so the Department Manager sent the preliminary report to the Service Provider.', 'ok');
   } else {
-    pushNotification('gm', 'RPT', 'Preliminary report PR-2026-018 is ready for General Manager approval.');
-    addLog('Department Manager sent preliminary report to General Manager', 'PR-2026-018');
-    toast('Sent to General Manager', 'No CAP is required, so the report moved to General Manager approval.', 'ok');
+    pushNotification('gm', 'RPT', 'Preliminary Report ' + reportId + ' is ready for General Manager review.');
+    addLog('Department Manager sent Preliminary Report to General Manager', reportId);
+    toast('Sent to General Manager', 'No CAP is required, so the report moved to General Manager review.', 'ok');
   }
   persistAfterAction();
   render();
@@ -3231,34 +3274,41 @@ function handleDepartmentPreliminaryApprove(path) {
 
 function handleDepartmentPreliminaryRequestChanges() {
   var ui = ensureDepartmentPreliminaryReviewUi();
+  var report = departmentPreliminaryReportRecord(ui.selectedReportId);
+  if (!report) {
+    toast('Preliminary Report unavailable', 'The selected exact Preliminary Report could not be found.', 'warn');
+    return;
+  }
   ui.returnedAt = logTimestamp();
   ui.approvedAt = '';
   ui.approvedPath = '';
   ui.approveMenuOpen = true;
-  var report = departmentPreliminaryReportRecord();
-  if (report) {
-    report.status = 'returned_to_lead';
-    if (report.approval && Array.isArray(report.approval.history)) {
-      report.approval.history.push({
-        actor: ROLES.manager.user,
-        role: 'manager',
-        action: 'returned',
-        date: ui.returnedAt,
-        comment: 'Department Manager requested changes before approving the preliminary report.'
-      });
-    }
+  report.status = 'returned_to_lead';
+  if (report.approval && Array.isArray(report.approval.history)) {
+    report.approval.history.push({
+      actor: ROLES.manager.user,
+      role: 'manager',
+      action: 'returned',
+      date: ui.returnedAt,
+      comment: 'Department Manager requested changes before approving the Preliminary Report.'
+    });
   }
-  pushNotification('leadInspector', 'RPT', 'Department Manager requested changes for preliminary report PR-2026-018.');
-  addLog('Department Manager requested changes on preliminary report', 'PR-2026-018');
+  pushNotification('leadInspector', 'RPT', 'Department Manager requested changes for Preliminary Report ' + report.id + '.');
+  addLog('Department Manager requested changes on Preliminary Report', report.id);
   persistAfterAction();
   render();
   toast('Changes requested', 'The preliminary report was returned to the Lead Inspector in this demo.', 'warn');
 }
 
 function handleDepartmentPreliminaryDownload() {
+  var report = departmentPreliminaryReportRecord();
+  if (!report) {
+    toast('Preliminary Report unavailable', 'The selected exact Preliminary Report could not be found.', 'warn');
+    return;
+  }
   openModal(modalShell('Download PDF',
     '<div class="lead-assigned-modal">' +
-      '<p><b>PR-2026-018 Department Manager review PDF</b></p>' +
+      '<p><b>' + esc(report.id) + ' Department Manager review PDF</b></p>' +
       '<p class="small muted mt-12">Demo only: the PDF download is represented as a preview action. No real reporting engine or document storage is used.</p>' +
     '</div>',
     '<button class="btn btn--primary" data-act="close-modal">Close</button>',
@@ -3529,7 +3579,7 @@ function handleFinanceReviewConfirm(planId) {
     toast('Finance decision not recorded', result.message, 'warn');
     return;
   }
-  var targetRole = state.financeUi.decision === 'approve' ? 'executiveDirector' : 'gm';
+  var targetRole = state.financeUi.decision === 'approve' ? 'gm' : 'manager';
   state.notifications.unshift({ id: 'N' + state.notifSeq++, role: targetRole, icon: '▤', text: result.message + ' ' + plan.id, time: 'Just now', unread: true });
   addLog(state.financeUi.decision === 'approve' ? 'Finance approved planning budget' : 'Finance returned planning budget for revision', plan.id);
   state.financeUi.decision = '';
@@ -3560,7 +3610,8 @@ function handleExecutiveOpenPlan(planId) {
 }
 
 function handleExecutiveOpenReport(reportId) {
-  var report = state.managerReports.filter(function (item) { return item.id === reportId && item.reportType === 'Final Report'; })[0];
+  var report = reportArtifactById(reportId, state);
+  if (report && normalizeReportType(report.reportType) !== 'Final Report') report = null;
   if (!report) return;
   state.executiveDirectorUi.selectedReportId = report.id;
   state.view = 'executive-final-reports';
@@ -3715,7 +3766,8 @@ function handleExecutivePlanDownload(planId) {
 
 function executiveSelectedReport(reportId) {
   var id = reportId || (state.executiveDirectorUi && state.executiveDirectorUi.selectedReportId);
-  return state.managerReports.filter(function (report) { return report.id === id && report.reportType === 'Final Report'; })[0] || null;
+  var report = reportArtifactById(id, state);
+  return report && normalizeReportType(report.reportType) === 'Final Report' ? report : null;
 }
 
 function handleExecutiveReportFieldChange(field, target) {
@@ -3879,7 +3931,7 @@ function leadReportDownloadText(auditId) {
     'Lead Inspector: John Lead Inspector',
     'Report Version: 1.0 (Draft)',
     'Checklist Progress: 60 / 60 (100%)',
-    'Approval Chain: Inspector -> Preliminary Report -> Lead Inspector Review -> Department Manager Review -> Preliminary Report Released to Service Provider if CAP required -> Service Provider CAP Completion -> Lead Inspector Finalizes Report -> Department Manager Final Approval -> Executive Director / GM Approval -> Final Report Issued -> CAP Process Starts -> Inspector verifies CAP -> Lead Inspector recommends closure -> Department Manager approves closure',
+    'Approval Chain: Inspector -> Preliminary Report -> Lead Inspector Review -> Department Manager Review -> Preliminary Report Released to Service Provider if CAP required -> Service Provider CAP Completion -> Lead Inspector Finalizes Report -> Department Manager Final Approval -> General Manager Review -> Executive Director Final Approval -> Final Report Issued -> CAP Process Starts -> Inspector verifies CAP -> Lead Inspector recommends closure -> Department Manager approves closure',
     '',
     'Executive Summary',
     'The inspection was conducted between 15 - 18 Jun 2026 at SkyCargo Air facilities as part of the scheduled routine inspection.',
@@ -3893,7 +3945,7 @@ function leadReportDownloadText(auditId) {
     'Observations: No CAP required.',
     '',
     'Service Provider Release',
-    'After Executive Director / GM approval, the final report is issued to the service provider and the CAP Process Starts with the above CAP closure deadlines.',
+    'After Executive Director approval, the final report is issued to the Service Provider and the CAP Process Starts with the configured follow-up targets above.',
     '',
     'Workflow Comment',
     ui.workflowComment || 'No workflow comment entered.'
@@ -4125,7 +4177,7 @@ function handleConvertPotentialFinding(id) {
       title: val('pf-title-' + id) || 'PBE not serviceable or not accessible in cabin emergency equipment check'
     });
     addLog('Potential Finding converted to Finding', finding.id);
-    pushNotification('auditee', '⚑', 'New finding ' + finding.id + ' was issued to ' + orgName(finding.orgId) + '. A CAP is required.');
+    pushNotification('auditee', '⚑', 'New finding ' + finding.id + ' was issued to ' + orgName(finding.orgId) + '. A CAP is required.', { organizationId: finding.orgId });
     pushNotification('manager', '⚑', 'Lead Inspector converted ' + id + ' to finding ' + finding.id + '.');
     toast('Finding created', finding.id + ' entered the existing CAP/Evidence/Closure flow.', 'ok');
     persistAfterAction();
@@ -4202,7 +4254,7 @@ function issueFinding(auditId, q) {
   if (a.status === 'Scheduled' || a.status === 'Planned') a.status = 'In Progress';
 
   addLog('Finding issued', id);
-  pushNotification('auditee', '⚑', 'New finding ' + id + ' was issued to ' + orgName(a.orgId) + '. A CAP is required.');
+  pushNotification('auditee', '⚑', 'New finding ' + id + ' was issued to ' + orgName(a.orgId) + '. A CAP is required.', { organizationId: a.orgId });
   pushNotification('manager', '⚑', 'Finding ' + id + ' (' + SEVERITY[finding.severity].label + ') issued for ' + orgName(a.orgId) + '.');
   closeModal();
   toast('Finding issued', id + ' created and sent to the auditee.', 'ok');
@@ -4257,7 +4309,7 @@ function capDecision(id, decision) {
     if (f.capRevisions && f.capRevisions.length) f.capRevisions[f.capRevisions.length - 1].status = V2_STATUS.accepted;
     f.status = 'EVIDENCE_REQUIRED';
     addLog('CAP accepted', id);
-    pushNotification('auditee', '✅', 'Your CAP for ' + id + ' was accepted. Please upload evidence that the action is complete.');
+    pushNotification('auditee', '✅', 'Your CAP for ' + id + ' was accepted. Please upload evidence that the action is complete.', { organizationId: f.orgId });
     closeModal();
     toast('CAP accepted', 'CAP accepted — but the finding stays open until evidence is accepted.', 'ok');
   } else {
@@ -4265,7 +4317,7 @@ function capDecision(id, decision) {
     if (f.capRevisions && f.capRevisions.length) f.capRevisions[f.capRevisions.length - 1].status = 'more_information_requested';
     f.status = 'CAP_MORE_INFO';
     addLog('CAP — more information requested', id);
-    pushNotification('auditee', '↩️', 'The CAA requested more information on your CAP for ' + id + '.');
+    pushNotification('auditee', '↩️', 'The CAA requested more information on your CAP for ' + id + '.', { organizationId: f.orgId });
     closeModal();
     toast('More information requested', 'The auditee has been asked to revise the CAP.', 'warn');
   }
@@ -4389,12 +4441,12 @@ function handleInspectorFindingDecision(id, decision) {
   ui.tab = 'cap';
   addLog(decision === 'accept' ? 'Inspector accepted CAP from Findings workspace' : 'Inspector returned CAP from Findings workspace', findingId);
   if (decision === 'accept') {
-    pushNotification('auditee', 'OK', 'Inspector accepted the CAP for ' + findingId + '.');
+    pushNotification('auditee', 'OK', 'Inspector accepted the CAP for ' + findingId + '.', { organizationId: notificationOrganizationIdForFinding(findingId) });
     persistAfterAction();
     render();
     toast('CAP accepted', findingId + ' is marked accepted in this demo workspace.', 'ok');
   } else {
-    pushNotification('auditee', 'REV', 'Inspector returned the CAP for ' + findingId + ' with revision comments.');
+    pushNotification('auditee', 'REV', 'Inspector returned the CAP for ' + findingId + ' with revision comments.', { organizationId: notificationOrganizationIdForFinding(findingId) });
     persistAfterAction();
     render();
     toast('Returned for revision', findingId + ' is back with the service provider for revision.', 'warn');
@@ -4518,14 +4570,14 @@ function handleCapReviewSubmitDecision(id) {
     if (f.capRevisions && f.capRevisions.length) f.capRevisions[f.capRevisions.length - 1].status = V2_STATUS.accepted;
     f.status = 'EVIDENCE_REQUIRED';
     addLog('CAP accepted', id);
-    pushNotification('auditee', 'OK', 'Your CAP for ' + id + ' was accepted. Please upload evidence that the action is complete.');
+    pushNotification('auditee', 'OK', 'Your CAP for ' + id + ' was accepted. Please upload evidence that the action is complete.', { organizationId: f.orgId });
     toast('CAP accepted', 'Finding stays open until required evidence is accepted.', 'ok');
   } else {
     f.cap.status = 'More Information Requested';
     if (f.capRevisions && f.capRevisions.length) f.capRevisions[f.capRevisions.length - 1].status = 'more_information_requested';
     f.status = 'CAP_MORE_INFO';
     addLog('CAP returned for revision', id);
-    pushNotification('auditee', 'REV', 'The CAA requested a CAP revision for ' + id + '.');
+    pushNotification('auditee', 'REV', 'The CAA requested a CAP revision for ' + id + '.', { organizationId: f.orgId });
     toast('Returned for revision', 'The CAP was sent back with your comment.', 'warn');
   }
   ui.decision = '';
@@ -4657,7 +4709,7 @@ function handleCapTrackingTab(tab) {
 function handleCapTrackingReminder() {
   var ui = ensureCapTrackingUi();
   ui.reminderSentAt = logTimestamp();
-  pushNotification('auditee', 'CAP', 'SkyCargo Air received a CAP reminder for the issued final report package.');
+  pushNotification('auditee', 'CAP', 'The Service Provider received a CAP reminder for the issued Final Report package.', { organizationId: 'ORG-XYZ' });
   addLog('CAP reminder sent to service provider', 'INS-2026-015');
   persistAfterAction();
   render();
@@ -4667,7 +4719,7 @@ function handleCapTrackingReminder() {
 function handleCapTrackingViewReport() {
   openModal(modalShell('Final report distribution', '' +
     '<div class="lead-preview-modal">' +
-      '<p><b>SMS Oversight Audit Final Report</b> was issued after Executive Director / GM approval on <b>22 Jun 2026</b>.</p>' +
+      '<p><b>Final Report</b> was issued after Executive Director approval on <b>22 Jun 2026</b>.</p>' +
       '<p>The system automatically sent the issued final report and CAP request package to <b>SkyCargo Air</b>. Inspectors now track every required corrective action from this CAP Tracking screen.</p>' +
       '<div class="lead-preview-deadlines"><span>Level 1: 14 days</span><span>Level 2: 90 days</span><span>Observation: No CAP</span></div>' +
     '</div>',
@@ -4715,7 +4767,7 @@ function handleCapTrackingRowAction(id, action) {
     return;
   }
   openModal(modalShell(title, '' +
-    '<p><b>' + esc(id || 'Finding') + '</b> is tracked under the issued final report sent to SkyCargo Air after Executive Director / GM approval.</p>' +
+    '<p><b>' + esc(id || 'Finding') + '</b> is tracked under the issued Final Report sent to the Service Provider after Executive Director approval.</p>' +
     '<p class="muted">This demo opens a review summary only. CAP decisions and evidence closure remain in the inspector review workflow.</p>',
     '<button class="btn" data-act="close-modal">Close</button>', false));
 }
@@ -4782,7 +4834,7 @@ function handleCapDetailRequestRevision(id) {
   ui.inspectorAssessment = 'request_revision';
   ui.reviewOutcome = 'needs_action';
   ui.reviewStatus = 'not_effective';
-  pushNotification('auditee', 'CAP', 'Inspector requested a CAP revision for ' + findingId + '.');
+  pushNotification('auditee', 'CAP', 'Inspector requested a CAP revision for ' + findingId + '.', { organizationId: notificationOrganizationIdForFinding(findingId) });
   addLog('Inspector requested CAP revision', findingId);
   persistAfterAction();
   render();
@@ -4795,7 +4847,7 @@ function handleCapDetailRequestMoreEvidence(id) {
   ui.selectedFindingId = findingId;
   ui.inspectorAssessment = 'request_more_evidence';
   ui.reviewOutcome = 'needs_action';
-  pushNotification('auditee', 'CAP', 'Inspector requested more CAP evidence for ' + findingId + '.');
+  pushNotification('auditee', 'CAP', 'Inspector requested more CAP evidence for ' + findingId + '.', { organizationId: notificationOrganizationIdForFinding(findingId) });
   addLog('Inspector requested more CAP evidence', findingId);
   persistAfterAction();
   render();
@@ -4833,7 +4885,7 @@ function handleInspectorCapPackageDecision(id, decision) {
   ui.allCapsApprovedAt = '';
   if (decision === 'revision') {
     ui.inspectorAssessment = 'request_revision';
-    pushNotification('auditee', 'CAP', 'Inspector requested a CAP revision for ' + findingId + '.');
+    pushNotification('auditee', 'CAP', 'Inspector requested a CAP revision for ' + findingId + '.', { organizationId: notificationOrganizationIdForFinding(findingId) });
     addLog('Inspector requested CAP package revision', findingId);
     persistAfterAction();
     render();
@@ -4864,34 +4916,80 @@ function handleCapDetailSubmitGeneralManager(id) {
   toast('Finding closure approved', 'The Department Manager closure approval moved this CAP to Finding Closed in the demo.', 'ok');
 }
 
-function handleFinalReportReadyAction(action) {
+function selectedFinalReportForAction(reportId) {
   var ui = ensureCapTrackingUi();
+  var selectedId = reportId || (state.params && (state.params.reportId || state.params.finalReportId)) || ui.selectedFinalReportId || 'FR-2026-018';
+  var report = typeof reportArtifactById === 'function' ? reportArtifactById(selectedId, state) : null;
+  if (!report || normalizeReportType(report.reportType) !== 'Final Report') return null;
+  ui.selectedFinalReportId = report.id;
+  return report;
+}
+
+function handleFinalReportReadyAction(action, reportId) {
+  var ui = ensureCapTrackingUi();
+  var report = selectedFinalReportForAction(reportId);
+  if (!report) {
+    toast('Final Report unavailable', 'The selected exact Final Report could not be found.', 'warn');
+    return;
+  }
   if (action === 'prepare') {
     ui.finalReportPreparedAt = logTimestamp();
     ui.finalReportPrepareStep = ui.finalReportPrepareStep || 'executive';
-    pushNotification('manager', 'RPT', 'Lead Inspector prepared the final report for INS-2026-014.');
-    addLog('Lead Inspector prepared final report', 'INS-2026-014');
+    addLog('Lead Inspector opened Final Report preparation', report.id);
     persistAfterAction();
-    go('final-report-prepare', { filter: 'final' });
+    go('final-report-prepare', { filter: 'final', reportId: report.id });
     toast('Final report opened', 'Lead Inspector can now write the Final Report sections.', 'ok');
     return;
   }
   if (action === 'preview') {
-    go('final-report-view', { filter: 'final' });
+    go('final-report-view', { filter: 'final', reportId: report.id });
     return;
   }
   if (action === 'record') {
-    toast('Inspection record opened', 'The inspection record is represented by this final report readiness page in the demo.', 'info');
+    go('audit-detail', { auditId: report.auditId });
     return;
   }
   if (action === 'attachments') {
-    toast('Attachments opened', 'Final report attachments are staged in this demo. No real files are stored.', 'info');
+    var files = Array.isArray(report.attachments) ? report.attachments : [];
+    var rows = files.length ? files.map(function (file) {
+      return '<li><span><b>' + esc(file) + '</b><small>Mock file name only</small></span><button class="btn btn--sm" data-act="final-report-attachment-download" data-id="' + esc(report.id) + '" data-file="' + esc(file) + '">Download Mock Record</button></li>';
+    }).join('') : '<li><span>No mock attachment names are recorded.</span></li>';
+    openModal(modalShell('Final Report Attachments — ' + report.id,
+      '<ul class="document-list">' + rows + '</ul><p class="small muted mt-12">Demo only: generated text records; no real upload service or document repository.</p>',
+      '<button class="btn btn--primary" data-act="close-modal">Close</button>', false));
   }
 }
 
+function handleFinalReportAttachmentDownload(reportId, fileName) {
+  var report = selectedFinalReportForAction(reportId);
+  if (!report || (report.attachments || []).indexOf(fileName) === -1) {
+    toast('Attachment unavailable', 'The selected attachment does not belong to this Final Report.', 'warn');
+    return;
+  }
+  var downloaded = downloadPlainTextFile(mockAttachmentDownloadFileName(fileName), [
+    'AviaSurveil360 - Mock Final Report Attachment Record',
+    '',
+    'Final Report: ' + report.id,
+    'Audit: ' + report.auditId,
+    'Organization: ' + report.organization,
+    'Mock file name: ' + fileName,
+    '',
+    'Demo only: this generated text file represents a browser-local attachment record.',
+    'No real document content, upload service, or storage is included.'
+  ].join('\n'));
+  addLog('Lead Inspector downloaded mock Final Report attachment record', report.id + ' · ' + fileName);
+  persistAfterAction();
+  toast(downloaded ? 'Attachment record downloaded' : 'Download unavailable', downloaded ? fileName + ' mock record generated.' : 'This browser does not support client-side downloads.', downloaded ? 'ok' : 'warn');
+}
+
 function handleFinalReportListOpen(reportId) {
+  var report = selectedFinalReportForAction(reportId);
+  if (!report) {
+    toast('Final Report unavailable', 'The selected exact Final Report could not be found.', 'warn');
+    return;
+  }
   state.view = 'audit-reports';
-  state.params = { filter: 'final', finalReportId: reportId || 'FR-2026-014' };
+  state.params = { filter: 'final', reportId: report.id, finalReportId: report.id };
   if (state.selectedFilters) state.selectedFilters['audit-reports'] = 'final';
   persistAfterAction();
   render();
@@ -4924,13 +5022,15 @@ function handleFinalReportPrepareBack() {
   var ui = ensureCapTrackingUi();
   ui.finalReportPreparedAt = ui.finalReportPreparedAt || logTimestamp();
   persistAfterAction();
-  go('audit-reports', { filter: 'final' });
+  go('audit-reports', { filter: 'final', reportId: ui.selectedFinalReportId, finalReportId: ui.selectedFinalReportId });
 }
 
 function handleFinalReportPrepareSave() {
   var ui = ensureCapTrackingUi();
+  var report = selectedFinalReportForAction();
+  if (!report) return;
   ui.finalReportSavedAt = logTimestamp();
-  addLog('Lead Inspector final report draft saved', 'INS-2026-014');
+  addLog('Lead Inspector Final Report draft saved', report.id);
   persistAfterAction();
   render();
   toast('Draft saved', 'Final Report draft was saved in this browser for the demo.', 'ok');
@@ -4938,9 +5038,11 @@ function handleFinalReportPrepareSave() {
 
 function handleFinalReportPrepareReview() {
   var ui = ensureCapTrackingUi();
+  var report = selectedFinalReportForAction();
+  if (!report) return;
   ui.finalReportSavedAt = logTimestamp();
   ui.finalReportPrepareStep = 'review';
-  addLog('Lead Inspector continued Final Report to review', 'INS-2026-014');
+  addLog('Lead Inspector continued Final Report to review', report.id);
   persistAfterAction();
   render();
   toast('Ready for review', 'Final Report content was saved and moved to the review step in this demo.', 'ok');
@@ -4952,10 +5054,17 @@ function handleFinalReportPrepareSubmit() {
 
 function handleFinalReportPrepareConfirmSubmit() {
   var ui = ensureCapTrackingUi();
+  var report = selectedFinalReportForAction();
+  if (!report) return;
   ui.finalReportSavedAt = logTimestamp();
   ui.finalReportSubmittedAt = ui.finalReportSavedAt;
-  pushNotification('manager', 'RPT', 'Final Report INS-2026-014 was submitted for Department Manager approval.');
-  addLog('Lead Inspector submitted Final Report for Department Manager approval', 'INS-2026-014');
+  report.status = 'pending_manager';
+  report.ownerRole = 'manager';
+  report.submittedAt = ui.finalReportSubmittedAt;
+  if (!Array.isArray(report.history)) report.history = [];
+  report.history.push({ at: ui.finalReportSubmittedAt, actor: ROLES.leadInspector.user, action: 'Final Report submitted to Department Manager' });
+  pushNotification('manager', 'RPT', 'Final Report ' + report.id + ' was submitted for Department Manager approval.');
+  addLog('Lead Inspector submitted Final Report for Department Manager approval', report.id);
   persistAfterAction();
   closeModal();
   render();
@@ -5210,7 +5319,7 @@ function handleCapTrackingQuickAction(action) {
   }
   if (action === 'enforcement') {
     openModal(modalShell('Enforcement matrix', '' +
-      '<p>CAP deadlines are tracked from the Final Report Issued date after Executive Director / GM approval.</p>' +
+      '<p>CAP targets are tracked from the Final Report Issued date after Executive Director approval.</p>' +
       '<div class="lead-preview-deadlines"><span>Level 1: 14 days</span><span>Level 2: 90 days</span><span>Observation: No CAP</span></div>' +
       '<p class="muted">Enforcement decisions follow the configured governance route and are not automatic.</p>',
       '<button class="btn" data-act="close-modal">Close</button>', false));
@@ -5257,7 +5366,7 @@ function evDecision(id, decision) {
     f.closureType = 'evidence-accepted';
     addLog('Evidence accepted', id);
     addLog('Finding closed (evidence accepted)', id);
-    pushNotification('auditee', '✅', 'Evidence accepted — finding ' + id + ' is now closed. Thank you.');
+    pushNotification('auditee', '✅', 'Evidence accepted — finding ' + id + ' is now closed. Thank you.', { organizationId: f.orgId });
     pushNotification('manager', '✅', 'Finding ' + id + ' closed for ' + orgName(f.orgId) + '. Dashboard updated.');
     closeModal();
     toast('Finding closed', id + ' closed after evidence acceptance. Manager dashboard updated.', 'ok');
@@ -5265,7 +5374,7 @@ function evDecision(id, decision) {
     if (latest) latest.status = 'More Information Requested';
     f.status = 'EVIDENCE_MORE_INFO';
     addLog('Evidence — more information requested', id);
-    pushNotification('auditee', '↩️', 'The CAA requested more evidence for ' + id + '.');
+    pushNotification('auditee', '↩️', 'The CAA requested more evidence for ' + id + '.', { organizationId: f.orgId });
     closeModal();
     toast('More information requested', 'The auditee has been asked for additional evidence.', 'warn');
   }
@@ -5285,7 +5394,7 @@ function doAuthorizedClosure(id) {
   if (comment) f.commentsToAuditee.push({ author: currentActorLabel(), date: DEMO_TODAY, text: comment });
   f.internalNotes.push({ author: currentActorLabel(), date: DEMO_TODAY, text: 'Authorized closure reason: ' + reason + (internal ? ' — ' + internal : '') });
   addLog('Finding closed (authorized closure)', id);
-  pushNotification('auditee', '✅', 'Finding ' + id + ' has been closed by the CAA under an authorized closure decision.');
+  pushNotification('auditee', '✅', 'Finding ' + id + ' has been closed by the CAA under an authorized closure decision.', { organizationId: f.orgId });
   pushNotification('manager', '⚖️', 'Finding ' + id + ' closed via authorized closure (recorded in the audit trail).');
   closeModal();
   toast('Finding closed', id + ' closed under an authorized closure decision (audit-logged).', 'ok');
@@ -5298,7 +5407,7 @@ function sendReminder(id) {
   if (!f) return;
   var d = dueInfo(f);
   var when = d.overdue ? 'is overdue' : (d.label && d.label !== '—' ? d.label.toLowerCase() : 'is awaiting your response');
-  pushNotification('auditee', '⏰', 'Reminder from the CAA: ' + id + ' — ' + nextActionLabel(f) + '. This finding ' + when + '.');
+  pushNotification('auditee', '⏰', 'Reminder from the CAA: ' + id + ' — ' + nextActionLabel(f) + '. This finding ' + when + '.', { organizationId: f.orgId });
   addLog('Reminder sent to auditee', id);
   toast('Reminder sent', 'A traceable reminder was sent to ' + orgName(f.orgId) + ' (in-app — no email).', 'ok');
   persistAfterAction();
@@ -5673,8 +5782,8 @@ function handleReportApproval(id, decision) {
     });
     addLog('Report approval decision recorded', report.id);
     if (report.finalLocked) {
-      addLog('Audit closed after Executive Director / GM report approval', report.auditId);
-      toast('Final report issued', 'Mock final report issued and audit closed after Executive Director / GM approval.', 'ok');
+      addLog('Final Report issued after Executive Director approval', report.auditId);
+      toast('Final report issued', 'Mock Final Report issued after Executive Director approval; open Findings keep the audit in Follow-up Open.', 'ok');
     } else {
       toast('Report decision recorded', report.id + ' — ' + approvalSummary(report).statusLabel + '.', 'ok');
     }
@@ -5786,8 +5895,23 @@ document.addEventListener('click', function (e) {
 });
 
 document.addEventListener('keydown', function (e) {
-  if (!e || e.key !== 'Escape') return;
   var modalHost = document.getElementById('modal-host');
+  if (e && e.key === 'Tab' && modalHost && !modalHost.hidden && modalHost.querySelectorAll) {
+    var focusable = Array.prototype.slice.call(modalHost.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex="0"]'));
+    if (focusable.length) {
+      var first = focusable[0];
+      var last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    return;
+  }
+  if (!e || e.key !== 'Escape') return;
   if (modalHost && !modalHost.hidden) {
     e.preventDefault();
     closeModal();

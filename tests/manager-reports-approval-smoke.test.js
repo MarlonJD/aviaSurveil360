@@ -87,6 +87,14 @@ vm.createContext(context);
   vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
 });
 
+const identityState = context.freshState();
+assert.equal(context.reportArtifactById('PR-2026-018', identityState).id, 'PR-2026-018');
+assert.equal(context.reportArtifactById('FR-2026-018', identityState).id, 'FR-2026-018');
+assert.notEqual(
+  context.reportArtifactById('PR-2026-018', identityState),
+  context.reportArtifactById('FR-2026-018', identityState)
+);
+
 const preliminaryState = context.freshState();
 const finalBeforePreliminaryDecision = JSON.stringify(
   context.managerReportById(preliminaryState, 'FR-2026-018')

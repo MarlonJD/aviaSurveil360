@@ -474,3 +474,9 @@ demos can:
     the selected state-backed report with a demo-only approval mark;
 12. complete these paths at desktop and mobile sizes without console errors or
     layout overflow.
+
+## Stakeholder Readiness Remediation Evidence — 2026-07-10
+
+Distinct canonical `PR-2026-018` and `FR-2026-018` artifacts now preserve exact selected identity across Department Manager decisions and Lead Final list, preparation, preview, attachments, inspection record, submission, and mock PDF paths. GM remains an intermediate return/forward reviewer; Executive Director alone may issue, add the demo mock approval mark, and lock an eligible Final Report. Report approval leaves open Findings in `Follow-up Open`; CAP acceptance remains separate from Evidence verification and Finding closure.
+
+Status: **demo-only**; focused/static checks and fresh isolated-browser report/authority/PDF/responsive checks at all four required viewports are **verified locally**. Production authorization, signature validity, enforcement execution, release, and external stakeholder acceptance are **not run**; **production-readiness not claimed**.
