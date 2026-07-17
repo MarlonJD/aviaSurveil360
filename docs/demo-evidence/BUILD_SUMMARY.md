@@ -707,6 +707,57 @@ production reporting/audit-log, enforcement-execution, legal/regulatory, and
 stakeholder sign-off evidence is **not run**. This remains **demo-only**;
 **production-readiness not claimed**.
 
+### Department planning command-center checkpoint — 2026-07-17
+
+Evidence status: **demo-only** and **verified locally**. The Department Manager
+now has Planning in both the sidebar and dashboard task workspace, bringing the
+manager navigation to nine task-based routes. The shared Planning screen now
+uses a compact Planning Command Center for General Manager and Department
+Manager instead of repeating a shallow command card and a second oversized plan
+hero. It exposes the plan basis, organization and department, risk driver,
+budget and proposed inspectors, target and readiness, current owner, next
+action, blocking reason, and the configured Department Manager -> Finance
+Review -> GM Review -> Executive Director decision path in one hierarchy.
+
+The generic eight-column Planning Workbench table is replaced by a compact
+Planning Queue with white status rows, semantic left rails, inline queue totals,
+clear decision context, month targets, and one role-aware action per request.
+Reset state now seeds three distinct department requests: Cabin Safety waiting
+for Finance, Flight Operations waiting for GM, and Airworthiness returned to
+Department Manager for revision. Selecting any row updates the Command Center,
+selected state, target plan and relevant Overview or Approval tab; legacy
+single-row browser state is migrated into this three-department queue.
+
+Overview continues to expose the seeded budget allocation, available plan
+budget, remaining annual budget, resource lines, proposed team, and preparation
+details without repeating the approval rail. Role-aware approval, release,
+preparation, history, mock-only boundaries, and client-side persistence remain
+unchanged.
+
+Fresh automated evidence (**verified locally**):
+
+- All 11 `js/*.js` files passed `node --check`.
+- `node --test tests/*.test.js` passed 60/60 with 0 failed, cancelled, skipped,
+  or todo tests.
+- Focused manager navigation, Planning workspace, rendering, responsive, table,
+  and General Manager smoke checks passed.
+- `git diff --check` passed.
+
+Fresh in-app Browser QA is **verified locally** for General Manager and
+Department Manager Planning at the accepted concept's native `1495x1052` size
+and at `390x844`. Page width matched the viewport, all three queue rows rendered
+without measured horizontal overflow, responsive rows collapsed to one column,
+and queue actions retained a 44 px minimum height. Department Manager Planning
+was present in both sidebar and dashboard task navigation. Selecting Flight
+Operations updated the Command Center; the GM `Review now` action and Department
+Manager Airworthiness `Review & submit` action both opened the selected plan's
+Approval tab. Browser console warning/error count was zero.
+
+Backend/database integration, real authorization, production audit logging,
+real document storage, notification delivery, deployment, real-device,
+accessibility certification, and stakeholder sign-off remain **not run**.
+This remains **demo-only**; **production-readiness not claimed**.
+
 ---
 
 ## Mocked items and limitations

@@ -35,13 +35,14 @@ function dataEl(attrs) {
 
 const context = {
   console,
-  window: { scrollTo() {} },
+  window: { scrollTo() {}, matchMedia() { return { matches: true }; } },
   document: {
     body: { classList: { toggle() {} }, appendChild() {}, removeChild() {} },
     addEventListener() {},
     createElement() { return { className: '', innerHTML: '', style: {}, parentNode: null, click() {} }; },
     getElementById: stubElement,
-    querySelectorAll() { return []; }
+    querySelectorAll() { return []; },
+    querySelector() { return { scrollIntoView() {} }; }
   },
   setTimeout,
   clearTimeout
@@ -66,6 +67,7 @@ vm.createContext(context);
 
 const expectedLabels = [
   'Dashboard',
+  'Planning',
   'Audits',
   'Reports Approval',
   'Risk Dashboard',
@@ -81,6 +83,7 @@ assert.deepEqual(
 
 const expectedRoutes = [
   'dashboard',
+  'planning',
   'calendar',
   'reports-approval',
   'manager-risk',
@@ -125,6 +128,7 @@ assert.match(html, /Inspection Team/);
 assert.match(html, /Recent High-Risk Findings/);
 assert.match(html, /Upcoming Audits/);
 assert.match(html, /Fly Namibia/);
+assert.match(html, /Planning/);
 assert.doesNotMatch(context.viewManagerDashboard(), /Calendar|Documents|Corrective Actions/);
 
 const taskRoutes = Array.from(
@@ -139,5 +143,43 @@ taskRoutes.forEach((route) => {
 context.handleAction('nav', dataEl({ 'data-view': 'reports-approval' }));
 assert.equal(context.state.view, 'reports-approval');
 assert.match(elements.get('app-root').innerHTML, /Reports Approval/);
+
+context.handleAction('nav', dataEl({ 'data-view': 'planning' }));
+assert.equal(context.state.view, 'planning');
+assert.match(elements.get('app-root').innerHTML, /Department Planning/);
+assert.match(elements.get('app-root').innerHTML, /Track planning approvals, release acceptance and department preparation in one panel/);
+assert.match(elements.get('app-root').innerHTML, /Planning Command Center/);
+assert.match(elements.get('app-root').innerHTML, /Scope &amp; Risk Driver/);
+assert.match(elements.get('app-root').innerHTML, /Budget &amp; Resources/);
+assert.match(elements.get('app-root').innerHTML, /Decision Path/);
+assert.match(elements.get('app-root').innerHTML, /Planning Queue/);
+assert.match(elements.get('app-root').innerHTML, /<b>3<\/b> active plans/);
+assert.match(elements.get('app-root').innerHTML, /Awaiting Finance Review/);
+assert.match(elements.get('app-root').innerHTML, /No Department Manager action required yet/);
+assert.match(elements.get('app-root').innerHTML, /Q4 Flight Operations Surveillance Plan/);
+assert.match(elements.get('app-root').innerHTML, /Q4 Airworthiness Records Review Plan/);
+assert.match(elements.get('app-root').innerHTML, /Your plan revision is required/);
+assert.match(elements.get('app-root').innerHTML, /View details/);
+assert.doesNotMatch(elements.get('app-root').innerHTML, /Open planning/);
+assert.match(elements.get('app-root').innerHTML, /USD 12,500/);
+assert.match(elements.get('app-root').innerHTML, /Caner Yildiz/);
+assert.match(elements.get('app-root').innerHTML, /Submit to Finance Review|Waiting for Finance Review/);
+
+context.handleAction('planning-queue-open', dataEl({
+  'data-id': 'PLAN-2026-Q4-FOPS',
+  'data-tab': 'overview'
+}));
+assert.equal(context.state.params.planningId, 'PLAN-2026-Q4-FOPS');
+assert.match(elements.get('app-root').innerHTML, /Planning Command Center[\s\S]*Q4 Flight Operations Surveillance Plan/);
+assert.match(elements.get('app-root').innerHTML, /planning-queue-row is-info is-selected/);
+
+context.handleAction('planning-queue-open', dataEl({
+  'data-id': 'PLAN-2026-Q4-AIRW',
+  'data-tab': 'approval'
+}));
+assert.equal(context.state.params.planningId, 'PLAN-2026-Q4-AIRW');
+assert.equal(context.state.params.tab, 'approval');
+assert.match(elements.get('app-root').innerHTML, /Planning Command Center[\s\S]*Q4 Airworthiness Records Review Plan/);
+assert.match(elements.get('app-root').innerHTML, /Decision Panel/);
 
 console.log('manager-navigation-dashboard-smoke: ok');

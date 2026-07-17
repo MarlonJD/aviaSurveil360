@@ -80,6 +80,17 @@ html = context.viewPlanningWorkspace();
 assert.match(html, /approval-package/);
 assert.match(html, /approval-package__decision/);
 assert.match(html, /Blocking reason/);
+assert.match(html, /planning-command-center/);
+assert.match(html, /planning-queue-panel/);
+assert.match(html, /planning-queue-row/);
+assert.match(html, /Awaiting Finance Review/);
+assert.match(html, /No Department Manager action required yet/);
+assert.match(html, /View details/);
+const planningQueueHtml = html.match(/<section class="approval-package__queue planning-queue-panel">([\s\S]*?)<\/section>/)[1];
+assert.doesNotMatch(planningQueueHtml, /<table|Priority|Open planning|planning-queue-summary > div/);
+assert.match(html, /Budget &amp; Resource Detail/);
+assert.equal((html.match(/class="approval-rail"/g) || []).length, 1, 'Overview shows the approval path once in the command center');
+assert.doesNotMatch(html, /governance-hero planning-workspace__hero/);
 
 html = context.viewQuestionBank();
 assert.match(html, /configuration-studio/);

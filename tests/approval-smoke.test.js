@@ -34,7 +34,21 @@ assert.equal(typeof context.applyApprovalDecision, 'function', 'applyApprovalDec
 
 const initialState = context.freshState();
 assert.ok(Array.isArray(initialState.planningItems), 'planning items are seeded in demo state');
-assert.equal(initialState.planningItems.length, 1, 'one thin-slice planning item is seeded');
+assert.equal(initialState.planningItems.length, 3, 'multiple department planning requests are seeded');
+assert.deepEqual(
+  clone(initialState.planningItems.map((planningItem) => planningItem.department)),
+  ['Cabin Safety', 'Flight Operations', 'Airworthiness']
+);
+
+const legacyPlanningState = clone(initialState);
+legacyPlanningState.demoStateVersion = 9;
+legacyPlanningState.planningItems = [Object.assign(clone(initialState.planningItems[0]), {
+  id: 'PLAN-2026-Q3-OPS',
+  title: 'Q3 Flight Operations Surveillance Plan'
+})];
+const migratedPlanningState = context.mergeDemoState(legacyPlanningState);
+assert.equal(migratedPlanningState.planningItems.length, 3, 'legacy single-row planning state upgrades to the three-department queue');
+assert.equal(migratedPlanningState.planningItems.some((planningItem) => planningItem.id === 'PLAN-2026-Q3-OPS'), false);
 
 const item = clone(initialState.planningItems[0]);
 assert.equal(item.id, 'PLAN-2026-Q3-CABIN');

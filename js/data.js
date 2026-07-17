@@ -9,7 +9,7 @@ var CANONICAL_SERVICE_PROVIDER_NAME = 'Fly Namibia';
 
 /* Demo persistence boundary. Views must not call localStorage directly. */
 var DEMO_STORAGE_KEY = 'aviasurveil360:v2-demo-state';
-var DEMO_STATE_VERSION = 9;
+var DEMO_STATE_VERSION = 10;
 var CANONICAL_CABIN_ASSIGNMENT_IDS = [
   'cab-galley-oven',
   'cab-lav-oxygen-compartment',
@@ -1167,6 +1167,158 @@ var SEED_PLANNING_ITEMS = [
         }
       ]
     }
+  },
+  {
+    id: 'PLAN-2026-Q4-FOPS',
+    title: 'Q4 Flight Operations Surveillance Plan',
+    department: 'Flight Operations',
+    organization: CANONICAL_SERVICE_PROVIDER_NAME,
+    organizationId: 'ORG-XYZ',
+    purpose: 'Targeted flight operations surveillance plan for repeated crew training record findings.',
+    riskCategory: 'Crew training record recurrence',
+    triggerType: 'Risk based / repeat finding',
+    budgetRequired: true,
+    requestedBudget: 'USD 18,600',
+    budget: {
+      currency: 'USD',
+      requested: 18600,
+      availableForPlan: 28000,
+      remainingAnnualBudget: 401400,
+      lines: [
+        { category: 'Travel', amount: 7600 },
+        { category: 'Accommodation', amount: 4200 },
+        { category: 'Daily Allowance', amount: 2400 },
+        { category: 'Vehicle', amount: 1400 },
+        { category: 'Equipment / Tools', amount: 2100 },
+        { category: 'Miscellaneous', amount: 900 }
+      ]
+    },
+    targetMonth: '2026-10',
+    proposedInspectors: ['Aylin Sezer', 'Mary Adams'],
+    status: 'under_gm_review',
+    financeReview: {
+      decision: 'approved',
+      comment: 'Budget is available for the proposed Q4 scope.',
+      reviewedBy: 'Finance Review',
+      reviewedAt: '2026-06-19 11:20'
+    },
+    preparation: {
+      status: 'not_released',
+      releasedBy: null,
+      releasedDate: null,
+      acceptedBy: null,
+      acceptedDate: null,
+      leadInspector: null,
+      proposedTeam: [],
+      proposedStartDate: null,
+      proposedEndDate: null,
+      resources: null,
+      assignmentPackage: null,
+      history: []
+    },
+    approval: {
+      chain: [
+        { role: 'manager', label: 'Department Manager', returnToRole: null },
+        { role: 'finance', label: 'Finance Review', returnToRole: 'manager', notApprovedReturnToRole: 'manager' },
+        { role: 'gm', label: 'GM Review', returnToRole: 'manager' },
+        { role: 'executiveDirector', label: 'Executive Director Approval', returnToRole: 'gm' }
+      ],
+      currentIndex: 2,
+      outcome: null,
+      returnPolicy: 'configured_role',
+      history: [
+        {
+          actor: 'Mehmet Kaya',
+          role: 'manager',
+          action: 'submitted',
+          date: '2026-06-18 09:10',
+          comment: 'Submitted Q4 Flight Operations surveillance plan for budget review.'
+        },
+        {
+          actor: 'Finance Review',
+          role: 'finance',
+          action: 'approved',
+          date: '2026-06-19 11:20',
+          comment: 'Budget is available for the proposed Q4 scope.'
+        }
+      ]
+    }
+  },
+  {
+    id: 'PLAN-2026-Q4-AIRW',
+    title: 'Q4 Airworthiness Records Review Plan',
+    department: 'Airworthiness',
+    organization: CANONICAL_SERVICE_PROVIDER_NAME,
+    organizationId: 'ORG-XYZ',
+    purpose: 'Focused records review for recurring maintenance release documentation gaps.',
+    riskCategory: 'Maintenance release documentation',
+    triggerType: 'Targeted follow-up / records review',
+    budgetRequired: true,
+    requestedBudget: 'USD 9,200',
+    budget: {
+      currency: 'USD',
+      requested: 9200,
+      availableForPlan: 14500,
+      remainingAnnualBudget: 392200,
+      lines: [
+        { category: 'Travel', amount: 3200 },
+        { category: 'Accommodation', amount: 2100 },
+        { category: 'Daily Allowance', amount: 1200 },
+        { category: 'Vehicle', amount: 700 },
+        { category: 'Equipment / Tools', amount: 1500 },
+        { category: 'Miscellaneous', amount: 500 }
+      ]
+    },
+    targetMonth: '2026-11',
+    proposedInspectors: ['Caner Yildiz'],
+    status: 'finance_not_approved',
+    financeReview: {
+      decision: 'not_approved',
+      reason: 'Clarify the equipment allowance before resubmission.',
+      reviewedBy: 'Finance Review',
+      reviewedAt: '2026-06-20 15:05'
+    },
+    preparation: {
+      status: 'not_released',
+      releasedBy: null,
+      releasedDate: null,
+      acceptedBy: null,
+      acceptedDate: null,
+      leadInspector: null,
+      proposedTeam: [],
+      proposedStartDate: null,
+      proposedEndDate: null,
+      resources: null,
+      assignmentPackage: null,
+      history: []
+    },
+    approval: {
+      chain: [
+        { role: 'manager', label: 'Department Manager', returnToRole: null },
+        { role: 'finance', label: 'Finance Review', returnToRole: 'manager', notApprovedReturnToRole: 'manager' },
+        { role: 'gm', label: 'GM Review', returnToRole: 'manager' },
+        { role: 'executiveDirector', label: 'Executive Director Approval', returnToRole: 'gm' }
+      ],
+      currentIndex: 0,
+      outcome: null,
+      returnPolicy: 'configured_role',
+      history: [
+        {
+          actor: 'Deniz Acar',
+          role: 'manager',
+          action: 'submitted',
+          date: '2026-06-19 13:40',
+          comment: 'Submitted Q4 Airworthiness records review plan for budget review.'
+        },
+        {
+          actor: 'Finance Review',
+          role: 'finance',
+          action: 'finance_not_approved',
+          date: '2026-06-20 15:05',
+          comment: 'Clarify the equipment allowance before resubmission.'
+        }
+      ]
+    }
   }
 ];
 
@@ -1976,6 +2128,14 @@ function mergeDemoState(saved) {
   if (!Array.isArray(base.regulatoryDocuments)) base.regulatoryDocuments = deepClone(SEED_REGULATORY_DOCUMENTS);
   if (!Array.isArray(base.regulatoryTraces)) base.regulatoryTraces = deepClone(SEED_REGULATORY_TRACES);
   if (!Array.isArray(base.planningItems)) base.planningItems = deepClone(SEED_PLANNING_ITEMS);
+  /* Retire the single-row prototype item before hydrating the multi-department queue. */
+  base.planningItems = base.planningItems.filter(function (item) {
+    return item.id !== 'PLAN-2026-Q3-OPS';
+  });
+  SEED_PLANNING_ITEMS.forEach(function (seedItem) {
+    var exists = base.planningItems.some(function (item) { return item.id === seedItem.id; });
+    if (!exists) base.planningItems.push(deepClone(seedItem));
+  });
   base.planningItems.forEach(function (item) {
     var seed = SEED_PLANNING_ITEMS.filter(function (candidate) { return candidate.id === item.id; })[0] || SEED_PLANNING_ITEMS[0];
     normalizePlanningApprovalV9(item, seed, saved.demoStateVersion);

@@ -6,6 +6,7 @@
 var NAV = {
   manager: [
     { view: 'dashboard', label: 'Dashboard', icon: '▦' },
+    { view: 'planning', label: 'Planning', icon: '▤' },
     { view: 'calendar', label: 'Audits', icon: '▤' },
     { view: 'reports-approval', label: 'Reports Approval', icon: '📄', badge: '2' },
     { view: 'manager-risk', label: 'Risk Dashboard', icon: '⌁' },
@@ -1724,6 +1725,7 @@ function handleAction(act, el) {
     case 'checklist-submit-version': handleSubmitChecklistVersion(id); break;
     case 'checklist-publish-version': handlePublishChecklistVersion(id); break;
     case 'planning-release': handlePlanningRelease(id); break;
+    case 'planning-queue-open': handlePlanningQueueOpen(id, tab); break;
     case 'planning-accept': handlePlanningAccept(id); break;
     case 'planning-assign-lead': handlePlanningAssignLead(id); break;
     case 'planning-propose-team': handlePlanningProposeTeam(id); break;
@@ -5741,6 +5743,17 @@ function handlePlanningRelease(id) {
   } catch (err) {
     toast('Release unavailable', err && err.message ? err.message : 'Planning item could not be released.', 'warn');
   }
+}
+
+function handlePlanningQueueOpen(id, tab) {
+  if (id) state.params.planningId = id;
+  go('planning', { tab: tab || 'overview' });
+  setTimeout(function () {
+    var details = document.querySelector('.approval-package__decision');
+    if (!details || typeof details.scrollIntoView !== 'function') return;
+    var reducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    details.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+  }, 0);
 }
 
 function handlePlanningAccept(id) {

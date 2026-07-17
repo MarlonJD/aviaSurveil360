@@ -714,6 +714,57 @@ production reporting/audit-log, enforcement-execution, legal/regulatory ve
 stakeholder sign-off kanıtı **not run**. Kapsam **demo-only**;
 **production-readiness not claimed**.
 
+### Department planning command-center checkpoint — 2026-07-17
+
+Kanıt durumu: **demo-only** ve **verified locally**. Department Manager artık
+hem sidebar hem dashboard task workspace içinde Planning erişimine sahip;
+manager navigation dokuz task-based route içeriyor. General Manager ve
+Department Manager tarafından paylaşılan Planning ekranı, sığ command card ve
+ikinci büyük plan hero tekrarının yerine yoğun bir Planning Command Center
+kullanıyor. Plan dayanağı, organization/department, risk driver, budget ve
+proposed inspector'lar, target/readiness, current owner, next action, blocking
+reason ve yapılandırılmış Department Manager -> Finance Review -> GM Review ->
+Executive Director decision path tek hiyerarşide görünür.
+
+Generic sekiz kolonlu Planning Workbench tablosu; white status row'ları,
+semantic sol rail'leri, inline queue toplamları, açık decision context'i, ay
+target'ları ve her talep için tek role-aware action içeren compact Planning
+Queue ile değiştirildi. Reset state artık üç ayrı department talebi seed eder:
+Finance bekleyen Cabin Safety, GM bekleyen Flight Operations ve revizyon için
+Department Manager'a dönmüş Airworthiness. Her row seçimi Command Center'ı,
+selected state'i, target planı ve ilgili Overview veya Approval tab'ını
+günceller; eski single-row browser state bu üç-department queue'ya migrate olur.
+
+Overview; approval rail'i tekrar etmeden seeded budget allocation, available
+plan budget, remaining annual budget, resource line'ları, proposed team ve
+preparation detail katmanını göstermeye devam eder. Role-aware approval,
+release, preparation, history, mock-only sınırlar ve client-side persistence
+davranışı korunur.
+
+Fresh automated kanıt (**verified locally**):
+
+- 11 `js/*.js` dosyasının tamamı `node --check` kontrolünden geçti.
+- `node --test tests/*.test.js` 60/60 geçti; failed, cancelled, skipped ve todo
+  sayıları sıfırdı.
+- Focused manager navigation, Planning workspace, rendering, responsive, table
+  ve General Manager smoke kontrolleri geçti.
+- `git diff --check` geçti.
+
+General Manager ve Department Manager Planning için fresh in-app Browser QA,
+kabul edilen konseptin native `1495x1052` boyutunda ve `390x844` boyutunda
+**verified locally**. Page width viewport ile eşleşti; üç queue row'u da ölçülen
+horizontal overflow üretmedi; responsive row'lar tek kolona indi ve queue
+action'ları en az 44 px yüksekliği korudu. Department Manager Planning hem
+sidebar hem dashboard task navigation içinde görünürdü. Flight Operations
+seçimi Command Center'ı güncelledi; GM `Review now` action'ı ve Department
+Manager Airworthiness `Review & submit` action'ı seçili planın Approval tab'ını
+açtı. Browser console warning/error sayısı sıfırdı.
+
+Backend/database integration, gerçek authorization, production audit log,
+gerçek document storage, notification delivery, deployment, real-device,
+accessibility certification ve stakeholder sign-off kanıtları **not run**
+kalır. Kapsam **demo-only**; **production-readiness not claimed**.
+
 ---
 
 ## Sahte öğeler ve kısıtlar

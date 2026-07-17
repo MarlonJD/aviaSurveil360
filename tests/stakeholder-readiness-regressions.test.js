@@ -506,7 +506,7 @@ test('pre-v9 planning migration never skips an unreviewed Finance stage', () => 
   }
 
   let migrated = context.mergeDemoState(legacyAt(1, null, null));
-  assert.equal(migrated.demoStateVersion, 9);
+  assert.equal(migrated.demoStateVersion, 10);
   assert.deepEqual(
     JSON.parse(JSON.stringify(migrated.planningItems[0].approval.chain.map((stage) => stage.role))),
     ['manager', 'finance', 'gm', 'executiveDirector']

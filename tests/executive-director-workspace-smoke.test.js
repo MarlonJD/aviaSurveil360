@@ -253,7 +253,11 @@ let planningHtml = context.viewExecutivePlanningWorkspace();
   'GM release remains a separate next step'
 ].forEach((text) => assert.match(planningHtml, new RegExp(text, 'i')));
 assert.ok(planningHtml.includes('Approve &amp; Sign (Demo)'));
-assert.equal((planningHtml.match(/Review \/ Take Action/g) || []).length, 1, 'each plan row has one action trigger');
+assert.equal(
+  (planningHtml.match(/Review \/ Take Action/g) || []).length,
+  dashboardState.planningItems.length,
+  'each plan row has one action trigger'
+);
 assert.match(planningHtml, new RegExp(dashboardPlan.id));
 assert.match(context.executivePlanDownloadText(dashboardPlan), new RegExp(dashboardPlan.id));
 assert.match(context.executivePlanDownloadText(dashboardPlan), /Demo-only browser-generated document/);

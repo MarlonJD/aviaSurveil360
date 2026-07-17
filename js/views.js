@@ -383,6 +383,138 @@ function planningDossierHtml(item) {
   '</div>';
 }
 
+function planningCommandCenterHtml(item, approval, prepMeta, eyebrow) {
+  var inspectors = (item.proposedInspectors || []).join(', ') || 'Not proposed';
+  return '<section class="planning-command-center" aria-labelledby="planning-command-title">' +
+    '<header class="planning-command-center__head">' +
+      '<div class="planning-command-center__identity">' +
+        '<span class="planning-command-center__eyebrow">' + esc(eyebrow) + ' · ' + esc(item.id) + '</span>' +
+        '<h2 id="planning-command-title">Planning Command Center</h2>' +
+        '<h3>' + esc(item.title) + '</h3>' +
+        '<p>' + esc(item.purpose) + '</p>' +
+      '</div>' +
+      '<div class="planning-command-center__state" aria-label="Plan state">' +
+        demoBadge(approval.statusLabel, approval.statusTone) +
+        demoBadge(prepMeta.label, prepMeta.tone) +
+      '</div>' +
+    '</header>' +
+    '<div class="planning-command-center__facts">' +
+      '<div><span>Organization &amp; Department</span><b>' + esc(item.organization) + '</b><small>' + esc(item.department) + '</small></div>' +
+      '<div><span>Scope &amp; Risk Driver</span><b>' + esc(item.triggerType) + '</b><small>' + esc(item.riskCategory) + '</small></div>' +
+      '<div><span>Budget &amp; Resources</span><b>' + esc(item.requestedBudget) + '</b><small>' + esc(inspectors) + '</small></div>' +
+      '<div><span>Target &amp; Readiness</span><b>' + esc(item.targetMonth) + '</b><small>' + esc(prepMeta.label) + '</small></div>' +
+    '</div>' +
+    '<div class="planning-command-center__action" role="status" aria-label="Current planning action">' +
+      '<div><span>Current Owner</span><b>' + esc(planningCurrentOwner(item)) + '</b></div>' +
+      '<div><span>Next Action</span><b>' + esc(planningNextAction(item)) + '</b></div>' +
+      '<div><span>Blocking reason</span><b>' + esc(planningBlockingReason(item)) + '</b></div>' +
+    '</div>' +
+    '<div class="planning-command-center__path">' +
+      '<div class="planning-command-center__path-head"><span>Decision Path</span><small>Department submission through final approval</small></div>' +
+      approvalProgressHtml(item) +
+    '</div>' +
+  '</section>';
+}
+
+function planningQueueSummaryHtml(items) {
+  var active = items.length;
+  var finance = items.filter(function (item) { return approvalSummary(item).ownerRole === 'finance'; }).length;
+  var ready = items.filter(function (item) { return item.preparation && item.preparation.status === 'ready_for_execution'; }).length;
+  return '<div class="planning-queue-summary" aria-label="Planning queue summary">' +
+    '<span><b>' + esc(String(active)) + '</b> active plan' + (active === 1 ? '' : 's') + '</span>' +
+    '<span><b>' + esc(String(finance)) + '</b> awaiting finance</span>' +
+    '<span><b>' + esc(String(ready)) + '</b> ready</span>' +
+  '</div>';
+}
+
+function planningQueueTargetText(targetMonth) {
+  var parts = String(targetMonth || '').split('-');
+  var months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  var monthIndex = Number(parts[1]) - 1;
+  if (parts.length !== 2 || !parts[0] || !months[monthIndex]) return targetMonth || 'Not set';
+  return months[monthIndex] + ' ' + parts[0];
+}
+
+function planningQueueRoleLabel(role) {
+  if (role === 'gm') return 'GM';
+  if (role === 'manager') return 'Department Manager';
+  if (role === 'finance') return 'Finance Review';
+  if (role === 'executiveDirector') return 'Executive Director';
+  return roleName(role);
+}
+
+function planningQueueStateMeta(item) {
+  var approval = approvalSummary(item);
+  var prep = item.preparation || { status: 'not_released' };
+  var prepMeta = planningPrepMeta(prep.status);
+  if (!approval.outcome) return { label: 'Awaiting ' + approval.ownerLabel, tone: approval.statusTone || 'warn' };
+  if (approval.outcome === 'rejected') return { label: 'Approval rejected', tone: 'danger' };
+  return { label: prepMeta.label, tone: prepMeta.tone || 'neutral' };
+}
+
+function planningQueueRoleContext(item) {
+  var approval = approvalSummary(item);
+  var prep = item.preparation || { status: 'not_released' };
+  if (!approval.outcome && approval.ownerRole === state.role) {
+    if (state.role === 'finance') return { note: 'Your budget decision is required', label: 'Review now', tab: 'approval' };
+    if (state.role === 'manager') return { note: 'Your plan revision is required', label: 'Review & submit', tab: 'approval' };
+    if (state.role === 'gm') return { note: 'Your planning decision is required', label: 'Review now', tab: 'approval' };
+    if (state.role === 'executiveDirector') return { note: 'Your final approval is required', label: 'Review now', tab: 'approval' };
+  }
+  if (approval.outcome === 'approved' && planningCurrentOwner(item) === roleName(state.role) && prep.status !== 'ready_for_execution') {
+    return { note: 'Your preparation action is required', label: 'Continue preparation', tab: 'preparation' };
+  }
+  if (prep.status === 'ready_for_execution') return { note: 'Ready for execution', label: 'View details', tab: 'overview' };
+  return { note: 'No ' + planningQueueRoleLabel(state.role) + ' action required yet', label: 'View details', tab: 'overview' };
+}
+
+function planningQueueRowHtml(item, selectedId) {
+  var stateMeta = planningQueueStateMeta(item);
+  var roleContext = planningQueueRoleContext(item);
+  var selected = item.id === selectedId;
+  return '<article class="planning-queue-row is-' + esc(stateMeta.tone) + (selected ? ' is-selected' : '') + '"' + (selected ? ' aria-current="true"' : '') + '>' +
+    '<div class="planning-queue-row__identity">' +
+      '<span>' + esc(item.id) + '</span>' +
+      '<h3>' + esc(item.title) + '</h3>' +
+      '<p>' + esc(item.organization) + ' <i aria-hidden="true">·</i> ' + esc(item.department) + '</p>' +
+    '</div>' +
+    '<div class="planning-queue-row__decision">' +
+      '<span>Decision state</span>' +
+      '<b class="is-' + esc(stateMeta.tone) + '">' + esc(stateMeta.label) + '</b>' +
+      '<p>' + esc(roleContext.note) + '</p>' +
+    '</div>' +
+    '<div class="planning-queue-row__target">' +
+      '<span>Target</span>' +
+      '<b>' + esc(planningQueueTargetText(item.targetMonth)) + '</b>' +
+    '</div>' +
+    '<button class="btn btn--sm planning-queue-row__action" data-act="planning-queue-open" data-id="' + esc(item.id) + '" data-tab="' + esc(roleContext.tab) + '" aria-label="' + esc(roleContext.label + ': ' + item.title) + '">' +
+      '<span>' + esc(roleContext.label) + '</span><img src="assets/icons/phosphor/arrow-right.svg" alt="" aria-hidden="true">' +
+    '</button>' +
+  '</article>';
+}
+
+function planningQueueRowsHtml(items, selectedId) {
+  if (!items.length) return '<div class="empty">No planning work items are seeded.</div>';
+  return '<div class="planning-queue-list">' + items.map(function (item) { return planningQueueRowHtml(item, selectedId); }).join('') + '</div>';
+}
+
+function planningBudgetResourceDetailHtml(item) {
+  var budget = item.budget || {};
+  var currency = budget.currency || 'USD';
+  var lines = budget.lines || [];
+  var inspectors = (item.proposedInspectors || []).join(', ') || 'Not proposed';
+  return '<div class="planning-budget-summary">' +
+      '<div><span>Requested</span><b>' + financeMoney(budget.requested, currency) + '</b></div>' +
+      '<div><span>Available for plan</span><b>' + financeMoney(budget.availableForPlan, currency) + '</b></div>' +
+      '<div><span>Remaining annual budget</span><b>' + financeMoney(budget.remainingAnnualBudget, currency) + '</b></div>' +
+    '</div>' +
+    '<div class="responsive-table-shell"><table class="planning-budget-table"><thead><tr><th>Resource</th><th>Amount</th></tr></thead><tbody>' +
+      lines.map(function (line) { return '<tr><td>' + esc(line.category) + '</td><td>' + financeMoney(line.amount, currency) + '</td></tr>'; }).join('') +
+      '<tr class="is-total"><td>Total requested</td><td>' + financeMoney(planningBudgetTotal(item), currency) + '</td></tr>' +
+    '</tbody></table></div>' +
+    '<div class="planning-resource-team"><span>Proposed inspection team</span><b>' + esc(inspectors) + '</b><small>' + esc(planningFinanceReviewText(item)) + '</small></div>';
+}
+
 function planningPreparationDetailHtml(item) {
   var prep = item.preparation;
   return '<div class="metaline">' +
@@ -414,8 +546,7 @@ function planningWorkspaceOverviewHtml(item) {
   var prepMeta = planningPrepMeta(item.preparation.status);
   return '<div class="grid grid--main">' +
     '<div style="display:flex;flex-direction:column;gap:16px">' +
-      '<div class="card"><div class="card__head"><h3>Planning Item Detail</h3><span class="sub">CAA internal mock item</span></div><div class="card__body">' + planningDossierHtml(item) + '</div></div>' +
-      '<div class="card"><div class="card__head"><h3>Approval Progress</h3><span class="sub">Department Manager -> Finance Review -> GM Review -> Executive Director</span></div><div class="card__body">' + approvalProgressHtml(item) + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Budget &amp; Resource Detail</h3><span class="sub">Mock planning allocation</span></div><div class="card__body">' + planningBudgetResourceDetailHtml(item) + '</div></div>' +
       '<div class="card"><div class="card__head"><h3>Preparation Detail</h3><div class="spacer"></div>' + demoBadge(prepMeta.label, prepMeta.tone) + '</div><div class="card__body">' + planningPreparationDetailHtml(item) + '</div></div>' +
     '</div>' +
     '<div style="display:flex;flex-direction:column;gap:16px">' +
@@ -456,7 +587,10 @@ function planningWorkspacePreparationHtml(item) {
 }
 
 function viewPlanningWorkspace(forcedTab) {
-  var item = state.planningItems && state.planningItems.length ? state.planningItems[0] : null;
+  var requestedPlanningId = state.params && state.params.planningId;
+  var item = state.planningItems && state.planningItems.length
+    ? state.planningItems.filter(function (candidate) { return candidate.id === requestedPlanningId; })[0] || state.planningItems[0]
+    : null;
   if (!item) return pageHead('Planning', '') + '<div class="empty">No planning item is seeded.</div>';
   if (!item.preparation) item.preparation = { status: 'not_released', proposedTeam: [], history: [] };
   if (!item.preparation.proposedTeam) item.preparation.proposedTeam = [];
@@ -464,41 +598,31 @@ function viewPlanningWorkspace(forcedTab) {
   var activeTab = planningWorkspaceTab(forcedTab);
   var approval = approvalSummary(item);
   var prepMeta = planningPrepMeta(item.preparation.status);
-  var approvalMeta = approvalMetaForStatus(item.status);
-  var planningItems = (state.planningItems || []).map(workItemFromPlanningItem).sort(workItemSort);
+  var planningItems = (state.planningItems || []).slice();
   var body = activeTab === 'approval'
     ? planningWorkspaceApprovalHtml(item)
     : (activeTab === 'preparation' ? planningWorkspacePreparationHtml(item) : planningWorkspaceOverviewHtml(item));
 
-  return pageHead('Planning', 'Single planning panel for approval, release, and audit preparation.') +
+  var workspaceTitle = state.role === 'manager' ? 'Department Planning' : 'Planning';
+  var workspacePurpose = state.role === 'manager'
+    ? planningApprovalPurposeForRole()
+    : 'Single planning panel for approval, release, and audit preparation.';
+  var workspaceEyebrow = state.role === 'manager'
+    ? 'Department planning workspace'
+    : 'Canonical planning workspace';
+
+  return pageHead(workspaceTitle, workspacePurpose) +
     guardrailStrip([
       { label: 'Frontend-only demo' },
       { label: 'Mock approval history', tone: 'info' },
       { label: 'No real authorization service', tone: 'warn' }
     ]) +
     '<div class="approval-package">' +
-      workbenchCommand('Planning approval package', item.title, [
-        { label: 'Current owner', value: planningCurrentOwner(item), tone: approval.outcome === 'approved' ? prepMeta.tone : approval.statusTone },
-        { label: 'Next action', value: planningNextAction(item), tone: 'info' },
-        { label: 'Blocking reason', value: planningBlockingReason(item), tone: approval.outcome === 'approved' ? prepMeta.tone : approval.statusTone }
-      ], '', 'approval') +
-      '<div class="approval-package__queue">' +
-        '<h2 class="section-heading">Planning Workbench</h2>' +
-        renderOpsTable(planningItems, { selectedId: item.id, empty: 'No planning work items are seeded.' }) +
-      '</div>' +
-      '<div class="governance-hero planning-workspace__hero mb-16">' +
-        '<div>' +
-          '<div class="governance-hero__eyebrow">Canonical planning workspace</div>' +
-          '<h2>' + esc(item.title) + '</h2>' +
-          '<p>' + esc(item.purpose) + '</p>' +
-        '</div>' +
-        '<div class="governance-hero__metrics">' +
-          compactMetric('Current owner', planningCurrentOwner(item), approval.outcome === 'approved' ? prepMeta.tone : approval.statusTone) +
-          compactMetric('Next action', planningNextAction(item), 'info') +
-          compactMetric('Approval status', approval.statusLabel, approvalMeta.tone) +
-          compactMetric('Preparation status', prepMeta.label, prepMeta.tone) +
-        '</div>' +
-      '</div>' +
+      planningCommandCenterHtml(item, approval, prepMeta, workspaceEyebrow) +
+      '<section class="approval-package__queue planning-queue-panel">' +
+        '<header class="planning-queue-panel__head"><h2>Planning Queue</h2>' + planningQueueSummaryHtml(planningItems) + '</header>' +
+        planningQueueRowsHtml(planningItems, item.id) +
+      '</section>' +
       '<div class="approval-package__decision">' +
         planningWorkspaceTabsHtml(activeTab) +
         body +
@@ -1629,13 +1753,14 @@ function viewManagerDashboard() {
     ['Inspection Team', dashboard.teamMembers, 'Manager reporting line', 'ok']
   ];
   var tasks = [
-    ['Audits', 'Review the audit work queue and upcoming inspections.', 'calendar', '▤'],
-    ['Reports Approval', 'Decide Preliminary and Final Report submissions.', 'reports-approval', '□'],
-    ['Risk Dashboard', 'Review department exposure and high-risk areas.', 'manager-risk', '⌁'],
-    ['Inspection Team', 'Review teams, assignments, and schedules.', 'inspection-team', '▥'],
-    ['Findings Review', 'Inspect findings requiring management attention.', 'findings-review', '⚑'],
-    ['CAP Monitoring', 'Track CAP owners, Due Dates, and evidence action.', 'cap-monitoring', '✓'],
-    ['Checklist Management', 'Maintain department packages and versions.', 'manager-checklists', '▧']
+    ['Planning', 'Create, submit, track, and prepare department surveillance plans.', 'planning'],
+    ['Audits', 'Review the audit work queue and upcoming inspections.', 'calendar'],
+    ['Reports Approval', 'Decide Preliminary and Final Report submissions.', 'reports-approval'],
+    ['Risk Dashboard', 'Review department exposure and high-risk areas.', 'manager-risk'],
+    ['Inspection Team', 'Review teams, assignments, and schedules.', 'inspection-team'],
+    ['Findings Review', 'Inspect findings requiring management attention.', 'findings-review'],
+    ['CAP Monitoring', 'Track CAP owners, Due Dates, and evidence action.', 'cap-monitoring'],
+    ['Checklist Management', 'Maintain department packages and versions.', 'manager-checklists']
   ];
   var recentRows = dashboard.recentHighRiskFindings.length ? dashboard.recentHighRiskFindings.map(function (finding) {
     return '<tr><td><b>' + esc(finding.id) + '</b><small>' + esc(finding.title) + '</small></td><td>' + esc(orgName(finding.orgId)) + '</td><td>' + severityHtml(finding) + '</td><td>' + esc(ownerLabel(finding)) + '</td><td>' + esc(nextActionLabel(finding)) + '</td><td>' + esc(finding.dueDate ? fmtDate(finding.dueDate) : '—') + '</td><td><button class="btn btn--sm" data-act="go" data-view="finding" data-id="' + esc(finding.id) + '">Open</button></td></tr>';
@@ -1644,18 +1769,25 @@ function viewManagerDashboard() {
     return '<tr><td><b>' + esc(audit.id) + '</b><small>' + esc(audit.ref || audit.type) + '</small></td><td>' + esc(orgName(audit.orgId)) + '</td><td>' + esc(audit.domain || '—') + '</td><td>' + esc(fmtDate(audit.date)) + '</td><td>' + demoBadge(audit.status, audit.status === 'In Progress' ? 'warn' : 'info') + '</td><td><button class="btn btn--sm" data-act="go" data-view="audit-detail" data-id="' + esc(audit.id) + '">Open</button></td></tr>';
   }).join('') : '<tr><td colspan="6"><div class="empty">No upcoming audits are available.</div></td></tr>';
 
-  return pageHead('Department Manager Dashboard', 'Operational oversight for ' + dashboard.organization + ', report decisions, findings, CAPs, and inspection teams.') +
+  return pageHead('Department Manager Dashboard', 'Operational planning and oversight for ' + dashboard.organization + ', report decisions, findings, CAPs, and inspection teams.') +
     '<div class="manager-dashboard-kpis">' + kpis.map(function (item) {
       return '<article class="is-' + esc(item[3]) + '"><span>' + esc(item[0]) + '</span><strong>' + esc(String(item[1])) + '</strong><small>' + esc(item[2]) + '</small></article>';
     }).join('') + '</div>' +
     '<section class="manager-dashboard-tasks"><div class="manager-dashboard-section-head"><div><span>Manager workspace</span><h2>What needs attention?</h2></div></div><div>' + tasks.map(function (task) {
-      return '<button class="manager-dashboard-task" data-act="go" data-view="' + esc(task[2]) + '"><span>' + esc(task[3]) + '</span><div><b>' + esc(task[0]) + '</b><small>' + esc(task[1]) + '</small></div><em>Open →</em></button>';
+      return '<button class="manager-dashboard-task" data-act="go" data-view="' + esc(task[2]) + '">' +
+        managerDashboardTaskIcon(task) +
+        '<div><b>' + esc(task[0]) + '</b><small>' + esc(task[1]) + '</small></div><em>Open →</em></button>';
     }).join('') + '</div></section>' +
     '<div class="manager-dashboard-grid">' +
       '<section class="manager-dashboard-panel"><div class="manager-dashboard-section-head"><div><span>Priority review</span><h2>Recent High-Risk Findings</h2></div><button class="btn btn--sm" data-act="go" data-view="findings-review">View Findings Review</button></div><div class="manager-dashboard-table"><table><thead><tr><th>Finding</th><th>Organization</th><th>Severity</th><th>Current Owner</th><th>Next Action</th><th>Due Date</th><th></th></tr></thead><tbody>' + recentRows + '</tbody></table></div></section>' +
       '<section class="manager-dashboard-panel"><div class="manager-dashboard-section-head"><div><span>Surveillance schedule</span><h2>Upcoming Audits</h2></div><button class="btn btn--sm" data-act="go" data-view="calendar">View Audits</button></div><div class="manager-dashboard-table"><table><thead><tr><th>Audit</th><th>Organization</th><th>Department</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody>' + upcomingRows + '</tbody></table></div></section>' +
     '</div>' +
     '<div class="guardrail-note"><b>Management indicators only:</b> Dashboard and risk values do not trigger automatic legal, enforcement, certificate, or finding-closure decisions.</div>';
+}
+
+function managerDashboardTaskIcon(task) {
+  if (typeof renderNavIcon === 'function') return renderNavIcon({ view: task[2], label: task[0] });
+  return '<span class="nav-item__icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 5h7v6H4z"></path><path d="M13 5h7v4h-7z"></path><path d="M13 11h7v8h-7z"></path><path d="M4 13h7v6H4z"></path></svg></span>';
 }
 
 function viewManagerWorkspacePlaceholder(title, message) {

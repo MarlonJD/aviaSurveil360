@@ -42,9 +42,33 @@ assert.match(
 );
 
 assert.equal(
-  (indexHtml.match(/\?v=20260713-checklist-reopen-v16/g) || []).length,
+  (indexHtml.match(/\?v=20260717-planning-queue-v19/g) || []).length,
   12,
   'The current UI update cache-busts the stylesheet and eleven frontend scripts together'
+);
+
+assert.match(
+  styles,
+  /\.planning-command-center__facts\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/s,
+  'Planning command center presents four decision-context facts at wide widths'
+);
+
+assert.match(
+  styles,
+  /@media \(max-width:\s*640px\)[\s\S]*?\.planning-command-center__facts[\s\S]*?grid-template-columns:\s*1fr/s,
+  'Planning command center collapses to a single readable mobile column'
+);
+
+assert.match(
+  styles,
+  /\.planning-queue-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1\.35fr\)\s+minmax\(220px,\s*1fr\)\s+minmax\(86px,\s*\.35fr\)\s+auto/s,
+  'Planning queue uses a compact four-part decision row instead of the legacy eight-column table'
+);
+
+assert.match(
+  styles,
+  /@media \(max-width:\s*640px\)[\s\S]*?\.planning-queue-row\s*\{[^}]*grid-template-columns:\s*1fr/s,
+  'Planning queue becomes one readable column on mobile'
 );
 
 console.log('manager-workspace-responsive-smoke: ok');

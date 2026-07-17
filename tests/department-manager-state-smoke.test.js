@@ -29,7 +29,7 @@ assert.ok(
 );
 
 const migrated = context.mergeDemoState({ demoStateVersion: 4, findings: [] });
-assert.equal(migrated.demoStateVersion, 9);
+assert.equal(migrated.demoStateVersion, 10);
 assert.equal(migrated.managerFindingsUi.selectedAuditId, 'AUD-2026-001');
 assert.ok(migrated.managerReports.length >= 2);
 
