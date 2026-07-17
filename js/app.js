@@ -116,11 +116,6 @@ var ROLE_DESC = {
   auditee: 'Service Provider Portal — findings, CAP uploads, responses and shared documents.',
   admin: 'Administration — regulatory library, templates, users, configuration and audit log.'
 };
-var ROLE_ICON = {
-  inspector: '✈️', leadInspector: '🧭', manager: '📊', gm: '🏛️',
-  finance: '💷', executiveDirector: '🎖️', auditee: '🏢', admin: '⚙️'
-};
-
 var EXPERIENCE_LABEL = {
   inspector: 'Inspector Workspace',
   leadInspector: 'Lead Inspector',
@@ -134,6 +129,23 @@ var EXPERIENCE_LABEL = {
 
 /* Display order for the role-select dropdown and the login role cards. */
 var ROLE_ORDER = ['inspector', 'leadInspector', 'manager', 'gm', 'finance', 'executiveDirector', 'auditee', 'admin'];
+
+var LOGIN_ROLE_GROUPS = [
+  { id: 'operational', label: 'Operational', roles: ['inspector', 'leadInspector'] },
+  { id: 'leadership', label: 'Leadership', roles: ['manager', 'gm', 'finance', 'executiveDirector'] },
+  { id: 'external', label: 'External & Configuration', roles: ['auditee', 'admin'] }
+];
+
+var LOGIN_ROLE_META = {
+  inspector: { scope: 'Daily inspections, findings and field work', icon: 'air-traffic-control' },
+  leadInspector: { scope: 'Assigned audits and report sign-off', icon: 'compass' },
+  manager: { scope: 'Planning, approvals and department oversight', icon: 'buildings' },
+  gm: { scope: 'Cross-department review and forwarding', icon: 'bank' },
+  finance: { scope: 'Budget and resource review', icon: 'wallet' },
+  executiveDirector: { scope: 'Final plan and report approval', icon: 'seal-check' },
+  auditee: { scope: 'CAP, Evidence and CAA requests', icon: 'globe-hemisphere-west' },
+  admin: { scope: 'Templates, rules and access', icon: 'gear' }
+};
 
 /* Temporary "picked file" names for mock uploads. */
 var pickedFiles = {};
@@ -348,6 +360,7 @@ function render() {
   var inspectorChrome = state.role === 'inspector' || state.role === 'leadInspector';
   if (document.body && document.body.classList) {
     document.body.classList.toggle('is-inspector-experience', inspectorChrome);
+    document.body.classList.toggle('is-login-experience', !state.role);
   }
   if (!state.role) { root.innerHTML = renderLogin(); return; }
   normalizeViewForRole();
@@ -560,24 +573,63 @@ function renderContent() {
 }
 
 function renderLogin() {
-  var cards = ROLE_ORDER.map(function (k) {
-    var r = ROLES[k];
-    return '<button class="role-card" data-act="role" data-role="' + k + '">' +
-      '<div class="role-card__icon" style="background:' + r.color + '">' + ROLE_ICON[k] + '</div>' +
-      '<div><div class="role-card__name">' + esc(EXPERIENCE_LABEL[k] || r.name) + (k === 'auditee' ? ' — Fly Namibia' : '') + '</div>' +
-      '<div class="role-card__desc">' + esc(ROLE_DESC[k]) + '</div>' +
-      '<div class="role-card__q">“' + esc(r.question) + '”</div></div></button>';
+  function roleLabel(roleKey) {
+    var role = ROLES[roleKey];
+    return (EXPERIENCE_LABEL[roleKey] || role.name) + (roleKey === 'auditee' ? ' — Fly Namibia' : '');
+  }
+
+  function roleButton(roleKey) {
+    var label = roleLabel(roleKey);
+    var meta = LOGIN_ROLE_META[roleKey];
+    var recommended = roleKey === 'inspector'
+      ? '<span class="role-card__recommended">Recommended start</span>'
+      : '';
+    return '<button class="role-card' + (roleKey === 'inspector' ? ' role-card--recommended' : '') + '" type="button" data-act="role" data-role="' + roleKey + '" aria-label="Open ' + esc(label) + '">' +
+      '<span class="role-card__icon" aria-hidden="true"><img src="assets/icons/phosphor/' + esc(meta.icon) + '.svg" width="24" height="24" alt="" /></span>' +
+      '<span class="role-card__copy"><span class="role-card__name-line"><span class="role-card__name">' + esc(label) + '</span>' + recommended + '</span>' +
+      '<span class="role-card__desc">' + esc(meta.scope) + '</span></span>' +
+      '<img class="role-card__arrow" src="assets/icons/phosphor/arrow-right.svg" width="20" height="20" alt="" aria-hidden="true" />' +
+    '</button>';
+  }
+
+  var groups = LOGIN_ROLE_GROUPS.map(function (group) {
+    return '<section class="role-group" aria-labelledby="login-group-' + group.id + '">' +
+      '<div class="role-group__head"><h3 id="login-group-' + group.id + '">' + esc(group.label) + '</h3><span aria-hidden="true"></span></div>' +
+      '<div class="role-group__list">' + group.roles.map(roleButton).join('') + '</div>' +
+    '</section>';
   }).join('');
-  return '<div class="login"><div class="login__card">' +
-    '<div class="login__head"><div class="login__brand">' + renderBrandMark('brand-mark--login') +
-      '<div><div class="login__title">AviaSurveil360</div>' +
-      '<div class="login__sub">Civil Aviation Authority surveillance &amp; oversight — clickable demo</div></div></div></div>' +
-    '<div class="login__body"><div class="login__prompt">Choose a role to enter the demo. You can switch roles at any time from the top bar.</div>' +
-      '<div class="role-grid">' + cards + '</div>' +
-      '<div class="login__foot">Demo scenario: a CAA Inspector raises <b>Finding CAB-2026-001</b> for Fly Namibia from a Cabin Inspection emergency equipment checklist. ' +
-      'The auditee submits a CAP and evidence; CAP acceptance does not close the finding, accepted evidence is required; the manager dashboard updates. ' +
-      'This is a mock prototype — no real authentication, backend, database or integrations. V2 demo actions are saved only in this browser.</div>' +
-    '</div></div></div>';
+
+  return '<div class="login">' +
+    '<a class="login-skip" href="#login-workspaces">Skip to workspace selection</a>' +
+    '<section class="login-hero" aria-labelledby="login-hero-title">' +
+      '<img class="login-hero__texture" src="assets/login/airspace-texture.png" width="600" height="1024" alt="" aria-hidden="true" />' +
+      '<div class="login-hero__brand">' +
+        '<img class="login-hero__logo" src="assets/login/aviasurveil360-mark.png" width="64" height="64" alt="" />' +
+        '<div><div class="login__title">AviaSurveil360</div>' +
+        '<div class="login__sub">Civil Aviation Authority surveillance &amp; oversight</div></div>' +
+      '</div>' +
+      '<div class="login-hero__story">' +
+        '<span class="login-demo-badge">Demo workspace</span>' +
+        '<h1 id="login-hero-title">Safer oversight,<br />from plan to closure.</h1>' +
+        '<span class="login-hero__rule" aria-hidden="true"></span>' +
+        '<a class="login-hero__explore" href="#login-workspaces">Explore the clickable demo' +
+          '<img src="assets/icons/phosphor/arrow-right.svg" width="22" height="22" alt="" aria-hidden="true" />' +
+        '</a>' +
+      '</div>' +
+      '<div class="login-hero__foot">' +
+        '<p>Frontend-only prototype · mock data · no real authentication or backend.</p>' +
+        '<button type="button" data-act="login-reset">Reset demo data</button>' +
+      '</div>' +
+    '</section>' +
+    '<main class="login-selector" id="login-workspaces">' +
+      '<header class="login-selector__head">' +
+        '<span class="login-selector__eyebrow">Role-based access</span>' +
+        '<h2>Choose your workspace</h2>' +
+        '<p>Enter the demo through one of eight perspectives. You can switch roles at any time.</p>' +
+      '</header>' +
+      '<div class="login-selector__groups">' + groups + '</div>' +
+    '</main>' +
+  '</div>';
 }
 
 function renderNotifPanel() {
@@ -1528,6 +1580,7 @@ function handleAction(act, el) {
 
   switch (act) {
     case 'role': setRole(el.getAttribute('data-role')); break;
+    case 'login-reset': resetDemoExperience(); break;
     case 'logout': state.role = null; state.view = 'login'; state.ui.notifOpen = false; state.ui.menuOpen = false; closeModal(); persistAfterAction(); render(); break;
     case 'nav': go(view, { auditId: id, findingId: id, orgId: id, filter: filter, tab: tab }); break;
     case 'go': go(view, { auditId: id, findingId: id, orgId: id, filter: filter, tab: tab }); break;
@@ -6061,13 +6114,15 @@ document.addEventListener('input', function (e) {
   }
 });
 
-document.getElementById('reset-demo').addEventListener('click', function () {
+function resetDemoExperience() {
   clearDemoState();
   seedState();
   pickedFiles = {};
   render();
   toast('Demo reset', 'All browser-saved demo state was cleared and reset to the starting point.', 'ok');
-});
+}
+
+document.getElementById('reset-demo').addEventListener('click', resetDemoExperience);
 
 /* ----------------------------- Boot ----------------------------- */
 initializeState();

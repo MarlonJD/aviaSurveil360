@@ -1,3 +1,49 @@
+## Login Experience Design QA — 2026-07-17
+
+- final result: passed
+- Scope: selected Direction 1 translated into the existing frontend-only role entry flow.
+- Result boundary: verified locally; this remains a clickable demo and does not add production authentication, backend, database, or integrations.
+
+### Source Visual Truth
+
+- Selected direction: `/Users/marlonjd/.codex/generated_images/019f7077-766f-70d1-bcdc-1099379f9d90/exec-723a8062-d8ae-40ee-9aee-4345b1e34ee2.png` (`1487x1058`).
+- Original product screen supplied by the user: `/var/folders/hb/d_4bmzm911143_n2rw1zj4nr0000gn/T/codex-clipboard-245ac69c-e26b-4d6d-8ec3-7bd486f8bc56.png`.
+- Fidelity target: asymmetric 41/59 split, authoritative aviation navy, restrained airspace texture, pale role-selection surface, grouped role rows, cobalt inspector emphasis, jade line icons, generous presentation-scale spacing.
+
+### Implementation Evidence
+
+- Desktop: `/private/tmp/avia-login-qa/login-1440x1024-pass2.png`.
+- Tablet: `/private/tmp/avia-login-qa/login-1024x768.png`.
+- Mobile viewport: `/private/tmp/avia-login-qa/login-390x844.png`.
+- Same-input visual comparison: `/private/tmp/avia-login-qa/comparison-pass2.png`.
+- Local preview: `http://127.0.0.1:4173/`.
+
+### Full-View and Focused Comparison
+
+- The desktop implementation preserves the selected direction's split ratio, navy/off-white contrast, logo/wordmark placement, two-line oversight statement, grouped role hierarchy, highlighted Inspector entry, line-icon treatment, and quiet airspace illustration.
+- Intentional product-fit changes: concise role descriptions, a `Recommended start` chip, a role-access eyebrow, a demo boundary note, and a working reset action were retained to improve orientation and preserve demo transparency.
+- Pass 1 exposed a three-line hero wrap and compressed role rows. Pass 2 reduced the hero type scale, tightened story placement, and increased full-height role rows; no actionable P0/P1/P2 visual findings remain.
+
+### Interaction and Responsive Evidence
+
+- All eight existing role buttons render once and keep their original `data-role` behavior.
+- Inspector entry was exercised in the in-app Browser and opened `My Assignments`; the mobile menu then returned to the role-selection screen.
+- The working `Reset demo data` action preserves the login state and all eight roles.
+- At `1440x1024`, document size equals viewport size with no horizontal or vertical overflow.
+- At `1024x768`, there is no horizontal overflow; the role list remains usable through a short vertical scroll and the smallest role target is `58px` high.
+- At `390x844` and `375x812`, there is no horizontal overflow; the layout becomes one column and every role target is at least `72px` high.
+- Semantic landmarks, grouped headings, button accessible names, a skip link, visible `:focus-visible` states, and `prefers-reduced-motion` safeguards are present.
+- Browser console errors/warnings: none.
+
+### Verification
+
+- `node --check js/app.js`: passed.
+- `git diff --check`: passed.
+- `node --test tests/login-experience-smoke.test.js`: 3/3 passed.
+- `node --test tests/*.test.js`: 59/59 passed.
+
+---
+
 **Findings**
 - No actionable P0/P1/P2 findings remain.
 
