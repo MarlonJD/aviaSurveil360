@@ -921,6 +921,66 @@ Real-device validation, production accessibility certification, deployment ve
 stakeholder sign-off **not run** kalır. Kapsam **demo-only**;
 **production-readiness not claimed**.
 
+### Unannounced inspection intake alignment checkpoint — 2026-07-20
+
+Kanıt durumu **demo-only** ve **verified locally**;
+**production-readiness not claimed**. Department Manager artık Planning
+içinden governed bir `New Inspection` item oluşturur. Sıfır bütçeli
+`Ad Hoc / Unannounced` submit işlemi seçili Planning Command Center item'ında
+kalır, `Finance Review` aşamasına girer ve executable Audit oluşturmadan
+`Advance notification withheld` / `No Advance Notice` politikasını saklar.
+Lead Inspector ve team çalışması approval ile `GM Release to Department`
+sonrasında kalır; scheduled Audit ancak Department Manager preparation
+confirmation sonrasında materialize edilir.
+
+Fresh automated kanıt (**verified locally**):
+
+- `node --check`; `js/data.js`, `js/planning.js`, `js/views.js` ve `js/app.js`
+  için geçti.
+- Son yedi dosyalı targeted komut 16/16 test geçti; failure, cancellation, skip
+  veya todo yoktu.
+- `node --test tests/*.test.js` 72/72 test geçti; failure, cancellation, skip
+  veya todo yoktu.
+- Focused contract'lar category validation, sıfır bütçeli Finance Review, JSON
+  round-trip persistence, preparation sonrasında materialization, idempotency,
+  scoped Lead preparation access ve Service Provider privacy alanlarını kapsar.
+
+Fresh isolated in-app Browser QA `1440x900` ve `390x844` boyutlarında
+**verified locally**. Desktop akışı Role Select -> Department Manager ->
+Planning -> `+ New Inspection` -> `Special Inspection` ->
+`Ad Hoc / Unannounced` -> sıfır bütçeli submit adımlarını kapsadı.
+`PLAN-2026-INS-001`, Finance owner ile Department Planning içinde kaldı ve
+preparation confirmation öncesinde ek Audit oluşmadı. Finance, GM, Executive
+Director, GM release, Department acceptance, Lead assignment/proposal ve
+Department confirmation sonrasında `No Advance Notice` taşıyan tam bir
+`Scheduled` Audit (`AUD-2026-009`) oluştu.
+
+Eşleşen Fly Namibia Service Provider portalı, Inspection Coordination içinde
+`AUD-2026-009` veya unannounced title göstermedi. İlgisiz
+`Routine / Announced` `AUD-2026-001` paketi Confirm Proposed Date ve Propose
+Alternative Date action'larıyla görünür kaldı. Mobile Step 2 ve submit sonucu
+`390px` içinde kaldı: document overflow false, category/callout control'ları
+sınırlar içinde, kapalı sidebar off-canvas ve primary action kullanılabilirdi.
+Unexpected browser console error sayısı sıfırdı.
+
+Rendered QA, gereğinden geniş bir Lead Inspector Planning shortcut'ı ortaya
+çıkardı. Bu durum failing regression contract'a çevrildi ve scoped bir
+post-release preparation task ile değiştirildi; final 72/72 suite mevcut Lead
+navigation restriction ile scoped preparation route'u birlikte doğrular.
+Browser tab'leri ve local static server kapatıldı. Process cleanup task-owned
+server, Playwright, Puppeteer, webdriver, headless Chrome veya remote-debugging
+Chrome kalıntısı bulmadı.
+
+Temporary local evidence,
+`/private/tmp/aviasurveil360-unannounced-intake-qa-20260720/` altındaki desktop
+ve mobile screenshot'lar ile `interaction-log.txt` dosyasındadır.
+
+Implementation, mock browser-local state kullanan static HTML, CSS ve Vanilla
+JavaScript olarak kalır. Backend, database, API, real authentication, upload,
+notification delivery veya production Audit service eklenmedi. Regulatory
+validation, deployment, real-device testing ve stakeholder sign-off **not run**
+durumundadır.
+
 ---
 
 ## Sahte öğeler ve kısıtlar

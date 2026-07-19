@@ -88,7 +88,7 @@ var VIEW_TITLES = {
   dashboard: 'Dashboard', calendar: 'Audit Work Queue', findings: 'Findings', 'findings-review': 'Findings Review', 'inspection-team': 'Inspection Team', 'reports-approval': 'Reports Approval', 'manager-risk': 'Risk Dashboard', 'cap-monitoring': 'CAP Monitoring', 'manager-checklists': 'Checklist Management', 'my-findings': 'My Findings',
   reports: 'Reports', report: 'Report', messages: 'Messages', templates: 'Templates',
   'template-preview': 'Template Preview', auditlog: 'Audit Log', 'audit-detail': 'Audit Detail',
-  checklist: 'Checklist Runner', finding: 'Finding Detail', wizard: 'New Audit Wizard',
+  checklist: 'Checklist Runner', finding: 'Finding Detail', wizard: 'New Inspection',
   organizations: 'Organizations', 'org-detail': 'Organization', users: 'Users', settings: 'Settings',
   'safety-intelligence': 'Safety Intelligence', 'org-risk': 'Organization Risk Profile',
   'regulatory-library': 'Regulatory Library', 'package-builder': 'Inspection Package Builder',
@@ -99,6 +99,7 @@ var VIEW_TITLES = {
   'checklist-approvals': 'Checklist Approvals', 'question-bank': 'Question Bank',
   'checklist-builder': 'Checklist Builder', 'checklist-versions': 'Version History',
   'lead-review': 'Lead Inspector Review', 'lead-assignment': 'Audit Assignment',
+  'lead-planning-preparation': 'Plan Preparation',
   'lead-assignment-questions': 'Assign Checklist Questions', 'planning-board': 'Planning',
   'audit-reports': 'Audit Reports', 'cap-review-detail': 'CAP Review', 'final-report-prepare': 'Prepare Final Report',
   'final-report-view': 'Final Report',
@@ -536,6 +537,7 @@ function renderContent() {
     case 'checklist-builder': return viewChecklistBuilder();
     case 'checklist-versions': return viewChecklistVersions();
     case 'lead-review': return viewLeadReviewQueue();
+    case 'lead-planning-preparation': return viewPlanningWorkspace();
     case 'lead-assignment': return viewLeadAssignmentWorkspace();
     case 'lead-assignment-questions': return viewLeadAssignmentQuestions();
     case 'cap-review-detail': return viewLeadCapReviewDetail();
@@ -693,6 +695,7 @@ function go(view, opts) {
   if (opts.reportId !== undefined && opts.reportId !== null && opts.reportId !== '') state.params.reportId = opts.reportId;
   if (opts.findingId !== undefined && opts.findingId !== null && opts.findingId !== '') state.params.findingId = opts.findingId;
   if (opts.orgId !== undefined && opts.orgId !== null && opts.orgId !== '') state.params.orgId = opts.orgId;
+  if (opts.planningId !== undefined && opts.planningId !== null && opts.planningId !== '') state.params.planningId = opts.planningId;
   if (view === 'org-risk' && !state.params.orgId) state.params.orgId = 'ORG-XYZ';
   if (opts.tab) state.params.tab = opts.tab;
   else if (view !== 'planning' && view !== 'planning-approvals' && view !== 'planning-board') delete state.params.tab;
@@ -1717,7 +1720,8 @@ function handleAction(act, el) {
     case 'do-authclose': doAuthorizedClosure(id); break;
     case 'send-reminder': sendReminder(id); break;
 
-    case 'new-audit': startWizard(); break;
+    case 'new-planning-inspection': startPlanningInspectionIntake(); break;
+    case 'new-audit': startPlanningInspectionIntake(); break;
     case 'wizard-next': wizardNext(); break;
     case 'wizard-back': wizardBack(); break;
     case 'wizard-create': wizardCreate(); break;
@@ -1739,6 +1743,7 @@ function handleAction(act, el) {
     case 'planning-assign-lead': handlePlanningAssignLead(id); break;
     case 'planning-propose-team': handlePlanningProposeTeam(id); break;
     case 'planning-confirm-prep': handlePlanningConfirmPrep(id); break;
+    case 'lead-planning-preparation-open': handleLeadPlanningPreparationOpen(id); break;
     case 'finance-review-select': handleFinanceReviewSelect(id); break;
     case 'finance-review-tab': handleFinanceReviewTab(tab); break;
     case 'finance-review-choice': handleFinanceReviewChoice(el.getAttribute('data-decision')); break;
@@ -3744,7 +3749,7 @@ function handleFinanceReviewFieldChange(field, target) {
 
 function handleFinanceReviewSelect(planId) {
   var plan = state.planningItems.filter(function (item) { return item.id === planId; })[0];
-  if (!plan || !plan.budgetRequired) return;
+  if (!plan) return;
   state.financeUi.selectedPlanId = plan.id;
   state.financeUi.openActionPlanId = plan.id;
   state.financeUi.decision = '';
@@ -6027,13 +6032,29 @@ function handlePlanningConfirmPrep(id) {
   var item = planningItemForAction(id);
   try {
     confirmPlanningPreparation(item, planningActor());
-    addLog('Audit assignment package generated (demo)', item.id);
-    toast('Ready for Execution', 'Mock Audit Assignment Package generated. No real document service was used.', 'ok');
+    var result = materializeReadyPlanningInspection(state, item);
+    addLog('Audit created from approved Planning item', result.audit.id);
+    toast(
+      'Ready for Execution',
+      result.audit.id + (result.audit.noticePolicy === 'withheld'
+        ? ' created with No Advance Notice.'
+        : ' created; Service Provider coordination is ready.'),
+      'ok'
+    );
     persistAfterAction();
     render();
   } catch (err) {
     toast('Confirmation unavailable', err && err.message ? err.message : 'Preparation could not be confirmed.', 'warn');
   }
+}
+
+function handleLeadPlanningPreparationOpen(id) {
+  var item = planningItemById(id);
+  if (state.role !== 'leadInspector' || !item || !item.preparation || item.preparation.status !== 'lead_inspector_assigned') {
+    toast('Preparation unavailable', 'This post-release preparation task is not assigned to the current Lead Inspector workspace.', 'warn');
+    return;
+  }
+  go('lead-planning-preparation', { planningId: item.id, tab: 'preparation' });
 }
 
 function handleReportApproval(id, decision) {
@@ -6075,22 +6096,31 @@ function handleReportApproval(id, decision) {
   }
 }
 
-/* ----------------------------- New Audit Wizard ----------------------------- */
-function startWizard() {
+/* ----------------------------- New Inspection intake ----------------------------- */
+function startPlanningInspectionIntake() {
   state.wizard = {
     step: 1,
     orgId: state.orgs[0].id,
     type: AUDIT_TYPES[0],
     domain: AUDIT_DOMAINS[0],
+    inspectionCategory: 'Routine / Announced',
+    noticePolicy: 'advance',
+    purpose: '',
+    triggerType: 'Department Manager initiated',
+    riskCategory: '',
     date: '2026-12-10',
     mode: 'On-site',
     location: '',
-    lead: INSPECTORS[0],
-    team: [],
     templateId: 'TPL-CABIN-2026',
-    scope: ''
+    scope: '',
+    currency: 'USD',
+    requestedBudget: '0'
   };
   go('wizard');
+}
+
+function startWizard() {
+  startPlanningInspectionIntake();
 }
 
 /* Read the inputs present for the current step into state.wizard. */
@@ -6099,23 +6129,25 @@ function wizardCapture() {
   if (document.getElementById('wz-org')) w.orgId = val('wz-org');
   if (document.getElementById('wz-type')) w.type = val('wz-type');
   if (document.getElementById('wz-domain')) w.domain = val('wz-domain');
+  if (document.getElementById('wz-inspection-category')) w.inspectionCategory = val('wz-inspection-category');
+  if (document.getElementById('wz-purpose')) w.purpose = val('wz-purpose');
+  if (document.getElementById('wz-trigger')) w.triggerType = val('wz-trigger');
+  if (document.getElementById('wz-risk')) w.riskCategory = val('wz-risk');
   if (document.getElementById('wz-date')) w.date = val('wz-date');
   if (document.getElementById('wz-mode')) w.mode = val('wz-mode');
   if (document.getElementById('wz-loc')) w.location = val('wz-loc');
-  if (document.getElementById('wz-lead')) w.lead = val('wz-lead');
   if (document.getElementById('wz-tpl')) w.templateId = val('wz-tpl');
   if (document.getElementById('wz-scope')) w.scope = val('wz-scope');
-  var team = document.querySelectorAll('.wz-team');
-  if (team.length) {
-    w.team = [];
-    team.forEach(function (c) { if (c.checked) w.team.push(c.value); });
-  }
+  if (document.getElementById('wz-budget')) w.requestedBudget = val('wz-budget');
+  if (document.getElementById('wz-currency')) w.currency = val('wz-currency');
+  w.noticePolicy = inspectionCategoryPolicy(w.inspectionCategory).noticePolicy;
 }
 
 function wizardNext() {
   wizardCapture();
   var w = state.wizard;
-  if (w.step === 2 && !w.location) { toast('Location required', 'Please enter a location for the audit.', 'warn'); return; }
+  if (w.step === 2 && !normalizeApprovalText(w.purpose)) { toast('Purpose required', 'Please enter the purpose of the inspection.', 'warn'); return; }
+  if (w.step === 3 && !normalizeApprovalText(w.location)) { toast('Location required', 'Please enter a location for the inspection.', 'warn'); return; }
   w.step = Math.min(5, w.step + 1);
   render();
 }
@@ -6129,22 +6161,35 @@ function wizardBack() {
 function wizardCreate() {
   wizardCapture();
   var w = state.wizard;
-  var id = 'AUD-2026-' + String(state.auditSeq).padStart(3, '0');
-  var team = (w.team && w.team.length) ? w.team.slice() : [];
-  if (team.indexOf(w.lead) === -1) team.unshift(w.lead);
-  var audit = {
-    id: id, ref: w.type, orgId: w.orgId, type: w.type, domain: w.domain,
-    templateId: w.templateId, date: w.date, mode: w.mode, location: w.location || '—',
-    lead: w.lead, team: team, status: 'Scheduled', checklistStarted: false
-  };
-  state.audits.push(audit);
-  state.auditSeq++;
-  state.wizard = null;
-  addLog('Audit scheduled', id);
-  pushNotification('manager', '🗓️', 'New audit ' + id + ' (' + audit.type + ' — ' + orgName(audit.orgId) + ') scheduled for ' + (function () { return fmtDate(audit.date); })() + '.');
-  toast('Audit scheduled', id + ' added to the 2026 plan.', 'ok');
-  persistAfterAction();
-  go('audit-detail', { auditId: id });
+  try {
+    var item = createPlanningInspection(state, {
+      organizationId: w.orgId,
+      applicationType: w.type,
+      domain: w.domain,
+      inspectionCategory: w.inspectionCategory,
+      purpose: w.purpose,
+      triggerType: w.triggerType,
+      riskCategory: w.riskCategory,
+      plannedDate: w.date,
+      mode: w.mode,
+      location: w.location,
+      templateId: w.templateId,
+      scope: w.scope,
+      currency: w.currency,
+      requestedBudget: Number(w.requestedBudget || 0)
+    }, {
+      role: state.role,
+      name: ROLES[state.role].user
+    });
+    state.wizard = null;
+    addLog('Inspection plan submitted to Finance Review', item.id);
+    pushNotification('finance', '🧾', item.id + ' is waiting for Finance Review.');
+    toast('Inspection submitted', item.id + ' sent to Finance Review.', 'ok');
+    persistAfterAction();
+    go('planning', { planningId: item.id, tab: 'overview' });
+  } catch (error) {
+    toast('Inspection not submitted', error.message, 'warn');
+  }
 }
 
 /* ----------------------------- Global listeners ----------------------------- */
@@ -6214,6 +6259,12 @@ document.addEventListener('keydown', function (e) {
 document.addEventListener('change', function (e) {
   if (e.target && e.target.id === 'role-select') setRole(e.target.value);
   var field = e.target && e.target.getAttribute ? e.target.getAttribute('data-field') : '';
+  if (field === 'wizard-inspection-category') {
+    wizardCapture();
+    state.wizard.inspectionCategory = e.target.value;
+    state.wizard.noticePolicy = inspectionCategoryPolicy(e.target.value).noticePolicy;
+    render();
+  }
   if (e.target && e.target.getAttribute && e.target.getAttribute('data-field') === 'checklist-comment') {
     setChecklistComment(e.target.getAttribute('data-q'), e.target.value);
   }

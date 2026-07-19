@@ -6,7 +6,7 @@
 2. Manager Dashboard
 3. Inspector Dashboard
 4. Audit Plan Calendar
-5. New Audit Wizard
+5. New Inspection Planning Intake
 6. Audit Detail
 7. Checklist Runner
 8. Finding Detail
@@ -76,29 +76,33 @@ Primary buttons:
 - Upload Evidence
 - Respond to CAA
 
-## New Audit Wizard
+## New Inspection Planning Intake
 
-Step 1: Neyi denetliyorsunuz?
+Ana amaç: executable Audit oluşmadan önce governed bir Planning item
+oluşturmaktır.
+
+Alanlar:
+
 - Organization
-- Audit type
+- Application Type
 - Domain
-
-Step 2: Ne zaman ve nerede?
-- Date
+- Inspection Category: `Routine / Announced` veya `Ad Hoc / Unannounced`
+- Advance-notice Policy
+- Purpose / Trigger
+- Planned Date
+- Mode
 - Location
-- Remote/on-site
-
-Step 3: Kim denetleyecek?
-- Lead inspector
-- Team members
-
-Step 4: Hangi checklist?
-- Checklist template
+- Checklist Template
 - Scope
+- Requested Budget
+- Approval Path
 
-Step 5: Review and schedule
-- Summary
-- Create audit
+`Ad Hoc / Unannounced` için `Advance notification withheld` uygulanır; Service
+Provider önceden bilgilendirilmez ve coordination branch atlanır. Submit işlemi,
+Current Owner `Finance Review` olacak şekilde seçili Planning Command Center
+item'ına döner. Lead Inspector ve team seçimi yalnızca approval ile
+`GM Release to Department` sonrasında yapılır. Executable Audit ancak Department
+Manager preparation confirmation sonrasında oluşturulur.
 
 ## Checklist Runner form
 

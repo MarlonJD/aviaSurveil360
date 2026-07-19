@@ -12,6 +12,129 @@ var PLANNING_PREP_STATUS_META = {
   ready_for_execution: { label: 'Ready for Execution', tone: 'ok' }
 };
 
+var INSPECTION_CATEGORY_POLICIES = {
+  'Routine / Announced': {
+    inspectionCategory: 'Routine / Announced',
+    noticePolicy: 'advance',
+    coordinationStatus: 'ready_to_notify'
+  },
+  'Ad Hoc / Unannounced': {
+    inspectionCategory: 'Ad Hoc / Unannounced',
+    noticePolicy: 'withheld',
+    coordinationStatus: 'notice_withheld'
+  }
+};
+
+function inspectionCategoryPolicy(category) {
+  var policy = INSPECTION_CATEGORY_POLICIES[category];
+  if (!policy) throw new Error('Inspection Category is required.');
+  return Object.assign({}, policy);
+}
+
+function nextPlanningInspectionId(target) {
+  var max = (target.planningItems || []).reduce(function (current, item) {
+    var match = String(item.id || '').match(/^PLAN-2026-INS-(\d{3})$/);
+    return match ? Math.max(current, Number(match[1])) : current;
+  }, 0);
+  return 'PLAN-2026-INS-' + String(max + 1).padStart(3, '0');
+}
+
+function planningOrganizationForIntake(target, organizationId) {
+  return (target.orgs || []).filter(function (organization) {
+    return organization.id === organizationId;
+  })[0] || null;
+}
+
+function validatePlanningInspectionInput(target, input, actor) {
+  if (!actor || actor.role !== 'manager') throw new Error('Department Manager is required to create an inspection plan.');
+  if (!planningOrganizationForIntake(target, input.organizationId)) throw new Error('Organization is required.');
+  if (!normalizeApprovalText(input.applicationType)) throw new Error('Application type is required.');
+  if (!normalizeApprovalText(input.domain)) throw new Error('Domain is required.');
+  inspectionCategoryPolicy(input.inspectionCategory);
+  if (!normalizeApprovalText(input.purpose)) throw new Error('Inspection purpose is required.');
+  if (!normalizeApprovalText(input.plannedDate)) throw new Error('Planned date is required.');
+  if (!normalizeApprovalText(input.location)) throw new Error('Location is required.');
+  if (!normalizeApprovalText(input.templateId)) throw new Error('Checklist template is required.');
+  var requestedBudget = Number(input.requestedBudget || 0);
+  if (!Number.isFinite(requestedBudget) || requestedBudget < 0) throw new Error('Requested budget must be zero or a positive number.');
+  return requestedBudget;
+}
+
+function createPlanningInspection(target, input, actor) {
+  input = input || {};
+  var requestedBudget = validatePlanningInspectionInput(target, input, actor);
+  var organization = planningOrganizationForIntake(target, input.organizationId);
+  var policy = inspectionCategoryPolicy(input.inspectionCategory);
+  var currency = normalizeApprovalText(input.currency) || 'USD';
+  var id = nextPlanningInspectionId(target);
+  var item = {
+    id: id,
+    title: input.applicationType + ' - ' + organization.name,
+    department: input.domain,
+    organization: organization.name,
+    organizationId: organization.id,
+    applicationType: input.applicationType,
+    inspectionCategory: policy.inspectionCategory,
+    noticePolicy: policy.noticePolicy,
+    purpose: normalizeApprovalText(input.purpose),
+    riskCategory: normalizeApprovalText(input.riskCategory) || 'Configured inspection risk',
+    triggerType: normalizeApprovalText(input.triggerType) || 'Department Manager initiated',
+    plannedDate: input.plannedDate,
+    targetMonth: String(input.plannedDate).slice(0, 7),
+    mode: input.mode || 'On-site',
+    location: normalizeApprovalText(input.location),
+    templateId: input.templateId,
+    scope: normalizeApprovalText(input.scope),
+    budgetRequired: requestedBudget > 0,
+    requestedBudget: currency + ' ' + requestedBudget.toLocaleString('en-US'),
+    budget: {
+      currency: currency,
+      requested: requestedBudget,
+      availableForPlan: requestedBudget,
+      remainingAnnualBudget: 0,
+      lines: [{ category: 'Inspection resources', amount: requestedBudget }]
+    },
+    proposedInspectors: [],
+    status: 'sent_to_finance',
+    financeReview: null,
+    auditId: '',
+    preparation: {
+      status: 'not_released',
+      releasedBy: null,
+      releasedDate: null,
+      acceptedBy: null,
+      acceptedDate: null,
+      leadInspector: null,
+      proposedTeam: [],
+      proposedStartDate: null,
+      proposedEndDate: null,
+      resources: null,
+      assignmentPackage: null,
+      history: []
+    },
+    approval: {
+      chain: [
+        { role: 'manager', label: 'Department Manager', returnToRole: null },
+        { role: 'finance', label: 'Finance Review', returnToRole: 'manager', notApprovedReturnToRole: 'manager' },
+        { role: 'gm', label: 'GM Review', returnToRole: 'manager' },
+        { role: 'executiveDirector', label: 'Executive Director Approval', returnToRole: 'gm' }
+      ],
+      currentIndex: 1,
+      outcome: null,
+      returnPolicy: 'configured_role',
+      history: [{
+        actor: actor.name,
+        role: actor.role,
+        action: 'submitted',
+        date: approvalDecisionDate(),
+        comment: 'Submitted ' + policy.inspectionCategory + ' inspection plan for Finance Review.'
+      }]
+    }
+  };
+  target.planningItems.unshift(item);
+  return item;
+}
+
 function planningBudgetTotal(item) {
   var lines = item && item.budget && Array.isArray(item.budget.lines) ? item.budget.lines : [];
   return lines.reduce(function (total, line) { return total + Number(line.amount || 0); }, 0);
@@ -209,4 +332,112 @@ function confirmPlanningPreparation(item, actor) {
   };
   appendPlanningPrepHistory(item, actor, 'ready_for_execution', 'Department Manager confirmed team/schedule and generated a mock assignment package.');
   return item;
+}
+
+function materializedPlanningAudit(target, item) {
+  return item.auditId
+    ? (target.audits || []).filter(function (audit) { return audit.id === item.auditId; })[0] || null
+    : null;
+}
+
+function materializeReadyPlanningInspection(target, item) {
+  if (!item || !item.preparation || item.preparation.status !== 'ready_for_execution') {
+    throw new Error('Planning preparation must be ready for execution before creating the Audit.');
+  }
+  var existing = materializedPlanningAudit(target, item);
+  if (existing) {
+    return {
+      audit: existing,
+      coordination: inspectionCoordinationByAuditId(target, existing.id),
+      created: false
+    };
+  }
+
+  var policy = inspectionCategoryPolicy(item.inspectionCategory);
+  var auditId = 'AUD-2026-' + String(target.auditSeq).padStart(3, '0');
+  var team = item.preparation.proposedTeam.slice();
+  if (team.indexOf(item.preparation.leadInspector) === -1) team.unshift(item.preparation.leadInspector);
+  var audit = {
+    id: auditId,
+    ref: item.title,
+    orgId: item.organizationId,
+    type: item.applicationType,
+    domain: item.department,
+    templateId: item.templateId,
+    date: item.preparation.proposedStartDate || item.plannedDate,
+    endDate: item.preparation.proposedEndDate || item.plannedDate,
+    mode: item.mode,
+    location: item.location,
+    inspectionCategory: policy.inspectionCategory,
+    noticePolicy: policy.noticePolicy,
+    lead: item.preparation.leadInspector,
+    team: team,
+    status: 'Scheduled',
+    checklistStarted: false,
+    planningItemId: item.id
+  };
+  target.audits.push(audit);
+  target.auditSeq += 1;
+  item.auditId = audit.id;
+  item.preparation.assignmentPackage.auditId = audit.id;
+
+  var userIdByName = {};
+  (target.users || []).forEach(function (user) { userIdByName[user.name] = user.id; });
+  target.inspectionTeams.push({
+    id: 'TEAM-' + audit.id,
+    auditId: audit.id,
+    department: audit.domain,
+    status: 'Scheduled',
+    startDate: audit.date,
+    endDate: audit.endDate,
+    leadUserId: userIdByName[audit.lead] || '',
+    memberIds: audit.team.map(function (name) { return userIdByName[name] || ''; }).filter(Boolean),
+    notes: item.preparation.resources,
+    attachments: [],
+    messages: [],
+    history: [{ at: approvalDecisionDate(), actor: ROLES.manager.user, action: 'Inspection team confirmed from Planning' }]
+  });
+  target.inspectionWorkspaces[audit.id] = {
+    selectedSectionKey: 'galley',
+    answersByQuestionId: {},
+    downloadedAt: '',
+    downloadedAttachmentIds: {},
+    draftSavedAt: '',
+    allSectionsCompletedAt: '',
+    submittedAt: '',
+    submittedByUserId: '',
+    lastSubmittedAt: '',
+    lastSubmittedByUserId: '',
+    reopenedAt: '',
+    reopenedByUserId: ''
+  };
+
+  var template = (target.templateLibrary || []).filter(function (candidate) {
+    return candidate.id === audit.templateId;
+  })[0] || null;
+  var coordination = {
+    auditId: audit.id,
+    planningItemId: item.id,
+    organizationId: audit.orgId,
+    inspectionCategory: policy.inspectionCategory,
+    noticePolicy: policy.noticePolicy,
+    status: policy.coordinationStatus,
+    proposedDate: audit.date,
+    alternativeDate: '',
+    confirmedDate: policy.noticePolicy === 'withheld' ? audit.date : '',
+    checklistName: template ? template.name : 'Inspection Checklist',
+    checklistFiles: [],
+    sharedInformation: policy.noticePolicy === 'advance'
+      ? ['Inspection scope', 'On-site location', 'Lead Inspector contact']
+      : [],
+    notifiedAt: '',
+    respondedAt: '',
+    caaConfirmedAt: '',
+    providerComment: '',
+    history: policy.noticePolicy === 'withheld'
+      ? [{ at: approvalDecisionDate(), actor: 'System', action: 'Advance notice withheld by configured inspection policy' }]
+      : []
+  };
+  target.inspectionCoordinations.push(coordination);
+  return { audit: audit, coordination: coordination, created: true };
 }

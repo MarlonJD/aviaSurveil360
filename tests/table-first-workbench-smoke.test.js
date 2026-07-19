@@ -105,15 +105,22 @@ assert.match(html, /data-act="nav" data-view="audit-detail" data-id="AUD-2026-00
 assert.match(html, /class="ops-table"/);
 
 context.state.role = 'manager';
+context.state.view = 'calendar';
+html = context.viewCalendar();
+assert.doesNotMatch(html, /\+ New Audit/);
+
 context.state.wizard = {
-  step: 1,
-  orgId: context.state.orgs[0].id,
-  type: context.AUDIT_TYPES[0],
-  domain: context.AUDIT_DOMAINS[0]
+  step: 2,
+  orgId: 'ORG-SKY',
+  type: 'Special Inspection',
+  domain: 'Security',
+  inspectionCategory: 'Ad Hoc / Unannounced',
+  noticePolicy: 'withheld'
 };
 html = context.viewAuditWizard();
-assert.match(html, /Initial Certification/);
-assert.match(html, /Variation \/ Amendment/);
-assert.match(html, /Remote Inspection/);
+assert.match(html, /Ad Hoc \/ Unannounced/);
+assert.match(html, /Service Provider will not be informed in advance/);
+assert.doesNotMatch(html, /Lead inspector|Team members/);
+assert.doesNotMatch(html, /Create &amp; schedule audit/);
 
 console.log('table-first-workbench-smoke: ok');

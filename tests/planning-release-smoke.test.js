@@ -12,7 +12,25 @@ vm.createContext(context);
 });
 
 context.state = context.freshState();
-const item = context.state.planningItems[0];
+const item = context.createPlanningInspection(context.state, {
+  organizationId: 'ORG-XYZ',
+  applicationType: 'Cabin Inspection',
+  domain: 'Cabin Safety',
+  inspectionCategory: 'Routine / Announced',
+  purpose: 'Verify the governed release and preparation path.',
+  triggerType: 'Routine surveillance',
+  riskCategory: 'Cabin emergency equipment',
+  plannedDate: '2026-09-10',
+  mode: 'On-site',
+  location: 'Fly Namibia HQ',
+  templateId: 'TPL-CABIN-2026',
+  scope: 'Cabin safety controls.',
+  currency: 'USD',
+  requestedBudget: 12500
+}, {
+  role: 'manager',
+  name: context.ROLES.manager.user
+});
 
 context.applyApprovalDecision(item, { decision: 'approve', actor: { role: 'finance', name: context.ROLES.finance.user }, comment: 'Budget accepted.' });
 context.applyApprovalDecision(item, { decision: 'forward', actor: { role: 'gm', name: context.ROLES.gm.user }, comment: 'Forward to Executive Director.' });
@@ -55,5 +73,10 @@ context.confirmPlanningPreparation(item, { actorRole: 'manager', actorName: 'Sel
 assert.equal(item.preparation.status, 'ready_for_execution');
 assert.equal(item.preparation.assignmentPackage.status, 'generated_demo');
 assert.match(item.preparation.assignmentPackage.title, /Audit Assignment Package/);
+
+const materialized = context.materializeReadyPlanningInspection(context.state, item);
+assert.equal(item.auditId, materialized.audit.id);
+assert.equal(materialized.audit.status, 'Scheduled');
+assert.equal(context.state.inspectionTeams.filter((team) => team.auditId === materialized.audit.id).length, 1);
 
 console.log('planning-release-smoke: ok');

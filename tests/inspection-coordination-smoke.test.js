@@ -153,4 +153,62 @@ const restored = context.mergeDemoState(JSON.parse(JSON.stringify(context.state)
 assert.equal(context.inspectionCoordinationByAuditId(restored, 'AUD-2026-001').status, 'date_confirmed');
 assert.equal(context.inspectionCoordinationByAuditId(restored, 'AUD-2026-005').status, 'notice_withheld');
 
+const dynamicState = context.freshState();
+const dynamicItem = context.createPlanningInspection(dynamicState, {
+  organizationId: 'ORG-SKY',
+  applicationType: 'Special Inspection',
+  domain: 'Security',
+  inspectionCategory: 'Ad Hoc / Unannounced',
+  purpose: 'Unannounced access-control compliance inspection.',
+  triggerType: 'Risk based / targeted inspection',
+  riskCategory: 'Cargo gate access control',
+  plannedDate: '2026-07-24',
+  mode: 'On-site',
+  location: 'SkyCargo Terminal',
+  templateId: 'TPL-SEC-2026',
+  scope: 'Restricted cargo-area access controls and records.',
+  currency: 'USD',
+  requestedBudget: 0
+}, {
+  role: 'manager',
+  name: context.ROLES.manager.user
+});
+context.applyApprovalDecision(dynamicItem, {
+  decision: 'approve',
+  actor: { role: 'finance', name: context.ROLES.finance.user },
+  comment: 'No additional budget required.'
+});
+context.applyApprovalDecision(dynamicItem, {
+  decision: 'forward',
+  actor: { role: 'gm', name: context.ROLES.gm.user },
+  comment: 'Forwarded for final approval.'
+});
+context.applyApprovalDecision(dynamicItem, {
+  decision: 'approve',
+  actor: { role: 'executiveDirector', name: context.ROLES.executiveDirector.user },
+  comment: 'Approved for controlled release.'
+});
+context.releasePlanningItem(dynamicItem, { actorRole: 'gm', actorName: context.ROLES.gm.user });
+context.acceptReleasedPlanningItem(dynamicItem, { actorRole: 'manager', actorName: context.ROLES.manager.user });
+context.assignLeadInspectorToPlanningItem(dynamicItem, {
+  actorRole: 'manager', actorName: context.ROLES.manager.user, leadInspector: 'Caner Yildiz'
+});
+context.proposePlanningTeamAndSchedule(dynamicItem, {
+  actorRole: 'leadInspector',
+  actorName: 'Caner Yildiz',
+  team: ['Caner Yildiz', 'Aylin Sezer'],
+  startDate: '2026-07-24',
+  endDate: '2026-07-24',
+  resources: 'Two inspectors; internal checklist package.'
+});
+context.confirmPlanningPreparation(dynamicItem, {
+  actorRole: 'manager', actorName: context.ROLES.manager.user
+});
+const dynamicResult = context.materializeReadyPlanningInspection(dynamicState, dynamicItem);
+assert.equal(dynamicResult.coordination.status, 'notice_withheld');
+assert.equal(
+  context.serviceProviderInspectionCoordinationRows(dynamicState, 'ORG-SKY').some((row) => row.auditId === dynamicResult.audit.id),
+  false
+);
+
 console.log('inspection-coordination-smoke: ok');

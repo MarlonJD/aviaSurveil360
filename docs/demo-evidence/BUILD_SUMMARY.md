@@ -910,6 +910,66 @@ Real-device validation, production accessibility certification, deployment,
 and stakeholder sign-off are **not run**. This remains **demo-only**;
 **production-readiness not claimed**.
 
+### Unannounced inspection intake alignment checkpoint — 2026-07-20
+
+Evidence status: **demo-only** and **verified locally**;
+**production-readiness not claimed**. Department Manager now creates a governed
+`New Inspection` item from Planning. A zero-budget `Ad Hoc / Unannounced`
+submission remains selected in the Planning Command Center, enters
+`Finance Review`, and stores `Advance notification withheld` / `No Advance
+Notice` without creating an executable Audit. Lead Inspector and team work
+remains post-approval and post-`GM Release to Department`; the scheduled Audit
+is materialized only after Department Manager preparation confirmation.
+
+Fresh automated evidence (**verified locally**):
+
+- `node --check` passed for `js/data.js`, `js/planning.js`, `js/views.js`, and
+  `js/app.js`.
+- The final seven-file targeted command passed 16/16 tests with zero failures,
+  cancellations, skips, or todos.
+- `node --test tests/*.test.js` passed 72/72 tests with zero failures,
+  cancellations, skips, or todos.
+- The focused contracts cover category validation, zero-budget Finance Review,
+  JSON round-trip persistence, post-confirmation materialization, idempotency,
+  scoped Lead preparation access, and Service Provider privacy.
+
+Fresh isolated in-app Browser QA is **verified locally** at `1440x900` and
+`390x844`. The desktop path covered Role Select -> Department Manager ->
+Planning -> `+ New Inspection` -> `Special Inspection` ->
+`Ad Hoc / Unannounced` -> zero-budget submission. `PLAN-2026-INS-001` stayed in
+Department Planning with Finance as owner and no additional Audit before
+preparation confirmation. Finance, GM, Executive Director, GM release,
+Department acceptance, Lead assignment/proposal, and Department confirmation
+then produced exactly one `Scheduled` Audit (`AUD-2026-009`) with `No Advance
+Notice`.
+
+The matching Fly Namibia Service Provider portal omitted `AUD-2026-009` and
+the unannounced title from Inspection Coordination. The unrelated
+`Routine / Announced` `AUD-2026-001` package remained visible with Confirm
+Proposed Date and Propose Alternative Date actions. Mobile Step 2 and the
+submission result stayed within `390px`: document overflow was false,
+category/callout controls stayed in bounds, the closed sidebar remained
+off-canvas, and the primary action remained usable. Unexpected browser console
+errors were zero.
+
+Rendered QA exposed an overly broad Lead Inspector Planning shortcut. It was
+converted to a failing regression contract and replaced with a scoped
+post-release preparation task; the final 72/72 suite proves the existing Lead
+navigation restriction and the scoped preparation route together. Browser tabs
+and the local static server were closed. Process cleanup found no task-owned
+server, Playwright, Puppeteer, webdriver, headless Chrome, or remote-debugging
+Chrome residue.
+
+Temporary local evidence is under
+`/private/tmp/aviasurveil360-unannounced-intake-qa-20260720/`, including desktop
+and mobile screenshots plus `interaction-log.txt`.
+
+The implementation remains static HTML, CSS, and Vanilla JavaScript with mock
+browser-local state. No backend, database, API, real authentication, upload,
+notification delivery, or production Audit service was added. Regulatory
+validation, deployment, real-device testing, and stakeholder sign-off are
+**not run**.
+
 ---
 
 ## Mocked items and limitations

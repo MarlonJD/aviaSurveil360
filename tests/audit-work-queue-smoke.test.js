@@ -106,6 +106,10 @@ assert.match(html, /Submit to Lead Inspector/);
 const appSource = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
 assert.match(appSource, /case 'inspection-reopen-editing': handleInspectionReopenEditing\(id\); break;/);
 assert.match(appSource, /reopenInspectionChecklistForEditing\(state, targetAuditId/);
+assert.match(appSource, /case 'new-planning-inspection': startPlanningInspectionIntake\(\); break;/);
+assert.match(appSource, /case 'new-audit': startPlanningInspectionIntake\(\); break;/);
+assert.match(appSource, /wizard: 'New Inspection'/);
+assert.match(appSource, /go\('planning', \{ planningId: item\.id, tab: 'overview' \}\)/);
 
 context.state.inspectionWorkspaces['AUD-2026-001'].selectedSectionKey = 'em-eq';
 html = context.viewAuditDetail();

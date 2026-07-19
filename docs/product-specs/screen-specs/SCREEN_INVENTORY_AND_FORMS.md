@@ -6,7 +6,7 @@
 2. Manager Dashboard
 3. Inspector Dashboard
 4. Audit Plan Calendar
-5. New Audit Wizard
+5. New Inspection Planning Intake
 6. Audit Detail
 7. Checklist Runner
 8. Finding Detail
@@ -76,29 +76,32 @@ Primary buttons:
 - Upload Evidence
 - Respond to CAA
 
-## New Audit Wizard
+## New Inspection Planning Intake
 
-Step 1: What are you inspecting?
+Main goal: create a governed Planning item before any executable Audit exists.
+
+Fields:
+
 - Organization
-- Audit type
+- Application Type
 - Domain
-
-Step 2: When and where?
-- Date
+- Inspection Category: `Routine / Announced` or `Ad Hoc / Unannounced`
+- Advance-notice Policy
+- Purpose / Trigger
+- Planned Date
+- Mode
 - Location
-- Remote/on-site
-
-Step 3: Who will inspect?
-- Lead inspector
-- Team members
-
-Step 4: What checklist?
-- Checklist template
+- Checklist Template
 - Scope
+- Requested Budget
+- Approval Path
 
-Step 5: Review and schedule
-- Summary
-- Create audit
+`Ad Hoc / Unannounced` uses `Advance notification withheld`; the Service
+Provider is not informed in advance and the coordination branch is skipped.
+Submission returns to the selected Planning Command Center item with
+`Finance Review` as the Current Owner. Lead Inspector and team selection occur
+only after approval and `GM Release to Department`. The executable Audit is
+created only after Department Manager preparation confirmation.
 
 ## Checklist Runner form
 

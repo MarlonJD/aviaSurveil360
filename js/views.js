@@ -373,12 +373,17 @@ function planningDossierHtml(item) {
   return '<div class="metaline">' +
     metaItem('Organization', item.organization) +
     metaItem('Department', item.department) +
+    (item.applicationType ? metaItem('Application type', item.applicationType) : '') +
+    (item.inspectionCategory ? metaItem('Inspection Category', item.inspectionCategory) : '') +
+    (item.noticePolicy ? metaItem('Advance-notice Policy', item.noticePolicy === 'withheld' ? 'No Advance Notice (withheld)' : 'Advance Notice Required (advance)') : '') +
+    (item.plannedDate ? metaItem('Planned Date', fmtDate(item.plannedDate)) : '') +
+    (item.location ? metaItem('Location', item.location) : '') +
     metaItem('Risk category', item.riskCategory) +
     metaItem('Trigger type', item.triggerType) +
     metaItem('Requested budget', item.requestedBudget) +
     metaItem('Budget required', item.budgetRequired ? 'Yes' : 'No') +
     metaItem('Target month', item.targetMonth) +
-    metaItem('Proposed inspectors', item.proposedInspectors.join(', ')) +
+    metaItem('Proposed inspectors', (item.proposedInspectors || []).join(', ') || 'Assigned after GM Release to Department') +
     metaItem('Finance review', planningFinanceReviewText(item)) +
   '</div>';
 }
@@ -396,6 +401,8 @@ function planningCommandCenterHtml(item, approval, prepMeta, eyebrow) {
       '<div class="planning-command-center__state" aria-label="Plan state">' +
         demoBadge(approval.statusLabel, approval.statusTone) +
         demoBadge(prepMeta.label, prepMeta.tone) +
+        (item.inspectionCategory ? demoBadge(item.inspectionCategory, item.noticePolicy === 'withheld' ? 'warn' : 'info') : '') +
+        (item.noticePolicy ? demoBadge(item.noticePolicy === 'withheld' ? 'No Advance Notice' : 'Advance Notice Required', item.noticePolicy === 'withheld' ? 'warn' : 'info') : '') +
       '</div>' +
     '</header>' +
     '<div class="planning-command-center__facts">' +
@@ -529,7 +536,8 @@ function planningPreparationDetailHtml(item) {
 function planningAssignmentPackageHtml(item) {
   var pkg = item.preparation.assignmentPackage;
   if (!pkg) return '<div class="muted small">Assignment package is generated only after Department Manager confirmation.</div>';
-  return '<div class="callout"><b>' + esc(pkg.title) + '</b><br><span class="small muted">' + esc(pkg.note) + '</span></div>';
+  return '<div class="callout"><b>' + esc(pkg.title) + '</b><br><span class="small muted">' + esc(pkg.note) + '</span></div>' +
+    (item.auditId ? '<div class="decision-panel__actions"><button class="btn btn--primary" data-act="nav" data-view="audit-detail" data-id="' + esc(item.auditId) + '">Open Audit Work Item</button></div>' : '');
 }
 
 function planningPrepHistoryHtml(item) {
@@ -610,8 +618,11 @@ function viewPlanningWorkspace(forcedTab) {
   var workspaceEyebrow = state.role === 'manager'
     ? 'Department planning workspace'
     : 'Canonical planning workspace';
+  var planningActions = state.role === 'manager'
+    ? '<button class="btn btn--primary btn--sm" data-act="new-planning-inspection">+ New Inspection</button>'
+    : '';
 
-  return pageHead(workspaceTitle, workspacePurpose) +
+  return pageHead(workspaceTitle, workspacePurpose, planningActions) +
     guardrailStrip([
       { label: 'Frontend-only demo' },
       { label: 'Mock approval history', tone: 'info' },
@@ -649,7 +660,7 @@ function financeReviewStatus(item) {
 function financeReviewRows(ui) {
   var query = (ui.query || '').trim().toLowerCase();
   return state.planningItems.filter(function (item) {
-    if (!item.budgetRequired) return false;
+    if (!item.approval || !item.approval.chain || !item.approval.chain.some(function (stage) { return stage.role === 'finance'; })) return false;
     var status = financeReviewStatus(item);
     if (ui.status !== 'all' && ui.status !== status.key) return false;
     return !query || [item.id, item.title, item.department, item.organization, item.riskCategory].join(' ').toLowerCase().indexOf(query) !== -1;
@@ -668,7 +679,7 @@ function financeReviewTabs(active) {
 
 function financeReviewTabBody(item, active) {
   if (active === 'breakdown') {
-    return '<section class="finance-review-panel"><h2>Budget Breakdown</h2><div class="responsive-table-shell"><table class="finance-budget-table"><thead><tr><th>Category</th><th>Amount</th><th>Share</th></tr></thead><tbody>' + item.budget.lines.map(function (line) { return '<tr><td>' + esc(line.category) + '</td><td>' + financeMoney(line.amount, item.budget.currency) + '</td><td>' + esc(String(Math.round((line.amount / item.budget.requested) * 100))) + '%</td></tr>'; }).join('') + '<tr class="is-total"><td>Total Requested</td><td>' + financeMoney(planningBudgetTotal(item), item.budget.currency) + '</td><td>100%</td></tr></tbody></table></div></section>';
+    return '<section class="finance-review-panel"><h2>Budget Breakdown</h2><div class="responsive-table-shell"><table class="finance-budget-table"><thead><tr><th>Category</th><th>Amount</th><th>Share</th></tr></thead><tbody>' + item.budget.lines.map(function (line) { var share = item.budget.requested ? Math.round((line.amount / item.budget.requested) * 100) : 0; return '<tr><td>' + esc(line.category) + '</td><td>' + financeMoney(line.amount, item.budget.currency) + '</td><td>' + esc(String(share)) + '%</td></tr>'; }).join('') + '<tr class="is-total"><td>Total Requested</td><td>' + financeMoney(planningBudgetTotal(item), item.budget.currency) + '</td><td>' + (item.budget.requested ? '100%' : '0%') + '</td></tr></tbody></table></div></section>';
   }
   if (active === 'documents') {
     return '<section class="finance-review-panel"><h2>Supporting Documents</h2><p>Mock filenames only; no real finance document storage is used.</p><div class="finance-document-list"><button data-act="finance-review-document" data-id="request">Budget Request · ' + esc(item.id) + '</button><button data-act="finance-review-document" data-id="travel">Travel Estimate · ' + esc(item.id) + '</button><button data-act="finance-review-document" data-id="scope">Inspection Scope · ' + esc(item.id) + '</button></div></section>';
@@ -689,7 +700,9 @@ function financeReviewDecisionPanel(item, ui) {
 
 function viewFinanceReviewWorkspace() {
   var ui = state.financeUi;
-  var all = state.planningItems.filter(function (item) { return item.budgetRequired; });
+  var all = state.planningItems.filter(function (item) {
+    return item.approval && item.approval.chain && item.approval.chain.some(function (stage) { return stage.role === 'finance'; });
+  });
   var rows = financeReviewRows(ui);
   var selected = all.filter(function (item) { return item.id === ui.selectedPlanId; })[0] || rows[0] || all[0] || null;
   if (!selected) return pageHead('Finance Review', 'Budget and resource review queue.') + '<div class="empty">No budget-required plans.</div>';
@@ -5233,9 +5246,6 @@ function viewCalendar() {
       esc(AUDIT_FILTER_LABELS[key]) + ' (' + counts[key] + ')</button>';
   }).join(' ');
   var actions = chips;
-  if (state.role === 'manager') {
-    actions += ' <button class="btn btn--primary btn--sm" data-act="new-audit">+ New Audit</button>';
-  }
   var items = list.map(workItemFromAudit);
   return pageHead('Audit Work Queue', 'Assigned audits in a simple queue, sorted by Due Date. Use Active for open work and Completed for finished audits.', actions) +
     renderOpsTable(items, { empty: 'No assigned audits match this filter.' });
@@ -6403,6 +6413,21 @@ function leadAssignedAuditRows() {
   ];
 }
 
+function leadPlanningPreparationTasksHtml() {
+  var items = (state.planningItems || []).filter(function (item) {
+    return item && item.preparation && item.preparation.status === 'lead_inspector_assigned';
+  });
+  if (!items.length) return '';
+  return '<section class="lead-preparation-tasks" aria-label="Post-release preparation tasks">' +
+    '<div class="lead-preparation-tasks__head"><div><span>Post-release preparation</span><h2>Assigned plan preparation</h2></div><p>Propose the team, dates, and resources after approval and GM Release to Department.</p></div>' +
+    items.map(function (item) {
+      var org = orgById(item.organizationId);
+      return '<article class="lead-preparation-task"><div><span>' + esc(item.id) + '</span><h3>' + esc(item.title) + '</h3><p>' + esc((org && org.name) || item.organizationId) + ' · ' + esc(item.department || item.domain || 'Department not set') + '</p></div>' +
+        '<button class="btn btn--primary" data-act="lead-planning-preparation-open" data-id="' + esc(item.id) + '">Open Preparation</button></article>';
+    }).join('') +
+  '</section>';
+}
+
 function leadAssignedAuditFilteredRows(ui) {
   var query = (ui.query || '').toLowerCase().trim();
   return leadAssignedAuditRows().filter(function (row) {
@@ -6960,6 +6985,7 @@ function viewLeadAssignedAudits() {
       leadAssignedKpiCard('Pending Approval', '3', 'Audits', 17, 'pending', '➤') +
       leadAssignedKpiCard('Overdue', '2', 'Audits', 11, 'overdue', '!') +
     '</div>' +
+    leadPlanningPreparationTasksHtml() +
     potentialPanel +
     leadAssignedFiltersHtml(ui) +
     leadAssignedTableHtml(rows, rows.length) +
@@ -10622,12 +10648,18 @@ function modalAuthorizedClosure(f) {
   return modalShell('Authorized Closure — ' + f.id, body, foot, true);
 }
 
-/* =========================== New Audit Wizard =========================== */
+/* =========================== New Inspection intake =========================== */
 function viewAuditWizard() {
   var w = state.wizard || {};
   var step = w.step || 1;
 
-  var steps = ['What are you inspecting?', 'When and where?', 'Who will inspect?', 'What checklist?', 'Review & schedule'];
+  var steps = [
+    'Inspection basics',
+    'Category and purpose',
+    'When and where',
+    'Checklist, scope and budget',
+    'Review and submit'
+  ];
   var rail = '<div class="stepper mb-16">' + steps.map(function (label, i) {
     var n = i + 1;
     var cls = n < step ? 'done' : (n === step ? 'current' : '');
@@ -10648,52 +10680,68 @@ function viewAuditWizard() {
           AUDIT_DOMAINS.map(function (t) { return '<option' + (w.domain === t ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select></div>' +
       '</div>';
   } else if (step === 2) {
+    var isWithheld = w.inspectionCategory === 'Ad Hoc / Unannounced' || w.noticePolicy === 'withheld';
+    bodyHtml =
+      '<div class="form-row"><label>Inspection Category <span class="req">*</span></label><select id="wz-inspection-category" data-field="wizard-inspection-category">' +
+        ['Routine / Announced', 'Ad Hoc / Unannounced'].map(function (category) { return '<option' + (w.inspectionCategory === category ? ' selected' : '') + '>' + esc(category) + '</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="inspection-policy-callout ' + (isWithheld ? 'is-withheld' : 'is-advance') + '"><b>' + (isWithheld ? 'No Advance Notice' : 'Advance Notice Required') + '</b><span>' +
+        (isWithheld
+          ? 'The Service Provider will not be informed in advance and the coordination branch will be skipped.'
+          : 'Coordination starts only after approval, GM Release to Department, and Lead Inspector assignment.') +
+      '</span></div>' +
+      '<div class="form-row"><label>Purpose <span class="req">*</span></label><textarea id="wz-purpose" placeholder="Why is this inspection required?">' + esc(w.purpose || '') + '</textarea></div>' +
+      '<div class="form-2col">' +
+        '<div class="form-row"><label>Trigger</label><input type="text" id="wz-trigger" value="' + esc(w.triggerType || '') + '" placeholder="e.g. Risk based / targeted inspection"></div>' +
+        '<div class="form-row"><label>Risk category</label><input type="text" id="wz-risk" value="' + esc(w.riskCategory || '') + '" placeholder="Configured inspection risk"></div>' +
+      '</div>' +
+      '<div class="help">Inspection category controls advance-notice behavior; Application type remains a separate field.</div>';
+  } else if (step === 3) {
     bodyHtml =
       '<div class="form-2col">' +
-        '<div class="form-row"><label>Date <span class="req">*</span></label><input type="date" id="wz-date" value="' + esc(w.date || '2026-12-10') + '"></div>' +
+        '<div class="form-row"><label>Planned Date <span class="req">*</span></label><input type="date" id="wz-date" value="' + esc(w.date || '2026-12-10') + '"></div>' +
         '<div class="form-row"><label>Mode</label><select id="wz-mode">' +
           ['On-site', 'Remote'].map(function (m) { return '<option' + (w.mode === m ? ' selected' : '') + '>' + esc(m) + '</option>'; }).join('') + '</select></div>' +
       '</div>' +
       '<div class="form-row"><label>Location <span class="req">*</span></label><input type="text" id="wz-loc" value="' + esc(w.location || '') + '" placeholder="e.g. Fly Namibia HQ"></div>';
-  } else if (step === 3) {
-    bodyHtml =
-      '<div class="form-row"><label>Lead inspector <span class="req">*</span></label><select id="wz-lead">' +
-        INSPECTORS.map(function (n) { return '<option' + (w.lead === n ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select></div>' +
-      '<div class="form-row"><label>Team members</label><div class="help">Select additional inspectors (optional).</div>' +
-        INSPECTORS.map(function (n) {
-          var checked = (w.team || []).indexOf(n) > -1 ? ' checked' : '';
-          return '<label style="display:flex;align-items:center;gap:8px;font-weight:500;margin-bottom:6px">' +
-            '<input type="checkbox" class="wz-team" value="' + esc(n) + '"' + checked + '> ' + esc(n) + '</label>';
-        }).join('') +
-      '</div>';
   } else if (step === 4) {
     bodyHtml =
       '<div class="form-row"><label>Checklist template <span class="req">*</span></label><select id="wz-tpl">' +
         state.templateLibrary.map(function (t) { return '<option value="' + t.id + '"' + (w.templateId === t.id ? ' selected' : '') + '>' + esc(t.name) + ' · ' + esc(t.version) + '</option>'; }).join('') +
       '</select><div class="help">Only the Cabin Inspection template is runnable in this demo.</div></div>' +
-      '<div class="form-row"><label>Scope (optional)</label><textarea id="wz-scope" placeholder="Areas in scope for this audit.">' + esc(w.scope || '') + '</textarea></div>';
+      '<div class="form-row"><label>Scope</label><textarea id="wz-scope" placeholder="Areas in scope for this inspection.">' + esc(w.scope || '') + '</textarea></div>' +
+      '<div class="form-2col">' +
+        '<div class="form-row"><label>Requested Budget</label><input type="text" inputmode="decimal" id="wz-budget" value="' + esc(w.requestedBudget === undefined ? '0' : w.requestedBudget) + '"></div>' +
+        '<div class="form-row"><label>Currency</label><select id="wz-currency">' +
+          ['USD', 'EUR', 'NAD'].map(function (currency) { return '<option' + (w.currency === currency ? ' selected' : '') + '>' + esc(currency) + '</option>'; }).join('') + '</select></div>' +
+      '</div>' +
+      '<div class="help">Finance Review remains in the approval path when the requested demo budget is zero.</div>';
   } else {
     var orgN = orgName(w.orgId);
     var tpl = null;
     state.templateLibrary.forEach(function (t) { if (t.id === w.templateId) tpl = t; });
+    var policyLabel = w.noticePolicy === 'withheld' ? 'No Advance Notice (withheld)' : 'Advance Notice Required (advance)';
     bodyHtml =
-      '<div class="callout mb-16">Review the audit before scheduling it into the 2026 plan.</div>' +
+      '<div class="callout mb-16">Review the Planning intake before submitting it to Finance Review. No executable Audit is created at this step.</div>' +
       '<div class="card"><div class="card__body"><div class="metaline">' +
         metaItem('Organization', orgN) + metaItem('Application type', w.type) + metaItem('Domain', w.domain) +
-        metaItem('Date', fmtDate(w.date)) + metaItem('Mode', w.mode || 'On-site') + metaItem('Location', w.location || '—') +
-        metaItem('Lead inspector', w.lead) + metaItem('Team', (w.team && w.team.length ? w.team.join(', ') : w.lead)) +
+        metaItem('Inspection Category', w.inspectionCategory) + metaItem('Notification Policy', policyLabel) +
+        metaItem('Purpose', w.purpose) + metaItem('Trigger', w.triggerType || 'Department Manager initiated') +
+        metaItem('Planned Date', fmtDate(w.date)) + metaItem('Mode', w.mode || 'On-site') + metaItem('Location', w.location || '—') +
         metaItem('Checklist', tpl ? tpl.name + ' · ' + tpl.version : '—') +
+        metaItem('Scope', w.scope || '—') + metaItem('Requested Budget', (w.currency || 'USD') + ' ' + Number(w.requestedBudget || 0).toLocaleString('en-US')) +
+        metaItem('Approval Path', 'Department Manager → Finance Review → GM Review → Executive Director → GM Release to Department') +
       '</div></div></div>';
   }
 
   var backBtn = step > 1
     ? '<button class="btn" data-act="wizard-back">Back</button>'
-    : '<button class="btn" data-act="nav" data-view="calendar">Cancel</button>';
+    : '<button class="btn" data-act="nav" data-view="planning">Cancel</button>';
   var fwdBtn = step < 5
     ? '<button class="btn btn--primary" data-act="wizard-next">Next</button>'
-    : '<button class="btn btn--primary" data-act="wizard-create">Create &amp; schedule audit</button>';
+    : '<button class="btn btn--primary" data-act="wizard-create">Submit for Finance Review</button>';
 
-  return pageHead('New Audit Wizard', 'Plan a new surveillance audit and schedule it into the 2026 plan.') +
+  return pageHead('New Inspection', 'Create a governed Planning intake for approval, release, and later preparation.') +
     rail +
     '<div class="card" style="max-width:680px"><div class="card__head"><h3>Step ' + step + ' of 5 — ' + esc(steps[step - 1]) + '</h3></div>' +
       '<div class="card__body">' + bodyHtml + '</div>' +

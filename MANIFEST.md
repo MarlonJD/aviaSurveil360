@@ -60,6 +60,9 @@ There is no `package.json`; do not assume `npm test`.
 - `tests/inspection-coordination-smoke.test.js`
 - `tests/inspection-lifecycle-alignment-smoke.test.js`
 - `tests/inspection-team-smoke.test.js`
+- `tests/unannounced-inspection-intake-smoke.test.js` — implemented focused
+  coverage for Department Manager Planning intake, notice-policy persistence,
+  governed materialization, idempotency, and Service Provider privacy.
 - `tests/inspector-nav-smoke.test.js`
 - `tests/lead-inspector-nav-smoke.test.js`
 - `tests/lead-inspector-workspace-smoke.test.js`
@@ -149,6 +152,7 @@ files in the same folder.
 - `docs/exec-plans/active/2026-07-10-inspector-report-and-governance-workflow-remediation-plan.md`
 - `docs/exec-plans/active/2026-07-10-stakeholder-readiness-final-remediation-plan.md`
 - `docs/exec-plans/active/2026-07-18-inspection-lifecycle-alignment-plan.md`
+- `docs/exec-plans/active/2026-07-20-unannounced-inspection-intake-alignment-plan.md`
 
 ## Execution Plan Archive And Tracker
 
