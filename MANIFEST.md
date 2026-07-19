@@ -48,20 +48,36 @@ There is no `package.json`; do not assume `npm test`.
 - `tests/checklist-comment-render-smoke.test.js`
 - `tests/checklist-management-smoke.test.js`
 - `tests/demo-boundary-smoke.test.js`
+- `tests/department-manager-findings-smoke.test.js`
 - `tests/department-manager-state-smoke.test.js`
+- `tests/department-preliminary-review-smoke.test.js`
 - `tests/executive-director-workspace-smoke.test.js`
 - `tests/finance-review-workspace-smoke.test.js`
+- `tests/general-manager-workspace-smoke.test.js`
 - `tests/governance-render-smoke.test.js`
 - `tests/harness-docs-smoke.test.js`
 - `tests/inspection-execution-smoke.test.js`
+- `tests/inspection-coordination-smoke.test.js`
+- `tests/inspection-lifecycle-alignment-smoke.test.js`
+- `tests/inspection-team-smoke.test.js`
 - `tests/inspector-nav-smoke.test.js`
 - `tests/lead-inspector-nav-smoke.test.js`
 - `tests/lead-inspector-workspace-smoke.test.js`
+- `tests/manager-cap-monitoring-smoke.test.js`
+- `tests/manager-checklist-management-smoke.test.js`
+- `tests/manager-navigation-dashboard-smoke.test.js`
+- `tests/manager-report-pdf-smoke.test.js`
+- `tests/manager-reports-approval-smoke.test.js`
+- `tests/manager-risk-dashboard-smoke.test.js`
+- `tests/manager-workspace-responsive-smoke.test.js`
 - `tests/planning-release-smoke.test.js`
 - `tests/planning-render-smoke.test.js`
 - `tests/planning-workspace-smoke.test.js`
+- `tests/premium-ui-remediation-smoke.test.js`
 - `tests/report-approval-smoke.test.js`
+- `tests/service-provider-final-report-smoke.test.js`
 - `tests/service-provider-portal-smoke.test.js`
+- `tests/stakeholder-readiness-regressions.test.js`
 - `tests/table-first-workbench-smoke.test.js`
 
 ## Agent Harness
@@ -126,6 +142,13 @@ files in the same folder.
 - `docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`
 - `docs/exec-plans/active/2026-06-30-planning-panel-simplification-plan.md`
 - `docs/exec-plans/active/2026-07-01-table-first-surveillance-workbench-ux-plan.md`
+- `docs/exec-plans/active/2026-07-08-modern-aviation-saas-rollout-plan.md`
+- `docs/exec-plans/active/2026-07-08-premium-ui-remediation-plan.md`
+- `docs/exec-plans/active/2026-07-09-cabin-inspection-demo-scenario-plan.md`
+- `docs/exec-plans/active/2026-07-09-department-manager-workspaces-plan.md`
+- `docs/exec-plans/active/2026-07-10-inspector-report-and-governance-workflow-remediation-plan.md`
+- `docs/exec-plans/active/2026-07-10-stakeholder-readiness-final-remediation-plan.md`
+- `docs/exec-plans/active/2026-07-18-inspection-lifecycle-alignment-plan.md`
 
 ## Execution Plan Archive And Tracker
 

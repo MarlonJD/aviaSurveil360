@@ -93,6 +93,45 @@ assert.equal(
   metrics.notSubmitted + metrics.inProgress + metrics.evidenceRequired + metrics.overdue + metrics.completed
 );
 
+['partially_close', 'not_close'].forEach((verificationResult) => {
+  const verificationState = context.freshState();
+  const verificationFinding = verificationState.findings.find((finding) => finding.id === 'CAB-2026-011');
+  verificationFinding.status = 'EVIDENCE_SUBMITTED';
+  verificationFinding.evidence = [
+    { id: 'EV-CAB-2026-011-V1', fileName: 'Cabin_Evidence_v1.pdf', version: 1, status: 'Uploaded' },
+    { id: 'EV-CAB-2026-011-V2', fileName: 'Cabin_Evidence_v2.pdf', version: 2, status: 'Uploaded' }
+  ];
+  const evidenceBefore = verificationFinding.evidence.map((evidence) => ({
+    id: evidence.id,
+    version: evidence.version,
+    fileName: evidence.fileName
+  }));
+  const decision = context.applyCapVerificationDecision(verificationState, verificationFinding.id, {
+    result: verificationResult,
+    actor: { role: 'leadInspector', name: context.ROLES.leadInspector.user },
+    commentToAuditee: verificationResult === 'partially_close'
+      ? 'Partially verified; provide the remaining implementation Evidence.'
+      : 'Verification was not sufficient; correct and resubmit Evidence.',
+    internalNote: verificationResult === 'partially_close'
+      ? 'One configured corrective action remains unverified.'
+      : 'The latest submitted material does not demonstrate implementation.'
+  });
+  assert.equal(decision.ok, true);
+  assert.equal(verificationFinding.status, 'EVIDENCE_MORE_INFO');
+  assert.equal(verificationFinding.capVerification.findingClosed, false);
+  assert.equal(verificationFinding.closedDate, null);
+  assert.deepEqual(
+    verificationFinding.evidence.map((evidence) => ({ id: evidence.id, version: evidence.version, fileName: evidence.fileName })),
+    evidenceBefore
+  );
+  const verificationRow = context.managerCapById(verificationState, 'CAP-2026-011');
+  assert.equal(verificationRow.findingStatus, 'EVIDENCE_MORE_INFO');
+  assert.notEqual(verificationRow.statusKey, 'completed');
+  assert.equal(context.managerCapMetrics(context.managerCapRows(verificationState, {
+    status: 'all', department: 'all', inspection: 'all', due: 'all'
+  })).completed, 0);
+});
+
 const selectorBefore = JSON.stringify(state);
 context.managerCapRows(state, { status: 'all', department: 'all', inspection: 'all', due: 'all' });
 assert.equal(JSON.stringify(state), selectorBefore, 'CAP selectors do not mutate shared state');

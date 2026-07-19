@@ -758,6 +758,122 @@ real document storage, notification delivery, deployment, real-device,
 accessibility certification, and stakeholder sign-off remain **not run**.
 This remains **demo-only**; **production-readiness not claimed**.
 
+### Announced-inspection coordination checkpoint — 2026-07-17
+
+Evidence status: **demo-only** and **verified locally** for the focused flow.
+Step 2 now branches on a configured advance-notice policy. The seeded
+`AUD-2026-001` Routine / Announced flow lets the Lead Inspector send the
+proposed date, checklist filename, scope, location, and Lead contact to the
+matching Service Provider. Fly Namibia can confirm the proposed date or submit
+an alternative; an alternative remains pending until the CAA accepts it. The
+assignment stepper keeps execution pending until the routine date is
+confirmed. The seeded `AUD-2026-005` Ad Hoc / Unannounced flow shows `No
+Advance Notice` internally and creates no Service Provider notification,
+portal request, or shared checklist package.
+
+The Service Provider navigation now includes `Inspection Coordination` while
+keeping `Corrective Actions (CAP)` as the home route. Coordination selectors
+enforce organization scope and exclude notice-withheld records. All actions
+use browser-local state, in-app notifications, and demo audit-log entries;
+they do not send real email or calendar invitations.
+
+Fresh focused automated evidence (**verified locally**):
+
+- All 11 `js/*.js` files passed `node --check`.
+- `tests/inspection-coordination-smoke.test.js`,
+  `tests/lead-inspector-nav-smoke.test.js`,
+  `tests/service-provider-portal-smoke.test.js`,
+  `tests/demo-boundary-smoke.test.js`, `tests/inspection-team-smoke.test.js`,
+  and `tests/planning-release-smoke.test.js` passed.
+- The full suite passed 57/60 tests. Three existing worktree failures remain:
+  two state-version expectations still require `9` while the current demo
+  state is `10`, and the Executive planning-row test expects one action trigger
+  while the current UI renders three. These failures are outside this
+  coordination change and are not presented as passing evidence.
+
+Fresh isolated Playwright QA is **verified locally** at `1440x900` and
+`390x844`. Routine package sending, Service Provider alternative-date
+submission, CAA acceptance, confirmed mobile state, and the unannounced branch
+were exercised. Console warning/error count was zero, mobile document overflow
+was false, the confirmed date persisted as `2026-06-17`, and the unannounced
+screen exposed no notify control. Screenshots are temporary local evidence at
+`/private/tmp/aviasurveil360-coordination-qa`.
+
+Real notification delivery, calendar integration, production authorization,
+external stakeholder sign-off, and regulatory validation remain **not run**.
+This remains **demo-only**; **production-readiness not claimed**.
+
+### Inspection lifecycle alignment checkpoint — 2026-07-18
+
+Evidence status: **demo-only** and **verified locally**. The accepted inspection
+lifecycle is now aligned across the browser-local state machine, role
+workspaces, automated contracts, and bilingual product documentation.
+
+Preliminary Reports follow one exact approval chain regardless of CAP
+requirement: Lead Inspector -> Department Manager -> General Manager ->
+Executive Director -> Service Provider issue. Department Manager and General
+Manager can only forward or return the exact selected artifact; only Executive
+Director approval releases and locks the browser-local mock record for the
+matching organization. The CAP-required flag changes the Service Provider's
+next action after release, not the approval chain. Existing released historical
+records remain readable.
+
+CAP verification now exposes `Close`, `Partially Close`, and `Not Close` to
+Inspector and Lead Inspector review routes. Both auditee-visible and internal
+comments are required and stored separately. `Partially Close` and `Not Close`
+reuse `EVIDENCE_MORE_INFO`, keep the Finding open, and preserve every Evidence
+version; only `Close` sets the Finding to `CLOSED`. Authorized closure remains a
+separate reasoned path and does not create a CAP verification record.
+
+Fresh automated evidence (**verified locally**):
+
+- `node --check` passed for `js/data.js`, `js/reports.js`,
+  `js/manager-workspaces.js`, `js/views.js`, and `js/app.js`.
+- The focused 13-file lifecycle command passed 18/18 tests with zero failures,
+  cancellations, skips, or todos.
+- `node --test tests/*.test.js` passed 66/66 tests with zero failures,
+  cancellations, skips, or todos.
+- `node tests/harness-docs-smoke.test.js` passed; lifecycle terminology and
+  qualified demo-boundary scans completed.
+- `git diff --check` is part of the final integrity gate recorded by the active
+  plan.
+
+Fresh isolated in-app Browser QA is **verified locally** at `1440x900`,
+`1024x768`, and `390x844`. The replay covered exact `PR-2026-018` Department
+Manager -> General Manager -> Executive Director handoff, zero Service Provider
+visibility before Executive Director release, organization-scoped visibility
+after release, and the CAP-aware `Respond to CAP and Evidence requests` action.
+Separate reset states recorded `Partially Close`, `Not Close`, and `Close
+Finding`; the first two displayed `Finding remains open`, while only the final
+outcome displayed `Finding closed`. Executive planning approval retained `GM
+Release to Department` as the next action. The Service Provider coordination
+surface retained George's Routine advance-notice and Ad Hoc / Unannounced
+withholding policy, while focused automation preserved the full coordination
+contract. The Executive Director Final Report surface exposed recommendation-
+only enforcement referral copy and no automatic sanction control.
+
+Document width matched all three viewports; the mobile decision controls were
+fully visible with practical touch areas; browser console warnings/errors were
+zero. Screenshots are temporary local evidence under
+`/private/tmp/aviasurveil360-lifecycle-qa-20260718/`, including:
+
+- `1440-department-manager-forwarded.png`
+- `1440-executive-preliminary-issued.png`
+- `1024-service-provider-preliminary-released.png`
+- `390-cap-verification-decisions-viewport.png`
+
+The isolated browser and static server were closed after QA. Process cleanup
+found no lifecycle-QA server, Playwright, Puppeteer, webdriver, headless Chrome,
+or remote-debugging Chrome residue.
+
+Approvals and timestamps remain browser-local mock records. Traceability is
+demo audit history, not a production audit trail. Attachments remain mock
+filenames and local browser state, not secure document storage. Production
+identity, authorization, signing, storage, notification delivery, audit-log
+immutability, enforcement execution, deployment, real-device evidence,
+regulatory validation, and stakeholder sign-off are **not run**. This remains
+**demo-only**; **production-readiness not claimed**.
+
 ---
 
 ## Mocked items and limitations

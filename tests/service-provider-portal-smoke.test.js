@@ -45,7 +45,7 @@ const css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
 
 assert.deepEqual(
   JSON.parse(JSON.stringify(context.NAV.auditee.filter((item) => item.label).map((item) => item.label))),
-  ['Corrective Actions (CAP)', 'Preliminary Reports', 'Final Reports', 'Messages', 'Documents', 'Settings']
+  ['Inspection Coordination', 'Corrective Actions (CAP)', 'Preliminary Reports', 'Final Reports', 'Messages', 'Documents', 'Settings']
 );
 assert.equal(context.homeView('auditee'), 'service-provider-cap');
 assert.equal(typeof context.serviceProviderVisibleFindings, 'function');
@@ -97,6 +97,14 @@ capRows.forEach((row) => {
 
 const preliminary = context.reportArtifactById('PR-2026-018', state);
 preliminary.organizationId = 'ORG-XYZ';
+preliminary.status = 'submitted_to_executive';
+preliminary.ownerRole = 'executiveDirector';
+preliminary.sharedAt = '';
+assert.equal(
+  context.serviceProviderVisibleReports(state, 'ORG-XYZ', 'Preliminary Report').some((report) => report.id === preliminary.id),
+  false,
+  'a Preliminary Report remains hidden before Executive Director release'
+);
 preliminary.status = 'released_to_service_provider';
 preliminary.sharedAt = '2026-07-10 15:00';
 preliminary.sharedBy = 'Mehmet Kaya';
@@ -114,11 +122,44 @@ assert.ok(preliminaryReports.some((report) => report.id === 'PR-2026-018'));
 assert.ok(finalReports.some((report) => report.id === 'FR-2026-018'));
 assert.ok(preliminaryReports.every((report) => report.organizationId === 'ORG-XYZ'));
 assert.ok(finalReports.every((report) => report.organizationId === 'ORG-XYZ'));
+const linkedOpenFindings = state.findings.filter((finding) => finding.auditId === preliminary.auditId && finding.status !== 'CLOSED');
+assert.ok(linkedOpenFindings.length > 0);
+preliminary.capRequired = false;
+assert.equal(context.serviceProviderRequiredAction(preliminary, linkedOpenFindings), 'View Report');
+preliminary.capRequired = true;
+assert.equal(context.serviceProviderRequiredAction(preliminary, linkedOpenFindings), 'Respond to CAP and Evidence requests');
+
+const otherOrganizationPreliminary = JSON.parse(JSON.stringify(preliminary));
+otherOrganizationPreliminary.id = 'PR-OTHER-ORG';
+otherOrganizationPreliminary.approvalPackageId = 'PR-OTHER-ORG';
+otherOrganizationPreliminary.organizationId = 'ORG-SKY';
+otherOrganizationPreliminary.organization = 'SkyCargo Air';
+state.auditReports.push(otherOrganizationPreliminary);
+const otherOrganizationProjection = JSON.parse(JSON.stringify(state.managerReports.find((report) => report.id === 'PR-2026-018')));
+otherOrganizationProjection.id = 'PR-OTHER-ORG';
+otherOrganizationProjection.approvalPackageId = 'PR-OTHER-ORG';
+otherOrganizationProjection.organizationId = 'ORG-SKY';
+otherOrganizationProjection.organization = 'SkyCargo Air';
+otherOrganizationProjection.status = 'released_to_service_provider';
+otherOrganizationProjection.sharedAt = '2026-07-10 15:30';
+state.managerReports.push(otherOrganizationProjection);
+assert.equal(context.serviceProviderVisibleReports(state, 'ORG-XYZ', 'Preliminary Report').some((report) => report.id === 'PR-OTHER-ORG'), false);
 
 context.state = state;
 context.state.role = 'auditee';
 context.state.view = 'service-provider-cap';
 context.state.params = {};
+const visibleVerificationFinding = state.findings.find((finding) => finding.id === 'CAB-2026-011');
+state.serviceProviderUi.cap.selectedFindingId = visibleVerificationFinding.id;
+visibleVerificationFinding.capVerification = {
+  result: 'partially_close', label: 'Partially Close', findingClosed: false,
+  actorRole: 'leadInspector', actorName: 'Lead Inspector Demo',
+  verifiedAt: '2026-07-18 10:00', evidenceId: 'EV-DEMO', evidenceVersion: 2
+};
+if (!Array.isArray(visibleVerificationFinding.internalNotes)) visibleVerificationFinding.internalNotes = [];
+visibleVerificationFinding.internalNotes.push({
+  author: 'Lead Inspector Demo', date: '2026-07-18', text: 'PRIVATE VERIFICATION RATIONALE'
+});
 let html = context.renderContent();
 assert.match(html, /Corrective Actions \(CAP\)/);
 assert.match(html, /Finding ID/);
@@ -130,7 +171,8 @@ assert.match(html, /Due Date/);
 assert.match(html, /Progress/);
 assert.match(html, /CAB-2026-011/);
 assert.match(html, /CAP acceptance does not close this Finding/);
-assert.doesNotMatch(html, /PRIVATE-OTHER-ORG|Internal CAA Note|Other organization private finding/);
+assert.match(html, /Partially Close|Finding remains open|Evidence version/);
+assert.doesNotMatch(html, /PRIVATE VERIFICATION RATIONALE|PRIVATE-OTHER-ORG|Internal CAA Note|Other organization private finding/);
 
 context.state.view = 'messages';
 html = context.renderContent();
@@ -170,6 +212,7 @@ assert.match(html, /Report ID/);
 assert.match(html, /Date Shared/);
 assert.match(html, /PR-2026-018/);
 assert.match(html, /Response Due Date/);
+assert.match(html, /Respond to CAP and Evidence requests/);
 assert.match(html, /Send Message to Inspector/);
 assert.doesNotMatch(html, /PRIVATE-OTHER-ORG|Internal CAA Note|Other organization private finding/);
 context.handleAction('service-provider-report-view', dataEl({ 'data-id': 'PR-2026-018' }));

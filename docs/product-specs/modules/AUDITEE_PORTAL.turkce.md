@@ -2,15 +2,17 @@
 
 ## Amaç
 
-External Service Provider'a CAA Finding'lerine yanıt verebileceği ve CAA'nın
-açıkça kendi kuruluşuna release ettiği raporları görebileceği, kuruluş kapsamlı
-odaklı bir çalışma alanı sağlamak.
+External Service Provider'a announced-inspection coordination request'lerine ve
+CAA Finding'lerine yanıt verebileceği, ayrıca CAA'nın açıkça kendi kuruluşuna
+release ettiği raporları görebileceği kuruluş kapsamlı odaklı bir çalışma alanı
+sağlamak.
 
 ## Operasyonel navigation
 
 Service Provider ana sayfası `Corrective Actions (CAP)` ekranıdır. Operasyonel
 navigation şunlardan oluşur:
 
+- Inspection Coordination
 - Corrective Actions (CAP)
 - Preliminary Reports
 - Final Reports
@@ -20,6 +22,20 @@ navigation şunlardan oluşur:
 
 Duplicate `Received Reports`, `My CAPs` ve `CAP Management` girişleri
 gösterilmez. Service Provider'a internal CAA dashboard verilmez.
+
+## Inspection Coordination
+
+Yalnız configured policy'si advance notice gerektiren Routine / Announced
+inspection kayıtları bu workspace'te görünür. Lead Inspector belirlendikten
+sonra CAA proposed date, checklist filename, inspection scope, location ve
+diğer auditee-safe relevant information'ı paylaşır. Service Provider proposed
+date'i confirm edebilir veya alternative önerebilir. Alternative, CAA kabul
+edene kadar pending kalır.
+
+Ad Hoc / Unannounced inspection advance olarak hiçbir zaman görünmez; Service
+Provider notification veya shared checklist package üretmez. Bu frontend-only
+demoda gönderim ve yanıt yalnız browser-local state ve in-app notification
+kaydeder; gerçek email veya calendar invite göndermez.
 
 ## Corrective Actions (CAP)
 
@@ -31,13 +47,20 @@ gösterir.
 
 `Respond`, Finding'in mevcut lifecycle adımına uygun CAP veya evidence response
 akışını açar. CAP kabulü Finding closure değildir. Finding yalnız gerekli
-evidence kabul edildikten, verification tamamlandıktan veya yetkili bir closure
-yolu açıkça kaydedildikten sonra kapanır. Evidence version history korunur.
+Evidence için Inspector veya Lead Inspector `Close` kaydettikten ya da ayrı
+authorized closure yolu kaydedildikten sonra kapanır. `Partially Close` ve `Not
+Close` Finding'i açık tutar ve kalan aksiyon veya Evidence gerektirir. Dossier
+latest result, actor, date, Evidence version ve next action'ı gösterir; ilgili
+`Internal CAA Note` hiçbir zaman gösterilmez. Evidence version history korunur.
 
 ## Preliminary Reports
 
-Yalnız mevcut kuruluşla açıkça paylaşılan Preliminary Report kayıtları
-görünür. Queue; Report ID, Audit / Inspection, Date Shared, Findings,
+Yalnız Executive Director tarafından approve ve mevcut kuruluşa release edilen
+Preliminary Report kayıtları görünür. Lead Inspector, Department Manager ve
+General Manager aşamaları Service Provider'a görünmez. CAP-required ve no-CAP
+raporlar aynı approval zincirini izler. Release sonrasında `capRequired` yalnız
+next action'ı değiştirir: CAP/Evidence taleplerine yanıt verme veya raporu
+görüntüleme. Queue; Report ID, Audit / Inspection, Date Shared, Findings,
 configured response Due Date ve Action alanlarını gösterir. Dossier yalnız
 auditee-safe summary, paylaşım metadata'sı, izin verilen attachments, report
 preview ve in-UI message aksiyonu içerir.
@@ -56,14 +79,18 @@ imzalı yasal belge değildir.
 ## Privacy ve permission kuralları
 
 - Service Provider yalnız kendi kuruluşunun audit'lerini, Finding'lerini, CAP
-  ve evidence taleplerini, CAA-visible comment'lerini, release edilmiş
-  Preliminary Report'larını, issue edilmiş Final Report'larını ve closure
-  status'unu görür.
+  ve evidence taleplerini, announced-inspection coordination request'lerini,
+  CAA-visible comment'lerini, release edilmiş Preliminary Report'larını, issue
+  edilmiş Final Report'larını ve closure status'unu görür.
+- Advance-notice-withheld inspection kayıtları ve paketleri Service Provider
+  portalında hiçbir zaman render edilmez.
 - Kapsam dışı Finding veya Report ID ile direct navigation not-found/forbidden
   durumuna gider.
 - Internal CAA Note, enforcement deliberation, internal risk score, inspector
   workload, başka kuruluş ve unreleased draft hiçbir zaman render edilmez.
 - `Comment to Auditee`, `Internal CAA Note` alanından ayrı kalır.
+- CAP verification result metadata gösterilebilir; ilgili `Internal CAA Note`
+  hiçbir zaman render edilmez.
 - Due Date configured record'dan gelir; severity yasal deadline üretmez.
 - Mock upload yalnız filename tutar. Dosya byte'ları okunmaz veya saklanmaz.
 - Rol seçimi demo-only'dir; gerçek authentication veya authorization
@@ -72,6 +99,10 @@ imzalı yasal belge değildir.
 ## Ana aksiyonlar
 
 - Finding ve CAP durumunu görüntüleme
+- Proposed Routine / Announced inspection date'i confirm etme
+- CAA confirmation için alternative inspection date önerme
+- Announced inspection için paylaşılan checklist filename ve relevant
+  information'ı görüntüleme
 - CAP submit veya update etme
 - Mock evidence filename sağlama
 - More information talebine yanıt verme
@@ -93,10 +124,15 @@ internal admin permission arkasında kalır.
   aksiyonlarında uygulanır.
 - Auditee-visible ve internal bilgi ayrı kalır.
 - CAP kabulü Evidence veya Finding closure gereksinimini bypass edemez.
+- Preliminary Report, Executive Director release öncesinde görünmez.
+- `Partially Close` ve `Not Close`, Finding'in açık kaldığını görünür biçimde gösterir.
 - Her visible control ekranda state, navigation, modal, preview, message veya
   browser-local file sonucu üretir.
 - Uygulama frontend-only, browser-local ve demo-only kalır; production
   auditability veya authorization iddia edilmez.
+- Approval ve timestamp kayıtları browser-local mock record'dur; traceability
+  demo audit history'dir, production audit trail değildir; attachment'lar local
+  browser state içindeki mock filename'lardır, secure document storage değildir.
 
 ## Stakeholder Readiness Privacy Kanıtı — 2026-07-10
 

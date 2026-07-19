@@ -893,6 +893,60 @@ function viewExecutivePlanningWorkspace() {
     '<section class="executive-plan-detail"><header><div><span>Selected plan</span><h2>' + esc(selected.title) + '</h2><p>' + esc(selected.id + ' · ' + selected.organization) + '</p></div>' + demoBadge(approvalSummary(selected).statusLabel, approvalSummary(selected).statusTone) + '</header>' + executivePlanningTabs(activeTab) + executivePlanningTabBody(selected, activeTab) + '</section></main><aside><section class="executive-plan-summary"><span>Selected plan</span><h2>' + esc(selected.id) + '</h2><dl><div><dt>Department</dt><dd>' + esc(selected.department) + '</dd></div><div><dt>Target</dt><dd>' + esc(selected.targetMonth) + '</dd></div><div><dt>Risk</dt><dd>' + esc(selected.riskCategory) + '</dd></div><div><dt>Requested Budget</dt><dd>' + financeMoney(selected.budget.requested, selected.budget.currency) + '</dd></div></dl><h3>Approval flow</h3>' + approvalProgressHtml(selected) + '</section>' + executivePlanningDecisionPanel(selected, ui) + '</aside></div></div>';
 }
 
+function executivePreliminarySummaryCards(projection) {
+  return '<section class="executive-report-summary" aria-label="Preliminary Report status summary">' + [
+    ['Total', projection.rows.length],
+    ['Pending', projection.pending],
+    ['Issued', projection.issued],
+    ['Returned / Rejected', projection.returnedOrRejected]
+  ].map(function (card) {
+    return '<article><span>' + esc(card[0]) + '</span><b>' + esc(String(card[1])) + '</b></article>';
+  }).join('') + '</section>';
+}
+
+function executivePreliminaryReportRows(rows, selectedId) {
+  if (!rows.length) return '<tr><td colspan="8"><div class="executive-empty"><b>No Preliminary Reports match these filters.</b><span>Only General Manager-forwarded or already decided Preliminary Reports appear here.</span></div></td></tr>';
+  return rows.map(function (report) {
+    var dueDate = report.responseDueDate || report.dueDate || '';
+    return '<tr class="' + (selectedId === report.id ? 'is-selected' : '') + '"><td><button class="service-link" data-act="executive-preliminary-select" data-id="' + esc(report.id) + '">' + esc(report.id) + '</button><small>Version ' + esc(report.version) + '</small></td><td>' + esc(report.auditId) + '</td><td>' + esc(report.organization) + '</td><td>' + esc(managerReportOwnerLabel(report.ownerRole, report.organization)) + '</td><td>' + esc(dueDate && dueDate !== 'Not configured' ? fmtDate(dueDate) : 'Not configured') + '</td><td>' + managerReportStatusBadge(report.status) + '</td><td>' + esc(report.capRequired === false ? 'No' : 'Yes') + '</td><td><button class="btn btn--sm' + (selectedId === report.id ? ' btn--primary' : '') + '" data-act="executive-preliminary-select" data-id="' + esc(report.id) + '">' + esc(selectedId === report.id ? 'Selected' : 'Review') + '</button></td></tr>';
+  }).join('');
+}
+
+function executivePreliminaryDecisionPanel(report, ui) {
+  var eligible = report.status === 'submitted_to_executive' && report.ownerRole === 'executiveDirector' && report.locked !== true;
+  if (!eligible) {
+    return '<section class="executive-report-decision is-complete"><span>Decision status</span><h2>' + esc(managerReportStatusLabel(report.status)) + '</h2>' + (report.mockApprovalSignature ? '<div class="executive-demo-signature"><b>' + esc(report.mockApprovalSignature.signer) + '</b><span>' + esc(report.mockApprovalSignature.label) + '</span><small>' + esc(report.mockApprovalSignature.date) + '</small></div>' : '') + '<p>Decision controls are disabled after the recorded browser-local outcome. History remains available.</p></section>';
+  }
+  var decision = ui.preliminaryReportDecision;
+  var labels = { approve: 'Approve & Issue to Service Provider', return: 'Return to General Manager', reject: 'Reject Report' };
+  return '<section class="executive-report-decision executive-preliminary-decision"><span>Executive Director decision</span><h2>Preliminary Report authority</h2><div class="executive-report-decision-choices"><button class="btn btn--primary" data-act="executive-preliminary-decision-choice" data-decision="approve" aria-pressed="' + (decision === 'approve' ? 'true' : 'false') + '">Approve &amp; Issue to Service Provider</button><button class="btn" data-act="executive-preliminary-decision-choice" data-decision="return" aria-pressed="' + (decision === 'return' ? 'true' : 'false') + '">Return to General Manager</button><button class="btn" data-act="executive-preliminary-decision-choice" data-decision="reject" aria-pressed="' + (decision === 'reject' ? 'true' : 'false') + '">Reject Report</button></div>' +
+    '<div class="executive-signature-notice"><b>Browser-local mock approval</b><span>Approval records a demo timestamp and mock mark; it is not a real e-signature.</span></div>' +
+    (decision ? '<div class="executive-report-decision-form"><label>' + esc(decision === 'approve' ? 'Issue note (optional)' : 'Decision rationale *') + '<textarea id="executive-preliminary-comment" data-field="executive-preliminary-comment" placeholder="' + esc(decision === 'approve' ? 'Optional browser-local issue note.' : 'Required: record the reason for this decision.') + '">' + esc(ui.preliminaryReportComment || '') + '</textarea></label><button class="btn btn--primary btn--block" data-act="executive-preliminary-confirm" data-id="' + esc(report.id) + '">Confirm ' + esc(labels[decision]) + '</button></div>' : '') + '</section>';
+}
+
+function viewExecutivePreliminaryReportsWorkspace() {
+  var ui = state.executiveDirectorUi;
+  var unfiltered = executivePreliminaryReportProjection(state, { status: 'all' });
+  var projection = executivePreliminaryReportProjection(state, {
+    query: ui.preliminaryReportQuery,
+    status: ui.preliminaryReportStatus
+  });
+  var selected = unfiltered.rows.filter(function (report) { return report.id === ui.selectedPreliminaryReportId; })[0] || projection.rows[0] || unfiltered.rows[0] || null;
+  if (!selected) {
+    return '<div class="executive-workspace-page">' + pageHead('Preliminary Reports', 'Review Preliminary Reports forwarded by the General Manager.') + guardrailStrip([{ label: 'Only GM-forwarded reports enter this workspace', tone: 'info' }, { label: 'Browser-local mock approval — no real e-signature', tone: 'warn' }]) + executivePreliminarySummaryCards(unfiltered) + '<div class="executive-empty"><b>No eligible Preliminary Reports.</b><span>Department Manager and General Manager review must complete before Executive Director action.</span></div></div>';
+  }
+  ui.selectedPreliminaryReportId = selected.id;
+  var linkedFindings = state.findings.filter(function (finding) { return finding.auditId === selected.auditId; });
+  var dueDate = selected.responseDueDate || selected.dueDate || '';
+  return '<div class="executive-workspace-page executive-preliminary-report-page">' +
+    pageHead('Preliminary Reports', 'Review, return, reject, or issue General Manager-forwarded Preliminary Reports.', '<button class="btn btn--primary" data-act="executive-preliminary-preview" data-id="' + esc(selected.id) + '">Preview Preliminary Report</button>') +
+    guardrailStrip([{ label: 'Executive Director issue authority', tone: 'info' }, { label: 'Mock approval mark — no real e-signature', tone: 'warn' }, { label: 'No enforcement action on Preliminary Reports' }]) +
+    executivePreliminarySummaryCards(unfiltered) +
+    '<section class="executive-report-filter"><label>Search<input type="search" data-field="executive-preliminary-query" value="' + esc(ui.preliminaryReportQuery || '') + '" placeholder="Report ID, audit, organization"></label><label>Status<select data-field="executive-preliminary-status"><option value="all"' + (ui.preliminaryReportStatus === 'all' ? ' selected' : '') + '>All statuses</option><option value="pending"' + (ui.preliminaryReportStatus === 'pending' ? ' selected' : '') + '>Pending</option><option value="issued"' + (ui.preliminaryReportStatus === 'issued' ? ' selected' : '') + '>Issued</option><option value="returned"' + (ui.preliminaryReportStatus === 'returned' ? ' selected' : '') + '>Returned / Rejected</option></select></label></section>' +
+    '<section class="executive-panel executive-report-queue executive-preliminary-queue"><header><div><span>Preliminary Report register</span><h2>' + esc(projection.rows.length + ' visible report' + (projection.rows.length === 1 ? '' : 's')) + '</h2></div></header><div class="responsive-table-shell"><table><thead><tr><th>Report ID</th><th>Audit</th><th>Organization</th><th>Owner</th><th>Due Date</th><th>Status</th><th>CAP Required</th><th>Action</th></tr></thead><tbody>' + executivePreliminaryReportRows(projection.rows, selected.id) + '</tbody></table></div></section>' +
+    '<div class="executive-report-review-layout"><main><section class="executive-plan-detail"><header><div><span>Selected Preliminary Report</span><h2>' + esc(selected.id + ' · ' + selected.organization) + '</h2><p>' + esc(selected.auditId + ' · Version ' + selected.version) + '</p></div>' + managerReportStatusBadge(selected.status) + '</header><div class="executive-report-tab-body"><div class="executive-report-summary-copy"><h3>Executive Summary</h3><p>' + esc(selected.summary || 'Preliminary Report prepared for configured review.') + '</p></div><div class="executive-report-finding-kpis"><span><small>Report ID</small><b>' + esc(selected.id) + '</b></span><span><small>CAP Required</small><b>' + esc(selected.capRequired === false ? 'No' : 'Yes') + '</b></span><span><small>Service Provider action</small><b>' + esc(serviceProviderRequiredAction(selected, linkedFindings)) + '</b></span><span><small>Evidence boundary</small><b>Mock filenames only</b></span></div><div class="executive-report-boundary"><b>Issue boundary:</b> Service Provider visibility starts only after Executive Director approval. CAP requirement changes the recipient action, not the approval chain.</div></div></section></main><aside><section class="executive-plan-summary"><span>Selected report</span><h2>' + esc(selected.id) + '</h2><dl><div><dt>Audit</dt><dd>' + esc(selected.auditId) + '</dd></div><div><dt>Organization</dt><dd>' + esc(selected.organization) + '</dd></div><div><dt>Owner</dt><dd>' + esc(managerReportOwnerLabel(selected.ownerRole, selected.organization)) + '</dd></div><div><dt>Due Date</dt><dd>' + esc(dueDate && dueDate !== 'Not configured' ? fmtDate(dueDate) : 'Not configured') + '</dd></div><div><dt>Status</dt><dd>' + esc(managerReportStatusLabel(selected.status)) + '</dd></div><div><dt>CAP Required</dt><dd>' + esc(selected.capRequired === false ? 'No' : 'Yes') + '</dd></div></dl><button class="btn btn--block" data-act="executive-preliminary-preview" data-id="' + esc(selected.id) + '">Preview Preliminary Report</button></section>' + executivePreliminaryDecisionPanel(selected, ui) + '</aside></div></div>';
+}
+
 function executiveFinalReportSummaryCards(projection, active) {
   var cards = [
     ['all', 'Total', projection.total],
@@ -1289,7 +1343,7 @@ function viewRoleHome() {
       purpose: 'Final approval for released plans and final report packages.',
       queueTitle: 'Executive Approval Queue',
       queueSub: 'Final governance approvals',
-      chain: 'Planning: DM -> Finance -> GM -> ED. Report: Lead -> Department Manager -> GM review -> ED issue.',
+      chain: DEMO_LIFECYCLE_SUMMARIES.planning + ' ' + DEMO_LIFECYCLE_SUMMARIES.preliminary + ' ' + DEMO_LIFECYCLE_SUMMARIES.final,
       boundary: 'ED approval is an internal governance step in this demo. Enforcement remains a separate authorized process, not an automatic outcome.',
       kpis: [
         ['Plan Approvals', '1', 'Ready for final approval', 'warn', 'planning'],
@@ -1906,6 +1960,7 @@ function generalManagerUiState() {
 
 function generalManagerKpis(projection) {
   var items = [
+    ['Pending Preliminary Reports', projection.pendingPreliminaryReports, 'warn'],
     ['Pending Final Reports', projection.pendingFinalReports, 'warn'],
     ['High Risk Findings', projection.highRiskFindings, 'danger'],
     ['Reports Awaiting Your Approval', projection.reportsAwaitingApproval, 'info'],
@@ -1930,9 +1985,9 @@ function generalManagerHeatMap(projection, title) {
 
 function generalManagerApprovalTable(projection, compact) {
   var body = projection.approvalRows.length ? projection.approvalRows.map(function (row) {
-    return '<tr><td><b>' + esc(row.id) + '</b><small>' + esc(row.auditId) + '</small></td><td>' + esc(row.organization) + '</td><td>' + esc(row.department) + '</td><td>v' + esc(row.version) + '</td><td>' + esc(row.leadInspector) + '</td><td>' + esc(row.submittedAt) + '</td><td><div class="gm-report-actions"><button class="btn btn--sm" data-act="gm-report-open" data-id="' + esc(row.id) + '">Open Report</button><button class="btn btn--sm" data-act="gm-report-decision" data-id="' + esc(row.id) + '" data-decision="return">Return Report</button><button class="btn btn--primary btn--sm" data-act="gm-report-decision" data-id="' + esc(row.id) + '" data-decision="approve">Forward to Executive Director</button></div></td></tr>';
-  }).join('') : '<tr><td colspan="7"><div class="empty"><b>No Final Reports awaiting approval</b><span>Department Manager-approved Final Reports will appear here.</span></div></td></tr>';
-  return '<div class="gm-table gm-approval-table"><table><thead><tr><th>Report</th><th>Organization</th><th>Department</th><th>Version</th><th>Lead Inspector</th><th>Submitted</th><th>Decision</th></tr></thead><tbody>' + body + '</tbody></table></div>' + (compact ? '<button class="btn btn--sm" data-act="go" data-view="gm-report-approvals">Open Report Approvals</button>' : '');
+    return '<tr><td><b>' + esc(row.id) + '</b><small>' + esc(row.auditId) + '</small></td><td>' + esc(row.reportType) + '</td><td>' + esc(row.organization) + '</td><td>' + esc(row.department) + '</td><td>v' + esc(row.version) + '</td><td>' + esc(row.leadInspector) + '</td><td>' + esc(row.submittedAt) + '</td><td><div class="gm-report-actions"><button class="btn btn--sm" data-act="gm-report-open" data-id="' + esc(row.id) + '">Open Report</button><button class="btn btn--sm" data-act="gm-report-decision" data-id="' + esc(row.id) + '" data-decision="return">Return Report</button><button class="btn btn--primary btn--sm" data-act="gm-report-decision" data-id="' + esc(row.id) + '" data-decision="approve">Forward to Executive Director</button></div></td></tr>';
+  }).join('') : '<tr><td colspan="8"><div class="empty"><b>No Reports awaiting approval</b><span>Department Manager-approved Preliminary and Final Reports will appear here.</span></div></td></tr>';
+  return '<div class="gm-table gm-approval-table"><table><thead><tr><th>Report</th><th>Report Type</th><th>Organization</th><th>Department</th><th>Version</th><th>Lead Inspector</th><th>Submitted</th><th>Decision</th></tr></thead><tbody>' + body + '</tbody></table></div>' + (compact ? '<button class="btn btn--sm" data-act="go" data-view="gm-report-approvals">Open Report Approvals</button>' : '');
 }
 
 function generalManagerRecentRisk(projection) {
@@ -1944,16 +1999,16 @@ function generalManagerRecentRisk(projection) {
 
 function viewGeneralManagerDashboard() {
   var projection = generalManagerProjection(state);
-  return pageHead('General Manager Dashboard', 'Review intermediate Final Report decisions, department exposure, high-risk findings, and overdue CAPs.') + generalManagerKpis(projection) +
+  return pageHead('General Manager Dashboard', 'Review intermediate Preliminary and Final Report decisions, department exposure, high-risk findings, and overdue CAPs.') + generalManagerKpis(projection) +
     '<div class="gm-dashboard-grid"><section class="gm-panel"><header><span>Cross-department oversight</span><h2>Department Overview</h2></header>' + generalManagerDepartmentTable(projection, true) + '</section>' + generalManagerHeatMap(projection, 'Risk Heat Map') + '</div>' +
-    '<section class="gm-panel gm-dashboard-queue"><header><span>Intermediate review stage</span><h2>Final Report Review Queue</h2></header>' + generalManagerApprovalTable(projection, true) + '</section>' +
-    '<div class="guardrail-note"><b>Authority boundary:</b> General Manager review may return a Final Report or forward it to Executive Director. GM cannot issue, mock-sign, or lock it.</div>';
+    '<section class="gm-panel gm-dashboard-queue"><header><span>Intermediate review stage</span><h2>Report Review Queue</h2></header>' + generalManagerApprovalTable(projection, true) + '</section>' +
+    '<div class="guardrail-note"><b>Authority boundary:</b> General Manager review may return or forward a Preliminary or Final Report. GM cannot issue, mock-sign, share, or lock either report.</div>';
 }
 
 function generalManagerReportDetail(row) {
-  if (!row) return '<section class="gm-report-detail"><div class="empty"><b>Select a Final Report</b><span>Open a queue row to inspect the report and its authorization history.</span></div></section>';
+  if (!row) return '<section class="gm-report-detail"><div class="empty"><b>Select a Report</b><span>Open a queue row to inspect the report and its authorization history.</span></div></section>';
   var history = row.report.history.slice().reverse().map(function (entry) { return '<li><time>' + esc(entry.at) + '</time><div><b>' + esc(entry.action) + '</b><small>' + esc(entry.actor) + (entry.comment ? ' · ' + esc(entry.comment) : '') + '</small></div></li>'; }).join('');
-  return '<section class="gm-report-detail"><header><div><span>Selected Final Report</span><h2>' + esc(row.id) + ' · ' + esc(row.organization) + '</h2><p>' + esc(row.auditId + ' · ' + row.department) + '</p></div>' + demoBadge('Awaiting GM Review', 'warn') + '</header><dl><div><dt>Version</dt><dd>' + esc(row.version) + '</dd></div><div><dt>Lead Inspector</dt><dd>' + esc(row.leadInspector) + '</dd></div><div><dt>Submitted</dt><dd>' + esc(row.submittedAt) + '</dd></div><div><dt>Locked</dt><dd>No</dd></div></dl><section><h3>Executive Summary</h3><p>' + esc(row.summary) + '</p></section><div class="gm-detail-actions"><button class="btn" data-act="gm-report-decision" data-id="' + esc(row.id) + '" data-decision="return">Return Report</button><button class="btn btn--primary" data-act="gm-report-decision" data-id="' + esc(row.id) + '" data-decision="approve">Forward to Executive Director</button></div><section><h3>Review History</h3><ol>' + history + '</ol></section><div class="gm-final-rule"><b>Intermediate review rule:</b> GM may return or forward this Final Report. Executive Director alone may issue, mock-sign, and lock it.</div></section>';
+  return '<section class="gm-report-detail"><header><div><span>Selected ' + esc(row.reportType) + '</span><h2>' + esc(row.id) + ' · ' + esc(row.organization) + '</h2><p>' + esc(row.auditId + ' · ' + row.department) + '</p></div>' + demoBadge('Awaiting GM Review', 'warn') + '</header><dl><div><dt>Report Type</dt><dd>' + esc(row.reportType) + '</dd></div><div><dt>Version</dt><dd>' + esc(row.version) + '</dd></div><div><dt>Lead Inspector</dt><dd>' + esc(row.leadInspector) + '</dd></div><div><dt>Submitted</dt><dd>' + esc(row.submittedAt) + '</dd></div><div><dt>Locked</dt><dd>No</dd></div></dl><section><h3>Executive Summary</h3><p>' + esc(row.summary) + '</p></section><div class="gm-detail-actions"><button class="btn" data-act="gm-report-decision" data-id="' + esc(row.id) + '" data-decision="return">Return Report</button><button class="btn btn--primary" data-act="gm-report-decision" data-id="' + esc(row.id) + '" data-decision="approve">Forward to Executive Director</button></div><section><h3>Review History</h3><ol>' + history + '</ol></section><div class="gm-final-rule"><b>Intermediate review rule:</b> GM may return or forward this ' + esc(row.reportType) + '. Executive Director alone may issue, mock-sign, share, and lock it.</div></section>';
 }
 
 function viewGeneralManagerReportApprovals() {
@@ -1961,7 +2016,7 @@ function viewGeneralManagerReportApprovals() {
   var projection = generalManagerProjection(state);
   var selected = projection.approvalRows.filter(function (row) { return row.id === ui.selectedReportId; })[0] || projection.approvalRows[0] || null;
   ui.selectedReportId = selected ? selected.id : '';
-  return pageHead('Report Approvals', 'Review Department Manager-approved Final Reports before forwarding them to Executive Director.') + generalManagerKpis(projection) + '<div class="gm-approval-workspace"><section class="gm-panel"><header><span>Intermediate review queue</span><h2>Final Reports Awaiting GM Review</h2></header>' + generalManagerApprovalTable(projection, false) + '</section>' + generalManagerReportDetail(selected) + '</div>' +
+  return pageHead('Report Approvals', 'Review Department Manager-approved Preliminary and Final Reports before forwarding them to Executive Director.') + generalManagerKpis(projection) + '<div class="gm-approval-workspace"><section class="gm-panel"><header><span>Intermediate review queue</span><h2>Reports Awaiting GM Review</h2></header>' + generalManagerApprovalTable(projection, false) + '</section>' + generalManagerReportDetail(selected) + '</div>' +
     '<div class="guardrail-note"><b>Restricted workspace:</b> General Manager users do not receive Department Manager team-editing or checklist-editing controls.</div>';
 }
 
@@ -1978,8 +2033,9 @@ function viewGeneralManagerRiskDashboard() {
 
 function modalGeneralManagerDecision(report, decision) {
   var approve = decision === 'approve';
-  var body = '<div class="modal__intro"><b>' + esc(report.id) + '</b> · ' + esc(report.organization) + '<br>' + (approve ? 'This intermediate review forwards the Final Report to Executive Director; it does not issue, mock-sign, or lock it.' : 'A comment is required before returning the Final Report to the Department Manager.') + '</div><div class="form-row"><label>General Manager Comment' + (approve ? '' : ' <span class="req">*</span>') + '</label><textarea id="gm-report-comment" placeholder="Record the review rationale or required revision."></textarea><div id="gm-report-validation" class="gm-decision-validation" role="alert"></div></div>';
-  return modalShell(approve ? 'Forward Final Report' : 'Return Final Report', body, '<button class="btn" data-act="close-modal">Cancel</button><button class="btn ' + (approve ? 'btn--primary' : 'btn--danger') + '" data-act="gm-report-confirm-decision" data-id="' + esc(report.id) + '" data-decision="' + esc(decision) + '">' + (approve ? 'Forward to Executive Director' : 'Return Report') + '</button>');
+  var reportType = normalizeReportType(report.reportType);
+  var body = '<div class="modal__intro"><b>' + esc(report.id) + '</b> · ' + esc(reportType) + ' · ' + esc(report.organization) + '<br>' + (approve ? 'This intermediate review forwards the ' + esc(reportType) + ' to Executive Director; it does not issue, mock-sign, share, or lock it.' : 'A comment is required before returning the ' + esc(reportType) + ' to the Department Manager.') + '</div><div class="form-row"><label>General Manager Comment' + (approve ? '' : ' <span class="req">*</span>') + '</label><textarea id="gm-report-comment" placeholder="Record the review rationale or required revision."></textarea><div id="gm-report-validation" class="gm-decision-validation" role="alert"></div></div>';
+  return modalShell(approve ? 'Forward ' + reportType : 'Return ' + reportType, body, '<button class="btn" data-act="close-modal">Cancel</button><button class="btn ' + (approve ? 'btn--primary' : 'btn--danger') + '" data-act="gm-report-confirm-decision" data-id="' + esc(report.id) + '" data-decision="' + esc(decision) + '">' + (approve ? 'Forward to Executive Director' : 'Return Report') + '</button>');
 }
 
 function managerChecklistUiState() {
@@ -2203,10 +2259,27 @@ function managerCapDrawerTabs(active) {
   }).join('') + '</div>';
 }
 
+function capVerificationResultHtml(record, findingStatus) {
+  if (!record) return '';
+  var remainsOpen = record.findingClosed !== true && findingStatus !== 'CLOSED';
+  var tone = record.findingClosed === true ? 'ok' : (record.result === 'not_close' ? 'danger' : 'warn');
+  var nextAction = remainsOpen
+    ? 'Service Provider must provide the remaining corrective action and Evidence.'
+    : 'No further CAP response is required for this Finding.';
+  return '<section class="cap-verification-result is-' + tone + '">' +
+    '<div><span>Latest CAP verification</span><b>' + esc(record.label || record.result || 'Recorded') + '</b></div>' +
+    '<dl><dt>Recorded by</dt><dd>' + esc(record.actorName || roleName(record.actorRole)) + '</dd>' +
+      '<dt>Recorded at</dt><dd>' + esc(record.verifiedAt || 'Not recorded') + '</dd>' +
+      '<dt>Evidence version</dt><dd>v' + esc(String(record.evidenceVersion || '—')) + '</dd>' +
+      '<dt>Finding result</dt><dd>' + esc(remainsOpen ? 'Finding remains open' : 'Finding closed') + '</dd>' +
+      '<dt>Next action</dt><dd>' + esc(nextAction) + '</dd></dl>' +
+  '</section>';
+}
+
 function managerCapOverview(row) {
   return '<div class="manager-cap-drawer-panel"><dl class="manager-cap-definition">' +
     '<div><dt>Status</dt><dd>' + managerCapStatusBadge(row) + '</dd></div><div><dt>Action Owner</dt><dd>' + esc(row.actionOwner) + '</dd></div><div><dt>Assignee</dt><dd>' + esc(row.assignee) + '</dd></div><div><dt>Due Date</dt><dd>' + esc(fmtDate(row.dueDate)) + '</dd></div><div><dt>Priority</dt><dd>' + esc(row.priority) + '</dd></div><div><dt>Target Closure Date</dt><dd>' + esc(fmtDate(row.targetClosureDate)) + '</dd></div>' +
-  '</dl><section><h3>Finding Description</h3><p>' + esc(row.findingDescription) + '</p></section><section><h3>Impact / Risk</h3><p>' + esc(row.impactRisk) + '</p></section><section><h3>Root Cause</h3><p>' + esc(row.rootCause || 'Not yet submitted.') + '</p></section><section><h3>Configured Reference</h3><p>' + esc(row.reference) + '</p></section><section><h3>Linked Finding</h3><p>' + esc(row.findingId + ' · ' + row.findingTitle) + '</p></section><div class="manager-cap-drawer-progress"><span><i style="width:' + esc(String(row.progress)) + '%"></i></span><b>' + esc(String(row.progress)) + '% complete</b></div><button class="btn btn--primary btn--sm" data-act="manager-cap-tab" data-tab="updates">Add Update</button><div class="manager-cap-closure-rule"><b>Closure boundary:</b> CAP acceptance is not finding closure. Required evidence and authorized verification remain separate.</div></div>';
+  '</dl>' + capVerificationResultHtml(row.capVerification, row.findingStatus) + '<section><h3>Finding Description</h3><p>' + esc(row.findingDescription) + '</p></section><section><h3>Impact / Risk</h3><p>' + esc(row.impactRisk) + '</p></section><section><h3>Root Cause</h3><p>' + esc(row.rootCause || 'Not yet submitted.') + '</p></section><section><h3>Configured Reference</h3><p>' + esc(row.reference) + '</p></section><section><h3>Linked Finding</h3><p>' + esc(row.findingId + ' · ' + row.findingTitle) + '</p></section><div class="manager-cap-drawer-progress"><span><i style="width:' + esc(String(row.progress)) + '%"></i></span><b>' + esc(String(row.progress)) + '% complete</b></div><button class="btn btn--primary btn--sm" data-act="manager-cap-tab" data-tab="updates">Add Update</button><div class="manager-cap-closure-rule"><b>Closure boundary:</b> CAP acceptance is not finding closure. Required evidence and authorized verification remain separate.</div></div>';
 }
 
 function managerCapActionPlan(row) {
@@ -4273,7 +4346,7 @@ function viewLeadInspectorCapReviewDetail(ui, data) {
     '</section>' +
     '<div class="lead-cap-review-layout">' +
       leadCapReviewList(data.id) +
-      '<main class="lead-cap-main">' + leadCapFindingInformation(data) + leadCapSubmittedPlan(data) + leadCapInspectorAssessment(data) + '</main>' +
+      '<main class="lead-cap-main">' + capVerificationResultHtml(data.capVerification, data.findingStatus) + leadCapFindingInformation(data) + leadCapSubmittedPlan(data) + leadCapInspectorAssessment(data) + '</main>' +
       '<aside class="lead-cap-side">' + leadCapQualityPanel() + leadCapDecisionPanel(ui, data) + '</aside>' +
     '</div>' +
   '</div>';
@@ -4609,7 +4682,7 @@ function viewInspectorSubmittedCapPackageDetail(ui, data) {
     inspectorCapPackageMeta(data) +
     inspectorCapPackageTabs(activeTab) +
     '<div class="inspector-package-layout">' +
-      '<main class="inspector-package-main">' + mainContent + '</main>' +
+      '<main class="inspector-package-main">' + capVerificationResultHtml(data.capVerification, data.findingStatus) + mainContent + '</main>' +
       inspectorCapPackageSnapshot(data) +
     '</div>' +
   '</div>';
@@ -4628,6 +4701,7 @@ function viewInspectorCapReviewDetail(ui, data) {
     '</div>' +
     '<div class="inspector-cap-review-layout">' +
       '<main class="inspector-cap-main">' +
+        capVerificationResultHtml(data.capVerification, data.findingStatus) +
         inspectorCapFindingSummary(data) +
         '<div class="cap-detail-tabs inspector-cap-tabs">' +
           capDetailTabButton('details', 'CAP Details', ui.detailTab) +
@@ -4709,6 +4783,9 @@ function viewLeadCapReviewDetail() {
   var ui = capTrackingUiState();
   var id = state.params.findingId || ui.selectedFindingId || 'F-2026-002';
   var data = capDetailData(id);
+  var runtimeFinding = findingById(id);
+  data.capVerification = runtimeFinding && runtimeFinding.capVerification ? runtimeFinding.capVerification : null;
+  data.findingStatus = runtimeFinding ? runtimeFinding.status : data.status;
   ui.selectedFindingId = data.id;
   if (state.role === 'leadInspector') return viewLeadInspectorCapReviewDetail(ui, data);
   if (state.role === 'inspector') return viewInspectorCapReviewDetail(ui, data);
@@ -4737,7 +4814,7 @@ function viewLeadCapReviewDetail() {
       capDetailTabButton('enforcement', 'Enforcement Process', ui.detailTab) +
     '</div>' +
     '<div class="cap-detail-layout">' +
-      '<main>' + body + '</main>' +
+      '<main>' + capVerificationResultHtml(data.capVerification, data.findingStatus) + body + '</main>' +
       '<aside class="cap-detail-side">' +
         capDetailPreviousReview(data) +
         capDetailStatusCard(data) +
@@ -6527,12 +6604,16 @@ function leadAssignmentOptions(options, selected) {
 }
 
 function leadAssignmentStatusLabel(ui) {
+  var coordination = inspectionCoordinationByAuditId(state, leadAssignmentAuditId());
+  if (ui.releasedAt && inspectionCoordinationRequiresAdvanceNotice(coordination) && coordination.status !== 'date_confirmed') return 'Service Provider Coordination Pending';
   if (ui.releasedAt) return 'Released to Inspectors';
   if (ui.assignedAt) return 'Draft Assignment Saved';
   return 'Not Started';
 }
 
 function leadAssignmentSummaryStatus(ui) {
+  var coordination = inspectionCoordinationByAuditId(state, leadAssignmentAuditId());
+  if (ui.releasedAt && inspectionCoordinationRequiresAdvanceNotice(coordination) && coordination.status !== 'date_confirmed') return 'Inspectors assigned; execution waits for date confirmation.';
   if (ui.releasedAt) return 'Inspectors notified; execution can begin.';
   if (ui.assignedAt) return 'Checklist assignment draft updated.';
   return 'Checklist not yet assigned to inspectors';
@@ -6540,11 +6621,15 @@ function leadAssignmentSummaryStatus(ui) {
 
 function leadAssignmentStepperHtml(ui) {
   var released = !!ui.releasedAt;
+  var coordination = inspectionCoordinationByAuditId(state, leadAssignmentAuditId());
+  var coordinationReady = !inspectionCoordinationRequiresAdvanceNotice(coordination) || coordination.status === 'date_confirmed';
+  var assignmentComplete = released && coordinationReady;
+  var assignmentState = assignmentComplete ? 'Completed' : (released ? 'Coordination Pending' : 'In Progress');
   var steps = [
     { label: 'Planning', state: 'Completed', tone: 'done', icon: '✓' },
     { label: 'Approval', state: 'Completed', tone: 'done', icon: '✓' },
-    { label: 'Assignment', state: released ? 'Completed' : 'In Progress', tone: released ? 'done' : 'active', icon: '☷' },
-    { label: 'Execution', state: released ? 'Ready' : 'Pending', tone: released ? 'active' : 'pending', icon: '▤' }
+    { label: 'Assignment', state: assignmentState, tone: assignmentComplete ? 'done' : 'active', icon: '☷' },
+    { label: 'Execution', state: assignmentComplete ? 'Ready' : 'Pending', tone: assignmentComplete ? 'active' : 'pending', icon: '▤' }
   ];
   return '<div class="lead-assignment-stepper">' + steps.map(function (step) {
     return '<div class="lead-assignment-step is-' + esc(step.tone) + '">' +
@@ -6553,6 +6638,57 @@ function leadAssignmentStepperHtml(ui) {
       '<small>' + esc(step.state) + '</small>' +
     '</div>';
   }).join('') + '</div>';
+}
+
+function inspectionCoordinationStatusMeta(record) {
+  var statuses = {
+    ready_to_notify: { label: 'Ready to Notify', tone: 'neutral', detail: 'Lead Inspector is assigned. Send the coordination package to the Service Provider.' },
+    awaiting_provider_response: { label: 'Awaiting Provider Response', tone: 'warn', detail: 'The Service Provider must confirm the proposed date or suggest an alternative.' },
+    alternative_proposed: { label: 'Alternative Date Proposed', tone: 'info', detail: 'The CAA must accept the alternative date before execution.' },
+    date_confirmed: { label: 'Inspection Date Confirmed', tone: 'ok', detail: 'Inspection team and schedule are ready for execution.' },
+    notice_withheld: { label: 'No Advance Notice', tone: 'neutral', detail: 'Service Provider coordination is skipped by the configured inspection policy.' }
+  };
+  return statuses[record && record.status] || statuses.ready_to_notify;
+}
+
+function leadAssignmentCoordinationCardHtml() {
+  var auditId = leadAssignmentAuditId();
+  var record = inspectionCoordinationByAuditId(state, auditId);
+  if (!record) return '';
+  var meta = inspectionCoordinationStatusMeta(record);
+  var actions = '';
+  if (record.status === 'ready_to_notify') {
+    actions = '<button class="btn btn--primary" data-act="lead-assignment-notify-provider" data-id="' + esc(auditId) + '">Send Coordination Package</button>';
+  } else if (record.status === 'alternative_proposed') {
+    actions = '<button class="btn btn--primary" data-act="lead-assignment-accept-alternative" data-id="' + esc(auditId) + '">Accept Alternative Date</button>';
+  }
+  var schedule = record.status === 'alternative_proposed'
+    ? '<div><small>Alternative Date</small><b>' + esc(fmtDate(record.alternativeDate)) + '</b><p>' + esc(record.providerComment || 'No provider note supplied.') + '</p></div>'
+    : '<div><small>' + esc(record.status === 'date_confirmed' ? 'Confirmed Date' : 'Proposed Date') + '</small><b>' + esc(fmtDate(record.confirmedDate || record.proposedDate)) + '</b><p>' + esc(record.status === 'date_confirmed' ? 'Provider/CAA coordination complete.' : 'Provider may confirm or propose an alternative.') + '</p></div>';
+  return '<section class="inspection-coordination-card is-' + esc(meta.tone) + '">' +
+    '<div class="inspection-coordination-card__head"><div><span>Step 2 · Inspection Assignment</span><h2>Service Provider Coordination</h2></div><strong>' + esc(meta.label) + '</strong></div>' +
+    '<div class="inspection-coordination-policy"><span>' + esc(record.inspectionCategory) + '</span><p>' + esc(meta.detail) + '</p></div>' +
+    (inspectionCoordinationRequiresAdvanceNotice(record)
+      ? '<div class="inspection-coordination-grid">' + schedule + '<div><small>Checklist and relevant information</small><b>' + esc(record.checklistName) + '</b><p>' + esc((record.sharedInformation || []).join(' · ')) + '</p></div></div>'
+      : '<div class="inspection-coordination-grid"><div><small>Notification policy</small><b>Service Provider not informed in advance</b><p>The coordination branch is intentionally skipped for this inspection type.</p></div></div>') +
+    '<div class="inspection-coordination-policy"><p><b>Routine:</b> notify the Service Provider after Lead Inspector assignment; share the proposed date, checklist, and relevant information; wait for confirmation or an accepted alternative date.</p><p><b>Ad Hoc / Unannounced:</b> withhold advance notification and coordination.</p></div>' +
+    '<div class="inspection-coordination-actions">' + actions + '<small>Frontend-only demo: records an in-app notification; no real email or external delivery.</small></div>' +
+  '</section>';
+}
+
+function leadAssignmentCoordinationNextRowsHtml() {
+  var record = inspectionCoordinationByAuditId(state, leadAssignmentAuditId());
+  if (!record) return '';
+  var meta = inspectionCoordinationStatusMeta(record);
+  var coordinationAction = record.status === 'ready_to_notify' ? 'lead-assignment-notify-provider' : (record.status === 'alternative_proposed' ? 'lead-assignment-accept-alternative' : 'lead-assignment-guide');
+  var coordinationLabel = record.status === 'ready_to_notify' ? 'Notify Service Provider' : (record.status === 'alternative_proposed' ? 'Confirm Alternative Date' : meta.label);
+  var executionReady = !inspectionCoordinationRequiresAdvanceNotice(record) || record.status === 'date_confirmed';
+  return '<button class="lead-assignment-next-row' + (record.status === 'ready_to_notify' || record.status === 'alternative_proposed' ? ' is-active' : '') + '" data-act="' + esc(coordinationAction) + '" data-id="' + esc(record.auditId) + '">' +
+      '<span>↔</span><b>' + esc(coordinationLabel) + '</b><small>' + esc(meta.detail) + '</small><em>&rsaquo;</em>' +
+    '</button>' +
+    '<button class="lead-assignment-next-row" data-act="lead-assignment-guide">' +
+      '<span>▤</span><b>Begin Execution</b><small>' + esc(executionReady ? 'The coordination policy is satisfied; execution starts after assignments are released.' : 'Execution remains pending until the inspection date is confirmed.') + '</small><em>&rsaquo;</em>' +
+    '</button>';
 }
 
 function leadAssignmentOverviewRow(icon, label, value, note, buttonHtml) {
@@ -6602,25 +6738,36 @@ function leadAssignmentMetrics(ui) {
 function viewLeadAssignmentWorkspace() {
   var ui = leadAssignmentUiState();
   var auditId = (state.params && state.params.auditId) || 'AUD-2026-001';
+  var audit = (state.audits || []).filter(function (item) { return item.id === auditId; })[0] || null;
+  var organization = audit ? (state.orgs || []).filter(function (item) { return item.id === audit.orgId; })[0] : null;
+  var coordination = inspectionCoordinationByAuditId(state, auditId);
+  var inspectionName = audit && audit.type ? audit.type : 'Inspection';
+  var organizationName = organization && organization.name ? organization.name : 'Organization unavailable';
+  var organizationType = organization && organization.type ? organization.type : 'Operator / Service Provider';
+  var checklistName = coordination && coordination.checklistName ? coordination.checklistName : 'Inspection Checklist';
+  var dateLabel = audit && audit.date ? fmtDate(audit.date) : 'Not configured';
+  var locationLabel = audit && audit.location ? audit.location : 'Not configured';
+  var departmentLabel = audit && audit.domain ? audit.domain + ' Oversight Department' : 'Oversight Department';
   var assignmentLabel = leadAssignmentStatusLabel(ui);
   var metrics = leadAssignmentMetrics(ui);
   return '<div class="lead-assignment-page">' +
     '<button class="lead-assignment-back" data-act="nav" data-view="lead-review">&larr; Back to Assigned Audits</button>' +
     '<div class="lead-assignment-titlebar">' +
-      '<div><h1>Cabin Inspection <span class="lead-assignment-approved">Approved</span></h1><p>AUD-2026-001</p></div>' +
+      '<div><h1>' + esc(inspectionName) + ' <span class="lead-assignment-approved">Approved</span></h1><p>' + esc(auditId) + '</p></div>' +
       '<button class="btn" data-act="lead-assignment-preview-report">▣ View Preliminary Report</button>' +
     '</div>' +
     '<section class="lead-assignment-summary">' +
-      '<div><small>Organization</small><b>Fly Namibia</b><small>Organization Type</small><b>Operator / Service Provider</b></div>' +
-      '<div><small>Inspection Type</small><b>Cabin Inspection</b><small>Risk Category</small><span class="lead-risk-pill is-high">High</span></div>' +
-      '<div><small>Inspection Dates</small><b>▣ 15 Jun 2026</b><small>Location</small><b>Fly Namibia aircraft cabin / on-site inspection</b></div>' +
-      '<div><small>Planned By</small><b>Cabin Safety Oversight Department</b><small>Budget (Approved)</small><b>Demo only</b></div>' +
+      '<div><small>Organization</small><b>' + esc(organizationName) + '</b><small>Organization Type</small><b>' + esc(organizationType) + '</b></div>' +
+      '<div><small>Inspection Type</small><b>' + esc(inspectionName) + '</b><small>Risk Category</small><span class="lead-risk-pill is-high">High</span></div>' +
+      '<div><small>Inspection Dates</small><b>▣ ' + esc(dateLabel) + '</b><small>Location</small><b>' + esc(locationLabel) + '</b></div>' +
+      '<div><small>Planned By</small><b>' + esc(departmentLabel) + '</b><small>Budget (Approved)</small><b>Demo only</b></div>' +
     '</section>' +
     leadAssignmentStepperHtml(ui) +
+    leadAssignmentCoordinationCardHtml() +
     '<div class="lead-assignment-grid">' +
       '<section class="lead-assignment-card lead-assignment-card--wide">' +
         '<h2>Assignment Overview</h2><p>Review audit details and manage team assignment.</p>' +
-        leadAssignmentOverviewRow('▣', 'Checklist', 'Cabin Inspection Checklist', '126 source rows / 6 runnable questions', '<button class="btn btn--sm" data-act="lead-assignment-preview-checklist">Preview Checklist</button>') +
+        leadAssignmentOverviewRow('▣', 'Checklist', checklistName, metrics.total ? '126 source rows / ' + metrics.total + ' runnable questions' : 'Configured checklist / no runnable demo questions', '<button class="btn btn--sm" data-act="lead-assignment-preview-checklist">Preview Checklist</button>') +
         leadAssignmentOverviewRow('▦', 'Sections in Scope', '6 Sections', 'Galley, lavatories, seats, emergency equipment and exits', '<button class="btn btn--sm" data-act="lead-assignment-view-details">View Details</button>') +
         leadAssignmentOverviewRow('☷', 'Team Size', metrics.inspectorCount + ' Inspectors', '1 Lead Inspector', '<button class="btn btn--sm" data-act="lead-assignment-view-team">View Team</button>') +
         leadAssignmentOverviewRow('!', 'Assignment Status', assignmentLabel, leadAssignmentSummaryStatus(ui), '<button class="btn btn--sm btn--primary" data-act="nav" data-view="lead-assignment-questions" data-id="' + esc(auditId) + '">' + esc(ui.assignedAt ? 'Continue Assignment' : 'Start Assignment') + '</button>') +
@@ -6630,7 +6777,7 @@ function viewLeadAssignmentWorkspace() {
         '<div class="lead-assignment-scope-row"><span>Sections</span><b>6</b></div>' +
         '<div class="lead-assignment-scope-row"><span>Locations</span><b>1</b></div>' +
         '<div class="lead-assignment-scope-row"><span>Checklist Source</span><b>126 source rows</b></div>' +
-        '<div class="lead-assignment-scope-row"><span>Runnable Subset</span><b>6 runnable questions</b></div>' +
+        '<div class="lead-assignment-scope-row"><span>Runnable Subset</span><b>' + esc(String(metrics.total)) + ' runnable questions</b></div>' +
         '<div class="lead-assignment-scope-row"><span>Estimated Duration</span><b>1 Day</b></div>' +
         '<div class="lead-assignment-scope-row"><span>Inspectors</span><b>' + esc(String(metrics.inspectorCount)) + '</b></div>' +
         '<div class="lead-assignment-scope-row"><span>Lead Inspector</span><b>Caner Yildiz</b></div>' +
@@ -6640,19 +6787,14 @@ function viewLeadAssignmentWorkspace() {
         '<button class="lead-assignment-next-row is-active" data-act="nav" data-view="lead-assignment-questions" data-id="' + esc(auditId) + '">' +
           '<span>☷</span><b>Assign Checklist Questions</b><small>Assign checklist questions to inspectors based on expertise and workload.</small><em>&rsaquo;</em>' +
         '</button>' +
-        '<button class="lead-assignment-next-row" data-act="lead-assignment-guide">' +
-          '<span>▣</span><b>Notify Inspectors</b><small>Inspectors will be notified once assignments are released.</small><em>&rsaquo;</em>' +
-        '</button>' +
-        '<button class="lead-assignment-next-row" data-act="lead-assignment-guide">' +
-          '<span>▤</span><b>Begin Execution</b><small>Inspectors can start working on assigned questions.</small><em>&rsaquo;</em>' +
-        '</button>' +
+        leadAssignmentCoordinationNextRowsHtml() +
         '<button class="btn btn--primary btn--block" data-act="nav" data-view="lead-assignment-questions" data-id="' + esc(auditId) + '">☷ Assign Checklist Questions</button>' +
         '<button class="btn btn--block" data-act="lead-assignment-download">⇩ Download Assignment Plan</button>' +
       '</section>' +
     '</div>' +
     '<section class="lead-assignment-info">' +
       '<button class="is-active" disabled aria-current="page">Audit Information</button><button disabled title="Not included in this demo">Departments</button><button disabled title="Not included in this demo">Checklist Summary</button><button disabled title="Not included in this demo">Documents</button><button disabled title="Not included in this demo">History</button>' +
-      '<div><span>Created By <b>Cabin Safety Oversight Department</b></span><span>Created On <b>15 Jun 2026 09:15</b></span><span>Last Updated <b>' + esc(ui.assignedAt ? '15 Jun 2026 14:20' : '15 Jun 2026 10:20') + '</b></span><span>Last Updated By <b>Mehmet Kaya</b></span></div>' +
+      '<div><span>Created By <b>' + esc(departmentLabel) + '</b></span><span>Created On <b>' + esc(dateLabel) + ' 09:15</b></span><span>Last Updated <b>' + esc(ui.assignedAt ? dateLabel + ' 14:20' : dateLabel + ' 10:20') + '</b></span><span>Last Updated By <b>Mehmet Kaya</b></span></div>' +
     '</section>' +
   '</div>';
 }
@@ -7394,10 +7536,10 @@ function leadPreliminaryReviewStep(row, ui) {
       '<label class="prelim-declaration"><input type="checkbox" data-field="preliminary-report-declaration" data-id="readyForReview"' + (ui.declarations.readyForReview ? ' checked' : '') + '> This report is ready for review and approval by the relevant authority.</label>' +
       '<div class="prelim-signature-grid"><label>Lead Inspector Name<input value="' + esc(row.projection.leadInspector) + '" readonly></label><label>Date<input value="' + esc(fmtDate(DEMO_TODAY)) + '" readonly></label><label>Approval mark<div class="prelim-signature">' + esc(row.projection.leadInspector) + ' <span>Demo acknowledgment</span></div></label></div>' +
       '<div class="prelim-next-step">' +
-        '<div class="prelim-next-step__intro"><h3>Next Step</h3><p>After Lead Inspector signature, the preliminary report is always forwarded to Department Manager Review. If CAP is required, the Department Manager releases it to the Service Provider; if no CAP is required, the Department Manager continues the approval path.</p></div>' +
+        '<div class="prelim-next-step__intro"><h3>Next Step</h3><p>After Lead Inspector submission, every Preliminary Report follows Department Manager, General Manager, and Executive Director review before Service Provider issue. CAP requirement changes only the Service Provider action after issue.</p></div>' +
         '<div class="prelim-flow-card is-current"><b>Department Manager</b><span>Review & Sign</span></div>' +
-        '<div class="prelim-flow-card is-cap"><b>If CAP Required</b><span>Department Manager → Service Provider</span></div>' +
-        '<div class="prelim-flow-card is-ok"><b>If No CAP Required</b><span>Department Manager Approval</span></div>' +
+        '<div class="prelim-flow-card is-cap"><b>General Manager</b><span>Intermediate review</span></div>' +
+        '<div class="prelim-flow-card is-ok"><b>Executive Director</b><span>Issue to Service Provider</span></div>' +
       '</div>' +
     '</section>' +
     '<aside class="prelim-review-side">' +
@@ -7406,7 +7548,7 @@ function leadPreliminaryReviewStep(row, ui) {
       '<h2 class="mt-24">Findings Summary</h2>' +
       '<div class="prelim-review-findings"><span>Level 1 Critical<b>' + esc(String(counts.L1)) + '</b></span><span>Level 2 Major<b>' + esc(String(counts.L2)) + '</b></span><span>Level 3 Minor<b>' + esc(String(counts.L3)) + '</b></span><span>Observation<b>' + esc(String(counts.OBS)) + '</b></span><span>Total Findings<b>' + esc(String(counts.all)) + '</b></span></div>' +
       '<h2 class="mt-24">Submission Flow</h2>' +
-      '<ol class="prelim-submit-flow"><li><b>Lead Inspector</b><span>' + (submitted ? 'Completed' : 'Current') + '</span><em>Submit for Review</em></li><li><b>Department Manager</b><span>' + (submitted ? 'Current' : 'Pending') + '</span><em>Review & Sign</em></li><li><b>Release to Service Provider (if CAP required)</b><span>Pending</span><em>Department Manager sends if needed</em></li><li><b>Department Manager Approval (if no CAP required)</b><span>Pending</span><em>Continues approval path</em></li></ol>' +
+      '<ol class="prelim-submit-flow"><li><b>Lead Inspector</b><span>' + (submitted ? 'Completed' : 'Current') + '</span><em>Submit for Review</em></li><li><b>Department Manager</b><span>' + (submitted ? 'Current' : 'Pending') + '</span><em>Forward to General Manager</em></li><li><b>General Manager</b><span>Pending</span><em>Forward to Executive Director</em></li><li><b>Executive Director</b><span>Pending</span><em>Issue to Service Provider</em></li></ol>' +
     '</aside>' +
   '</div>';
 }
@@ -7480,18 +7622,9 @@ function departmentPreliminaryMetaItem(label, value) {
 }
 
 function departmentPreliminaryApproveControl(ui, showMenu) {
-  var currentPath = ui.capRequired ? 'service_provider' : 'gm';
   var disabled = ui.approvedAt ? ' disabled' : '';
-  var menu = showMenu && ui.approveMenuOpen && !ui.approvedAt
-    ? '<div class="dm-prelim-approve-menu">' +
-        '<button data-act="department-prelim-approve" data-path="service_provider"><span></span>If CAP Required, send to Service Provider</button>' +
-        '<button data-act="department-prelim-approve" data-path="gm"><span></span>If No CAP Required, send to General Manager for Review</button>' +
-      '</div>'
-    : '';
   return '<div class="dm-prelim-approve-wrap">' +
-    '<button class="btn btn--primary" data-act="department-prelim-approve" data-path="' + esc(currentPath) + '"' + disabled + '>' + esc(ui.approvedAt ? 'Approved / Sent' : 'Approve / Send to Next Step') + '</button>' +
-    '<button class="btn btn--primary dm-prelim-approve-caret" data-act="department-prelim-toggle-menu"' + disabled + ' aria-label="Approval path options">⌄</button>' +
-    menu +
+    '<button class="btn btn--primary" data-act="department-prelim-approve"' + disabled + '>' + esc(ui.approvedAt ? 'Approved & Forwarded' : 'Approve & Forward to General Manager') + '</button>' +
   '</div>';
 }
 
@@ -7553,7 +7686,6 @@ function departmentPreliminaryDepartmentRows() {
 }
 
 function departmentPreliminarySidePanel(ui) {
-  var sentToService = ui.approvedPath === 'service_provider';
   var sentToGm = ui.approvedPath === 'gm';
   var returned = !!ui.returnedAt;
   function flowItem(number, title, subtitle, stateLabel, cls) {
@@ -7565,13 +7697,14 @@ function departmentPreliminarySidePanel(ui) {
       '<ol class="dm-prelim-flow">' +
         flowItem('✓', 'Submitted by Lead Inspector', '15 Jun 2026 14:30', 'Completed', 'is-done') +
         flowItem('2', 'Department Manager Review', returned ? 'Changes requested' : (ui.approvedAt ? 'Completed' : 'You are here'), ui.approvedAt ? 'Completed' : '', ui.approvedAt ? 'is-done' : 'is-current') +
-        flowItem('3', 'If CAP Required', sentToService ? 'Sent to Service Provider' : 'Send to Service Provider', sentToService ? 'Done' : '', sentToService ? 'is-done' : '') +
-        flowItem('4', 'If No CAP Required', sentToGm ? 'Sent to General Manager' : 'Send to General Manager for Review', sentToGm ? 'Done' : '', sentToGm ? 'is-done' : '') +
+        flowItem('3', 'General Manager Review', sentToGm ? 'Report forwarded' : 'Next approval stage', sentToGm ? 'Current owner' : '', sentToGm ? 'is-current' : '') +
+        flowItem('4', 'Executive Director Review', 'Issue authority', '', '') +
+        flowItem('5', 'Service Provider Issue', 'After Executive Director approval', '', '') +
       '</ol>' +
       '<div class="dm-prelim-detail-list"><h2>Inspection Details</h2>' +
         '<dl><dt>Inspection Type</dt><dd>Routine (Announced)</dd><dt>Scope</dt><dd>AVSEC Compliance</dd><dt>Risk Category</dt><dd>High</dd><dt>Team Members</dt><dd>5 Inspectors</dd><dt>Checklist Used</dt><dd>AVSEC Comprehensive Checklist v3.2</dd></dl>' +
       '</div>' +
-      '<div class="dm-prelim-action-note"><b>Your Action Required</b><p>Please review the report thoroughly. If everything is in order:</p><ul><li>If CAP is required, the report will be sent to the Service Provider.</li><li>If no CAP is required, the report will be sent to the General Manager for review.</li></ul></div>' +
+      '<div class="dm-prelim-action-note"><b>Your Action Required</b><p>Review the report and forward it to the General Manager. CAP requirement changes the Service Provider action after issue, not this approval chain.</p></div>' +
     '</section>' +
   '</aside>';
 }
@@ -7582,7 +7715,7 @@ function departmentPreliminarySummaryTab(row, ui) {
       '<section class="dm-prelim-panel">' +
         '<h2>Report Summary</h2>' +
         '<p>The preliminary report has been completed by the Lead Inspector. Please review all sections, findings, and supporting evidence before approving.</p>' +
-        '<p>If CAP is required, the report will be sent to the Service Provider after your approval.</p>' +
+        '<p>Your approval forwards the report to the General Manager. The Service Provider sees it only after Executive Director approval.</p>' +
         departmentPreliminaryFindingStats() +
         '<h2 class="mt-24">Findings by Department</h2>' +
         '<table class="dm-prelim-table"><thead><tr><th>Department</th><th>Total Findings</th><th>L1 (Critical)</th><th>L2 (Major)</th><th>L3 (Observation)</th></tr></thead><tbody>' + departmentPreliminaryDepartmentRows() + '</tbody></table>' +
@@ -7653,7 +7786,7 @@ function departmentPreliminaryAuditTrailTab(ui) {
     ['15 Jun 2026 14:10', 'Lead Inspector', 'Report content, findings and attachments prepared.', 'Aylin Sezer'],
     ['15 Jun 2026 13:20', 'Inspection Team', 'Inspection findings marked reviewed.', 'Mehmet Kaya, John Smith, Fatma Yilmaz']
   ];
-  if (ui.approvedAt) rows.unshift([ui.approvedAt, 'Department Manager', ui.approvedPath === 'gm' ? 'Sent to General Manager for approval.' : 'Sent to Service Provider because CAP is required.', ROLES.manager.user]);
+  if (ui.approvedAt) rows.unshift([ui.approvedAt, 'Department Manager', ui.approvedPath === 'service_provider' ? 'Historical browser-local release record preserved.' : 'Sent to General Manager for approval.', ROLES.manager.user]);
   if (ui.returnedAt) rows.unshift([ui.returnedAt, 'Department Manager', 'Requested changes from Lead Inspector.', ROLES.manager.user]);
   return '<div class="dm-prelim-layout">' +
     '<main class="dm-prelim-panel">' +
@@ -8548,6 +8681,7 @@ function viewFinding() {
   } else {
     evHtml = '<div class="empty">No evidence uploaded yet.</div>';
   }
+  evHtml = capVerificationResultHtml(f.capVerification, f.status) + evHtml;
 
   /* Comments to auditee (visible to all) */
   var commentsHtml = (f.commentsToAuditee && f.commentsToAuditee.length)
@@ -8578,7 +8712,7 @@ function viewFinding() {
       ? '<button class="btn btn--sm" data-act="send-reminder" data-id="' + f.id + '">⏰ Send reminder to auditee</button>' : '';
     authClose = '<div class="callout row-between mb-16" style="border-style:dashed">' +
       '<span>⚖️ <b>CAA actions</b> — nudge the auditee with a traceable reminder, or close this finding ' +
-      'without evidence under an authorized closure (reason required, recorded in the audit trail).</span>' +
+      'without evidence under an authorized closure (reason required, recorded in the demo audit history).</span>' +
       '<span style="display:flex;gap:8px;flex-wrap:wrap">' + reminderBtn +
       '<button class="btn btn--danger btn--sm" data-act="authclose" data-id="' + f.id + '">Authorized closure…</button></span></div>';
   }
@@ -9285,7 +9419,7 @@ function managerReportSummaryPanel(report) {
       '<article><span>CAP Required</span><strong>' + (report.capRequired ? 'Yes' : 'No') + '</strong></article>' +
     '</div>' +
     '<section class="manager-report-copy"><h3>Report Summary</h3><p>' + esc(report.summary || 'No report summary has been entered.') + '</p></section>' +
-    '<div class="manager-report-boundary"><b>Approval boundary:</b> Department Manager approval of a Final Report only forwards it to the configured final authorized stage. It does not issue or lock the report.</div>' +
+    '<div class="manager-report-boundary"><b>Approval boundary:</b> Department Manager approval of this ' + esc(report.reportType) + ' only forwards it to General Manager review. It does not issue, share, sign, or lock the report.</div>' +
   '</div>';
 }
 
@@ -9404,7 +9538,7 @@ function filterFindings(filter) {
 
 function viewFindings() {
   var filter = state.params.filter || 'all';
-  if (state.role === 'inspector') return viewInspectorCapReviews();
+  if (state.role === 'inspector' && filter !== 'evreview') return viewInspectorCapReviews();
   if (state.role === 'leadInspector' && filter === 'capreview') return viewLeadCapTracking();
   var chipKeys = state.role === 'inspector'
     ? ['all', 'open', 'capreview', 'evreview', 'duesoon', 'critical', 'closed']
@@ -9430,6 +9564,57 @@ function viewFindings() {
 /* =========================== Reports list =========================== */
 function serviceProviderUiState() {
   return typeof ensureServiceProviderUiState === 'function' ? ensureServiceProviderUiState() : state.serviceProviderUi;
+}
+
+function serviceProviderInspectionCoordinationRows(source, organizationId) {
+  var records = source && Array.isArray(source.inspectionCoordinations) ? source.inspectionCoordinations : [];
+  return records.filter(function (record) {
+    return record.organizationId === organizationId &&
+      inspectionCoordinationRequiresAdvanceNotice(record) &&
+      !!record.notifiedAt;
+  });
+}
+
+function serviceProviderCoordinationResponseHtml(record) {
+  var meta = inspectionCoordinationStatusMeta(record);
+  if (record.status === 'awaiting_provider_response') {
+    return '<div class="service-coordination-response">' +
+      '<h3>Your response</h3><p>Confirm the proposed date or provide an alternative date for CAA review.</p>' +
+      '<label><span>Alternative Date</span><input id="service-provider-alternative-date-' + esc(record.auditId) + '" type="date" min="' + esc(record.proposedDate) + '"></label>' +
+      '<label><span>Comment to CAA <small>(optional)</small></span><textarea id="service-provider-coordination-comment-' + esc(record.auditId) + '" rows="3" placeholder="Explain availability or scheduling constraints."></textarea></label>' +
+      '<div class="service-coordination-response__actions"><button class="btn btn--primary" data-act="service-provider-coordination-confirm" data-id="' + esc(record.auditId) + '">Confirm Proposed Date</button><button class="btn" data-act="service-provider-coordination-propose" data-id="' + esc(record.auditId) + '">Propose Alternative Date</button></div>' +
+    '</div>';
+  }
+  if (record.status === 'alternative_proposed') {
+    return '<div class="service-coordination-response is-pending"><h3>Alternative submitted</h3><p><b>' + esc(fmtDate(record.alternativeDate)) + '</b> is waiting for CAA confirmation.</p>' + (record.providerComment ? '<small>Your comment: ' + esc(record.providerComment) + '</small>' : '') + '</div>';
+  }
+  if (record.status === 'date_confirmed') {
+    return '<div class="service-coordination-response is-confirmed"><h3>Inspection date confirmed</h3><p><b>' + esc(fmtDate(record.confirmedDate || record.proposedDate)) + '</b></p><small>The inspection team and schedule are ready for execution.</small></div>';
+  }
+  return '<div class="service-coordination-response"><h3>' + esc(meta.label) + '</h3><p>' + esc(meta.detail) + '</p></div>';
+}
+
+function viewServiceProviderInspectionCoordination() {
+  var organizationId = ROLES.auditee.org;
+  var rows = serviceProviderInspectionCoordinationRows(state, organizationId);
+  var content = rows.length ? rows.map(function (record) {
+    var audit = (state.audits || []).filter(function (item) { return item.id === record.auditId; })[0] || null;
+    var meta = inspectionCoordinationStatusMeta(record);
+    var files = (record.checklistFiles || []).map(function (file) { return '<span><b>' + esc(file) + '</b><small>Mock filename only</small></span>'; }).join('');
+    return '<article class="service-coordination-card">' +
+      '<header><div><span>' + esc(record.inspectionCategory) + '</span><h2>' + esc(record.auditId + ' · ' + (audit ? audit.type : 'Inspection')) + '</h2><p>' + esc(audit ? audit.ref : 'CAA inspection coordination request') + '</p></div><strong class="is-' + esc(meta.tone) + '">' + esc(meta.label) + '</strong></header>' +
+      '<div class="service-coordination-summary"><div><small>Proposed Date</small><b>' + esc(fmtDate(record.proposedDate)) + '</b></div><div><small>Lead Inspector</small><b>' + esc(audit && audit.lead ? audit.lead : 'CAA Lead Inspector') + '</b></div><div><small>Location</small><b>' + esc(audit && audit.location ? audit.location : 'Not configured') + '</b></div><div><small>Inspection Type</small><b>' + esc(record.inspectionCategory) + '</b></div></div>' +
+      '<section class="service-coordination-package"><div><span>Checklist and relevant information</span><h3>' + esc(record.checklistName) + '</h3><p>' + esc((record.sharedInformation || []).join(' · ')) + '</p></div><div class="service-coordination-files">' + files + '</div></section>' +
+      serviceProviderCoordinationResponseHtml(record) +
+    '</article>';
+  }).join('') : '<div class="empty">No announced inspection coordination requests are waiting for your organization.</div>';
+  return '<div class="service-coordination-page">' +
+    pageHead('Inspection Coordination', 'Confirm a proposed routine inspection date or suggest an alternative before execution.') +
+    serviceProviderScopeNote() +
+    '<div class="callout"><b>Advance-notice rule:</b> only inspections configured for advance notice appear here. Ad Hoc / Unannounced inspections are not disclosed in advance.</div>' +
+    content +
+    '<p class="small muted mt-12">Frontend-only demo: responses and notifications are stored in this browser. No real email, calendar invitation, or external delivery is sent.</p>' +
+  '</div>';
 }
 
 function serviceProviderScopeNote() {
@@ -9470,6 +9655,7 @@ function serviceProviderCapDossier(finding) {
     '<h3>' + esc(finding.title) + '</h3><p>' + esc(finding.description) + '</p>' +
     '<dl><dt>Finding ID</dt><dd>' + esc(finding.id) + '</dd><dt>Level</dt><dd>' + esc(SEVERITY[finding.severity] ? SEVERITY[finding.severity].label : String(finding.severity)) + '</dd><dt>Audit / Inspection</dt><dd>' + esc(finding.auditId || 'Not configured') + '</dd><dt>Due Date</dt><dd>' + esc(finding.dueDate ? fmtDate(finding.dueDate) : 'Not configured') + '</dd><dt>Current owner</dt><dd>' + esc(roleName(status.ownerRole)) + '</dd><dt>Next action</dt><dd>' + esc(status.next) + '</dd></dl>' +
     '<div class="service-progress"><span><b>Lifecycle progress</b><em>' + esc(progress.label) + '</em></span><div><i style="width:' + esc(String(progress.percent)) + '%"></i></div></div>' +
+    capVerificationResultHtml(finding.capVerification, finding.status) +
     '<h3>CAP / Evidence timeline</h3><ol class="service-mini-timeline"><li class="is-done">Finding issued</li><li class="' + (finding.cap ? 'is-done' : 'is-current') + '">CAP submitted / reviewed</li><li class="' + (evidence.length ? 'is-done' : (finding.cap ? 'is-current' : '')) + '">Evidence submitted / reviewed</li><li class="' + (finding.status === 'CLOSED' ? 'is-done' : '') + '">Authorized closure</li></ol>' +
     '<h3>CAA-visible comments</h3>' + (comments.length ? '<div class="service-comment-list">' + comments.map(function (comment) { return '<p><b>' + esc(comment.author) + '</b><span>' + esc(comment.date) + '</span>' + esc(comment.text) + '</p>'; }).join('') + '</div>' : '<p class="muted small">No CAA-visible comments.</p>') +
     '<h3>Evidence versions</h3>' + (evidence.length ? '<div class="service-evidence-list">' + evidence.map(function (item) { return '<p><b>v' + esc(String(item.version)) + ' · ' + esc(item.fileName) + '</b><span>' + esc(item.status + ' · ' + item.uploadedDate) + '</span></p>'; }).join('') + '</div>' : '<p class="muted small">No evidence versions submitted.</p>') +
@@ -9507,7 +9693,13 @@ function serviceProviderReportStatus(report, findings) {
 function serviceProviderPreliminaryDossier(report) {
   var safe = report ? serviceProviderSafeReportProjection(state, ROLES.auditee.org, report.id) : null;
   if (!safe) return '<aside class="service-dossier"><div class="empty">Select a shared Preliminary Report.</div></aside>';
-  return '<aside class="service-dossier"><div class="service-dossier__head"><div><span>Selected Report</span><h2>' + esc(safe.id) + '</h2></div>' + demoBadge('Service Provider visible', 'ok') + '</div><h3>' + esc(safe.audit) + '</h3><p>' + esc(safe.summary) + '</p><dl><dt>Status</dt><dd>' + esc(serviceProviderReportStatus(report, serviceProviderReportFindings(state, ROLES.auditee.org, report))) + '</dd><dt>Date Shared</dt><dd>' + esc(safe.dateShared || 'Not recorded') + '</dd><dt>Shared By</dt><dd>' + esc(safe.sharedBy) + '</dd><dt>Total Findings</dt><dd>' + esc(String(safe.findingCount)) + '</dd><dt>Response Due Date</dt><dd>' + esc(safe.responseDueDate === 'Not configured' ? safe.responseDueDate : fmtDate(safe.responseDueDate)) + '</dd><dt>Classification</dt><dd>' + esc(safe.classification) + '</dd></dl><h3>Shared attachments</h3>' + (safe.attachments.length ? '<div class="service-document-list">' + safe.attachments.map(function (file) { return '<button data-act="service-provider-document" data-id="' + esc(safe.id) + '" data-file="' + esc(file) + '">' + esc(file) + '</button>'; }).join('') + '</div>' : '<p class="muted small">No attachments shared.</p>') + '<div class="service-dossier-actions"><button class="btn btn--primary" data-act="service-provider-report-view" data-id="' + esc(safe.id) + '">View Report</button><button class="btn" data-act="service-provider-message" data-id="' + esc(safe.id) + '">Send Message to Inspector</button></div></aside>';
+  var findings = serviceProviderReportFindings(state, ROLES.auditee.org, report);
+  var nextAction = serviceProviderRequiredAction(report, findings);
+  var responseFinding = findings.filter(function (finding) { return finding.status !== 'CLOSED'; })[0] || null;
+  var actionButton = nextAction === 'Respond to CAP and Evidence requests' && responseFinding
+    ? '<button class="btn btn--primary" data-act="service-provider-cap-respond" data-id="' + esc(responseFinding.id) + '">' + esc(nextAction) + '</button>'
+    : '<button class="btn btn--primary" data-act="service-provider-report-view" data-id="' + esc(safe.id) + '">' + esc(nextAction) + '</button>';
+  return '<aside class="service-dossier"><div class="service-dossier__head"><div><span>Selected Report</span><h2>' + esc(safe.id) + '</h2></div>' + demoBadge('Service Provider visible', 'ok') + '</div><h3>' + esc(safe.audit) + '</h3><p>' + esc(safe.summary) + '</p><dl><dt>Status</dt><dd>' + esc(serviceProviderReportStatus(report, findings)) + '</dd><dt>Next action</dt><dd>' + esc(nextAction) + '</dd><dt>Date Shared</dt><dd>' + esc(safe.dateShared || 'Not recorded') + '</dd><dt>Shared By</dt><dd>' + esc(safe.sharedBy) + '</dd><dt>Total Findings</dt><dd>' + esc(String(safe.findingCount)) + '</dd><dt>Response Due Date</dt><dd>' + esc(safe.responseDueDate === 'Not configured' ? safe.responseDueDate : fmtDate(safe.responseDueDate)) + '</dd><dt>Classification</dt><dd>' + esc(safe.classification) + '</dd></dl><h3>Shared attachments</h3>' + (safe.attachments.length ? '<div class="service-document-list">' + safe.attachments.map(function (file) { return '<button data-act="service-provider-document" data-id="' + esc(safe.id) + '" data-file="' + esc(file) + '">' + esc(file) + '</button>'; }).join('') + '</div>' : '<p class="muted small">No attachments shared.</p>') + '<div class="service-dossier-actions">' + actionButton + '<button class="btn" data-act="service-provider-message" data-id="' + esc(safe.id) + '">Send Message to Inspector</button></div></aside>';
 }
 
 function viewServiceProviderPreliminaryReports() {
@@ -9518,7 +9710,14 @@ function viewServiceProviderPreliminaryReports() {
   var filtered = rows.filter(function (row) { if (ui.auditId !== 'all' && row.auditId !== ui.auditId) return false; if (ui.status !== 'all' && row.status !== ui.status) return false; var query = (ui.query || '').toLowerCase(); return !query || (row.report.id + ' ' + row.auditId + ' ' + row.report.organization).toLowerCase().indexOf(query) !== -1; });
   var selected = serviceProviderReportById(state, organizationId, ui.selectedReportId);
   if (!selected || normalizeReportType(selected.reportType) !== 'Preliminary Report') selected = filtered.length ? filtered[0].report : null;
-  var body = filtered.length ? filtered.map(function (row) { return '<tr><td><button class="service-link" data-act="service-provider-report-select" data-id="' + esc(row.report.id) + '" data-report-type="preliminary">' + esc(row.report.id) + '</button></td><td>' + esc(row.auditId + ' · ' + (auditById(row.auditId) ? auditById(row.auditId).type : 'Inspection')) + '</td><td>' + esc(row.report.sharedAt || row.report.releasedAt || 'Not recorded') + '</td><td>' + esc(String(row.findings.length)) + '</td><td>' + esc(row.report.responseDueDate ? fmtDate(row.report.responseDueDate) : 'Not configured') + '</td><td><button class="btn btn--sm" data-act="service-provider-report-view" data-id="' + esc(row.report.id) + '">View Report</button></td></tr>'; }).join('') : '<tr><td colspan="6"><div class="empty">No shared Preliminary Reports match these filters.</div></td></tr>';
+  var body = filtered.length ? filtered.map(function (row) {
+    var nextAction = serviceProviderRequiredAction(row.report, row.findings);
+    var responseFinding = row.findings.filter(function (finding) { return finding.status !== 'CLOSED'; })[0] || null;
+    var action = nextAction === 'Respond to CAP and Evidence requests' && responseFinding
+      ? '<button class="btn btn--sm" data-act="service-provider-cap-respond" data-id="' + esc(responseFinding.id) + '">' + esc(nextAction) + '</button>'
+      : '<button class="btn btn--sm" data-act="service-provider-report-view" data-id="' + esc(row.report.id) + '">' + esc(nextAction) + '</button>';
+    return '<tr><td><button class="service-link" data-act="service-provider-report-select" data-id="' + esc(row.report.id) + '" data-report-type="preliminary">' + esc(row.report.id) + '</button></td><td>' + esc(row.auditId + ' · ' + (auditById(row.auditId) ? auditById(row.auditId).type : 'Inspection')) + '</td><td>' + esc(row.report.sharedAt || row.report.releasedAt || 'Not recorded') + '</td><td>' + esc(String(row.findings.length)) + '</td><td>' + esc(row.report.responseDueDate ? fmtDate(row.report.responseDueDate) : 'Not configured') + '</td><td>' + action + '</td></tr>';
+  }).join('') : '<tr><td colspan="6"><div class="empty">No shared Preliminary Reports match these filters.</div></td></tr>';
   return '<div class="service-workspace">' + pageHead('Preliminary Reports', 'Only report packages explicitly released to ' + ROLES.auditee.orgName + ' are visible.') + serviceProviderScopeNote() + serviceProviderWorkspaceMetrics([{ label: 'Total', value: rows.length }, { label: 'Pending Your Response', value: rows.filter(function (row) { return row.status === 'pending-response'; }).length, tone: 'warn' }, { label: 'Under Review by Authority', value: rows.filter(function (row) { return row.status === 'under-review'; }).length, tone: 'info' }, { label: 'Closed', value: rows.filter(function (row) { return row.status === 'closed'; }).length, tone: 'ok' }]) + '<div class="service-filter-row"><label>Audit / Inspection<select data-field="service-provider-preliminary-audit">' + serviceProviderAuditOptions(ui.auditId, rows) + '</select></label><label>Status<select data-field="service-provider-preliminary-status"><option value="all">All Statuses</option><option value="pending-response"' + (ui.status === 'pending-response' ? ' selected' : '') + '>Pending Your Response</option><option value="under-review"' + (ui.status === 'under-review' ? ' selected' : '') + '>Under Review by Authority</option><option value="closed"' + (ui.status === 'closed' ? ' selected' : '') + '>Closed</option></select></label><label class="is-search">Search<input type="search" data-field="service-provider-preliminary-query" value="' + esc(ui.query) + '" placeholder="Report ID or Audit ID"></label></div><div class="service-workspace-layout"><section class="service-table-card"><div class="responsive-table-shell"><table class="service-table"><thead><tr><th>Report ID</th><th>Audit/Inspection</th><th>Date Shared</th><th>Findings</th><th>Due Date</th><th>Action</th></tr></thead><tbody>' + body + '</tbody></table></div></section>' + serviceProviderPreliminaryDossier(selected) + '</div></div>';
 }
 
@@ -9547,7 +9746,7 @@ function viewServiceProviderReportPreview() {
   if (!safe) return pageHead('Report not available', 'This Report ID is not released to your organization.') + serviceProviderScopeNote();
   var backView = safe.reportType === 'Final Report' ? 'service-provider-final-reports' : 'service-provider-preliminary-reports';
   var findings = safe.findings.map(function (finding) { return '<tr><td>' + esc(finding.id) + '</td><td>' + esc(finding.level) + '</td><td>' + esc(finding.status) + '</td><td>' + esc(finding.dueDate === 'Not configured' ? finding.dueDate : fmtDate(finding.dueDate)) + '</td></tr>'; }).join('');
-  return '<div class="service-report-preview"><button class="inspection-back" data-act="nav" data-view="' + backView + '">&larr; Back to ' + esc(safe.reportType === 'Final Report' ? 'Final Reports' : 'Preliminary Reports') + '</button>' + serviceProviderScopeNote() + '<article class="service-report-paper"><header><div>' + renderBrandMark('brand-mark--report') + '<span>AviaSurveil360</span></div><p>' + esc(safe.classification) + '</p></header><h1>' + esc(safe.reportType) + '</h1><h2>' + esc(safe.id + ' · ' + safe.organization) + '</h2><div class="service-report-paper__meta"><span><b>Audit ID</b>' + esc(safe.auditId) + '</span><span><b>Inspection</b>' + esc(safe.inspectionType) + '</span><span><b>Lead Inspector</b>' + esc(safe.leadInspector) + '</span><span><b>Version</b>' + esc(safe.version) + '</span><span><b>Released / Shared</b>' + esc(safe.dateShared || 'Not recorded') + '</span></div><h3>Authorized Service Provider Summary</h3><p>' + esc(safe.summary) + '</p><h3>Objective & Scope</h3><p>This auditee-safe copy summarizes the configured inspection, the Findings communicated to the Service Provider, and the required Corrective Action / Evidence lifecycle. It excludes all internal CAA working information.</p><h3>Findings</h3><table><thead><tr><th>Finding</th><th>Level</th><th>Status</th><th>Due Date</th></tr></thead><tbody>' + findings + '</tbody></table><h3>Shared attachments</h3><div class="service-document-list">' + safe.attachments.map(function (file) { return '<button data-act="service-provider-document" data-id="' + esc(safe.id) + '" data-file="' + esc(file) + '">' + esc(file) + '</button>'; }).join('') + '</div><footer>Demo-only browser-local report viewer. No real electronic signature, file storage, or reporting engine.</footer></article><div class="service-preview-actions"><button class="btn" data-act="service-provider-message" data-id="' + esc(safe.id) + '">Send Message to Inspector</button><button class="btn btn--primary" data-act="service-provider-download-all" data-id="' + esc(safe.id) + '">Download Shared Package</button></div></div>';
+  return '<div class="service-report-preview"><button class="inspection-back" data-act="nav" data-view="' + backView + '">&larr; Back to ' + esc(safe.reportType === 'Final Report' ? 'Final Reports' : 'Preliminary Reports') + '</button>' + serviceProviderScopeNote() + '<article class="service-report-paper"><header><div>' + renderBrandMark('brand-mark--report') + '<span>AviaSurveil360</span></div><p>' + esc(safe.classification) + '</p></header><h1>' + esc(safe.reportType) + '</h1><h2>' + esc(safe.id + ' · ' + safe.organization) + '</h2><div class="service-report-paper__meta"><span><b>Audit ID</b>' + esc(safe.auditId) + '</span><span><b>Inspection</b>' + esc(safe.inspectionType) + '</span><span><b>Lead Inspector</b>' + esc(safe.leadInspector) + '</span><span><b>Version</b>' + esc(safe.version) + '</span><span><b>Released / Shared</b>' + esc(safe.dateShared || 'Not recorded') + '</span></div><h3>Authorized Service Provider Summary</h3><p>' + esc(safe.summary) + '</p><h3>Objective & Scope</h3><p>This auditee-safe copy summarizes the configured inspection, the Findings communicated to the Service Provider, and the required Corrective Action / Evidence lifecycle. It excludes all internal CAA working information.</p><h3>Findings</h3><table><thead><tr><th>Finding</th><th>Level</th><th>Status</th><th>Due Date</th></tr></thead><tbody>' + findings + '</tbody></table><h3>Shared attachments</h3><div class="service-document-list">' + safe.attachments.map(function (file) { return '<button data-act="service-provider-document" data-id="' + esc(safe.id) + '" data-file="' + esc(file) + '">' + esc(file) + '</button>'; }).join('') + '</div><footer>' + esc(DEMO_BOUNDARY_SUMMARIES.join(' ')) + '</footer></article><div class="service-preview-actions"><button class="btn" data-act="service-provider-message" data-id="' + esc(safe.id) + '">Send Message to Inspector</button><button class="btn btn--primary" data-act="service-provider-download-all" data-id="' + esc(safe.id) + '">Download Shared Package</button></div></div>';
 }
 
 function viewServiceProviderDocuments() {
@@ -10130,7 +10329,7 @@ function viewAuditLog() {
       '<td><span class="tag-pill">' + esc(l.target) + '</span></td><td>' + esc(l.actor) + '</td>' +
       '<td>' + demoBadge(l.system ? 'System' : 'Manual', l.system ? 'info' : 'neutral') + '</td></tr>';
   }).join('');
-  return pageHead('Audit Log', 'Critical actions are recorded for traceability (mock).') +
+  return pageHead('Audit Log', 'Demo audit history for traceability; not a production audit trail.') +
     '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>' +
     '<th>Time</th><th>Action</th><th>Target</th><th>Actor</th><th>System / Manual</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
@@ -10228,13 +10427,19 @@ function viewSettings() {
   var weights = ohi.components.map(function (c) {
     return '<div class="row-between small" style="padding:3px 0"><span class="muted">' + esc(c.label) + '</span><b>' + c.weight + '%</b></div>';
   }).join('');
+  var lifecycleSummaries = [DEMO_LIFECYCLE_SUMMARIES.planning, DEMO_LIFECYCLE_SUMMARIES.preliminary, DEMO_LIFECYCLE_SUMMARIES.final].map(function (line) {
+    return '<p>' + esc(line) + '</p>';
+  }).join('');
+  var demoBoundaries = DEMO_BOUNDARY_SUMMARIES.map(function (line) { return '<p>' + esc(line) + '</p>'; }).join('');
   return pageHead('Settings', 'Configured rules and parameters (preview only).') +
     '<div class="callout mb-16">Preview only — these are read-only in the demo. They show the configured rules the product would manage, not editable controls.</div>' +
     '<div class="grid grid--2">' +
       '<div class="card"><div class="card__head"><h3>Severity scheme</h3></div><div class="card__body">' + sevList + '</div></div>' +
       '<div class="card"><div class="card__head"><h3>Finding lifecycle</h3></div><div class="card__body small">' + lifecycle + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Inspection lifecycle</h3></div><div class="card__body small">' + lifecycleSummaries + '</div></div>' +
+      '<div class="card"><div class="card__head"><h3>Demo boundaries</h3></div><div class="card__body small">' + demoBoundaries + '</div></div>' +
       '<div class="card"><div class="card__head"><h3>Closure policy</h3></div><div class="card__body small">' +
-        'A finding closes only after <b>required evidence is accepted</b>, or via an explicit <b>authorized closure</b> that is recorded in the audit trail. CAP acceptance alone does not close a finding.' +
+        'A Finding closes only after required Evidence is verified with a <b>Close</b> result, or via a separate explicit <b>authorized closure</b> recorded in demo audit history. <b>Partially Close</b> and <b>Not Close</b> leave the Finding open; CAP acceptance alone does not close it.' +
       '</div></div>' +
       '<div class="card"><div class="card__head"><h3>Due-date language</h3></div><div class="card__body">' +
         '<span class="badge badge--info"><span class="dot"></span>Due Date</span> ' +
@@ -10326,7 +10531,7 @@ function modalReviewEvidence(f) {
   var latest = (f.evidence && f.evidence.length) ? f.evidence[f.evidence.length - 1] : null;
   var prev = (f.evidence || []).slice(0, -1);
   var body =
-    '<div class="modal__intro">Review the submitted evidence for <b>' + esc(f.id) + '</b>. Accepting verified evidence will <b>close</b> the finding.</div>' +
+    '<div class="modal__intro">Review the submitted Evidence for <b>' + esc(f.id) + '</b> and record one explicit verification result.</div>' +
     (latest
       ? '<div class="filechip mb-16"><div class="filechip__icon">PDF</div><div style="flex:1">' +
         '<div class="filechip__name">' + esc(latest.fileName) + '</div>' +
@@ -10337,13 +10542,19 @@ function modalReviewEvidence(f) {
         return '<div class="filechip mt-12"><div class="filechip__icon">PDF</div><div style="flex:1">' +
           '<div class="filechip__name">' + esc(e.fileName) + '</div><div class="filechip__meta">Version ' + e.version + ' · ' + esc(e.status) + '</div></div></div>';
       }).join('') : '') +
-    '<div class="form-row mt-16"><label>Comment to Auditee</label>' +
-      '<textarea id="ev-comment" placeholder="Visible to the auditee.">Evidence reviewed and accepted. Finding closed. Thank you.</textarea></div>' +
-    '<div class="form-row"><label>Internal CAA Note</label><div class="help">Not visible to the auditee.</div>' +
-      '<textarea id="ev-internal" placeholder="Internal only.">Closure verified against expected evidence.</textarea></div>';
+    '<div class="cap-verification-guidance" aria-label="CAP verification outcomes">' +
+      '<p><b>Close:</b> all required implementation and Evidence verified; Finding closes.</p>' +
+      '<p><b>Partially Close:</b> some implementation verified; Finding remains open.</p>' +
+      '<p><b>Not Close:</b> verification insufficient; Finding remains open.</p>' +
+    '</div>' +
+    '<div class="form-row mt-16"><label>Comment to Auditee <span class="req">*</span></label>' +
+      '<textarea id="ev-comment" required placeholder="Required and visible to the Auditee."></textarea></div>' +
+    '<div class="form-row"><label>Internal CAA Note <span class="req">*</span></label><div class="help">Required. Not visible to the Auditee.</div>' +
+      '<textarea id="ev-internal" required placeholder="Required and internal to the CAA."></textarea></div>';
   var foot =
-    '<button class="btn btn--danger" data-act="ev-decision" data-id="' + f.id + '" data-decision="moreinfo">Request More Information</button>' +
-    '<button class="btn btn--ok" data-act="ev-decision" data-id="' + f.id + '" data-decision="accept">Accept Evidence & Close</button>';
+    '<button class="btn btn--danger" data-act="ev-decision" data-id="' + f.id + '" data-decision="not_close">Not Close</button>' +
+    '<button class="btn" data-act="ev-decision" data-id="' + f.id + '" data-decision="partially_close">Partially Close</button>' +
+    '<button class="btn btn--ok" data-act="ev-decision" data-id="' + f.id + '" data-decision="close">Close Finding</button>';
   return modalShell('Review Evidence — ' + f.id, body, foot, true);
 }
 
@@ -10390,7 +10601,7 @@ function modalFindingForm(auditId, qId) {
 function modalAuthorizedClosure(f) {
   var body =
     '<div class="modal__intro">⚖️ You are closing <b>' + esc(f.id) + '</b> without evidence acceptance. ' +
-    'This is an <b>authorized closure</b> and will be recorded in the audit trail. A reason is required.</div>' +
+    'This is an <b>authorized closure</b> and will be recorded in demo audit history. A reason is required.</div>' +
     '<div class="form-row"><label>Reason for authorized closure <span class="req">*</span></label>' +
       '<textarea id="ac-reason" placeholder="e.g. Risk accepted by management; finding superseded; equivalent action verified by other means."></textarea></div>' +
     '<div class="form-row"><label>Comment to Auditee (optional)</label>' +

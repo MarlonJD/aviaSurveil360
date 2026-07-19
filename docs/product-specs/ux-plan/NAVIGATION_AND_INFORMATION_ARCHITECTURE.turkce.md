@@ -5,7 +5,8 @@
 Ana ekran genel dashboard değil workbench'tir. Bugünkü assigned Cabin
 Inspection'ları, devam eden checklist'leri, CAP ve Evidence review'larını, Due
 Soon ve Overdue işleri öne alır. Inspector, Lead Inspector assignment
-rotalarına giremez.
+rotalarına giremez. Inspector ve Lead Inspector Evidence review, explicit
+`Close`, `Partially Close` ve `Not Close` verification sonuçlarını sunar.
 
 ## Lead Inspector IA
 
@@ -19,6 +20,7 @@ orphan report shell oluşturulmaz.
 Service Provider yalnız kendi kuruluşunu ve kendisine release edilen aksiyon
 ve raporları görür. Exact operational navigation:
 
+- Inspection Coordination
 - Corrective Actions (CAP)
 - Preliminary Reports
 - Final Reports
@@ -30,6 +32,14 @@ Home route Corrective Actions (CAP)'tir. List, detail, preview, message ve
 download selector'ları organization scope uygular. Internal CAA Note,
 enforcement deliberation, internal risk, inspector workload, başka kuruluş ve
 unreleased draft dışarıda tutulur.
+
+Inspection Coordination yalnız Lead Inspector assignment sonrasında mevcut
+kuruluşa açıkça release edilmiş Routine / Announced request'leri gösterir.
+Service Provider proposed date'i confirm edebilir veya alternative önerebilir;
+checklist ve auditee-safe relevant information'ı görür. Ad Hoc / Unannounced
+inspection ve withheld-notice record tamamen dışarıda tutulur.
+Release edilmiş CAP verification metadata gösterilebilir; Internal CAA Note
+dışarıda kalır.
 
 ## Finance IA
 
@@ -54,19 +64,27 @@ ayrı bir sonraki adım olarak kalır.
 
 ## Executive Director IA
 
-Executive Director üç decision module ve iki utility kullanır:
+Executive Director ayrı planning, Preliminary Report ve Final Report decision
+yüzeyleriyle supporting utility'leri kullanır:
 
 - Dashboard
 - Planning
+- Preliminary Reports
 - Final Reports
 - Notifications
 - Settings
 
-Dashboard pending plan ve Final Report kararlarını ilk viewport'a koyar;
+Dashboard pending plan ve report kararlarını ilk viewport'a koyar;
 ardından derived department, risk ve overdue bağlamı gösterir. Planning tek
 selected plan dossier, preview, `Approve & Sign (Demo)` ve Reject sunar. ED plan
 approval mock approval mark kaydeder; yine de Department'a geçiş için ayrı
 General Manager release gerekir.
+
+Preliminary Reports yalnız GM-forwarded Preliminary Report kayıtlarını içerir.
+Executive Director exact report'u ilgili Service Provider kuruluşuna approve ve
+issue edebilir, General Manager'a return edebilir veya reject edebilir. Bu
+yüzeyde enforcement action bulunmaz. Approval browser-local mock mark kaydeder,
+issue edilmiş copy'yi lock eder ve gerçek e-signature değildir.
 
 Final Reports yalnız Final Report queue'su, selected review dossier,
 state-backed preview ve Approve, Return, Reject veya Refer for Enforcement
@@ -78,17 +96,19 @@ recommendation/referral olarak kalır ve otomatik sanction uygulamaz.
 
 Department Manager exposure, team work, Findings, CAP delay, checklist
 governance ve department kararı bekleyen raporları görür. Department Manager
-approval Final Report'u ileri gönderir; issue, sign veya lock etmez.
+approval Preliminary ve Final Report'u General Manager'a ilerletir; hiçbirini
+issue, share, sign veya lock etmez.
 
 ## General Manager IA
 
 General Manager Dashboard, Planning, Report Approvals, Departments, Risk
 Dashboard ve Settings kullanır. Planning, Finance-approved planları GM Review
 için erişilebilir kılar: GM planı Department Manager'a return edebilir veya
-Executive Director'a ilerletebilir. GM ayrıca intermediate Final Report
-reviewer'dır: report'u return edebilir veya Executive Director'a ilerletebilir
-fakat issue, sign veya lock edemez. ED plan approval sonrasında ayrı Release to
-Department adımını GM uygular.
+Executive Director'a ilerletebilir. GM ayrıca Preliminary ve Final Report için
+intermediate reviewer'dır: exact report'u Department Manager'a return edebilir
+veya Executive Director'a ilerletebilir fakat issue, share, sign veya lock
+edemez. ED plan approval sonrasında ayrı Release to Department adımını GM
+uygular.
 
 ## Admin IA
 

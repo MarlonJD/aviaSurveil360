@@ -19,11 +19,13 @@ var NAV = {
     { view: 'dashboard', label: 'Dashboard', icon: '▦' },
     { view: 'inspector-assignments', label: 'My Assignments', icon: '▣', badge: '8' },
     { view: 'findings', label: 'Findings', icon: '✓', badge: '14' },
+    { view: 'findings', label: 'Evidence Review', icon: '◉', filter: 'evreview' },
     { view: 'messages', label: 'Messages', icon: '✉', badge: '2' },
     { view: 'calendar', label: 'Calendar', icon: '▤' },
     { view: 'reports', label: 'Reports', icon: '□' }
   ],
   auditee: [
+    { view: 'service-provider-inspection-coordination', label: 'Inspection Coordination', icon: '↔', badge: '1' },
     { view: 'service-provider-cap', label: 'Corrective Actions (CAP)', icon: '✓', badge: '4' },
     { view: 'service-provider-preliminary-reports', label: 'Preliminary Reports', icon: '□' },
     { view: 'service-provider-final-reports', label: 'Final Reports', icon: '□' },
@@ -53,6 +55,7 @@ var NAV = {
      docs/plans/2026-06-28-caa-governance-workflow-and-roles-plan.md. */
   leadInspector: [
     { view: 'lead-review', label: 'Assigned Audits', icon: '▣' },
+    { view: 'findings', label: 'Evidence Review', icon: '◉', filter: 'evreview' },
     { view: 'audit-reports', label: 'Preliminary Reports', icon: '□', filter: 'preliminary', badge: '6' },
     { view: 'audit-reports', label: 'Final Reports', icon: '□', filter: 'final', badge: '4' },
     { view: 'calendar', label: 'Calendar', icon: '▤' },
@@ -74,6 +77,7 @@ var NAV = {
   executiveDirector: [
     { view: 'executive-dashboard', label: 'Dashboard', icon: '▦' },
     { view: 'executive-planning', label: 'Planning', icon: '▤' },
+    { view: 'executive-preliminary-reports', label: 'Preliminary Reports', icon: '□' },
     { view: 'executive-final-reports', label: 'Final Reports', icon: '📄' },
     { view: 'executive-notifications', label: 'Notifications', icon: '✉' },
     { view: 'settings', label: 'Settings', icon: '⚙' }
@@ -101,20 +105,21 @@ var VIEW_TITLES = {
   'unit-manager-review': 'Department Manager Approval',
   'gm-dashboard': 'General Manager Dashboard', 'gm-report-approvals': 'Report Approvals',
   'gm-departments': 'Departments', 'gm-risk': 'Risk Dashboard', 'finance-review': 'Finance Review',
+  'service-provider-inspection-coordination': 'Inspection Coordination',
   'service-provider-cap': 'Corrective Actions (CAP)', 'service-provider-preliminary-reports': 'Preliminary Reports',
   'service-provider-final-reports': 'Final Reports', 'service-provider-report-preview': 'Report Preview',
   'executive-dashboard': 'Executive Director Dashboard', 'executive-planning': 'Planning',
-  'executive-final-reports': 'Final Reports', 'executive-notifications': 'Notifications', 'executive-report-preview': 'Final Report Preview'
+  'executive-preliminary-reports': 'Preliminary Reports', 'executive-final-reports': 'Final Reports', 'executive-notifications': 'Notifications', 'executive-report-preview': 'Final Report Preview'
 };
 
 var ROLE_DESC = {
   inspector: 'Inspector Workspace — daily operations, findings review, CAP verification and field work.',
   leadInspector: 'Lead Inspector — assigned audits and preliminary/final reports.',
   manager: 'Department Manager — planning items, approvals, scheduling and department oversight.',
-  gm: 'General Manager — intermediate Final Report review, Executive Director forwarding, department oversight and cross-department risk review.',
+  gm: 'General Manager — intermediate Preliminary and Final Report review, Executive Director forwarding, department oversight and cross-department risk review.',
   finance: 'Finance Review — budget and resource review for planned audits.',
   executiveDirector: 'Executive Director — final approval of plans and audit reports.',
-  auditee: 'Service Provider Portal — findings, CAP uploads, responses and shared documents.',
+  auditee: 'Service Provider Portal — inspection coordination, findings, CAP uploads, responses and shared documents.',
   admin: 'Administration — regulatory library, templates, users, configuration and audit log.'
 };
 var EXPERIENCE_LABEL = {
@@ -144,7 +149,7 @@ var LOGIN_ROLE_META = {
   gm: { scope: 'Cross-department review and forwarding', icon: 'bank' },
   finance: { scope: 'Budget and resource review', icon: 'wallet' },
   executiveDirector: { scope: 'Final plan and report approval', icon: 'seal-check' },
-  auditee: { scope: 'CAP, Evidence and CAA requests', icon: 'globe-hemisphere-west' },
+  auditee: { scope: 'Inspection dates, CAP, Evidence and CAA requests', icon: 'globe-hemisphere-west' },
   admin: { scope: 'Templates, rules and access', icon: 'gear' }
 };
 
@@ -203,6 +208,7 @@ var GENERAL_MANAGER_ALLOWED_VIEWS = {
 };
 
 var AUDITEE_ALLOWED_VIEWS = {
+  'service-provider-inspection-coordination': true,
   'service-provider-cap': true,
   'service-provider-preliminary-reports': true,
   'service-provider-final-reports': true,
@@ -216,6 +222,7 @@ var FINANCE_ALLOWED_VIEWS = { 'finance-review': true };
 var EXECUTIVE_DIRECTOR_ALLOWED_VIEWS = {
   'executive-dashboard': true,
   'executive-planning': true,
+  'executive-preliminary-reports': true,
   'executive-final-reports': true,
   'executive-notifications': true,
   'executive-report-preview': true,
@@ -519,6 +526,7 @@ function renderContent() {
     case 'finance-review': return viewFinanceReviewWorkspace();
     case 'executive-dashboard': return viewExecutiveDirectorDashboard();
     case 'executive-planning': return viewExecutivePlanningWorkspace();
+    case 'executive-preliminary-reports': return viewExecutivePreliminaryReportsWorkspace();
     case 'executive-final-reports': return viewExecutiveFinalReportsWorkspace();
     case 'executive-notifications': return viewExecutiveNotifications();
     case 'executive-report-preview': return viewExecutiveReportPreview();
@@ -546,6 +554,7 @@ function renderContent() {
     case 'gm-report-approvals': return viewGeneralManagerReportApprovals();
     case 'gm-departments': return viewGeneralManagerDepartments();
     case 'gm-risk': return viewGeneralManagerRiskDashboard();
+    case 'service-provider-inspection-coordination': return viewServiceProviderInspectionCoordination();
     case 'service-provider-cap': return viewServiceProviderCapWorkspace();
     case 'service-provider-preliminary-reports': return viewServiceProviderPreliminaryReports();
     case 'service-provider-final-reports': return viewServiceProviderFinalReports();
@@ -1341,14 +1350,14 @@ function handleGeneralManagerDecisionConfirm(reportId, decision) {
   if (!result.ok) {
     var validation = document.getElementById('gm-report-validation');
     if (validation) validation.innerHTML = esc(result.message);
-    toast('Final Report decision', result.message, 'warn');
+    toast('Report decision', result.message, 'warn');
     return;
   }
   generalManagerUiState().selectedReportId = '';
   closeModal();
   persistAfterAction();
   render();
-  toast(decision === 'approve' ? 'Final Report forwarded' : 'Final Report returned', result.message, 'ok');
+  toast(decision === 'approve' ? 'Report forwarded' : 'Report returned', result.message, 'ok');
 }
 
 function managerChecklistActor() {
@@ -1746,6 +1755,10 @@ function handleAction(act, el) {
     case 'executive-plan-confirm': handleExecutivePlanConfirm(id); break;
     case 'executive-plan-preview': handleExecutivePlanPreview(id); break;
     case 'executive-plan-download': handleExecutivePlanDownload(id); break;
+    case 'executive-preliminary-select': handleExecutivePreliminarySelect(id); break;
+    case 'executive-preliminary-decision-choice': handleExecutivePreliminaryDecisionChoice(el.getAttribute('data-decision')); break;
+    case 'executive-preliminary-confirm': handleExecutivePreliminaryConfirm(id); break;
+    case 'executive-preliminary-preview': handleExecutivePreliminaryPreview(id); break;
     case 'executive-report-status': handleExecutiveReportStatus(status); break;
     case 'executive-report-select': handleExecutiveReportSelect(id); break;
     case 'executive-report-tab': handleExecutiveReportTab(tab); break;
@@ -1807,6 +1820,8 @@ function handleAction(act, el) {
     case 'lead-assignment-save': handleLeadAssignmentSave(); break;
     case 'lead-assignment-preview': handleLeadAssignmentPreview(); break;
     case 'lead-assignment-release': handleLeadAssignmentRelease(); break;
+    case 'lead-assignment-notify-provider': handleLeadAssignmentNotifyProvider(id); break;
+    case 'lead-assignment-accept-alternative': handleLeadAssignmentAcceptAlternative(id); break;
     case 'lead-assignment-bulk': handleLeadAssignmentBulk(el.getAttribute('data-mode')); break;
     case 'preliminary-report-open-package': handlePreliminaryReportOpenPackage(); break;
     case 'preliminary-report-new': handlePreliminaryReportOpenPackage(); break;
@@ -1824,7 +1839,7 @@ function handleAction(act, el) {
     case 'preliminary-report-view-finding': handlePreliminaryReportViewFinding(id); break;
     case 'department-prelim-tab': handleDepartmentPreliminaryTab(tab); break;
     case 'department-prelim-toggle-menu': handleDepartmentPreliminaryToggleMenu(); break;
-    case 'department-prelim-approve': handleDepartmentPreliminaryApprove(el.getAttribute('data-path')); break;
+    case 'department-prelim-approve': handleDepartmentPreliminaryApprove(); break;
     case 'department-prelim-request-changes': handleDepartmentPreliminaryRequestChanges(); break;
     case 'department-prelim-download': handleDepartmentPreliminaryDownload(); break;
     case 'department-prelim-back': go('audit-reports', { filter: 'all' }); break;
@@ -1837,6 +1852,8 @@ function handleAction(act, el) {
     case 'service-provider-cap-group': handleServiceProviderCapGroup(el.getAttribute('data-group')); break;
     case 'service-provider-cap-select': handleServiceProviderCapSelect(id); break;
     case 'service-provider-cap-respond': handleServiceProviderCapRespond(id); break;
+    case 'service-provider-coordination-confirm': handleServiceProviderCoordinationConfirm(id); break;
+    case 'service-provider-coordination-propose': handleServiceProviderCoordinationPropose(id); break;
     case 'service-provider-report-select': handleServiceProviderReportSelect(id, el.getAttribute('data-report-type')); break;
     case 'service-provider-report-view': handleServiceProviderReportView(id); break;
     case 'service-provider-message': handleServiceProviderMessage(id); break;
@@ -2405,6 +2422,7 @@ function serviceProviderOrganizationId() {
 function ensureServiceProviderUiState() {
   if (!state.serviceProviderUi) state.serviceProviderUi = {};
   var defaults = {
+    coordination: { selectedAuditId: 'AUD-2026-001', alternativeDate: '', providerComment: '' },
     cap: { group: 'all', auditId: 'all', level: 'all', status: 'all', query: '', selectedFindingId: 'CAB-2026-001' },
     preliminaryReports: { auditId: 'all', status: 'all', query: '', selectedReportId: 'PR-2026-018' },
     finalReports: { auditId: 'all', year: 'all', capRequirement: 'all', query: '', selectedReportId: 'FR-2026-018' },
@@ -2905,7 +2923,74 @@ function handleLeadAssignmentRelease() {
   });
   persistAfterAction();
   render();
-  toast('Released to inspectors', 'Inspectors can now work on their assigned checklist questions.', 'ok');
+  var coordination = inspectionCoordinationByAuditId(state, (state.params && state.params.auditId) || 'AUD-2026-001');
+  var releaseMessage = inspectionCoordinationRequiresAdvanceNotice(coordination) && coordination.status !== 'date_confirmed'
+    ? 'Assignments are released. Inspection execution remains pending until the Service Provider confirms the proposed date or the CAA accepts an alternative.'
+    : 'Inspectors can now work on their assigned checklist questions.';
+  toast('Released to inspectors', releaseMessage, 'ok');
+}
+
+function handleLeadAssignmentNotifyProvider(auditId) {
+  var id = auditId || (state.params && state.params.auditId) || 'AUD-2026-001';
+  var coordination = inspectionCoordinationByAuditId(state, id);
+  if (!coordination) {
+    toast('Coordination unavailable', 'No inspection coordination record is configured for this audit.', 'warn');
+    return;
+  }
+  if (!inspectionCoordinationRequiresAdvanceNotice(coordination)) {
+    toast('Advance notice withheld', 'This inspection is configured as Ad Hoc / Unannounced, so no Service Provider notification is sent.', 'warn');
+    return;
+  }
+  if (coordination.status !== 'ready_to_notify') {
+    toast('Coordination already started', 'The Service Provider coordination package has already been sent or answered.', 'warn');
+    return;
+  }
+  coordination.status = 'awaiting_provider_response';
+  coordination.notifiedAt = nowIsoDemo();
+  coordination.history = Array.isArray(coordination.history) ? coordination.history : [];
+  coordination.history.push({ at: coordination.notifiedAt, actor: 'Caner Yildiz', action: 'Sent proposed date, checklist, and relevant information to Service Provider' });
+  state.notifications.unshift({
+    id: 'n-inspection-coordination-' + state.notifSeq++,
+    role: 'auditee',
+    organizationId: coordination.organizationId,
+    userId: '',
+    icon: '↔',
+    text: 'CAA shared a proposed inspection date, checklist, and relevant information for ' + id + '. Confirm the date or propose an alternative.',
+    time: 'Now',
+    unread: true
+  });
+  addLog('Lead Inspector sent Service Provider coordination package', id);
+  persistAfterAction();
+  render();
+  toast('Coordination package sent', 'The Service Provider can confirm the proposed date or suggest an alternative in the portal.', 'ok');
+}
+
+function handleLeadAssignmentAcceptAlternative(auditId) {
+  var id = auditId || (state.params && state.params.auditId) || 'AUD-2026-001';
+  var coordination = inspectionCoordinationByAuditId(state, id);
+  if (!coordination || coordination.status !== 'alternative_proposed' || !coordination.alternativeDate) {
+    toast('Alternative unavailable', 'No Service Provider alternative date is waiting for CAA confirmation.', 'warn');
+    return;
+  }
+  coordination.status = 'date_confirmed';
+  coordination.confirmedDate = coordination.alternativeDate;
+  coordination.caaConfirmedAt = nowIsoDemo();
+  coordination.history = Array.isArray(coordination.history) ? coordination.history : [];
+  coordination.history.push({ at: coordination.caaConfirmedAt, actor: 'Caner Yildiz', action: 'Accepted Service Provider alternative date ' + coordination.confirmedDate });
+  state.notifications.unshift({
+    id: 'n-inspection-date-confirmed-' + state.notifSeq++,
+    role: 'auditee',
+    organizationId: coordination.organizationId,
+    userId: '',
+    icon: '✓',
+    text: 'CAA accepted the alternative inspection date for ' + id + ': ' + coordination.confirmedDate + '.',
+    time: 'Now',
+    unread: true
+  });
+  addLog('CAA accepted Service Provider alternative inspection date', id);
+  persistAfterAction();
+  render();
+  toast('Alternative date confirmed', 'The inspection team and schedule are ready for execution.', 'ok');
 }
 
 function handleLeadAssignmentDownload() {
@@ -3284,47 +3369,34 @@ function departmentPreliminaryReportRecord(reportId) {
   return report && normalizeReportType(report.reportType) === 'Preliminary Report' ? report : null;
 }
 
-function handleDepartmentPreliminaryApprove(path) {
+function handleDepartmentPreliminaryApprove() {
   var ui = ensureDepartmentPreliminaryReviewUi();
   var report = departmentPreliminaryReportRecord(ui.selectedReportId);
   if (!report) {
     toast('Preliminary Report unavailable', 'The selected exact Preliminary Report could not be found.', 'warn');
     return;
   }
-  var approvalPath = path === 'gm' ? 'gm' : (path === 'service_provider' ? 'service_provider' : (ui.capRequired ? 'service_provider' : 'gm'));
-  ui.capRequired = approvalPath === 'service_provider';
-  ui.approvedPath = approvalPath;
-  ui.approvedAt = logTimestamp();
+  var result = applyManagerReportDecision(
+    state,
+    report.id,
+    'approve',
+    'Department Manager review complete.',
+    { role: 'manager', name: ROLES.manager.user }
+  );
+  if (!result.ok) {
+    toast('Preliminary Report decision not recorded', result.message, 'warn');
+    return;
+  }
+  ui.capRequired = report.capRequired !== false;
+  ui.approvedPath = 'gm';
+  ui.approvedAt = report.managerDecisionAt || logTimestamp();
   ui.returnedAt = '';
   ui.approveMenuOpen = false;
-
-  var reportId = report.id;
-  if (!report.preliminaryNotice) report.preliminaryNotice = {};
-  report.preliminaryNotice.capRequired = approvalPath === 'service_provider';
-  report.status = approvalPath === 'service_provider' ? 'released_to_service_provider' : 'submitted_to_gm';
-  if (report.approval && Array.isArray(report.approval.history)) {
-    report.approval.history.push({
-      actor: ROLES.manager.user,
-      role: 'manager',
-      action: approvalPath === 'service_provider' ? 'sent_to_service_provider' : 'sent_to_general_manager',
-      date: ui.approvedAt,
-      comment: approvalPath === 'service_provider'
-        ? 'Department Manager approved the Preliminary Report and sent it to the Service Provider because CAP is required.'
-        : 'Department Manager approved the Preliminary Report and sent it to the General Manager for review because no CAP is required.'
-    });
-  }
-
-  if (approvalPath === 'service_provider') {
-    pushNotification('auditee', 'RPT', 'Preliminary Report ' + reportId + ' was released to your Service Provider portal for CAP response.', { organizationId: report.organizationId });
-    addLog('Department Manager sent Preliminary Report to Service Provider', reportId);
-    toast('Sent to Service Provider', 'CAP is required, so the Department Manager sent the preliminary report to the Service Provider.', 'ok');
-  } else {
-    pushNotification('gm', 'RPT', 'Preliminary Report ' + reportId + ' is ready for General Manager review.');
-    addLog('Department Manager sent Preliminary Report to General Manager', reportId);
-    toast('Sent to General Manager', 'No CAP is required, so the report moved to General Manager review.', 'ok');
-  }
+  pushNotification('gm', 'RPT', 'Preliminary Report ' + report.id + ' is ready for General Manager review.');
+  addLog('Department Manager sent Preliminary Report to General Manager', report.id);
   persistAfterAction();
   render();
+  toast('Sent to General Manager', 'The Preliminary Report moved to General Manager review. CAP requirement does not bypass the approval chain.', 'ok');
 }
 
 function handleDepartmentPreliminaryRequestChanges() {
@@ -3449,6 +3521,83 @@ function handleServiceProviderViewFinding(findingId) {
 
 function handleServiceProviderDocument(documentId) {
   handleServiceProviderSafeDocument('', documentId || 'Document');
+}
+
+function serviceProviderCoordinationRecord(auditId) {
+  var record = inspectionCoordinationByAuditId(state, auditId);
+  if (!record || record.organizationId !== serviceProviderOrganizationId() || !inspectionCoordinationRequiresAdvanceNotice(record) || !record.notifiedAt) return null;
+  return record;
+}
+
+function notifyLeadInspectorOfCoordination(record, text) {
+  state.notifications.unshift({
+    id: 'n-provider-coordination-response-' + state.notifSeq++,
+    role: 'leadInspector',
+    organizationId: '',
+    userId: 'USR-CANER',
+    icon: '↔',
+    text: text,
+    time: 'Now',
+    unread: true
+  });
+}
+
+function handleServiceProviderCoordinationConfirm(auditId) {
+  var record = serviceProviderCoordinationRecord(auditId);
+  if (!record) {
+    toast('Request unavailable', 'This inspection coordination request is not available to your organization.', 'warn');
+    return;
+  }
+  if (record.status !== 'awaiting_provider_response') {
+    toast('Response already recorded', 'This proposed inspection date is no longer awaiting confirmation.', 'warn');
+    return;
+  }
+  record.status = 'date_confirmed';
+  record.confirmedDate = record.proposedDate;
+  record.respondedAt = nowIsoDemo();
+  record.providerComment = val('service-provider-coordination-comment-' + auditId).trim();
+  record.history = Array.isArray(record.history) ? record.history : [];
+  record.history.push({ at: record.respondedAt, actor: ROLES.auditee.orgName + ' Quality Manager', action: 'Confirmed proposed inspection date ' + record.confirmedDate });
+  notifyLeadInspectorOfCoordination(record, ROLES.auditee.orgName + ' confirmed the proposed inspection date for ' + auditId + ': ' + record.confirmedDate + '.');
+  addLog('Service Provider confirmed proposed inspection date', auditId);
+  persistAfterAction();
+  render();
+  toast('Inspection date confirmed', 'The CAA Lead Inspector has been notified in this demo.', 'ok');
+}
+
+function handleServiceProviderCoordinationPropose(auditId) {
+  var record = serviceProviderCoordinationRecord(auditId);
+  if (!record) {
+    toast('Request unavailable', 'This inspection coordination request is not available to your organization.', 'warn');
+    return;
+  }
+  if (record.status !== 'awaiting_provider_response') {
+    toast('Response already recorded', 'This proposed inspection date is no longer awaiting a response.', 'warn');
+    return;
+  }
+  var alternativeDate = val('service-provider-alternative-date-' + auditId).trim();
+  var comment = val('service-provider-coordination-comment-' + auditId).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(alternativeDate)) {
+    toast('Alternative date required', 'Choose a valid alternative date before submitting.', 'warn');
+    return;
+  }
+  if (alternativeDate === record.proposedDate) {
+    toast('Choose another date', 'Use Confirm Proposed Date when the original date is acceptable.', 'warn');
+    return;
+  }
+  record.status = 'alternative_proposed';
+  record.alternativeDate = alternativeDate;
+  record.providerComment = comment;
+  record.respondedAt = nowIsoDemo();
+  record.history = Array.isArray(record.history) ? record.history : [];
+  record.history.push({ at: record.respondedAt, actor: ROLES.auditee.orgName + ' Quality Manager', action: 'Proposed alternative inspection date ' + alternativeDate });
+  ensureServiceProviderUiState().coordination.alternativeDate = alternativeDate;
+  ensureServiceProviderUiState().coordination.providerComment = comment;
+  notifyLeadInspectorOfCoordination(record, ROLES.auditee.orgName + ' proposed an alternative inspection date for ' + auditId + ': ' + alternativeDate + '.');
+  addLog('Service Provider proposed alternative inspection date', auditId);
+  persistAfterAction();
+  render();
+  toast('Alternative date proposed', 'The CAA must confirm the alternative before inspection execution.', 'ok');
 }
 
 function handleServiceProviderFieldChange(field, target) {
@@ -3819,6 +3968,73 @@ function handleExecutivePlanDownload(planId) {
   toast(downloaded ? 'Plan downloaded' : 'Plan prepared', downloaded ? plan.id + ' browser-local demo plan was generated.' : 'Download is unavailable in this test environment.', downloaded ? 'ok' : 'info');
 }
 
+function executiveSelectedPreliminaryReport(reportId) {
+  var id = reportId || (state.executiveDirectorUi && state.executiveDirectorUi.selectedPreliminaryReportId);
+  var report = reportArtifactById(id, state);
+  return report && normalizeReportType(report.reportType) === 'Preliminary Report' ? report : null;
+}
+
+function handleExecutivePreliminaryFieldChange(field, target) {
+  var ui = state.executiveDirectorUi;
+  var value = target && target.value !== undefined ? target.value : '';
+  if (field === 'executive-preliminary-query') ui.preliminaryReportQuery = value || '';
+  if (field === 'executive-preliminary-status') ui.preliminaryReportStatus = value || 'all';
+  if (field === 'executive-preliminary-comment') ui.preliminaryReportComment = value || '';
+  persistAfterAction();
+  if (field !== 'executive-preliminary-comment') render();
+}
+
+function handleExecutivePreliminarySelect(reportId) {
+  var report = executiveSelectedPreliminaryReport(reportId);
+  if (!report) return;
+  state.executiveDirectorUi.selectedPreliminaryReportId = report.id;
+  state.executiveDirectorUi.preliminaryReportDecision = '';
+  state.executiveDirectorUi.preliminaryReportComment = '';
+  state.params = { reportId: report.id };
+  persistAfterAction();
+  render();
+}
+
+function handleExecutivePreliminaryDecisionChoice(decision) {
+  if (['approve', 'return', 'reject'].indexOf(decision) === -1) return;
+  state.executiveDirectorUi.preliminaryReportDecision = decision;
+  state.executiveDirectorUi.preliminaryReportComment = '';
+  persistAfterAction();
+  render();
+}
+
+function handleExecutivePreliminaryConfirm(reportId) {
+  var report = executiveSelectedPreliminaryReport(reportId);
+  if (!report) return;
+  var commentInput = document.getElementById('executive-preliminary-comment');
+  if (commentInput && commentInput.value !== undefined) {
+    state.executiveDirectorUi.preliminaryReportComment = commentInput.value || '';
+  }
+  var ui = state.executiveDirectorUi;
+  var result = applyExecutivePreliminaryReportDecision(state, report.id, {
+    decision: ui.preliminaryReportDecision,
+    actor: { role: 'executiveDirector', name: ROLES.executiveDirector.user },
+    rationale: ui.preliminaryReportComment
+  });
+  if (!result.ok) {
+    toast('Preliminary Report decision not recorded', result.message, 'warn');
+    return;
+  }
+  ui.preliminaryReportDecision = '';
+  ui.preliminaryReportComment = '';
+  persistAfterAction();
+  render();
+  toast('Preliminary Report decision recorded', result.message, 'ok');
+}
+
+function handleExecutivePreliminaryPreview(reportId) {
+  var report = executiveSelectedPreliminaryReport(reportId);
+  if (!report) return;
+  state.executiveDirectorUi.selectedPreliminaryReportId = report.id;
+  persistAfterAction();
+  openModal(modalManagerReportPreview(report));
+}
+
 function executiveSelectedReport(reportId) {
   var id = reportId || (state.executiveDirectorUi && state.executiveDirectorUi.selectedReportId);
   var report = reportArtifactById(id, state);
@@ -3986,7 +4202,10 @@ function leadReportDownloadText(auditId) {
     'Lead Inspector: John Lead Inspector',
     'Report Version: 1.0 (Draft)',
     'Checklist Progress: 60 / 60 (100%)',
-    'Approval Chain: Inspector -> Preliminary Report -> Lead Inspector Review -> Department Manager Review -> Preliminary Report Released to Service Provider if CAP required -> Service Provider CAP Completion -> Lead Inspector Finalizes Report -> Department Manager Final Approval -> General Manager Review -> Executive Director Final Approval -> Final Report Issued -> CAP Process Starts -> Inspector verifies CAP -> Lead Inspector recommends closure -> Department Manager approves closure',
+    DEMO_LIFECYCLE_SUMMARIES.planning,
+    DEMO_LIFECYCLE_SUMMARIES.preliminary,
+    DEMO_LIFECYCLE_SUMMARIES.final,
+    'CAP Verification: Inspector / Lead Inspector -> Close, Partially Close, or Not Close. Only Close closes the Finding.',
     '',
     'Executive Summary',
     'The inspection was conducted between 15 - 18 Jun 2026 at SkyCargo Air facilities as part of the scheduled routine inspection.',
@@ -5409,30 +5628,26 @@ function submitEvidence(id) {
 function evDecision(id, decision) {
   var f = findingById(id);
   if (!f) return;
-  var comment = val('ev-comment'), internal = val('ev-internal');
-  var latest = f.evidence.length ? f.evidence[f.evidence.length - 1] : null;
-  if (comment) f.commentsToAuditee.push({ author: currentActorLabel(), date: DEMO_TODAY, text: comment });
-  if (internal) f.internalNotes.push({ author: currentActorLabel(), date: DEMO_TODAY, text: internal });
-
-  if (decision === 'accept') {
-    if (latest) latest.status = 'Accepted';
-    f.status = 'CLOSED';
-    f.closedDate = DEMO_TODAY;
-    f.closureType = 'evidence-accepted';
-    addLog('Evidence accepted', id);
-    addLog('Finding closed (evidence accepted)', id);
-    pushNotification('auditee', '✅', 'Evidence accepted — finding ' + id + ' is now closed. Thank you.', { organizationId: f.orgId });
-    pushNotification('manager', '✅', 'Finding ' + id + ' closed for ' + orgName(f.orgId) + '. Dashboard updated.');
-    closeModal();
-    toast('Finding closed', id + ' closed after evidence acceptance. Manager dashboard updated.', 'ok');
-  } else {
-    if (latest) latest.status = 'More Information Requested';
-    f.status = 'EVIDENCE_MORE_INFO';
-    addLog('Evidence — more information requested', id);
-    pushNotification('auditee', '↩️', 'The CAA requested more evidence for ' + id + '.', { organizationId: f.orgId });
-    closeModal();
-    toast('More information requested', 'The auditee has been asked for additional evidence.', 'warn');
+  var actorRole = state.role === 'leadInspector' ? 'leadInspector' : state.role;
+  var result = applyCapVerificationDecision(state, id, {
+    result: decision,
+    actor: {
+      role: actorRole,
+      name: ROLES[actorRole] ? ROLES[actorRole].user : currentActorLabel()
+    },
+    commentToAuditee: val('ev-comment'),
+    internalNote: val('ev-internal')
+  });
+  if (!result.ok) {
+    toast('Verification not recorded', result.message, 'warn');
+    return;
   }
+  closeModal();
+  toast(
+    result.finding.status === 'CLOSED' ? 'Finding closed' : 'Finding remains open',
+    result.message,
+    result.finding.status === 'CLOSED' ? 'ok' : 'warn'
+  );
   persistAfterAction();
   render();
 }
@@ -5450,7 +5665,7 @@ function doAuthorizedClosure(id) {
   f.internalNotes.push({ author: currentActorLabel(), date: DEMO_TODAY, text: 'Authorized closure reason: ' + reason + (internal ? ' — ' + internal : '') });
   addLog('Finding closed (authorized closure)', id);
   pushNotification('auditee', '✅', 'Finding ' + id + ' has been closed by the CAA under an authorized closure decision.', { organizationId: f.orgId });
-  pushNotification('manager', '⚖️', 'Finding ' + id + ' closed via authorized closure (recorded in the audit trail).');
+  pushNotification('manager', '⚖️', 'Finding ' + id + ' closed via authorized closure (recorded in demo audit history).');
   closeModal();
   toast('Finding closed', id + ' closed under an authorized closure decision (audit-logged).', 'ok');
   persistAfterAction();
@@ -6039,6 +6254,7 @@ document.addEventListener('change', function (e) {
   if (field === 'manager-risk-level') handleManagerRiskFilter('risk', e.target.value);
   if (field === 'finance-review-status' || field === 'finance-review-comment') handleFinanceReviewFieldChange(field, e.target);
   if (field && field.indexOf('executive-planning-') === 0) handleExecutivePlanningFieldChange(field, e.target);
+  if (field && field.indexOf('executive-preliminary-') === 0) handleExecutivePreliminaryFieldChange(field, e.target);
   if (field && field.indexOf('executive-report-') === 0) handleExecutiveReportFieldChange(field, e.target);
   if (field === 'lead-review-decision') {
     handleLeadReviewDecision(e.target.getAttribute('data-id'), e.target.value);
@@ -6109,6 +6325,7 @@ document.addEventListener('input', function (e) {
   }
   if (field === 'finance-review-query' || field === 'finance-review-comment') handleFinanceReviewFieldChange(field, e.target);
   if (field === 'executive-planning-query' || field === 'executive-planning-comment') handleExecutivePlanningFieldChange(field, e.target);
+  if (field === 'executive-preliminary-query' || field === 'executive-preliminary-comment') handleExecutivePreliminaryFieldChange(field, e.target);
   if (field === 'executive-report-query' || field === 'executive-report-comment') handleExecutiveReportFieldChange(field, e.target);
   if (field === 'final-report-content') {
     handleFinalReportPrepareFieldChange(field, e.target);

@@ -18,6 +18,8 @@ context.applyApprovalDecision(item, { decision: 'approve', actor: { role: 'finan
 context.applyApprovalDecision(item, { decision: 'forward', actor: { role: 'gm', name: context.ROLES.gm.user }, comment: 'Forward to Executive Director.' });
 context.applyApprovalDecision(item, { decision: 'approve', actor: { role: 'executiveDirector', name: context.ROLES.executiveDirector.user }, comment: 'ED approved.' });
 assert.equal(item.status, 'approved');
+assert.equal(item.preparation.status, 'not_released');
+assert.equal(context.planningWorkspaceNextAction(item).label, 'GM Release to Department');
 
 assert.throws(
   () => context.releasePlanningItem(item, { actorRole: 'manager', actorName: 'Selin Demir' }),

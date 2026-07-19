@@ -232,12 +232,13 @@ test('Department Preliminary decisions propagate the exact selected Report ID', 
   context.state.departmentPreliminaryReviewUi.selectedReportId = 'PR-ISOLATION-CHECK';
   const originalPreliminaryBefore = JSON.stringify(context.reportArtifactById('PR-2026-018', context.state));
 
-  context.handleDepartmentPreliminaryApprove('service_provider');
+  context.handleDepartmentPreliminaryApprove();
 
   assert.match(context.state.notifications[0].text, /PR-ISOLATION-CHECK/);
   assert.equal(context.state.auditLog[0].target, 'PR-ISOLATION-CHECK');
   assert.equal(JSON.stringify(context.reportArtifactById('PR-2026-018', context.state)), originalPreliminaryBefore);
-  assert.equal(context.reportArtifactById('PR-ISOLATION-CHECK', context.state).status, 'released_to_service_provider');
+  assert.equal(context.reportArtifactById('PR-ISOLATION-CHECK', context.state).status, 'submitted_to_gm');
+  assert.equal(context.reportArtifactById('PR-ISOLATION-CHECK', context.state).ownerRole, 'gm');
 });
 
 test('mobile report preview CSS contains nested overflow and width guards', () => {
@@ -535,7 +536,8 @@ test('role home planning summaries keep Finance before GM', () => {
 
   context.state.role = 'executiveDirector';
   let html = context.viewRoleHome();
-  assert.match(html, /Planning: DM -&gt; Finance -&gt; GM -&gt; ED/);
+  assert.match(html, /Planning: Department Manager -&gt; Finance -&gt; General Manager -&gt; Executive Director/);
+  assert.match(html, /GM Release to Department -&gt; Department preparation/);
   assert.doesNotMatch(html, /Planning: DM -&gt; GM -&gt; Finance -&gt; ED/);
 
   context.state.role = 'finance';

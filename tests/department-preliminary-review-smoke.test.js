@@ -52,6 +52,7 @@ vm.createContext(context);
   'js/inspection.js',
   'js/planning.js',
   'js/reports.js',
+  'js/manager-workspaces.js',
   'js/work-items.js',
   'js/views.js',
   'js/app.js'
@@ -72,10 +73,8 @@ assert.match(html, /Cabin Inspection/);
 assert.match(html, /Fly Namibia/);
 assert.match(html, /Pending Your Approval/);
 assert.match(html, /Submission & Next Steps/);
-assert.match(html, /If CAP Required/);
-assert.match(html, /Send to Service Provider/);
-assert.match(html, /If No CAP Required/);
-assert.match(html, /Send to General Manager for Review/);
+assert.match(html, /Approve &amp; Forward to General Manager/);
+assert.doesNotMatch(html, /If CAP Required|If No CAP Required|Send to Service Provider/);
 assert.match(html, /Request Changes/);
 
 context.handleAction('department-prelim-tab', dataEl({ 'data-tab': 'findings' }));
@@ -84,22 +83,24 @@ assert.match(html, /Inspection & Findings/);
 assert.match(html, /CAB-2026-011/);
 assert.match(html, /Required/);
 
-context.handleAction('department-prelim-approve', dataEl({ 'data-path': 'service_provider' }));
-assert.equal(context.state.departmentPreliminaryReviewUi.approvedPath, 'service_provider');
-assert.equal(context.state.notifications[0].role, 'auditee');
-assert.match(context.state.notifications[0].text, /Service Provider portal/);
-assert.equal(context.reportForAudit('AUD-2026-001').status, 'released_to_service_provider');
+context.handleAction('department-prelim-approve', dataEl({}));
+assert.equal(context.state.departmentPreliminaryReviewUi.approvedPath, 'gm');
+assert.equal(context.state.notifications[0].role, 'gm');
+assert.match(context.state.notifications[0].text, /General Manager review/);
+assert.equal(context.reportForAudit('AUD-2026-001').status, 'submitted_to_gm');
 html = elements.get('app-root').innerHTML;
-assert.match(html, /Sent to Service Provider/);
+assert.match(html, /Sent to General Manager/);
 
 Object.assign(context.state, context.freshState());
 context.state.role = 'manager';
 context.state.view = 'audit-reports';
 context.state.params = { filter: 'preliminary' };
 context.state.selectedFilters['audit-reports'] = 'preliminary';
+context.reportArtifactById('PR-2026-018', context.state).capRequired = false;
+context.state.managerReports.find((report) => report.id === 'PR-2026-018').capRequired = false;
 context.render();
 
-context.handleAction('department-prelim-approve', dataEl({ 'data-path': 'gm' }));
+context.handleAction('department-prelim-approve', dataEl({}));
 assert.equal(context.state.departmentPreliminaryReviewUi.approvedPath, 'gm');
 assert.equal(context.state.notifications[0].role, 'gm');
 assert.match(context.state.notifications[0].text, /General Manager review/);
@@ -122,10 +123,10 @@ context.state.view = 'audit-reports';
 context.state.params = { filter: 'preliminary', reportId: 'PR-ISOLATION-CHECK' };
 context.state.departmentPreliminaryReviewUi.selectedReportId = 'PR-ISOLATION-CHECK';
 const originalPreliminaryBefore = JSON.stringify(context.reportArtifactById('PR-2026-018', context.state));
-context.handleDepartmentPreliminaryApprove('service_provider');
+context.handleDepartmentPreliminaryApprove();
 assert.match(context.state.notifications[0].text, /PR-ISOLATION-CHECK/);
 assert.equal(context.state.auditLog[0].target, 'PR-ISOLATION-CHECK');
-assert.equal(context.reportArtifactById('PR-ISOLATION-CHECK', context.state).status, 'released_to_service_provider');
+assert.equal(context.reportArtifactById('PR-ISOLATION-CHECK', context.state).status, 'submitted_to_gm');
 assert.equal(JSON.stringify(context.reportArtifactById('PR-2026-018', context.state)), originalPreliminaryBefore);
 
 console.log('department-preliminary-review-smoke: ok');

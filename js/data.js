@@ -78,7 +78,7 @@ var ROLES = {
   manager:          { key: 'manager',          name: 'Department Manager', user: 'Mehmet Kaya',  initials: 'MK', color: '#2f6fd6',
                       question: 'Where are we exposed, delayed or overloaded?' },
   gm:               { key: 'gm',               name: 'General Manager',    user: 'Okan Demir',   initials: 'OD', color: '#0f766e',
-                      question: 'Which Final Reports need intermediate review or forwarding, and where are departments exposed?' },
+                      question: 'Which Reports need intermediate review or forwarding, and where are departments exposed?' },
   finance:          { key: 'finance',          name: 'Finance Review',     user: 'Derya Acar',   initials: 'DA', color: '#b45309',
                       question: 'Is the requested budget and resource justified?' },
   executiveDirector:{ key: 'executiveDirector',name: 'Executive Director', user: 'Ufuk Aslan',   initials: 'UA', color: '#9f1239',
@@ -118,6 +118,20 @@ var LIFECYCLE_STEPS = [
   'Evidence submitted',
   'Evidence verified',
   'Closed'
+];
+
+var DEMO_LIFECYCLE_SUMMARIES = {
+  planning: 'Planning: Department Manager -> Finance -> General Manager -> Executive Director -> GM Release to Department -> Department preparation.',
+  preliminary: 'Preliminary Report: Lead Inspector -> Department Manager -> General Manager -> Executive Director -> Service Provider issue.',
+  final: 'Final Report: Lead Inspector -> Department Manager -> General Manager -> Executive Director -> Service Provider issue.',
+  routineCoordination: 'Routine: notify the Service Provider after Lead Inspector assignment; share the proposed date, checklist, and relevant information; wait for confirmation or an accepted alternative date.',
+  unannouncedCoordination: 'Ad Hoc / Unannounced: withhold advance notification and coordination.'
+};
+
+var DEMO_BOUNDARY_SUMMARIES = [
+  'Browser-local mock approvals with demo timestamps.',
+  'Demo audit history for traceability; not a production audit trail.',
+  'Mock filenames and local browser state; no secure document storage.'
 ];
 
 var V2_STATUS = {
@@ -297,6 +311,7 @@ var SEED_MANAGED_CHECKLISTS = [
 var SEED_AUDITS = [
   { id: 'AUD-2026-001', ref: '2026 Cabin Inspection - ' + CANONICAL_SERVICE_PROVIDER_NAME, orgId: 'ORG-XYZ', type: 'Cabin Inspection', domain: 'Cabin Safety',
     templateId: 'TPL-CABIN-2026', date: DEMO_TODAY, mode: 'On-site', location: CANONICAL_SERVICE_PROVIDER_NAME + ' aircraft cabin / on-site inspection',
+    inspectionCategory: 'Routine', noticePolicy: 'advance',
     lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer'], status: 'Scheduled', checklistStarted: false },
   { id: 'AUD-2026-002', ref: 'Q1 Ramp Inspection', orgId: 'ORG-SKY', type: 'Ramp Inspection', domain: 'Ramp',
     templateId: 'TPL-RAMP-2026', date: '2026-02-12', mode: 'On-site', location: 'Apron 4',
@@ -309,6 +324,7 @@ var SEED_AUDITS = [
     lead: 'Caner Yildiz', team: ['Caner Yildiz'], status: 'Closed', checklistStarted: true },
   { id: 'AUD-2026-005', ref: 'Security Audit', orgId: 'ORG-SKY', type: 'Special Inspection', domain: 'Security',
     templateId: 'TPL-SEC-2026', date: '2026-05-22', mode: 'On-site', location: 'SkyCargo Terminal',
+    inspectionCategory: 'Ad Hoc / Unannounced', noticePolicy: 'withheld',
     lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer', 'Mehmet Aydin'], status: 'In Progress', checklistStarted: true },
   { id: 'AUD-2026-006', ref: 'Certificate Renewal Review', orgId: 'ORG-BLU', type: 'Certificate Renewal', domain: 'Licensing',
     templateId: 'TPL-CABIN-2026', date: '2026-09-10', mode: 'On-site', location: 'BlueWing HQ',
@@ -1373,6 +1389,55 @@ var SEED_INSPECTION_TEAMS = [
   }
 ];
 
+/* ----------------------------- Inspection coordination (demo-only) ----------------------------- */
+var SEED_INSPECTION_COORDINATIONS = [
+  {
+    auditId: 'AUD-2026-001',
+    organizationId: 'ORG-XYZ',
+    inspectionCategory: 'Routine / Announced',
+    noticePolicy: 'advance',
+    status: 'ready_to_notify',
+    proposedDate: '2026-06-15',
+    alternativeDate: '',
+    confirmedDate: '',
+    checklistName: 'Cabin Inspection Checklist',
+    checklistFiles: ['Cabin_Inspection_Checklist_Demo.pdf'],
+    sharedInformation: ['Inspection scope', 'On-site location', 'Lead Inspector contact'],
+    notifiedAt: '',
+    respondedAt: '',
+    caaConfirmedAt: '',
+    providerComment: '',
+    history: []
+  },
+  {
+    auditId: 'AUD-2026-005',
+    organizationId: 'ORG-SKY',
+    inspectionCategory: 'Ad Hoc / Unannounced',
+    noticePolicy: 'withheld',
+    status: 'notice_withheld',
+    proposedDate: '2026-05-22',
+    alternativeDate: '',
+    confirmedDate: '2026-05-22',
+    checklistName: 'Security Inspection Checklist',
+    checklistFiles: [],
+    sharedInformation: [],
+    notifiedAt: '',
+    respondedAt: '',
+    caaConfirmedAt: '',
+    providerComment: '',
+    history: [{ at: '2026-05-22 08:00', actor: 'System', action: 'Advance notice withheld by configured inspection policy' }]
+  }
+];
+
+function inspectionCoordinationByAuditId(source, auditId) {
+  var records = source && Array.isArray(source.inspectionCoordinations) ? source.inspectionCoordinations : [];
+  return records.filter(function (record) { return record.auditId === auditId; })[0] || null;
+}
+
+function inspectionCoordinationRequiresAdvanceNotice(record) {
+  return !!record && record.noticePolicy === 'advance';
+}
+
 var SEED_MANAGER_REPORTS = [
   {
     id: 'PR-2026-018', approvalPackageId: 'PR-2026-018', auditId: 'AUD-2026-001', organizationId: 'ORG-XYZ', organization: CANONICAL_SERVICE_PROVIDER_NAME,
@@ -1598,6 +1663,21 @@ function normalizeCanonicalInspectionExecution(target) {
 
 function mergeRemediationState(base, saved) {
   var source = saved || {};
+  var coordinationDefaults = deepClone(SEED_INSPECTION_COORDINATIONS);
+  var savedCoordinations = Array.isArray(source.inspectionCoordinations) ? source.inspectionCoordinations : [];
+  base.inspectionCoordinations = coordinationDefaults.map(function (defaults) {
+    var savedRecord = savedCoordinations.filter(function (record) { return record.auditId === defaults.auditId; })[0] || {};
+    var merged = Object.assign({}, defaults, savedRecord);
+    merged.checklistFiles = Array.isArray(savedRecord.checklistFiles) ? savedRecord.checklistFiles.slice() : defaults.checklistFiles.slice();
+    merged.sharedInformation = Array.isArray(savedRecord.sharedInformation) ? savedRecord.sharedInformation.slice() : defaults.sharedInformation.slice();
+    merged.history = Array.isArray(savedRecord.history) ? savedRecord.history.slice() : defaults.history.slice();
+    return merged;
+  });
+  savedCoordinations.forEach(function (savedRecord) {
+    if (!savedRecord || !savedRecord.auditId || inspectionCoordinationByAuditId({ inspectionCoordinations: base.inspectionCoordinations }, savedRecord.auditId)) return;
+    base.inspectionCoordinations.push(deepClone(savedRecord));
+  });
+
   var leadDefaults = freshState().leadAssignmentsByAudit;
   base.leadAssignmentsByAudit = Object.assign({}, deepClone(leadDefaults), source.leadAssignmentsByAudit || {});
   Object.keys(base.leadAssignmentsByAudit).forEach(function (auditId) {
@@ -1688,7 +1768,7 @@ function mergeRemediationState(base, saved) {
 
   var fresh = freshState();
   base.serviceProviderUi = Object.assign({}, deepClone(fresh.serviceProviderUi), source.serviceProviderUi || {});
-  ['cap', 'preliminaryReports', 'finalReports', 'reportPreview'].forEach(function (key) {
+  ['coordination', 'cap', 'preliminaryReports', 'finalReports', 'reportPreview'].forEach(function (key) {
     base.serviceProviderUi[key] = Object.assign({}, deepClone(fresh.serviceProviderUi[key]), (source.serviceProviderUi && source.serviceProviderUi[key]) || {});
   });
   base.financeUi = Object.assign({}, deepClone(fresh.financeUi), source.financeUi || {});
@@ -1697,17 +1777,32 @@ function mergeRemediationState(base, saved) {
   if (!base.planningItems.some(function (item) { return item.id === base.financeUi.selectedPlanId; })) base.financeUi.selectedPlanId = base.planningItems[0] ? base.planningItems[0].id : '';
   if (!base.planningItems.some(function (item) { return item.id === base.executiveDirectorUi.selectedPlanId; })) base.executiveDirectorUi.selectedPlanId = base.planningItems[0] ? base.planningItems[0].id : '';
   var gmSelectionEligible = base.auditReports.some(function (report) {
-    return report.id === base.generalManagerUi.selectedReportId && report.reportType === 'Final Report' && report.status === 'submitted_to_gm' && report.ownerRole === 'gm' && report.locked !== true;
+    return report.id === base.generalManagerUi.selectedReportId && ['Preliminary Report', 'Final Report'].indexOf(report.reportType) !== -1 && report.status === 'submitted_to_gm' && report.ownerRole === 'gm' && report.locked !== true;
   });
   if (!gmSelectionEligible) {
     var pendingGm = base.auditReports.filter(function (report) {
-      return report.reportType === 'Final Report' && report.status === 'submitted_to_gm' && report.ownerRole === 'gm' && report.locked !== true;
+      return ['Preliminary Report', 'Final Report'].indexOf(report.reportType) !== -1 && report.status === 'submitted_to_gm' && report.ownerRole === 'gm' && report.locked !== true;
     }).sort(function (left, right) {
       if (left.id === 'FR-2026-021') return -1;
       if (right.id === 'FR-2026-021') return 1;
       return (right.submittedAt || '').localeCompare(left.submittedAt || '');
     })[0];
     base.generalManagerUi.selectedReportId = pendingGm ? pendingGm.id : '';
+  }
+  var preliminarySelectionEligible = base.auditReports.some(function (report) {
+    return report.id === base.executiveDirectorUi.selectedPreliminaryReportId && report.reportType === 'Preliminary Report' && report.status === 'submitted_to_executive' && report.ownerRole === 'executiveDirector' && report.locked !== true;
+  });
+  var hasUnsavedPreliminaryDecision = !!(
+    base.executiveDirectorUi.preliminaryReportDecision ||
+    String(base.executiveDirectorUi.preliminaryReportComment || '').trim()
+  );
+  if (!preliminarySelectionEligible && !hasUnsavedPreliminaryDecision) {
+    var pendingPreliminary = base.auditReports.filter(function (report) {
+      return report.reportType === 'Preliminary Report' && report.status === 'submitted_to_executive' && report.ownerRole === 'executiveDirector' && report.locked !== true;
+    }).sort(function (left, right) {
+      return (right.submittedAt || '').localeCompare(left.submittedAt || '') || left.id.localeCompare(right.id);
+    })[0];
+    base.executiveDirectorUi.selectedPreliminaryReportId = pendingPreliminary ? pendingPreliminary.id : '';
   }
   var edSelectionEligible = base.auditReports.some(function (report) {
     return report.id === base.executiveDirectorUi.selectedReportId && report.reportType === 'Final Report' && report.status === 'submitted_to_executive' && report.ownerRole === 'executiveDirector' && report.locked !== true;
@@ -1762,6 +1857,7 @@ function freshState() {
     planningItems: deepClone(SEED_PLANNING_ITEMS),
     users: deepClone(SEED_USERS),
     inspectionTeams: deepClone(SEED_INSPECTION_TEAMS),
+    inspectionCoordinations: deepClone(SEED_INSPECTION_COORDINATIONS),
     managerReports: deepClone(SEED_MANAGER_REPORTS),
     managerFindingsUi: { query: '', status: 'all', dateRange: 'all', selectedAuditId: 'AUD-2026-001', tab: 'overview' },
     inspectionTeamUi: { query: '', department: 'all', status: 'all', dateRange: 'all', selectedAuditId: 'AUD-2026-001', tab: 'overview', openMenuAuditId: '' },
@@ -1822,6 +1918,7 @@ function freshState() {
       }
     },
     serviceProviderUi: {
+      coordination: { selectedAuditId: 'AUD-2026-001', alternativeDate: '', providerComment: '' },
       cap: { group: 'all', auditId: 'all', level: 'all', status: 'all', query: '', selectedFindingId: 'CAB-2026-001' },
       preliminaryReports: { auditId: 'all', status: 'all', query: '', selectedReportId: 'PR-2026-018' },
       finalReports: { auditId: 'all', year: 'all', capRequirement: 'all', query: '', selectedReportId: 'FR-2026-018' },
@@ -1832,6 +1929,7 @@ function freshState() {
       dashboardRange: 'current',
       planningQuery: '', planningDepartment: 'all', planningRisk: 'all', planningDate: 'all', planningStatus: 'all',
       selectedPlanId: 'PLAN-2026-Q3-CABIN', openPlanActionId: '', planDecision: '', planComment: '', planTab: 'overview',
+      preliminaryReportQuery: '', preliminaryReportStatus: 'all', selectedPreliminaryReportId: '', preliminaryReportDecision: '', preliminaryReportComment: '',
       reportQuery: '', reportOrganization: 'all', reportType: 'Final Report', reportStatus: 'all',
       selectedReportId: 'FR-2026-022', reportTab: 'summary', reportDecision: '', enforcementCategory: '', reportComment: '', previewZoom: 100
     },
@@ -2103,6 +2201,24 @@ function mergeDemoState(saved) {
     ['updates', 'attachments', 'notifications', 'history'].forEach(function (field) {
       if (!Array.isArray(existingCap[field])) existing.cap[field] = deepClone((seedFinding.cap && seedFinding.cap[field]) || []);
     });
+  });
+  base.findings.forEach(function (finding) {
+    if (!Array.isArray(finding.evidence)) finding.evidence = [];
+    if (!Array.isArray(finding.commentsToAuditee)) finding.commentsToAuditee = [];
+    if (!Array.isArray(finding.internalNotes)) finding.internalNotes = [];
+    if (!Array.isArray(finding.capVerificationHistory)) finding.capVerificationHistory = [];
+    if (!finding.capVerification || typeof finding.capVerification !== 'object') {
+      finding.capVerification = null;
+      return;
+    }
+    var current = finding.capVerification;
+    var alreadyRecorded = finding.capVerificationHistory.some(function (entry) {
+      return entry.result === current.result &&
+        entry.verifiedAt === current.verifiedAt &&
+        entry.evidenceId === current.evidenceId &&
+        Number(entry.evidenceVersion) === Number(current.evidenceVersion);
+    });
+    if (!alreadyRecorded) finding.capVerificationHistory.push(deepClone(current));
   });
   if (!Array.isArray(base.auditLog)) base.auditLog = [];
   SEED_AUDIT_LOG.forEach(function (seedLog) {

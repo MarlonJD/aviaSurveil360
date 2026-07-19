@@ -103,15 +103,15 @@ let result = context.applyManagerReportDecision(
   preliminaryState,
   'PR-2026-018',
   'approve',
-  'Approved for CAP response.',
+  'Approved for General Manager review.',
   { role: 'manager', name: 'Mehmet Kaya' }
 );
 assert.equal(result.ok, true);
-assert.equal(result.report.status, 'released_to_service_provider');
-assert.equal(result.report.ownerRole, 'auditee');
+assert.equal(result.report.status, 'submitted_to_gm');
+assert.equal(result.report.ownerRole, 'gm');
 assert.equal(result.report.managerDecision, 'approve');
 assert.ok(result.report.managerDecisionAt);
-assert.match(result.report.history.at(-1).action, /released to Service Provider/);
+assert.match(result.report.history.at(-1).action, /forwarded Preliminary Report to General Manager/);
 assert.equal(
   JSON.stringify(context.managerReportById(preliminaryState, 'FR-2026-018')),
   finalBeforePreliminaryDecision,

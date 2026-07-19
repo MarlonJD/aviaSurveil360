@@ -23,11 +23,33 @@ let result = context.applyManagerReportDecision(
   context.state,
   preliminary.id,
   'approve',
-  'Department Manager released the Preliminary Report to the Service Provider.',
+  'Department Manager forwarded the Preliminary Report to the General Manager.',
   { role: 'manager', name: context.ROLES.manager.user }
 );
 assert.equal(result.ok, true);
+assert.equal(preliminary.status, 'submitted_to_gm');
+assert.equal(preliminary.ownerRole, 'gm');
+assert.equal(context.serviceProviderVisibleReports(context.state, preliminary.organizationId, 'Preliminary Report').some((report) => report.id === preliminary.id), false);
+result = context.applyGeneralManagerReportDecision(
+  context.state,
+  preliminary.id,
+  'approve',
+  'General Manager reviewed and forwarded the Preliminary Report.',
+  { role: 'gm', name: context.ROLES.gm.user }
+);
+assert.equal(result.ok, true);
+assert.equal(preliminary.status, 'submitted_to_executive');
+assert.equal(preliminary.ownerRole, 'executiveDirector');
+assert.equal(context.serviceProviderVisibleReports(context.state, preliminary.organizationId, 'Preliminary Report').some((report) => report.id === preliminary.id), false);
+result = context.applyExecutivePreliminaryReportDecision(context.state, preliminary.id, {
+  decision: 'approve',
+  actor: { role: 'executiveDirector', name: context.ROLES.executiveDirector.user },
+  rationale: 'Approved for issue to the Service Provider.'
+});
+assert.equal(result.ok, true);
 assert.equal(preliminary.status, 'released_to_service_provider');
+assert.equal(preliminary.locked, true);
+assert.equal(context.serviceProviderVisibleReports(context.state, preliminary.organizationId, 'Preliminary Report').filter((report) => report.id === preliminary.id).length, 1);
 assert.equal(JSON.stringify(finalReport), finalBeforePreliminary);
 
 const preliminaryBeforeFinal = JSON.stringify(preliminary);

@@ -14,20 +14,24 @@ Draft, Submitted, Pending CAA Review, Accepted, Rejected, More Information Reque
 
 ## Evidence statuses
 
-Uploaded, Pending CAA Review, Accepted, Rejected, More Information Requested, Superseded.
+Uploaded, Pending CAA Review, Accepted, Partially Accepted, Rejected, More Information Requested, Superseded.
 
 ## Permissions
 
 | Action | Inspector | Lead Inspector | Department Manager | Finance | General Manager | Executive Director | Auditee | Admin |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | View assigned audits | Yes | Yes | Yes | No | Summary | Summary | Own organization | Yes |
+| Coordinate announced inspection date | No | Send / confirm alternative | View | No | Summary | Summary | Confirm / propose alternative for own organization | No |
 | Create audit | Limited | Yes | Yes | No | No | No | No | Yes |
 | Complete checklist | Yes, assigned scope | Yes | No | No | No | No | No | No |
 | Create / issue Finding | Create | Review / issue | Yes | No | No | No | No | No |
 | Submit CAP / Evidence | No | No | No | No | No | No | Own organization | No |
-| Review CAP / Evidence | Yes | Yes | Yes | No | Summary | Summary | No | No |
-| Close Finding | Configurable recommendation | Recommend | Authorized path | No | No | No | No | No |
+| Review CAP | Yes | Yes | Summary | No | Summary | Summary | No | No |
+| Record Evidence verification: Close / Partially Close / Not Close | Yes | Yes | No | No | No | No | No | No |
+| Close Finding | Verification `Close` | Verification `Close` | Separate authorized path | No | No | No | No | No |
 | Review budget-required plan | No | No | Submit | Approve / return only | Review / release stage | Final plan approval (demo) | No | No |
+| Review Preliminary Report | No | Prepare | Department review | No | Return / forward only | Final decision | ED-released own-organization only | No |
+| Issue, mock-sign, or lock Preliminary Report | No | No | No | No | No | Yes, demo-only | No | No |
 | Review Final Report | No | Prepare | Department review | No | Return / forward only | Final decision | Issued own-organization only | No |
 | Issue, mock-sign, or lock Final Report | No | No | No | No | No | Yes, demo-only | No | No |
 | Configure templates | No | Limited | Limited | No | No | No | No | Yes |
@@ -35,19 +39,39 @@ Uploaded, Pending CAA Review, Accepted, Rejected, More Information Requested, Su
 ## Security rules
 
 - Auditee can see only its own organization across Messages, Settings, counts, documents, reports, CAP, Evidence, and notifications.
+- Auditee can see advance coordination only for its own Routine / Announced inspections after the CAA releases the request. Ad Hoc / Unannounced and notice-withheld records never render in advance.
 - Auditee cannot see Internal CAA Notes, inspector workload, other organizations, internal risk scoring, private dashboards, or enforcement deliberations.
-- General Manager review is intermediate. GM can return or forward a Final Report but cannot issue, mock-sign, or lock it.
-- Executive Director alone may issue, mock-sign, and lock an eligible Final Report in this demo.
+- Department Manager forwards Preliminary and Final Reports to General Manager;
+  Department Manager cannot issue, share, mock-sign, or lock them.
+- General Manager review is intermediate. GM can return or forward a
+  Preliminary or Final Report but cannot issue, share, mock-sign, or lock it.
+- Executive Director alone may issue, mock-sign, and lock an eligible
+  Preliminary or Final Report in this demo.
+- Service Provider visibility for a Preliminary Report begins only after
+  Executive Director release and remains restricted to the report's
+  `organizationId`. `capRequired` changes the recipient action, not the approval
+  chain.
 - Finance can approve or return a budget-required plan only; Finance cannot edit audit scope, release a plan, or decide a report.
 - Planning approval order: Department Manager -> Finance Review -> GM Review -> Executive Director.
   Finance approval advances to GM Review. Finance Return for Revision goes to Department Manager.
   GM may forward a Finance-reviewed plan to Executive Director or return it to Department Manager.
   A corrected submission must pass Finance again. Executive Director approval does not release the plan directly; GM Release to Department remains a separate next action.
-- CAP acceptance is not Finding closure. Report approval does not close open Findings or bypass required Evidence/verification.
+- CAP acceptance is not Finding closure. Report approval does not close open
+  Findings or bypass required Evidence/verification. Only Inspector or Lead
+  Inspector records `Close`, `Partially Close`, or `Not Close` in this demo.
+  `Partially Close` and `Not Close` leave the Finding at
+  `EVIDENCE_MORE_INFO`; only `Close` changes it to `CLOSED`.
+- `Comment to Auditee` and `Internal CAA Note` are both required for CAP
+  verification and remain separate. Internal notes never render to the Service
+  Provider.
 - Enforcement remains a separate configured or authorized process and is never automatic.
 - Submitted evidence is never deleted.
-- Critical actions require audit trail.
+- Demo traceability uses browser-local audit history; it is not a production
+  immutable audit trail.
 - Internal users should use MFA.
 - Sensitive data and files need access control.
 
 Implementation evidence is **demo-only** and **verified locally** through focused Node regressions and fresh isolated-browser authority/privacy checks at `1536x864`, `1366x768`, `1024x768`, and `390x844`. Production identity, authorization, signing, enforcement execution, and immutable audit logging are **not run**; **production-readiness not claimed**.
+
+Approvals and timestamps are browser-local mock records. Attachments are mock
+filenames in local browser state; no secure document storage is implemented.

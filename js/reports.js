@@ -161,6 +161,138 @@ function serviceProviderCapProgress(finding) {
   return progress[status] || { label: 'Open', percent: 0 };
 }
 
+var CAP_VERIFICATION_RESULTS = {
+  close: {
+    label: 'Close',
+    evidenceStatus: 'Accepted',
+    findingStatus: 'CLOSED',
+    findingClosed: true
+  },
+  partially_close: {
+    label: 'Partially Close',
+    evidenceStatus: 'Partially Accepted',
+    findingStatus: 'EVIDENCE_MORE_INFO',
+    findingClosed: false
+  },
+  not_close: {
+    label: 'Not Close',
+    evidenceStatus: 'More Information Requested',
+    findingStatus: 'EVIDENCE_MORE_INFO',
+    findingClosed: false
+  }
+};
+
+function capVerificationTimestamp() {
+  if (typeof managerReportDecisionTimestamp === 'function') return managerReportDecisionTimestamp();
+  if (typeof logTimestamp === 'function') return logTimestamp();
+  return (typeof DEMO_TODAY === 'string' ? DEMO_TODAY : '2026-06-15') + ' 00:00';
+}
+
+function capVerificationLatestEvidence(finding) {
+  var evidence = finding && Array.isArray(finding.evidence) ? finding.evidence : [];
+  return evidence.reduce(function (latest, item) {
+    if (!latest) return item;
+    return Number(item.version) >= Number(latest.version) ? item : latest;
+  }, null);
+}
+
+function applyCapVerificationDecision(target, findingId, input) {
+  var s = target || (typeof state !== 'undefined' ? state : null);
+  input = input || {};
+  var actor = input.actor || {};
+  if (!s || !Array.isArray(s.findings)) {
+    return { ok: false, message: 'Finding state is unavailable.', finding: null };
+  }
+  if (['inspector', 'leadInspector'].indexOf(actor.role) === -1) {
+    return { ok: false, message: 'Only an Inspector or Lead Inspector may record a CAP verification result.', finding: null };
+  }
+  var meta = CAP_VERIFICATION_RESULTS[input.result];
+  if (!meta) {
+    return { ok: false, message: 'Choose Close, Partially Close, or Not Close.', finding: null };
+  }
+  var finding = s.findings.filter(function (candidate) { return candidate.id === findingId; })[0] || null;
+  if (!finding) return { ok: false, message: 'Finding not found.', finding: null };
+  if (finding.status !== 'EVIDENCE_SUBMITTED') {
+    return { ok: false, message: 'This Finding is not awaiting Evidence verification.', finding: finding };
+  }
+  var latest = capVerificationLatestEvidence(finding);
+  if (!latest) {
+    return { ok: false, message: 'A submitted Evidence version is required before verification.', finding: finding };
+  }
+  var commentToAuditee = String(input.commentToAuditee || '').trim();
+  var internalNote = String(input.internalNote || '').trim();
+  if (!commentToAuditee) {
+    return { ok: false, message: 'Comment to Auditee is required.', finding: finding };
+  }
+  if (!internalNote) {
+    return { ok: false, message: 'Internal CAA Note is required.', finding: finding };
+  }
+
+  var at = capVerificationTimestamp();
+  var actorName = String(actor.name || (actor.role === 'leadInspector' ? 'Lead Inspector' : 'Inspector'));
+  var record = {
+    result: input.result,
+    label: meta.label,
+    findingClosed: meta.findingClosed,
+    actorRole: actor.role,
+    actorName: actorName,
+    verifiedAt: at,
+    evidenceId: latest.id,
+    evidenceVersion: latest.version
+  };
+  if (!Array.isArray(finding.capVerificationHistory)) finding.capVerificationHistory = [];
+  finding.capVerificationHistory.push(Object.assign({}, record));
+  finding.capVerification = record;
+  if (!Array.isArray(finding.commentsToAuditee)) finding.commentsToAuditee = [];
+  if (!Array.isArray(finding.internalNotes)) finding.internalNotes = [];
+  finding.commentsToAuditee.push({ author: actorName, date: DEMO_TODAY, text: commentToAuditee });
+  finding.internalNotes.push({ author: actorName, date: DEMO_TODAY, text: internalNote });
+  latest.status = meta.evidenceStatus;
+  finding.status = meta.findingStatus;
+  if (meta.findingClosed) {
+    finding.closedDate = DEMO_TODAY;
+    finding.closureType = 'evidence-verified';
+  } else {
+    finding.closedDate = null;
+    finding.closureType = null;
+  }
+
+  if (!Array.isArray(s.auditLog)) s.auditLog = [];
+  var nextLogId = Number(s.logSeq) || (s.auditLog.length + 1);
+  s.auditLog.unshift({
+    id: 'L' + nextLogId,
+    time: at,
+    actor: actorName,
+    action: 'CAP verification recorded: ' + meta.label,
+    target: finding.id,
+    system: false
+  });
+  s.logSeq = nextLogId + 1;
+  if (!Array.isArray(s.notifications)) s.notifications = [];
+  var nextNotificationId = Number(s.notifSeq) || (s.notifications.length + 1);
+  s.notifications.unshift({
+    id: 'N' + nextNotificationId,
+    role: 'auditee',
+    organizationId: finding.orgId || '',
+    userId: '',
+    icon: meta.findingClosed ? '✅' : '↩️',
+    text: meta.findingClosed
+      ? 'CAP verification closed Finding ' + finding.id + '.'
+      : meta.label + ' recorded for ' + finding.id + '; the Finding remains open.',
+    time: 'Just now',
+    unread: true
+  });
+  s.notifSeq = nextNotificationId + 1;
+
+  return {
+    ok: true,
+    message: meta.findingClosed
+      ? 'CAP verification recorded and Finding closed.'
+      : meta.label + ' recorded. Finding remains open.',
+    finding: finding
+  };
+}
+
 function serviceProviderCapRows(targetState, organizationId, filters) {
   var target = targetState || state;
   var opts = filters || {};
@@ -282,6 +414,7 @@ function serviceProviderRequiredAction(report, linkedFindings) {
   if (!report) return 'No action';
   if (normalizeReportType(report.reportType) === 'Preliminary Report') {
     if (report.status === 'closed') return 'No action - Preliminary Report closed';
+    if (report.capRequired === false) return 'View Report';
     return findings.some(function (finding) { return finding.status !== 'CLOSED'; }) ? 'Respond to CAP and Evidence requests' : 'View Report';
   }
   return findings.some(function (finding) { return finding.status !== 'CLOSED'; }) ? 'Continue Corrective Actions (CAP)' : 'View Report';
@@ -391,7 +524,7 @@ function finalReportDocumentHtml(report, audit, findings, team, targetState) {
     '<section class="state-report-section" id="report-conclusion"><h2>4. Conclusion</h2><p>This Final Report records the selected inspection and its linked Findings. ' + esc(open.length ? open.length + ' Finding' + (open.length === 1 ? '' : 's') + ' remain open for configured CAP, Evidence, verification, or authorized closure steps.' : 'No linked Finding remains open in the current browser-local state.') + '</p></section>' +
     '<section class="state-report-section" id="report-next"><h2>5. Next Steps</h2><ul><li>Service Provider continues the configured Corrective Action Plan and Evidence response for every open Finding.</li><li>CAA Inspector reviews submitted CAP/Evidence; acceptance does not by itself close a Finding.</li><li>Finding closure requires accepted evidence and verification, or an explicitly authorized and audit-logged closure path.</li></ul></section>' +
     '<footer class="state-report-approval"><div><span>Prepared by</span><b>' + esc(report.leadInspector) + '</b><small>' + esc(report.submittedAt || 'Not recorded') + '</small></div><div><span>Final authorized by</span><b>' + esc(report.finalAuthorizedBy || 'Pending Executive Director decision') + '</b><small>' + esc(report.finalAuthorizedAt || 'Not recorded') + '</small></div>' + signature + '</footer>' +
-    '<div class="state-report-demo-boundary">Demo-only browser-local report. No production reporting engine, real electronic signature, real document storage, enforcement execution, or records-management service is used.</div>' +
+    '<div class="state-report-demo-boundary">' + esc(DEMO_BOUNDARY_SUMMARIES.join(' ')) + ' No production reporting engine, enforcement execution, or records-management service is used.</div>' +
   '</article>';
 }
 
@@ -439,6 +572,6 @@ function finalReportPdfLines(report, audit, findings, team, targetState) {
   } else {
     lines.push('', 'Final authorized approval: Pending - no approval mark recorded.');
   }
-  lines.push('', 'Demo-only browser-generated document. No real electronic signature, file storage, enforcement execution, or records-management service.');
+  lines.push('', DEMO_BOUNDARY_SUMMARIES.join(' '), 'No production reporting engine, enforcement execution, or records-management service.');
   return lines;
 }

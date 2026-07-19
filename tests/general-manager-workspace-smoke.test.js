@@ -88,7 +88,7 @@ assert.equal(context.homeView('gm'), 'gm-dashboard');
 assert.match(context.ROLE_DESC.gm, /intermediate|review|forward/i);
 assert.doesNotMatch(context.ROLE_DESC.gm, /final report authorization/i);
 assert.doesNotMatch(context.ROLE_DESC.gm, /planning|budget/i);
-assert.match(context.ROLES.gm.question, /Final Reports/);
+assert.match(context.ROLES.gm.question, /Reports/);
 
 const defaultState = context.freshState();
 const defaultGmReport = context.reportArtifactById('FR-2026-021', defaultState);
@@ -143,15 +143,19 @@ assert.equal(state.auditLog.length, logCount + 1);
 assert.equal(state.notifications.length, notificationCount + 1);
 
 preliminaryReport.status = 'submitted_to_gm';
+preliminaryReport.ownerRole = 'gm';
 const preliminaryResult = context.applyGeneralManagerReportDecision(
   state,
   preliminaryReport.id,
   'approve',
-  'Not permitted.',
+  'Preliminary Report reviewed and forwarded.',
   { role: 'gm', name: 'General Manager' }
 );
-assert.equal(preliminaryResult.ok, false);
-assert.notEqual(preliminaryReport.status, 'submitted_to_executive');
+assert.equal(preliminaryResult.ok, true);
+assert.equal(preliminaryReport.status, 'submitted_to_executive');
+assert.equal(preliminaryReport.ownerRole, 'executiveDirector');
+assert.equal(preliminaryReport.reportType, 'Preliminary Report');
+assert.notEqual(preliminaryReport.locked, true);
 
 const wrongStageState = context.freshState();
 const wrongStageFinal = context.reportArtifactById('FR-2026-018', wrongStageState);
@@ -186,12 +190,17 @@ const projectionState = context.freshState();
 const projectionFinal = context.reportArtifactById('FR-2026-018', projectionState);
 projectionFinal.status = 'submitted_to_gm';
 projectionFinal.ownerRole = 'gm';
+const projectionPreliminary = context.reportArtifactById('PR-2026-018', projectionState);
+projectionPreliminary.status = 'submitted_to_gm';
+projectionPreliminary.ownerRole = 'gm';
 const projection = context.generalManagerProjection(projectionState);
+assert.equal(projection.pendingPreliminaryReports, 1);
 assert.equal(projection.pendingFinalReports, 2);
-assert.equal(projection.reportsAwaitingApproval, 2);
+assert.equal(projection.reportsAwaitingApproval, 3);
 assert.ok(Array.isArray(projection.departments));
 assert.ok(Array.isArray(projection.approvalRows));
 assert.ok(projection.approvalRows.some((row) => row.id === projectionFinal.id));
+assert.equal(projection.approvalRows.find((row) => row.id === projectionPreliminary.id).reportType, 'Preliminary Report');
 assert.ok(projection.approvalRows.some((row) => row.id === 'FR-2026-021'));
 assert.equal(projection.riskMatrix.length, 25);
 
@@ -203,19 +212,21 @@ context.render();
 let html = elements.get('app-root').innerHTML;
 [
   'General Manager Dashboard',
+  'Pending Preliminary Reports',
   'Pending Final Reports',
   'High Risk Findings',
   'Reports Awaiting Your Approval',
   'Overdue CAPs',
   'Department Overview',
   'Risk Heat Map',
-  'Final Report Review Queue'
+  'Report Review Queue'
 ].forEach((label) => assert.match(html, new RegExp(label)));
 
 context.state.view = 'gm-report-approvals';
 context.render();
 html = elements.get('app-root').innerHTML;
 assert.match(html, /Report Approvals/);
+assert.match(html, /Selected Preliminary Report|Selected Final Report/);
 assert.match(html, /Forward to Executive Director/);
 assert.doesNotMatch(html, /Approve &amp; Issue|final authorization|issues and locks/i);
 assert.match(html, /Return Report/);

@@ -42,7 +42,7 @@ const css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
 
 assert.deepEqual(
   JSON.parse(JSON.stringify(context.NAV.executiveDirector.filter((item) => item.label).map((item) => item.label))),
-  ['Dashboard', 'Planning', 'Final Reports', 'Notifications', 'Settings']
+  ['Dashboard', 'Planning', 'Preliminary Reports', 'Final Reports', 'Notifications', 'Settings']
 );
 assert.equal(context.homeView('executiveDirector'), 'executive-dashboard');
 assert.match(
@@ -56,10 +56,87 @@ assert.match(
   'the ED Final Report register must collapse duplicated columns before tablet row actions are clipped'
 );
 assert.equal(typeof context.applyExecutivePlanningDecision, 'function');
+assert.equal(typeof context.executivePreliminaryReportProjection, 'function');
+assert.equal(typeof context.applyExecutivePreliminaryReportDecision, 'function');
 assert.equal(typeof context.executiveFinalReportProjection, 'function');
 assert.equal(typeof context.applyExecutiveFinalReportDecision, 'function');
 assert.equal(typeof context.finalReportDocumentHtml, 'function');
 assert.equal(typeof context.finalReportPdfLines, 'function');
+
+const preliminaryState = context.freshState();
+const preliminaryReport = context.reportArtifactById('PR-2026-018', preliminaryState);
+context.applyManagerReportDecision(
+  preliminaryState,
+  preliminaryReport.id,
+  'approve',
+  'Department review complete.',
+  { role: 'manager', name: context.ROLES.manager.user }
+);
+context.applyGeneralManagerReportDecision(
+  preliminaryState,
+  preliminaryReport.id,
+  'approve',
+  'GM review complete.',
+  { role: 'gm', name: context.ROLES.gm.user }
+);
+assert.equal(preliminaryReport.status, 'submitted_to_executive');
+let preliminaryProjection = context.executivePreliminaryReportProjection(preliminaryState, {});
+assert.equal(preliminaryProjection.pending, 1);
+assert.ok(preliminaryProjection.rows.some((row) => row.id === preliminaryReport.id));
+assert.equal(context.applyExecutivePreliminaryReportDecision(preliminaryState, preliminaryReport.id, {
+  decision: 'approve',
+  actor: { role: 'gm', name: 'Wrong role' },
+  rationale: 'Wrong authority.'
+}).ok, false);
+
+preliminaryState.role = 'executiveDirector';
+preliminaryState.view = 'executive-preliminary-reports';
+preliminaryState.executiveDirectorUi.selectedPreliminaryReportId = preliminaryReport.id;
+preliminaryState.executiveDirectorUi.preliminaryReportStatus = 'all';
+context.state = preliminaryState;
+const preliminaryHtml = context.viewExecutivePreliminaryReportsWorkspace();
+[
+  'Preliminary Reports',
+  'Pending',
+  'Issued',
+  preliminaryReport.id,
+  preliminaryReport.organization,
+  'CAP Required',
+  'Approve &amp; Issue to Service Provider',
+  'Return to General Manager',
+  'Reject Report',
+  'not a real e-signature'
+].forEach((text) => assert.match(preliminaryHtml, new RegExp(text, 'i')));
+assert.doesNotMatch(preliminaryHtml, /Refer for Enforcement Review|Administrative Fee|Suspension/i);
+
+const preliminaryReturnState = context.freshState();
+const preliminaryReturnReport = context.reportArtifactById('PR-2026-018', preliminaryReturnState);
+preliminaryReturnReport.status = 'submitted_to_executive';
+preliminaryReturnReport.ownerRole = 'executiveDirector';
+let preliminaryDecision = context.applyExecutivePreliminaryReportDecision(preliminaryReturnState, preliminaryReturnReport.id, {
+  decision: 'return',
+  actor: { role: 'executiveDirector', name: context.ROLES.executiveDirector.user },
+  rationale: 'Clarify the release summary.'
+});
+assert.equal(preliminaryDecision.ok, true);
+assert.equal(preliminaryReturnReport.status, 'submitted_to_gm');
+assert.equal(preliminaryReturnReport.ownerRole, 'gm');
+assert.equal(context.serviceProviderVisibleReports(preliminaryReturnState, preliminaryReturnReport.organizationId, 'Preliminary Report').some((report) => report.id === preliminaryReturnReport.id), false);
+
+const preliminaryApprovalState = context.freshState();
+const preliminaryApprovalReport = context.reportArtifactById('PR-2026-018', preliminaryApprovalState);
+preliminaryApprovalReport.status = 'submitted_to_executive';
+preliminaryApprovalReport.ownerRole = 'executiveDirector';
+preliminaryDecision = context.applyExecutivePreliminaryReportDecision(preliminaryApprovalState, preliminaryApprovalReport.id, {
+  decision: 'approve',
+  actor: { role: 'executiveDirector', name: context.ROLES.executiveDirector.user },
+  rationale: 'Approved for Service Provider issue.'
+});
+assert.equal(preliminaryDecision.ok, true);
+assert.equal(preliminaryApprovalReport.status, 'released_to_service_provider');
+assert.equal(preliminaryApprovalReport.ownerRole, 'auditee');
+assert.equal(preliminaryApprovalReport.locked, true);
+assert.equal(preliminaryApprovalState.notifications[0].organizationId, preliminaryApprovalReport.organizationId);
 
 const defaultReportState = context.freshState();
 const defaultEdReport = context.reportArtifactById('FR-2026-022', defaultReportState);

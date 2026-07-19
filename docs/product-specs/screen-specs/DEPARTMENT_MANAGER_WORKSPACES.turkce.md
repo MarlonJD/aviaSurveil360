@@ -182,9 +182,14 @@ Preliminary Report:
 
 1. Lead Inspector submit eder.
 2. Department Manager approve, request revision veya return kararı verir.
-3. CAP-required findings varsa onaylanan rapor CAP response için Fly Namibia
-   Service Provider Portal'a release edilir.
-4. CAP gerekmiyorsa configured next governance stage'e ilerler.
+3. Department Manager approval exact Preliminary Report'u her durumda General
+   Manager intermediate review'a ilerletir.
+4. General Manager return veya Executive Director'a forward edebilir; issue,
+   share, sign veya lock edemez.
+5. Executive Director approval controlled demo copy'yi report'un Service
+   Provider kuruluşuna issue eder ve lock eder.
+6. `capRequired` yalnız issue sonrasındaki recipient action'ı değiştirir;
+   approval zincirini değiştirmez veya bypass etmez.
 
 Final Report:
 

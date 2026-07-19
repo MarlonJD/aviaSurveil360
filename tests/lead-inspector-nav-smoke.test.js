@@ -238,9 +238,10 @@ assert.equal(context.state.preliminaryReportDrafts['PR-2026-018'].step, 'review'
 preliminaryHtml = elements.get('app-root').innerHTML;
 assert.match(preliminaryHtml, /Review Before Submit/);
 assert.match(preliminaryHtml, /Submit to Department Manager/);
-assert.match(preliminaryHtml, /always forwarded to Department Manager Review/);
-assert.match(preliminaryHtml, /Department Manager releases it to the Service Provider/);
-assert.match(preliminaryHtml, /If CAP Required/);
+assert.match(preliminaryHtml, /every Preliminary Report follows Department Manager, General Manager, and Executive Director review/);
+assert.match(preliminaryHtml, /CAP requirement changes only the Service Provider action after issue/);
+assert.match(preliminaryHtml, /Forward to General Manager/);
+assert.doesNotMatch(preliminaryHtml, /Department Manager releases it to the Service Provider/);
 
 context.handleAction('preliminary-report-submit', dataEl({}));
 assert.ok(context.state.preliminaryReportDrafts['PR-2026-018'].submittedAt);

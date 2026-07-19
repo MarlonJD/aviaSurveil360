@@ -12891,6 +12891,18 @@ td .sp-report-badge {
 .modal__close:hover { color: var(--ink); }
 .modal__body { padding: 20px; overflow-y: auto; }
 .modal__foot { padding: 14px 20px; border-top: 1px solid var(--line); display: flex; gap: 10px; justify-content: flex-end; }
+.cap-verification-guidance { display: grid; gap: 7px; margin: 16px 0; padding: 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-sm); background: var(--surface-alt); }
+.cap-verification-guidance p { margin: 0; color: var(--ink-soft); font-size: 12px; line-height: 1.5; }
+.cap-verification-result { margin: 12px 0; padding: 12px; border: 1px solid var(--line-soft); border-left: 4px solid var(--blue-500); border-radius: var(--radius-sm); background: var(--surface-alt); }
+.cap-verification-result.is-ok { border-left-color: var(--ok); }
+.cap-verification-result.is-warn { border-left-color: var(--warn); }
+.cap-verification-result.is-danger { border-left-color: var(--danger); }
+.cap-verification-result > div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.cap-verification-result > div span { color: var(--muted); font-size: 10px; text-transform: uppercase; }
+.cap-verification-result dl { display: grid; grid-template-columns: minmax(100px, .65fr) minmax(0, 1.35fr); gap: 6px 10px; margin: 10px 0 0; }
+.cap-verification-result dt { color: var(--muted); font-size: 11px; }
+.cap-verification-result dd { margin: 0; color: var(--ink); font-size: 11.5px; font-weight: 650; overflow-wrap: anywhere; }
+.modal__foot [data-act="ev-decision"] { min-height: 44px; white-space: normal; }
 .modal__intro { color: var(--ink-soft); font-size: 13.5px; margin-bottom: 16px; background: var(--surface-alt); padding: 11px 13px; border-radius: 8px; }
 .final-submit-modal {
   display: grid;
@@ -15473,12 +15485,112 @@ td .sp-report-badge {
 .service-document-catalog small { margin-top: 3px; color: var(--ink-soft); }
 .service-document-catalog em { color: var(--blue-600); font-style: normal; }
 
+/* George feedback: conditional Service Provider coordination before execution */
+.inspection-coordination-card,
+.service-coordination-card {
+  min-width: 0;
+  margin: 16px 0;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.inspection-coordination-card { border-left: 4px solid var(--blue-500); }
+.inspection-coordination-card.is-warn { border-left-color: var(--warn); }
+.inspection-coordination-card.is-ok { border-left-color: var(--ok); }
+.inspection-coordination-card__head,
+.service-coordination-card > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.inspection-coordination-card__head span,
+.service-coordination-card > header span {
+  color: var(--blue-600);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.inspection-coordination-card__head h2,
+.service-coordination-card > header h2 { margin: 4px 0 0; font-size: 19px; }
+.inspection-coordination-card__head strong,
+.service-coordination-card > header strong {
+  padding: 7px 10px;
+  color: var(--ink);
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.service-coordination-card > header strong.is-warn { color: #7a4b00; background: #fff7df; border-color: #ead59c; }
+.service-coordination-card > header strong.is-info { color: var(--blue-700); background: var(--blue-50); border-color: #cbdcf7; }
+.service-coordination-card > header strong.is-ok { color: #146b3a; background: #edf9f2; border-color: #b8dfc8; }
+.service-coordination-card > header p { margin: 5px 0 0; color: var(--ink-soft); }
+.inspection-coordination-policy { margin: 14px 0; padding: 12px 14px; background: var(--surface-alt); border-radius: 8px; }
+.inspection-coordination-policy span { color: var(--ink); font-weight: 800; }
+.inspection-coordination-policy p { margin: 4px 0 0; color: var(--ink-soft); font-size: 12px; }
+.inspection-coordination-grid,
+.service-coordination-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.inspection-coordination-grid > div,
+.service-coordination-summary > div {
+  min-width: 0;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+}
+.inspection-coordination-grid small,
+.service-coordination-summary small { display: block; color: var(--ink-soft); font-size: 10.5px; font-weight: 700; }
+.inspection-coordination-grid b,
+.service-coordination-summary b { display: block; margin-top: 4px; color: var(--ink); overflow-wrap: anywhere; }
+.inspection-coordination-grid p { margin: 4px 0 0; color: var(--ink-soft); font-size: 11px; }
+.inspection-coordination-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.inspection-coordination-actions small { color: var(--ink-soft); }
+.service-coordination-page { max-width: 1180px; margin: 0 auto; }
+.service-coordination-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 16px 0; }
+.service-coordination-package {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, .7fr);
+  gap: 16px;
+  padding: 16px;
+  background: var(--blue-50);
+  border: 1px solid #cbdcf7;
+  border-radius: 9px;
+}
+.service-coordination-package > div > span { color: var(--blue-700); font-size: 10.5px; font-weight: 800; text-transform: uppercase; }
+.service-coordination-package h3 { margin: 5px 0; font-size: 16px; }
+.service-coordination-package p { margin: 0; color: var(--ink-soft); font-size: 12px; }
+.service-coordination-files { display: grid; gap: 8px; }
+.service-coordination-files span { padding: 9px 10px; background: #fff; border: 1px solid #cbdcf7; border-radius: 7px; overflow-wrap: anywhere; }
+.service-coordination-files b,
+.service-coordination-files small { display: block; }
+.service-coordination-files small { margin-top: 3px; color: var(--ink-soft); }
+.service-coordination-response { margin-top: 16px; padding: 16px; background: var(--surface-alt); border: 1px solid var(--line); border-radius: 9px; }
+.service-coordination-response.is-pending { background: #fff7df; border-color: #ead59c; }
+.service-coordination-response.is-confirmed { background: #edf9f2; border-color: #b8dfc8; }
+.service-coordination-response h3 { margin: 0 0 5px; font-size: 15px; }
+.service-coordination-response p { margin: 0 0 12px; color: var(--ink-soft); }
+.service-coordination-response label { display: grid; gap: 6px; margin-top: 12px; color: var(--ink); font-size: 12px; font-weight: 700; }
+.service-coordination-response input,
+.service-coordination-response textarea { width: 100%; min-height: 44px; padding: 10px 11px; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 7px; font: inherit; }
+.service-coordination-response textarea { resize: vertical; }
+.service-coordination-response__actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 14px; }
+
 @media (max-width: 1100px) {
   .service-workspace-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .service-filter-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .service-workspace-layout { grid-template-columns: 1fr; }
   .service-dossier { position: static; }
   .service-report-paper__meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .service-coordination-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
   .service-workspace-metrics,
@@ -15493,6 +15605,15 @@ td .sp-report-badge {
   .service-report-paper header,
   .service-document-catalog > button { flex-direction: column; }
   .service-report-paper header p { text-align: left; }
+  .inspection-coordination-card__head,
+  .service-coordination-card > header,
+  .service-coordination-package { grid-template-columns: 1fr; flex-direction: column; }
+  .inspection-coordination-grid,
+  .service-coordination-summary { grid-template-columns: 1fr; }
+  .inspection-coordination-card__head strong,
+  .service-coordination-card > header strong { white-space: normal; }
+  .inspection-coordination-actions .btn,
+  .service-coordination-response__actions .btn { width: 100%; min-height: 44px; }
 }
 
 /* ================= Department Manager Reports Approval ================= */
@@ -17882,7 +18003,9 @@ td .sp-report-badge {
 
 /* Executive Director Final Report review */
 .executive-report-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
-.executive-report-summary button { display: flex; align-items: center; justify-content: space-between; min-height: 62px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink-soft); cursor: pointer; }
+.executive-report-summary button,
+.executive-report-summary article { display: flex; align-items: center; justify-content: space-between; min-height: 62px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink-soft); }
+.executive-report-summary button { cursor: pointer; }
 .executive-report-summary button:hover,
 .executive-report-summary button.is-active { border-color: var(--blue-500); background: var(--blue-50); color: var(--navy-800); }
 .executive-report-summary button:focus-visible { outline: 3px solid rgba(47, 111, 214, .24); outline-offset: 2px; }
@@ -17921,6 +18044,7 @@ td .sp-report-badge {
 .executive-report-decision > h2 { margin: 3px 0 12px; font-size: 15px; }
 .executive-report-decision > p { margin-top: 11px; color: var(--muted); font-size: 9px; line-height: 1.45; }
 .executive-report-decision-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.executive-preliminary-decision .btn { min-height: 44px; white-space: normal; }
 .executive-report-decision-form { display: grid; gap: 10px; margin-top: 13px; padding-top: 13px; border-top: 1px solid var(--line-soft); }
 .executive-report-decision-form textarea { min-height: 88px; padding: 9px; resize: vertical; }
 .executive-referral-result { display: grid; gap: 3px; margin-top: 10px; padding: 11px; border: 1px solid #ead7aa; border-radius: var(--radius-sm); background: #fffaf0; }

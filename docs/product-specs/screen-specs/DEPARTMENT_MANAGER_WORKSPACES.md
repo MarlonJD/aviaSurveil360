@@ -268,10 +268,14 @@ Preliminary Report:
 
 1. Lead Inspector submits the Preliminary Report.
 2. Department Manager approves, requests revision, or returns the report.
-3. If CAP-required findings exist, approval releases the Preliminary Report to
-   the Fly Namibia Service Provider Portal for CAP response.
-4. If no CAP is required, approval forwards the report to the configured next
-   governance stage.
+3. Department Manager approval always forwards the exact Preliminary Report to
+   General Manager intermediate review.
+4. General Manager may return it or forward it to Executive Director, but
+   cannot issue, share, sign, or lock it.
+5. Executive Director approval issues and locks the controlled demo copy for
+   the report's Service Provider organization.
+6. `capRequired` changes only the recipient action after issue; it never
+   changes or bypasses the approval chain.
 
 Final Report:
 

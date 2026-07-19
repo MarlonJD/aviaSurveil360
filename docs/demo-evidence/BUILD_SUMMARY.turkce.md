@@ -765,6 +765,124 @@ gerçek document storage, notification delivery, deployment, real-device,
 accessibility certification ve stakeholder sign-off kanıtları **not run**
 kalır. Kapsam **demo-only**; **production-readiness not claimed**.
 
+### Announced-inspection coordination checkpoint — 2026-07-17
+
+Kanıt durumu focused flow için **demo-only** ve **verified locally**. Step 2
+artık configured advance-notice policy üzerinden dallanır. Seed
+`AUD-2026-001` Routine / Announced akışında Lead Inspector proposed date,
+checklist filename, scope, location ve Lead contact paketini eşleşen Service
+Provider'a gönderebilir. Fly Namibia proposed date'i confirm edebilir veya
+alternative date submit edebilir; alternative CAA kabul edene kadar pending
+kalır. Assignment stepper, routine date confirm edilene kadar execution'ı
+pending tutar. Seed `AUD-2026-005` Ad Hoc / Unannounced akışı internal olarak
+`No Advance Notice` gösterir; Service Provider notification, portal request
+veya shared checklist package üretmez.
+
+Service Provider navigation artık `Inspection Coordination` içerir;
+`Corrective Actions (CAP)` home route olarak kalır. Coordination selector'ları
+organization scope uygular ve notice-withheld record'ları dışarıda tutar. Tüm
+aksiyonlar browser-local state, in-app notification ve demo audit-log entry
+kullanır; gerçek email veya calendar invitation göndermez.
+
+Fresh focused otomatik kanıt (**verified locally**):
+
+- 11 `js/*.js` dosyasının tamamı `node --check` kontrolünden geçti.
+- `tests/inspection-coordination-smoke.test.js`,
+  `tests/lead-inspector-nav-smoke.test.js`,
+  `tests/service-provider-portal-smoke.test.js`,
+  `tests/demo-boundary-smoke.test.js`, `tests/inspection-team-smoke.test.js`
+  ve `tests/planning-release-smoke.test.js` geçti.
+- Full suite 57/60 test geçti. Worktree'de mevcut üç failure devam ediyor: iki
+  state-version expectation hâlâ `9` beklerken current demo state `10`; ayrıca
+  Executive planning-row testi current UI'daki üç action trigger yerine bir
+  tane bekliyor. Bu failure'lar coordination değişikliğinin dışında ve passing
+  evidence olarak sunulmuyor.
+
+Fresh isolated Playwright QA `1440x900` ve `390x844` boyutlarında **verified
+locally**. Routine package gönderimi, Service Provider alternative-date
+submission, CAA acceptance, confirmed mobile state ve unannounced dal
+uygulandı. Console warning/error sayısı sıfır, mobile document overflow false,
+confirmed date `2026-06-17` olarak kalıcı ve unannounced ekranda notify control
+yoktu. Screenshot'lar geçici local evidence olarak
+`/private/tmp/aviasurveil360-coordination-qa` altındadır.
+
+Gerçek notification delivery, calendar integration, production authorization,
+external stakeholder sign-off ve regulatory validation **not run** kalır.
+Kapsam **demo-only**; **production-readiness not claimed**.
+
+### Inspection lifecycle alignment checkpoint — 2026-07-18
+
+Kanıt durumu **demo-only** ve **verified locally**. Kabul edilen inspection
+lifecycle; browser-local state machine, rol workspace'leri, otomatik
+contract'lar ve bilingual product documentation boyunca hizalandı.
+
+Preliminary Report'lar CAP requirement'tan bağımsız olarak tek exact approval
+chain izler: Lead Inspector -> Department Manager -> General Manager ->
+Executive Director -> Service Provider issue. Department Manager ve General
+Manager yalnız exact selected artifact'ı forward veya return edebilir; yalnız
+Executive Director approval eşleşen organization için browser-local mock
+record'ı release ve lock eder. CAP-required flag approval chain'i değil,
+release sonrasındaki Service Provider next action'ını değiştirir. Önceden
+release edilmiş historical record'lar okunabilir kalır.
+
+CAP verification artık Inspector ve Lead Inspector review route'larında
+`Close`, `Partially Close` ve `Not Close` seçeneklerini sunar. Auditee-visible
+comment ile internal comment ayrı ve zorunludur. `Partially Close` ve `Not
+Close`, `EVIDENCE_MORE_INFO` durumunu kullanır, Finding'i açık tutar ve tüm
+Evidence version'larını korur; yalnız `Close` Finding'i `CLOSED` yapar.
+Authorized closure ayrı, reason gerektiren bir yol olarak kalır ve CAP
+verification record'ı üretmez.
+
+Fresh automated kanıt (**verified locally**):
+
+- `js/data.js`, `js/reports.js`, `js/manager-workspaces.js`, `js/views.js` ve
+  `js/app.js` için `node --check` geçti.
+- 13 dosyalı focused lifecycle komutu 18/18 test geçti; failure,
+  cancellation, skip ve todo sayıları sıfırdı.
+- `node --test tests/*.test.js` 66/66 test geçti; failure, cancellation, skip
+  ve todo sayıları sıfırdı.
+- `node tests/harness-docs-smoke.test.js` geçti; lifecycle terminoloji ve
+  qualified demo-boundary taramaları tamamlandı.
+- `git diff --check`, active plan içinde kaydedilen final integrity gate'in
+  parçasıdır.
+
+Fresh isolated in-app Browser QA `1440x900`, `1024x768` ve `390x844`
+boyutlarında **verified locally**. Replay; exact `PR-2026-018` Department
+Manager -> General Manager -> Executive Director handoff'unu, Executive
+Director release öncesinde sıfır Service Provider visibility'yi, release
+sonrasında organization-scoped visibility'yi ve CAP-aware `Respond to CAP and
+Evidence requests` action'ını kapsadı. Ayrı reset state'lerde `Partially
+Close`, `Not Close` ve `Close Finding` kaydedildi; ilk iki sonuç `Finding
+remains open`, yalnız son sonuç `Finding closed` gösterdi. Executive planning
+approval sonrasında `GM Release to Department` next action olarak kaldı.
+Service Provider coordination yüzeyi George'un Routine advance-notice ve Ad
+Hoc / Unannounced withholding kuralını korudu; focused automation full
+coordination contract'ını doğruladı. Executive Director Final Report yüzeyi
+recommendation-only enforcement referral sınırını gösterdi ve automatic
+sanction control sunmadı.
+
+Document width üç viewport'un tamamıyla eşleşti; mobile decision control'ları
+practical touch area ile tamamen görünürdü; browser console warning/error
+sayısı sıfırdı. Screenshot'lar geçici local kanıt olarak
+`/private/tmp/aviasurveil360-lifecycle-qa-20260718/` altındadır:
+
+- `1440-department-manager-forwarded.png`
+- `1440-executive-preliminary-issued.png`
+- `1024-service-provider-preliminary-released.png`
+- `390-cap-verification-decisions-viewport.png`
+
+Isolated browser ve static server QA sonrasında kapatıldı. Process cleanup,
+lifecycle-QA server, Playwright, Puppeteer, webdriver, headless Chrome veya
+remote-debugging Chrome kalıntısı bulmadı.
+
+Approval ve timestamp'ler browser-local mock record olarak kalır. Traceability
+demo audit history'dir; production audit trail değildir. Attachment'lar mock
+filename ve local browser state'tir; secure document storage değildir.
+Production identity, authorization, signing, storage, notification delivery,
+audit-log immutability, enforcement execution, deployment, real-device kanıtı,
+regulatory validation ve stakeholder sign-off **not run** kalır. Kapsam
+**demo-only**; **production-readiness not claimed**.
+
 ---
 
 ## Sahte öğeler ve kısıtlar

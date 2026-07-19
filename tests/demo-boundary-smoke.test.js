@@ -70,6 +70,20 @@ vm.createContext(context);
 
 context.state = context.freshState();
 
+assert.deepEqual(JSON.parse(JSON.stringify(context.DEMO_BOUNDARY_SUMMARIES)), [
+  'Browser-local mock approvals with demo timestamps.',
+  'Demo audit history for traceability; not a production audit trail.',
+  'Mock filenames and local browser state; no secure document storage.'
+]);
+const runtimeClaims = ['index.html', 'js/data.js', 'js/reports.js', 'js/manager-workspaces.js', 'js/views.js', 'js/app.js', 'css/styles.css']
+  .map((file) => fs.readFileSync(path.join(root, file), 'utf8'))
+  .join('\n');
+assert.doesNotMatch(
+  runtimeClaims,
+  /all approvals are electronic|securely stored|automatic penalty|automatic suspension/i,
+  'Demo runtime copy must not claim production approvals, storage, or automatic sanctions.'
+);
+
 context.state.role = 'auditee';
 context.state.view = 'my-findings';
 context.state.params = {};
@@ -145,5 +159,11 @@ assert.equal(
   'Product rule violated: Mock evidence stored file contents. The demo must not implement real upload/storage.'
 );
 assert.equal(evidenceFinding.status, 'EVIDENCE_SUBMITTED');
+
+const evidenceReviewHtml = context.modalReviewEvidence(evidenceFinding);
+assert.match(evidenceReviewHtml, /data-decision="close"/);
+assert.match(evidenceReviewHtml, /data-decision="partially_close"/);
+assert.match(evidenceReviewHtml, /data-decision="not_close"/);
+assert.doesNotMatch(evidenceReviewHtml, /data-decision="accept"|data-decision="moreinfo"/);
 
 console.log('demo-boundary-smoke: ok');
