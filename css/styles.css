@@ -18251,4 +18251,173 @@ textarea:focus-visible,
   .executive-plan-summary { order: 2; }
   .executive-decision-panel,
   .executive-report-decision { order: 4; }
+  .executive-plan-detail {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .executive-plan-detail > header {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  .executive-plan-detail > header > div,
+  .executive-detail-body,
+  .executive-detail-body .approval-rail {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .executive-detail-tabs {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+}
+
+@media (max-width: 1100px) {
+  /* Inspector queue: retain table semantics while presenting readable task cards. */
+  .inspector-assignment-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .inspector-assignment-kpi {
+    min-height: 86px;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+  .inspector-assignment-kpi:last-child { grid-column: 1 / -1; }
+  .inspector-assignment-kpi__icon { width: 40px; height: 40px; font-size: 16px; }
+  .inspector-assignment-kpi strong { font-size: 22px; }
+  .inspector-assignment-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .inspector-assignment-filter--search,
+  .inspector-assignment-filters > .btn { grid-column: 1 / -1; }
+  .inspector-assignment-filter input,
+  .inspector-assignment-filter select,
+  .inspector-assignment-filters > .btn { min-height: 44px; }
+  .inspector-assignment-panel { border: 0; background: transparent; box-shadow: none; overflow: visible; }
+  .inspector-assignment-table-wrap { overflow: visible; }
+  .inspector-assignment-table { min-width: 0; table-layout: auto; display: block; }
+  .inspector-assignment-table thead { display: none; }
+  .inspector-assignment-table tbody { display: grid; gap: 12px; }
+  .inspector-assignment-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "item status"
+      "org org"
+      "dates due"
+      "progress progress"
+      "actions actions";
+    gap: 12px 16px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+  }
+  .inspector-assignment-table tbody tr td {
+    display: block !important;
+    width: auto !important;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    overflow-wrap: normal;
+  }
+  .inspector-assignment-table td[data-col="item"] { grid-area: item; }
+  .inspector-assignment-table td[data-col="org"] { grid-area: org; }
+  .inspector-assignment-table td[data-col="type"] { display: none !important; }
+  .inspector-assignment-table td[data-col="dates"] { grid-area: dates; }
+  .inspector-assignment-table td[data-col="status"] { grid-area: status; align-self: start; justify-self: end; }
+  .inspector-assignment-table td[data-col="progress"] { grid-area: progress; }
+  .inspector-assignment-table td[data-col="due"] { grid-area: due; text-align: right; }
+  .inspector-assignment-table td[data-col="actions"] { grid-area: actions; }
+  .inspector-assignment-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    color: var(--ink-soft);
+    font-size: 10px;
+    font-weight: 780;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .inspector-assignment-main { grid-template-columns: 40px minmax(0, 1fr); gap: 10px; }
+  .inspector-assignment-link { color: var(--ink); line-height: 1.35; overflow-wrap: anywhere; }
+  .inspector-assignment-actions { justify-content: stretch; }
+  .inspector-assignment-actions .btn { flex: 1 1 auto; min-height: 44px; }
+  .inspector-assignment-actions .iconbtn { flex: 0 0 44px; width: 44px; height: 44px; }
+  .inspector-assignment-table-foot { grid-template-columns: 1fr; justify-items: stretch; }
+  .inspector-assignment-pager { justify-content: center; }
+  .inspector-assignment-pager button { width: 44px; height: 44px; }
+
+  /* Executive Planning: replace the 1120px register with responsive plan cards. */
+  .executive-planning-page,
+  .executive-planning-layout,
+  .executive-planning-layout > main,
+  .executive-planning-queue { width: 100%; max-width: 100%; min-width: 0; }
+  .executive-planning-queue { overflow: hidden; }
+  .executive-planning-queue .responsive-table-shell { max-width: 100%; overflow: visible; }
+  .executive-planning-queue table { min-width: 0; table-layout: auto; display: block; }
+  .executive-planning-queue thead { display: none; }
+  .executive-planning-queue tbody { display: grid; gap: 10px; }
+  .executive-planning-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "plan status"
+      "organization organization"
+      "department owner"
+      "risk target"
+      "action action";
+    gap: 11px 16px;
+    padding: 14px;
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .executive-planning-row.is-selected { border-color: var(--blue-500); box-shadow: inset 3px 0 0 var(--blue-500); }
+  .executive-planning-row td {
+    display: block;
+    width: auto !important;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent !important;
+    overflow-wrap: anywhere;
+  }
+  .executive-planning-row td[data-col="plan"] { grid-area: plan; }
+  .executive-planning-row td[data-col="department"] { grid-area: department; }
+  .executive-planning-row td[data-col="organization"] { grid-area: organization; }
+  .executive-planning-row td[data-col="risk"] { grid-area: risk; }
+  .executive-planning-row td[data-col="target"] { grid-area: target; text-align: right; }
+  .executive-planning-row td[data-col="owner"] { grid-area: owner; text-align: right; }
+  .executive-planning-row td[data-col="status"] { grid-area: status; justify-self: end; }
+  .executive-planning-row td[data-col="action"] { grid-area: action; }
+  .executive-planning-row td[data-col="empty"] { grid-column: 1 / -1; }
+  .executive-planning-row td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 3px;
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  .executive-planning-row .service-link { overflow-wrap: anywhere; }
+  .executive-planning-row .executive-row-action .btn { width: 100%; min-height: 44px; }
+  .executive-planning-row--empty { display: block; }
+}
+
+@media (min-width: 800px) and (max-width: 1100px) {
+  .inspector-assignment-table tbody,
+  .executive-planning-queue tbody {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

@@ -883,6 +883,44 @@ audit-log immutability, enforcement execution, deployment, real-device kanıtı,
 regulatory validation ve stakeholder sign-off **not run** kalır. Kapsam
 **demo-only**; **production-readiness not claimed**.
 
+### Responsive workbench checkpoint — 2026-07-19
+
+Kanıt durumu **demo-only** ve **verified locally**. Önce 2026-07-18 tarihli
+complete Playwright screenshot baseline incelendi: desktop, tablet ve mobile
+boyutlarında 85 route için 255/255 screenshot alındı; capture error, console
+issue veya route mismatch yoktu. İnceleme iki blocking responsive defect'i
+ayırdı: mobile Inspector Assignments tablosu metni okunamaz dikey parçalara
+sıkıştırıyordu; mobile Executive Planning ise `390px` viewport içinde document
+genişliğini `1136px` seviyesine çıkarıyordu.
+
+Inspector Assignments ve Executive Planning desktop table düzenini koruyor,
+ancak `1100px` ve altında semantic task/plan card'ları kullanıyor. Tablet iki
+kolon, phone tek kolon card grid'i gösteriyor. Operational identity,
+organization, status, owner/progress, Due Date veya target ve primary action
+görünür kalıyor. Executive detail tab'leri selected-plan paneli içinde
+contain ediliyor. Tüm CSS/JavaScript asset'leri ortak
+`20260719-mobile-workbench-v1` cache token'ını kullanıyor.
+
+Fresh in-app Playwright delta QA; Inspector Assignments, Executive Planning ve
+coverage envanterine yeni eklenen Executive Preliminary Reports ekranlarını
+`1440x1000`, `1024x900` ve `390x844` boyutlarında kapsadı. Dokuz
+route/viewport check'in tamamında expected heading görüldü; document overflow
+ve console warning/error sayısı sıfırdı. Değişen iki mobile route
+`scrollWidth === innerWidth === 390`, iki tablet workbench ise
+`scrollWidth === innerWidth === 1024` sonucu ve okunabilir iki kolon card grid'i
+üretti. Full Node suite 66/66 geçti; tüm `js/*.js` syntax check'leri ve
+`git diff --check` geçti.
+
+Temporary local evidence aşağıdadır:
+
+- `/private/tmp/aviasurveil360-ui-audit-2026-07-18/`
+- `/private/tmp/aviasurveil360-ui-qa-2026-07-19-before/`
+- `/private/tmp/aviasurveil360-ui-qa-2026-07-19-after/`
+
+Real-device validation, production accessibility certification, deployment ve
+stakeholder sign-off **not run** kalır. Kapsam **demo-only**;
+**production-readiness not claimed**.
+
 ---
 
 ## Sahte öğeler ve kısıtlar

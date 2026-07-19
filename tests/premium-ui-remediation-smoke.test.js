@@ -55,6 +55,41 @@ html = context.viewInspectorAssignments();
 assert.doesNotMatch(html, /inspector-next-dossier|Next inspection/);
 assert.match(html, /inspector-assignment-kpis/);
 assert.match(html, /inspector-assignment-table/);
+assert.match(html, /class="inspector-assignment-row"/);
+assert.match(html, /data-col="item"/);
+assert.match(html, /data-col="org" data-label="Organization"/);
+assert.match(html, /data-col="due" data-label="Due Date"/);
+assert.match(html, /data-col="actions"/);
+assert.match(
+  styles,
+  /@media \(max-width:\s*1100px\)[\s\S]*?\.inspector-assignment-table thead\s*\{[^}]*display:\s*none[\s\S]*?\.inspector-assignment-table tbody tr\s*\{[^}]*grid-template-areas:/s
+);
+
+context.state = context.freshState();
+context.state.role = 'executiveDirector';
+context.state.view = 'executive-planning';
+context.state.params = {};
+html = context.viewExecutivePlanningWorkspace();
+assert.match(html, /class="executive-planning-row/);
+assert.match(html, /data-col="plan"/);
+assert.match(html, /data-col="status" data-label="Status"/);
+assert.match(html, /data-col="action"/);
+assert.match(
+  styles,
+  /@media \(max-width:\s*1100px\)[\s\S]*?\.executive-planning-queue table\s*\{[^}]*min-width:\s*0[^}]*display:\s*block[\s\S]*?\.executive-planning-row\s*\{[^}]*grid-template-areas:/s
+);
+assert.match(
+  styles,
+  /@media \(min-width:\s*800px\) and \(max-width:\s*1100px\)[\s\S]*?\.inspector-assignment-table tbody,\s*\.executive-planning-queue tbody\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s
+);
+assert.match(
+  styles,
+  /@media \(max-width:\s*640px\)[\s\S]*?\.executive-plan-detail\s*\{[^}]*min-width:\s*0[^}]*max-width:\s*100%[^}]*overflow:\s*hidden/s
+);
+assert.match(
+  styles,
+  /@media \(max-width:\s*640px\)[\s\S]*?\.executive-detail-tabs\s*\{[^}]*min-width:\s*0[^}]*max-width:\s*100%[^}]*overflow-x:\s*auto/s
+);
 
 context.state.role = 'inspector';
 context.state.params = { auditId: 'AUD-2026-001' };

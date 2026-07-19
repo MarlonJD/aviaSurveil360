@@ -8,7 +8,48 @@
 
 **Tech Stack:** HTML, CSS, Vanilla JavaScript, mock data, browser-local demo state, direct Node smoke tests, local static server, Browser/Playwright-style rendered QA.
 
-**Status:** `active` — refreshed on 2026-07-18 after a full current-working-tree visual audit.
+**Status:** `active` — responsive blockers remediated and verified locally on 2026-07-19; broader visual-system rollout remains active.
+
+## 2026-07-19 Responsive Blocker Remediation Checkpoint
+
+The complete 2026-07-18 Playwright baseline was reviewed through its 255
+screenshots and role/viewport contact sheets before implementation. That review
+confirmed two actionable blockers: mobile Inspector Assignments compressed its
+desktop columns into unreadable vertical fragments, and mobile Executive
+Planning rendered a `1136px` document inside a `390px` viewport. The registered
+route inventory also gained Executive Director `Preliminary Reports`, bringing
+the current coverage inventory to 86 screen states.
+
+The two dense workbenches now preserve semantic table markup on desktop and
+render readable task/plan cards through tablet and phone widths. At tablet
+width, cards use a two-column grid; at phone width, they use one column. Every
+card keeps the operational identity, organization, status, owner or progress,
+Due Date/target, and primary action visible. Executive Planning detail tabs are
+contained within their panel and no longer widen the document.
+
+Fresh local delta evidence:
+
+- Baseline reviewed: 85 routes x 3 viewports, 255/255 screenshots captured on
+  2026-07-18 with 0 capture errors and 0 console issues.
+- Delta capture: Inspector Assignments, Executive Planning, and the newly
+  registered Executive Preliminary Reports at `1440x1000`, `1024x900`, and
+  `390x844` (9 route/viewport checks).
+- Delta result: 0 document-overflow failures, 0 console warnings/errors, and
+  correct route headings in all 9 checks.
+- Mobile result: Inspector Assignments and Executive Planning both report
+  `scrollWidth === innerWidth === 390`.
+- Tablet result: both adapted registers report `scrollWidth === innerWidth ===
+  1024`; Inspector and Executive rows render in two readable columns.
+- Automated result: the full local Node suite passes 66/66; all `js/*.js`
+  syntax checks and `git diff --check` pass.
+- Baseline evidence: `/private/tmp/aviasurveil360-ui-audit-2026-07-18/`.
+- Before/after and delta evidence:
+  `/private/tmp/aviasurveil360-ui-qa-2026-07-19-before/` and
+  `/private/tmp/aviasurveil360-ui-qa-2026-07-19-after/`.
+
+This checkpoint is **verified locally** and remains **demo-only**. It does not
+claim production accessibility certification, real-device validation,
+deployment, or stakeholder sign-off.
 
 ## 2026-07-18 Visual Audit Refresh
 
@@ -185,7 +226,7 @@ Test and evidence files:
 
 Purpose: freeze the current visual state, identify all shared primitives, and make the next QA run capable of catching visual defects before push.
 
-- [ ] **Step 1: Confirm clean baseline**
+- [x] **Step 1: Confirm clean baseline**
 
   Run:
 
@@ -196,7 +237,7 @@ Purpose: freeze the current visual state, identify all shared primitives, and ma
 
   Expected: only intentional local changes, if any; latest commits include the attachment download and clipping fixes.
 
-- [ ] **Step 2: Inventory visual primitives**
+- [x] **Step 2: Inventory visual primitives**
 
   Run:
 
@@ -236,7 +277,7 @@ Purpose: freeze the current visual state, identify all shared primitives, and ma
   Executive Planning. Evidence is under
   `/private/tmp/aviasurveil360-ui-audit-2026-07-18/`.
 
-- [ ] **Step 4: Add or update visual QA guard expectations**
+- [x] **Step 4: Add or update visual QA guard expectations**
 
   Extend existing smoke tests before visual edits where possible. At minimum, guards must assert:
 
@@ -247,6 +288,12 @@ Purpose: freeze the current visual state, identify all shared primitives, and ma
   - key route markup includes the new shared visual primitives once they are introduced
 
   Expected: a future regression like clipped file names breaks a test or rendered metric.
+
+  Current result (2026-07-19): the smoke contracts assert semantic row hooks,
+  field labels, phone/tablet card breakpoints, two-column tablet grids,
+  contained Executive detail tabs, and the shared asset token. The focused
+  tests were written or updated before the responsive implementation and fail
+  if the table compression or document-overflow guards are removed.
 
 ### Phase 1 - Shared Modern Aviation Design System
 
@@ -306,7 +353,7 @@ Purpose: create the reusable visual layer before touching every screen.
 
   Keep emoji only in seed notification data if removal would require broader copy changes; document any retained cases.
 
-- [ ] **Step 4: Add asset token**
+- [x] **Step 4: Add asset token**
 
   Change all CSS/JS query strings in `index.html` to a new shared token, for example:
 
@@ -315,6 +362,8 @@ Purpose: create the reusable visual layer before touching every screen.
   ```
 
   Expected: local and deployed browsers fetch the updated CSS/JS instead of cached assets.
+
+  Current local token: `20260719-mobile-workbench-v1`.
 
 ### Phase 2 - Shell, Navigation, And Role Identity
 
@@ -745,7 +794,7 @@ Boundary verification:
 
 ## Task Checklist
 
-- [ ] Phase 0: Baseline, token audit, and QA gate.
+- [x] Phase 0: Baseline, token audit, and QA gate.
 - [ ] Phase 1: Shared Modern Aviation design system.
 - [ ] Phase 2: Shell, navigation, and role identity.
 - [ ] Phase 3: Inspector experience.

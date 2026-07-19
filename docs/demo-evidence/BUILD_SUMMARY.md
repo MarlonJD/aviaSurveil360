@@ -874,6 +874,42 @@ immutability, enforcement execution, deployment, real-device evidence,
 regulatory validation, and stakeholder sign-off are **not run**. This remains
 **demo-only**; **production-readiness not claimed**.
 
+### Responsive workbench checkpoint — 2026-07-19
+
+Evidence status: **demo-only** and **verified locally**. The full 2026-07-18
+Playwright screenshot baseline was reviewed first: 85 routes across desktop,
+tablet, and mobile produced 255/255 screenshots with no capture errors, console
+issues, or route mismatches. The review isolated two blocking responsive
+defects: mobile Inspector Assignments compressed its table into unreadable
+vertical text, while mobile Executive Planning widened the document from
+`390px` to `1136px`.
+
+Inspector Assignments and Executive Planning now retain desktop tables but use
+semantic task/plan cards through `1100px`. Tablet renders two card columns;
+phone renders one. Operational identity, organization, status, owner/progress,
+Due Date or target, and primary action remain visible. Executive detail tabs
+are contained within the selected-plan panel. All CSS/JavaScript assets now use
+the shared `20260719-mobile-workbench-v1` cache token.
+
+Fresh in-app Playwright delta QA covered Inspector Assignments, Executive
+Planning, and the newly registered Executive Preliminary Reports at
+`1440x1000`, `1024x900`, and `390x844`. All 9 route/viewport checks had the
+expected heading, zero document overflow, and zero console warnings/errors.
+Both changed mobile routes reported `scrollWidth === innerWidth === 390`; both
+tablet workbenches reported `scrollWidth === innerWidth === 1024` and readable
+two-column card grids. The full Node suite passed 66/66; all `js/*.js` syntax
+checks and `git diff --check` passed.
+
+Temporary local evidence is under:
+
+- `/private/tmp/aviasurveil360-ui-audit-2026-07-18/`
+- `/private/tmp/aviasurveil360-ui-qa-2026-07-19-before/`
+- `/private/tmp/aviasurveil360-ui-qa-2026-07-19-after/`
+
+Real-device validation, production accessibility certification, deployment,
+and stakeholder sign-off are **not run**. This remains **demo-only**;
+**production-readiness not claimed**.
+
 ---
 
 ## Mocked items and limitations

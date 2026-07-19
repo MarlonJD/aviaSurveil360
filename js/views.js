@@ -831,12 +831,21 @@ function executiveUniqueOptions(items, field, selected, allLabel) {
 }
 
 function executivePlanningRowsHtml(rows, selected, ui) {
-  if (!rows.length) return '<tr><td colspan="8"><div class="executive-empty"><b>No plans match these filters.</b><span>Clear a filter or choose another approval stage.</span></div></td></tr>';
+  if (!rows.length) return '<tr class="executive-planning-row executive-planning-row--empty"><td data-col="empty" colspan="8"><div class="executive-empty"><b>No plans match these filters.</b><span>Clear a filter or choose another approval stage.</span></div></td></tr>';
   return rows.map(function (item) {
     var summary = approvalSummary(item);
     var eligible = summary.ownerRole === 'executiveDirector' && !summary.outcome;
     var open = ui.openPlanActionId === item.id;
-    return '<tr class="' + (selected && selected.id === item.id ? 'is-selected' : '') + '"><td><button class="service-link" data-act="executive-open-plan" data-id="' + esc(item.id) + '">' + esc(item.id) + '</button><small>' + esc(item.title) + '</small></td><td>' + esc(item.department) + '</td><td>' + esc(item.organization) + '</td><td>' + esc(item.riskCategory) + '</td><td>' + esc(item.targetMonth) + '</td><td>' + esc(summary.ownerLabel) + '</td><td>' + demoBadge(summary.statusLabel, summary.statusTone) + '</td><td><div class="executive-row-action"><button class="btn btn--sm" data-act="executive-plan-actions-toggle" data-id="' + esc(item.id) + '" aria-expanded="' + (open ? 'true' : 'false') + '">Review / Take Action</button>' + (open ? '<div class="executive-row-menu"><button data-act="executive-plan-quick-action" data-id="' + esc(item.id) + '" data-mode="review">Review Plan</button><button data-act="executive-plan-quick-action" data-id="' + esc(item.id) + '" data-mode="preview">Preview Full Plan</button>' + (eligible ? '<button data-act="executive-plan-quick-action" data-id="' + esc(item.id) + '" data-mode="approve">Approve &amp; Sign (Demo)</button>' : '') + '</div>' : '') + '</div></td></tr>';
+    return '<tr class="executive-planning-row' + (selected && selected.id === item.id ? ' is-selected' : '') + '">' +
+      '<td data-col="plan"><button class="service-link" data-act="executive-open-plan" data-id="' + esc(item.id) + '">' + esc(item.id) + '</button><small>' + esc(item.title) + '</small></td>' +
+      '<td data-col="department" data-label="Department">' + esc(item.department) + '</td>' +
+      '<td data-col="organization" data-label="Organization">' + esc(item.organization) + '</td>' +
+      '<td data-col="risk" data-label="Risk Category">' + esc(item.riskCategory) + '</td>' +
+      '<td data-col="target" data-label="Target">' + esc(item.targetMonth) + '</td>' +
+      '<td data-col="owner" data-label="Current Owner">' + esc(summary.ownerLabel) + '</td>' +
+      '<td data-col="status" data-label="Status">' + demoBadge(summary.statusLabel, summary.statusTone) + '</td>' +
+      '<td data-col="action"><div class="executive-row-action"><button class="btn btn--sm" data-act="executive-plan-actions-toggle" data-id="' + esc(item.id) + '" aria-expanded="' + (open ? 'true' : 'false') + '">Review / Take Action</button>' + (open ? '<div class="executive-row-menu"><button data-act="executive-plan-quick-action" data-id="' + esc(item.id) + '" data-mode="review">Review Plan</button><button data-act="executive-plan-quick-action" data-id="' + esc(item.id) + '" data-mode="preview">Preview Full Plan</button>' + (eligible ? '<button data-act="executive-plan-quick-action" data-id="' + esc(item.id) + '" data-mode="approve">Approve &amp; Sign (Demo)</button>' : '') + '</div>' : '') + '</div></td>' +
+    '</tr>';
   }).join('');
 }
 
@@ -2682,16 +2691,16 @@ function inspectorAssignmentActionLabel(row) {
 }
 
 function inspectorAssignmentRow(row) {
-  return '<tr>' +
-    '<td><div class="inspector-assignment-main">' + inspectorAssignmentIcon(row) +
+  return '<tr class="inspector-assignment-row">' +
+    '<td data-col="item"><div class="inspector-assignment-main">' + inspectorAssignmentIcon(row) +
       '<button class="inspector-assignment-link" data-act="inspector-assignment-select" data-id="' + esc(row.id) + '">' + esc(row.title) + '<span>' + esc(row.code) + '</span></button></div></td>' +
-    '<td><b>' + esc(row.organization) + '</b><span>' + esc(row.location) + '</span></td>' +
-    '<td><span class="inspector-assignment-type">' + esc(row.type) + '</span></td>' +
-    '<td>' + esc(row.dates) + '</td>' +
-    '<td>' + inspectorAssignmentStatusBadge(row) + '</td>' +
-    '<td>' + inspectorAssignmentProgressHtml(row) + '</td>' +
-    '<td class="inspector-assignment-due is-' + esc(row.dueTone) + '"><b>' + esc(row.dueDate) + '</b>' + (row.dueNote ? '<span>' + esc(row.dueNote) + '</span>' : '') + '</td>' +
-    '<td><div class="inspector-assignment-actions">' +
+    '<td data-col="org" data-label="Organization"><b>' + esc(row.organization) + '</b><span>' + esc(row.location) + '</span></td>' +
+    '<td data-col="type" data-label="Type"><span class="inspector-assignment-type">' + esc(row.type) + '</span></td>' +
+    '<td data-col="dates" data-label="Inspection Dates">' + esc(row.dates) + '</td>' +
+    '<td data-col="status" data-label="Status">' + inspectorAssignmentStatusBadge(row) + '</td>' +
+    '<td data-col="progress" data-label="Progress">' + inspectorAssignmentProgressHtml(row) + '</td>' +
+    '<td data-col="due" data-label="Due Date" class="inspector-assignment-due is-' + esc(row.dueTone) + '"><b>' + esc(row.dueDate) + '</b>' + (row.dueNote ? '<span>' + esc(row.dueNote) + '</span>' : '') + '</td>' +
+    '<td data-col="actions"><div class="inspector-assignment-actions">' +
       '<button class="btn btn--sm' + (row.status === 'completed' ? '' : ' btn--primary') + '" data-act="inspector-assignment-open" data-id="' + esc(row.id) + '">' + esc(inspectorAssignmentActionLabel(row)) + '</button>' +
       '<button class="iconbtn iconbtn--small" data-act="inspector-assignment-menu" data-id="' + esc(row.id) + '" aria-label="More actions for ' + esc(row.title) + '">&#8942;</button>' +
     '</div></td>' +
