@@ -8,10 +8,12 @@
 
 **Tech Stack:** HTML, CSS, Vanilla JavaScript, browser-local mock state, Node `node:test`/assert smoke tests, localhost HTTP serving, Codex in-app Browser real-click verification.
 
-**Status:** `ready-for-verification` — implementation, syntax, focused 16/16,
-full 88/88, the 15-item localhost real-click Browser matrix, clean final
-console, screenshots, and process cleanup are **verified locally**. Stakeholder
-review/sign-off is **not run**; production readiness is not claimed.
+**Status:** `superseded` — retained as historical `candidate-only` evidence.
+A fresh 70-check real-click audit on 2026-07-20 found 13 residual defects
+(1 Blocking, 6 High, 6 Medium), so its earlier completeness claims are not the
+current remediation authority. The successor is now completed:
+[`2026-07-20-working-scenario-audit-remediation-plan.md`](../completed/2026-07-20-working-scenario-audit-remediation-plan.md).
+Production readiness is not claimed.
 
 ## Global Constraints
 

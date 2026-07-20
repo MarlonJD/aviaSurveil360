@@ -1072,6 +1072,32 @@ notification delivery, production scheduling, or automatic enforcement was
 added. Regulatory validation, deployment, real-device testing, and stakeholder
 sign-off remain **not run**.
 
+### Working scenario audit remediation checkpoint — 2026-07-20
+
+Status: all 13 audited findings and the complete local remediation are
+**verified locally**; release remains **release pending**. The focused gate
+passes 45/45, the demo-boundary gate passes 1/1, all changed JavaScript syntax
+checks pass 7/7, and the complete local suite passes 103/103 with zero
+failures, cancellations, skips, or todos.
+
+The fresh in-app Browser rerun at `http://127.0.0.1:4173/index.html` completed
+the original workflow matrix with **70 PASS, 0 FAIL, and 0 blocked**. All checks
+used real UI clicks without `file://`, direct state writes, or direct
+`localStorage` mutation. Browser verification found two additional WSA-009
+projection gaps for raw `Uploaded` and `Partially Accepted` Evidence states,
+plus a residual WSA-003 duplicated mobile checklist decision action. Focused
+contracts were confirmed red first, the shared `findingWorkState()` projection
+and 390×844 cascade were corrected, the asset token advanced to v5, and both
+CAP/Evidence and mobile paths were rerun.
+
+The canonical matrix, WSA-by-WSA disposition, silent-state before/after scope,
+screenshots, clean final-console record, and cleanup record are in
+[WORKING_SCENARIO_REMEDIATION_2026-07-20.md](WORKING_SCENARIO_REMEDIATION_2026-07-20.md).
+No backend, database, API, real authentication, storage, messaging, framework
+migration, deployment, or production capability was added. Regulatory
+validation, real-device testing, stakeholder sign-off, release approval, and
+production readiness are `not run`.
+
 ---
 
 ## Mocked items and limitations

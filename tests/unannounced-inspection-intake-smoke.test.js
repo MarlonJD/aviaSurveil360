@@ -171,6 +171,7 @@ test('Lead Inspector receives a scoped post-release preparation task without bro
   const unrelated = JSON.parse(JSON.stringify(item));
   unrelated.id = 'PLAN-OTHER-LEAD';
   unrelated.preparation.leadInspector = 'Aylin Sezer';
+  unrelated.preparation.leadInspectorUserId = 'USR-AYLIN';
   state.planningItems.push(unrelated);
   const scopedTaskHtml = context.leadPlanningPreparationTasksHtml();
   assert.match(scopedTaskHtml, new RegExp(item.id));

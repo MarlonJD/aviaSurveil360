@@ -146,8 +146,10 @@ html = context.leadPotentialDecisionRowsHtml([{
   status: 'pending_lead_review',
   findingId: ''
 }]);
-assert.match(html, /id="pf-cap-required-PF-TEST-OBS"[^>]*checked/);
-assert.match(html, /id="pf-evidence-required-PF-TEST-OBS"[^>]*checked/);
+assert.match(html, /<option value="4" selected>Observation<\/option>/);
+assert.doesNotMatch(html, /id="pf-cap-required-PF-TEST-OBS"[^>]*checked/);
+assert.doesNotMatch(html, /id="pf-evidence-required-PF-TEST-OBS"[^>]*checked/);
+assert.match(html, /id="pf-due-date-PF-TEST-OBS"[^>]*value=""/);
 assert.match(html, /data-field="potential-finding-severity"/);
 assert.match(html, /Observation defaults clear CAP, Evidence, and Due Date/);
 

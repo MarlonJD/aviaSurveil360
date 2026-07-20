@@ -86,17 +86,23 @@ assert.equal(context.serviceProviderInspectionCoordinationRows(state, 'ORG-XYZ')
 
 context.state = state;
 context.state.role = 'leadInspector';
-context.state.view = 'lead-assignment';
-context.state.params = { auditId: 'AUD-2026-001' };
+context.state.view = 'lead-review';
+context.state.params = {};
+context.handleAction('nav', dataEl({ 'data-view': 'lead-assignment', 'data-id': 'AUD-2026-001' }));
 
 let html = context.renderContent();
 assert.match(html, /Service Provider Coordination/);
 assert.match(html, /Routine \/ Announced/);
-assert.match(html, /Send Coordination Package/);
+assert.doesNotMatch(html, /Send Coordination Package/);
+assert.match(html, /Release Assignments First/);
 assert.match(html, /Checklist and relevant information/);
 assert.match(html, /Routine:[\s\S]*notify the Service Provider after Lead Inspector assignment/);
 assert.match(html, /Ad Hoc \/ Unannounced:[\s\S]*withhold advance notification and coordination/);
 
+context.handleAction('lead-assignment-assign', dataEl({}));
+context.handleAction('lead-assignment-release', dataEl({}));
+html = context.renderContent();
+assert.match(html, /Send Coordination Package/);
 context.handleAction('lead-assignment-notify-provider', dataEl({ 'data-id': 'AUD-2026-001' }));
 routine = context.inspectionCoordinationByAuditId(context.state, 'AUD-2026-001');
 assert.equal(routine.status, 'awaiting_provider_response');
@@ -166,8 +172,11 @@ assert.equal(context.leadPreliminaryReportById('PR-2026-018').dates, '17 Jun 202
 state = context.freshState();
 context.state = state;
 context.state.role = 'leadInspector';
-context.state.view = 'lead-assignment';
-context.state.params = { auditId: 'AUD-2026-001' };
+context.state.view = 'lead-review';
+context.state.params = {};
+context.handleAction('nav', dataEl({ 'data-view': 'lead-assignment', 'data-id': 'AUD-2026-001' }));
+context.handleAction('lead-assignment-assign', dataEl({}));
+context.handleAction('lead-assignment-release', dataEl({}));
 context.handleAction('lead-assignment-notify-provider', dataEl({ 'data-id': 'AUD-2026-001' }));
 context.state.role = 'auditee';
 context.state.view = 'service-provider-inspection-coordination';

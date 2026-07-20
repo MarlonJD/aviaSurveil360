@@ -48,7 +48,7 @@ assert.match(
 );
 
 assert.equal(
-  (indexHtml.match(/\?v=20260720-scenario-integrity-v1/g) || []).length,
+  (indexHtml.match(/\?v=20260720-wsa-remediation-v5/g) || []).length,
   12,
   'The current UI update cache-busts the stylesheet and eleven frontend scripts together'
 );

@@ -70,23 +70,23 @@ var DEMO_PERSISTENCE_CONFIG = {
    kept (display = Department Manager) so existing role-conditional code keeps
    working; a later phase may rename the key to `departmentManager`. */
 var ROLES = {
-  inspector:        { key: 'inspector',        name: 'Inspector',          user: 'Ahmed Ali', initials: 'AA', color: '#005db8',
+  inspector:        { key: 'inspector',        name: 'Inspector',          userId: 'USR-AYLIN', user: 'Aylin Sezer', initials: 'AS', color: '#005db8',
                       assignmentAliases: ['Aylin Sezer', 'Mary Adams'],
                       question: 'What do I need to inspect or review today?' },
-  leadInspector:    { key: 'leadInspector',    name: 'Lead Inspector',     user: 'John Lead Inspector', initials: 'JL', color: '#1d4f99',
+  leadInspector:    { key: 'leadInspector',    name: 'Lead Inspector',     userId: 'USR-CANER', user: 'Caner Yildiz', initials: 'CY', color: '#1d4f99',
                       question: 'What needs review, conversion to finding, or report sign-off?' },
-  manager:          { key: 'manager',          name: 'Department Manager', user: 'Mehmet Kaya',  initials: 'MK', color: '#2f6fd6',
+  manager:          { key: 'manager',          name: 'Department Manager', userId: 'USR-MANAGER-MEHMET', user: 'Mehmet Kaya',  initials: 'MK', color: '#2f6fd6',
                       question: 'Where are we exposed, delayed or overloaded?' },
-  gm:               { key: 'gm',               name: 'General Manager',    user: 'Okan Demir',   initials: 'OD', color: '#0f766e',
+  gm:               { key: 'gm',               name: 'General Manager',    userId: 'USR-OKAN', user: 'Okan Demir',   initials: 'OD', color: '#0f766e',
                       question: 'Which Reports need intermediate review or forwarding, and where are departments exposed?' },
-  finance:          { key: 'finance',          name: 'Finance Review',     user: 'Derya Acar',   initials: 'DA', color: '#b45309',
+  finance:          { key: 'finance',          name: 'Finance Review',     userId: 'USR-DERYA', user: 'Derya Acar',   initials: 'DA', color: '#b45309',
                       question: 'Is the requested budget and resource justified?' },
-  executiveDirector:{ key: 'executiveDirector',name: 'Executive Director', user: 'Ufuk Aslan',   initials: 'UA', color: '#9f1239',
+  executiveDirector:{ key: 'executiveDirector',name: 'Executive Director', userId: 'USR-UFUK', user: 'Ufuk Aslan',   initials: 'UA', color: '#9f1239',
                       question: 'What needs my final approval to proceed?' },
-  auditee:          { key: 'auditee',          name: 'Auditee',            user: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager', initials: 'FN', color: '#1f9d62',
+  auditee:          { key: 'auditee',          name: 'Auditee',            userId: 'USR-FLY-NAMIBIA-QM', user: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager', initials: 'FN', color: '#1f9d62',
                       org: 'ORG-XYZ', orgName: CANONICAL_SERVICE_PROVIDER_NAME,
                       question: 'What does the CAA need from my organization?' },
-  admin:            { key: 'admin',            name: 'Admin Preview',      user: 'System Admin', initials: 'AP', color: '#c77700',
+  admin:            { key: 'admin',            name: 'Admin Preview',      userId: 'USR-ADMIN', user: 'System Admin', initials: 'AP', color: '#c77700',
                       question: 'Which template or rule must be configured?' }
 };
 
@@ -376,29 +376,29 @@ var SEED_AUDITS = [
   { id: 'AUD-2026-001', ref: '2026 Cabin Inspection - ' + CANONICAL_SERVICE_PROVIDER_NAME, orgId: 'ORG-XYZ', type: 'Cabin Inspection', domain: 'Cabin Safety',
     templateId: 'TPL-CABIN-2026', date: DEMO_TODAY, mode: 'On-site', location: CANONICAL_SERVICE_PROVIDER_NAME + ' aircraft cabin / on-site inspection',
     inspectionCategory: 'Routine', noticePolicy: 'advance',
-    lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer'], status: 'Scheduled', checklistStarted: false },
+    lead: 'Caner Yildiz', leadInspectorUserId: 'USR-CANER', team: ['Caner Yildiz', 'Aylin Sezer'], status: 'Scheduled', checklistStarted: false },
   { id: 'AUD-2026-002', ref: 'Q1 Ramp Inspection', orgId: 'ORG-SKY', type: 'Ramp Inspection', domain: 'Ramp',
     templateId: 'TPL-RAMP-2026', date: '2026-02-12', mode: 'On-site', location: 'Apron 4',
-    lead: 'Caner Yildiz', team: ['Caner Yildiz'], status: 'Report Issued', checklistStarted: true },
+    lead: 'Caner Yildiz', leadInspectorUserId: 'USR-CANER', team: ['Caner Yildiz'], status: 'Report Issued', checklistStarted: true },
   { id: 'AUD-2026-003', ref: 'Airworthiness Audit', orgId: 'ORG-BLU', type: 'Periodic Surveillance', domain: 'Airworthiness',
     templateId: 'TPL-AWO-2026', date: '2026-03-20', mode: 'On-site', location: 'BlueWing Hangar 2',
-    lead: 'Aylin Sezer', team: ['Aylin Sezer'], status: 'Report Issued', checklistStarted: true },
+    lead: 'Aylin Sezer', leadInspectorUserId: 'USR-AYLIN', team: ['Aylin Sezer'], status: 'Report Issued', checklistStarted: true },
   { id: 'AUD-2026-004', ref: 'Cabin Safety Audit', orgId: 'ORG-XYZ', type: 'Follow-up Inspection', domain: 'Cabin Safety',
     templateId: 'TPL-CAB-2026', date: '2026-04-15', mode: 'On-site', location: CANONICAL_SERVICE_PROVIDER_NAME + ' Training Centre',
-    lead: 'Caner Yildiz', team: ['Caner Yildiz'], status: 'Closed', checklistStarted: true },
+    lead: 'Caner Yildiz', leadInspectorUserId: 'USR-CANER', team: ['Caner Yildiz'], status: 'Closed', checklistStarted: true },
   { id: 'AUD-2026-005', ref: 'Security Audit', orgId: 'ORG-SKY', type: 'Special Inspection', domain: 'Security',
     templateId: 'TPL-SEC-2026', date: '2026-05-22', mode: 'On-site', location: 'SkyCargo Terminal',
     inspectionCategory: 'Ad Hoc / Unannounced', noticePolicy: 'withheld',
-    lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer', 'Mehmet Aydin'], status: 'In Progress', checklistStarted: true },
+    lead: 'Caner Yildiz', leadInspectorUserId: 'USR-CANER', team: ['Caner Yildiz', 'Aylin Sezer', 'Mehmet Aydin'], status: 'In Progress', checklistStarted: true },
   { id: 'AUD-2026-006', ref: 'Certificate Renewal Review', orgId: 'ORG-BLU', type: 'Certificate Renewal', domain: 'Licensing',
     templateId: 'TPL-CABIN-2026', date: '2026-09-10', mode: 'On-site', location: 'BlueWing HQ',
-    lead: 'Caner Yildiz', team: ['Caner Yildiz', 'Aylin Sezer'], status: 'Planned', checklistStarted: false },
+    lead: 'Caner Yildiz', leadInspectorUserId: 'USR-CANER', team: ['Caner Yildiz', 'Aylin Sezer'], status: 'Planned', checklistStarted: false },
   { id: 'AUD-2026-007', ref: 'Initial Application Review', orgId: 'ORG-XYZ', type: 'Initial Application', domain: 'Certification',
     templateId: 'TPL-CABIN-2026', date: '2026-10-05', mode: 'Remote', location: 'Document review',
-    lead: 'Aylin Sezer', team: ['Aylin Sezer'], status: 'Planned', checklistStarted: false },
+    lead: 'Aylin Sezer', leadInspectorUserId: 'USR-AYLIN', team: ['Aylin Sezer'], status: 'Planned', checklistStarted: false },
   { id: 'AUD-2026-008', ref: 'Variation / Amendment Review', orgId: 'ORG-XYZ', type: 'Variation / Amendment', domain: 'Licensing',
     templateId: 'TPL-RAMP-2026', date: '2026-11-18', mode: 'On-site', location: 'Apron 1',
-    lead: 'Caner Yildiz', team: ['Caner Yildiz'], status: 'Planned', checklistStarted: false }
+    lead: 'Caner Yildiz', leadInspectorUserId: 'USR-CANER', team: ['Caner Yildiz'], status: 'Planned', checklistStarted: false }
 ];
 
 /* ----------------------------- Findings -----------------------------
@@ -1229,6 +1229,7 @@ var SEED_PLANNING_ITEMS = [
       acceptedBy: null,
       acceptedDate: null,
       leadInspector: null,
+      leadInspectorUserId: null,
       proposedTeam: [],
       proposedStartDate: null,
       proposedEndDate: null,
@@ -1307,6 +1308,7 @@ var SEED_PLANNING_ITEMS = [
       acceptedBy: null,
       acceptedDate: null,
       leadInspector: null,
+      leadInspectorUserId: null,
       proposedTeam: [],
       proposedStartDate: null,
       proposedEndDate: null,
@@ -1392,6 +1394,7 @@ var SEED_PLANNING_ITEMS = [
       acceptedBy: null,
       acceptedDate: null,
       leadInspector: null,
+      leadInspectorUserId: null,
       proposedTeam: [],
       proposedStartDate: null,
       proposedEndDate: null,
@@ -1955,6 +1958,7 @@ function mergeRemediationState(base, saved) {
 function freshState() {
   return {
     demoStateVersion: DEMO_STATE_VERSION,
+    demoClockSequence: 0,
     role: null,                 // null = login screen
     auditeeOrganizationId: 'ORG-XYZ',
     inspectorUserId: 'USR-AYLIN',
@@ -2280,6 +2284,52 @@ function normalizeLegacyProviderState(target) {
   return target;
 }
 
+function migrateLegacyLeadInspectorIdentity(target) {
+  var warnings = Array.isArray(target.identityMigrationWarnings) ? target.identityMigrationWarnings.slice() : [];
+  var users = Array.isArray(target.users) ? target.users : [];
+  var canonicalCaner = users.filter(function (user) {
+    return user.id === 'USR-CANER' && user.name === 'Caner Yildiz' && user.roleKey === 'leadInspector' && user.status === 'Active';
+  });
+
+  function migrate(record, idField, nameField, recordType, recordId) {
+    if (!record || record[idField]) return;
+    var legacyName = String(record[nameField] || '').trim();
+    if (!legacyName) return;
+    if (legacyName === 'Caner Yildiz' && canonicalCaner.length === 1) {
+      record[idField] = canonicalCaner[0].id;
+      return;
+    }
+    var warning = recordType + ' ' + recordId + ': legacy Lead display name "' + legacyName + '" was not mapped to a canonical user ID.';
+    if (warnings.indexOf(warning) === -1) warnings.push(warning);
+    record[idField] = null;
+  }
+
+  (target.audits || []).forEach(function (audit) {
+    migrate(audit, 'leadInspectorUserId', 'lead', 'Audit', audit.id || 'unknown');
+  });
+  (target.planningItems || []).forEach(function (item) {
+    migrate(item.preparation, 'leadInspectorUserId', 'leadInspector', 'Planning item', item.id || 'unknown');
+  });
+
+  target.identityMigrationWarnings = warnings;
+  if (!warnings.length) return;
+  if (!Array.isArray(target.auditLog)) target.auditLog = [];
+  warnings.forEach(function (warning, index) {
+    var exists = target.auditLog.some(function (entry) {
+      return entry.action === 'Legacy Lead Inspector identity mapping discarded' && entry.target === warning;
+    });
+    if (exists) return;
+    target.auditLog.push({
+      id: 'L-MIG-LEAD-' + String(index + 1),
+      time: DEMO_TODAY + ' 09:00',
+      actor: 'System',
+      action: 'Legacy Lead Inspector identity mapping discarded',
+      target: warning,
+      system: true
+    });
+  });
+}
+
 function mergeDemoState(saved) {
   var base = freshState();
   var managerFindingsUiDefault = deepClone(base.managerFindingsUi);
@@ -2292,6 +2342,7 @@ function mergeDemoState(saved) {
     if (key === 'ui') return;
     base[key] = saved[key];
   });
+  if (!Number.isFinite(base.demoClockSequence) || base.demoClockSequence < 0) base.demoClockSequence = 0;
   normalizeLegacyProviderState(base);
   if (!Array.isArray(base.notifications)) base.notifications = deepClone(SEED_NOTIFICATIONS);
   if (!Array.isArray(base.reminderEvents)) base.reminderEvents = [];
@@ -2402,6 +2453,7 @@ function mergeDemoState(saved) {
     item.budget = Object.assign({}, deepClone(normalizationSeed.budget), item.budget || {});
     if (!Array.isArray(item.budget.lines)) item.budget.lines = deepClone(normalizationSeed.budget.lines);
   });
+  migrateLegacyLeadInspectorIdentity(base);
   base.executionChecklists = deepClone(SEED_EXECUTION_CHECKLISTS);
   if (!Array.isArray(base.managedChecklists)) base.managedChecklists = deepClone(SEED_MANAGED_CHECKLISTS);
   SEED_MANAGED_CHECKLISTS.forEach(function (seedPackage) {

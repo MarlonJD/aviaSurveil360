@@ -66,7 +66,7 @@ function reopenInspectionChecklistForEditing(target, auditId, metadata) {
 
   var previousSubmittedAt = workspace.submittedAt;
   var previousSubmittedByUserId = workspace.submittedByUserId || '';
-  var reopenedAt = metadata.at || new Date().toISOString();
+  var reopenedAt = metadata.at || (typeof demoNowIso === 'function' ? demoNowIso(target) : DEMO_TODAY + 'T09:00:00.000Z');
   var reopenedByUserId = metadata.userId || '';
   var historyEntry = {
     auditId: auditId,
@@ -231,6 +231,52 @@ function inspectionExecutionQuestionsForInspector(target, auditId, inspectorUser
       assignmentScope: !record ? 'unassigned' : (record.inspectorUserId === inspectorUserId ? 'mine' : 'other')
     });
   });
+}
+
+function inspectionMutationAuthority(target, auditId, questionId, actor) {
+  var audit = inspectionExecutionAudit(target, auditId);
+  var workspace = target && target.inspectionWorkspaces ? target.inspectionWorkspaces[auditId] : null;
+  actor = actor || {};
+  if (!audit) return { allowed: false, reason: 'Canonical Audit not found.' };
+  if (['inspector', 'leadInspector'].indexOf(actor.role) === -1) {
+    return { allowed: false, reason: 'Inspector or Lead Inspector authority required.' };
+  }
+  var user = ((target && target.users) || []).filter(function (candidate) {
+    return candidate.id === actor.userId && candidate.roleKey === actor.role && candidate.status === 'Active';
+  })[0] || null;
+  if (!user) return { allowed: false, reason: 'Active canonical session user is required.' };
+
+  if (actor.role === 'leadInspector') {
+    if (!audit.leadInspectorUserId || audit.leadInspectorUserId !== actor.userId) {
+      return { allowed: false, reason: 'Only the assigned Lead Inspector can change this Audit.' };
+    }
+  } else if ((audit.team || []).indexOf(user.name) === -1) {
+    return { allowed: false, reason: 'Inspector is not a member of this Audit team.' };
+  }
+
+  if (questionId) {
+    var pkg = inspectionExecutionPackageForAudit(target, auditId);
+    if (!pkg || !pkg.questions.some(function (question) { return question.id === questionId; })) {
+      return { allowed: false, reason: 'Question is outside this Audit checklist.' };
+    }
+    var assignment = target.leadAssignmentsByAudit && target.leadAssignmentsByAudit[auditId];
+    var record = assignment && assignment.assignmentsByQuestionId
+      ? assignment.assignmentsByQuestionId[questionId]
+      : null;
+    if (actor.role === 'inspector' && record && record.inspectorUserId !== actor.userId) {
+      return { allowed: false, reason: 'Question is assigned to another Inspector.' };
+    }
+  }
+
+  if (actor.action === 'reopen') {
+    if (!workspace || !workspace.submittedAt) return { allowed: false, reason: 'Only a submitted checklist can be reopened.' };
+    if (audit.reportIssuedAt || audit.status === 'Closed') return { allowed: false, reason: 'Issued or closed inspections cannot be reopened.' };
+    return { allowed: true, reason: '' };
+  }
+  if (workspace && workspace.submittedAt) {
+    return { allowed: false, reason: 'Submitted checklist is read-only until an authorized reopen.' };
+  }
+  return { allowed: true, reason: '' };
 }
 
 function checklistResultRequiresComment(result) {

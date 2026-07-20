@@ -130,7 +130,7 @@ assert.match(html, /Blocking reason/);
 assert.match(html, /planning-command-center/);
 assert.match(html, /planning-queue-panel/);
 assert.match(html, /planning-queue-row/);
-assert.match(html, /Awaiting Finance Review/);
+assert.match(html, /Awaiting approval — Finance Review/);
 assert.match(html, /No Department Manager action required yet/);
 assert.match(html, /View details/);
 const planningQueueHtml = html.match(/<section class="approval-package__queue planning-queue-panel">([\s\S]*?)<\/section>/)[1];

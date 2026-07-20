@@ -220,6 +220,13 @@ var AUDITEE_ALLOWED_VIEWS = {
 };
 
 var FINANCE_ALLOWED_VIEWS = { 'finance-review': true };
+var ADMIN_ALLOWED_VIEWS = {
+  templates: true,
+  'template-preview': true,
+  users: true,
+  settings: true,
+  profile: true
+};
 var EXECUTIVE_DIRECTOR_ALLOWED_VIEWS = {
   'executive-dashboard': true,
   'executive-planning': true,
@@ -242,6 +249,7 @@ function roleCanOpenView(role, view) {
   if (role === 'auditee') return !!AUDITEE_ALLOWED_VIEWS[view];
   if (role === 'finance') return !!FINANCE_ALLOWED_VIEWS[view];
   if (role === 'executiveDirector') return !!EXECUTIVE_DIRECTOR_ALLOWED_VIEWS[view];
+  if (role === 'admin') return !!ADMIN_ALLOWED_VIEWS[view];
   return true;
 }
 
@@ -671,6 +679,7 @@ function renderNotifPanel() {
 
 function inspectorUserBar() {
   var r = ROLES[state.role] || ROLES.inspector;
+  var actor = currentSessionActor(state);
   var unread = unreadCount(state.role);
   return '<div class="inspector-userbar">' +
     '<button class="topbar__menu inspector-userbar__menu" data-act="toggle-menu" aria-label="Open menu">☰</button>' +
@@ -682,7 +691,7 @@ function inspectorUserBar() {
     '</div>' +
     '<button class="inspector-user" data-act="nav" data-view="profile">' +
       '<span class="who__avatar" style="background:' + r.color + '">' + esc(r.initials) + '</span>' +
-      '<span class="inspector-user__name">' + esc(r.user) + '</span>' +
+      '<span class="inspector-user__name">' + esc(actor.name) + '</span>' +
       '<span class="inspector-user__chev">&#8964;</span>' +
     '</button>' +
   '</div>';
@@ -2029,15 +2038,18 @@ function inspectionWorkspaceRow(rowId, auditId) {
 }
 
 function currentInspectorUserId() {
-  return state.inspectorUserId || 'USR-AYLIN';
+  return currentSessionActor(Object.assign({}, state, { role: 'inspector' })).userId;
 }
 
 function currentInspectorCanEditQuestion(rowId, auditId) {
-  if (state.role !== 'inspector') return true;
   var targetAuditId = activeInspectionAuditId(auditId);
-  var scoped = inspectionExecutionQuestionsForInspector(state, targetAuditId, currentInspectorUserId());
-  var row = scoped.filter(function (question) { return question.id === rowId; })[0] || null;
-  return !!row && row.assignmentScope !== 'other';
+  var actor = currentSessionActor(state);
+  return inspectionMutationAuthority(state, targetAuditId, rowId, actor).allowed;
+}
+
+function inspectionActionAuthority(auditId, questionId, action) {
+  var actor = currentSessionActor(state);
+  return inspectionMutationAuthority(state, activeInspectionAuditId(auditId), questionId || '', Object.assign({}, actor, { action: action || 'edit' }));
 }
 
 function handleInspectionStatusCycle(rowId) {
@@ -2056,8 +2068,9 @@ function handleInspectionStatusCycle(rowId) {
 }
 
 function setInspectionStatus(rowId, next) {
+  if (!inspectionActionAuthority(activeInspectionAuditId(), rowId, 'edit').allowed) return false;
   var row = inspectionWorkspaceRow(rowId);
-  if (!row || !currentInspectorCanEditQuestion(rowId) || !INSPECTOR_EXECUTION_STATUS_META[next]) return false;
+  if (!row || !INSPECTOR_EXECUTION_STATUS_META[next]) return false;
   var workspace = activeInspectionWorkspace();
   if (workspace.submittedAt) return false;
   if (!workspace.answersByQuestionId[rowId]) workspace.answersByQuestionId[rowId] = {};
@@ -2074,16 +2087,21 @@ function syncInspectionPotentialFinding(row, workspace) {
   var comment = normalizeApprovalText(answer.comment || '');
   var files = answer.file ? [answer.file] : [];
   if ((result === 'noncompliant' || result === 'observation') && !comment) return null;
-  recordChecklistResult(activeInspectionAuditId(), row.id, result, comment, files);
+  var recorded = recordChecklistResult(activeInspectionAuditId(), row.id, result, comment, files);
   if (result !== 'noncompliant' && result !== 'observation') return null;
-  var potential = createPotentialFinding(activeInspectionAuditId(), row.id, { actorName: currentActorLabel() });
-  answer.potentialFindingId = potential.id;
+  var potential = recorded.potentialFindingId ? potentialFindingById(recorded.potentialFindingId) : null;
+  if (potential) {
+    potential.result = result;
+    potential.comment = comment;
+    potential.evidenceFiles = normalizeMockFiles(recorded.evidenceFiles || files);
+  }
   return potential;
 }
 
 function setInspectionComment(rowId, comment) {
+  if (!inspectionActionAuthority(activeInspectionAuditId(), rowId, 'edit').allowed) return;
   var row = inspectionWorkspaceRow(rowId);
-  if (!row || !currentInspectorCanEditQuestion(rowId)) return;
+  if (!row) return;
   var workspace = activeInspectionWorkspace();
   if (workspace.submittedAt) return;
   if (!workspace.answersByQuestionId[rowId]) workspace.answersByQuestionId[rowId] = {};
@@ -2097,7 +2115,8 @@ function handleInspectionRowMenu(rowId) {
   if (!row) return;
   var statusKey = inspectionExecutionStatus(row);
   var meta = INSPECTOR_EXECUTION_STATUS_META[statusKey] || INSPECTOR_EXECUTION_STATUS_META.na;
-  var comment = inspectionExecutionComment(row) || 'No comment yet.';
+  var recordedComment = inspectionExecutionComment(row) || '';
+  var comment = recordedComment || 'No comment yet.';
   var file = (typeof inspectionExecutionFileName === 'function' ? inspectionExecutionFileName(row) : row.file) || 'No file attached';
   var body = '<div class="modal__intro"><b>' + esc(row.no) + '</b> ' + esc(row.item) + '</div>' +
     '<div class="metaline">' +
@@ -2106,9 +2125,15 @@ function handleInspectionRowMenu(rowId) {
       metaItem('Comment', comment) +
     '</div>';
   var readOnly = !!activeInspectionWorkspace().submittedAt || !currentInspectorCanEditQuestion(rowId);
+  var workspaceAnswer = activeInspectionWorkspace().answersByQuestionId[row.id] || {};
+  var eligibleForPotential = (statusKey === 'noncompliant' || statusKey === 'observation') && !!normalizeApprovalText(recordedComment);
+  var potential = workspaceAnswer.potentialFindingId ? potentialFindingById(workspaceAnswer.potentialFindingId) : null;
   var foot = '<button class="btn" data-act="close-modal">Close</button>' + (readOnly ? '' :
     '<button class="btn" data-act="inspection-set-status" data-id="' + esc(row.id) + '" data-status="observation">Mark Observation</button>' +
-    '<button class="btn btn--danger" data-act="inspection-set-status" data-id="' + esc(row.id) + '" data-status="noncompliant">Mark Non-Compliant</button>');
+    '<button class="btn btn--danger" data-act="inspection-set-status" data-id="' + esc(row.id) + '" data-status="noncompliant">Mark Non-Compliant</button>' +
+    (eligibleForPotential && !potential
+      ? '<button class="btn btn--primary" data-act="create-potential" data-id="' + esc(activeInspectionAuditId()) + '" data-q="' + esc(row.id) + '">Create Potential Finding</button>'
+      : (potential ? '<button class="btn" disabled>Potential Finding ' + esc(potential.id) + ' created</button>' : '')));
   openModal(modalShell('Checklist row actions', body, foot));
 }
 
@@ -2177,6 +2202,7 @@ function inspectionAttachmentDownloadText(row, fileName) {
 }
 
 function handleInspectionFileDownload(rowId) {
+  if (!inspectionActionAuthority(activeInspectionAuditId(), rowId, 'edit').allowed) return;
   var row = inspectionWorkspaceRow(rowId);
   if (!row) return;
   var file = (typeof inspectionExecutionFileName === 'function' ? inspectionExecutionFileName(row) : row.file) || '';
@@ -2186,7 +2212,7 @@ function handleInspectionFileDownload(rowId) {
   }
   var downloaded = downloadPlainTextFile(mockAttachmentDownloadFileName(file), inspectionAttachmentDownloadText(row, file));
   var workspace = activeInspectionWorkspace();
-  workspace.downloadedAttachmentIds[row.id] = new Date().toISOString();
+  workspace.downloadedAttachmentIds[row.id] = demoNowIso();
   addLog('Checklist attachment download simulated', file);
   persistAfterAction();
   render();
@@ -2196,8 +2222,9 @@ function handleInspectionFileDownload(rowId) {
 }
 
 function handleInspectionFileAttach(rowId) {
+  if (!inspectionActionAuthority(activeInspectionAuditId(), rowId, 'edit').allowed) return;
   var row = inspectionWorkspaceRow(rowId);
-  if (!row || !currentInspectorCanEditQuestion(rowId)) return;
+  if (!row) return;
   var workspace = activeInspectionWorkspace();
   if (workspace.submittedAt) return;
   if (!workspace.answersByQuestionId[row.id]) workspace.answersByQuestionId[row.id] = {};
@@ -2244,14 +2271,15 @@ function handleInspectionSetStatus(rowId, next) {
   render();
   if (next === 'noncompliant' || next === 'observation') {
     var row = inspectionWorkspaceRow(rowId);
-    var potential = row ? activeInspectionWorkspace().answersByQuestionId[row.id].potentialFindingId : '';
-    toast(potential ? 'Potential Finding recorded' : 'Comment required', potential ? potential + ' is waiting for Lead Inspector review.' : 'Add the required comment to create a Potential Finding.', potential ? 'warn' : 'info');
+    var answer = row ? activeInspectionWorkspace().answersByQuestionId[row.id] : null;
+    toast('Result updated', answer && answer.comment ? 'Use Create Potential Finding when this result is ready for Lead Inspector review.' : 'Add the required comment before creating a Potential Finding.', 'info');
   }
 }
 
 function handleInspectionDownload(auditId) {
   var targetAuditId = activeInspectionAuditId(auditId);
-  activeInspectionWorkspace(targetAuditId).downloadedAt = new Date().toISOString();
+  if (!inspectionActionAuthority(targetAuditId, '', 'edit').allowed) return;
+  activeInspectionWorkspace(targetAuditId).downloadedAt = demoNowIso();
   addLog('Checklist download simulated', targetAuditId);
   persistAfterAction();
   downloadInspectionChecklist(targetAuditId);
@@ -2261,9 +2289,10 @@ function handleInspectionDownload(auditId) {
 
 function handleInspectionSaveDraft(auditId) {
   var targetAuditId = activeInspectionAuditId(auditId);
+  if (!inspectionActionAuthority(targetAuditId, '', 'edit').allowed) return;
   var workspace = activeInspectionWorkspace(targetAuditId);
   if (workspace.submittedAt) return;
-  workspace.draftSavedAt = new Date().toISOString();
+  workspace.draftSavedAt = demoNowIso();
   addLog('Inspection draft saved', targetAuditId);
   persistAfterAction();
   render();
@@ -2273,11 +2302,12 @@ function handleInspectionSaveDraft(auditId) {
 function handleInspectionSubmitLead(auditId) {
   requireActionRole(['inspector'], 'Checklist submission');
   var targetAuditId = activeInspectionAuditId(auditId);
+  if (!inspectionActionAuthority(targetAuditId, '', 'edit').allowed) return;
   var pkg = inspectionExecutionPackageForAudit(state, targetAuditId);
   if (!pkg) return;
   var workspace = activeInspectionWorkspace(targetAuditId);
   if (!workspace.submittedAt) {
-    workspace.submittedAt = new Date().toISOString();
+    workspace.submittedAt = demoNowIso();
     workspace.submittedByUserId = currentInspectorUserId();
     if (!workspace.allSectionsCompletedAt) workspace.allSectionsCompletedAt = workspace.submittedAt;
     addLog('Inspection submitted to Lead Inspector', targetAuditId);
@@ -2291,6 +2321,7 @@ function handleInspectionSubmitLead(auditId) {
 function handleInspectionReopenEditing(auditId) {
   requireActionRole(['inspector', 'leadInspector'], 'Checklist reopen');
   var targetAuditId = activeInspectionAuditId(auditId);
+  if (!inspectionActionAuthority(targetAuditId, '', 'reopen').allowed) return;
   var workspace = state.inspectionWorkspaces && state.inspectionWorkspaces[targetAuditId];
   if (!workspace || !workspace.submittedAt) {
     toast('Checklist not reopened', 'Only a submitted checklist can be reopened.', 'warn');
@@ -2308,11 +2339,13 @@ function handleInspectionReopenEditing(auditId) {
 function handleInspectionReopenConfirm(auditId) {
   requireActionRole(['inspector', 'leadInspector'], 'Checklist reopen');
   var targetAuditId = activeInspectionAuditId(auditId);
-  var userId = state.role === 'leadInspector' ? 'USR-CANER' : (state.inspectorUserId || 'USR-AYLIN');
+  var authority = inspectionActionAuthority(targetAuditId, '', 'reopen');
+  if (!authority.allowed) return;
+  var actor = currentSessionActor(state);
   try {
     reopenInspectionChecklistForEditing(state, targetAuditId, {
-      at: new Date().toISOString(),
-      userId: userId,
+      at: demoNowIso(),
+      userId: actor.userId,
       role: state.role,
       reason: val('inspection-reopen-reason')
     });
@@ -2328,9 +2361,10 @@ function handleInspectionReopenConfirm(auditId) {
 
 function handleInspectionCompleteSections(auditId) {
   var targetAuditId = activeInspectionAuditId(auditId);
+  if (!inspectionActionAuthority(targetAuditId, '', 'edit').allowed) return;
   var workspace = activeInspectionWorkspace(targetAuditId);
   if (workspace.submittedAt) return;
-  workspace.allSectionsCompletedAt = new Date().toISOString();
+  workspace.allSectionsCompletedAt = demoNowIso();
   addLog('Inspector marked all checklist sections complete', targetAuditId);
   persistAfterAction();
   render();
@@ -2687,7 +2721,16 @@ function handleInspectorAssignmentsFieldChange(field, target) {
   if (field === 'inspector-assignment-organization') ui.organization = value || 'all';
   if (field === 'inspector-assignment-date') ui.dateRange = value || 'all';
   persistAfterAction();
-  if (field !== 'inspector-assignment-query') render();
+  var selectionStart = target && Number.isFinite(target.selectionStart) ? target.selectionStart : value.length;
+  var selectionEnd = target && Number.isFinite(target.selectionEnd) ? target.selectionEnd : selectionStart;
+  render();
+  if (field === 'inspector-assignment-query' && typeof document !== 'undefined' && document.querySelector) {
+    var queryInput = document.querySelector('[data-field="inspector-assignment-query"]');
+    if (queryInput) {
+      if (queryInput.focus) queryInput.focus();
+      if (queryInput.setSelectionRange) queryInput.setSelectionRange(selectionStart, selectionEnd);
+    }
+  }
 }
 
 function handleInspectorAssignmentFilter(status) {
@@ -2701,7 +2744,7 @@ function handleInspectorAssignmentFilter(status) {
 
 function handleInspectorAssignmentApply() {
   var ui = ensureInspectorAssignmentsUi();
-  ui.appliedAt = new Date().toISOString();
+  ui.appliedAt = demoNowIso();
   persistAfterAction();
   render();
   toast('Filters applied', 'My Assignments list updated.', 'ok');
@@ -2788,7 +2831,7 @@ function handleLeadAssignedReset() {
 
 function handleLeadAssignedApply() {
   var ui = ensureLeadAssignedAuditsUi();
-  ui.appliedAt = new Date().toISOString();
+  ui.appliedAt = demoNowIso();
   persistAfterAction();
   render();
   toast('Filters applied', 'Assigned audits list updated.', 'ok');
@@ -2809,7 +2852,7 @@ function handleLeadAssignedNew() {
         metaItem('Operator', 'West Air (Pty) Ltd') +
         metaItem('Department', 'OPS') +
         metaItem('Audit type', 'Regular Surveillance') +
-        metaItem('Lead Inspector', ROLES.leadInspector.user) +
+        metaItem('Lead Inspector', currentSessionActor(Object.assign({}, state, { role: 'leadInspector' })).name) +
       '</div>' +
       '<p class="small muted mt-12">Demo only: this prepares a mock assignment record. No real notification, file storage, or backend workflow is created.</p>' +
     '</div>',
@@ -2839,6 +2882,17 @@ function leadAssignmentTeamForAudit(target, auditId) {
   return teams.filter(function (team) { return team.auditId === auditId; })[0] || null;
 }
 
+function leadAuditMutationAuthority(target, auditId) {
+  if (!target || target.role !== 'leadInspector') return { allowed: false, reason: 'Lead Inspector authority required.' };
+  var actor = currentSessionActor(target);
+  var audit = (target.audits || []).filter(function (candidate) { return candidate.id === auditId; })[0] || null;
+  if (!audit) return { allowed: false, reason: 'Canonical Audit not found.' };
+  if (!audit.leadInspectorUserId || audit.leadInspectorUserId !== actor.userId) {
+    return { allowed: false, reason: 'Only the assigned Lead Inspector can change this Audit.' };
+  }
+  return { allowed: true, reason: '' };
+}
+
 function activeInternalInspectorById(target, userId) {
   var users = target && Array.isArray(target.users) ? target.users : [];
   return users.filter(function (user) {
@@ -2847,6 +2901,8 @@ function activeInternalInspectorById(target, userId) {
 }
 
 function addInspectorToAuditTeam(target, auditId, userId) {
+  var authority = leadAuditMutationAuthority(target, auditId);
+  if (!authority.allowed) return { ok: false, message: authority.reason, team: null };
   var team = leadAssignmentTeamForAudit(target, auditId);
   if (!team) return { ok: false, message: 'Inspection team not found.', team: null };
   var inspector = activeInternalInspectorById(target, userId);
@@ -2860,6 +2916,8 @@ function addInspectorToAuditTeam(target, auditId, userId) {
 }
 
 function assignLeadQuestionsToInspector(target, auditId, questionIds, inspectorUserId, input) {
+  var authority = leadAuditMutationAuthority(target, auditId);
+  if (!authority.allowed) return { ok: false, message: authority.reason, assignment: null };
   var team = leadAssignmentTeamForAudit(target, auditId);
   var inspector = activeInternalInspectorById(target, inspectorUserId);
   if (!team) return { ok: false, message: 'Inspection team not found.', assignment: null };
@@ -2988,6 +3046,8 @@ function handleLeadAssignmentAssign() {
 }
 
 function handleLeadAssignmentSave() {
+  var auditId = (state.params && state.params.auditId) || 'AUD-2026-001';
+  if (!leadAuditMutationAuthority(state, auditId).allowed) return;
   var ui = ensureLeadAssignmentUi();
   ui.draftSavedAt = nowIsoDemo();
   persistAfterAction();
@@ -2996,6 +3056,8 @@ function handleLeadAssignmentSave() {
 }
 
 function handleLeadAssignmentRelease() {
+  var auditId = (state.params && state.params.auditId) || 'AUD-2026-001';
+  if (!leadAuditMutationAuthority(state, auditId).allowed) return;
   var ui = ensureLeadAssignmentUi();
   var assignedUserIds = Array.from(new Set(Object.keys(ui.assignmentsByQuestionId || {}).map(function (questionId) {
     return ui.assignmentsByQuestionId[questionId].inspectorUserId;
@@ -3033,6 +3095,7 @@ function handleLeadAssignmentRelease() {
 
 function handleLeadAssignmentNotifyProvider(auditId) {
   var id = auditId || (state.params && state.params.auditId) || 'AUD-2026-001';
+  if (!leadAuditMutationAuthority(state, id).allowed) return;
   var coordination = inspectionCoordinationByAuditId(state, id);
   if (!coordination) {
     toast('Coordination unavailable', 'No inspection coordination record is configured for this audit.', 'warn');
@@ -3042,6 +3105,11 @@ function handleLeadAssignmentNotifyProvider(auditId) {
     toast('Advance notice withheld', 'This inspection is configured as Ad Hoc / Unannounced, so no Service Provider notification is sent.', 'warn');
     return;
   }
+  var assignment = state.leadAssignmentsByAudit && state.leadAssignmentsByAudit[id];
+  if (!assignment || !assignment.releasedAt) {
+    toast('Coordination not sent', 'Release checklist assignments before notifying the Service Provider.', 'warn');
+    return;
+  }
   if (coordination.status !== 'ready_to_notify') {
     toast('Coordination already started', 'The Service Provider coordination package has already been sent or answered.', 'warn');
     return;
@@ -3049,7 +3117,7 @@ function handleLeadAssignmentNotifyProvider(auditId) {
   coordination.status = 'awaiting_provider_response';
   coordination.notifiedAt = nowIsoDemo();
   coordination.history = Array.isArray(coordination.history) ? coordination.history : [];
-  coordination.history.push({ at: coordination.notifiedAt, actor: 'Caner Yildiz', action: 'Sent proposed date, checklist, and relevant information to Service Provider' });
+  coordination.history.push({ at: coordination.notifiedAt, actor: currentSessionActor(state).name, action: 'Sent proposed date, checklist, and relevant information to Service Provider' });
   state.notifications.unshift({
     id: 'n-inspection-coordination-' + state.notifSeq++,
     role: 'auditee',
@@ -3068,8 +3136,14 @@ function handleLeadAssignmentNotifyProvider(auditId) {
 
 function handleLeadAssignmentAcceptAlternative(auditId) {
   var id = auditId || (state.params && state.params.auditId) || 'AUD-2026-001';
+  if (!leadAuditMutationAuthority(state, id).allowed) return;
   var coordination = inspectionCoordinationByAuditId(state, id);
   var audit = (state.audits || []).filter(function (item) { return item.id === id; })[0] || null;
+  var assignment = state.leadAssignmentsByAudit && state.leadAssignmentsByAudit[id];
+  if (!assignment || !assignment.releasedAt) {
+    toast('Alternative not accepted', 'Release checklist assignments before confirming Service Provider coordination.', 'warn');
+    return;
+  }
   if (!coordination || coordination.status !== 'alternative_proposed' || !coordination.alternativeDate) {
     toast('Alternative unavailable', 'No Service Provider alternative date is waiting for CAA confirmation.', 'warn');
     return;
@@ -3087,7 +3161,7 @@ function handleLeadAssignmentAcceptAlternative(auditId) {
   coordination.history = Array.isArray(coordination.history) ? coordination.history : [];
   coordination.history.push({
     at: coordination.caaConfirmedAt,
-    actor: 'Caner Yildiz',
+    actor: currentSessionActor(state).name,
     action: 'Accepted Service Provider alternative date ' + coordination.confirmedDate + '; original proposed date ' + originalProposedDate
   });
   state.notifications.unshift({
@@ -4386,7 +4460,7 @@ function downloadLeadReviewChecklist(auditId) {
 
 function handleLeadReviewDownload(auditId) {
   var ui = ensureLeadReviewUi();
-  ui.downloadedAt = new Date().toISOString();
+  ui.downloadedAt = demoNowIso();
   addLog('Lead report draft download simulated', auditId || 'INS-2026-015');
   persistAfterAction();
   downloadLeadReportDraft(auditId || 'INS-2026-015');
@@ -4396,7 +4470,7 @@ function handleLeadReviewDownload(auditId) {
 
 function handleLeadReportGenerate(auditId) {
   var ui = ensureLeadReviewUi();
-  ui.reportGeneratedAt = new Date().toISOString();
+  ui.reportGeneratedAt = demoNowIso();
   ui.reportDraftSavedAt = ui.reportDraftSavedAt || ui.reportGeneratedAt;
   ui.tab = 'report';
   ui.actionsOpen = false;
@@ -4424,7 +4498,7 @@ function handleLeadReportPreview(auditId) {
 
 function handleLeadReportSaveDraft(auditId) {
   var ui = ensureLeadReviewUi();
-  ui.reportDraftSavedAt = new Date().toISOString();
+  ui.reportDraftSavedAt = demoNowIso();
   ui.reportGeneratedAt = ui.reportGeneratedAt || ui.reportDraftSavedAt;
   ui.tab = 'report';
   ui.actionsOpen = false;
@@ -4466,7 +4540,7 @@ function handleLeadReportSendUnitManager(auditId) {
         comment: ui.workflowComment || 'Preliminary report draft prepared and sent to Department Manager review before any required Service Provider CAP completion.'
       });
     }
-    ui.sentToUnitManagerAt = new Date().toISOString();
+    ui.sentToUnitManagerAt = demoNowIso();
     ui.reportGeneratedAt = ui.reportGeneratedAt || ui.sentToUnitManagerAt;
     ui.reportDraftSavedAt = ui.reportDraftSavedAt || ui.sentToUnitManagerAt;
     ui.tab = 'report';
@@ -4491,7 +4565,7 @@ function handleLeadReviewFinalize(auditId) {
     toast('Comment required', 'Add a return comment before sending checklist items back.', 'warn');
     return;
   }
-  ui.finalizedAt = new Date().toISOString();
+  ui.finalizedAt = demoNowIso();
   addLog(returnedRows.length ? 'Lead review sent back' : 'Lead review finalized', auditId || 'INS-2026-015');
   if (returnedRows.length) {
     pushNotification('inspector', 'REV', 'Lead Inspector returned ' + returnedRows.length + ' checklist item(s) for revision.');
@@ -4552,6 +4626,7 @@ function handleLeadReviewFileDownload(rowId, fileName) {
 
 function handleMockChecklistEvidence(q) {
   var auditId = activeInspectionAuditId();
+  if (!inspectionActionAuthority(auditId, q, 'edit').allowed) return;
   var workspace = inspectionWorkspaceForAudit(state, auditId);
   var previous = workspace.answersByQuestionId[q] || {};
   workspace.answersByQuestionId[q] = Object.assign({}, previous, {
@@ -4566,10 +4641,11 @@ function handleMockChecklistEvidence(q) {
 
 function handleCreatePotentialFinding(auditId, q) {
   requireActionRole(['inspector'], 'Potential Finding creation');
+  if (!inspectionActionAuthority(auditId, q, 'edit').allowed) return;
   var ans = checklistAnswerForAudit(state, auditId, q) || {};
   try {
     recordChecklistResult(auditId, q, ans.answer, ans.comment, ans.evidenceFiles || []);
-    var potential = createPotentialFinding(auditId, q, { actorName: ROLES[state.role].user });
+    var potential = createPotentialFinding(auditId, q, { actorName: currentSessionActor(state).name });
     addLog('Potential Finding created', potential.id);
     pushNotification('leadInspector', '⚑', potential.id + ' is waiting for Lead Inspector review.');
     toast('Potential Finding created', potential.id + ' sent to Lead Inspector review.', 'ok');
@@ -4587,7 +4663,7 @@ function handleConvertPotentialFinding(id) {
     var capChoice = document.getElementById('pf-cap-required-' + id);
     var evidenceChoice = document.getElementById('pf-evidence-required-' + id);
     var conversionOptions = {
-      actorName: ROLES[state.role].user,
+      actorName: currentSessionActor(state).name,
       severity: severity,
       title: val('pf-title-' + id) || 'PBE not serviceable or not accessible in cabin emergency equipment check'
     };
@@ -4624,7 +4700,7 @@ function handlePotentialFindingSeverityChange(id, value) {
 function handleReturnPotentialFinding(id) {
   requireActionRole(['leadInspector'], 'Potential Finding return');
   try {
-    returnPotentialFinding(id, val('pf-reason-' + id), ROLES[state.role].user);
+    returnPotentialFinding(id, val('pf-reason-' + id), currentSessionActor(state).name);
     addLog('Potential Finding returned to Inspector', id);
     pushNotification('inspector', '↩️', id + ' was returned by the Lead Inspector for revision.');
     toast('Returned', id + ' returned to Inspector with a required reason.', 'warn');
@@ -4638,7 +4714,7 @@ function handleReturnPotentialFinding(id) {
 function handleDismissPotentialFinding(id) {
   requireActionRole(['leadInspector'], 'Potential Finding dismissal');
   try {
-    dismissPotentialFinding(id, val('pf-reason-' + id), ROLES[state.role].user);
+    dismissPotentialFinding(id, val('pf-reason-' + id), currentSessionActor(state).name);
     addLog('Potential Finding dismissed', id);
     toast('Dismissed', id + ' dismissed with a required reason.', 'ok');
     persistAfterAction();
@@ -5913,7 +5989,7 @@ function doAuthorizedClosure(id) {
   if (!reason) { toast('Reason required', 'Please enter a reason for the authorized closure.', 'warn'); return; }
   var comment = val('ac-comment'), internal = val('ac-internal');
   var result = applyAuthorizedFindingClosure(state, id, {
-    actor: { role: state.role, name: ROLES[state.role].user },
+    actor: { role: state.role, name: currentSessionActor(state).name },
     reason: reason,
     commentToAuditee: comment,
     internalNote: internal
@@ -5936,7 +6012,7 @@ function sendReminder(id) {
   pushNotification('auditee', '⏰', 'Reminder from the CAA: ' + id + ' — ' + nextActionLabel(f) + '. This finding ' + when + '.', { organizationId: f.orgId });
   recordManualReminderEvent(state, f, {
     role: state.role,
-    name: ROLES[state.role] ? ROLES[state.role].user : currentActorLabel(),
+    name: ROLES[state.role] ? currentSessionActor(state).name : currentActorLabel(),
     at: nowIsoDemo()
   });
   toast('Reminder recorded', 'A traceable demo in-app reminder was recorded for ' + orgName(f.orgId) + '; no real delivery occurred.', 'ok');
@@ -6116,7 +6192,7 @@ function handleCreateChecklistDraft() {
   }
   try {
     var draft = createChecklistDraftVersion(checklist, {
-      actorName: ROLES[state.role].user,
+      actorName: currentSessionActor(state).name,
       actorRole: state.role,
       reason: val('cl-change-reason')
     });
@@ -6188,7 +6264,7 @@ function handlePublishChecklistVersion(versionId) {
     return;
   }
   try {
-    publishChecklistVersion(checklist, version, { actorName: ROLES[state.role].user, actorRole: state.role });
+    publishChecklistVersion(checklist, version, { actorName: currentSessionActor(state).name, actorRole: state.role });
     addLog('Checklist version published active (demo)', version.id);
     toast('Published Active', 'Version ' + version.version + ' is now active; prior active version archived.', 'ok');
     persistAfterAction();
@@ -6199,7 +6275,8 @@ function handlePublishChecklistVersion(versionId) {
 }
 
 function planningActor() {
-  return { actorRole: state.role, actorName: state.role === 'leadInspector' ? planningLeadSessionName(state) : ROLES[state.role].user };
+  var actor = currentSessionActor(state);
+  return { actorRole: state.role, actorName: actor.name, actorUserId: actor.userId };
 }
 
 function planningItemForAction(id) {
@@ -6254,7 +6331,7 @@ function handlePlanningAssignLead(id) {
   try {
     assignLeadInspectorToPlanningItem(item, {
       actorRole: state.role,
-      actorName: ROLES[state.role].user,
+      actorName: currentSessionActor(state).name,
       leadInspector: val('prep-lead') || 'Caner Yildiz'
     });
     addLog('Lead Inspector assigned', item.id);
@@ -6341,7 +6418,7 @@ function handleReportApproval(id, decision) {
   try {
     applyReportApprovalDecision(report, {
       decision: decision,
-      actor: { role: state.role, name: ROLES[state.role].user },
+      actor: { role: state.role, name: currentSessionActor(state).name },
       comment: val('report-note-' + report.id),
       reason: val('report-note-' + report.id),
       enforcementRecommendation: recommendation
@@ -6443,7 +6520,7 @@ function wizardCreate() {
       requestedBudget: Number(w.requestedBudget || 0)
     }, {
       role: state.role,
-      name: ROLES[state.role].user
+      name: currentSessionActor(state).name
     });
     state.wizard = null;
     addLog('Inspection plan submitted to Finance Review', item.id);

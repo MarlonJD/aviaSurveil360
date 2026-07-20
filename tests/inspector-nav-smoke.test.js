@@ -331,6 +331,7 @@ context.handleAction('inspection-set-status', dataEl({ 'data-id': 'cab-exit-safe
 assert.equal(context.state.inspectionWorkspaces['AUD-2026-001'].answersByQuestionId['cab-exit-safety-strap'].status, 'noncompliant');
 assert.equal(context.state.potentialFindings.length, 0, 'required comment prevents premature Potential Finding creation');
 context.setInspectionComment('cab-exit-safety-strap', 'Exit safety strap was not serviceable during the cabin inspection.');
+context.handleCreatePotentialFinding('AUD-2026-001', 'cab-exit-safety-strap');
 assert.equal(context.state.potentialFindings.length, 1);
 assert.equal(context.state.potentialFindings[0].auditId, 'AUD-2026-001');
 assert.equal(context.state.potentialFindings[0].questionId, 'cab-exit-safety-strap');

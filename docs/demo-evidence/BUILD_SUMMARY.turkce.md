@@ -1085,6 +1085,31 @@ notification delivery, production scheduling veya automatic enforcement
 eklenmedi. Regulatory validation, deployment, real-device testing ve
 stakeholder sign-off **not run** kalır.
 
+### Working scenario audit remediation checkpoint — 2026-07-20
+
+Durum: denetlenen 13 bulgunun tamamı ve yerel remediation bütünü **verified
+locally**; release durumu **release pending**. Focused gate 45/45,
+demo-boundary gate 1/1, değişen JavaScript syntax check'leri 7/7 ve complete
+local suite 103/103 geçer; failure, cancellation, skip veya todo yoktur.
+
+Fresh in-app Browser yeniden koşumu
+`http://127.0.0.1:4173/index.html` üzerinde orijinal iş akışı matrisini **70
+PASS, 0 FAIL ve 0 blocked** ile tamamladı. Tüm kontroller `file://`, direct state
+write veya direct `localStorage` mutation olmadan real UI click kullandı.
+Browser doğrulaması ham `Uploaded` ve `Partially Accepted` Evidence durumları
+için iki ek WSA-009 projection boşluğu ile kalan bir WSA-003 duplicated mobile
+checklist karar işlemi buldu. Focused contract'lar önce red olarak doğrulandı;
+ortak `findingWorkState()` projection ve 390×844 cascade düzeltildi, asset token
+v5 oldu ve CAP/Evidence ile mobil yollar yeniden koşuldu.
+
+Kanonik matrix, WSA bazında disposition, silent-state öncesi/sonrası kapsamı,
+screenshot'lar, temiz final-console kaydı ve cleanup kaydı
+[WORKING_SCENARIO_REMEDIATION_2026-07-20.turkce.md](WORKING_SCENARIO_REMEDIATION_2026-07-20.turkce.md)
+içindedir. Backend, database, API, real authentication, storage, messaging,
+framework migration, deployment veya production capability eklenmedi.
+Regulatory validation, real-device testing, stakeholder sign-off, release
+approval ve production readiness `not run`.
+
 ---
 
 ## Sahte öğeler ve kısıtlar

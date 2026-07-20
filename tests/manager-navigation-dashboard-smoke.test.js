@@ -154,7 +154,7 @@ assert.match(elements.get('app-root').innerHTML, /Budget &amp; Resources/);
 assert.match(elements.get('app-root').innerHTML, /Decision Path/);
 assert.match(elements.get('app-root').innerHTML, /Planning Queue/);
 assert.match(elements.get('app-root').innerHTML, /<b>3<\/b> active plans/);
-assert.match(elements.get('app-root').innerHTML, /Awaiting Finance Review/);
+assert.match(elements.get('app-root').innerHTML, /Awaiting approval — Finance Review/);
 assert.match(elements.get('app-root').innerHTML, /No Department Manager action required yet/);
 assert.match(elements.get('app-root').innerHTML, /Q4 Flight Operations Surveillance Plan/);
 assert.match(elements.get('app-root').innerHTML, /Q4 Airworthiness Records Review Plan/);

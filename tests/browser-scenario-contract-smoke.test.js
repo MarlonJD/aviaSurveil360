@@ -226,7 +226,7 @@ test('localhost entrypoint cache-busts every current scenario-integrity asset to
   const assetVersions = Array.from(indexHtml.matchAll(/[?&]v=([^"&]+)/g), (match) => match[1]);
 
   assert.ok(assetVersions.length >= 12, 'expected stylesheet and JavaScript asset versions');
-  assert.deepEqual(new Set(assetVersions), new Set(['20260720-scenario-integrity-v1']));
+  assert.deepEqual(new Set(assetVersions), new Set(['20260720-wsa-remediation-v5']));
 });
 
 test('planning intake describes all five runnable audit-specific checklist packages truthfully', () => {

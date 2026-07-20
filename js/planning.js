@@ -105,6 +105,7 @@ function createPlanningInspection(target, input, actor) {
       acceptedBy: null,
       acceptedDate: null,
       leadInspector: null,
+      leadInspectorUserId: null,
       proposedTeam: [],
       proposedStartDate: null,
       proposedEndDate: null,
@@ -250,15 +251,62 @@ function planningPrepMeta(status) {
   return PLANNING_PREP_STATUS_META[status] || { label: humanStatus(status), tone: statusTone(status) };
 }
 
+function planningPreparationPresentation(item) {
+  var approval = typeof approvalSummary === 'function'
+    ? approvalSummary(item)
+    : { outcome: null, ownerRole: null, ownerLabel: 'Approval review', statusTone: 'warn' };
+  if (!approval.outcome) {
+    return {
+      statusKey: 'awaiting_approval',
+      statusLabel: 'Awaiting approval',
+      ownerRole: approval.ownerRole || null,
+      ownerLabel: approval.ownerLabel || 'Approval review',
+      tone: approval.statusTone || 'warn'
+    };
+  }
+  if (approval.outcome === 'rejected') {
+    return {
+      statusKey: 'approval_rejected',
+      statusLabel: 'Approval rejected',
+      ownerRole: approval.ownerRole || null,
+      ownerLabel: approval.ownerLabel || 'Department Manager',
+      tone: 'danger'
+    };
+  }
+  var prep = item && item.preparation ? item.preparation : { status: 'not_released' };
+  if (prep.status === 'not_released') {
+    return {
+      statusKey: 'approved_awaiting_gm_release',
+      statusLabel: 'Approved — Awaiting GM Release',
+      ownerRole: 'gm',
+      ownerLabel: roleName('gm'),
+      tone: 'warn'
+    };
+  }
+  var meta = planningPrepMeta(prep.status);
+  var action = planningWorkspaceNextAction(item);
+  return {
+    statusKey: prep.status,
+    statusLabel: meta.label,
+    ownerRole: action.ownerRole || null,
+    ownerLabel: action.ownerRole ? roleName(action.ownerRole) : 'CAA Planning Team',
+    tone: meta.tone || 'neutral'
+  };
+}
+
 function planningLeadSessionName(target) {
-  var lead = ((target && target.users) || []).filter(function (user) {
-    return user.roleKey === 'leadInspector' && user.status === 'Active';
-  })[0] || null;
-  return lead ? lead.name : 'Caner Yildiz';
+  var session = target || state;
+  var actor = currentSessionActor(Object.assign({}, session, { role: 'leadInspector' }));
+  return actor.name;
 }
 
 function planningItemAssignedToCurrentLead(target, item) {
-  return !!(item && item.preparation && item.preparation.leadInspector === planningLeadSessionName(target));
+  if (!item || !item.preparation) return false;
+  var session = Object.assign({}, target || state, { role: 'leadInspector' });
+  var actor = currentSessionActor(session);
+  return item.preparation.leadInspectorUserId
+    ? item.preparation.leadInspectorUserId === actor.userId
+    : item.preparation.leadInspector === actor.name;
 }
 
 function appendPlanningPrepHistory(item, actor, action, comment) {
@@ -306,8 +354,12 @@ function assignLeadInspectorToPlanningItem(item, options) {
   requirePlanningRole(options, 'manager', 'Department Manager assigns the Lead Inspector.');
   if (item.preparation.status !== 'accepted_by_department') throw new Error('Department must accept the released audit before Lead assignment.');
   if (!normalizeApprovalText(options.leadInspector)) throw new Error('Lead Inspector is required.');
+  var matchingLead = ((typeof state !== 'undefined' && state && state.users) || []).filter(function (user) {
+    return user.name === options.leadInspector && user.roleKey === 'leadInspector' && user.status === 'Active';
+  });
   item.preparation.status = 'lead_inspector_assigned';
   item.preparation.leadInspector = options.leadInspector;
+  item.preparation.leadInspectorUserId = options.leadInspectorUserId || (matchingLead.length === 1 ? matchingLead[0].id : (options.leadInspector === 'Caner Yildiz' ? 'USR-CANER' : ''));
   appendPlanningPrepHistory(item, options, 'lead_inspector_assigned', 'Lead Inspector assigned: ' + options.leadInspector + '.');
   return item;
 }
@@ -315,6 +367,14 @@ function assignLeadInspectorToPlanningItem(item, options) {
 function proposePlanningTeamAndSchedule(item, options) {
   requirePlanningRole(options, 'leadInspector', 'Lead Inspector proposal required.');
   if (item.preparation.status !== 'lead_inspector_assigned') throw new Error('Lead Inspector must be assigned before proposing team and schedule.');
+  if (item.preparation.leadInspectorUserId) {
+    if (options.actorUserId && options.actorUserId !== item.preparation.leadInspectorUserId) {
+      throw new Error('Only the assigned Lead Inspector can propose the team and schedule.');
+    }
+    if (!options.actorUserId && options.actorName !== item.preparation.leadInspector) {
+      throw new Error('Only the assigned Lead Inspector can propose the team and schedule.');
+    }
+  }
   if (!options.team || !options.team.length || !options.startDate || !options.endDate) {
     throw new Error('Team, start date, and end date are required.');
   }
@@ -338,6 +398,7 @@ function confirmPlanningPreparation(item, actor) {
     status: 'generated_demo',
     generatedDate: DEMO_TODAY,
     leadInspector: item.preparation.leadInspector,
+    leadInspectorUserId: item.preparation.leadInspectorUserId,
     team: item.preparation.proposedTeam.slice(),
     dateRange: item.preparation.proposedStartDate + ' to ' + item.preparation.proposedEndDate,
     note: 'Mock package only; no real document generation or storage.'
@@ -383,6 +444,7 @@ function materializeReadyPlanningInspection(target, item) {
     inspectionCategory: policy.inspectionCategory,
     noticePolicy: policy.noticePolicy,
     lead: item.preparation.leadInspector,
+    leadInspectorUserId: item.preparation.leadInspectorUserId,
     team: team,
     status: 'Scheduled',
     checklistStarted: false,

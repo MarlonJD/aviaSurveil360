@@ -54,6 +54,27 @@ function capEffectivenessByFindingId(id) { for (var i = 0; i < state.capEffectiv
 
 function roleName(roleKey) { return ROLES[roleKey] ? ROLES[roleKey].name : '—'; }
 
+function currentSessionUser(target) {
+  var session = target || state;
+  var role = session && ROLES[session.role];
+  if (!role || !role.userId) return null;
+  return (session.users || []).filter(function (user) {
+    return user.id === role.userId && user.roleKey === session.role && user.status === 'Active';
+  })[0] || null;
+}
+
+function currentSessionActor(target) {
+  var session = target || state;
+  var user = currentSessionUser(session);
+  if (!user) throw new Error('Active session user is required for ' + session.role + '.');
+  return {
+    userId: user.id,
+    name: user.name,
+    role: session.role,
+    organizationId: session.role === 'auditee' ? ROLES.auditee.org : ''
+  };
+}
+
 /* Findings visible to the current role. Auditee sees ONLY its own org. */
 function visibleFindings() {
   if (state.role === 'auditee') {
@@ -116,6 +137,12 @@ function humanStatus(status) {
     planned: 'Planned',
     pending_lead_review: 'Pending Lead Review',
     returned_to_inspector: 'Returned to Inspector',
+    returned_to_lead: 'Returned to Lead Inspector',
+    released_to_department: 'Released to Department',
+    accepted_by_department: 'Accepted by Department',
+    lead_inspector_assigned: 'Lead Inspector Assigned',
+    team_schedule_proposed: 'Team and Schedule Proposed',
+    ready_for_execution: 'Ready for Execution',
     converted: 'Converted',
     dismissed: 'Dismissed'
   };
@@ -139,23 +166,38 @@ function demoBadge(label, tone) {
   return '<span class="badge badge--' + (tone || 'neutral') + '"><span class="dot"></span>' + esc(label) + '</span>';
 }
 
+function demoNowIso(target) {
+  var session = target || (typeof state !== 'undefined' ? state : null);
+  var sequence = session && Number.isFinite(session.demoClockSequence) ? session.demoClockSequence : 0;
+  var totalSeconds = (9 * 60 * 60) + sequence;
+  var hours = Math.floor(totalSeconds / 3600) % 24;
+  var minutes = Math.floor((totalSeconds % 3600) / 60);
+  var seconds = totalSeconds % 60;
+  function p(n) { return String(n).padStart(2, '0'); }
+  if (session) session.demoClockSequence = sequence + 1;
+  return DEMO_TODAY + 'T' + p(hours) + ':' + p(minutes) + ':' + p(seconds) + '.000Z';
+}
+
 function nowIsoDemo() {
-  var d = new Date();
-  function p(n) { return (n < 10 ? '0' : '') + n; }
-  return DEMO_TODAY + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  return demoNowIso();
 }
 
 /* ----------------------------- Finding presentation ----------------------------- */
-function statusMeta(finding) { return FINDING_STATUS[finding.status] || FINDING_STATUS.WAITING_CAP; }
-
-function ownerLabel(finding) {
-  var m = statusMeta(finding);
-  if (!m.ownerRole) return '—';
-  if (m.ownerRole === 'auditee') return orgName(finding.orgId) + ' (Auditee)';
-  return 'CAA Inspector';
+function statusMeta(finding) {
+  var projection = typeof findingWorkState === 'function' ? findingWorkState(finding) : null;
+  return projection ? (FINDING_STATUS[projection.statusKey] || FINDING_STATUS.WAITING_CAP) : (FINDING_STATUS[finding.status] || FINDING_STATUS.WAITING_CAP);
 }
 
-function nextActionLabel(finding) { return statusMeta(finding).next; }
+function ownerLabel(finding) {
+  if (typeof findingWorkState === 'function') return findingWorkState(finding).ownerLabel;
+  var m = statusMeta(finding);
+  if (!m.ownerRole) return '—';
+  return roleName(m.ownerRole);
+}
+
+function nextActionLabel(finding) {
+  return typeof findingWorkState === 'function' ? findingWorkState(finding).nextAction : statusMeta(finding).next;
+}
 
 function severityHtml(finding) {
   var s = SEVERITY[finding.severity];
@@ -373,8 +415,9 @@ function computeOHI() {
 function currentActorLabel() {
   var r = ROLES[state.role];
   if (!r) return 'System';
+  var actor = currentSessionActor(state);
   var suffix = state.role === 'auditee' ? ' (Auditee)' : ' (' + r.name + ')';
-  return r.user + suffix;
+  return actor.name + suffix;
 }
 
 function addLog(action, target, actorOverride) {
@@ -389,9 +432,8 @@ function addLog(action, target, actorOverride) {
 }
 
 function logTimestamp() {
-  var d = new Date();
-  function p(n) { return (n < 10 ? '0' : '') + n; }
-  return DEMO_TODAY + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  var iso = demoNowIso();
+  return iso.slice(0, 10) + ' ' + iso.slice(11, 16);
 }
 
 function pushNotification(role, icon, text, options) {

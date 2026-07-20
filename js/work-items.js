@@ -7,6 +7,78 @@ function workItemPriority(label, tone, rank) {
   return { label: label || 'Normal', tone: tone || 'neutral', rank: rank || 50 };
 }
 
+function findingWorkState(finding) {
+  var statusKey = finding && finding.status ? finding.status : 'WAITING_CAP';
+  var cap = finding && finding.cap ? finding.cap : null;
+  var evidence = finding && Array.isArray(finding.evidence) ? finding.evidence : [];
+  var latestEvidence = evidence.length ? evidence[evidence.length - 1] : null;
+
+  if (finding && finding.status !== 'CLOSED') {
+    if (latestEvidence && /uploaded|submitted|pending/i.test(latestEvidence.status || '')) statusKey = 'EVIDENCE_SUBMITTED';
+    else if (latestEvidence && /rejected|more information|revision|partially accepted/i.test(latestEvidence.status || '')) statusKey = 'EVIDENCE_MORE_INFO';
+    else if (cap && /accepted/i.test(cap.status || '') && finding.evidenceRequired) statusKey = 'EVIDENCE_REQUIRED';
+    else if (cap && /submitted|pending/i.test(cap.status || '')) statusKey = 'CAP_SUBMITTED';
+    else if (finding.capRequired === false && finding.evidenceRequired === false) statusKey = 'OPEN_OBSERVATION';
+  }
+
+  var meta = FINDING_STATUS[statusKey] || FINDING_STATUS.WAITING_CAP;
+  var closureBasis = null;
+  if (statusKey === 'CLOSED') {
+    if (finding.closureType === FINDING_CLOSURE_TYPES.AUTHORIZED || finding.closureType === 'authorized-no-cap') closureBasis = 'authorized';
+    else if (finding.closureType === FINDING_CLOSURE_TYPES.EVIDENCE_VERIFIED || finding.closureType === 'evidence-accepted') closureBasis = 'evidence-verified';
+    else closureBasis = 'unrecorded';
+  }
+  return {
+    statusKey: statusKey,
+    statusLabel: meta.label,
+    ownerRole: meta.ownerRole || null,
+    ownerLabel: !meta.ownerRole ? '—' : (meta.ownerRole === 'auditee' ? 'Auditee' : (meta.ownerRole === 'inspector' ? 'CAA Inspector' : roleName(meta.ownerRole))),
+    nextAction: meta.next,
+    dueDate: finding && finding.dueDate ? finding.dueDate : null,
+    closureBasis: closureBasis
+  };
+}
+
+function findingLifecycleProjection(finding) {
+  var workState = findingWorkState(finding);
+  var cap = finding && finding.cap ? finding.cap : null;
+  var evidence = finding && Array.isArray(finding.evidence) ? finding.evidence : [];
+  var capRequired = !!(finding && finding.capRequired);
+  var evidenceRequired = !!(finding && finding.evidenceRequired);
+  var capSubmitted = capRequired && !!(cap && (cap.submittedDate || !/^not submitted$/i.test(cap.status || 'Not Submitted')));
+  var capAccepted = capRequired && !!(cap && /accepted/i.test(cap.status || ''));
+  var evidenceSubmitted = evidenceRequired && evidence.length > 0;
+  var evidenceVerified = evidenceRequired && evidence.some(function (record) {
+    return /accepted|verified/i.test(record.status || record.reviewStatus || '');
+  });
+  if (workState.closureBasis === 'evidence-verified') evidenceVerified = true;
+  var closed = workState.statusKey === 'CLOSED';
+  var definitions = [
+    { key: 'finding-issued', label: 'Finding issued', complete: true, required: true },
+    { key: 'cap-submitted', label: 'CAP submitted', complete: capSubmitted, required: capRequired },
+    { key: 'cap-accepted', label: 'CAP accepted', complete: capAccepted, required: capRequired },
+    { key: 'evidence-submitted', label: 'Evidence submitted', complete: evidenceSubmitted, required: evidenceRequired },
+    { key: 'evidence-verified', label: 'Evidence verified', complete: evidenceVerified, required: evidenceRequired },
+    { key: 'closed', label: 'Closed', complete: closed, required: true }
+  ];
+  var currentAssigned = false;
+  var steps = definitions.map(function (definition) {
+    var stepState;
+    if (!definition.required) stepState = 'not-required';
+    else if (definition.complete) stepState = 'complete';
+    else if (!currentAssigned) {
+      stepState = 'current';
+      currentAssigned = true;
+    } else stepState = 'incomplete';
+    return { key: definition.key, label: definition.label, state: stepState };
+  });
+  return {
+    closureBasis: workState.closureBasis,
+    closureLabel: closed ? closureBasisLabel(finding) : 'Closure pending',
+    steps: steps
+  };
+}
+
 var REMINDER_EVENT_BOUNDARY = 'Demo in-app event; no real delivery';
 
 function reminderCalendarDay(dateValue) {

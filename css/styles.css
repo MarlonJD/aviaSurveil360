@@ -15669,6 +15669,7 @@ td .sp-report-badge {
 .service-mini-timeline li { padding: 8px 10px; color: var(--ink-soft); background: var(--surface-alt); border-left: 3px solid var(--line); font-size: 11px; }
 .service-mini-timeline li.is-done { color: var(--ink); border-color: var(--ok); }
 .service-mini-timeline li.is-current { color: var(--ink); border-color: var(--blue-500); background: var(--blue-50); }
+.service-mini-timeline li.is-not-required { color: var(--ink-soft); border-style: dashed; }
 .service-comment-list p,
 .service-evidence-list p { margin: 0 0 7px; padding: 8px; background: var(--surface-alt); border-radius: 6px; font-size: 10.8px; }
 .service-comment-list b,
@@ -18548,7 +18549,7 @@ td .sp-report-badge {
   border-left: 4px solid var(--blue-500);
   border-radius: var(--radius-sm);
 }
-.mobile-decision-summary--mobile-only { display: none; }
+.mobile-decision-summary:not(.workbench-command).mobile-decision-summary--mobile-only { display: none; }
 .mobile-decision-summary__action {
   grid-column: 1 / -1;
   display: flex;
@@ -18606,7 +18607,10 @@ td .sp-report-badge {
   :root { --text-label-mobile: 12px; }
   .responsive-record-card__facts,
   .mobile-decision-summary:not(.workbench-command) { grid-template-columns: 1fr; }
-  .mobile-decision-summary--mobile-only { display: grid; }
+  .mobile-decision-summary:not(.workbench-command).mobile-decision-summary--mobile-only { display: grid; }
+  .inspection-submit-action,
+  .inspection-reopen-action { display: none; }
+  .service-dossier__desktop-primary { display: none; }
   .responsive-record-card__actions .btn,
   .responsive-record-card__actions button,
   .mobile-decision-summary .btn { min-height: 44px; }
