@@ -47,7 +47,8 @@ context.state.params = {};
 html = context.viewInspectorAssignments();
 assert.match(html, /data-act="inspector-assignment-open" data-id="AUD-2026-001"/);
 assert.match(html, /data-act="inspector-assignment-open" data-id="AUD-2026-005"/);
-assert.match(html, /Template preview only/);
+assert.doesNotMatch(html, /Report preview unavailable|Template preview only/);
+assert.match(html, /More actions for SMS Audit/);
 assert.doesNotMatch(html, /data-act="inspector-assignment-open" data-id="PR-2026-/);
 
 context.state.params = { auditId: 'AUD-2026-001' };

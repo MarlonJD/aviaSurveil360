@@ -2732,6 +2732,7 @@ function handleInspectorAssignmentSelect(assignmentId) {
 function handleInspectorAssignmentMenu(assignmentId) {
   var row = typeof inspectorAssignmentById === 'function' ? inspectorAssignmentById(assignmentId) : null;
   if (!row) return;
+  var unavailableCopy = row.actionDisabled ? '<div class="callout mt-12">' + esc(inspectorAssignmentUnavailableMessage(row)) + '</div>' : '';
   openModal(modalShell('Assignment actions',
     '<div class="lead-assigned-modal">' +
       '<p><b>' + esc(row.title) + '</b> · ' + esc(row.code) + '</p>' +
@@ -2741,9 +2742,9 @@ function handleInspectorAssignmentMenu(assignmentId) {
         metaItem('Progress', row.progress + '%') +
         metaItem('Questions', row.questionsDone + ' / ' + row.questionsTotal) +
       '</div>' +
+      unavailableCopy +
     '</div>',
-    '<button class="btn" data-act="close-modal">Close</button>' + (row.actionDisabled
-      ? '<button class="btn" disabled aria-disabled="true">' + esc(row.actionDisabledLabel || 'Template preview only') + '</button>'
+    '<button class="btn" data-act="close-modal">Close</button>' + (row.actionDisabled ? ''
       : '<button class="btn btn--primary" data-act="inspector-assignment-open" data-id="' + esc(row.auditId) + '" data-assignment-id="' + esc(row.id) + '">' + esc(row.status === 'completed' ? 'View Report' : (row.status === 'open' ? 'Start' : 'Continue')) + '</button>'),
     false));
 }

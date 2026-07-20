@@ -2909,10 +2909,15 @@ function inspectorAssignmentActionLabel(row) {
   return 'Continue';
 }
 
+function inspectorAssignmentUnavailableMessage(row) {
+  return row && row.actionDisabledLabel === 'Report preview unavailable'
+    ? 'No audit-specific report preview is available for this assignment in the Inspector demo.'
+    : 'No runnable checklist template is available for this assignment in the Inspector demo.';
+}
+
 function inspectorAssignmentRow(row) {
-  var disabledActionLabel = row.actionDisabledLabel || 'Template preview only';
   var actionButton = row.actionDisabled
-    ? '<button class="btn btn--sm" disabled aria-disabled="true" title="This assignment has no audit-specific report preview in the Inspector demo">' + esc(disabledActionLabel) + '</button>'
+    ? ''
     : '<button class="btn btn--sm' + (row.status === 'completed' ? '' : ' btn--primary') + '" data-act="inspector-assignment-open" data-id="' + esc(row.auditId) + '" data-assignment-id="' + esc(row.id) + '">' + esc(inspectorAssignmentActionLabel(row)) + '</button>';
   return '<tr class="inspector-assignment-row">' +
     '<td data-col="item"><div class="inspector-assignment-main">' + inspectorAssignmentIcon(row) +
@@ -3018,7 +3023,7 @@ function inspectorAssignmentDetailPanel(rows, ui) {
   var notStarted = Math.max(selected.questionsTotal - selected.questionsDone, 0);
   var sections = selected.sections && selected.sections.length ? selected.sections : inspectorAssignmentRows()[0].sections;
   var continueButton = selected.actionDisabled
-    ? '<button class="btn" disabled aria-disabled="true">Template preview only</button>'
+    ? '<p class="small muted">' + esc(inspectorAssignmentUnavailableMessage(selected)) + '</p>'
     : '<button class="btn btn--primary" data-act="inspector-assignment-open" data-id="' + esc(selected.auditId) + '" data-assignment-id="' + esc(selected.id) + '"><span>&#8618;</span> Continue Working</button>';
   return '<div class="inspector-assignment-detail">' +
     '<section class="inspector-assignment-detail-card inspector-assignment-detail-card--summary">' +

@@ -289,7 +289,8 @@ test('completed Inspector assignments never expose a generic report action for t
   });
 
   const html = context.viewInspectorAssignments();
-  assert.match(html, /Report preview unavailable/);
+  assert.doesNotMatch(html, /Report preview unavailable|Template preview only/);
+  assert.match(html, /More actions for Ramp Inspection/);
   assert.doesNotMatch(html, /data-assignment-id="PR-2026-017"[^>]*>View Report/);
   assert.doesNotMatch(html, /data-assignment-id="PR-2026-011"[^>]*>View Report/);
 });
