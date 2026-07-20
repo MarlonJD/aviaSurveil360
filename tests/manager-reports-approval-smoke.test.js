@@ -220,8 +220,20 @@ assert.match(html, /Comments/);
 assert.match(html, /History/);
 assert.match(html, /Request Revision/);
 assert.match(html, /Return Report/);
-assert.match(html, /Approve Report/);
+assert.match(html, /Preliminary Report Approval/);
+assert.match(html, /Approve &amp; Forward to General Manager/);
 assert.match(html, /Download PDF/);
+
+context.state.managerReportsUi.selectedReportId = 'FR-2026-022';
+context.state.managerReportsUi.reportType = 'all';
+context.state.managerReportsUi.status = 'all';
+context.go('reports-approval');
+assert.equal(context.state.managerReportsUi.selectedReportId, 'PR-2026-018');
+assert.equal(context.state.managerReportsUi.reportType, 'Preliminary Report');
+assert.equal(context.state.managerReportsUi.status, 'pending');
+assert.match(elements.get('app-root').innerHTML, /Preliminary Report Approval/);
+assert.match(elements.get('app-root').innerHTML, /Approve &amp; Forward to General Manager/);
+context.handleAction('manager-report-filter', dataEl({ 'data-key': 'reset' }));
 
 context.handleAction('manager-report-download', dataEl({
   'data-id': 'PR-2026-018',

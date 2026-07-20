@@ -2,27 +2,32 @@
 
 ## Amaç
 
-Prevent overdue findings and keep management aware of risk.
+Gerçek notification delivery veya production scheduling iddiası olmadan
+deterministik browser-local reminder ve manager-attention event'lerini gösterir.
 
 ## Adımlar
 
-1. 30-day reminder
-2. 15-day reminder
-3. 7-day reminder
-4. Due today
-5. Overdue
-6. Manager escalation
-7. Optional enforcement escalation
+1. Exact calendar-day stage'i türet: 30 days, 15 days, 7 days, due today,
+   overdue veya none
+2. Her uygun stage ve Finding için tek, idempotent Auditee event'i kaydet
+3. Açık Level 1 Critical Finding için immediate manager attention kaydet
+4. Overdue Finding için manager escalation event'i kaydet
+5. User-triggered manual reminder'ı ayrı audit-log event'i olarak tut
+6. Stage, recipient, date, `demo_recorded` status ve demo boundary'yi göster
 
 ## Kurallar
 
-- Use Due Soon and Overdue language
-- Level 1 critical notifies manager immediately
-- Repeated findings can trigger attention
-- Escalation is not automatic enforcement unless configured
+- Event ID'leri deterministiktir; aynı Finding ve stage için duplicate oluşmaz.
+- Her event organization-scoped'dur, `in_app` channel ve `demo_recorded`
+  delivery status kullanır.
+- Auditee view yalnız o organization'a ait Auditee-recipient event'leri gösterir.
+- Her history yüzeyi `Demo in-app event; no real delivery` yazar.
+- Manager attention ve overdue escalation enforcement başlatmaz, Finding
+  kapatmaz veya production delivery ima etmez.
 
 ## UX notları
 
 - Current owner, due date ve next action ekranın üstünde gösterilmeli.
-- History timeline/tab içinde kalmalı, primary content olmamalı.
+- Reminder history okunabilir olmalı ancak Finding next action'ına göre
+  secondary kalmalıdır.
 - Primary button next action ile aynı dili kullanmalı.

@@ -7,6 +7,122 @@ function workItemPriority(label, tone, rank) {
   return { label: label || 'Normal', tone: tone || 'neutral', rank: rank || 50 };
 }
 
+var REMINDER_EVENT_BOUNDARY = 'Demo in-app event; no real delivery';
+
+function reminderCalendarDay(dateValue) {
+  var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateValue || ''));
+  if (!match) return null;
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+}
+
+function deriveReminderStage(finding, today) {
+  if (!finding || finding.status === 'CLOSED' || !finding.dueDate) return 'none';
+  var dueDay = reminderCalendarDay(finding.dueDate);
+  var todayDay = reminderCalendarDay(today);
+  if (dueDay === null || todayDay === null) return 'none';
+  var days = Math.round((dueDay - todayDay) / 86400000);
+  if (days < 0) return 'overdue';
+  if (days === 0) return 'due_today';
+  if (days === 7) return '7_days';
+  if (days === 15) return '15_days';
+  if (days === 30) return '30_days';
+  return 'none';
+}
+
+function reminderEventLabel(stage) {
+  var labels = {
+    '30_days': '30 days before Due Date',
+    '15_days': '15 days before Due Date',
+    '7_days': '7 days before Due Date',
+    due_today: 'Due today',
+    overdue: 'Overdue reminder',
+    critical_attention: 'Level 1 manager attention',
+    overdue_manager_escalation: 'Overdue manager escalation',
+    manual: 'Manual reminder'
+  };
+  return labels[stage] || stage || 'Reminder event';
+}
+
+function appendReminderEvent(target, finding, stage, recipientRole, today) {
+  var id = 'REM-' + finding.id + '-' + stage;
+  var existing = target.reminderEvents.filter(function (event) { return event.id === id; })[0];
+  if (existing) return existing;
+  var event = {
+    id: id,
+    findingId: finding.id,
+    auditId: finding.auditId || '',
+    organizationId: finding.orgId,
+    stage: stage,
+    recipientRole: recipientRole,
+    createdDate: today,
+    channel: 'in_app',
+    deliveryStatus: 'demo_recorded',
+    boundary: REMINDER_EVENT_BOUNDARY
+  };
+  target.reminderEvents.push(event);
+  return event;
+}
+
+function ensureDeterministicReminderEvents(target, today) {
+  if (!target || !Array.isArray(target.findings)) return [];
+  if (!Array.isArray(target.reminderEvents)) target.reminderEvents = [];
+  target.findings.forEach(function (finding) {
+    if (!finding || finding.status === 'CLOSED') return;
+    var stage = deriveReminderStage(finding, today);
+    if (stage !== 'none') appendReminderEvent(target, finding, stage, 'auditee', today);
+    if (Number(finding.severity) === 1) {
+      appendReminderEvent(target, finding, 'critical_attention', 'manager', today);
+    }
+    if (stage === 'overdue') {
+      appendReminderEvent(target, finding, 'overdue_manager_escalation', 'manager', today);
+    }
+  });
+  return target.reminderEvents;
+}
+
+function recordManualReminderEvent(target, finding, metadata) {
+  if (!target || !finding) throw new Error('Finding is required for a manual reminder.');
+  metadata = metadata || {};
+  if (!Array.isArray(target.reminderEvents)) target.reminderEvents = [];
+  if (!Array.isArray(target.auditLog)) target.auditLog = [];
+  if (!Number.isFinite(target.reminderSeq) || target.reminderSeq < 1) target.reminderSeq = 1;
+  if (!Number.isFinite(target.logSeq) || target.logSeq < 1) target.logSeq = 1;
+  var at = String(metadata.at || (typeof nowIsoDemo === 'function' ? nowIsoDemo() : DEMO_TODAY + 'T00:00:00'));
+  var event = {
+    id: 'MANUAL-' + finding.id + '-' + String(target.reminderSeq++).padStart(3, '0'),
+    findingId: finding.id,
+    auditId: finding.auditId || '',
+    organizationId: finding.orgId,
+    stage: 'manual',
+    recipientRole: 'auditee',
+    createdDate: at.slice(0, 10),
+    channel: 'in_app',
+    deliveryStatus: 'demo_recorded',
+    boundary: REMINDER_EVENT_BOUNDARY,
+    actorRole: metadata.role || '',
+    actorName: metadata.name || 'CAA user'
+  };
+  target.reminderEvents.push(event);
+  target.auditLog.unshift({
+    id: 'L' + target.logSeq++,
+    time: at.slice(0, 10) + ' ' + at.slice(11, 16),
+    actor: event.actorName + (event.actorRole ? ' (' + event.actorRole + ')' : ''),
+    action: 'Manual reminder sent to Auditee (demo in-app; no real delivery)',
+    target: finding.id,
+    system: false
+  });
+  return event;
+}
+
+function reminderEventsForFinding(target, findingId, sessionRole, organizationId) {
+  var events = target && Array.isArray(target.reminderEvents) ? target.reminderEvents : [];
+  return events.filter(function (event) {
+    if (event.findingId !== findingId) return false;
+    if (sessionRole !== 'auditee') return true;
+    return event.recipientRole === 'auditee' && event.organizationId === organizationId;
+  });
+}
+
 function workItemPriorityForFinding(finding) {
   var d = dueInfo(finding);
   if (finding.status === 'CLOSED') return workItemPriority('Closed', 'ok', 80);

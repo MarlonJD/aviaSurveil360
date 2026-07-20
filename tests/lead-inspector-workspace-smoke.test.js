@@ -256,4 +256,29 @@ assert.match(html, /Report Approval Queue/);
 assert.match(html, /Fly Namibia Cabin Inspection Preliminary Report/);
 assert.match(html, /CAP due 24 Jun 2026/);
 
+context.state = context.freshState();
+context.state.role = 'leadInspector';
+context.state.view = 'lead-review';
+context.state.params = {};
+html = context.viewLeadAssignedAudits();
+assert.match(html, /class="responsive-record-list lead-assigned-mobile-list"/);
+assert.match(html, /data-mobile-record="AUD-2025-045"/);
+assert.match(html, /Organization[\s\S]*Fly Namibia/);
+assert.match(html, /Progress[\s\S]*75%/);
+assert.match(html, /data-view="lead-assignment"/);
+
+context.state.view = 'lead-assignment-questions';
+context.state.params = { auditId: 'AUD-2026-001' };
+html = context.viewLeadAssignmentQuestions();
+assert.match(html, /lead-assignment-question-mobile-list/);
+assert.match(html, /Risk Level/);
+assert.match(html, /Assigned Inspector/);
+
+context.state.view = 'audit-reports';
+context.state.params = { filter: 'preliminary' };
+html = context.viewLeadPreliminaryReports();
+assert.match(html, /lead-preliminary-mobile-list/);
+assert.match(html, /Report ID/);
+assert.match(html, /Organization/);
+
 console.log('lead-inspector-workspace-smoke: ok');

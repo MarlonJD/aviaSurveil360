@@ -152,6 +152,12 @@ assert.match(html, /History/);
 assert.match(html, /Caner Yildiz/);
 assert.match(html, /caner\.yildiz@caa\.demo/);
 assert.match(html, /aria-expanded="false"/);
+assert.match(html, /manager-team-mobile-list/);
+assert.match(html, /data-mobile-record="AUD-2026-001"/);
+assert.match(html, /Current Status/);
+assert.match(html, /data-act="manager-team-select"/);
+assert.match(html, /data-act="manager-team-menu"/);
+assert.match(html, /manager-team-member-mobile-list/);
 
 const managerNavLabels = context.NAV.manager
   .filter((item) => item.label)

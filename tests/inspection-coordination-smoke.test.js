@@ -77,6 +77,11 @@ assert.equal(routine.proposedDate, '2026-06-15');
 assert.match(routine.checklistName, /Cabin Inspection Checklist/);
 assert.equal(unannounced.noticePolicy, 'withheld');
 assert.equal(unannounced.status, 'notice_withheld');
+assert.equal(unannounced.notifiedAt, '');
+assert.equal(
+  state.notifications.some((notification) => notification.organizationId === unannounced.organizationId),
+  false
+);
 assert.equal(context.serviceProviderInspectionCoordinationRows(state, 'ORG-XYZ').length, 0);
 
 context.state = state;
@@ -133,6 +138,30 @@ routine = context.inspectionCoordinationByAuditId(context.state, 'AUD-2026-001')
 assert.equal(routine.status, 'date_confirmed');
 assert.equal(routine.confirmedDate, '2026-06-17');
 assert.ok(routine.caaConfirmedAt);
+assert.equal(context.state.audits.find((audit) => audit.id === 'AUD-2026-001').date, '2026-06-17');
+assert.equal(context.state.audits.find((audit) => audit.id === 'AUD-2026-001').endDate, '2026-06-17');
+assert.ok(
+  routine.history.some((entry) => /original proposed date 2026-06-15/i.test(entry.action)),
+  'coordination history preserves the original proposed date'
+);
+
+html = context.renderContent();
+assert.match(html, /17 Jun 2026/);
+
+context.state.role = 'auditee';
+context.state.view = 'service-provider-inspection-coordination';
+context.state.params = {};
+html = context.renderContent();
+assert.match(html, /17 Jun 2026/);
+
+context.state.role = 'inspector';
+context.state.view = 'inspector-assignments';
+context.state.params = {};
+html = context.renderContent();
+assert.match(html, /17 Jun 2026/);
+
+context.state.role = 'leadInspector';
+assert.equal(context.leadPreliminaryReportById('PR-2026-018').dates, '17 Jun 2026');
 
 state = context.freshState();
 context.state = state;

@@ -23,6 +23,17 @@ vm.createContext(context);
 
 const styles = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
 
+function assertMobileDecisionSummary(markup, deadlineLabel) {
+  assert.equal((markup.match(/<section class="[^"]*mobile-decision-summary[^"]*"/g) || []).length, 1);
+  const summary = markup.match(/<section class="[^"]*mobile-decision-summary[^"]*"[\s\S]*?<\/section>/);
+  assert.ok(summary);
+  assert.match(summary[0], /Current owner/);
+  assert.match(summary[0], /Next action/);
+  assert.match(summary[0], new RegExp(deadlineLabel));
+  assert.match(summary[0], /Status/);
+  assert.match(summary[0], /<button/);
+}
+
 context.state = context.freshState();
 context.state.role = 'manager';
 let html = context.viewSafetyIntelligenceDashboard();
@@ -34,11 +45,12 @@ assert.doesNotMatch(html, /Management Signal Table/);
 
 context.state.role = 'leadInspector';
 context.state.view = 'cap-review-detail';
-context.state.params = { findingId: 'F-2026-002' };
+context.state.params = { findingId: 'SEC-2026-002' };
 html = context.viewLeadCapReviewDetail();
+assertMobileDecisionSummary(html, 'Due Date');
 assert.match(html, /workbench-command workbench-command--lead-cap/);
 assert.match(html, /Current owner/);
-assert.match(html, /Decision needed/);
+assert.match(html, /Next action/);
 assert.match(html, /cap-track-head-actions/);
 assert.match(styles, /\.workbench-command--lead-cap[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(220px,\s*auto\)/);
 assert.match(styles, /\.shell--inspector\s+\.cap-detail-head[\s\S]*?padding-right:\s*0/);
@@ -132,5 +144,38 @@ assert.match(html, /configuration-studio/);
 assert.match(html, /Selected Question Preview/);
 assert.match(html, /Expected evidence preview/);
 assert.match(html, /Regulatory reference/);
+
+context.state = context.freshState();
+context.state.role = 'inspector';
+context.state.view = 'finding';
+context.state.params = { findingId: 'SEC-2026-002' };
+html = context.viewFinding();
+assert.match(html, /AI draft assistance/);
+assert.match(html, /data-source-view="finding"/);
+
+context.state.view = 'ai-assistant';
+context.state.params = { sourceView: 'finding', findingId: 'SEC-2026-002' };
+html = context.viewAiAssistant();
+assert.match(html, /ai-source-context/);
+assert.match(html, /AI-generated draft - requires authorized review/);
+assert.match(html, /Back to Finding/);
+
+context.state = context.freshState();
+context.state.role = 'manager';
+context.state.params = { orgId: 'ORG-XYZ' };
+assertMobileDecisionSummary(context.viewOrganizationRiskProfile(), 'Target');
+assertMobileDecisionSummary(context.viewOrgDetail(), 'Target');
+
+assert.match(styles, /\.responsive-record-list\s*\{[^}]*display:\s*none/s);
+assert.match(styles, /\.responsive-record-card\s*\{[^}]*min-width:\s*0/s);
+assert.match(styles, /\.responsive-record-card__facts\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
+assert.match(styles, /@media \(max-width:\s*640px\)[\s\S]*?\.responsive-record-card__actions[\s\S]*?min-height:\s*44px/s);
+assert.match(styles, /\.mobile-decision-summary\s*\{[^}]*min-width:\s*0/s);
+assert.match(styles, /--text-label-mobile:\s*12px/);
+assert.match(
+  styles,
+  /@media \(max-width:\s*760px\)[\s\S]*?\.admin-checklist-table-wrap,\s*\.admin-question-bank-table-wrap\s*\{[^}]*display:\s*none[\s\S]*?\.admin-checklist-mobile-list,\s*\.admin-question-bank-mobile-list\s*\{[^}]*display:\s*grid/s
+);
+assert.match(styles, /\.admin-question-bank-mobile-card\s*\{[^}]*overflow-wrap:\s*anywhere/s);
 
 console.log('premium-ui-remediation-smoke: ok');

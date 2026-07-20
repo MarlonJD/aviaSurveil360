@@ -24,15 +24,20 @@ Create reusable checklists and let inspectors execute them.
 - Start checklist
 - Answer item
 - Attach file
-- Create finding
+- Create Potential Finding
 - Complete checklist
 
 ## İş kuralları
 
 - Templates are versioned
 - Old audits keep old template version
-- Non-compliant answer can create finding
-- Observation CAP optional by configuration
+- Non-Compliant veya Observation ile zorunlu comment, Lead Inspector review
+  için audit-scoped Potential Finding oluşturabilir
+- Kanonik Finding'i yalnız Lead conversion oluşturur
+- Observation CAP, Evidence ve Due Date requirement'ları configuration'a göre
+  isteğe bağlıdır
+- Submitted checklist reopen için Inspector/Lead authority, valid stage ve
+  reason gerekir
 
 ## UX yönü
 

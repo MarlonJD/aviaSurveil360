@@ -24,15 +24,19 @@ Create reusable checklists and let inspectors execute them.
 - Start checklist
 - Answer item
 - Attach file
-- Create finding
+- Create Potential Finding
 - Complete checklist
 
 ## Business rules
 
 - Templates are versioned
 - Old audits keep old template version
-- Non-compliant answer can create finding
-- Observation CAP optional by configuration
+- Non-Compliant or Observation plus a required comment can create an
+  audit-scoped Potential Finding for Lead Inspector review
+- Only Lead conversion creates the canonical Finding
+- Observation CAP, Evidence, and Due Date are optional by configuration
+- Submitted checklist reopen requires Inspector/Lead authority, a valid stage,
+  and a reason
 
 ## UX direction
 

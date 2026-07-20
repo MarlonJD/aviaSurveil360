@@ -294,10 +294,25 @@ const dashboardHtml = context.viewExecutiveDirectorDashboard();
   'Department overview',
   'informational only'
 ].forEach((text) => assert.match(dashboardHtml, new RegExp(text, 'i')));
+assert.equal((dashboardHtml.match(/executive-decision-queue/g) || []).length, 2);
+assert.match(dashboardHtml, /Final Report approvals/);
+assert.match(dashboardHtml, /Review report/);
 assert.match(dashboardHtml, /data-act="executive-open-plan"/);
 assert.match(dashboardHtml, /data-act="executive-open-report"/);
 assert.match(dashboardHtml, /data-act="executive-dashboard-kpi"/);
 assert.match(dashboardHtml, /do not make an automatic legal, enforcement, certificate suspension, Finding closure, or audit closure decision/i);
+
+const emptyPreliminaryState = context.freshState();
+emptyPreliminaryState.role = 'executiveDirector';
+emptyPreliminaryState.view = 'executive-preliminary-reports';
+emptyPreliminaryState.params = {};
+context.state = emptyPreliminaryState;
+const emptyPreliminaryHtml = context.viewExecutivePreliminaryReportsWorkspace();
+assert.match(emptyPreliminaryHtml, /No eligible Preliminary Reports/);
+assert.match(emptyPreliminaryHtml, /Reports reach this queue after General Manager approval/);
+assert.match(emptyPreliminaryHtml, /data-view="executive-notifications"/);
+
+context.state = dashboardState;
 
 dashboardState.view = 'finding';
 dashboardState.params = { findingId: 'SEC-2026-002' };
@@ -439,6 +454,13 @@ approvalState.view = 'executive-report-preview';
 approvalState.params = { reportId: approvalReport.id, returnView: 'executive-final-reports' };
 approvalState.executiveDirectorUi.previewZoom = 100;
 const previewHtml = context.viewExecutiveReportPreview();
+assert.equal((previewHtml.match(/<section class="[^"]*mobile-decision-summary[^"]*"/g) || []).length, 1);
+const reportDecisionSummary = previewHtml.match(/<section class="[^"]*mobile-decision-summary[^"]*"[\s\S]*?<\/section>/)[0];
+assert.match(reportDecisionSummary, /Current owner/);
+assert.match(reportDecisionSummary, /Next action/);
+assert.match(reportDecisionSummary, /Due Date/);
+assert.match(reportDecisionSummary, /Status/);
+assert.match(reportDecisionSummary, /<button/);
 assert.match(previewHtml, /Return to Final Report review/);
 assert.match(previewHtml, /Sample page 1/);
 assert.match(previewHtml, /Contents/);

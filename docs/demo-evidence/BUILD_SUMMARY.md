@@ -27,6 +27,16 @@ and return to seed data.
 
 ---
 
+## Latest UI evidence
+
+The 19 July 2026 page-by-page screenshot audit covers 86 screens at desktop,
+tablet, and mobile sizes. The preserved baseline recorded 76 Pass and 10 Issue
+results; the completed remediation now records 86 Pass and 0 Issue with fresh
+258-view local evidence:
+[`UI_SCREEN_AUDIT_2026-07-19.md`](UI_SCREEN_AUDIT_2026-07-19.md).
+
+---
+
 ## Changed files
 
 | File | Purpose |
@@ -35,12 +45,14 @@ and return to seed data.
 | `css/styles.css` | V2 responsive UI for role-based workspaces, including the restricted Department/General Manager workbenches, split panes, sticky row actions, bounded menus/drawers, and 390px mobile behavior. |
 | `js/data.js` | Backend-ready mock records, workbook-derived Cabin Inspection data, manager/GM demo records, explicit status values, and isolated `localStorage` demo storage helpers. |
 | `js/helpers.js` | Selectors, status helpers, Cabin/PBE regulatory trace lookups, outbox helpers, and demo badge helpers. |
-| `js/work-items.js` | Shared table-first work-item shaping for audits, findings, CAP/evidence child rows, approvals, planning items, and admin queues. |
+| `js/work-items.js` | Shared work-item shaping plus deterministic, organization-scoped browser-local reminder and manager-attention records. |
 | `js/manager-workspaces.js` | Pure Department/General Manager projections and mutations, separate report decisions, CAP/checklist/risk helpers, and dependency-free demo PDF generation. |
 | `js/views.js` | Existing screens plus Cabin Inspection flow, restricted manager/GM dashboards, Findings Review, Inspection Team, Reports Approval, CAP Monitoring, Checklist Management, Risk Dashboards, and table-first work queues. |
 | `js/app.js` | Role-based navigation, centralized persistence, manager/GM interaction dispatch, PDF/CSV downloads, Cabin Inspection lifecycle transitions, simulated offline transitions, and stable ID generation. |
 | `docs/demo-evidence/BUILD_SUMMARY.md` | This English canonical build summary. |
 | `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Turkish companion summary for stakeholder handoff. |
+| `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.md` | Canonical 86-screen desktop/tablet/mobile visual audit. |
+| `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.turkce.md` | Turkish stakeholder companion for the visual audit. |
 | `docs/exec-plans/index.md` | Updated only if the active plan status / next todo changes. |
 | `tests/*.test.js` | Focused smoke coverage for the Cabin Inspection path, Department/General Manager workspaces, lifecycle and authorization boundaries, valid PDF construction, responsive contracts, and demo boundaries. |
 
@@ -225,7 +237,14 @@ Advanced capabilities are visibly labeled as:
 The original product rules remain preserved:
 
 - CAP accepted is not finding closure.
-- A finding closes only after evidence acceptance or authorized closure.
+- Checklist exceptions create audit-scoped Potential Findings for Lead
+  Inspector review; they do not silently issue Findings or switch roles.
+- Observation defaults to no CAP, no Evidence, and no Due Date unless the Lead
+  Inspector explicitly configures those requirements.
+- Evidence `Close` records `Evidence accepted and verified`; a Department
+  Manager's reason-required authorized closure remains distinct.
+- Reminder and manager-attention history is browser-local and states `Demo
+  in-app event; no real delivery`; it does not start enforcement.
 - Auditee views do not show internal CAA notes, inspector workload, other
   organizations, internal risk scoring, regulatory governance data, or AI
   governance data.
@@ -910,6 +929,43 @@ Real-device validation, production accessibility certification, deployment,
 and stakeholder sign-off are **not run**. This remains **demo-only**;
 **production-readiness not claimed**.
 
+### UI screenshot-audit remediation checkpoint — 2026-07-19
+
+Evidence status: **demo-only** and **verified locally**. All 10 baseline Issue
+routes were remediated without changing the static HTML/CSS/Vanilla JavaScript
+architecture or introducing a backend, service, real AI, real upload, or real
+notification boundary. Shared responsive record cards, decision summaries,
+multiline reference/question controls, tablet decision-queue reflow, contextual
+AI entry/return, 44px mobile actions, and updated typography/long-page behavior
+are covered by direct-Node contracts.
+
+Fresh isolated in-app Browser QA recaptured the complete 86-route inventory at
+`1440x1000`, `1024x900`, and `390x844`. All 258/258 screenshots were accepted;
+all 27 contact sheets were inspected. The matrix recorded 0 capture errors, 0
+console warnings/errors, 0 route or role mismatches, 0 missing headings, 0
+document horizontal overflow failures, and 0 unintended nested overflow
+failures. Decorative report-logo masks and deliberate scrollers were visually
+inspected as intentional behavior.
+
+Changed-control evidence passed 14/14 scenarios. This included Lead card
+navigation, Manager Team and Findings state changes, multiline edit/save,
+Checklist Builder Add/Up/Down, Executive report opening, and AI entry from and
+return to the same Finding. Browser Tab and visible-focus checks passed across
+56 changed-action targets. The final mobile audit covered 41 visible changed
+actions with a minimum measured size of 44 × 44 CSS pixels.
+
+Temporary local evidence is under
+`/private/tmp/aviasurveil360-ui-audit-remediation-2026-07-19/`, including
+`capture-results.json`, `SUMMARY.md`, 258 screenshots, and 27 contact sheets.
+The isolated Browser and static server were closed; the cleanup process search
+found no task-owned automation or server residue. The QA-only deep-route
+wrapper was removed after capture.
+
+Screen-reader testing, automated contrast auditing, real-device testing,
+production accessibility certification, deployment, and stakeholder sign-off
+are **not run**. This checkpoint is not a production-readiness or full
+accessibility-compliance claim.
+
 ### Unannounced inspection intake alignment checkpoint — 2026-07-20
 
 Evidence status: **demo-only** and **verified locally**;
@@ -969,6 +1025,52 @@ browser-local state. No backend, database, API, real authentication, upload,
 notification delivery, or production Audit service was added. Regulatory
 validation, deployment, real-device testing, and stakeholder sign-off are
 **not run**.
+
+### Browser scenario integrity remediation checkpoint — 2026-07-20
+
+Evidence status: **demo-only** and focused behavior **verified locally**;
+**production-readiness not claimed**. Canonical checklist answers and Potential
+Findings are scoped by exact Audit. Inspector execution records a Potential
+Finding for Lead Inspector return, dismissal, or conversion; no action silently
+changes role. Canonical `state.findings` records now drive CAP, Evidence,
+Department Manager, Auditee, report, dashboard, and reminder surfaces.
+
+Planning preparation is limited to the approved and released item, and
+executable Audits are materialized idempotently only after Department Manager
+confirmation. Configured Flight Operations, Airworthiness, Ramp, and Security
+packages are runnable for their exact Audit; unavailable template previews are
+explicitly disabled. Submitted checklist reopen requires Inspector/Lead
+authority, a valid stage, and a reason.
+
+Observation defaults to no CAP, no Evidence, and no Due Date. CAP acceptance
+leaves the Finding open. Evidence `Close` records `evidence-verified` and
+renders `Evidence accepted and verified`; Department Manager authorized closure
+requires a reason, records `authorized`, and remains a separate path.
+Deterministic 30/15/7-day, due-today, overdue, Level 1 manager-attention, and
+overdue manager-escalation events are idempotent and organization scoped. Their
+channel/status is `in_app` / `demo_recorded`, with the visible boundary `Demo
+in-app event; no real delivery`; no enforcement side effect is created.
+
+Final automated evidence is **verified locally**. All `js/*.js` syntax checks
+passed; the focused scenario-integrity gate passed 16/16; and the complete
+`tests/*.test.js` suite passed 88/88 with zero failures, cancellations, skips,
+or todos. The 15-item Task 13 localhost real-click Browser matrix passed through
+`http://127.0.0.1:4173/index.html` without `file://` or direct state mutation.
+The final fresh-tab console returned no warning/error entries. Critical
+screenshots, the exact matrix, and cleanup evidence are recorded in
+[`BROWSER_SCENARIO_INTEGRITY_2026-07-20.md`](BROWSER_SCENARIO_INTEGRITY_2026-07-20.md).
+
+Browser verification also found and closed one false completed-assignment
+control: Ramp and Airworthiness `View Report` actions had opened the generic
+report list. Until an exact Inspector report preview exists, those controls now
+render as disabled `Report preview unavailable`. Browser tabs and the localhost
+server were closed; the final process search found no task-owned automation or
+server residue.
+
+No backend, database, API, real authentication/authorization, real upload,
+notification delivery, production scheduling, or automatic enforcement was
+added. Regulatory validation, deployment, real-device testing, and stakeholder
+sign-off remain **not run**.
 
 ---
 

@@ -150,6 +150,7 @@ context.state.role = 'auditee';
 context.state.view = 'service-provider-cap';
 context.state.params = {};
 const visibleVerificationFinding = state.findings.find((finding) => finding.id === 'CAB-2026-011');
+visibleVerificationFinding.dueDate = '2026-06-22';
 state.serviceProviderUi.cap.selectedFindingId = visibleVerificationFinding.id;
 visibleVerificationFinding.capVerification = {
   result: 'partially_close', label: 'Partially Close', findingClosed: false,
@@ -161,6 +162,13 @@ visibleVerificationFinding.internalNotes.push({
   author: 'Lead Inspector Demo', date: '2026-07-18', text: 'PRIVATE VERIFICATION RATIONALE'
 });
 let html = context.renderContent();
+assert.equal((html.match(/<section class="[^"]*mobile-decision-summary[^"]*"/g) || []).length, 1);
+const capDecisionSummary = html.match(/<section class="[^"]*mobile-decision-summary[^"]*"[\s\S]*?<\/section>/)[0];
+assert.match(capDecisionSummary, /Current owner/);
+assert.match(capDecisionSummary, /Next action/);
+assert.match(capDecisionSummary, /Due Date/);
+assert.match(capDecisionSummary, /Status/);
+assert.match(capDecisionSummary, /<button/);
 assert.match(html, /Corrective Actions \(CAP\)/);
 assert.match(html, /Finding ID/);
 assert.match(html, /Audit\/Inspection/);
@@ -172,6 +180,9 @@ assert.match(html, /Progress/);
 assert.match(html, /CAB-2026-011/);
 assert.match(html, /CAP acceptance does not close this Finding/);
 assert.match(html, /Partially Close|Finding remains open|Evidence version/);
+assert.match(html, /7 days before Due Date/);
+assert.match(html, /Demo in-app event; no real delivery/);
+assert.doesNotMatch(html, /Level 1 manager attention|Overdue manager escalation/);
 assert.doesNotMatch(html, /PRIVATE VERIFICATION RATIONALE|PRIVATE-OTHER-ORG|Internal CAA Note|Other organization private finding/);
 
 context.state.view = 'messages';

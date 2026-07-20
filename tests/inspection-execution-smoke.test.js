@@ -59,6 +59,65 @@ assert.deepEqual(
 assert.ok(executionPackage.questions.some((question) => question.id === questionId));
 assert.doesNotMatch(JSON.stringify(executionPackage), /SMS Oversight|Safety Policy and Objectives/);
 
+const canonicalCabinState = context.state;
+const breadthState = context.freshState();
+breadthState.audits.find((audit) => audit.id === 'AUD-2026-002').status = 'In Progress';
+breadthState.audits.find((audit) => audit.id === 'AUD-2026-003').status = 'In Progress';
+breadthState.audits.push({
+  id: 'AUD-2026-009',
+  ref: 'Flight Operations crew records surveillance',
+  orgId: 'ORG-XYZ',
+  type: 'Continued Surveillance',
+  domain: 'Flight Operations',
+  templateId: 'TPL-FOPS-2026',
+  date: '2026-10-12',
+  mode: 'On-site',
+  location: 'Fly Namibia HQ',
+  lead: 'Caner Yildiz',
+  team: ['Caner Yildiz', 'Aylin Sezer'],
+  status: 'In Progress',
+  checklistStarted: true
+});
+context.state = breadthState;
+
+const packageScenarios = [
+  { auditId: 'AUD-2026-001', templateId: 'TPL-CABIN-2026' },
+  { auditId: 'AUD-2026-002', templateId: 'TPL-RAMP-2026' },
+  { auditId: 'AUD-2026-003', templateId: 'TPL-AWO-2026' },
+  { auditId: 'AUD-2026-005', templateId: 'TPL-SEC-2026' },
+  { auditId: 'AUD-2026-009', templateId: 'TPL-FOPS-2026' }
+];
+const questionIdsByAudit = new Map();
+packageScenarios.forEach(({ auditId: scopedAuditId, templateId }) => {
+  const pkg = context.inspectionExecutionPackageForAudit(breadthState, scopedAuditId);
+  assert.ok(pkg, `${templateId} has a runnable demo package`);
+  assert.equal(pkg.auditId, scopedAuditId);
+  assert.equal(pkg.templateId, templateId);
+  assert.ok(pkg.questions.length >= 3, `${templateId} has at least three deterministic questions`);
+  assert.ok(pkg.questions.every((question) => /Configured (?:reference|security reference|ramp reference|airworthiness reference|flight operations reference)/i.test(question.reference)));
+  assert.ok(pkg.questions.every((question) => question.expectedEvidence));
+  assert.ok(pkg.questions.every((question) => question.allowedResults.join(',') === 'compliant,noncompliant,observation,na'));
+
+  const compliantQuestion = pkg.questions[0];
+  const exceptionQuestion = pkg.questions[1];
+  context.recordChecklistResult(scopedAuditId, compliantQuestion.id, 'compliant', '', []);
+  context.recordChecklistResult(scopedAuditId, exceptionQuestion.id, 'noncompliant', `${templateId} scoped exception`, []);
+  const potentialFinding = context.createPotentialFinding(scopedAuditId, exceptionQuestion.id, { actorName: 'Aylin Sezer' });
+  const updated = context.inspectionExecutionPackageForAudit(breadthState, scopedAuditId);
+
+  assert.equal(updated.auditId, scopedAuditId);
+  assert.equal(updated.answered, 2);
+  assert.equal(updated.workspace.answersByQuestionId[compliantQuestion.id].auditId, scopedAuditId);
+  assert.equal(updated.workspace.answersByQuestionId[exceptionQuestion.id].comment, `${templateId} scoped exception`);
+  assert.equal(potentialFinding.auditId, scopedAuditId);
+  assert.equal(updated.potentialFindings.some((finding) => finding.id === potentialFinding.id), true);
+  questionIdsByAudit.set(scopedAuditId, pkg.questions.map((question) => question.id));
+});
+
+const allBreadthQuestionIds = Array.from(questionIdsByAudit.values()).flat();
+assert.equal(new Set(allBreadthQuestionIds).size, allBreadthQuestionIds.length, 'runnable template question IDs never collide');
+context.state = canonicalCabinState;
+
 const legacySavedState = context.freshState();
 legacySavedState.demoStateVersion = 7;
 legacySavedState.checklist = {
@@ -120,6 +179,36 @@ assert.equal(finding.status, 'WAITING_CAP');
 assert.equal(finding.severity, 1);
 assert.equal(finding.riskCategory, 'Emergency Preparedness');
 assert.equal(finding.findingType, 'Equipment');
-assert.equal(context.state.checklistAnswers[questionId].findingId, finding.id);
+assert.equal(context.checklistAnswerForAudit(context.state, auditId, questionId).findingId, finding.id);
+
+context.state = context.freshState();
+context.recordChecklistResult(auditId, 'cab-galley-oven', 'observation', 'Monitor the sampled galley record.', []);
+const defaultObservationPotential = context.createPotentialFinding(auditId, 'cab-galley-oven', { actorName: 'Aylin Sezer' });
+const defaultObservation = context.convertPotentialFindingToFinding(defaultObservationPotential.id, {
+  actorName: 'Caner Yildiz',
+  severity: 4,
+  title: 'Galley record observation'
+});
+assert.equal(defaultObservation.severity, 0);
+assert.equal(defaultObservation.capRequired, false);
+assert.equal(defaultObservation.evidenceRequired, false);
+assert.equal(defaultObservation.dueDate, null);
+assert.equal(defaultObservation.status, 'OPEN_OBSERVATION');
+
+context.state = context.freshState();
+context.recordChecklistResult(auditId, 'cab-galley-oven', 'observation', 'Configured follow-up is required for this observation.', []);
+const configuredObservationPotential = context.createPotentialFinding(auditId, 'cab-galley-oven', { actorName: 'Aylin Sezer' });
+const configuredObservation = context.convertPotentialFindingToFinding(configuredObservationPotential.id, {
+  actorName: 'Caner Yildiz',
+  severity: 4,
+  capRequired: true,
+  evidenceRequired: true,
+  dueDate: '2026-07-25',
+  title: 'Observation with configured CAP and Evidence'
+});
+assert.equal(configuredObservation.capRequired, true);
+assert.equal(configuredObservation.evidenceRequired, true);
+assert.equal(configuredObservation.dueDate, '2026-07-25');
+assert.equal(configuredObservation.status, 'WAITING_CAP');
 
 console.log('inspection-execution-smoke: ok');

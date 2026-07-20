@@ -72,6 +72,16 @@ function commandMetric(label, value, tone) {
     '<span>' + esc(label) + '</span><b>' + esc(value || '-') + '</b></div>';
 }
 
+function mobileDecisionSummaryHtml(currentOwner, nextAction, deadlineLabel, deadlineValue, status, actionHtml, modifier) {
+  return '<section class="mobile-decision-summary mobile-decision-summary--mobile-only' + (modifier ? ' mobile-decision-summary--' + esc(modifier) : '') + '" aria-label="Mobile decision summary">' +
+    commandMetric('Current owner', currentOwner, 'info') +
+    commandMetric('Next action', nextAction, 'warn') +
+    commandMetric(deadlineLabel, deadlineValue || 'Not configured', 'neutral') +
+    commandMetric('Status', status, 'neutral') +
+    '<div class="mobile-decision-summary__action">' + actionHtml + '</div>' +
+  '</section>';
+}
+
 function workbenchCommand(title, purpose, metrics, actionsHtml, modifier) {
   var cls = 'workbench-command' + (modifier ? ' workbench-command--' + esc(modifier) : '');
   return '<section class="' + cls + '">' +
@@ -269,9 +279,9 @@ function planningPrepActionPanel(item) {
     body += '<div class="form-row"><label>Lead Inspector</label><select id="prep-lead"><option>Caner Yildiz</option><option>Aylin Sezer</option></select></div>' +
       '<div class="decision-panel__actions"><button class="btn btn--primary" data-act="planning-assign-lead" data-id="' + esc(item.id) + '">Assign Lead Inspector</button></div>';
   } else if (state.role === 'leadInspector' && prep.status === 'lead_inspector_assigned') {
-    body += '<div class="form-2col"><div class="form-row"><label>Start date</label><input id="prep-start" type="date" value="2026-09-10"></div>' +
-      '<div class="form-row"><label>End date</label><input id="prep-end" type="date" value="2026-09-12"></div></div>' +
-      '<div class="form-row"><label>Resources</label><textarea id="prep-resources">2 inspectors, document review package</textarea></div>' +
+    body += '<div class="form-2col"><div class="form-row"><label>Start date</label><input id="prep-start" type="date" value="' + esc(item.plannedDate || '') + '"></div>' +
+      '<div class="form-row"><label>End date</label><input id="prep-end" type="date" value="' + esc(item.plannedDate || '') + '"></div></div>' +
+      '<div class="form-row"><label>Resources</label><textarea id="prep-resources">' + esc(prep.resources || '2 inspectors, document review package') + '</textarea></div>' +
       '<div class="decision-panel__actions"><button class="btn btn--primary" data-act="planning-propose-team" data-id="' + esc(item.id) + '">Propose Team / Dates / Resources</button></div>';
   } else if (state.role === 'manager' && prep.status === 'team_schedule_proposed') {
     body += '<div class="callout">Lead proposed ' + esc((prep.proposedTeam || []).join(', ')) + ' · ' + esc(prep.proposedStartDate || '—') + ' to ' + esc(prep.proposedEndDate || '—') + '.</div>' +
@@ -641,6 +651,40 @@ function viewPlanningWorkspace(forcedTab) {
     '</div>';
 }
 
+function viewLeadPlanningPreparation() {
+  var planningItemId = state.params && state.params.planningItemId;
+  var item = (state.planningItems || []).filter(function (candidate) { return candidate.id === planningItemId; })[0] || null;
+  if (state.role !== 'leadInspector' || !item || !planningItemAssignedToCurrentLead(state, item)) {
+    return pageHead('Plan Preparation', 'Scoped Lead Inspector task') + '<div class="empty">This plan preparation task is not assigned to the current Lead Inspector.</div>';
+  }
+  var prep = item.preparation;
+  var org = orgById(item.organizationId);
+  return pageHead('Plan Preparation', 'Scoped post-release preparation for ' + item.id,
+    '<button class="btn" data-act="nav" data-view="lead-review">Back to Assigned Audits</button>') +
+    guardrailStrip([
+      { label: 'Frontend-only demo' },
+      { label: 'Selected plan only', tone: 'info' },
+      { label: 'Department approval and budget controls hidden', tone: 'warn' }
+    ]) +
+    '<div class="grid grid--main lead-plan-preparation">' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<section class="card"><div class="card__head"><h3>Approved scope</h3>' + demoBadge(planningPrepMeta(prep.status).label, planningPrepMeta(prep.status).tone) + '</div><div class="card__body"><div class="metaline">' +
+          metaItem('Plan', item.id) +
+          metaItem('Organization', (org && org.name) || item.organization || item.organizationId) +
+          metaItem('Application type', item.applicationType) +
+          metaItem('Inspection Category', item.inspectionCategory) +
+          metaItem('Planned Date', item.plannedDate) +
+          metaItem('Mode / Location', item.mode + ' · ' + item.location) +
+        '</div><p><b>Approved scope</b><br>' + esc(item.scope || item.purpose || 'No scope configured.') + '</p></div></section>' +
+        '<section class="card"><div class="card__head"><h3>Lead / Team / Date proposal</h3></div><div class="card__body">' + planningPreparationDetailHtml(item) + '</div></section>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<section class="card"><div class="card__head"><h3>Propose Team / Dates / Resources</h3></div><div class="card__body">' + planningPrepActionPanel(item) + '</div></section>' +
+        '<section class="card"><div class="card__head"><h3>Preparation history</h3></div><div class="card__body">' + planningPrepHistoryHtml(item) + '</div></section>' +
+      '</div>' +
+    '</div>';
+}
+
 function viewPlanningApprovals() {
   return viewPlanningWorkspace('approval');
 }
@@ -694,7 +738,11 @@ function financeReviewDecisionPanel(item, ui) {
   var summary = approvalSummary(item);
   var eligible = summary.ownerRole === 'finance' && !summary.outcome;
   var selected = ui.decision;
-  return '<section class="finance-review-decision"><div><span>Current owner</span><b>' + esc(summary.ownerLabel) + '</b><small>' + esc(summary.nextAction) + '</small></div><div class="finance-decision-buttons"><button class="btn btn--primary" data-act="finance-review-choice" data-decision="approve"' + (eligible ? '' : ' disabled') + '>Approve Budget</button><button class="btn" data-act="finance-review-choice" data-decision="return"' + (eligible ? '' : ' disabled') + '>Return for Revision</button></div>' +
+  var mobileAction = eligible
+    ? '<button class="btn btn--primary" data-act="finance-review-choice" data-decision="approve">Approve Budget</button>'
+    : '<button class="btn btn--primary" data-act="finance-review-select" data-id="' + esc(item.id) + '">Review selected plan</button>';
+  return mobileDecisionSummaryHtml(summary.ownerLabel, summary.nextAction, 'Target', item.targetMonth || 'Not configured', summary.statusLabel, mobileAction, 'finance') +
+    '<section class="finance-review-decision"><div><span>Current owner</span><b>' + esc(summary.ownerLabel) + '</b><small>' + esc(summary.nextAction) + '</small></div><div class="finance-decision-buttons"><button class="btn btn--primary" data-act="finance-review-choice" data-decision="approve"' + (eligible ? '' : ' disabled') + '>Approve Budget</button><button class="btn" data-act="finance-review-choice" data-decision="return"' + (eligible ? '' : ' disabled') + '>Return for Revision</button></div>' +
     (selected ? '<div class="finance-decision-form"><h3>' + esc(selected === 'approve' ? 'Approve Budget' : 'Return for Revision') + '</h3><label>Decision note' + (selected === 'return' ? ' <span class="req">*</span>' : ' (optional)') + '<textarea id="finance-review-comment" data-field="finance-review-comment" placeholder="' + esc(selected === 'return' ? 'Required: explain what must be revised.' : 'Optional finance note.') + '">' + esc(ui.comment || '') + '</textarea></label><button class="btn btn--primary" data-act="finance-review-confirm" data-id="' + esc(item.id) + '">Confirm Finance Decision</button></div>' : '') + '</section>';
 }
 
@@ -792,8 +840,8 @@ function viewExecutiveDirectorDashboard() {
       executiveKpiButton('Overdue Actions', metrics.overdueActions.length, 'Open Finding Due Dates', 'reports', 'all', metrics.overdueActions.length ? 'danger' : 'ok') +
       executiveKpiButton('Closed This Period', metrics.closedThisPeriod, 'Closed audits and Findings', 'reports', 'approved', 'ok') +
     '</section>' +
-    '<section class="executive-decision-grid"><div class="executive-panel"><header><div><span>Decision queue</span><h2>Planning approvals</h2></div><button class="btn btn--sm" data-act="executive-dashboard-kpi" data-target="planning" data-status="all">View all</button></header>' + executivePlanningQueueHtml(metrics.pendingPlans) + '</div>' +
-    '<div class="executive-panel"><header><div><span>Decision queue</span><h2>Final Report approvals</h2></div><button class="btn btn--sm" data-act="executive-dashboard-kpi" data-target="reports" data-status="all">View all</button></header>' + executiveReportQueueHtml(metrics.pendingReports) + '</div></section>' +
+    '<section class="executive-decision-grid executive-dashboard-grid"><div class="executive-panel executive-decision-queue"><header><div><span>Decision queue</span><h2>Planning approvals</h2></div><button class="btn btn--sm" data-act="executive-dashboard-kpi" data-target="planning" data-status="all">View all</button></header>' + executivePlanningQueueHtml(metrics.pendingPlans) + '</div>' +
+    '<div class="executive-panel executive-decision-queue"><header><div><span>Decision queue</span><h2>Final Report approvals</h2></div><button class="btn btn--sm" data-act="executive-dashboard-kpi" data-target="reports" data-status="all">View all</button></header>' + executiveReportQueueHtml(metrics.pendingReports) + '</div></section>' +
     '<section class="executive-lower-grid"><div class="executive-panel"><header><div><span>Portfolio context</span><h2>Department overview</h2></div></header>' + executiveDepartmentOverviewHtml() + '</div>' +
     '<div class="executive-panel"><header><div><span>Due Date attention</span><h2>Overdue actions</h2></div></header>' + executiveOverdueActionsHtml(metrics.overdueActions) + '</div>' +
     '<aside class="executive-risk-guardrail"><span>Oversight Health context</span><h2>Management indicator only</h2><p>Risk and workload summaries are informational only. They do not make an automatic legal, enforcement, certificate suspension, Finding closure, or audit closure decision.</p></aside></section>' +
@@ -955,7 +1003,7 @@ function viewExecutivePreliminaryReportsWorkspace() {
   });
   var selected = unfiltered.rows.filter(function (report) { return report.id === ui.selectedPreliminaryReportId; })[0] || projection.rows[0] || unfiltered.rows[0] || null;
   if (!selected) {
-    return '<div class="executive-workspace-page">' + pageHead('Preliminary Reports', 'Review Preliminary Reports forwarded by the General Manager.') + guardrailStrip([{ label: 'Only GM-forwarded reports enter this workspace', tone: 'info' }, { label: 'Browser-local mock approval — no real e-signature', tone: 'warn' }]) + executivePreliminarySummaryCards(unfiltered) + '<div class="executive-empty"><b>No eligible Preliminary Reports.</b><span>Department Manager and General Manager review must complete before Executive Director action.</span></div></div>';
+    return '<div class="executive-workspace-page">' + pageHead('Preliminary Reports', 'Review Preliminary Reports forwarded by the General Manager.') + guardrailStrip([{ label: 'Only GM-forwarded reports enter this workspace', tone: 'info' }, { label: 'Browser-local mock approval — no real e-signature', tone: 'warn' }]) + executivePreliminarySummaryCards(unfiltered) + '<div class="executive-empty"><b>No eligible Preliminary Reports.</b><span>Reports reach this queue after General Manager approval. Approved or returned items remain available in the report workflow.</span><button class="btn btn--primary" data-act="nav" data-view="executive-notifications">Open Notifications</button></div></div>';
   }
   ui.selectedPreliminaryReportId = selected.id;
   var linkedFindings = state.findings.filter(function (finding) { return finding.auditId === selected.auditId; });
@@ -1063,8 +1111,12 @@ function viewExecutiveReportPreview() {
   var findings = finalReportLinkedFindings(state, report);
   var team = state.inspectionTeams.filter(function (candidate) { return candidate.auditId === report.auditId; })[0] || null;
   var zoom = Number(state.executiveDirectorUi.previewZoom || 100);
+  var previewStatus = managerReportStatusLabel(report.status);
+  var previewNextAction = report.status === 'issued' ? 'Review issued Final Report' : 'Return to Final Report decision review';
   return '<div class="executive-report-preview-page">' +
     '<header class="executive-report-preview-head"><div><button class="inspection-back" data-act="executive-report-return">&larr; Return to Final Report review</button><span>Selected report · ' + esc(report.id) + '</span><h1>Final Report Preview</h1><p>State-backed browser preview · Sample page 1 · ' + esc(String(findings.length)) + ' linked Findings</p></div><div class="executive-preview-actions"><div class="executive-zoom-control" aria-label="Preview zoom"><span>Zoom</span>' + [75, 90, 100, 110].map(function (value) { return '<button data-act="executive-report-zoom" data-zoom="' + value + '" aria-pressed="' + (zoom === value ? 'true' : 'false') + '" class="' + (zoom === value ? 'is-active' : '') + '">' + value + '%</button>'; }).join('') + '</div><button class="btn" data-act="executive-report-print">Print</button><button class="btn btn--primary" data-act="executive-report-download" data-id="' + esc(report.id) + '">Download PDF</button></div></header>' +
+    mobileDecisionSummaryHtml(managerReportOwnerLabel(report.ownerRole, report.organization), previewNextAction, 'Due Date', report.dueDate ? fmtDate(report.dueDate) : 'Not configured', previewStatus,
+      '<button class="btn btn--primary" data-act="executive-report-download" data-id="' + esc(report.id) + '">Download PDF</button>', 'executive-preview') +
     '<div class="executive-report-preview-layout"><aside class="executive-report-contents"><span>Contents</span><a href="#report-summary">1. Executive Summary</a><a href="#report-overview">2. Inspection Overview</a><a href="#report-findings">3. Findings Overview</a><a href="#report-conclusion">4. Conclusion</a><a href="#report-next">5. Next Steps</a><div><b>Document facts</b><small>' + esc(report.id + ' · Version ' + report.version) + '</small><small>' + esc(String(findings.length) + ' linked Findings') + '</small><small>Sample page 1</small></div></aside><main class="executive-report-canvas"><div class="executive-report-zoom-stage" style="--report-zoom:' + esc(String(zoom / 100)) + '">' + finalReportDocumentHtml(report, audit, findings, team, state) + '</div></main></div>' +
   '</div>';
 }
@@ -1172,7 +1224,7 @@ function viewQuestionBank() {
   var createPanel = canEdit
     ? '<div class="configuration-create-panel"><h3>New Question</h3><span class="sub">Mock item, saved in browser</span>' +
         '<div class="form-2col"><div class="form-row"><label>Title</label><input id="qb-title" type="text" value="Training evidence reconciliation"></div>' +
-        '<div class="form-row"><label>Question text</label><input id="qb-text" type="text" value="Does the training matrix reconcile to sampled crew certificate evidence?"></div></div>' +
+        '<div class="form-row form-row--full"><label for="qb-text">Question text</label><textarea id="qb-text" rows="3">Does the training matrix reconcile to sampled crew certificate evidence?</textarea><small class="field-help">Use a complete, testable inspection question.</small></div></div>' +
         '<button class="btn btn--primary" data-act="qb-create">+ New Question</button>' +
       '</div>'
     : '<div class="scope-note">Read-only preview. Inspectors cannot edit checklist configuration in this demo.</div>';
@@ -1216,6 +1268,50 @@ function viewQuestionBank() {
     '</div>';
 }
 
+function adminChecklistVersionMobileCardsHtml(working, isEditable) {
+  if (!working || !working.questionIds || !working.questionIds.length) {
+    return '<div class="responsive-record-list admin-checklist-mobile-list"><div class="empty">No questions in this version.</div></div>';
+  }
+
+  return '<div class="responsive-record-list admin-checklist-mobile-list">' + working.questionIds.map(function (qid, idx) {
+    var last = working.questionIds.length - 1;
+    var actions = isEditable
+      ? '<button class="btn btn--sm" data-act="checklist-move-question" data-id="' + esc(working.id) + '" data-question="' + esc(qid) + '" data-direction="up"' + (idx === 0 ? ' disabled aria-disabled="true"' : '') + '>Up</button>' +
+        '<button class="btn btn--sm" data-act="checklist-move-question" data-id="' + esc(working.id) + '" data-question="' + esc(qid) + '" data-direction="down"' + (idx === last ? ' disabled aria-disabled="true"' : '') + '>Down</button>'
+      : '<span class="badge badge--neutral"><span class="dot"></span>Locked</span>';
+    return '<article class="responsive-record-card admin-checklist-mobile-card">' +
+      '<div class="responsive-record-card__identity"><span class="ops-priority is-neutral">' + esc(idx + 1) + '</span><div><b>' + esc(checklistQuestionLabel(qid)) + '</b><small>Question ID · ' + esc(qid) + '</small></div></div>' +
+      '<div class="responsive-record-card__facts">' +
+        '<span><small>Order</small><b>' + esc(idx + 1) + ' of ' + esc(working.questionIds.length) + '</b></span>' +
+        '<span><small>Version status</small>' + checklistStatusBadge(working.status) + '</span>' +
+      '</div>' +
+      '<div class="responsive-record-card__actions">' + actions + '</div>' +
+    '</article>';
+  }).join('') + '</div>';
+}
+
+function adminQuestionBankMobileCardsHtml(working, isEditable) {
+  var questions = state.questionBank || [];
+  if (!questions.length) {
+    return '<div class="responsive-record-list admin-question-bank-mobile-list"><div class="empty">No reusable questions are seeded.</div></div>';
+  }
+
+  return '<div class="responsive-record-list admin-question-bank-mobile-list">' + questions.map(function (q) {
+    var already = working && working.questionIds && working.questionIds.indexOf(q.id) > -1;
+    var action = isEditable && !already
+      ? '<button class="btn btn--sm" data-act="checklist-add-question" data-id="' + esc(working.id) + '" data-question="' + esc(q.id) + '">Add</button>'
+      : '<span class="badge badge--neutral"><span class="dot"></span>' + (already ? 'In version' : 'Read-only') + '</span>';
+    return '<article class="responsive-record-card admin-question-bank-mobile-card">' +
+      '<div class="responsive-record-card__identity"><div><b>' + esc(q.title) + '</b><small>Question ID · ' + esc(q.id) + '</small><p>' + esc(q.text) + '</p></div></div>' +
+      '<div class="responsive-record-card__facts responsive-record-card__facts--stacked">' +
+        '<span><small>Configured reference</small><b>' + esc(q.regulationRef) + '</b></span>' +
+        '<span><small>Expected evidence</small><b>' + esc(q.exampleEvidence) + '</b></span>' +
+      '</div>' +
+      '<div class="responsive-record-card__actions">' + action + '</div>' +
+    '</article>';
+  }).join('') + '</div>';
+}
+
 function viewChecklistBuilder() {
   var checklist = activeManagedChecklist();
   if (!checklist) return pageHead('Checklist Builder', '') + '<div class="empty">No managed checklist is seeded.</div>';
@@ -1248,9 +1344,11 @@ function viewChecklistBuilder() {
     '</tr>';
   }).join('') : '';
   var currentVersionTable = versionRows
-    ? '<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th style="width:82px">Order</th><th>Question</th><th>Status</th><th style="width:150px;text-align:right">Actions</th></tr></thead><tbody>' + versionRows + '</tbody></table></div>'
-    : '<div class="empty">No questions in this version.</div>';
-  var bankTable = '<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Reusable question</th><th>Reference</th><th>Expected evidence</th><th style="width:130px;text-align:right">Action</th></tr></thead><tbody>' + bankRows + '</tbody></table></div>';
+    ? '<div class="ops-table-wrap admin-checklist-table-wrap"><table class="ops-table"><thead><tr><th style="width:82px">Order</th><th>Question</th><th>Status</th><th style="width:150px;text-align:right">Actions</th></tr></thead><tbody>' + versionRows + '</tbody></table></div>'
+    : '<div class="empty admin-checklist-table-wrap">No questions in this version.</div>';
+  currentVersionTable += adminChecklistVersionMobileCardsHtml(working, isEditable);
+  var bankTable = '<div class="ops-table-wrap admin-question-bank-table-wrap"><table class="ops-table"><thead><tr><th>Reusable question</th><th>Reference</th><th>Expected evidence</th><th style="width:130px;text-align:right">Action</th></tr></thead><tbody>' + bankRows + '</tbody></table></div>' +
+    adminQuestionBankMobileCardsHtml(working, isEditable);
 
   var draftPanel = editable
     ? '<div class="callout mb-16"><b>Working version:</b> v' + esc(editable.version) + ' · ' + esc(approvalMetaForStatus(editable.status).label) + '. Reason for Change: ' + esc(editable.changeReason) + '</div>'
@@ -1493,6 +1591,7 @@ function viewOrganizationRiskProfile() {
   var fs = state.findings.filter(function (f) { return f.orgId === org.id; });
   var audits = state.audits.filter(function (a) { return a.orgId === org.id; });
   var trace = regulatoryTraceById(profile.traceId);
+  var nextAudit = audits.filter(function (audit) { return !isClosedAudit(audit); }).sort(function (a, b) { return a.date < b.date ? -1 : 1; })[0] || null;
 
   var findings = renderOpsTable(fs.map(function (finding) {
     return workItemFromFinding(finding, { allEvidenceVersions: true });
@@ -1506,6 +1605,8 @@ function viewOrganizationRiskProfile() {
       { label: 'mock risk indicator', tone: 'info' },
       { label: 'Not a legal decision', tone: 'warn' }
     ]) +
+    mobileDecisionSummaryHtml('CAA Manager', profile.recommendedAction, 'Target', nextAudit ? fmtDate(nextAudit.date) : 'Not configured', profile.band + ' · mock score ' + profile.score,
+      '<button class="btn btn--primary" data-act="nav" data-view="org-detail" data-id="' + esc(org.id) + '">Open organization record</button>', 'organization-risk') +
     '<div class="risk-header">' +
       '<div class="risk-score__num">' + profile.score + '</div>' +
       '<div class="risk-header__main">' +
@@ -1698,6 +1799,39 @@ function viewCapEffectiveness() {
 }
 
 function viewAiAssistant() {
+  var params = state.params || {};
+  var sourceView = params.sourceView || '';
+  var sourceContext = '';
+  var backAction = '<button class="btn" data-act="nav" data-view="inspector-assignments">Back to My Assignments</button>';
+
+  if (sourceView === 'finding' && params.findingId) {
+    var sourceFinding = findingById(params.findingId);
+    if (sourceFinding) {
+      backAction = '<button class="btn" data-act="nav" data-view="finding" data-id="' + esc(sourceFinding.id) + '">Back to Finding</button>';
+      sourceContext = '<section class="ai-source-context"><div><span>Finding context</span><h2>' + esc(sourceFinding.id + ' · ' + sourceFinding.title) + '</h2><p>' + esc(sourceFinding.description) + '</p></div><div class="ai-source-context__facts">' +
+        '<span><small>Organization</small><b>' + esc(orgName(sourceFinding.orgId)) + '</b></span>' +
+        '<span><small>Status</small><b>' + esc(statusMeta(sourceFinding).label) + '</b></span>' +
+        '<span><small>Configured reference</small><b>' + esc(sourceFinding.reference) + '</b></span>' +
+      '</div></section>';
+    }
+  } else if (sourceView === 'checklist' && params.auditId && params.questionId) {
+    var sourceAudit = auditById(params.auditId);
+    var sourceQuestion = (state.checklist.items || []).filter(function (item) { return item.id === params.questionId; })[0];
+    if (sourceAudit && sourceQuestion) {
+      backAction = '<button class="btn" data-act="nav" data-view="checklist" data-id="' + esc(sourceAudit.id) + '" data-question-id="' + esc(sourceQuestion.id) + '">Back to Checklist Question</button>';
+      var sourceAnswer = checklistAnswerForAudit(state, sourceAudit.id, sourceQuestion.id) || {};
+      sourceContext = '<section class="ai-source-context"><div><span>Checklist question context</span><h2>' + esc(sourceQuestion.id + ' · ' + sourceQuestion.text) + '</h2><p>' + esc(sourceAudit.ref + ' · ' + orgName(sourceAudit.orgId)) + '</p></div><div class="ai-source-context__facts">' +
+        '<span><small>Configured reference</small><b>' + esc(sourceQuestion.ref) + '</b></span>' +
+        '<span><small>Expected evidence</small><b>' + esc(sourceQuestion.evidence) + '</b></span>' +
+        '<span><small>Recorded answer</small><b>' + esc(CHECKLIST_RESULTS[sourceAnswer.answer || sourceAnswer.status] || 'Not answered') + '</b></span>' +
+      '</div></section>';
+    }
+  }
+
+  if (!sourceContext) {
+    sourceContext = '<section class="ai-source-context ai-source-context--preview"><div><span>Demo preview</span><h2>No Finding or checklist question is attached.</h2><p>Open this draft-assistance panel from a Finding or selected checklist question to carry source context into the review.</p></div></section>';
+  }
+
   var rows = state.aiSuggestions.map(function (s) {
     var decision = s.decision ? '<div class="callout mt-12"><b>Recorded decision:</b> ' + humanStatus(s.decision.status) +
       ' by ' + esc(s.decision.reviewer) + ' · saved in this browser for demo only.</div>' : '';
@@ -1713,14 +1847,15 @@ function viewAiAssistant() {
       '</div></td>' +
     '</tr>';
   }).join('');
-  return pageHead('AI Inspector Assistant Panel', 'Review source-referenced draft assistance with accept, edit and reject controls.') +
+  return pageHead('AI Inspector Assistant Panel', 'Review source-referenced draft assistance with accept, edit and reject controls.', backAction) +
     guardrailStrip([
       { label: 'AI-generated draft - requires authorized review', tone: 'warn' },
       { label: 'Demo data' },
       { label: 'Not a legal decision', tone: 'warn' },
       { label: 'No real AI service', tone: 'neutral' }
     ]) +
-    '<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Draft suggestion</th><th>Status</th><th>Review text</th><th style="width:220px;text-align:right">Authorized review</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    sourceContext +
+    '<div class="ops-table-wrap ai-review-table"><table class="ops-table"><thead><tr><th>Draft suggestion</th><th>Status</th><th>Review text</th><th style="width:220px;text-align:right">Authorized review</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 function viewSspNaspDashboard() {
@@ -2139,7 +2274,7 @@ function managerChecklistQuestionEditor(question, item, section, ui) {
   var guidance = draft.guidance || draft.inspectorGuidance || '';
   return '<form class="manager-checklist-question-editor" onsubmit="return false"><div class="manager-checklist-section-title"><div><span>Question editor</span><h3>' + (question ? 'Edit Question' : 'New Question') + '</h3></div><span class="manager-checklist-risk is-' + esc(risk.level.toLowerCase()) + '">' + esc(risk.level) + ' · ' + risk.score + '</span></div>' +
     '<div class="manager-checklist-editor-grid"><label class="is-wide"><span>Question Text</span><textarea id="manager-checklist-question-text" placeholder="Enter a clear inspection question.">' + esc(draft.text || '') + '</textarea></label>' +
-    '<label class="is-wide"><span>Configured Requirement / Reference</span><input id="manager-checklist-question-reference" value="' + esc(reference) + '" placeholder="Configured reference or finding basis"></label>' +
+    '<label class="is-wide"><span>Configured Requirement / Reference</span><textarea id="manager-checklist-question-reference" class="manager-checklist-reference-textarea" data-field="manager-checklist-question-reference" rows="3" placeholder="Configured reference or finding basis">' + esc(reference) + '</textarea></label>' +
     '<label class="is-wide"><span>Guidance Note</span><textarea id="manager-checklist-question-guidance" placeholder="Inspector guidance for this demo question.">' + esc(guidance) + '</textarea></label>' +
     '<label><span>Evidence Methods</span><input id="manager-checklist-question-evidence" value="' + esc(evidenceMethods) + '" placeholder="Document Review, Interview"></label>' +
     '<label><span>Finding Types</span><input id="manager-checklist-question-findings" value="' + esc(findingTypes) + '" placeholder="Compliance, Equipment"></label>' +
@@ -2434,16 +2569,16 @@ var INSPECTOR_ASSIGNMENT_ROWS = [
   },
   {
     id: 'PR-2026-017',
-    auditId: 'AUD-2026-001',
-    title: 'Ramp Safety Inspection',
+    auditId: 'AUD-2026-002',
+    title: 'Ramp Inspection',
     code: 'PR-2026-017',
-    organization: 'AirMove Ground',
-    location: 'JFK International Airport',
-    type: 'Safety',
+    organization: 'SkyCargo Air',
+    location: 'Apron 4',
+    type: 'Ramp',
     dates: '10 - 11 Jun 2026',
-    status: 'in-progress',
-    statusLabel: 'In Progress',
-    progress: 30,
+    status: 'completed',
+    statusLabel: 'Completed',
+    progress: 100,
     questionsDone: 24,
     questionsTotal: 80,
     completedQuestions: 16,
@@ -2452,6 +2587,8 @@ var INSPECTOR_ASSIGNMENT_ROWS = [
     dueTone: 'warn',
     icon: 'vehicle',
     iconLabel: 'RS',
+    actionDisabled: true,
+    actionDisabledLabel: 'Report preview unavailable',
     sections: [
       { name: 'Ramp Operations', total: 12, done: 4 },
       { name: 'Ground Equipment', total: 10, done: 3 },
@@ -2478,6 +2615,7 @@ var INSPECTOR_ASSIGNMENT_ROWS = [
     dueTone: 'danger',
     icon: 'checklist',
     iconLabel: 'SM',
+    actionDisabled: true,
     sections: [
       { name: 'Safety Policy', total: 10, done: 8 },
       { name: 'Risk Management', total: 12, done: 9 },
@@ -2504,15 +2642,16 @@ var INSPECTOR_ASSIGNMENT_ROWS = [
     dueTone: 'danger',
     icon: 'box',
     iconLabel: 'DG',
+    actionDisabled: true,
     sections: []
   },
   {
     id: 'PR-2026-014',
     auditId: 'AUD-2026-005',
-    title: 'Security Inspection',
+    title: 'Security Audit',
     code: 'PR-2026-014',
-    organization: 'JetFast Aviation',
-    location: 'Terminal 2',
+    organization: 'SkyCargo Air',
+    location: 'SkyCargo Terminal',
     type: 'Security',
     dates: '1 - 2 Jun 2026',
     status: 'in-progress',
@@ -2552,6 +2691,7 @@ var INSPECTOR_ASSIGNMENT_ROWS = [
     dueTone: 'neutral',
     icon: 'users',
     iconLabel: 'AC',
+    actionDisabled: true,
     sections: [
       { name: 'Badging', total: 10, done: 2 },
       { name: 'Access Logs', total: 10, done: 2 },
@@ -2578,16 +2718,17 @@ var INSPECTOR_ASSIGNMENT_ROWS = [
     dueTone: 'neutral',
     icon: 'baggage',
     iconLabel: 'BH',
+    actionDisabled: true,
     sections: []
   },
   {
     id: 'PR-2026-011',
     auditId: 'AUD-2026-003',
-    title: 'Training & Awareness Audit',
+    title: 'Continuing Airworthiness Audit',
     code: 'PR-2026-011',
-    organization: 'SkyCargo Air',
-    location: 'Training Center',
-    type: 'Training',
+    organization: 'BlueWing Aviation',
+    location: 'BlueWing Hangar 2',
+    type: 'Airworthiness',
     dates: '15 - 16 May 2026',
     status: 'completed',
     statusLabel: 'Completed',
@@ -2600,6 +2741,8 @@ var INSPECTOR_ASSIGNMENT_ROWS = [
     dueTone: 'neutral',
     icon: 'training',
     iconLabel: 'TR',
+    actionDisabled: true,
+    actionDisabledLabel: 'Report preview unavailable',
     sections: []
   }
 ];
@@ -2629,22 +2772,85 @@ function inspectorAssignmentsUiState() {
   return state.inspectorAssignmentsUi;
 }
 
+function inspectorAssignmentRows() {
+  var staticRows = INSPECTOR_ASSIGNMENT_ROWS.map(function (row) {
+    var audit = (state.audits || []).filter(function (item) { return item.id === row.auditId; })[0] || null;
+    if (!audit || !audit.date) return row;
+    var dates = fmtDate(audit.date);
+    if (audit.endDate && audit.endDate !== audit.date) dates += ' - ' + fmtDate(audit.endDate);
+    return Object.assign({}, row, { dates: dates });
+  });
+  var representedAuditIds = {};
+  staticRows.forEach(function (row) { representedAuditIds[row.auditId] = true; });
+  var iconByTemplate = {
+    'TPL-CABIN-2026': ['plane', 'CI'],
+    'TPL-FOPS-2026': ['checklist', 'FO'],
+    'TPL-AWO-2026': ['training', 'AW'],
+    'TPL-RAMP-2026': ['vehicle', 'RA'],
+    'TPL-SEC-2026': ['shield', 'SE']
+  };
+  var dynamicRows = (state.audits || []).filter(function (audit) {
+    return !!audit.planningItemId && !representedAuditIds[audit.id] &&
+      (audit.status === 'Scheduled' || audit.status === 'In Progress') &&
+      !!inspectionExecutionPackageForAudit(state, audit.id);
+  }).map(function (audit) {
+    var pkg = inspectionExecutionPackageForAudit(state, audit.id);
+    var icon = iconByTemplate[audit.templateId] || ['checklist', 'AU'];
+    var dueDate = audit.endDate || audit.date;
+    var status = audit.checklistStarted || pkg.answered ? 'in-progress' : 'open';
+    return {
+      id: 'AUD-ASSIGN-' + audit.id,
+      auditId: audit.id,
+      title: audit.ref,
+      code: audit.id,
+      organization: pkg.organization,
+      location: audit.location || 'Not configured',
+      type: audit.domain || audit.type,
+      dates: fmtDate(audit.date) + (audit.endDate && audit.endDate !== audit.date ? ' - ' + fmtDate(audit.endDate) : ''),
+      status: status,
+      statusLabel: status === 'in-progress' ? 'In Progress' : 'Open',
+      progress: pkg.progressPercent,
+      questionsDone: pkg.answered,
+      questionsTotal: pkg.total,
+      completedQuestions: pkg.answered,
+      dueDate: fmtDate(dueDate),
+      dueNote: dueDate < DEMO_TODAY ? '(Overdue)' : (dueDate === DEMO_TODAY ? '(Today)' : ''),
+      dueTone: dueDate < DEMO_TODAY ? 'danger' : (dueDate === DEMO_TODAY ? 'warn' : 'neutral'),
+      icon: icon[0],
+      iconLabel: icon[1],
+      actionDisabled: false,
+      sections: pkg.sections.map(function (section) {
+        return { name: section.label, total: section.total, done: section.completed };
+      })
+    };
+  });
+  return staticRows.concat(dynamicRows);
+}
+
 function inspectorAssignmentById(id) {
-  return INSPECTOR_ASSIGNMENT_ROWS.filter(function (row) { return row.id === id; })[0] || null;
+  return inspectorAssignmentRows().filter(function (row) { return row.id === id; })[0] || null;
+}
+
+function inspectorAssignmentForOpen(id) {
+  return inspectorAssignmentById(id) || inspectorAssignmentRows().filter(function (row) {
+    return row.auditId === id && !row.actionDisabled;
+  })[0] || null;
 }
 
 function inspectorAssignmentStats() {
-  var inProgressRows = INSPECTOR_ASSIGNMENT_ROWS.filter(function (row) { return row.status === 'in-progress'; });
+  var assignmentRows = inspectorAssignmentRows();
+  var dynamicCount = Math.max(0, assignmentRows.length - INSPECTOR_ASSIGNMENT_ROWS.length);
+  var inProgressRows = assignmentRows.filter(function (row) { return row.status === 'in-progress'; });
   var questionsAssigned = inProgressRows.reduce(function (sum, row) { return sum + (Number(row.questionsTotal) || 0); }, 0);
   var questionsCompleted = inProgressRows.reduce(function (sum, row) { return sum + (Number(row.completedQuestions) || 0); }, 0);
   var questionsRemaining = Math.max(questionsAssigned - questionsCompleted, 0);
   var averageCompletion = questionsAssigned ? Math.round((questionsCompleted / questionsAssigned) * 100) : 0;
   return {
-    open: 8,
+    open: 8 + dynamicCount,
     inProgress: inProgressRows.length,
     completed: 3,
     overdue: 1,
-    totalAssigned: 17,
+    totalAssigned: 17 + dynamicCount,
     questionsAssigned: questionsAssigned,
     questionsCompleted: questionsCompleted,
     questionsRemaining: questionsRemaining,
@@ -2662,7 +2868,7 @@ function inspectorAssignmentSelect(name, field, value, options) {
 
 function inspectorAssignmentFilteredRows(ui) {
   var query = String(ui.query || '').trim().toLowerCase();
-  return INSPECTOR_ASSIGNMENT_ROWS.filter(function (row) {
+  return inspectorAssignmentRows().filter(function (row) {
     if (ui.status === 'in-progress' && row.status !== 'in-progress') return false;
     if (ui.status === 'open' && row.status !== 'open') return false;
     if (ui.status === 'completed' && row.status !== 'completed') return false;
@@ -2704,6 +2910,10 @@ function inspectorAssignmentActionLabel(row) {
 }
 
 function inspectorAssignmentRow(row) {
+  var disabledActionLabel = row.actionDisabledLabel || 'Template preview only';
+  var actionButton = row.actionDisabled
+    ? '<button class="btn btn--sm" disabled aria-disabled="true" title="This assignment has no audit-specific report preview in the Inspector demo">' + esc(disabledActionLabel) + '</button>'
+    : '<button class="btn btn--sm' + (row.status === 'completed' ? '' : ' btn--primary') + '" data-act="inspector-assignment-open" data-id="' + esc(row.auditId) + '" data-assignment-id="' + esc(row.id) + '">' + esc(inspectorAssignmentActionLabel(row)) + '</button>';
   return '<tr class="inspector-assignment-row">' +
     '<td data-col="item"><div class="inspector-assignment-main">' + inspectorAssignmentIcon(row) +
       '<button class="inspector-assignment-link" data-act="inspector-assignment-select" data-id="' + esc(row.id) + '">' + esc(row.title) + '<span>' + esc(row.code) + '</span></button></div></td>' +
@@ -2714,7 +2924,7 @@ function inspectorAssignmentRow(row) {
     '<td data-col="progress" data-label="Progress">' + inspectorAssignmentProgressHtml(row) + '</td>' +
     '<td data-col="due" data-label="Due Date" class="inspector-assignment-due is-' + esc(row.dueTone) + '"><b>' + esc(row.dueDate) + '</b>' + (row.dueNote ? '<span>' + esc(row.dueNote) + '</span>' : '') + '</td>' +
     '<td data-col="actions"><div class="inspector-assignment-actions">' +
-      '<button class="btn btn--sm' + (row.status === 'completed' ? '' : ' btn--primary') + '" data-act="inspector-assignment-open" data-id="' + esc(row.id) + '">' + esc(inspectorAssignmentActionLabel(row)) + '</button>' +
+      actionButton +
       '<button class="iconbtn iconbtn--small" data-act="inspector-assignment-menu" data-id="' + esc(row.id) + '" aria-label="More actions for ' + esc(row.title) + '">&#8942;</button>' +
     '</div></td>' +
   '</tr>';
@@ -2806,7 +3016,10 @@ function inspectorAssignmentDetailPanel(rows, ui) {
   var completed = Number(selected.completedQuestions) || Math.round((selected.progress * selected.questionsTotal) / 100);
   var inProgress = Math.max(selected.questionsDone - completed, 0);
   var notStarted = Math.max(selected.questionsTotal - selected.questionsDone, 0);
-  var sections = selected.sections && selected.sections.length ? selected.sections : INSPECTOR_ASSIGNMENT_ROWS[0].sections;
+  var sections = selected.sections && selected.sections.length ? selected.sections : inspectorAssignmentRows()[0].sections;
+  var continueButton = selected.actionDisabled
+    ? '<button class="btn" disabled aria-disabled="true">Template preview only</button>'
+    : '<button class="btn btn--primary" data-act="inspector-assignment-open" data-id="' + esc(selected.auditId) + '" data-assignment-id="' + esc(selected.id) + '"><span>&#8618;</span> Continue Working</button>';
   return '<div class="inspector-assignment-detail">' +
     '<section class="inspector-assignment-detail-card inspector-assignment-detail-card--summary">' +
       '<div class="inspector-assignment-detail-title">' + inspectorAssignmentIcon(selected) +
@@ -2830,7 +3043,7 @@ function inspectorAssignmentDetailPanel(rows, ui) {
       '<div class="inspector-assignment-section-list">' + sections.map(function (section) { return inspectorAssignmentSectionRow(section, selected.id); }).join('') + '</div>' +
       '<div class="inspector-assignment-detail-actions">' +
         '<button class="btn" data-act="inspector-assignment-download"><span>&#8681;</span> Download Assignment</button>' +
-        '<button class="btn btn--primary" data-act="inspector-assignment-open" data-id="' + esc(selected.id) + '"><span>&#8618;</span> Continue Working</button>' +
+        continueButton +
       '</div>' +
     '</section>' +
   '</div>';
@@ -2856,7 +3069,7 @@ function viewInspectorDashboard() {
 /* =========================== Inspector CAP reviews =========================== */
 function capReviewUiState() {
   var fallback = {
-    expandedId: 'F-014-02',
+    expandedId: 'CAB-2026-011',
     tab: 'cap',
     status: 'all',
     due: 'all',
@@ -2890,14 +3103,42 @@ function capReviewSourceFindings() {
 }
 
 function capReviewFindingDisplayId(finding) {
-  var displayIds = {
-    'SEC-2026-002': 'F-2026-001',
-    'AWO-2026-003': 'F-2026-002',
-    'RAMP-2026-005': 'F-2026-003',
-    'CAB-2026-004': 'F-2026-004',
-    'OPS-2025-014': 'F-2025-014'
+  return finding.id;
+}
+
+function capReviewRowFromFinding(finding) {
+  var status = capReviewStatusMeta(finding);
+  var due = capReviewDueMeta(finding);
+  var severity = SEVERITY[finding.severity] ? SEVERITY[finding.severity].label : 'Observation';
+  var level = finding.severity === 1 ? 'Level 1' : (finding.severity === 2 ? 'Level 2' : (finding.severity === 3 ? 'Level 3' : 'Observation'));
+  var ownerMeta = typeof derivedStatus === 'function' ? derivedStatus(finding) : null;
+  return {
+    id: finding.id,
+    detailId: finding.id,
+    title: finding.title,
+    organization: orgName(finding.orgId),
+    orgKey: String(orgName(finding.orgId) || finding.orgId).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+    checklist: finding.reference || 'Configured checklist reference',
+    level: level,
+    levelKey: finding.severity === 1 ? 'l1' : (finding.severity === 2 ? 'l2' : 'l3'),
+    levelLabel: severity,
+    statusKey: finding.status === 'CLOSED'
+      ? 'closed'
+      : (finding.status === 'WAITING_CAP' ? 'waiting_cap'
+        : (finding.status === 'CAP_MORE_INFO' || finding.status === 'EVIDENCE_MORE_INFO' ? 'returned' : 'cap_submitted')),
+    statusLabel: status.label,
+    statusTone: status.tone,
+    due: finding.dueDate || '',
+    dueDateText: finding.dueDate ? fmtDate(finding.dueDate) : 'No Due Date',
+    dueRule: due.label,
+    dueKey: due.key,
+    owner: ownerMeta ? roleName(ownerMeta.ownerRole) : (finding.responsiblePerson || 'CAA Review'),
+    submittedOn: finding.cap && finding.cap.submittedDate ? finding.cap.submittedDate : '-',
+    description: finding.description || '',
+    reference: finding.reference || '',
+    location: (auditById(finding.auditId) || {}).location || '',
+    finding: finding
   };
-  return displayIds[finding.id] || finding.id;
 }
 
 function capReviewTargetDate(finding) {
@@ -3175,13 +3416,17 @@ function capReviewTableRows(items, ui) {
 }
 
 function inspectorCapReviewProviders() {
-  return [
-    { id: 'skycargo-air', icon: 'AIR', name: 'SkyCargo Air', role: 'Service Provider', status: 'submitted', findings: 9, caps: 9, submittedOn: '27 Jun 2026 09:15' },
-    { id: 'skycargo-ground', icon: 'GND', name: 'SkyCargo Ground Handling Ltd.', role: 'Ground Handler', status: 'submitted', findings: 5, caps: 5, submittedOn: '27 Jun 2026 09:15' },
-    { id: 'skyfuel', icon: 'FUEL', name: 'SkyFuel Services', role: 'Fuel Services', status: 'submitted', findings: 3, caps: 3, submittedOn: '27 Jun 2026 09:15' },
-    { id: 'skysecurity', icon: 'SEC', name: 'SkySecurity Services', role: 'Security Services', status: 'submitted', findings: 4, caps: 4, submittedOn: '27 Jun 2026 09:15' },
-    { id: 'skycatering', icon: 'CAT', name: 'SkyCatering Ltd.', role: 'Catering Provider', status: 'pending', findings: 2, caps: 0, submittedOn: '-' }
-  ];
+  var groups = {};
+  capReviewSourceFindings().forEach(function (finding) {
+    var row = capReviewRowFromFinding(finding);
+    if (!groups[row.orgKey]) {
+      groups[row.orgKey] = { id: row.orgKey, icon: row.organization.slice(0, 3).toUpperCase(), name: row.organization, role: 'Service Provider', status: 'submitted', findings: 0, caps: 0, submittedOn: '-' };
+    }
+    groups[row.orgKey].findings += 1;
+    if (finding.cap) groups[row.orgKey].caps += 1;
+    if (finding.cap && finding.cap.submittedDate) groups[row.orgKey].submittedOn = finding.cap.submittedDate;
+  });
+  return Object.keys(groups).map(function (key) { return groups[key]; });
 }
 
 function inspectorCapReviewProviderById(id) {
@@ -3193,40 +3438,9 @@ function inspectorCapReviewProviderById(id) {
 }
 
 function inspectorCapReviewRowsForProvider(providerId) {
-  var skyCargoRows = [
-    { id: 'F-014-01', detailId: 'F-014-01', title: 'Access control to restricted areas', checklist: 'Access Control', level: 'Level 1', levelKey: 'l1', levelLabel: 'Level 1 (Critical)', due: '2026-06-30', dueDateText: '30 Jun 2026', dueRule: '14 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-    { id: 'F-014-04', detailId: 'F-014-04', title: 'Screening procedure compliance', checklist: 'Screening', level: 'Level 1', levelKey: 'l1', levelLabel: 'Level 1 (Critical)', due: '2026-06-30', dueDateText: '30 Jun 2026', dueRule: '14 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-    { id: 'F-014-02', detailId: 'F-014-02', title: 'Staff training records', checklist: 'Training', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-    { id: 'F-014-03', detailId: 'F-014-03', title: 'Vehicle security inspection', checklist: 'Ground Handling', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-    { id: 'F-014-07', detailId: 'F-014-07', title: 'Emergency exit signage', checklist: 'Safety Signage', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-    { id: 'F-014-05', detailId: 'F-014-05', title: 'Signage and awareness', checklist: 'Security Awareness', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-    { id: 'F-014-06', detailId: 'F-014-06', title: 'Tarmac safety cones availability', checklist: 'Ramp Safety', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-    { id: 'F-014-08', detailId: 'F-014-08', title: 'Wildlife control program', checklist: 'Wildlife Hazard', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-    { id: 'F-014-09', detailId: 'F-014-09', title: 'Housekeeping in operational areas', checklist: 'Operations', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' }
-  ];
-  var providerRows = {
-    'skycargo-air': skyCargoRows,
-    'skycargo-ground': [
-      { id: 'F-GND-01', detailId: 'F-GND-01', title: 'Ground handling training records incomplete', checklist: 'Ground Handling', level: 'Level 1', levelKey: 'l1', levelLabel: 'Level 1 (Critical)', due: '2026-06-30', dueDateText: '30 Jun 2026', dueRule: '14 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-      { id: 'F-GND-02', detailId: 'F-GND-02', title: 'Baggage reconciliation evidence missing', checklist: 'Security', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-      { id: 'F-GND-03', detailId: 'F-GND-03', title: 'Vehicle access logs not retained', checklist: 'Access Control', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-      { id: 'F-GND-04', detailId: 'F-GND-04', title: 'Ramp escort process not consistently documented', checklist: 'Ramp Safety', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-      { id: 'F-GND-05', detailId: 'F-GND-05', title: 'Shift briefing records need standardization', checklist: 'Operations', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' }
-    ],
-    skyfuel: [
-      { id: 'F-FUEL-01', detailId: 'F-FUEL-01', title: 'Fuel quality sampling records incomplete', checklist: 'Fuel Quality', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-      { id: 'F-FUEL-02', detailId: 'F-FUEL-02', title: 'Spill response drill evidence missing', checklist: 'Emergency Response', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-      { id: 'F-FUEL-03', detailId: 'F-FUEL-03', title: 'Fuel truck inspection labels unclear', checklist: 'Equipment', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' }
-    ],
-    skysecurity: [
-      { id: 'F-SEC-01', detailId: 'F-SEC-01', title: 'Security patrol records incomplete', checklist: 'Security Patrol', level: 'Level 1', levelKey: 'l1', levelLabel: 'Level 1 (Critical)', due: '2026-06-30', dueDateText: '30 Jun 2026', dueRule: '14 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-      { id: 'F-SEC-02', detailId: 'F-SEC-02', title: 'CCTV retention validation not evidenced', checklist: 'Surveillance', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-      { id: 'F-SEC-03', detailId: 'F-SEC-03', title: 'Access control badge reconciliation delayed', checklist: 'Access Control', level: 'Level 2', levelKey: 'l2', levelLabel: 'Level 2 (Major)', due: '2026-09-14', dueDateText: '14 Sep 2026', dueRule: '90 days', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' },
-      { id: 'F-SEC-04', detailId: 'F-SEC-04', title: 'Visitor log countersignature missing', checklist: 'Visitor Control', level: 'Level 3', levelKey: 'l3', levelLabel: 'Level 3 (Observation)', due: '', dueDateText: 'Observation', dueRule: 'Observation / No due date', submittedOn: '27 Jun 2026 09:15', statusKey: 'pending_review', statusLabel: 'Pending Review', statusTone: 'info' }
-    ],
-    skycatering: []
-  };
-  return providerRows[providerId] || skyCargoRows;
+  return capReviewSourceFindings().map(capReviewRowFromFinding).filter(function (row) {
+    return row.orgKey === providerId;
+  });
 }
 
 function inspectorCapReviewRowById(id) {
@@ -3256,48 +3470,7 @@ function inspectorCapReviewFilteredRows(rows, ui) {
 }
 
 function inspectorCapVerificationRows() {
-  var base = [
-    { id: 'F-014-01', detailId: 'F-014-01', title: 'Perimeter Fence Security', organization: 'SkyCargo Air', orgKey: 'skycargo-air', checklist: 'Access Control', levelKey: 'l1', levelLabel: 'Level 1', statusKey: 'waiting_cap', statusLabel: 'Waiting for CAP', statusTone: 'warn', dueDateText: '14 Jul 2026', dueRule: '3 days left', dueKey: 'due7', owner: 'John Doe', submittedOn: '-', description: 'Perimeter fence is damaged in the east section allowing unauthorized access.', reference: 'ICAO Annex 17 - 4.2.3.8', location: 'East Perimeter' },
-    { id: 'F-014-02', detailId: 'F-014-02', title: 'Access Control System', organization: 'SkyCargo Air', orgKey: 'skycargo-air', checklist: 'Access Control', levelKey: 'l2', levelLabel: 'Level 2', statusKey: 'cap_submitted', statusLabel: 'CAP Submitted', statusTone: 'ok', dueDateText: '20 Jul 2026', dueRule: '9 days left', dueKey: 'later', owner: 'John Doe', submittedOn: '17 Jun 2026', description: 'Access control software did not enforce password policy and badge exception review was not consistently completed.', reference: 'ICAO Annex 17 - 4.2.3.8', location: 'Main Cargo Gate' },
-    { id: 'F-014-03', detailId: 'F-014-03', title: 'CCTV Coverage Gaps', organization: 'SkyCargo Air', orgKey: 'skycargo-air', checklist: 'Surveillance', levelKey: 'l2', levelLabel: 'Level 2', statusKey: 'returned', statusLabel: 'Returned', statusTone: 'danger', dueDateText: '25 Jul 2026', dueRule: '14 days left', dueKey: 'later', owner: 'John Doe', submittedOn: '18 Jun 2026', description: 'CCTV coverage map does not prove that blind spots near the cargo gate are monitored.', reference: 'Security Program 6.4', location: 'Cargo Gate' },
-    { id: 'F-014-04', detailId: 'F-014-04', title: 'Security Training Records', organization: 'SkyCargo Air', orgKey: 'skycargo-air', checklist: 'Training', levelKey: 'l3', levelLabel: 'Level 3', statusKey: 'cap_submitted', statusLabel: 'CAP Submitted', statusTone: 'ok', dueDateText: '28 Jul 2026', dueRule: '17 days left', dueKey: 'later', owner: 'John Doe', submittedOn: '19 Jun 2026', description: 'Training records are not consistently attached for all access control personnel.', reference: 'Training Manual 2.1', location: 'Security Office' },
-    { id: 'F-014-05', detailId: 'F-014-05', title: 'Vehicle Access Procedures', organization: 'SkyCargo Ground Handling Ltd.', orgKey: 'skycargo-ground', checklist: 'Access Control', levelKey: 'l1', levelLabel: 'Level 1', statusKey: 'waiting_cap', statusLabel: 'Waiting for CAP', statusTone: 'warn', dueDateText: '30 Jul 2026', dueRule: '19 days left', dueKey: 'later', owner: 'Sarah K.', submittedOn: '-', description: 'Vehicle access procedure is not consistently enforced for contractor vehicles.', reference: 'Airport Security Program 5.7', location: 'Vehicle Gate' },
-    { id: 'F-014-06', detailId: 'F-014-06', title: 'ID Card Management', organization: 'SkyCargo Air', orgKey: 'skycargo-air', checklist: 'Access Control', levelKey: 'l3', levelLabel: 'Level 3', statusKey: 'closed', statusLabel: 'Closed', statusTone: 'neutral', dueDateText: '10 Jul 2026', dueRule: 'closed', dueKey: 'no_due', owner: 'John Doe', submittedOn: '16 Jun 2026', description: 'Temporary ID card register required cleanup. Corrective evidence has been reviewed and accepted.', reference: 'Access Control SOP 3.2', location: 'Admin Office' },
-    { id: 'F-014-07', detailId: 'F-014-07', title: 'Lighting Adequacy', organization: 'SkyCargo Air', orgKey: 'skycargo-air', checklist: 'Surveillance', levelKey: 'l2', levelLabel: 'Level 2', statusKey: 'returned', statusLabel: 'Returned', statusTone: 'danger', dueDateText: '16 Jul 2026', dueRule: '5 days left', dueKey: 'due7', owner: 'John Doe', submittedOn: '20 Jun 2026', description: 'Night inspection evidence did not demonstrate adequate perimeter lighting.', reference: 'Physical Security 4.8', location: 'East Apron' },
-    { id: 'F-014-08', detailId: 'F-014-08', title: 'Guard Patrol Frequency', organization: 'SkySecurity Services', orgKey: 'skysecurity', checklist: 'Security Patrol', levelKey: 'l2', levelLabel: 'Level 2', statusKey: 'cap_submitted', statusLabel: 'CAP Submitted', statusTone: 'ok', dueDateText: '30 Jul 2026', dueRule: '19 days left', dueKey: 'later', owner: 'David L.', submittedOn: '19 Jun 2026', description: 'Patrol log frequency did not match the approved patrol schedule.', reference: 'Patrol Procedure 7.1', location: 'Cargo Apron' },
-    { id: 'F-014-09', detailId: 'F-014-09', title: 'Visitor Access Logs', organization: 'SkySecurity Services', orgKey: 'skysecurity', checklist: 'Visitor Control', levelKey: 'l3', levelLabel: 'Level 3', statusKey: 'cap_submitted', statusLabel: 'CAP Submitted', statusTone: 'ok', dueDateText: '31 Jul 2026', dueRule: '20 days left', dueKey: 'later', owner: 'David L.', submittedOn: '19 Jun 2026', description: 'Visitor access logs did not consistently include escort signatures.', reference: 'Visitor Control 2.4', location: 'Reception' },
-    { id: 'F-014-10', detailId: 'F-014-10', title: 'Fuel Storage Area Security', organization: 'SkyFuel Services', orgKey: 'skyfuel', checklist: 'Fuel Security', levelKey: 'l1', levelLabel: 'Level 1', statusKey: 'cap_submitted', statusLabel: 'CAP Submitted', statusTone: 'ok', dueDateText: '30 Jul 2026', dueRule: '19 days left', dueKey: 'later', owner: 'Michael T.', submittedOn: '19 Jun 2026', description: 'Fuel storage area access evidence was incomplete for two sample dates.', reference: 'Fuel Security 6.1', location: 'Fuel Farm' },
-    { id: 'F-014-11', detailId: 'F-014-11', title: 'Spill Response Equipment', organization: 'SkyFuel Services', orgKey: 'skyfuel', checklist: 'Emergency Response', levelKey: 'l2', levelLabel: 'Level 2', statusKey: 'cap_submitted', statusLabel: 'CAP Submitted', statusTone: 'ok', dueDateText: '2 Aug 2026', dueRule: '22 days left', dueKey: 'later', owner: 'Michael T.', submittedOn: '20 Jun 2026', description: 'Spill response equipment inspection records were incomplete.', reference: 'Emergency Response 8.2', location: 'Fuel Farm' },
-    { id: 'F-014-12', detailId: 'F-014-12', title: 'Cold Chain Monitoring', organization: 'SkyCatering Ltd.', orgKey: 'skycatering', checklist: 'Catering', levelKey: 'l2', levelLabel: 'Level 2', statusKey: 'waiting_cap', statusLabel: 'Waiting for CAP', statusTone: 'warn', dueDateText: '5 Aug 2026', dueRule: '25 days left', dueKey: 'later', owner: 'Emma R.', submittedOn: '-', description: 'Cold chain temperature records were not complete for two inspected routes.', reference: 'Catering Quality 3.5', location: 'Catering Store' },
-    { id: 'F-014-13', detailId: 'F-014-13', title: 'Emergency Communication', organization: 'SkySecurity Services', orgKey: 'skysecurity', checklist: 'Emergency Preparedness', levelKey: 'l3', levelLabel: 'Level 3', statusKey: 'closed', statusLabel: 'Closed', statusTone: 'neutral', dueDateText: '9 Jul 2026', dueRule: 'closed', dueKey: 'no_due', owner: 'David L.', submittedOn: '17 Jun 2026', description: 'Emergency communication contact list needed update. Evidence accepted.', reference: 'ERP 1.4', location: 'Security Control Room' },
-    { id: 'F-014-14', detailId: 'F-014-14', title: 'Food Safety Training', organization: 'SkyCatering Ltd.', orgKey: 'skycatering', checklist: 'Training', levelKey: 'l2', levelLabel: 'Level 2', statusKey: 'closed', statusLabel: 'Closed', statusTone: 'neutral', dueDateText: '10 Jul 2026', dueRule: 'closed', dueKey: 'no_due', owner: 'Emma R.', submittedOn: '18 Jun 2026', description: 'Food safety refresher training matrix was corrected and accepted.', reference: 'Catering Training 2.2', location: 'Catering Office' }
-  ];
-  var generated = (state.findings || []).filter(function (finding) {
-    return /^SMS-2026-/.test(finding.id);
-  }).map(function (finding) {
-    return {
-      id: finding.id,
-      detailId: finding.id,
-      title: finding.title,
-      organization: orgName(finding.orgId),
-      orgKey: 'skycargo-air',
-      checklist: finding.reference || 'Checklist',
-      levelKey: finding.severity === 1 ? 'l1' : (finding.severity === 2 ? 'l2' : 'l3'),
-      levelLabel: finding.severity === 1 ? 'Level 1' : (finding.severity === 2 ? 'Level 2' : 'Level 3'),
-      statusKey: 'waiting_cap',
-      statusLabel: 'Waiting for CAP',
-      statusTone: 'warn',
-      dueDateText: fmtDate(finding.dueDate),
-      dueRule: 'CAP required',
-      dueKey: 'later',
-      owner: finding.responsiblePerson || 'Service Provider CAP Owner',
-      submittedOn: '-',
-      description: finding.description,
-      reference: finding.reference,
-      location: 'SMS Oversight Audit'
-    };
-  });
-  return base.concat(generated);
+  return visibleFindings().map(capReviewRowFromFinding);
 }
 
 function inspectorCapVerificationNormalizedStatus(status) {
@@ -3494,6 +3667,7 @@ function inspectorFindingDetailBody(row, ui) {
         '<dt>Status</dt><dd><b class="is-' + esc(row.statusTone) + '">' + esc(decisionLabel) + '</b></dd>' +
       '</dl><button class="btn btn--sm" data-act="cap-review-evidence" data-id="' + esc(row.id) + '" data-file="CAP_' + esc(row.id) + '.pdf">View CAP Document</button></section>' +
       '<section class="finding-detail-card"><h3>Inspector Verification</h3><p>Review the submitted CAP and supporting evidence.</p>' +
+        '<label>Comment to Auditee<textarea data-field="cap-review-comment" data-id="' + esc(row.id) + '" rows="3" placeholder="Required when returning the CAP">' + esc(ui.comment || '') + '</textarea></label>' +
         '<div class="finding-verification-actions"><button class="btn btn--ok" data-act="finding-accept-cap" data-id="' + esc(row.id) + '">Accept CAP</button><button class="btn btn--danger" data-act="finding-return-cap" data-id="' + esc(row.id) + '">Return for Revision</button></div>' +
         (decision ? '<p class="finding-decision-note">Latest update: <b>' + esc(decisionLabel) + '</b> at ' + esc(decision.at) + '</p>' : '') +
       '</section></div>';
@@ -3539,16 +3713,13 @@ function inspectorFindingReturnedFlow() {
     ['5. Revision by Service Provider', 'CAP and uploads are updated.'],
     ['6. Resubmitted', 'Revised CAP is resubmitted.'],
     ['7. Inspector Review', 'Inspector reviews again.'],
-    ['8. Closed', 'Inspector accepts and closes.']
+    ['8. Verification', 'CAP acceptance keeps the Finding open until the configured Evidence or authorized verification path is complete.']
   ];
   return '<section class="finding-return-flow"><h3>Returned Flow <span>(Lifecycle)</span></h3><div class="finding-flow-steps">' +
     stages.map(function (stage, index) {
       return '<div class="finding-flow-step"><b>' + esc(stage[0]) + '</b><p>' + esc(stage[1]) + '</p></div>' + (index < stages.length - 1 ? '<span class="finding-flow-arrow">→</span>' : '');
     }).join('') +
-    '</div><div class="finding-return-columns">' +
-      '<section><h4>Service Provider View</h4><div class="finding-flow-card"><b>F-014-03 · CCTV Coverage Gaps</b><p class="is-danger">Status: Returned</p><p>Evidence is not sufficient. Please provide updated photos and coverage map.</p><button class="btn btn--primary btn--sm" data-act="finding-submit-revised" data-id="F-014-03">Submit Revised CAP</button></div></section>' +
-      '<section><h4>Inspector View</h4><div class="finding-flow-card"><b>Review Revised CAP</b><p>Supporting evidence and revised comments are available for inspection.</p><div class="finding-verification-actions"><button class="btn btn--ok btn--sm" data-act="finding-accept-cap" data-id="F-014-03">Accept CAP</button><button class="btn btn--danger btn--sm" data-act="finding-return-cap" data-id="F-014-03">Return for Revision</button></div></div></section>' +
-    '</div></section>';
+    '</div><p class="muted">Every action above applies to the selected canonical Finding. Internal CAA Notes remain private; a returned CAP requires a Comment to Auditee.</p></section>';
 }
 
 function inspectorCapReviewProviderCards(ui) {
@@ -3670,17 +3841,15 @@ function viewInspectorCapReviews() {
   }
   if (!selected) selected = visibleRows[0] || allRows[0] || null;
   if (!selected && allRows.length) selected = allRows[0];
-  if (!matchedSelected && (!ui.status || ui.status === 'all')) {
-    for (i = 0; i < visibleRows.length; i++) {
-      if (visibleRows[i].id === 'F-014-02') selected = visibleRows[i];
-    }
-  }
+  if (!matchedSelected && (!ui.status || ui.status === 'all')) selected = visibleRows[0] || null;
   if (selected) ui.expandedId = selected.id;
+  var selectedFinding = selected ? findingById(selected.id) : null;
+  var selectedAudit = selectedFinding ? (auditById(selectedFinding.auditId) || {}) : {};
   var actions = '<button class="btn" data-act="mock-export">⇩ Export</button>' +
     '<button class="btn" data-act="finding-filter-toggle">▽ Filter</button>' +
     '<button class="btn btn--primary" data-act="finding-new">+ New Finding</button>';
   return '<div class="finding-workspace cap-review-page">' +
-    '<div class="cap-review-crumb"><span>SkyCargo Air</span><span>›</span><span>Routine Inspection</span><span>›</span><b>Findings</b></div>' +
+    '<div class="cap-review-crumb"><span>' + esc(selectedFinding ? orgName(selectedFinding.orgId) : 'CAA Inspector') + '</span><span>›</span><span>' + esc(selectedFinding ? selectedFinding.auditId : 'Assigned inspections') + '</span><span>›</span><span>' + esc(selectedAudit.type || selectedAudit.ref || 'Inspection') + '</span><span>›</span><b>Findings</b></div>' +
     pageHead('Findings', 'All findings and CAPs from this inspection', actions) +
     inspectorCapVerificationTabs(ui, counts) +
     (ui.filtersOpen === false ? '' : inspectorCapVerificationFilters(ui)) +
@@ -3758,16 +3927,28 @@ function capTrackingUiState() {
 }
 
 function capTrackingRows() {
-  return [
-    { id: 'F-2026-001', title: 'Risk assessment process is not comprehensive', level: 'Level 1', cap: 'Yes', owner: 'Safety Manager', due: '2026-07-06', status: 'CAP Submitted', days: '2 days', action: 'Review CAP', actionKey: 'review', tone: 'ok' },
-    { id: 'F-2026-002', title: 'Training records incomplete for ground handling staff', level: 'Level 2', cap: 'Yes', owner: 'Training Manager', due: '2026-09-20', status: 'In Review', days: '77 days', action: 'View CAP', actionKey: 'view', tone: 'info' },
-    { id: 'F-2026-003', title: 'Safety objectives are not measurable', level: 'Observation', cap: 'No', owner: '-', due: '', status: 'Observation', days: '-', action: 'View Finding', actionKey: 'finding', tone: 'neutral' },
-    { id: 'F-2026-004', title: 'Emergency response procedures not documented', level: 'Level 1', cap: 'Yes', owner: 'Operations Manager', due: '2026-07-06', status: 'Overdue', days: '-1 day', action: 'Escalate', actionKey: 'escalate', tone: 'danger' },
-    { id: 'F-2026-005', title: 'Internal audit program not fully implemented', level: 'Level 2', cap: 'Yes', owner: 'Quality Manager', due: '2026-09-20', status: 'Not Submitted', days: '77 days', action: 'Not Submitted', actionKey: 'pending', tone: 'warn' },
-    { id: 'F-2026-006', title: 'Equipment maintenance records demonstrate compliance', level: 'Observation', cap: 'No', owner: '-', due: '', status: 'Observation', days: '-', action: 'View Finding', actionKey: 'finding', tone: 'neutral' },
-    { id: 'F-2026-007', title: 'Procedures for contractor oversight need improvement', level: 'Level 2', cap: 'Yes', owner: 'Procurement Manager', due: '2026-09-20', status: 'Not Submitted', days: '77 days', action: 'Not Submitted', actionKey: 'pending', tone: 'warn' },
-    { id: 'F-2026-008', title: 'Management review meetings not held regularly', level: 'Observation', cap: 'No', owner: '-', due: '', status: 'Observation', days: '-', action: 'View Finding', actionKey: 'finding', tone: 'neutral' }
-  ];
+  return visibleFindings().map(function (finding) {
+    var row = capReviewRowFromFinding(finding);
+    var status = statusMeta(finding);
+    var due = finding.dueDate ? daysBetween(DEMO_TODAY, finding.dueDate) : null;
+    var actionKey = finding.status === 'WAITING_CAP' ? 'pending' : (finding.status === 'CLOSED' ? 'finding' : (finding.cap ? 'review' : 'finding'));
+    return {
+      id: finding.id,
+      title: finding.title,
+      level: row.level,
+      levelLabel: row.levelLabel,
+      department: (auditById(finding.auditId) || {}).domain || 'Oversight',
+      cap: finding.capRequired ? 'Yes' : 'No',
+      owner: finding.responsiblePerson || row.owner,
+      due: finding.dueDate || '',
+      status: status.label,
+      days: due === null ? '-' : (due < 0 ? String(due) + ' days' : String(due) + ' days'),
+      action: actionKey === 'pending' ? 'Not Submitted' : (finding.cap ? 'Review CAP' : 'View Finding'),
+      actionKey: actionKey,
+      tone: finding.status === 'CLOSED' ? 'neutral' : (due !== null && due < 0 ? 'danger' : (finding.status === 'CAP_SUBMITTED' ? 'ok' : 'info')),
+      finding: finding
+    };
+  });
 }
 
 function capTrackLevelBadge(level) {
@@ -3964,33 +4145,33 @@ function viewLeadCapTracking() {
 }
 
 function capDetailRowById(id) {
-  var submittedCap = inspectorCapReviewRowById(id);
-  if (submittedCap) {
-    return {
-      id: submittedCap.id,
-      title: submittedCap.title,
-      level: submittedCap.level,
-      levelLabel: submittedCap.levelLabel,
-      department: submittedCap.checklist,
-      cap: 'Yes',
-      owner: submittedCap.organization || 'SkyCargo Air',
-      due: submittedCap.due || '',
-      status: submittedCap.statusLabel,
-      days: submittedCap.dueRule,
-      action: 'Review CAP',
-      actionKey: 'review',
-      tone: 'info'
-    };
-  }
-  var rows = capTrackingRows();
-  for (var i = 0; i < rows.length; i++) {
-    if (rows[i].id === id) return rows[i];
-  }
-  return rows[1] || rows[0];
+  var finding = findingById(id);
+  if (!finding) return null;
+  var row = capReviewRowFromFinding(finding);
+  return Object.assign({}, row, {
+    cap: finding.capRequired ? 'Yes' : 'No',
+    status: statusMeta(finding).label,
+    days: row.dueRule,
+    action: finding.cap ? 'Review CAP' : 'View Finding',
+    actionKey: finding.cap ? 'review' : 'finding',
+    tone: row.statusTone
+  });
 }
 
 function capDetailData(id) {
-  var row = capDetailRowById(id || 'F-2026-002');
+  var finding = findingById(id);
+  if (!finding) return null;
+  var row = capDetailRowById(finding.id);
+  var cap = finding.cap || {};
+  var latestInternal = (finding.internalNotes || []).slice(-1)[0] || {};
+  var latestAuditee = (finding.commentsToAuditee || []).slice(-1)[0] || {};
+  var evidenceRows = (finding.evidence || []).map(function (item) {
+    return [item.fileName, item.type || 'Document', item.size || 'Mock filename'];
+  });
+  var actions = state.auditLog.filter(function (entry) { return entry.target === finding.id; }).map(function (entry) {
+    return [entry.time, entry.actor, entry.action, entry.system ? 'Demo system record' : '-'];
+  });
+  if (!actions.length) actions.push([finding.issuedDate, 'CAA', 'Finding issued.', finding.basis || '-']);
   var detail = {
     id: row.id,
     title: row.title,
@@ -4000,47 +4181,25 @@ function capDetailData(id) {
     status: row.status,
     due: row.due,
     days: row.days,
-    requirement: 'SMS 2.4 - Competency and Training',
-    description: 'Training records for ground handling staff are incomplete. Some records do not include training dates, instructor names, and training content.',
+    requirement: finding.reference || 'Configured reference',
+    description: finding.description || '',
     capDeadline: row.level === 'Level 1' ? '14 days' : (row.level === 'Level 2' ? '90 days' : 'No CAP'),
-    originalDue: row.due || '2026-09-20',
-    department: row.department || 'Flight Operations (OPS)',
-    capSubmittedDate: row.id === 'F-2026-001' ? '2026-06-28' : '2026-06-28',
-    rootCause: 'Lack of structured record-keeping process and insufficient oversight by training coordinator.',
-    correctiveActions: [
-      'Develop and implement training record standard template.',
-      'Conduct training for all training coordinators.',
-      'Review and update all existing training records.'
-    ],
-    evidence: [
-      ['Training_Record_Template.pdf', 'Document', '216 KB'],
-      ['Training_Coordinator_Training.xlsx', 'Spreadsheet', '512 KB'],
-      ['Updated_Records_Sample.jpg', 'Image', '1.2 MB']
-    ],
+    originalDue: row.due || '',
+    department: (auditById(finding.auditId) || {}).domain || 'Oversight',
+    capSubmittedDate: cap.submittedDate || '',
+    rootCause: cap.rootCause || 'No root cause submitted.',
+    correctiveActions: [cap.correctiveAction, cap.preventiveAction].filter(Boolean),
+    evidence: evidenceRows,
     previousReview: {
-      reviewer: 'John Inspector',
-      date: '05 Jul 2026',
-      status: 'Needs Further Action',
-      comments: 'Partial improvement observed. However, records remain incomplete for several employees.',
-      requiredActions: [
-        'Ensure all training records include missing information.',
-        'Implement internal audit to verify compliance.',
-        'Provide evidence of completed audit.'
-      ]
+      reviewer: latestInternal.author || 'CAA Inspector',
+      date: latestInternal.date || cap.submittedDate || finding.issuedDate,
+      status: row.status,
+      comments: latestInternal.text || 'No Internal CAA Note recorded.',
+      requiredActions: latestAuditee.text ? [latestAuditee.text] : ['Continue the canonical CAP and Evidence lifecycle.']
     },
-    actions: [
-      ['22 Jun 2026 14:30', 'Executive Director', 'Final Report issued and sent to Service Provider.', '-'],
-      ['22 Jun 2026 14:20', 'Department Manager', 'Report forwarded to General Manager review.', '-'],
-      ['28 Jun 2026 09:15', 'Service Provider', 'CAP submitted.', 'Initial CAP submission.'],
-      ['05 Jul 2026 11:20', 'Inspector', 'CAP reviewed (2nd review).', 'Partial improvement observed.'],
-      ['05 Jul 2026 11:25', 'Inspector', 'CAP review sent to Lead Inspector.', 'Additional actions required.']
-    ]
+    actions: actions,
+    finding: finding
   };
-  if (row.id !== 'F-2026-002') {
-    detail.requirement = row.level === 'Level 1' ? 'SMS 2.1 - Risk Management Process' : detail.requirement;
-    detail.description = row.title + ' is tracked under the issued final report CAP package.';
-    detail.previousReview.status = row.status === 'CAP Submitted' ? 'Pending 1st Review' : detail.previousReview.status;
-  }
   return detail;
 }
 
@@ -4238,76 +4397,87 @@ function capDetailActionHistory(data) {
 }
 
 function leadCapReviewList(selectedId) {
-  var items = [
-    { capId: 'CAP-2025-045-001', finding: 'OPS-001', dept: 'Flight Operations (OPS)', due: '20 May 2025', inspector: 'Mary Adams', tone: 'danger', risk: 'High', id: 'F-2026-002' },
-    { capId: 'CAP-2025-038-002', finding: 'OPS-004', dept: 'Flight Operations (OPS)', due: '22 May 2025', inspector: 'Ahmed Khan', tone: 'warn', risk: 'Medium', id: 'F-2026-001' },
-    { capId: 'CAP-2025-028-001', finding: 'PEL-002', dept: 'Personnel Licensing (PEL)', due: '25 May 2025', inspector: 'Peter Shikongo', tone: 'ok', risk: 'Low', id: 'F-2026-007' }
-  ];
+  var items = visibleFindings().filter(function (finding) { return finding.capRequired && finding.cap; }).map(function (finding) {
+    var audit = auditById(finding.auditId) || {};
+    return {
+      capId: finding.cap.id || 'CAP not submitted',
+      finding: finding.id,
+      dept: finding.department || audit.domain || 'Oversight',
+      due: finding.dueDate ? fmtDate(finding.dueDate) : 'No Due Date',
+      inspector: audit.lead || 'CAA Inspector',
+      tone: finding.severity === 1 ? 'danger' : (finding.severity === 2 ? 'warn' : 'ok'),
+      risk: finding.severity === 1 ? 'High' : (finding.severity === 2 ? 'Medium' : 'Low'),
+      id: finding.id
+    };
+  });
   return '<aside class="lead-cap-list cap-detail-panel">' +
     '<div class="lead-cap-list__head"><h2>CAP Review List</h2><button class="icon-btn" data-act="cap-track-quick-action" data-track-action="filter" aria-label="Filter CAP review list">⌁</button></div>' +
-    '<div class="lead-cap-list__tabs"><button class="is-active">Waiting (3)</button><button>Reviewed (12)</button></div>' +
+    '<div class="lead-cap-list__tabs"><button class="is-active">Canonical CAPs (' + esc(String(items.length)) + ')</button></div>' +
     '<div class="lead-cap-search"><input type="search" placeholder="Search..." aria-label="Search CAP reviews"><span>⌕</span></div>' +
     '<div class="lead-cap-list__items">' + items.map(function (item) {
       return '<button class="lead-cap-card' + (item.id === selectedId ? ' is-active' : '') + '" data-act="nav" data-view="cap-review-detail" data-id="' + esc(item.id) + '">' +
         '<span><b>' + esc(item.capId) + '</b>' + demoBadge(item.risk, item.tone) + '</span>' +
         '<small>Finding: ' + esc(item.finding) + '</small>' +
         '<small>Dept: ' + esc(item.dept) + '</small>' +
-        '<small>Due: ' + esc(item.due) + (item.capId === 'CAP-2025-045-001' ? ' <b>(Today)</b>' : '') + '</small>' +
+        '<small>Due: ' + esc(item.due) + '</small>' +
         '<small>Inspector: ' + esc(item.inspector) + '</small>' +
       '</button>';
     }).join('') + '</div>' +
-    '<div class="lead-cap-list__foot"><span>Showing 1 to 3 of 3</span><button class="icon-btn" disabled>‹</button><button class="cap-review-page-btn is-active">1</button><button class="icon-btn" disabled>›</button></div>' +
+    '<div class="lead-cap-list__foot"><span>Showing ' + esc(String(items.length)) + ' canonical Finding records</span></div>' +
   '</aside>';
 }
 
 function leadCapFindingInformation(data) {
+  var finding = data.finding;
+  var audit = auditById(finding.auditId) || {};
   return '<section class="cap-detail-panel lead-cap-finding-info">' +
     '<div class="cap-detail-panel-head"><h2>Finding Information</h2><button class="cap-file-link" data-act="open" data-id="' + esc(data.id) + '">View Finding Details ↗</button></div>' +
     '<div class="lead-cap-info-grid">' +
-      '<div><span>Audit No.</span><b>AUD-2025-045</b></div>' +
-      '<div><span>Department</span><b>Flight Operations (OPS)</b></div>' +
-      '<div><span>Finding ID</span><b>OPS-001</b></div>' +
-      '<div><span>Risk Level</span>' + demoBadge('High', 'danger') + '</div>' +
-      '<div><span>Regulation</span><b>NAMCAR OPS 1.1005(a)</b></div>' +
-      '<div><span>Original Due Date</span><b>20 May 2025</b></div>' +
-      '<div class="is-wide"><span>Finding Title</span><b>Inadequate Flight Duty Time Monitoring</b></div>' +
-      '<div><span>Finding Raised On</span><b>14 May 2025</b></div>' +
-      '<div class="is-full"><span>Finding Description</span><p>The operator did not consistently monitor and record cumulative flight duty time for flight crew members. Records for 3 out of 10 sampled pilots did not demonstrate compliance with regulatory limitations.</p></div>' +
+      '<div><span>Audit / Inspection</span><b>' + esc(finding.auditId) + '</b></div>' +
+      '<div><span>Department</span><b>' + esc(finding.department || audit.domain || 'Oversight') + '</b></div>' +
+      '<div><span>Finding ID</span><b>' + esc(finding.id) + '</b></div>' +
+      '<div><span>Severity</span>' + demoBadge(data.levelLabel || data.level, inspectorCapPackageLevelTone(data)) + '</div>' +
+      '<div><span>Regulatory reference</span><b>' + esc(finding.reference || 'Configured reference') + '</b></div>' +
+      '<div><span>Due Date</span><b>' + esc(fmtDate(finding.dueDate)) + '</b></div>' +
+      '<div class="is-wide"><span>Finding Title</span><b>' + esc(finding.title) + '</b></div>' +
+      '<div><span>Finding Raised On</span><b>' + esc(fmtDate(finding.issuedDate)) + '</b></div>' +
+      '<div class="is-full"><span>Finding Description</span><p>' + esc(finding.description || 'No description recorded.') + '</p></div>' +
     '</div>' +
   '</section>';
 }
 
 function leadCapSubmittedPlan(data) {
-  var files = [
-    ['PDF', 'FDT_Monitoring_Procedure_v2.0.pdf', '1.2 MB', 'danger'],
-    ['XLS', 'FDT_Training_Records_May2025.xlsx', '850 KB', 'ok'],
-    ['PDF', 'Internal_Audit_Report_May2025.pdf', '2.4 MB', 'danger']
-  ];
+  var finding = data.finding;
+  var cap = finding.cap || {};
+  var files = (cap.attachments || []).concat((finding.evidence || []).map(function (item) { return item.fileName; })).filter(Boolean);
   return '<section class="cap-detail-panel lead-cap-service-provider">' +
     '<h2>Corrective Action Plan (CAP) by Service Provider</h2>' +
-    '<h3>Corrective Action</h3><p>We have implemented an automated flight duty time monitoring system integrated with scheduling to ensure compliance. All affected pilots have been briefed and records updated.</p>' +
-    '<h3>Preventive Action</h3><p>Introduce monthly compliance monitoring and internal audits to ensure continued adherence. Recurrent training will be conducted every 6 months.</p>' +
+    '<h3>Root Cause</h3><p>' + esc(cap.rootCause || 'No root cause submitted.') + '</p>' +
+    '<h3>Corrective Action</h3><p>' + esc(cap.correctiveAction || 'No corrective action submitted.') + '</p>' +
+    '<h3>Preventive Action</h3><p>' + esc(cap.preventiveAction || 'No preventive action submitted.') + '</p>' +
     '<div class="lead-cap-meta-row">' +
-      '<div><span>Responsible Person</span><b>Operations Manager</b></div>' +
-      '<div><span>Target Completion Date</span><b>18 May 2025</b></div>' +
-      '<div><span>Actual Completion Date</span><b>17 May 2025</b></div>' +
-      '<div><span>CAP Submitted On</span><b>18 May 2025</b></div>' +
+      '<div><span>Responsible Person</span><b>' + esc(cap.responsible || finding.responsiblePerson || 'Not configured') + '</b></div>' +
+      '<div><span>Target Completion Date</span><b>' + esc(fmtDate(cap.targetDate || cap.dueDate)) + '</b></div>' +
+      '<div><span>CAP Status</span><b>' + esc(cap.status || 'Not submitted') + '</b></div>' +
+      '<div><span>CAP Submitted On</span><b>' + esc(fmtDate(cap.submittedDate)) + '</b></div>' +
     '</div>' +
-    '<h3>Evidence Submitted</h3><div class="lead-cap-evidence-grid">' + files.map(function (file) {
-      return '<button class="cap-detail-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="' + esc(file[1]) + '" title="' + esc(file[1]) + '">' +
-        '<span class="cap-detail-file__icon is-' + esc(file[3]) + '">' + esc(file[0]) + '</span><span><b>' + esc(file[1]) + '</b><small>' + esc(file[2]) + '</small></span>' +
+    '<h3>CAP attachments and Evidence</h3><div class="lead-cap-evidence-grid">' + (files.length ? files.map(function (fileName) {
+      return '<button class="cap-detail-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="' + esc(fileName) + '" title="' + esc(fileName) + '">' +
+        '<span class="cap-detail-file__icon is-info">FILE</span><span><b>' + esc(fileName) + '</b><small>Mock file name</small></span>' +
       '</button>';
-    }).join('') + '<button class="lead-cap-more-files" data-act="cap-track-quick-action" data-track-action="documents"><b>+2</b><small>More Files</small></button></div>' +
+    }).join('') : '<p class="muted">No Evidence file name has been submitted.</p>') + '</div>' +
   '</section>';
 }
 
 function leadCapInspectorAssessment(data) {
+  var finding = data.finding;
+  var audit = auditById(finding.auditId) || {};
   return '<section class="cap-detail-panel lead-cap-assessment">' +
     '<div class="cap-detail-panel-head"><h2>Inspector Assessment</h2><button class="cap-file-link" data-act="cap-unit-view-inspector-report" data-id="' + esc(data.id) + '">View Inspector Assessment →</button></div>' +
     '<div class="lead-cap-assessment-grid">' +
-      '<div><span>Inspector</span><b>Mary Adams</b></div>' +
-      '<div><span>Reviewed On</span><b>18 May 2025</b></div>' +
-      '<div><span>Overall Recommendation</span>' + demoBadge('Recommend Closure', 'ok') + '</div>' +
+      '<div><span>Inspector</span><b>' + esc(audit.lead || 'CAA Inspector') + '</b></div>' +
+      '<div><span>CAP status</span><b>' + esc((finding.cap && finding.cap.status) || 'Not submitted') + '</b></div>' +
+      '<div><span>Next action</span>' + demoBadge(nextActionLabel(finding), 'info') + '</div>' +
     '</div>' +
     '<p class="lead-review-muted mt-12">Inspector reviewed the CAP and evidence first. The package is now waiting for Lead Inspector decision.</p>' +
   '</section>';
@@ -4349,17 +4519,19 @@ function leadCapDecisionPanel(ui, data) {
 }
 
 function viewLeadInspectorCapReviewDetail(ui, data) {
+  var finding = data.finding;
   return '<div class="cap-detail-page lead-cap-review-page">' +
-    '<section class="workbench-command workbench-command--lead-cap cap-detail-head">' +
+    '<section class="workbench-command workbench-command--lead-cap cap-detail-head mobile-decision-summary">' +
       '<div class="workbench-command__main">' +
-        '<div class="cap-track-breadcrumb">Dashboard › Finding Closure › CAP Review › CAP-2025-045-001</div>' +
+        '<div class="cap-track-breadcrumb">Dashboard › Findings › CAP Review › ' + esc((finding.cap && finding.cap.id) || finding.id) + '</div>' +
         '<h1>CAP Review (Lead Inspector) ' + demoBadge('Waiting for Review', 'info') + '</h1>' +
         '<p class="lead-review-muted">Review the corrective action plan and inspector assessment, then make your decision.</p>' +
       '</div>' +
       '<div class="workbench-command__meta">' +
         commandMetric('Current owner', 'Lead Inspector', 'info') +
-        commandMetric('Decision needed', 'Recommend, return, or request evidence', 'warn') +
-        commandMetric('Due Date', '20 May 2025 · Due today', 'danger') +
+        commandMetric('Next action', 'Recommend, return, or request evidence', 'warn') +
+        commandMetric('Due Date', finding.dueDate ? fmtDate(finding.dueDate) : 'No Due Date', 'danger') +
+        commandMetric('Status', statusMeta(finding).label, 'info') +
       '</div>' +
       '<div class="cap-track-head-actions">' +
         '<button class="btn" data-act="cap-track-export">Export PDF</button>' +
@@ -4538,7 +4710,7 @@ function inspectorCapReviewPanel(ui, data) {
 }
 
 function isInspectorSubmittedCapPackage(data) {
-  return /^F-(014|GND|FUEL|SEC)-/.test(data && data.id ? data.id : '');
+  return !!(data && data.finding && data.finding.cap && data.finding.cap.status !== 'Not Submitted');
 }
 
 function inspectorCapPackageLevelTone(data) {
@@ -4548,23 +4720,28 @@ function inspectorCapPackageLevelTone(data) {
 }
 
 function inspectorCapPackageMeta(data) {
+  var finding = data.finding;
+  var audit = auditById(finding.auditId) || {};
+  var cap = finding.cap || {};
   return '<div class="inspector-package-meta">' +
-    '<div><span>Inspection ID</span><b>INS-2026-014</b></div>' +
-    '<div><span>Organization</span><b>SkyCargo Air</b></div>' +
-    '<div><span>Inspection Type</span><b>Routine (Announced)</b></div>' +
-    '<div><span>Inspection Dates</span><b>12 - 14 Jun 2026</b></div>' +
-    '<div><span>Report Version</span><b>2.0 (CAP Submitted)</b></div>' +
-    '<div><span>CAP Submitted On</span><b>27 Jun 2026 09:15</b><small>by SkyCargo Air</small></div>' +
+    '<div><span>Audit / Inspection</span><b>' + esc(finding.auditId) + '</b></div>' +
+    '<div><span>Organization</span><b>' + esc(orgName(finding.orgId)) + '</b></div>' +
+    '<div><span>Inspection Type</span><b>' + esc(audit.type || audit.ref || 'Configured inspection') + '</b></div>' +
+    '<div><span>Inspection Date</span><b>' + esc(fmtDate(audit.date)) + '</b></div>' +
+    '<div><span>CAP ID</span><b>' + esc(cap.id || 'Not submitted') + '</b></div>' +
+    '<div><span>CAP Submitted On</span><b>' + esc(fmtDate(cap.submittedDate)) + '</b><small>by ' + esc(orgName(finding.orgId)) + '</small></div>' +
   '</div>';
 }
 
-function inspectorCapPackageTabs(active) {
+function inspectorCapPackageTabs(active, data) {
+  var finding = data && data.finding ? data.finding : {};
+  var attachmentCount = ((finding.cap && finding.cap.attachments) || []).length + (finding.evidence || []).length;
   var tabs = [
     ['details', 'Finding Details'],
     ['cap', 'Service Provider CAP'],
     ['evaluation', 'Inspector Evaluation'],
     ['history', 'Comments & History'],
-    ['attachments', 'Attachments (2)']
+    ['attachments', 'Attachments (' + attachmentCount + ')']
   ];
   return '<div class="inspector-package-tabs">' + tabs.map(function (tab) {
     return '<button class="' + (active === tab[0] ? 'is-active' : '') + '" data-act="cap-detail-tab" data-tab="' + esc(tab[0]) + '">' + esc(tab[1]) + '</button>';
@@ -4572,6 +4749,7 @@ function inspectorCapPackageTabs(active) {
 }
 
 function inspectorCapPackageFindingCard(data) {
+  var finding = data.finding;
   return '<section class="inspector-package-card inspector-package-finding">' +
     '<h2>Finding Information</h2>' +
     '<div class="inspector-package-info-grid">' +
@@ -4582,72 +4760,65 @@ function inspectorCapPackageFindingCard(data) {
       '<div><span>Status</span>' + demoBadge('Pending Review', 'info') + '</div>' +
     '</div>' +
     '<h3>Finding Description</h3>' +
-    '<p>During the inspection, it was observed that access control procedures for restricted areas are not consistently enforced. Several individuals were able to enter restricted zones without proper identification or authorization.</p>' +
-    '<h3>Evidence</h3>' +
-    '<ul><li>Access doors were left open at the time of inspection.</li><li>Visitor logs were incomplete.</li></ul>' +
+    '<p>' + esc(finding.description || 'No Finding description recorded.') + '</p>' +
+    '<h3>Evidence</h3><p>' + esc(String((finding.evidence || []).length)) + ' Evidence version(s) recorded.</p>' +
     '<h3>Initial Recommendation</h3>' +
-    '<p>Ensure strict implementation of access control procedures and maintain complete visitor records.</p>' +
-    '<h3>Related Checklist</h3>' +
-    '<div class="inspector-package-table-wrap"><table class="inspector-package-table"><thead><tr><th>Checklist Section</th><th>Question</th><th>Your Finding</th><th>Status</th></tr></thead><tbody>' +
-      '<tr><td>Physical Security</td><td>Are access control procedures implemented for restricted areas?</td><td>' + demoBadge('Non-Compliant', 'danger') + '</td><td>' + demoBadge('CAP Required', 'warn') + '</td></tr>' +
-      '<tr><td>Physical Security</td><td>Are access points monitored and recorded?</td><td>' + demoBadge('Non-Compliant', 'danger') + '</td><td>' + demoBadge('CAP Required', 'warn') + '</td></tr>' +
-      '<tr><td>Physical Security</td><td>Are visitors properly identified and authorized?</td><td>' + demoBadge('Non-Compliant', 'danger') + '</td><td>' + demoBadge('CAP Required', 'warn') + '</td></tr>' +
-    '</tbody></table></div>' +
-    '<div class="inspector-package-due-note"><b>Level Due Date Guide</b><span>Level 1 (Critical) findings must be closed within 14 days.</span><em>Due Date: 30 Jun 2026 (14 days left)</em></div>' +
+    '<p>' + esc((finding.commentsToAuditee || [])[0] ? finding.commentsToAuditee[0].text : 'Continue the configured CAP and Evidence lifecycle.') + '</p>' +
+    '<div class="inspector-package-due-note"><b>Configured Finding basis</b><span>' + esc(finding.basis || finding.reference || 'Configured checklist result') + '</span><em>Due Date: ' + esc(fmtDate(finding.dueDate)) + '</em></div>' +
   '</section>';
 }
 
 function inspectorCapPackagePlanCard(data) {
+  var finding = data.finding;
+  var cap = finding.cap || {};
   return '<section class="inspector-package-card inspector-package-cap-plan">' +
     '<h2>Service Provider Corrective Action Plan (CAP)</h2>' +
     demoBadge('CAP Submitted', 'ok') +
     '<h3>Root Cause</h3>' +
-    '<p>Inadequate supervision of access points during peak hours and insufficient security personnel.</p>' +
+    '<p>' + esc(cap.rootCause || 'No root cause submitted.') + '</p>' +
     '<h3>Corrective Action</h3>' +
-    '<p>Additional security personnel have been assigned to all access points during peak hours. Access control procedures have been reinforced.</p>' +
+    '<p>' + esc(cap.correctiveAction || 'No corrective action submitted.') + '</p>' +
     '<h3>Preventive Action</h3>' +
-    '<p>Regular training will be provided to security staff. Periodic internal audits will be conducted to ensure compliance.</p>' +
+    '<p>' + esc(cap.preventiveAction || 'No preventive action submitted.') + '</p>' +
     '<dl class="inspector-package-cap-dl">' +
-      '<dt>CAP Submitted On</dt><dd>27 Jun 2026 09:15</dd>' +
-      '<dt>Submitted By</dt><dd>SkyCargo Air</dd>' +
-      '<dt>Target Completion Date</dt><dd>30 Jun 2026</dd>' +
-      '<dt>Attachments</dt><dd>2 files</dd>' +
+      '<dt>CAP Submitted On</dt><dd>' + esc(fmtDate(cap.submittedDate)) + '</dd>' +
+      '<dt>Submitted By</dt><dd>' + esc(orgName(finding.orgId)) + '</dd>' +
+      '<dt>Target Completion Date</dt><dd>' + esc(fmtDate(cap.targetDate || cap.dueDate)) + '</dd>' +
+      '<dt>Attachments</dt><dd>' + esc(String((cap.attachments || []).length)) + ' mock file name(s)</dd>' +
     '</dl>' +
     '<button class="btn btn--sm" data-act="cap-detail-tab" data-tab="attachments">View Attachments</button>' +
   '</section>';
 }
 
 function inspectorCapPackageSnapshot(data) {
+  var finding = data.finding;
+  var cap = finding.cap || {};
+  var attachments = (cap.attachments || []).concat((finding.evidence || []).map(function (item) { return item.fileName; })).filter(Boolean);
   return '<aside class="inspector-package-side">' +
     '<section class="inspector-package-card">' +
       '<h2>Finding Snapshot</h2>' +
       '<dl class="inspector-package-snapshot">' +
-        '<dt>Department</dt><dd>Security</dd>' +
-        '<dt>Checklist Section</dt><dd>Physical Security</dd>' +
-        '<dt>Question</dt><dd>Are access control procedures implemented for restricted areas?</dd>' +
-        '<dt>Your Finding</dt><dd>Non-Compliant</dd>' +
-        '<dt>Evidence Provided</dt><dd>Yes (2 files)</dd>' +
-        '<dt>CAP Required</dt><dd>Yes</dd>' +
-        '<dt>CAP Submitted On</dt><dd>27 Jun 2026 09:15</dd>' +
-        '<dt>Submitted By</dt><dd>SkyCargo Air</dd>' +
-        '<dt>Due Date</dt><dd class="is-danger">30 Jun 2026 (14 days left)</dd>' +
+        '<dt>Department</dt><dd>' + esc(finding.department || 'Oversight') + '</dd>' +
+        '<dt>Audit / Inspection</dt><dd>' + esc(finding.auditId) + '</dd>' +
+        '<dt>Finding basis</dt><dd>' + esc(finding.basis || finding.reference || 'Configured checklist result') + '</dd>' +
+        '<dt>Evidence Provided</dt><dd>' + esc(String((finding.evidence || []).length)) + ' version(s)</dd>' +
+        '<dt>CAP Required</dt><dd>' + esc(finding.capRequired ? 'Yes' : 'No') + '</dd>' +
+        '<dt>CAP Submitted On</dt><dd>' + esc(fmtDate(cap.submittedDate)) + '</dd>' +
+        '<dt>Submitted By</dt><dd>' + esc(orgName(finding.orgId)) + '</dd>' +
+        '<dt>Due Date</dt><dd class="is-danger">' + esc(fmtDate(finding.dueDate)) + '</dd>' +
       '</dl>' +
     '</section>' +
     '<section class="inspector-package-card">' +
-      '<h2>Attachments (2)</h2>' +
-      '<button class="inspector-package-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="CAP_AccessControl_F-014-01.pdf"><b>CAP_AccessControl_F-014-01.pdf</b><small>1.2 MB</small><span>↓</span></button>' +
-      '<button class="inspector-package-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="Evidence_Photos.zip"><b>Evidence_Photos.zip</b><small>14.7 MB</small><span>↓</span></button>' +
+      '<h2>Attachments (' + esc(String(attachments.length)) + ')</h2>' +
+      (attachments.length ? attachments.map(function (fileName) { return '<button class="inspector-package-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="' + esc(fileName) + '"><b>' + esc(fileName) + '</b><small>Mock file name</small><span>↓</span></button>'; }).join('') : '<p class="muted">No Evidence file name has been submitted.</p>') +
       '<button class="cap-file-link mt-12" data-act="cap-detail-tab" data-tab="attachments">View all attachments</button>' +
     '</section>' +
     '<section class="inspector-package-card">' +
       '<h2>Review Timeline</h2>' +
       '<div class="cap-review-mini-timeline">' +
-        '<div class="cap-review-mini-step is-done"><span>✓</span><p><b>CAP Submitted by Service Provider</b><small>27 Jun 2026 09:15</small></p></div>' +
+        '<div class="cap-review-mini-step is-done"><span>✓</span><p><b>CAP Submitted by Service Provider</b><small>' + esc(fmtDate(cap.submittedDate)) + '</small></p></div>' +
         '<div class="cap-review-mini-step is-current"><span>2</span><p><b>Inspector Review</b><small>In Progress</small></p></div>' +
-        '<div class="cap-review-mini-step is-waiting"><span>3</span><p><b>Lead Inspector Review</b><small>Pending</small></p></div>' +
-        '<div class="cap-review-mini-step is-waiting"><span>4</span><p><b>Department Manager Approval</b><small>Pending</small></p></div>' +
-        '<div class="cap-review-mini-step is-waiting"><span>5</span><p><b>General Manager Approval</b><small>Pending</small></p></div>' +
-        '<div class="cap-review-mini-step is-waiting"><span>6</span><p><b>ED Final Approval</b><small>Pending</small></p></div>' +
+        '<div class="cap-review-mini-step is-waiting"><span>3</span><p><b>' + esc(finding.evidenceRequired ? 'Evidence review' : 'Verification') + '</b><small>CAP acceptance does not close this Finding</small></p></div>' +
       '</div>' +
     '</section>' +
   '</aside>';
@@ -4689,20 +4860,19 @@ function viewInspectorSubmittedCapPackageDetail(ui, data) {
     '</div></section>';
   } else if (activeTab === 'attachments') {
     mainContent = '<section class="inspector-package-card"><h2>Attachments (2)</h2>' +
-      '<button class="inspector-package-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="CAP_AccessControl_F-014-01.pdf"><b>CAP_AccessControl_F-014-01.pdf</b><small>1.2 MB</small><span>↓</span></button>' +
-      '<button class="inspector-package-file" data-act="cap-review-evidence" data-id="' + esc(data.id) + '" data-file="Evidence_Photos.zip"><b>Evidence_Photos.zip</b><small>14.7 MB</small><span>↓</span></button>' +
+      inspectorCapPackageSnapshot(data).replace(/^<aside[^>]*>|<\/aside>$/g, '') +
     '</section>' + inspectorCapPackageEvaluation(ui, data);
   } else {
     mainContent = '<div class="inspector-package-top-grid">' + inspectorCapPackageFindingCard(data) + inspectorCapPackagePlanCard(data) + '</div>' + inspectorCapPackageEvaluation(ui, data);
   }
   return '<div class="inspector-package-page">' +
-    '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><span>INS-2026-014</span><span>›</span><span>CAP Review</span><span>›</span><b>' + esc(data.id) + '</b></div>' +
+    '<div class="cap-review-crumb"><span>Dashboard</span><span>›</span><span>My Assignments</span><span>›</span><span>' + esc(data.finding.auditId) + '</span><span>›</span><span>CAP Review</span><span>›</span><b>' + esc(data.id) + '</b></div>' +
     '<div class="inspector-package-head">' +
-      '<div><h1>CAP Review - ' + esc(data.title) + ' (' + esc(data.id) + ') ' + demoBadge(data.levelLabel || data.level, inspectorCapPackageLevelTone(data)) + demoBadge('Pending Review', 'info') + '</h1></div>' +
-      '<div class="cap-track-head-actions"><button class="btn" data-act="nav" data-view="findings" data-filter="capreview">← Back to List</button><button class="btn btn--primary" data-act="nav" data-view="cap-review-detail" data-id="' + esc(data.id) + '">View Final Report Progress</button></div>' +
+      '<div><h1>CAP Review - ' + esc(data.title) + ' (' + esc(data.id) + ') ' + demoBadge(data.levelLabel || data.level, inspectorCapPackageLevelTone(data)) + demoBadge(statusMeta(data.finding).label, data.finding.status === 'EVIDENCE_REQUIRED' ? 'warn' : 'info') + '</h1></div>' +
+      '<div class="cap-track-head-actions"><button class="btn" data-act="nav" data-view="findings" data-filter="capreview">← Back to List</button></div>' +
     '</div>' +
     inspectorCapPackageMeta(data) +
-    inspectorCapPackageTabs(activeTab) +
+    inspectorCapPackageTabs(activeTab, data) +
     '<div class="inspector-package-layout">' +
       '<main class="inspector-package-main">' + capVerificationResultHtml(data.capVerification, data.findingStatus) + mainContent + '</main>' +
       inspectorCapPackageSnapshot(data) +
@@ -4803,8 +4973,9 @@ function capDetailMainBody(ui, data) {
 
 function viewLeadCapReviewDetail() {
   var ui = capTrackingUiState();
-  var id = state.params.findingId || ui.selectedFindingId || 'F-2026-002';
+  var id = state.params.findingId || ui.selectedFindingId || 'CAB-2026-011';
   var data = capDetailData(id);
+  if (!data) return pageHead('Finding not found', '') + '<div class="empty">The selected canonical Finding is unavailable.</div>';
   var runtimeFinding = findingById(id);
   data.capVerification = runtimeFinding && runtimeFinding.capVerification ? runtimeFinding.capVerification : null;
   data.findingStatus = runtimeFinding ? runtimeFinding.status : data.status;
@@ -4863,8 +5034,8 @@ function capUnitProgress(ui) {
     capUnitStep('done', 'CAP Submitted', '28 Jun 2026', 2) +
     capUnitStep('done', 'Inspector Review', '05 Jul 2026', 3) +
     capUnitStep('done', 'Lead Inspector Recommendation', '05 Jul 2026', 4) +
-    capUnitStep(approved ? 'done' : 'active', 'Department Manager approves closure', approved ? ui.departmentManagerApprovedAt : 'In Progress', 5) +
-    capUnitStep(closed ? 'done' : 'waiting', 'Finding Closed', closed ? ui.findingClosedAt : 'Pending', 6) +
+    capUnitStep(approved ? 'done' : 'active', 'Department Manager records management review', approved ? ui.departmentManagerApprovedAt : 'In Progress', 5) +
+    capUnitStep(closed ? 'done' : 'waiting', 'Canonical closure verification', closed ? ui.findingClosedAt : 'Still required', 6) +
   '</div>';
 }
 
@@ -4917,7 +5088,7 @@ function capUnitRecommendationForm(ui, data) {
   var recommendation = legacyDecisionMap[ui.unitRecommendationType] || ui.unitRecommendationType || 'administrative_penalty';
   var selectedDecision = legacyDecisionMap[ui.unitRecommendationLevel] || ui.unitRecommendationLevel || recommendation;
   var closureDecisionOptions = [
-    { value: 'close_finding', label: 'Close Finding' },
+    { value: 'close_finding', label: 'Recommend Closure' },
     { value: 'more_information', label: 'Request More Information' },
     { value: 'additional_cap_required', label: 'Additional CAP Required' },
     { value: 'escalate_high_risk', label: 'Escalate High-Risk / Enforcement' }
@@ -4927,7 +5098,7 @@ function capUnitRecommendationForm(ui, data) {
   var levelOptions = capReviewSelectOptions(closureDecisionOptions, selectedDecision);
   return '<section class="cap-detail-panel cap-unit-evaluation">' +
     '<h2>Department Manager Approval</h2>' +
-    '<p class="muted">Based on the Inspector review and Lead Inspector recommendation, approve closure or request additional action.</p>' +
+    '<p class="muted">Record the management review without bypassing canonical Evidence or authorized closure requirements.</p>' +
     '<h3>CAP Effectiveness</h3>' +
     '<div class="cap-unit-radio-list">' +
       capUnitRadio('cap-unit-effectiveness', 'cap-unit-effectiveness', 'effective', effectiveness, 'Effective', 'CAP fully addresses the finding.') +
@@ -4937,7 +5108,7 @@ function capUnitRecommendationForm(ui, data) {
     '<h3>Closure / Verification Decision</h3>' +
     '<div class="cap-unit-choice-grid">' +
       '<div><h4>Decision</h4>' +
-        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'close_finding', recommendation, 'Close Finding', 'Evidence is sufficient for closure.') +
+        capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'close_finding', recommendation, 'Recommend Closure', 'Canonical Evidence verification or authorized closure is still required.') +
         capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'more_information', recommendation, 'Request More Information', 'Return to service provider for clarification.') +
         capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'additional_cap_required', recommendation, 'Additional CAP Required', 'Require additional corrective action before closure.') +
         capUnitRadio('cap-unit-recommendation-type', 'cap-unit-recommendation-type', 'escalate_high_risk', recommendation, 'Escalate High-Risk / Enforcement', 'Use the configured enforcement governance route if required.') +
@@ -4949,8 +5120,8 @@ function capUnitRecommendationForm(ui, data) {
       '<div class="form-row cap-unit-justification"><label>Decision Note</label><textarea data-field="cap-unit-justification" rows="5">' + esc(ui.unitJustification || '') + '</textarea></div>' +
       '<div class="form-row"><label>Attachments (Optional)</label><div class="cap-unit-file-row"><span>' + esc(ui.unitAttachmentName || 'No file chosen') + '</span><button class="btn btn--sm" data-act="cap-unit-choose-file" data-id="' + esc(data.id) + '">Choose File</button></div></div>' +
     '</div>' +
-    '<button class="btn btn--primary" data-act="cap-unit-submit-general-manager" data-id="' + esc(data.id) + '">Approve Closure Decision</button>' +
-    (ui.departmentManagerApprovedAt ? '<p class="cap-detail-note is-ok">Department Manager approved closure decision at ' + esc(ui.departmentManagerApprovedAt) + '.</p>' : '') +
+    '<button class="btn btn--primary" data-act="cap-unit-submit-general-manager" data-id="' + esc(data.id) + '">Record Management Review</button>' +
+    (ui.departmentManagerApprovedAt ? '<p class="cap-detail-note is-ok">Department Manager recorded management review at ' + esc(ui.departmentManagerApprovedAt) + '. The Finding remains governed by canonical closure rules.</p>' : '') +
   '</section>';
 }
 
@@ -4961,8 +5132,8 @@ function capUnitWorkflow(ui) {
     ['done', 'CAP Submitted', 'Completed', '28 Jun 2026'],
     ['done', 'Inspector Review', 'Completed', '05 Jul 2026'],
     ['done', 'Lead Inspector Recommendation', 'Completed', '05 Jul 2026'],
-    [approved ? 'done' : 'active', 'Department Manager approves closure', approved ? 'Approved' : 'In Progress', approved ? ui.departmentManagerApprovedAt : ''],
-    [closed ? 'done' : 'waiting', 'Finding Closed', closed ? 'Closed' : 'Pending', closed ? ui.findingClosedAt : '']
+    [approved ? 'done' : 'active', 'Department Manager management review', approved ? 'Recorded' : 'In Progress', approved ? ui.departmentManagerApprovedAt : ''],
+    [closed ? 'done' : 'waiting', 'Canonical closure verification', closed ? 'Completed' : 'Still required', closed ? ui.findingClosedAt : '']
   ];
   return '<section class="cap-detail-panel"><h2>Approval Workflow</h2><div class="cap-track-process">' +
     steps.map(function (step, index) {
@@ -5006,16 +5177,19 @@ function capUnitReminder(data) {
 
 function viewUnitManagerCapReview() {
   var ui = capTrackingUiState();
-  var id = state.params.findingId || ui.selectedFindingId || 'F-2026-002';
+  var id = state.params.findingId || ui.selectedFindingId || 'CAB-2026-012';
   var data = capDetailData(id);
+  if (!data) return pageHead('Finding not found', '') + '<div class="empty">The selected canonical Finding is unavailable.</div>';
   ui.selectedFindingId = data.id;
+  var finding = data.finding;
+  var audit = auditById(finding.auditId) || {};
   return '<div class="cap-detail-page cap-unit-page">' +
     '<div class="cap-detail-head">' +
       '<div>' +
-        '<div class="cap-track-breadcrumb">CAP Reviews › Finding: ' + esc(data.id) + ' › Department Manager Approval</div>' +
-        '<h1>Department Manager Approval - Finding ' + esc(data.id) + ' ' + capTrackLevelBadge(data.level) + '</h1>' +
+        '<div class="cap-track-breadcrumb">CAP Reviews › Finding: ' + esc(data.id) + ' › Department Manager Review</div>' +
+        '<h1>Department Manager Review - Finding ' + esc(data.id) + ' ' + capTrackLevelBadge(data.level) + '</h1>' +
         '<div class="cap-track-meta">' +
-          '<span>Inspection ID: <b>INS-2026-015</b></span><span>Organization: <b>SkyCargo Air</b></span><span>Inspection Type: <b>Routine Inspection</b></span><span>Final Report Issued: <b>22 Jun 2026</b></span>' +
+          '<span>Audit / Inspection: <b>' + esc(finding.auditId) + '</b></span><span>Organization: <b>' + esc(orgName(finding.orgId)) + '</b></span><span>Inspection Type: <b>' + esc(audit.type || audit.ref || 'Configured inspection') + '</b></span><span>Finding status: <b>' + esc(statusMeta(finding).label) + '</b></span>' +
         '</div>' +
       '</div>' +
       '<div class="cap-track-head-actions">' +
@@ -5406,6 +5580,11 @@ function viewInspectorAuditExecution(audit) {
       '<td class="inspection-row-menu"><button class="iconbtn iconbtn--small" data-act="inspection-row-menu" data-id="' + esc(row.id) + '" aria-label="Row details">&#8942;</button></td>' +
     '</tr>';
   }).join('');
+  var executionStatus = submitted ? 'Submitted' : (allSectionsComplete ? 'Ready to Submit' : 'In Progress');
+  var executionNextAction = submitted ? 'Waiting for Lead Inspector Review' : (allSectionsComplete ? 'Submit to Lead Inspector' : 'Complete checklist sections');
+  var executionPrimaryAction = submitted
+    ? '<button class="btn btn--primary" data-act="inspection-reopen-editing" data-id="' + esc(audit.id) + '">Reopen for Editing</button>'
+    : '<button class="btn btn--primary" data-act="inspection-submit-lead" data-id="' + esc(audit.id) + '">Submit to Lead Inspector</button>';
   return '<div class="inspection-exec">' +
     '<button class="inspection-back" data-act="nav" data-view="inspector-assignments">&larr; Back to Inspections</button>' +
     '<div class="inspection-exec__head"><div><h1>' + esc(pkg.title) + '</h1>' +
@@ -5419,6 +5598,7 @@ function viewInspectorAuditExecution(audit) {
           ? '<button class="btn btn--primary inspection-reopen-action" data-act="inspection-reopen-editing" data-id="' + esc(audit.id) + '"><span>&#8635;</span>Reopen for Editing</button>'
           : '<button class="btn btn--primary inspection-submit-action" data-act="inspection-submit-lead" data-id="' + esc(audit.id) + '"><span>&#10148;</span>Submit to Lead Inspector</button>') +
       '</div></div>' +
+    mobileDecisionSummaryHtml(inspectorUser ? inspectorUser.name : inspectorUserId, executionNextAction, 'Due Date', fmtDate(pkg.endDate), executionStatus, executionPrimaryAction, 'audit-detail') +
     '<div class="inspection-summary-card">' +
       '<div class="inspection-summary-item"><span class="inspection-summary-icon">&#128197;</span><div><span>Inspection ID</span><b>' + esc(pkg.inspectionId) + '</b></div></div>' +
       '<div class="inspection-summary-item"><span class="inspection-summary-icon">&#128197;</span><div><span>Start Date</span><b>' + esc(fmtDate(pkg.startDate)) + '</b></div></div>' +
@@ -5500,8 +5680,28 @@ function metaItem(k, v) {
 function viewChecklistRunner() {
   var a = auditById(state.params.auditId);
   if (!a) return pageHead('Audit not found', '') + '<div class="empty">This audit could not be found.</div>';
-  var tpl = state.checklist;
-  var answers = state.checklistAnswers;
+  var executionPackage = inspectionExecutionPackageForAudit(state, a.id);
+  if (!executionPackage) return pageHead('Checklist unavailable', '') + '<div class="empty">This Audit does not have a published demo checklist package.</div>';
+  var tpl = {
+    name: executionPackage.templateName,
+    version: executionPackage.templateVersion,
+    items: executionPackage.questions.map(function (question) {
+      return {
+        id: question.id,
+        text: question.text,
+        ref: question.reference,
+        evidence: question.expectedEvidence,
+        section: question.sectionLabel,
+        subSection: ''
+      };
+    })
+  };
+  var rawAnswers = executionPackage.workspace.answersByQuestionId;
+  var answers = {};
+  Object.keys(rawAnswers).forEach(function (questionId) {
+    var raw = rawAnswers[questionId] || {};
+    answers[questionId] = Object.assign({}, raw, { answer: raw.answer || raw.status || '' });
+  });
   var answered = Object.keys(answers).filter(function (q) { return answers[q] && answers[q].answer; }).length;
   var pct = Math.round((answered / tpl.items.length) * 100);
 
@@ -5584,6 +5784,7 @@ function viewChecklistRunner() {
       commandMetric('Next action', selected ? 'Confirm answer and notes' : 'Choose an answer', selected ? 'ok' : 'warn') +
       commandMetric('Finding path', activeFlagged ? 'Potential finding required' : 'No finding yet', activeFlagged ? 'danger' : 'neutral') +
     '</div>' +
+    '<div class="ai-assistance-entry"><div><b>AI draft assistance</b><span>AI-generated draft - requires authorized review. No real AI service is used.</span></div><button class="btn btn--sm" data-act="nav" data-view="ai-assistant" data-source-view="checklist" data-id="' + esc(a.id) + '" data-question-id="' + esc(activeItem.id) + '">Open assistant</button></div>' +
     '<div class="answers">' +
       aBtn('compliant', 'Compliant', 'sel-compliant') +
       aBtn('noncompliant', 'Non-Compliant', 'sel-noncompliant') +
@@ -5698,9 +5899,12 @@ function leadPotentialDecisionRowsHtml(potentials) {
       var canDecide = state.role === 'leadInspector' && pf.status === 'pending_lead_review';
       var decision = canDecide
         ? '<div class="divider"></div><div class="form-row"><label>Finding title</label><input id="pf-title-' + esc(pf.id) + '" type="text" value="PBE not serviceable or not accessible in cabin emergency equipment check"></div>' +
-          '<div class="form-row"><label>Lead severity <span class="req">*</span></label><select id="pf-severity-' + esc(pf.id) + '">' +
-            '<option value="">Select severity</option><option value="3">Level 3 Minor</option><option value="2">Level 2 Major</option><option value="1">Level 1 Critical</option><option value="0">Observation</option>' +
+          '<div class="form-row"><label>Lead severity <span class="req">*</span></label><select id="pf-severity-' + esc(pf.id) + '" data-field="potential-finding-severity" data-id="' + esc(pf.id) + '">' +
+            '<option value="">Select severity</option><option value="3">Level 3 Minor</option><option value="2">Level 2 Major</option><option value="1">Level 1 Critical</option><option value="4">Observation</option>' +
           '</select></div>' +
+          '<div class="form-2col"><label class="checkline"><input id="pf-cap-required-' + esc(pf.id) + '" type="checkbox" checked> CAP Required</label>' +
+            '<label class="checkline"><input id="pf-evidence-required-' + esc(pf.id) + '" type="checkbox" checked> Evidence Required</label></div>' +
+          '<div class="form-row"><label>Due Date</label><input id="pf-due-date-' + esc(pf.id) + '" type="date" value="2026-07-15"><span class="small muted">Observation defaults clear CAP, Evidence, and Due Date; the Lead Inspector may explicitly enable them.</span></div>' +
           '<div class="form-row"><label>Reason for return/dismissal</label><textarea id="pf-reason-' + esc(pf.id) + '" placeholder="Required only for Return or Dismiss."></textarea></div>' +
           '<div class="row-actions">' +
             '<button class="btn btn--primary" data-act="convert-potential" data-id="' + esc(pf.id) + '">Convert to Finding</button>' +
@@ -6415,7 +6619,7 @@ function leadAssignedAuditRows() {
 
 function leadPlanningPreparationTasksHtml() {
   var items = (state.planningItems || []).filter(function (item) {
-    return item && item.preparation && item.preparation.status === 'lead_inspector_assigned';
+    return item && item.preparation && item.preparation.status === 'lead_inspector_assigned' && planningItemAssignedToCurrentLead(state, item);
   });
   if (!items.length) return '';
   return '<section class="lead-preparation-tasks" aria-label="Post-release preparation tasks">' +
@@ -6423,7 +6627,7 @@ function leadPlanningPreparationTasksHtml() {
     items.map(function (item) {
       var org = orgById(item.organizationId);
       return '<article class="lead-preparation-task"><div><span>' + esc(item.id) + '</span><h3>' + esc(item.title) + '</h3><p>' + esc((org && org.name) || item.organizationId) + ' · ' + esc(item.department || item.domain || 'Department not set') + '</p></div>' +
-        '<button class="btn btn--primary" data-act="lead-planning-preparation-open" data-id="' + esc(item.id) + '">Open Preparation</button></article>';
+        '<button class="btn btn--primary" data-act="lead-planning-preparation-open" data-id="' + esc(item.id) + '">Continue plan preparation</button></article>';
     }).join('') +
   '</section>';
 }
@@ -6542,6 +6746,25 @@ function leadAssignedTableHtml(rows, filteredCount) {
       '<div class="lead-assigned-pager"><span>Rows per page: <b>10</b></span><button disabled>‹‹</button><button disabled>‹</button><button class="is-active">1</button><button>2</button><button>›</button><button>››</button></div>' +
     '</div>' +
   '</section>';
+}
+
+function leadAssignedMobileCardsHtml(rows) {
+  var visibleRows = rows.slice(0, 8);
+  var body = visibleRows.length ? visibleRows.map(function (row) {
+    return '<article class="responsive-record-card" data-mobile-record="' + esc(row.id) + '">' +
+      '<div class="responsive-record-card__identity"><small>Audit ID</small><b>' + esc(row.id) + '</b><small>' + esc(row.auditType) + '</small></div>' +
+      '<div class="responsive-record-card__facts">' +
+        '<span><small>Organization</small><b>' + esc(row.operator) + '</b></span>' +
+        '<span><small>Department</small><b>' + esc(row.department) + '</b></span>' +
+        '<span><small>Risk Level</small><b>' + esc(row.risk) + '</b></span>' +
+        '<span><small>Current Status</small><b>' + esc(row.status) + '</b></span>' +
+        '<span><small>Progress</small><b>' + esc(String(row.progress)) + '%</b></span>' +
+        '<span><small>Due Date</small><b>' + esc(row.dueDate) + '</b></span>' +
+      '</div>' +
+      '<div class="responsive-record-card__actions"><button class="btn btn--primary" data-act="nav" data-view="lead-assignment" data-id="' + esc(row.detailAuditId) + '">Open audit</button></div>' +
+    '</article>';
+  }).join('') : '<div class="empty">No assigned audits match the current filters.</div>';
+  return '<div class="responsive-record-list lead-assigned-mobile-list">' + body + '</div>';
 }
 
 function leadAssignmentAuditId() {
@@ -6866,6 +7089,26 @@ function leadAssignmentQuestionRowsHtml(ui) {
   }).join('');
 }
 
+function leadAssignmentQuestionMobileCardsHtml(rows, ui) {
+  var body = rows.length ? rows.map(function (row) {
+    var selected = !!ui.selectedQuestionIds[row.id];
+    var assignedRecord = ui.assignmentsByQuestionId[row.id] || null;
+    var assignedTo = assignedRecord ? leadAssignmentInspectorName(assignedRecord.inspectorUserId) : 'Unassigned';
+    return '<article class="responsive-record-card' + (selected ? ' is-selected' : '') + '" data-mobile-record="' + esc(row.id) + '">' +
+      '<div class="responsive-record-card__identity">' +
+        '<label><input type="checkbox" data-field="lead-assignment-question" data-id="' + esc(row.id) + '"' + (selected ? ' checked' : '') + ' aria-label="Select question ' + esc(String(row.no)) + '"> <small>Question ' + esc(String(row.no)) + ' · ' + esc(row.id) + '</small></label>' +
+        '<b>' + esc(row.text) + '</b>' +
+      '</div>' +
+      '<div class="responsive-record-card__facts">' +
+        '<span><small>Section</small><b>' + esc(row.section) + '</b></span>' +
+        '<span><small>Risk Level</small><b>' + esc(row.risk) + '</b></span>' +
+        '<span><small>Assigned Inspector</small><b>' + esc(assignedTo) + '</b></span>' +
+      '</div>' +
+    '</article>';
+  }).join('') : '<div class="empty">No checklist questions match the current filters.</div>';
+  return '<div class="responsive-record-list lead-assignment-question-mobile-list">' + body + '</div>';
+}
+
 function viewLeadAssignmentQuestions() {
   var ui = leadAssignmentUiState();
   var auditId = (state.params && state.params.auditId) || 'AUD-2026-001';
@@ -6949,6 +7192,7 @@ function viewLeadAssignmentQuestions() {
         '</div>' +
         '<div class="lead-assignment-table-wrap responsive-table-shell"><table class="lead-assignment-table assignment-question-table"><thead><tr><th><input type="checkbox" data-field="lead-assignment-select-visible" aria-label="Select visible questions"></th><th>No.</th><th>Checklist Item</th><th>Risk Level</th><th>Assigned To</th></tr></thead><tbody>' + leadAssignmentQuestionRowsHtml(ui) + '</tbody></table></div>' +
       '</section>' +
+      leadAssignmentQuestionMobileCardsHtml(leadAssignmentFilteredQuestions(ui), ui) +
       '<aside class="lead-assignment-side">' +
         '<div class="lead-assignment-side-head"><h2>' + esc(inspectorMode ? 'Selected Questions' : 'Assign Selected') + ' (' + esc(String(selectedCount)) + ')</h2><button data-act="lead-assignment-clear-selection" aria-label="Clear selected questions">×</button></div>' +
         '<label><span>Assign To</span><select data-field="lead-assignment-assignee">' + inspectorOptions + '</select></label>' +
@@ -6989,6 +7233,7 @@ function viewLeadAssignedAudits() {
     potentialPanel +
     leadAssignedFiltersHtml(ui) +
     leadAssignedTableHtml(rows, rows.length) +
+    leadAssignedMobileCardsHtml(rows) +
     '<div class="lead-assigned-legend"><span><b class="is-high"></b>High Risk</span><span><b class="is-medium"></b>Medium Risk</span><span><b class="is-low"></b>Low Risk</span></div>' +
   '</div>';
 }
@@ -7275,8 +7520,8 @@ function leadPreliminaryTableHtml(rows, totalCount) {
       '<td><button class="btn btn--sm" data-act="preliminary-report-actions" data-id="' + esc(row.id) + '">' + esc(row.completePackage ? 'Continue Existing Report' : 'View History') + '</button></td>' +
     '</tr>';
   }).join('') : '<tr><td colspan="8"><div class="empty">No preliminary reports match the current filters.</div></td></tr>';
-  return '<section class="prelim-report-table-panel">' +
-    '<div class="prelim-report-table-wrap"><table class="prelim-report-table"><thead><tr>' +
+  return '<section class="prelim-report-table-panel lead-preliminary-table-panel">' +
+    '<div class="prelim-report-table-wrap lead-preliminary-table-wrap"><table class="prelim-report-table"><thead><tr>' +
       '<th>Report ID</th><th>Inspection</th><th>Organization</th><th>Inspection Dates</th><th>Status</th><th>Findings</th><th>Last Updated</th><th>Actions</th>' +
     '</tr></thead><tbody>' + body + '</tbody></table></div>' +
     '<div class="prelim-report-table-foot">' +
@@ -7284,6 +7529,26 @@ function leadPreliminaryTableHtml(rows, totalCount) {
       '<div class="prelim-report-pager"><button disabled>‹</button><button class="is-active">1</button><button disabled>›</button></div>' +
     '</div>' +
   '</section>';
+}
+
+function leadPreliminaryMobileCardsHtml(rows) {
+  var visibleRows = rows.slice(0, 8);
+  var body = visibleRows.length ? visibleRows.map(function (row) {
+    var status = leadPreliminaryStatusMeta(row.status);
+    return '<article class="responsive-record-card" data-mobile-record="' + esc(row.id) + '">' +
+      '<div class="responsive-record-card__identity"><small>Report ID</small><button class="prelim-report-link" data-act="preliminary-report-open" data-id="' + esc(row.id) + '">' + esc(row.id) + '</button><small>' + esc(row.inspection) + '</small></div>' +
+      '<div class="responsive-record-card__facts">' +
+        '<span><small>Organization</small><b>' + esc(row.organization) + '</b></span>' +
+        '<span><small>Inspection Dates</small><b>' + esc(row.dates) + '</b></span>' +
+        '<span><small>Status</small><b>' + esc(status.label) + '</b></span>' +
+        '<span><small>Current owner</small><b>' + esc(row.owner) + '</b></span>' +
+        '<span><small>Findings</small><b>' + esc(String(row.findings.critical + row.findings.major + row.findings.observation)) + '</b></span>' +
+        '<span><small>Last Updated</small><b>' + esc(row.updated) + '</b></span>' +
+      '</div>' +
+      '<div class="responsive-record-card__actions"><button class="btn btn--primary" data-act="preliminary-report-actions" data-id="' + esc(row.id) + '">' + esc(row.completePackage ? 'Continue Existing Report' : 'View History') + '</button></div>' +
+    '</article>';
+  }).join('') : '<div class="empty">No preliminary reports match the current filters.</div>';
+  return '<div class="responsive-record-list lead-preliminary-mobile-list">' + body + '</div>';
 }
 
 function viewLeadPreliminaryReports() {
@@ -7297,6 +7562,7 @@ function viewLeadPreliminaryReports() {
     leadPreliminaryMetricsHtml(allRows) +
     leadPreliminaryFiltersHtml(ui) +
     leadPreliminaryTableHtml(rows, rows.length) +
+    leadPreliminaryMobileCardsHtml(rows) +
   '</div>';
 }
 
@@ -7377,7 +7643,7 @@ function leadPreliminaryWorkflowHeader(row, ui) {
   var meta = leadPreliminaryWorkflowStepMeta(step);
   var statusText = ui.submittedAt ? 'Pending Department Manager Review' : row.statusLabel;
   var nextAction = step === 'review'
-    ? '<button class="btn btn--primary" data-act="preliminary-report-submit"' + (ui.submittedAt ? ' disabled' : '') + '>' + esc(ui.submittedAt ? 'Submitted to Department Manager' : meta.next) + ' →</button>'
+    ? leadPreliminarySubmissionAction(ui, meta.next)
     : '<button class="btn btn--primary" data-act="preliminary-report-next">' + esc(meta.next) + ' →</button>';
   return '<div class="prelim-workflow-head">' +
     '<div class="prelim-workflow-crumb"><button data-act="nav" data-view="audit-reports" data-filter="preliminary">⌂</button><span>Preliminary Reports</span><span>›</span><span>' + esc(row.id) + '</span><span>›</span><b>' + esc(meta.label) + '</b></div>' +
@@ -7394,6 +7660,45 @@ function leadPreliminaryWorkflowHeader(row, ui) {
       leadPreliminaryMetaItem('Status', statusText) +
     '</div>' +
   '</div>';
+}
+
+function leadPreliminarySubmissionAction(ui, readyLabel) {
+  if (ui.submittedAt) {
+    return '<button class="btn btn--primary" data-act="preliminary-report-status" aria-label="View submission status: Submitted to Department Manager">Submitted to Department Manager · View Status →</button>';
+  }
+  return '<button class="btn btn--primary" data-act="preliminary-report-submit">' + esc(readyLabel || 'Submit to Department Manager') + ' →</button>';
+}
+
+function leadPreliminarySubmissionStatusLabel(status) {
+  var labels = {
+    pending_manager: 'Pending Department Manager Review',
+    submitted_to_gm: 'Pending General Manager Review',
+    submitted_to_executive: 'Pending Executive Director Review',
+    released_to_service_provider: 'Released to Service Provider',
+    revision_requested: 'Revision Requested',
+    returned_to_lead: 'Returned to Lead Inspector',
+    issued: 'Issued'
+  };
+  return labels[status] || humanStatus(status || 'pending_manager');
+}
+
+function modalLeadPreliminarySubmissionStatus(row, ui) {
+  var artifact = row && row.artifact ? row.artifact : null;
+  var status = artifact ? artifact.status : 'pending_manager';
+  var ownerRole = artifact && artifact.ownerRole ? artifact.ownerRole : 'manager';
+  var owner = managerReportOwnerLabel(ownerRole, row ? row.organization : '');
+  var body = '<div class="prelim-submission-status">' +
+    '<p class="modal__intro"><b>' + esc(row ? row.id : 'Preliminary Report') + '</b> has already been submitted. The original submission is preserved; opening this status does not submit a duplicate.</p>' +
+    '<dl>' +
+      '<div><dt>Status</dt><dd>' + esc(leadPreliminarySubmissionStatusLabel(status)) + '</dd></div>' +
+      '<div><dt>Current owner</dt><dd>' + esc(owner) + '</dd></div>' +
+      '<div><dt>Submitted</dt><dd>' + esc(ui && ui.submittedAt ? ui.submittedAt : (artifact && artifact.submittedAt ? artifact.submittedAt : 'Not recorded')) + '</dd></div>' +
+      '<div><dt>Next action</dt><dd>' + esc(status === 'pending_manager' ? 'Department Manager review and decision' : 'Continue the configured approval chain') + '</dd></div>' +
+    '</dl>' +
+    '<p class="small muted">Preliminary Reports follow Department Manager → General Manager → Executive Director review before Service Provider release.</p>' +
+  '</div>';
+  return modalShell('Preliminary Report Submission Status', body,
+    '<button class="btn" data-act="close-modal">Close</button><button class="btn btn--primary" data-act="nav" data-view="audit-reports" data-filter="preliminary">Back to Preliminary Reports</button>', false);
 }
 
 function leadPreliminaryWorkflowBadge(label, tone) {
@@ -7596,7 +7901,7 @@ function leadPreliminaryWorkflowBottom(ui) {
   var step = ui.step || 'inspection';
   var backLabel = step === 'inspection' ? 'Back: Preliminary Reports' : 'Back: ' + leadPreliminaryWorkflowStepMeta(preliminaryReportPreviousStep(step)).label;
   var primary = step === 'review'
-    ? '<button class="btn btn--primary" data-act="preliminary-report-submit"' + (ui.submittedAt ? ' disabled' : '') + '>' + esc(ui.submittedAt ? 'Submitted to Department Manager' : 'Submit to Department Manager') + ' →</button>'
+    ? leadPreliminarySubmissionAction(ui, 'Submit to Department Manager')
     : '<button class="btn btn--primary" data-act="preliminary-report-next">' + esc(leadPreliminaryWorkflowStepMeta(step).next) + ' →</button>';
   return '<div class="prelim-workflow-bottom"><button class="btn" data-act="preliminary-report-back">← ' + esc(backLabel) + '</button><div><button class="btn" data-act="preliminary-report-save">Save Draft</button>' + primary + '</div></div>';
 }
@@ -8679,6 +8984,24 @@ function viewAuditReportsApproval() {
 }
 
 /* =========================== Finding Detail =========================== */
+function reminderHistoryHtml(finding, sessionRole, organizationId) {
+  if (!finding) return '<div class="reminder-history"><p class="muted small">No Finding selected.</p></div>';
+  ensureDeterministicReminderEvents(state, DEMO_TODAY);
+  var events = reminderEventsForFinding(state, finding.id, sessionRole, organizationId);
+  if (!events.length) {
+    return '<div class="reminder-history"><p class="muted small">No reminder stage has been recorded for this Finding.</p>' +
+      '<p class="reminder-history__boundary">' + esc(REMINDER_EVENT_BOUNDARY) + '</p></div>';
+  }
+  return '<div class="reminder-history">' + events.map(function (event) {
+    return '<article class="reminder-history__event" data-reminder-stage="' + esc(event.stage) + '">' +
+      '<b>' + esc(reminderEventLabel(event.stage)) + '</b>' +
+      '<span>Recipient: ' + esc(roleName(event.recipientRole)) + ' · Date: ' + esc(fmtDate(event.createdDate)) + '</span>' +
+      '<span>Status: ' + esc(event.deliveryStatus) + ' · Channel: ' + esc(event.channel) + '</span>' +
+      '<small>' + esc(event.boundary || REMINDER_EVENT_BOUNDARY) + '</small>' +
+    '</article>';
+  }).join('') + '</div>';
+}
+
 function viewFinding() {
   var f = findingById(state.params.findingId);
   if (!f) return pageHead('Finding not found', '') + '<div class="empty">This finding could not be found.</div>';
@@ -8772,10 +9095,18 @@ function viewFinding() {
       'Not visible to the auditee');
   }
 
+  var aiFindingEntry = state.role === 'inspector'
+    ? '<div class="ai-assistance-entry"><div><b>AI draft assistance</b><span>Source-referenced demo draft only; authorized Inspector review remains required.</span></div><button class="btn btn--sm" data-act="nav" data-view="ai-assistant" data-source-view="finding" data-id="' + esc(f.id) + '">Open assistant</button></div>'
+    : '';
+  var findingPrimary = primaryActionFor(f);
+  var findingDecisionSummary = mobileDecisionSummaryHtml(ownerLabel(f), nextActionLabel(f), 'Due Date', dueDisplay, statusMeta(f).label,
+    '<button class="' + esc(findingPrimary.cls) + '" data-act="' + esc(findingPrimary.action) + '" data-id="' + esc(f.id) + '">' + esc(findingPrimary.label) + '</button>', 'finding-detail');
+
   return '' +
     pageHead('Finding ' + f.id, esc(f.title),
       '<button class="btn" data-act="nav" data-view="' + (isAuditee ? 'my-findings' : 'findings') + '">Back to findings</button>') +
     nextActionBar(f) +
+    findingDecisionSummary +
     authClose +
     '<div class="lifecycle-strip">' + lifecycleStepper(f) +
       '<div class="lifecycle-strip__note">CAP accepted is not closure - a finding closes only after evidence is accepted, verification is completed, or an authorized closure is recorded.</div>' +
@@ -8799,13 +9130,14 @@ function viewFinding() {
           '<div class="metaline__k">Description</div><div class="mt-12">' + esc(f.description) + '</div>' +
           '<div class="metaline__k mt-16">Finding basis / regulatory reference</div>' +
           '<div class="mt-12 small muted">' + esc(f.reference) + ' · ' + esc(f.basis) + '</div>' +
-          regulatoryTraceHtml(regulatoryTraceForFinding(f), true)) +
+          regulatoryTraceHtml(regulatoryTraceForFinding(f), true) + aiFindingEntry) +
         dossierPanel('Corrective Action Plan (CAP)', capHtml + capActions, 'CAP acceptance does not close the finding') +
         dossierPanel('Evidence', evHtml + evidenceActions, 'Version history is preserved') +
         internalPanel +
       '</div>' +
       '<div class="dossier-stack">' +
         dossierPanel('Comments to Auditee', commentsHtml) +
+        dossierPanel('Reminder & Escalation History', reminderHistoryHtml(f, state.role, isAuditee ? state.auditeeOrganizationId : '')) +
         dossierPanel('Audit Trail', logHtml) +
       '</div>' +
     '</div>';
@@ -8907,6 +9239,31 @@ function managerFindingsInspectionTable(rows, selectedAuditId) {
     '</tr></thead><tbody>' + managerFindingsInspectionRows(rows, selectedAuditId) + '</tbody></table></div>';
 }
 
+function managerFindingsMobileCards(rows, selectedAuditId) {
+  var body = rows.length ? rows.map(function (row) {
+    var selected = row.auditId === selectedAuditId;
+    var severity = [
+      row.counts.critical + ' Critical',
+      row.counts.major + ' Major',
+      row.counts.minor + ' Minor',
+      row.counts.observations + ' Observation'
+    ].join(' · ');
+    return '<article class="responsive-record-card' + (selected ? ' is-selected' : '') + '" data-mobile-record="' + esc(row.auditId) + '">' +
+      '<div class="responsive-record-card__identity"><small>Audit ID</small><b>' + esc(row.auditId) + '</b><small>' + esc(row.type) + '</small></div>' +
+      '<div class="responsive-record-card__facts">' +
+        '<span><small>Organization</small><b>' + esc(row.organization) + '</b></span>' +
+        '<span><small>Department</small><b>' + esc(row.department) + '</b></span>' +
+        '<span><small>Audit Date</small><b>' + esc(fmtDate(row.auditDate)) + '</b></span>' +
+        '<span><small>Team Leader</small><b>' + esc(row.teamLeader) + '</b></span>' +
+        '<span><small>Status</small><b>' + esc(row.status) + '</b></span>' +
+        '<span><small>Findings</small><b>' + esc(String(row.counts.total)) + '</b><small>' + esc(severity) + '</small></span>' +
+      '</div>' +
+      '<div class="responsive-record-card__actions"><button class="btn' + (selected ? ' btn--primary' : '') + '" data-act="manager-findings-select" data-id="' + esc(row.auditId) + '">' + (selected ? 'Selected' : 'Review findings') + '</button></div>' +
+    '</article>';
+  }).join('') : '<div class="empty">No inspections match these filters.</div>';
+  return '<div class="responsive-record-list manager-findings-mobile-list">' + body + '</div>';
+}
+
 function managerFindingsFocusFinding(findings) {
   return (findings || []).slice().sort(function (left, right) {
     var leftClosed = left.status === 'CLOSED' ? 1 : 0;
@@ -8985,6 +9342,7 @@ function managerFindingsFocusStrip(row) {
     '<div><span>Severity</span>' + severityHtml(finding) + '</div>' +
     '<div><span>Related Audit</span><b>' + esc(finding.auditId || '—') + '</b></div>' +
     '<div><span>Organization</span><b>' + esc(row.organization) + '</b></div>' +
+    '<div class="manager-findings-focus__reminders"><span>Reminder / escalation</span>' + reminderHistoryHtml(finding, 'manager', finding.orgId) + '</div>' +
     '<button class="btn btn--primary btn--sm" data-act="manager-findings-open-finding" data-id="' + esc(finding.id) + '">Open Finding</button>' +
   '</section>';
 }
@@ -9077,7 +9435,7 @@ function viewManagerFindingsReview() {
   if (selected && selected.auditId !== ui.selectedAuditId) ui.selectedAuditId = selected.auditId;
   var left = '<section class="manager-findings-inspections">' +
     '<div class="manager-workbench-panel-head"><div><span>Inspection register</span><h2>Inspections with Findings</h2></div><button class="btn" data-act="manager-findings-export">Export List</button></div>' +
-    managerFindingsFilters(ui) + managerFindingsKpis(rows) + managerFindingsInspectionTable(rows, selected ? selected.auditId : '') +
+    managerFindingsFilters(ui) + managerFindingsKpis(rows) + managerFindingsInspectionTable(rows, selected ? selected.auditId : '') + managerFindingsMobileCards(rows, selected ? selected.auditId : '') +
   '</section>';
   var right = selected
     ? managerFindingsDossier(selected, ui.tab)
@@ -9192,6 +9550,28 @@ function managerTeamTable(rows, selectedAuditId, openMenuAuditId) {
   return '<div class="manager-team-table"><table><thead><tr><th>Audit</th><th>Organization</th><th>Schedule</th><th>Lead Inspector</th><th>Team</th><th>Status</th><th>Actions</th></tr></thead><tbody>' + body + '</tbody></table></div>';
 }
 
+function managerTeamMobileCards(rows, selectedAuditId, openMenuAuditId) {
+  var body = rows.length ? rows.map(function (row) {
+    var selected = row.auditId === selectedAuditId;
+    return '<article class="responsive-record-card' + (selected ? ' is-selected' : '') + '" data-mobile-record="' + esc(row.auditId) + '">' +
+      '<div class="responsive-record-card__identity"><small>Audit ID</small><b>' + esc(row.auditId) + '</b><small>' + esc(row.auditType) + '</small></div>' +
+      '<div class="responsive-record-card__facts">' +
+        '<span><small>Organization</small><b>' + esc(row.organization) + '</b></span>' +
+        '<span><small>Department</small><b>' + esc(row.department) + '</b></span>' +
+        '<span><small>Schedule</small><b>' + esc(fmtDate(row.startDate)) + ' – ' + esc(fmtDate(row.endDate)) + '</b></span>' +
+        '<span><small>Lead Inspector</small><b>' + esc(row.lead.name) + '</b></span>' +
+        '<span><small>Team Members</small><b>' + esc(String(row.memberCount)) + '</b></span>' +
+        '<span><small>Current Status</small><b>' + esc(row.status) + '</b></span>' +
+      '</div>' +
+      '<div class="responsive-record-card__actions">' +
+        '<button class="btn' + (selected ? ' btn--primary' : '') + '" data-act="manager-team-select" data-id="' + esc(row.auditId) + '">' + (selected ? 'Selected' : 'View team') + '</button>' +
+        managerTeamActionMenu(row, openMenuAuditId === row.auditId) +
+      '</div>' +
+    '</article>';
+  }).join('') : '<div class="empty">No inspection teams match these filters.</div>';
+  return '<div class="responsive-record-list manager-team-mobile-list">' + body + '</div>';
+}
+
 function managerTeamTabs(active) {
   var tabs = [
     ['overview', 'Overview'],
@@ -9220,6 +9600,28 @@ function managerTeamMemberTable(row, allowActions) {
   }).join('') + '</tbody></table></div>';
 }
 
+function managerTeamMemberMobileCards(row, allowActions) {
+  if (!row.members.length) return '<div class="responsive-record-list manager-team-member-mobile-list"><div class="empty">No manager-scoped inspectors are assigned.</div></div>';
+  return '<div class="responsive-record-list manager-team-member-mobile-list">' + row.members.map(function (member) {
+    var isLead = member.id === row.team.leadUserId;
+    var actions = '';
+    if (allowActions && !isLead) {
+      actions = '<div class="responsive-record-card__actions">' +
+        '<button class="btn btn--sm" data-act="manager-team-member-lead" data-id="' + esc(row.auditId) + '" data-user="' + esc(member.id) + '">Make Lead</button>' +
+        '<button class="btn btn--sm" data-act="manager-team-member-remove" data-id="' + esc(row.auditId) + '" data-user="' + esc(member.id) + '">Remove</button>' +
+      '</div>';
+    }
+    return '<article class="responsive-record-card" data-mobile-record="' + esc(member.id) + '">' +
+      '<div class="responsive-record-card__identity"><small>' + esc(isLead ? 'Lead Inspector' : member.role) + '</small><b>' + esc(member.name) + '</b></div>' +
+      '<div class="responsive-record-card__facts">' +
+        '<span><small>Department</small><b>' + esc(member.department) + '</b></span>' +
+        '<span><small>Email</small><b><a href="mailto:' + esc(member.email) + '">' + esc(member.email) + '</a></b></span>' +
+        '<span><small>Status</small><b>' + esc(member.status || 'Active') + '</b></span>' +
+      '</div>' + actions +
+    '</article>';
+  }).join('') + '</div>';
+}
+
 function managerTeamOverview(row) {
   return '<div class="manager-team-tab-panel" role="tabpanel">' +
     '<div class="manager-team-overview-cards">' +
@@ -9230,12 +9632,13 @@ function managerTeamOverview(row) {
     '</div>' +
     '<div class="manager-team-section-head"><div><h3>Inspection Team</h3><p>Only inspectors in this Department Manager reporting line are shown.</p></div><button class="btn btn--sm" data-act="manager-team-add" data-id="' + esc(row.auditId) + '">Add Inspector</button></div>' +
     managerTeamMemberTable(row, false) +
+    managerTeamMemberMobileCards(row, false) +
     '<div class="manager-team-notes"><label for="manager-team-notes">Team notes</label><textarea id="manager-team-notes" placeholder="Add a browser-local team note.">' + esc(row.notes) + '</textarea><div><span>Demo-only note visible in this workspace.</span><button class="btn btn--primary btn--sm" data-act="manager-team-save-notes" data-id="' + esc(row.auditId) + '">Save Notes</button></div></div>' +
   '</div>';
 }
 
 function managerTeamMembers(row) {
-  return '<div class="manager-team-tab-panel" role="tabpanel"><div class="manager-team-section-head"><div><h3>Team Members</h3><p>Manage membership and Lead Inspector assignment within the allowed reporting line.</p></div><button class="btn btn--primary btn--sm" data-act="manager-team-add" data-id="' + esc(row.auditId) + '">Add Inspector</button></div>' + managerTeamMemberTable(row, true) + '</div>';
+  return '<div class="manager-team-tab-panel" role="tabpanel"><div class="manager-team-section-head"><div><h3>Team Members</h3><p>Manage membership and Lead Inspector assignment within the allowed reporting line.</p></div><button class="btn btn--primary btn--sm" data-act="manager-team-add" data-id="' + esc(row.auditId) + '">Add Inspector</button></div>' + managerTeamMemberTable(row, true) + managerTeamMemberMobileCards(row, true) + '</div>';
 }
 
 function managerTeamAssignments(row) {
@@ -9280,7 +9683,7 @@ function viewInspectionTeam() {
   var rows = managerTeamRows(state, ui);
   var selected = rows.filter(function (row) { return row.auditId === ui.selectedAuditId; })[0] || rows[0] || null;
   if (selected && selected.auditId !== ui.selectedAuditId) ui.selectedAuditId = selected.auditId;
-  var left = '<section class="manager-team-list"><div class="manager-workbench-panel-head"><div><span>Department workspace</span><h2>Inspection Teams</h2></div><button class="btn btn--primary btn--sm" data-act="manager-team-add" data-id="' + esc(selected ? selected.auditId : '') + '"' + (selected ? '' : ' disabled') + '>Add Inspector</button></div>' + managerTeamFilters(ui, allRows) + managerTeamMetrics(rows) + managerTeamTable(rows, selected ? selected.auditId : '', ui.openMenuAuditId) + '</section>';
+  var left = '<section class="manager-team-list"><div class="manager-workbench-panel-head"><div><span>Department workspace</span><h2>Inspection Teams</h2></div><button class="btn btn--primary btn--sm" data-act="manager-team-add" data-id="' + esc(selected ? selected.auditId : '') + '"' + (selected ? '' : ' disabled') + '>Add Inspector</button></div>' + managerTeamFilters(ui, allRows) + managerTeamMetrics(rows) + managerTeamTable(rows, selected ? selected.auditId : '', ui.openMenuAuditId) + managerTeamMobileCards(rows, selected ? selected.auditId : '', ui.openMenuAuditId) + '</section>';
   var right = selected ? managerTeamDossier(selected, ui.tab) : '<section class="manager-team-dossier manager-team-dossier--empty"><div class="empty">Select an inspection team to review its assignment.</div></section>';
   return pageHead('Inspection Team', 'Review manager-scoped inspectors, active teams, schedules, assignments, and team actions.') + '<div class="manager-workbench manager-team-workbench">' + left + right + '</div>';
 }
@@ -9504,21 +9907,23 @@ function managerReportDecisionPanel(report, ui) {
   if (report.status !== 'pending_manager') {
     return '<div class="manager-report-decision manager-report-decision--complete"><div><b>Manager stage completed</b><span>' + esc(managerReportStatusLabel(report.status)) + ' · Current owner: ' + esc(managerReportOwnerLabel(report.ownerRole, report.organization)) + '</span></div></div>';
   }
-  return '<div class="manager-report-decision"><label for="manager-report-comment">Manager Comments</label><textarea id="manager-report-comment" placeholder="Add a decision comment.">' + esc(report.managerComment || '') + '</textarea>' +
+  return '<div class="manager-report-decision"><div class="manager-report-decision__head"><span>Department Manager decision</span><h3>' + esc(report.reportType) + ' Approval</h3><p>Approve and forward this exact report artifact to General Manager review, or return it with a comment.</p></div><label for="manager-report-comment">Manager Comments</label><textarea id="manager-report-comment" placeholder="Add a decision comment.">' + esc(report.managerComment || '') + '</textarea>' +
     '<div class="manager-report-validation" role="alert">' + esc(ui.validationMessage || '') + '</div>' +
     '<div class="manager-report-decision-actions">' +
       '<button class="btn" data-act="manager-report-decision" data-id="' + esc(report.id) + '" data-decision="revision">Request Revision</button>' +
       '<button class="btn btn--danger" data-act="manager-report-decision" data-id="' + esc(report.id) + '" data-decision="return">Return Report</button>' +
-      '<button class="btn btn--primary" data-act="manager-report-decision" data-id="' + esc(report.id) + '" data-decision="approve">Approve Report</button>' +
+      '<button class="btn btn--primary" data-act="manager-report-decision" data-id="' + esc(report.id) + '" data-decision="approve">Approve &amp; Forward to General Manager</button>' +
     '</div></div>';
 }
 
 function managerReportDossier(report, ui) {
+  var decision = managerReportDecisionPanel(report, ui);
+  var pendingDecision = report.status === 'pending_manager';
   return '<section class="manager-report-dossier"><div class="manager-report-dossier-head">' +
     '<div><span>Selected report artifact</span><h2>' + esc(report.id) + ' · ' + esc(report.organization) + '</h2><p>' + esc(report.reportType) + ' · Version ' + esc(report.version) + '</p></div>' +
     '<div class="manager-report-head-actions">' + managerReportStatusBadge(report.status) + managerReportDownloadMenu(report) + '<button class="btn btn--sm" data-act="manager-report-preview" data-id="' + esc(report.id) + '">Review Full Report</button></div>' +
     '<dl><div><dt>Audit ID</dt><dd>' + esc(report.auditId) + '</dd></div><div><dt>Lead Inspector</dt><dd>' + esc(report.leadInspector) + '</dd></div><div><dt>Submitted</dt><dd>' + esc(report.submittedAt) + '</dd></div><div><dt>Current Owner</dt><dd>' + esc(managerReportOwnerLabel(report.ownerRole, report.organization)) + '</dd></div></dl>' +
-  '</div>' + managerReportTabs(ui.tab) + managerReportPanel(report, ui.tab) + managerReportDecisionPanel(report, ui) + '</section>';
+  '</div>' + (pendingDecision ? decision : '') + managerReportTabs(ui.tab) + managerReportPanel(report, ui.tab) + (pendingDecision ? '' : decision) + '</section>';
 }
 
 function viewManagerReportsApproval() {
@@ -9686,12 +10091,15 @@ function serviceProviderCapDossier(finding) {
   var evidence = Array.isArray(finding.evidence) ? finding.evidence : [];
   var comments = Array.isArray(finding.commentsToAuditee) ? finding.commentsToAuditee : [];
   var responseLabel = ['WAITING_CAP', 'CAP_MORE_INFO', 'EVIDENCE_REQUIRED', 'EVIDENCE_MORE_INFO'].indexOf(finding.status) !== -1 ? 'Respond' : 'View Status';
-  return '<aside class="service-dossier"><div class="service-dossier__head"><div><span>Selected Finding</span><h2>' + esc(finding.id) + '</h2></div>' + demoBadge(status.label, finding.status === 'CLOSED' ? 'ok' : 'info') + '</div>' +
+  var mobileSummary = mobileDecisionSummaryHtml(roleName(status.ownerRole), status.next, 'Due Date', finding.dueDate ? fmtDate(finding.dueDate) : 'Not configured', status.label,
+    '<button class="btn btn--primary" data-act="service-provider-cap-respond" data-id="' + esc(finding.id) + '">' + esc(responseLabel) + '</button>', 'auditee-cap');
+  return mobileSummary + '<aside class="service-dossier"><div class="service-dossier__head"><div><span>Selected Finding</span><h2>' + esc(finding.id) + '</h2></div>' + demoBadge(status.label, finding.status === 'CLOSED' ? 'ok' : 'info') + '</div>' +
     '<h3>' + esc(finding.title) + '</h3><p>' + esc(finding.description) + '</p>' +
     '<dl><dt>Finding ID</dt><dd>' + esc(finding.id) + '</dd><dt>Level</dt><dd>' + esc(SEVERITY[finding.severity] ? SEVERITY[finding.severity].label : String(finding.severity)) + '</dd><dt>Audit / Inspection</dt><dd>' + esc(finding.auditId || 'Not configured') + '</dd><dt>Due Date</dt><dd>' + esc(finding.dueDate ? fmtDate(finding.dueDate) : 'Not configured') + '</dd><dt>Current owner</dt><dd>' + esc(roleName(status.ownerRole)) + '</dd><dt>Next action</dt><dd>' + esc(status.next) + '</dd></dl>' +
     '<div class="service-progress"><span><b>Lifecycle progress</b><em>' + esc(progress.label) + '</em></span><div><i style="width:' + esc(String(progress.percent)) + '%"></i></div></div>' +
     capVerificationResultHtml(finding.capVerification, finding.status) +
-    '<h3>CAP / Evidence timeline</h3><ol class="service-mini-timeline"><li class="is-done">Finding issued</li><li class="' + (finding.cap ? 'is-done' : 'is-current') + '">CAP submitted / reviewed</li><li class="' + (evidence.length ? 'is-done' : (finding.cap ? 'is-current' : '')) + '">Evidence submitted / reviewed</li><li class="' + (finding.status === 'CLOSED' ? 'is-done' : '') + '">Authorized closure</li></ol>' +
+    '<h3>CAP / Evidence timeline</h3><ol class="service-mini-timeline"><li class="is-done">Finding issued</li><li class="' + (finding.cap ? 'is-done' : 'is-current') + '">CAP submitted / reviewed</li><li class="' + (evidence.length ? 'is-done' : (finding.cap ? 'is-current' : '')) + '">Evidence submitted / reviewed</li><li class="' + (finding.status === 'CLOSED' ? 'is-done' : '') + '">' + esc(finding.status === 'CLOSED' ? closureBasisLabel(finding) : 'Closure pending') + '</li></ol>' +
+    '<h3>Reminder history</h3>' + reminderHistoryHtml(finding, 'auditee', state.auditeeOrganizationId) +
     '<h3>CAA-visible comments</h3>' + (comments.length ? '<div class="service-comment-list">' + comments.map(function (comment) { return '<p><b>' + esc(comment.author) + '</b><span>' + esc(comment.date) + '</span>' + esc(comment.text) + '</p>'; }).join('') + '</div>' : '<p class="muted small">No CAA-visible comments.</p>') +
     '<h3>Evidence versions</h3>' + (evidence.length ? '<div class="service-evidence-list">' + evidence.map(function (item) { return '<p><b>v' + esc(String(item.version)) + ' · ' + esc(item.fileName) + '</b><span>' + esc(item.status + ' · ' + item.uploadedDate) + '</span></p>'; }).join('') + '</div>' : '<p class="muted small">No evidence versions submitted.</p>') +
     '<button class="btn btn--primary btn--block" data-act="service-provider-cap-respond" data-id="' + esc(finding.id) + '">' + esc(responseLabel) + '</button>' +
@@ -9816,63 +10224,21 @@ function serviceProviderFinalReportMeta() {
 }
 
 function serviceProviderCapRequirements() {
-  return [
-    {
-      id: 'F-014-01',
-      title: 'Access control to restricted areas',
-      checklist: 'Access Control',
-      level: 'l1',
-      levelLabel: 'Level 1 (Critical)',
-      dueDateText: '30 Jun 2026',
-      dueRule: '14 days',
-      daysLeftText: '14 days',
-      capRequired: true
-    },
-    {
-      id: 'F-014-04',
-      title: 'Screening procedure compliance',
-      checklist: 'Screening',
-      level: 'l1',
-      levelLabel: 'Level 1 (Critical)',
-      dueDateText: '30 Jun 2026',
-      dueRule: '14 days',
-      daysLeftText: '14 days',
-      capRequired: true
-    },
-    {
-      id: 'F-014-02',
-      title: 'Staff training records',
-      checklist: 'Training',
-      level: 'l2',
-      levelLabel: 'Level 2 (Major)',
-      dueDateText: '14 Sep 2026',
-      dueRule: '90 days',
-      daysLeftText: '89 days',
-      capRequired: true
-    },
-    {
-      id: 'F-014-03',
-      title: 'Vehicle security inspection',
-      checklist: 'Ground Handling',
-      level: 'l2',
-      levelLabel: 'Level 2 (Major)',
-      dueDateText: '14 Sep 2026',
-      dueRule: '90 days',
-      daysLeftText: '89 days',
-      capRequired: true
-    },
-    {
-      id: 'F-014-05',
-      title: 'Signage and awareness',
-      checklist: 'Security Awareness',
-      level: 'l3',
-      levelLabel: 'Level 3 (Observation)',
-      dueDateText: 'Observation',
-      dueRule: 'Observation',
-      daysLeftText: '-',
-      capRequired: false
-    }
-  ];
+  var organizationId = state.auditeeOrganizationId || 'ORG-XYZ';
+  return serviceProviderVisibleFindings(state, organizationId).map(function (finding) {
+    var due = finding.dueDate ? daysBetween(DEMO_TODAY, finding.dueDate) : null;
+    return {
+      id: finding.id,
+      title: finding.title,
+      checklist: finding.reference || 'Configured checklist reference',
+      level: finding.severity === 1 ? 'l1' : (finding.severity === 2 ? 'l2' : 'l3'),
+      levelLabel: SEVERITY[finding.severity] ? SEVERITY[finding.severity].label : 'Observation',
+      dueDateText: finding.dueDate ? fmtDate(finding.dueDate) : 'No Due Date',
+      dueRule: finding.capRequired ? 'Configured Due Date' : 'No CAP required by default',
+      daysLeftText: due === null ? '-' : (due < 0 ? Math.abs(due) + ' days overdue' : due + ' days'),
+      capRequired: !!finding.capRequired
+    };
+  });
 }
 
 function serviceProviderCapRequirementById(id) {
@@ -10271,7 +10637,7 @@ function viewReport() {
         '<dt>Issued</dt><dd>' + esc(fmtDate(f.issuedDate)) + '</dd>' +
         '<dt>Due Date</dt><dd>' + esc(fmtDate(f.dueDate)) + '</dd>' +
         (f.closedDate ? '<dt>Closed</dt><dd>' + esc(fmtDate(f.closedDate)) + '</dd>' : '') +
-        (f.closureType ? '<dt>Closure basis</dt><dd>' + esc(f.closureType === 'evidence-accepted' ? 'Evidence accepted and verified' : 'Authorized closure (audit-logged)') + '</dd>' : '') +
+        (f.closureType ? '<dt>Closure basis</dt><dd>' + esc(closureBasisLabel(f)) + '</dd>' : '') +
       '</dl></div>' +
       (f.cap ? '<div class="report__section"><h4>Corrective Action Plan</h4><dl class="report__kv">' +
         '<dt>Root cause</dt><dd>' + esc(f.cap.rootCause) + '</dd>' +
@@ -10402,6 +10768,8 @@ function viewOrgDetail() {
   var s = orgStats(o.id);
   var audits = state.audits.filter(function (a) { return a.orgId === o.id; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
   var findings = state.findings.filter(function (f) { return f.orgId === o.id; });
+  var nextAudit = audits.filter(function (audit) { return !isClosedAudit(audit); }).sort(function (a, b) { return a.date < b.date ? -1 : 1; })[0] || null;
+  var orgNextAction = s.overdue ? 'Review overdue Findings' : (nextAudit ? 'Open next audit' : 'Review surveillance history');
 
   var auditRows = renderOpsTable(audits.map(workItemFromAudit), { empty: 'No audits for this organization.' });
   var findingRows = renderOpsTable(findings.map(function (finding) {
@@ -10410,6 +10778,8 @@ function viewOrgDetail() {
 
   return pageHead(o.name, esc(o.type),
     '<button class="btn" data-act="nav" data-view="organizations">Back to organizations</button>') +
+    mobileDecisionSummaryHtml('CAA Manager', orgNextAction, 'Target', nextAudit ? fmtDate(nextAudit.date) : 'Not configured', s.open + ' open Findings · ' + s.overdue + ' overdue',
+      '<button class="btn btn--primary" data-act="nav" data-view="org-risk" data-id="' + esc(o.id) + '">Open risk profile</button>', 'organization-detail') +
     '<div class="grid grid--kpi mb-16">' +
       kpiCard('Open Findings', s.open, 'Currently open', { tone: s.open ? 'warn' : 'ok' }) +
       kpiCard('Overdue', s.overdue, 'Past due date', { tone: s.overdue ? 'danger' : 'ok' }) +
@@ -10708,7 +11078,7 @@ function viewAuditWizard() {
     bodyHtml =
       '<div class="form-row"><label>Checklist template <span class="req">*</span></label><select id="wz-tpl">' +
         state.templateLibrary.map(function (t) { return '<option value="' + t.id + '"' + (w.templateId === t.id ? ' selected' : '') + '>' + esc(t.name) + ' · ' + esc(t.version) + '</option>'; }).join('') +
-      '</select><div class="help">Only the Cabin Inspection template is runnable in this demo.</div></div>' +
+      '</select><div class="help">Cabin, Flight Operations, Airworthiness, Ramp, and Security packages are runnable with audit-specific demo questions.</div></div>' +
       '<div class="form-row"><label>Scope</label><textarea id="wz-scope" placeholder="Areas in scope for this inspection.">' + esc(w.scope || '') + '</textarea></div>' +
       '<div class="form-2col">' +
         '<div class="form-row"><label>Requested Budget</label><input type="text" inputmode="decimal" id="wz-budget" value="' + esc(w.requestedBudget === undefined ? '0' : w.requestedBudget) + '"></div>' +

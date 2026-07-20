@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Store and review evidence with versions.
+Record and review demo Evidence filenames with preserved versions.
 
 ## Key fields
 
@@ -19,10 +19,10 @@ Store and review evidence with versions.
 
 - Upload
 - Replace/supersede
-- Preview
-- Accept
-- Reject
-- Request more information
+- Review latest version
+- Close
+- Partially Close
+- Not Close
 
 ## Business rules
 
@@ -30,6 +30,9 @@ Store and review evidence with versions.
 - Old evidence marked superseded
 - Reject requires reason
 - Internal notes separate from auditee comments
+- Close records evidence-verified Finding closure; Partially Close and Not
+  Close preserve the open Finding
+- The frontend-only demo stores filenames, not files
 
 ## UX direction
 

@@ -164,13 +164,30 @@ test('Lead Inspector receives a scoped post-release preparation task without bro
   const html = context.viewLeadAssignedAudits();
   assert.match(html, new RegExp(item.id));
   assert.match(html, /Post-release preparation/);
+  assert.match(html, /Continue plan preparation/);
   assert.match(html, /data-act="lead-planning-preparation-open"/);
   assert.doesNotMatch(html, /data-view="planning"/);
 
+  const unrelated = JSON.parse(JSON.stringify(item));
+  unrelated.id = 'PLAN-OTHER-LEAD';
+  unrelated.preparation.leadInspector = 'Aylin Sezer';
+  state.planningItems.push(unrelated);
+  const scopedTaskHtml = context.leadPlanningPreparationTasksHtml();
+  assert.match(scopedTaskHtml, new RegExp(item.id));
+  assert.doesNotMatch(scopedTaskHtml, /PLAN-OTHER-LEAD/);
+
+  context.state.view = 'lead-planning-preparation';
+  context.state.params = { planningItemId: item.id };
+  const scopedPreparationHtml = context.viewLeadPlanningPreparation();
+  assert.match(scopedPreparationHtml, new RegExp(item.id));
+  assert.match(scopedPreparationHtml, /Propose Team \/ Dates \/ Resources/);
+  assert.match(scopedPreparationHtml, /Approved scope/);
+  assert.doesNotMatch(scopedPreparationHtml, /Release to Department|Approve Budget|Approve &amp; Sign|Planning Queue/);
+
   const appSource = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
-  assert.match(appSource, /case 'lead-planning-preparation': return viewPlanningWorkspace\(\);/);
+  assert.match(appSource, /case 'lead-planning-preparation': return viewLeadPlanningPreparation\(\);/);
   assert.match(appSource, /case 'lead-planning-preparation-open': handleLeadPlanningPreparationOpen\(id\); break;/);
-  assert.match(appSource, /go\('lead-planning-preparation', \{ planningId: item\.id, tab: 'preparation' \}\)/);
+  assert.match(appSource, /go\('lead-planning-preparation', \{ planningItemId: item\.id \}\)/);
 });
 
 test('unannounced Audit materializes only after preparation and remains private', () => {

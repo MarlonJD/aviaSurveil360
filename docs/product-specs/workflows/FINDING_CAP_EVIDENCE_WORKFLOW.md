@@ -6,8 +6,10 @@ Manage finding follow-up from issue to closure.
 
 ## Steps
 
-1. Create finding
-2. Issue to auditee
+1. Inspector submits an audit-scoped Potential Finding from an eligible
+   checklist result and required comment
+2. Lead Inspector returns, dismisses, or converts it to the canonical Finding
+   issued to the Auditee
 3. Service Provider submits root cause, corrective action, preventive action,
    responsible person, target completion date, and mock Evidence filenames
 4. CAA reviews CAP
@@ -23,6 +25,8 @@ Manage finding follow-up from issue to closure.
 ## Rules
 
 - CAP accepted is not closure.
+- Observation defaults to no CAP, no Evidence, and no Due Date; Lead Inspector
+  conversion may explicitly configure any of those requirements.
 - `Close` maps the Finding to `CLOSED` and records `evidence-verified` closure.
 - `Partially Close` and `Not Close` map the Finding to
   `EVIDENCE_MORE_INFO`; both record `findingClosed: false`.
@@ -32,8 +36,8 @@ Manage finding follow-up from issue to closure.
   demo.
 - Evidence versions and CAP verification history are append-only; an earlier
   Evidence record is never overwritten or deleted.
-- Authorized closure requires separate authority and does not impersonate
-  Evidence verification.
+- Authorized closure requires Department Manager authority and a reason,
+  records `authorized`, and does not impersonate Evidence verification.
 - Enforcement remains a referral for separate authorized review and does not
   apply a sanction automatically.
 

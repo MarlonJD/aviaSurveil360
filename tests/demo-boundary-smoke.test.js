@@ -75,7 +75,7 @@ assert.deepEqual(JSON.parse(JSON.stringify(context.DEMO_BOUNDARY_SUMMARIES)), [
   'Demo audit history for traceability; not a production audit trail.',
   'Mock filenames and local browser state; no secure document storage.'
 ]);
-const runtimeClaims = ['index.html', 'js/data.js', 'js/reports.js', 'js/manager-workspaces.js', 'js/views.js', 'js/app.js', 'css/styles.css']
+const runtimeClaims = ['index.html', 'js/data.js', 'js/reports.js', 'js/manager-workspaces.js', 'js/work-items.js', 'js/views.js', 'js/app.js', 'css/styles.css']
   .map((file) => fs.readFileSync(path.join(root, file), 'utf8'))
   .join('\n');
 assert.doesNotMatch(
@@ -83,6 +83,8 @@ assert.doesNotMatch(
   /all approvals are electronic|securely stored|automatic penalty|automatic suspension/i,
   'Demo runtime copy must not claim production approvals, storage, or automatic sanctions.'
 );
+assert.match(runtimeClaims, /Demo in-app event; no real delivery/);
+assert.doesNotMatch(runtimeClaims, /reminder[^\n]*(email|sms|whatsapp)[^\n]*(sent|delivered)/i);
 
 context.state.role = 'auditee';
 context.state.view = 'my-findings';

@@ -251,7 +251,7 @@ function applyCapVerificationDecision(target, findingId, input) {
   finding.status = meta.findingStatus;
   if (meta.findingClosed) {
     finding.closedDate = DEMO_TODAY;
-    finding.closureType = 'evidence-verified';
+    finding.closureType = FINDING_CLOSURE_TYPES.EVIDENCE_VERIFIED;
   } else {
     finding.closedDate = null;
     finding.closureType = null;

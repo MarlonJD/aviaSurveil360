@@ -9,13 +9,14 @@
 5. New Inspection Planning Intake
 6. Audit Detail
 7. Checklist Runner
-8. Finding Detail
-9. Auditee Portal Dashboard
-10. CAP Submission Form
-11. Evidence Upload
-12. Evidence Review
-13. Closed Finding / Report Preview
-14. Admin Template Preview
+8. Lead Inspector Potential Finding Review
+9. Finding Detail
+10. Auditee Portal Dashboard
+11. CAP Submission Form
+12. Evidence Upload
+13. Evidence Review
+14. Closed Finding / Report Preview
+15. Admin Template Preview
 
 ## Inspector dashboard
 
@@ -112,11 +113,15 @@ Her checklist item için:
 - Regulation reference
 - Expected evidence
 - Answer: Compliant / Non-Compliant / Observation / Not Applicable / Not Checked
-- Comment
-- Attachment
-- Create Finding button
+- Non-Compliant veya Observation sonucu için zorunlu comment
+- Mock Evidence filename
+- Exact Audit'e scoped Create Potential Finding button
 
-## Finding form
+Submitted checklist read-only'dir. Yalnız Inspector veya Lead Inspector valid
+stage'de reason-required confirmation ile reopen edebilir. Configured execution
+package bulunmayan template açıkça disabled action gösterir.
+
+## Lead Inspector Potential Finding review ve Finding conversion form
 
 Minimum alanlar:
 
@@ -125,17 +130,21 @@ Minimum alanlar:
 - Regulation reference
 - Severity
 - Due date
-- Auditee responsible person
 - CAP required
 - Evidence required
-- Issue Finding button
+- Reason ile Return
+- Reason ile Dismiss
+- Convert to Finding button
+
+Observation; CAP unchecked, Evidence unchecked ve Due Date olmadan initialize
+edilir. Lead Inspector conversion öncesinde bu alanları açıkça configure
+edebilir. Conversion kanonik Finding'e yazar; sessiz rol değişimi yapmaz.
 
 Advanced fields:
 
 - Risk category
 - Repeat finding
 - Related previous finding
-- Enforcement escalation
 - Internal CAA note
 
 ## Auditee CAP form
@@ -153,10 +162,16 @@ Helper text kullan:
 
 Alanlar:
 
-- Evidence preview
+- Mock Evidence filename ve version
 - Related finding
 - Related CAP
 - Previous versions
-- Decision: Accept / Reject / Request More Information
+- Decision: Close / Partially Close / Not Close
 - Comment to auditee
 - Internal CAA note
+
+`Close`, `Evidence accepted and verified` kaydeder. `Partially Close` ve `Not
+Close` Finding'i açık tutar. Department Manager reason-required authorized
+closure, Evidence review'dan ayrıdır. Finding, Auditee ve Manager yüzeyleri;
+stage, recipient, date, `demo_recorded` status ve `Demo in-app event; no real
+delivery` içeren organization-scoped reminder history gösterir.

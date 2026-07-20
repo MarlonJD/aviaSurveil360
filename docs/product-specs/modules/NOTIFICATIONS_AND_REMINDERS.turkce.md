@@ -2,7 +2,7 @@
 
 ## Amaç
 
-Send due-date and status messages.
+Deterministik browser-local Due Date ve manager-attention event'leri kaydeder.
 
 ## Ana alanlar
 
@@ -16,7 +16,7 @@ Send due-date and status messages.
 
 ## Ana aksiyonlar
 
-- Send notification
+- Manual in-app reminder kaydet
 - Configure template
 - Enable rule
 - View delivery
@@ -24,9 +24,13 @@ Send due-date and status messages.
 ## İş kuralları
 
 - 30/15/7/due/overdue reminders
-- Critical finding immediate manager alert
+- Critical Finding immediate manager-attention record
 - Messages link to record
 - No sensitive internal info in notifications
+- Event'ler idempotent, organization-scoped'dur ve `in_app` /
+  `demo_recorded` kullanır
+- Overdue escalation enforcement başlatmaz
+- Her history yüzeyi `Demo in-app event; no real delivery` yazar
 
 ## UX yönü
 

@@ -8,6 +8,7 @@ Cabin Inspection for Fly Namibia: PBE serviceability and accessibility not confi
 
 - CAA Manager
 - CAA Inspector
+- Lead Inspector
 - Fly Namibia Auditee User
 
 ## Data
@@ -27,9 +28,14 @@ Cabin Inspection for Fly Namibia: PBE serviceability and accessibility not confi
 2. Cabin Inspection for Fly Namibia is scheduled.
 3. Inspector opens today's assigned Cabin Inspection.
 4. Inspector starts the Cabin Inspection checklist.
-5. Inspector opens the `EM EQ / PBE` question and marks it Non-Compliant.
-6. System opens a finding form with prefilled organization, audit, checklist reference, severity, and expected evidence context.
-7. Inspector issues Finding CAB-2026-001.
+5. Inspector opens the `EM EQ / PBE` question, marks it Non-Compliant, and
+   records the required comment for this exact Audit.
+6. AviaSurveil360 creates an audit-scoped Potential Finding for Lead Inspector
+   review; it does not silently issue a Finding or switch roles.
+7. The Lead Inspector may return, dismiss, or convert the Potential Finding.
+   Conversion creates canonical Finding CAB-2026-001 with the Audit,
+   organization, configured reference, severity, CAP requirement, and Evidence
+   requirement recorded on that Finding.
 8. Fly Namibia auditee logs in and sees My Findings for its own organization only.
 9. Auditee submits CAP:
    - Root cause: Pre-flight cabin equipment serviceability checks did not reconcile the PBE position with the deferred defect list.
@@ -38,9 +44,19 @@ Cabin Inspection for Fly Namibia: PBE serviceability and accessibility not confi
    - Target completion date: 15 July 2026.
 10. Auditee uploads Fly_Namibia_PBE_Serviceability_Record_CAB-2026-001.pdf and may reference PBE_Cabin_Position_Photo.jpg as a mock filename.
 11. Inspector reviews and accepts the CAP. The finding remains open at Evidence Required.
-12. Inspector reviews and accepts evidence.
-13. Finding closes only after evidence acceptance.
+12. Inspector reviews the latest Evidence version and records `Close`.
+13. The Finding closes with `Evidence accepted and verified` as its closure
+    basis. `Partially Close` and `Not Close` keep it open.
 14. Manager dashboard updates.
+
+An Observation does not require CAP, Evidence, or a Due Date by default; the
+Lead Inspector can explicitly configure those requirements during conversion.
+CAP acceptance never closes a Finding. Evidence-verified closure and a
+reason-required, audit-logged authorized closure are separate paths.
+30/15/7-day, due-today, overdue, and manager-attention records are
+deterministic browser-local demo events. They show `Demo in-app event; no real
+delivery` and are not production scheduling, notification delivery, or
+automatic enforcement.
 
 ## Department and General Manager oversight extension
 

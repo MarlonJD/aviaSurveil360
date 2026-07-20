@@ -31,6 +31,12 @@ assert.match(
 
 assert.match(
   styles,
+  /\.lead-preliminary-table-panel \.prelim-report-table th:nth-child\(5\)\s*\{[^}]*width:\s*190px[^}]*\}[\s\S]*?\.lead-preliminary-table-panel \.prelim-status\s*\{[^}]*white-space:\s*normal/s,
+  'Preliminary Report status labels stay inside their table column instead of overlapping Findings'
+);
+
+assert.match(
+  styles,
   /\.manager-team-menu\s*\{[^}]*max-height:\s*min\(300px,\s*calc\(100vh\s*-\s*32px\)\);[^}]*overflow-y:\s*auto;/s,
   'Inspection Team constrains and scrolls its desktop row menu inside the viewport'
 );
@@ -42,7 +48,7 @@ assert.match(
 );
 
 assert.equal(
-  (indexHtml.match(/\?v=20260719-mobile-workbench-v1/g) || []).length,
+  (indexHtml.match(/\?v=20260720-scenario-integrity-v1/g) || []).length,
   12,
   'The current UI update cache-busts the stylesheet and eleven frontend scripts together'
 );
@@ -70,5 +76,14 @@ assert.match(
   /@media \(max-width:\s*640px\)[\s\S]*?\.planning-queue-row\s*\{[^}]*grid-template-columns:\s*1fr/s,
   'Planning queue becomes one readable column on mobile'
 );
+
+assert.match(styles, /\.manager-team-filters\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
+assert.match(styles, /\.manager-team-search\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/s);
+assert.match(styles, /\.manager-findings-filters\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
+assert.match(styles, /@media \(max-width:\s*1100px\)[\s\S]*?\.manager-team-mobile-list[\s\S]*?display:\s*grid/s);
+assert.match(styles, /@media \(max-width:\s*1100px\)[\s\S]*?\.manager-findings-mobile-list[\s\S]*?display:\s*grid/s);
+assert.match(styles, /@media \(max-width:\s*1180px\)[\s\S]*?\.executive-dashboard-grid\s*\{[^}]*grid-template-columns:\s*1fr/s);
+assert.match(styles, /@media \(max-width:\s*1180px\)[\s\S]*?\.executive-decision-list article\s*\{[^}]*grid-template-columns:\s*1fr/s);
+assert.match(styles, /\.executive-decision-list article[^}]*min-width:\s*0/s);
 
 console.log('manager-workspace-responsive-smoke: ok');

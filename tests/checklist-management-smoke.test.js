@@ -7,7 +7,18 @@ const root = path.resolve(__dirname, '..');
 const context = { console, window: undefined, document: undefined, setTimeout, clearTimeout };
 vm.createContext(context);
 
-['js/data.js', 'js/helpers.js', 'js/approval.js', 'js/checklists.js'].forEach((file) => {
+[
+  'js/data.js',
+  'js/helpers.js',
+  'js/approval.js',
+  'js/planning.js',
+  'js/checklists.js',
+  'js/inspection.js',
+  'js/reports.js',
+  'js/manager-workspaces.js',
+  'js/work-items.js',
+  'js/views.js'
+].forEach((file) => {
   vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
 });
 
@@ -57,5 +68,23 @@ const archived = checklist.versions.find((item) => item.id === 'CL-CABIN-v1.0');
 assert.equal(reviewVersion.status, 'published_active');
 assert.equal(archived.status, 'archived');
 assert.equal(checklist.publishedVersion, '1.1');
+
+context.state = context.freshState();
+context.state.role = 'admin';
+
+let html = context.viewQuestionBank();
+assert.match(html, /<textarea id="qb-text"[^>]*rows="3"/);
+assert.match(html, /data-act="qb-create"/);
+
+context.createChecklistDraftVersion(context.state.managedChecklists[0], {
+  actorName: 'Admin Preview',
+  reason: 'Verify responsive checklist ordering controls.'
+});
+html = context.viewChecklistBuilder();
+assert.match(html, /admin-checklist-mobile-list/);
+assert.match(html, /admin-question-bank-mobile-list/);
+assert.match(html, /Configured reference/);
+assert.match(html, /Expected evidence/);
+assert.match(html, /data-act="checklist-move-question"/);
 
 console.log('checklist-management-smoke: ok');

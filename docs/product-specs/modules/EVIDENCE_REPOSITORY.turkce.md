@@ -2,7 +2,7 @@
 
 ## Amaç
 
-Store and review evidence with versions.
+Demo Evidence filename kayıtlarını version history korunarak review eder.
 
 ## Ana alanlar
 
@@ -19,10 +19,10 @@ Store and review evidence with versions.
 
 - Upload
 - Replace/supersede
-- Preview
-- Accept
-- Reject
-- Request more information
+- Latest version review et
+- Close
+- Partially Close
+- Not Close
 
 ## İş kuralları
 
@@ -30,6 +30,9 @@ Store and review evidence with versions.
 - Old evidence marked superseded
 - Reject requires reason
 - Internal notes separate from auditee comments
+- Close evidence-verified Finding closure kaydeder; Partially Close ve Not
+  Close Finding'i açık tutar
+- Frontend-only demo dosya değil, yalnız filename saklar
 
 ## UX yönü
 

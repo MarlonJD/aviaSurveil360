@@ -16,6 +16,8 @@ vm.createContext(context);
 });
 
 const state = context.freshState();
+assert.equal(context.closureBasisLabel({ closureType: 'evidence-verified' }), 'Evidence accepted and verified');
+assert.equal(context.closureBasisLabel({ closureType: 'authorized' }), 'Authorized closure (audit-logged)');
 const preliminary = context.managerReportById(state, 'PR-2026-018');
 const finalReport = context.managerReportById(state, 'FR-2026-018');
 

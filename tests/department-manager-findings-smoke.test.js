@@ -121,6 +121,13 @@ assert.match(html, /By Level/);
 assert.match(html, /Current Owner/);
 assert.match(html, /Next Action/);
 assert.match(html, /Due Date/);
+assert.match(html, /manager-findings-mobile-list/);
+assert.match(html, /data-mobile-record="AUD-2026-001"/);
+assert.match(html, /Organization/);
+assert.match(html, /Audit Date/);
+assert.match(html, /Team Leader/);
+assert.match(html, /Status/);
+assert.match(html, /data-act="manager-findings-select"/);
 
 const focusStart = html.indexOf('<section class="manager-findings-focus">');
 const focusEnd = html.indexOf('</section>', focusStart);
@@ -141,6 +148,10 @@ assert.match(focusHtml, /<span>Related Audit<\/span>/);
 assert.match(focusHtml, /AUD-2026-001/);
 assert.match(focusHtml, /<span>Organization<\/span>/);
 assert.match(focusHtml, /Fly Namibia/);
+assert.match(focusHtml, /Level 1 manager attention/);
+assert.match(focusHtml, /Department Manager/);
+assert.match(focusHtml, /demo_recorded/);
+assert.match(focusHtml, /Demo in-app event; no real delivery/);
 
 const managerNavLabels = context.NAV.manager
   .filter((item) => item.label)

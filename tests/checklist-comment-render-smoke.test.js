@@ -15,8 +15,8 @@ context.state = context.freshState();
 context.state.role = 'inspector';
 context.state.view = 'checklist';
 context.state.params = { auditId: 'AUD-2026-001' };
-context.state.checklistAnswers['cab-galley-oven'] = { answer: 'compliant', comment: 'Galley oven serviceability record checked for report context.' };
-context.state.checklistAnswers['cab-em-eq-pbe'] = { answer: 'noncompliant', comment: '' };
+context.state.inspectionWorkspaces['AUD-2026-001'].answersByQuestionId['cab-galley-oven'] = { answer: 'compliant', status: 'compliant', comment: 'Galley oven serviceability record checked for report context.' };
+context.state.inspectionWorkspaces['AUD-2026-001'].answersByQuestionId['cab-em-eq-pbe'] = { answer: 'noncompliant', status: 'noncompliant', comment: '' };
 
 const html = context.viewChecklistRunner();
 

@@ -23,8 +23,8 @@ Create, issue, track and close findings.
 
 ## Primary actions
 
-- Create finding
-- Issue finding
+- Review Potential Finding
+- Return, dismiss, or convert Potential Finding
 - Review CAP
 - Review evidence
 - Request more info
@@ -35,6 +35,9 @@ Create, issue, track and close findings.
 
 - Issued findings cannot be deleted
 - CAP accepted does not close finding
+- Observation does not require CAP, Evidence, or a Due Date by default
+- Evidence `Close` records evidence-verified closure; authorized closure is a
+  separate Department Manager, reason-required path
 - Internal notes separated
 - Critical/overdue findings appear on manager dashboard
 

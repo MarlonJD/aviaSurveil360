@@ -34,27 +34,69 @@ function inspectionWorkspaceForAudit(target, auditId) {
       lastSubmittedAt: '',
       lastSubmittedByUserId: '',
       reopenedAt: '',
-      reopenedByUserId: ''
+      reopenedByUserId: '',
+      reopenReason: '',
+      reopenHistory: []
     };
   }
   var workspace = target.inspectionWorkspaces[auditId];
   if (!workspace.answersByQuestionId || typeof workspace.answersByQuestionId !== 'object') workspace.answersByQuestionId = {};
   if (!workspace.downloadedAttachmentIds || typeof workspace.downloadedAttachmentIds !== 'object') workspace.downloadedAttachmentIds = {};
+  if (!Array.isArray(workspace.reopenHistory)) workspace.reopenHistory = [];
   return workspace;
 }
 
-function reopenInspectionChecklistForEditing(target, auditId, metadata) {
-  if (!inspectionExecutionAudit(target, auditId)) return false;
+function checklistAnswerForAudit(target, auditId, questionId) {
   var workspace = inspectionWorkspaceForAudit(target, auditId);
-  if (!workspace.submittedAt) return false;
+  return workspace.answersByQuestionId[questionId] || null;
+}
+
+function reopenInspectionChecklistForEditing(target, auditId, metadata) {
   metadata = metadata || {};
-  workspace.lastSubmittedAt = workspace.submittedAt;
-  workspace.lastSubmittedByUserId = workspace.submittedByUserId || '';
+  var audit = inspectionExecutionAudit(target, auditId);
+  var workspace = target && target.inspectionWorkspaces ? target.inspectionWorkspaces[auditId] : null;
+  if (['inspector', 'leadInspector'].indexOf(metadata.role) === -1) {
+    throw new Error('Inspector or Lead Inspector authority required.');
+  }
+  if (!workspace || !workspace.submittedAt) throw new Error('Only a submitted checklist can be reopened.');
+  var reason = normalizeApprovalText(metadata.reason);
+  if (!reason) throw new Error('Reason for reopening is required.');
+  if (!audit) throw new Error('Audit not found.');
+  if (audit.reportIssuedAt || audit.status === 'Closed') throw new Error('Issued or closed inspections cannot be reopened.');
+
+  var previousSubmittedAt = workspace.submittedAt;
+  var previousSubmittedByUserId = workspace.submittedByUserId || '';
+  var reopenedAt = metadata.at || new Date().toISOString();
+  var reopenedByUserId = metadata.userId || '';
+  var historyEntry = {
+    auditId: auditId,
+    previousSubmittedAt: previousSubmittedAt,
+    previousSubmittedByUserId: previousSubmittedByUserId,
+    reopenedAt: reopenedAt,
+    reopenedByUserId: reopenedByUserId,
+    role: metadata.role,
+    reason: reason
+  };
+  workspace.lastSubmittedAt = previousSubmittedAt;
+  workspace.lastSubmittedByUserId = previousSubmittedByUserId;
   workspace.submittedAt = '';
   workspace.submittedByUserId = '';
   workspace.allSectionsCompletedAt = '';
-  workspace.reopenedAt = metadata.at || new Date().toISOString();
-  workspace.reopenedByUserId = metadata.userId || '';
+  workspace.reopenedAt = reopenedAt;
+  workspace.reopenedByUserId = reopenedByUserId;
+  workspace.reopenReason = reason;
+  if (!Array.isArray(workspace.reopenHistory)) workspace.reopenHistory = [];
+  workspace.reopenHistory.push(historyEntry);
+  if (!Array.isArray(target.auditLog)) target.auditLog = [];
+  if (!Number.isFinite(target.logSeq)) target.logSeq = 100;
+  target.auditLog.unshift({
+    id: 'L' + target.logSeq++,
+    time: reopenedAt,
+    actor: reopenedByUserId + ' (' + metadata.role + ')',
+    action: 'Checklist reopened for editing — reason: ' + reason,
+    target: auditId,
+    system: false
+  });
   return true;
 }
 
@@ -65,11 +107,15 @@ function inspectionExecutionAudit(target, auditId) {
 
 function inspectionExecutionTemplate(target, templateId) {
   if (target && target.checklist && target.checklist.id === templateId) return target.checklist;
+  var executionPackages = target && Array.isArray(target.executionChecklists) ? target.executionChecklists : [];
+  for (var i = 0; i < executionPackages.length; i++) {
+    if (executionPackages[i].id === templateId && executionPackages[i].status === 'Published') return executionPackages[i];
+  }
   var packages = target && Array.isArray(target.managedChecklists) ? target.managedChecklists : [];
-  for (var i = 0; i < packages.length; i++) {
-    var versions = Array.isArray(packages[i].versions) ? packages[i].versions : [];
-    for (var j = 0; j < versions.length; j++) {
-      if (versions[j].templateId === templateId && versions[j].status === 'Published') return versions[j];
+  for (var packageIndex = 0; packageIndex < packages.length; packageIndex++) {
+    var versions = Array.isArray(packages[packageIndex].versions) ? packages[packageIndex].versions : [];
+    for (var versionIndex = 0; versionIndex < versions.length; versionIndex++) {
+      if (versions[versionIndex].templateId === templateId && versions[versionIndex].status === 'Published') return versions[versionIndex];
     }
   }
   return null;
@@ -92,9 +138,18 @@ function inspectionExecutionPackageForAudit(target, auditId) {
   var template = inspectionExecutionTemplate(target, audit.templateId);
   if (!template || !Array.isArray(template.items)) return null;
   var workspace = inspectionWorkspaceForAudit(target, auditId);
-  var sectionDefinitions = audit.templateId === 'TPL-CABIN-2026'
-    ? CABIN_EXECUTION_SECTIONS
-    : [{ key: 'checklist', label: template.name || audit.type || 'Checklist', questionIds: template.items.map(function (item) { return item.id; }) }];
+  var sectionDefinitions = audit.templateId === 'TPL-CABIN-2026' ? CABIN_EXECUTION_SECTIONS : [];
+  if (!sectionDefinitions.length) {
+    template.items.forEach(function (item) {
+      var sectionKey = item.sectionKey || 'checklist';
+      var existing = sectionDefinitions.filter(function (section) { return section.key === sectionKey; })[0] || null;
+      if (!existing) {
+        existing = { key: sectionKey, label: item.sectionLabel || template.name || audit.type || 'Checklist', questionIds: [] };
+        sectionDefinitions.push(existing);
+      }
+      existing.questionIds.push(item.id);
+    });
+  }
   var itemById = {};
   template.items.forEach(function (item) { itemById[item.id] = item; });
   var questions = [];
@@ -117,7 +172,8 @@ function inspectionExecutionPackageForAudit(target, auditId) {
         status: status,
         comment: answer.comment || '',
         file: answer.file || '',
-        commentRequired: !!(bankMeta && bankMeta.commentRequired)
+        commentRequired: !!(bankMeta && bankMeta.commentRequired),
+        allowedResults: Array.isArray(item.allowedResults) ? item.allowedResults.slice() : ['compliant', 'noncompliant', 'observation', 'na']
       };
       questions.push(row);
       return row;
@@ -193,12 +249,17 @@ function recordChecklistResult(auditId, questionId, result, comment, files) {
   if (checklistResultRequiresComment(answer) && !note) {
     throw new Error('Comment required for Non-Compliant or Observation checklist results.');
   }
-  if (!state.checklistAnswers[questionId]) state.checklistAnswers[questionId] = {};
-  state.checklistAnswers[questionId].auditId = auditId;
-  state.checklistAnswers[questionId].answer = answer;
-  state.checklistAnswers[questionId].comment = note;
-  state.checklistAnswers[questionId].evidenceFiles = normalizeMockFiles(files);
-  return state.checklistAnswers[questionId];
+  var workspace = inspectionWorkspaceForAudit(state, auditId);
+  var previous = workspace.answersByQuestionId[questionId] || {};
+  workspace.answersByQuestionId[questionId] = Object.assign({}, previous, {
+    auditId: auditId,
+    questionId: questionId,
+    answer: answer,
+    status: answer,
+    comment: note,
+    evidenceFiles: normalizeMockFiles(files)
+  });
+  return workspace.answersByQuestionId[questionId];
 }
 
 function potentialFindingById(id) {
@@ -209,9 +270,12 @@ function potentialFindingById(id) {
   return null;
 }
 
-function checklistItemById(questionId) {
-  for (var i = 0; i < state.checklist.items.length; i++) {
-    if (state.checklist.items[i].id === questionId) return state.checklist.items[i];
+function checklistItemById(questionId, auditId) {
+  var audit = auditId ? inspectionExecutionAudit(state, auditId) : null;
+  var template = audit ? inspectionExecutionTemplate(state, audit.templateId) : state.checklist;
+  var items = template && Array.isArray(template.items) ? template.items : [];
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].id === questionId) return items[i];
   }
   return null;
 }
@@ -219,8 +283,8 @@ function checklistItemById(questionId) {
 function createPotentialFinding(auditId, questionId, options) {
   options = options || {};
   var audit = auditById(auditId);
-  var item = checklistItemById(questionId);
-  var answer = state.checklistAnswers[questionId];
+  var item = checklistItemById(questionId, auditId);
+  var answer = checklistAnswerForAudit(state, auditId, questionId);
   if (!audit || !item || !answer) throw new Error('Checklist answer required before creating a Potential Finding.');
   if (answer.answer !== 'noncompliant' && answer.answer !== 'observation') {
     throw new Error('Potential Finding is only available for Non-Compliant or Observation results.');
@@ -249,6 +313,43 @@ function createPotentialFinding(auditId, questionId, options) {
   return potential;
 }
 
+function findingRequirementDefaults(severity) {
+  var normalizedSeverity = parseInt(severity, 10);
+  if (normalizedSeverity === 4 || normalizedSeverity === 0) {
+    return { capRequired: false, evidenceRequired: false, dueDate: null };
+  }
+  return { capRequired: true, evidenceRequired: true, dueDate: '2026-07-15' };
+}
+
+function applyAuthorizedFindingClosure(target, findingId, input) {
+  var s = target || (typeof state !== 'undefined' ? state : null);
+  input = input || {};
+  var actor = input.actor || {};
+  if (!s || !Array.isArray(s.findings)) return { ok: false, message: 'Finding state is unavailable.', finding: null };
+  if (actor.role !== 'manager') return { ok: false, message: 'Department Manager authority required for authorized closure.', finding: null };
+  var finding = s.findings.filter(function (candidate) { return candidate.id === findingId; })[0] || null;
+  if (!finding) return { ok: false, message: 'Finding not found.', finding: null };
+  var reason = normalizeApprovalText(input.reason);
+  if (!reason) return { ok: false, message: 'Reason for authorized closure is required.', finding: finding };
+  var actorName = normalizeApprovalText(actor.name) || 'Department Manager';
+  var at = input.at || (typeof logTimestamp === 'function' ? logTimestamp() : DEMO_TODAY + ' 00:00');
+  var commentToAuditee = normalizeApprovalText(input.commentToAuditee);
+  var internalNote = normalizeApprovalText(input.internalNote);
+  finding.status = 'CLOSED';
+  finding.closedDate = DEMO_TODAY;
+  finding.closureType = FINDING_CLOSURE_TYPES.AUTHORIZED;
+  finding.authorizedClosure = { reason: reason, actorRole: actor.role, actorName: actorName, closedAt: at };
+  if (!Array.isArray(finding.commentsToAuditee)) finding.commentsToAuditee = [];
+  if (!Array.isArray(finding.internalNotes)) finding.internalNotes = [];
+  if (commentToAuditee) finding.commentsToAuditee.push({ author: actorName, date: DEMO_TODAY, text: commentToAuditee });
+  finding.internalNotes.push({ author: actorName, date: DEMO_TODAY, text: 'Authorized closure reason: ' + reason + (internalNote ? ' — ' + internalNote : '') });
+  if (!Array.isArray(s.auditLog)) s.auditLog = [];
+  var nextLogId = Number(s.logSeq) || (s.auditLog.length + 1);
+  s.auditLog.unshift({ id: 'L' + nextLogId, time: at, actor: actorName + ' (Department Manager)', action: 'Finding closed (authorized closure) — reason: ' + reason, target: finding.id, system: false });
+  s.logSeq = nextLogId + 1;
+  return { ok: true, message: 'Authorized closure recorded with a required reason.', finding: finding };
+}
+
 function convertPotentialFindingToFinding(potentialId, options) {
   options = options || {};
   var potential = potentialFindingById(potentialId);
@@ -256,8 +357,13 @@ function convertPotentialFindingToFinding(potentialId, options) {
   if (potential.status === 'converted' && potential.findingId) return findingById(potential.findingId);
   var severity = parseInt(options.severity, 10);
   if (Number.isNaN(severity)) throw new Error('Severity required before converting a Potential Finding.');
+  var storedSeverity = severity === 4 ? 0 : severity;
+  var defaults = findingRequirementDefaults(severity);
+  var capRequired = options.capRequired === undefined ? defaults.capRequired : !!options.capRequired;
+  var evidenceRequired = options.evidenceRequired === undefined ? defaults.evidenceRequired : !!options.evidenceRequired;
+  var dueDate = options.dueDate === undefined ? defaults.dueDate : (normalizeApprovalText(options.dueDate) || null);
   var audit = auditById(potential.auditId);
-  var item = checklistItemById(potential.questionId);
+  var item = checklistItemById(potential.questionId, potential.auditId);
   var trace = regulatoryTraceForQuestion(potential.questionId);
   var id = 'CAB-2026-' + String(state.findingSeq).padStart(3, '0');
   var finding = {
@@ -266,17 +372,17 @@ function convertPotentialFindingToFinding(potentialId, options) {
     description: potential.comment,
     orgId: potential.orgId,
     auditId: potential.auditId,
-    severity: severity,
+    severity: storedSeverity,
     riskCategory: item && item.riskCategory ? item.riskCategory : '',
     findingType: item && item.findingType ? item.findingType : '',
     reference: item ? item.ref : 'Configured rule (regulatory reference)',
     traceId: trace ? trace.id : null,
     basis: 'Lead Inspector converted Potential Finding ' + potential.id,
-    status: 'WAITING_CAP',
-    capRequired: true,
-    evidenceRequired: true,
+    status: capRequired ? 'WAITING_CAP' : (evidenceRequired ? 'EVIDENCE_REQUIRED' : 'OPEN_OBSERVATION'),
+    capRequired: capRequired,
+    evidenceRequired: evidenceRequired,
     issuedDate: DEMO_TODAY,
-    dueDate: options.dueDate || '2026-07-15',
+    dueDate: dueDate,
     closedDate: null,
     closureType: null,
     responsiblePerson: '',
@@ -300,10 +406,12 @@ function convertPotentialFindingToFinding(potentialId, options) {
     action: 'converted',
     actor: options.actorName || currentActorLabel(),
     date: DEMO_TODAY,
-    severity: severity
+    severity: storedSeverity,
+    capRequired: capRequired,
+    evidenceRequired: evidenceRequired
   };
-  if (!state.checklistAnswers[potential.questionId]) state.checklistAnswers[potential.questionId] = {};
-  state.checklistAnswers[potential.questionId].findingId = id;
+  var answer = checklistAnswerForAudit(state, potential.auditId, potential.questionId);
+  if (answer) answer.findingId = id;
   if (audit && (audit.status === 'Scheduled' || audit.status === 'Planned')) audit.status = 'In Progress';
   return finding;
 }

@@ -250,6 +250,17 @@ function planningPrepMeta(status) {
   return PLANNING_PREP_STATUS_META[status] || { label: humanStatus(status), tone: statusTone(status) };
 }
 
+function planningLeadSessionName(target) {
+  var lead = ((target && target.users) || []).filter(function (user) {
+    return user.roleKey === 'leadInspector' && user.status === 'Active';
+  })[0] || null;
+  return lead ? lead.name : 'Caner Yildiz';
+}
+
+function planningItemAssignedToCurrentLead(target, item) {
+  return !!(item && item.preparation && item.preparation.leadInspector === planningLeadSessionName(target));
+}
+
 function appendPlanningPrepHistory(item, actor, action, comment) {
   if (!item.preparation.history) item.preparation.history = [];
   item.preparation.history.push({
@@ -318,6 +329,7 @@ function proposePlanningTeamAndSchedule(item, options) {
 
 function confirmPlanningPreparation(item, actor) {
   requirePlanningRole(actor, 'manager', 'Department Manager confirmation required.');
+  if (item.preparation.status === 'ready_for_execution' && item.preparation.assignmentPackage) return item;
   if (item.preparation.status !== 'team_schedule_proposed') throw new Error('Lead proposal required before confirmation.');
   item.preparation.status = 'ready_for_execution';
   item.preparation.assignmentPackage = {

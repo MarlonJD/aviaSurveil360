@@ -39,6 +39,16 @@ assert.doesNotMatch(html, /AUD-2026-008/);
 assert.ok(overdueIndex < todayIndex, 'overdue audit is sorted before today');
 assert.match(html, /Continue checklist/);
 assert.match(html, /Start checklist/);
+assert.match(html, /data-act="start-checklist"[^>]*data-id="AUD-2026-001"/);
+assert.match(html, /data-act="nav"[^>]*data-view="checklist"[^>]*data-id="AUD-2026-005"/);
+
+context.state.view = 'inspector-assignments';
+context.state.params = {};
+html = context.viewInspectorAssignments();
+assert.match(html, /data-act="inspector-assignment-open" data-id="AUD-2026-001"/);
+assert.match(html, /data-act="inspector-assignment-open" data-id="AUD-2026-005"/);
+assert.match(html, /Template preview only/);
+assert.doesNotMatch(html, /data-act="inspector-assignment-open" data-id="PR-2026-/);
 
 context.state.params = { auditId: 'AUD-2026-001' };
 html = context.viewAuditDetail();
@@ -85,7 +95,9 @@ assert.doesNotMatch(html, /<select[^>]+data-field="inspection-status"/);
 assert.equal(typeof context.reopenInspectionChecklistForEditing, 'function');
 assert.equal(context.reopenInspectionChecklistForEditing(context.state, 'AUD-2026-001', {
   at: '2026-07-11T10:05:00.000Z',
-  userId: 'USR-AYLIN'
+  userId: 'USR-AYLIN',
+  role: 'inspector',
+  reason: 'Correct the recorded galley sample after Lead review.'
 }), true);
 assert.equal(submittedWorkspace.submittedAt, '');
 assert.equal(submittedWorkspace.submittedByUserId, '');
@@ -94,6 +106,10 @@ assert.equal(submittedWorkspace.lastSubmittedAt, '2026-07-11T09:31:42.154Z');
 assert.equal(submittedWorkspace.lastSubmittedByUserId, 'USR-AYLIN');
 assert.equal(submittedWorkspace.reopenedAt, '2026-07-11T10:05:00.000Z');
 assert.equal(submittedWorkspace.reopenedByUserId, 'USR-AYLIN');
+assert.equal(submittedWorkspace.reopenReason, 'Correct the recorded galley sample after Lead review.');
+assert.equal(submittedWorkspace.reopenHistory.length, 1);
+assert.equal(submittedWorkspace.reopenHistory[0].auditId, 'AUD-2026-001');
+assert.equal(submittedWorkspace.reopenHistory[0].previousSubmittedAt, '2026-07-11T09:31:42.154Z');
 assert.equal(JSON.stringify(submittedWorkspace.answersByQuestionId), answersBeforeReopen);
 
 html = context.viewAuditDetail();
@@ -105,6 +121,7 @@ assert.match(html, /Submit to Lead Inspector/);
 
 const appSource = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
 assert.match(appSource, /case 'inspection-reopen-editing': handleInspectionReopenEditing\(id\); break;/);
+assert.match(appSource, /case 'inspection-reopen-confirm': handleInspectionReopenConfirm\(id\); break;/);
 assert.match(appSource, /reopenInspectionChecklistForEditing\(state, targetAuditId/);
 assert.match(appSource, /case 'new-planning-inspection': startPlanningInspectionIntake\(\); break;/);
 assert.match(appSource, /case 'new-audit': startPlanningInspectionIntake\(\); break;/);
@@ -116,5 +133,21 @@ html = context.viewAuditDetail();
 assert.match(html, /Emergency Equipment/);
 assert.match(html, /Is the PBE installed, serviceable, accessible/);
 assert.doesNotMatch(html, /Are operational hazards formally identified\?/);
+
+context.state.role = 'leadInspector';
+html = context.leadPotentialDecisionRowsHtml([{
+  id: 'PF-TEST-OBS',
+  auditId: 'AUD-2026-001',
+  questionId: 'cab-galley-oven',
+  checklistText: 'Galley record sample',
+  result: 'observation',
+  comment: 'Monitor the sample.',
+  status: 'pending_lead_review',
+  findingId: ''
+}]);
+assert.match(html, /id="pf-cap-required-PF-TEST-OBS"[^>]*checked/);
+assert.match(html, /id="pf-evidence-required-PF-TEST-OBS"[^>]*checked/);
+assert.match(html, /data-field="potential-finding-severity"/);
+assert.match(html, /Observation defaults clear CAP, Evidence, and Due Date/);
 
 console.log('audit-work-queue-smoke: ok');

@@ -31,9 +31,8 @@ framework migration is included.
 - `js/reports.js` — preliminary/final report approval demo logic.
 - `js/manager-workspaces.js` — Department Manager workspace state normalization
   and lookup selectors.
-- `js/work-items.js` — shared table-first work-item shaping for audits,
-  findings, CAP/evidence child rows, approvals, planning items, and admin
-  queues.
+- `js/work-items.js` — shared work-item shaping plus deterministic,
+  organization-scoped browser-local reminder and manager-attention records.
 - `js/views.js` — static demo screen rendering.
 - `js/app.js` — role routing, UI action handling, mock interactions, and demo
   bootstrapping.
@@ -44,6 +43,9 @@ There is no `package.json`; do not assume `npm test`.
 
 - `tests/approval-smoke.test.js`
 - `tests/audit-work-queue-smoke.test.js`
+- `tests/browser-scenario-contract-smoke.test.js` — role/action authority,
+  canonical CAP/Finding mutation, reason-required reopen, and closure-label
+  regression coverage.
 - `tests/checklist-approval-smoke.test.js`
 - `tests/checklist-comment-render-smoke.test.js`
 - `tests/checklist-management-smoke.test.js`
@@ -78,10 +80,14 @@ There is no `package.json`; do not assume `npm test`.
 - `tests/planning-workspace-smoke.test.js`
 - `tests/premium-ui-remediation-smoke.test.js`
 - `tests/report-approval-smoke.test.js`
+- `tests/scenario-integrity-regression.test.js` — exact-Audit checklist,
+  Potential Finding, Observation, closure, and deterministic reminder contract.
 - `tests/service-provider-final-report-smoke.test.js`
 - `tests/service-provider-portal-smoke.test.js`
 - `tests/stakeholder-readiness-regressions.test.js`
 - `tests/table-first-workbench-smoke.test.js`
+- `tests/ui-screenshot-audit-remediation-smoke.test.js` — focused responsive,
+  interaction, and truthful-control contract for the 86-screen visual audit.
 
 ## Agent Harness
 
@@ -104,6 +110,14 @@ There is no `package.json`; do not assume `npm test`.
 - `docs/demo-evidence/BUILD_SUMMARY.md` — English canonical demo evidence, verification
   status, and known limitations.
 - `docs/demo-evidence/BUILD_SUMMARY.turkce.md` — Turkish stakeholder companion summary.
+- `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.md` — canonical 86-screen
+  desktop, tablet, and mobile visual-audit evidence.
+- `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.turkce.md` — Turkish
+  stakeholder companion for the visual-audit evidence.
+- `docs/demo-evidence/BROWSER_SCENARIO_INTEGRITY_2026-07-20.md` — canonical
+  real-click browser matrix, automated gate, console, screenshot, and cleanup evidence.
+- `docs/demo-evidence/BROWSER_SCENARIO_INTEGRITY_2026-07-20.turkce.md` — Turkish
+  stakeholder companion for the scenario-integrity evidence.
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.md`
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.turkce.md`
 - `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`
@@ -152,7 +166,9 @@ files in the same folder.
 - `docs/exec-plans/active/2026-07-10-inspector-report-and-governance-workflow-remediation-plan.md`
 - `docs/exec-plans/active/2026-07-10-stakeholder-readiness-final-remediation-plan.md`
 - `docs/exec-plans/active/2026-07-18-inspection-lifecycle-alignment-plan.md`
+- `docs/exec-plans/active/2026-07-19-ui-screenshot-audit-remediation-plan.md`
 - `docs/exec-plans/active/2026-07-20-unannounced-inspection-intake-alignment-plan.md`
+- `docs/exec-plans/active/2026-07-20-browser-scenario-integrity-remediation-plan.md`
 
 ## Execution Plan Archive And Tracker
 

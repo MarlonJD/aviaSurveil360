@@ -215,6 +215,10 @@ assert.match(html, /Finding Types/);
 assert.match(html, /Mandatory/);
 assert.match(html, /Critical/);
 assert.match(html, /Version History/);
+assert.match(html, /<textarea[^>]*id="manager-checklist-question-reference"[^>]*class="manager-checklist-reference-textarea"/);
+assert.match(html, /Configured Requirement \/ Reference/);
+assert.match(html, /ICAO Annex 6/);
+assert.doesNotMatch(html, /<input[^>]*id="manager-checklist-question-reference"/);
 
 const beforeUiDuplicate = context.state.managedChecklists.length;
 context.handleAction('manager-checklist-duplicate', dataEl({ 'data-id': 'CL-CABIN' }));

@@ -23,8 +23,8 @@ Create, issue, track and close findings.
 
 ## Ana aksiyonlar
 
-- Create finding
-- Issue finding
+- Potential Finding review et
+- Potential Finding'i return, dismiss veya convert et
 - Review CAP
 - Review evidence
 - Request more info
@@ -35,6 +35,9 @@ Create, issue, track and close findings.
 
 - Issued findings cannot be deleted
 - CAP accepted does not close finding
+- Observation varsayılan olarak CAP, Evidence veya Due Date gerektirmez
+- Evidence `Close`, evidence-verified closure kaydeder; authorized closure ayrı
+  Department Manager ve reason-required yoldur
 - Internal notes separated
 - Critical/overdue findings appear on manager dashboard
 

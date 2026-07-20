@@ -9,13 +9,14 @@
 5. New Inspection Planning Intake
 6. Audit Detail
 7. Checklist Runner
-8. Finding Detail
-9. Auditee Portal Dashboard
-10. CAP Submission Form
-11. Evidence Upload
-12. Evidence Review
-13. Closed Finding / Report Preview
-14. Admin Template Preview
+8. Lead Inspector Potential Finding Review
+9. Finding Detail
+10. Auditee Portal Dashboard
+11. CAP Submission Form
+12. Evidence Upload
+13. Evidence Review
+14. Closed Finding / Report Preview
+15. Admin Template Preview
 
 ## Inspector dashboard
 
@@ -111,11 +112,15 @@ For each checklist item:
 - Regulation reference
 - Expected evidence
 - Answer: Compliant / Non-Compliant / Observation / Not Applicable / Not Checked
-- Comment
-- Attachment
-- Create Finding button
+- Required comment for a Non-Compliant or Observation result
+- Mock Evidence filename
+- Create Potential Finding button scoped to the exact Audit
 
-## Finding form
+Submitted checklists are read-only. Inspector or Lead Inspector may reopen only
+at a valid stage through a reason-required confirmation. Templates with no
+configured execution package show an explicitly disabled action.
+
+## Lead Inspector Potential Finding review and Finding conversion form
 
 Minimum fields:
 
@@ -124,17 +129,22 @@ Minimum fields:
 - Regulation reference
 - Severity
 - Due date
-- Auditee responsible person
 - CAP required
 - Evidence required
-- Issue Finding button
+- Return with reason
+- Dismiss with reason
+- Convert to Finding button
+
+Observation initializes with CAP unchecked, Evidence unchecked, and no Due
+Date. The Lead Inspector may explicitly configure those fields before
+conversion. Conversion writes the canonical Finding; it does not silently
+switch roles.
 
 Advanced fields:
 
 - Risk category
 - Repeat finding
 - Related previous finding
-- Enforcement escalation
 - Internal CAA note
 
 ## CAP form for auditee
@@ -152,10 +162,16 @@ Use helper text:
 
 Fields:
 
-- Evidence preview
+- Mock Evidence filename and version
 - Related finding
 - Related CAP
 - Previous versions
-- Decision: Accept / Reject / Request More Information
+- Decision: Close / Partially Close / Not Close
 - Comment to auditee
 - Internal CAA note
+
+`Close` records `Evidence accepted and verified`. `Partially Close` and `Not
+Close` keep the Finding open. A Department Manager's reason-required authorized
+closure is separate from Evidence review. Finding, Auditee, and Manager
+surfaces show organization-scoped reminder history with stage, recipient, date,
+`demo_recorded` status, and `Demo in-app event; no real delivery`.

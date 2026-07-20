@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Send due-date and status messages.
+Record deterministic browser-local due-date and manager-attention events.
 
 ## Key fields
 
@@ -16,7 +16,7 @@ Send due-date and status messages.
 
 ## Primary actions
 
-- Send notification
+- Record manual in-app reminder
 - Configure template
 - Enable rule
 - View delivery
@@ -24,9 +24,13 @@ Send due-date and status messages.
 ## Business rules
 
 - 30/15/7/due/overdue reminders
-- Critical finding immediate manager alert
+- Critical Finding immediate manager-attention record
 - Messages link to record
 - No sensitive internal info in notifications
+- Events are idempotent, organization scoped, and use `in_app` /
+  `demo_recorded`
+- Overdue escalation does not start enforcement
+- Every history surface states `Demo in-app event; no real delivery`
 
 ## UX direction
 

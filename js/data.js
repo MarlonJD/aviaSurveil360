@@ -98,10 +98,27 @@ var SEVERITY = {
   0: { label: 'Observation',      cls: 'sev--obs', badge: 'neutral' }
 };
 
+var FINDING_CLOSURE_TYPES = {
+  EVIDENCE_VERIFIED: 'evidence-verified',
+  AUTHORIZED: 'authorized'
+};
+
+function closureBasisLabel(finding) {
+  var closureType = finding && finding.closureType;
+  if (closureType === FINDING_CLOSURE_TYPES.EVIDENCE_VERIFIED || closureType === 'evidence-accepted') {
+    return 'Evidence accepted and verified';
+  }
+  if (closureType === FINDING_CLOSURE_TYPES.AUTHORIZED || closureType === 'authorized-no-cap') {
+    return 'Authorized closure (audit-logged)';
+  }
+  return 'Closure basis not recorded';
+}
+
 /* ----------------------------- Finding statuses -----------------------------
    step = index into the 6-step lifecycle stepper.
    ownerRole / nextAction drive "current owner + next action" everywhere. */
 var FINDING_STATUS = {
+  OPEN_OBSERVATION:   { label: 'Open Observation',                   badge: 'neutral', step: 0, ownerRole: 'manager', next: 'Review configured Observation follow-up' },
   WAITING_CAP:        { label: 'Waiting for CAP',                    badge: 'warn',    step: 0, ownerRole: 'auditee',   next: 'Submit CAP' },
   CAP_SUBMITTED:      { label: 'CAP Submitted — Pending CAA Review', badge: 'info',    step: 1, ownerRole: 'inspector', next: 'Review CAP' },
   CAP_MORE_INFO:      { label: 'More Information Requested (CAP)',   badge: 'warn',    step: 0, ownerRole: 'auditee',   next: 'Revise and resubmit CAP' },
@@ -189,6 +206,53 @@ var SEED_CHECKLIST = {
   ]
 };
 
+var SEED_EXECUTION_CHECKLISTS = [
+  {
+    id: 'TPL-FOPS-2026',
+    name: 'Flight Operations Audit',
+    version: 'v3.2 (2026 demo)',
+    status: 'Published',
+    items: [
+      { id: 'FOPS-TRN-01', sectionKey: 'crew-training', sectionLabel: 'Crew Training Records', riskCategory: 'Flight Operations', severity: 2, findingType: 'Operational', text: 'Are sampled crew training records complete for the configured surveillance scope?', ref: 'Configured flight operations reference FOPS-TRN-01', evidence: 'Sampled crew training record and currency summary (mock filename only)' },
+      { id: 'FOPS-TRN-02', sectionKey: 'crew-training', sectionLabel: 'Crew Training Records', riskCategory: 'Flight Operations', severity: 2, findingType: 'Operational', text: 'Are training completion and currency exceptions reviewed and recorded?', ref: 'Configured flight operations reference FOPS-TRN-02', evidence: 'Training exception review record or corrective follow-up note' },
+      { id: 'FOPS-TRN-03', sectionKey: 'crew-training', sectionLabel: 'Crew Training Records', riskCategory: 'Flight Operations', severity: 3, findingType: 'Records', text: 'Can the sampled training evidence be traced to the applicable crew member and programme?', ref: 'Configured flight operations reference FOPS-TRN-03', evidence: 'Crew-to-programme trace sample and training evidence index' }
+    ]
+  },
+  {
+    id: 'TPL-AWO-2026',
+    name: 'Continuing Airworthiness Audit',
+    version: 'v2.0 (2026 demo)',
+    status: 'Published',
+    items: [
+      { id: 'AWO-REC-01', sectionKey: 'maintenance-records', sectionLabel: 'Maintenance Records', riskCategory: 'Airworthiness', severity: 2, findingType: 'Records', text: 'Are sampled maintenance release records complete for the configured review scope?', ref: 'Configured airworthiness reference AWO-REC-01', evidence: 'Sample maintenance release record and trace index' },
+      { id: 'AWO-REC-02', sectionKey: 'maintenance-records', sectionLabel: 'Maintenance Records', riskCategory: 'Airworthiness', severity: 2, findingType: 'Records', text: 'Are deferred defect records traceable to their current review status?', ref: 'Configured airworthiness reference AWO-REC-02', evidence: 'Deferred defect sample and current review status record' },
+      { id: 'AWO-REC-03', sectionKey: 'maintenance-records', sectionLabel: 'Maintenance Records', riskCategory: 'Airworthiness', severity: 3, findingType: 'Records', text: 'Are sampled component records linked to the reviewed aircraft record set?', ref: 'Configured airworthiness reference AWO-REC-03', evidence: 'Component-to-aircraft trace sample and supporting record index' }
+    ]
+  },
+  {
+    id: 'TPL-RAMP-2026',
+    name: 'Ramp Inspection',
+    version: 'v1.4 (2026 demo)',
+    status: 'Published',
+    items: [
+      { id: 'RAMP-OPS-01', sectionKey: 'ramp-operations', sectionLabel: 'Ramp Operations', riskCategory: 'Ramp Safety', severity: 2, findingType: 'Operational', text: 'Are sampled ramp movement controls applied in the configured inspection area?', ref: 'Configured ramp reference RAMP-OPS-01', evidence: 'Ramp observation note and mock location photo filename' },
+      { id: 'RAMP-OPS-02', sectionKey: 'ramp-operations', sectionLabel: 'Ramp Operations', riskCategory: 'Ramp Safety', severity: 2, findingType: 'Equipment', text: 'Is sampled ground support equipment condition recorded before use?', ref: 'Configured ramp reference RAMP-OPS-02', evidence: 'Ground support equipment pre-use record sample' },
+      { id: 'RAMP-OPS-03', sectionKey: 'ramp-operations', sectionLabel: 'Ramp Operations', riskCategory: 'Ramp Safety', severity: 3, findingType: 'Operational', text: 'Are ramp access exceptions documented and reviewed?', ref: 'Configured ramp reference RAMP-OPS-03', evidence: 'Ramp access exception log or review note' }
+    ]
+  },
+  {
+    id: 'TPL-SEC-2026',
+    name: 'Aviation Security Audit',
+    version: 'v1.1 (2026 demo)',
+    status: 'Published',
+    items: [
+      { id: 'SEC-ACCESS-01', sectionKey: 'access-control', sectionLabel: 'Access Control', riskCategory: 'Aviation Security', severity: 2, findingType: 'Operational', text: 'Are configured restricted-area access controls applied?', ref: 'Configured security reference SEC-ACCESS-01', evidence: 'Restricted-area access control sample and mock observation note' },
+      { id: 'SEC-ACCESS-02', sectionKey: 'access-control', sectionLabel: 'Access Control', riskCategory: 'Aviation Security', severity: 2, findingType: 'Records', text: 'Are sampled visitor records complete?', ref: 'Configured security reference SEC-ACCESS-02', evidence: 'Sample visitor access record and escort confirmation' },
+      { id: 'SEC-ACCESS-03', sectionKey: 'access-control', sectionLabel: 'Access Control', riskCategory: 'Aviation Security', severity: 3, findingType: 'Records', text: 'Are access exceptions reviewed and recorded?', ref: 'Configured security reference SEC-ACCESS-03', evidence: 'Access exception log and review note' }
+    ]
+  }
+];
+
 var SEED_QUESTION_BANK = [
   { id: 'cab-galley-oven', title: 'Galley oven serviceability', text: 'Is the oven installed, serviceable, and in compliance with configured cabin inspection requirements?',
     regulationRef: 'Configured reference: ICAO Annex 6 / Company Cabin Inspection Manual (demo)', department: 'Cabin Safety',
@@ -227,13 +291,13 @@ var SEED_QUESTION_BANK = [
     exampleEvidence: 'Lavatory inspection record or cabin defect rectification note', notes: 'Workbook-derived demo question; available for checklist versioning demo.', status: 'Active' }
 ];
 
-/* Other templates only shown in Admin preview list (not runnable in demo). */
+/* Published templates below have deterministic frontend-only execution packages. */
 var SEED_TEMPLATE_LIBRARY = [
   { id: 'TPL-CABIN-2026', name: 'Cabin Inspection', domain: 'Cabin Safety', version: 'v1.0 (2026 demo)', items: '126 source rows / 6 runnable demo rows', status: 'Published' },
-  { id: 'TPL-FOPS-2026', name: 'Flight Operations Audit', domain: 'Flight Operations', version: 'v3.2 (2026)', items: 5, status: 'Published' },
-  { id: 'TPL-AWO-2026',  name: 'Continuing Airworthiness Audit', domain: 'Airworthiness', version: 'v2.0 (2026)', items: 8, status: 'Published' },
-  { id: 'TPL-RAMP-2026', name: 'Ramp Inspection (SAFA-style)', domain: 'Ramp', version: 'v1.4 (2026)', items: 12, status: 'Published' },
-  { id: 'TPL-SEC-2026',  name: 'Aviation Security Audit', domain: 'Security', version: 'v1.1 (2026)', items: 10, status: 'Draft' }
+  { id: 'TPL-FOPS-2026', name: 'Flight Operations Audit', domain: 'Flight Operations', version: 'v3.2 (2026 demo)', items: '3 runnable demo rows', status: 'Published' },
+  { id: 'TPL-AWO-2026',  name: 'Continuing Airworthiness Audit', domain: 'Airworthiness', version: 'v2.0 (2026 demo)', items: '3 runnable demo rows', status: 'Published' },
+  { id: 'TPL-RAMP-2026', name: 'Ramp Inspection (SAFA-style)', domain: 'Ramp', version: 'v1.4 (2026 demo)', items: '3 runnable demo rows', status: 'Published' },
+  { id: 'TPL-SEC-2026',  name: 'Aviation Security Audit', domain: 'Security', version: 'v1.1 (2026 demo)', items: '3 runnable demo rows', status: 'Published' }
 ];
 
 var SEED_MANAGED_CHECKLISTS = [
@@ -422,7 +486,7 @@ var SEED_MANAGER_FINDINGS = [
     description: 'The document index could more clearly identify the latest approved cabin inspection record set.',
     status: 'CLOSED', capRequired: false, evidenceRequired: false,
     issuedDate: '2026-06-15', dueDate: '2026-06-20', closedDate: '2026-06-18',
-    closureType: 'authorized-no-cap', responsiblePerson: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager',
+    closureType: 'authorized', responsiblePerson: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager',
     cap: { rootCause: 'Not required for this observation.', correctiveAction: 'Updated the index label.',
            preventiveAction: 'Review index labels during document publication.',
            responsible: CANONICAL_SERVICE_PROVIDER_NAME + ' Quality Manager',
@@ -442,7 +506,7 @@ var SEED_FINDINGS = [
     description: 'Sample of pre-flight documents not filed within the required period.',
     status: 'CLOSED', capRequired: true, evidenceRequired: true,
     issuedDate: '2025-11-10', dueDate: '2025-12-10', closedDate: '2025-12-04',
-    closureType: 'evidence-accepted', responsiblePerson: 'Ops Records Lead',
+    closureType: 'evidence-verified', responsiblePerson: 'Ops Records Lead',
     cap: { rootCause: 'Manual filing backlog.', correctiveAction: 'Cleared backlog and assigned owner.',
            preventiveAction: 'Weekly filing check added to ops routine.', responsible: 'Ops Records Lead',
            targetDate: '2025-12-01', submittedDate: '2025-11-20', status: 'Accepted' },
@@ -504,7 +568,7 @@ var SEED_FINDINGS = [
     description: 'Latest cabin crew manual revision not yet acknowledged by all crew.',
     status: 'CLOSED', capRequired: true, evidenceRequired: true,
     issuedDate: '2026-04-16', dueDate: '2026-05-16', closedDate: '2026-05-10',
-    closureType: 'evidence-accepted', responsiblePerson: 'Cabin Safety Lead',
+    closureType: 'evidence-verified', responsiblePerson: 'Cabin Safety Lead',
     cap: { rootCause: 'Distribution list outdated.', correctiveAction: 'Re-issued with updated list.',
            preventiveAction: 'Quarterly distribution-list review.', responsible: 'Cabin Safety Lead',
            targetDate: '2026-05-08', submittedDate: '2026-04-25', status: 'Accepted' },
@@ -1126,6 +1190,15 @@ var SEED_PLANNING_ITEMS = [
     department: 'Cabin Safety',
     organization: CANONICAL_SERVICE_PROVIDER_NAME,
     organizationId: 'ORG-XYZ',
+    applicationType: 'Continued Surveillance',
+    inspectionCategory: 'Routine / Announced',
+    noticePolicy: 'advance',
+    templateId: 'TPL-CABIN-2026',
+    plannedDate: '2026-09-10',
+    mode: 'On-site',
+    location: 'Fly Namibia HQ',
+    scope: 'Cabin emergency equipment serviceability oversight.',
+    auditId: '',
     purpose: 'Focused Q3 cabin inspection plan for emergency equipment serviceability oversight.',
     riskCategory: 'Emergency equipment serviceability',
     triggerType: 'Risk based / repeat finding',
@@ -1190,6 +1263,15 @@ var SEED_PLANNING_ITEMS = [
     department: 'Flight Operations',
     organization: CANONICAL_SERVICE_PROVIDER_NAME,
     organizationId: 'ORG-XYZ',
+    applicationType: 'Continued Surveillance',
+    inspectionCategory: 'Routine / Announced',
+    noticePolicy: 'advance',
+    templateId: 'TPL-FOPS-2026',
+    plannedDate: '2026-10-12',
+    mode: 'On-site',
+    location: 'Fly Namibia HQ',
+    scope: 'Flight Operations crew training record surveillance.',
+    auditId: '',
     purpose: 'Targeted flight operations surveillance plan for repeated crew training record findings.',
     riskCategory: 'Crew training record recurrence',
     triggerType: 'Risk based / repeat finding',
@@ -1266,6 +1348,15 @@ var SEED_PLANNING_ITEMS = [
     department: 'Airworthiness',
     organization: CANONICAL_SERVICE_PROVIDER_NAME,
     organizationId: 'ORG-XYZ',
+    applicationType: 'Continued Surveillance',
+    inspectionCategory: 'Routine / Announced',
+    noticePolicy: 'advance',
+    templateId: 'TPL-AWO-2026',
+    plannedDate: '2026-11-16',
+    mode: 'On-site',
+    location: 'Fly Namibia HQ',
+    scope: 'Airworthiness maintenance release documentation review.',
+    auditId: '',
     purpose: 'Focused records review for recurring maintenance release documentation gaps.',
     riskCategory: 'Maintenance release documentation',
     triggerType: 'Targeted follow-up / records review',
@@ -1735,6 +1826,42 @@ function mergeRemediationState(base, saved) {
     record.downloadedAttachmentIds = Object.assign({}, record.downloadedAttachmentIds || {});
     base.inspectionWorkspaces[auditId] = record;
   });
+
+  var legacyChecklistAnswers = source.checklistAnswers && typeof source.checklistAnswers === 'object'
+    ? source.checklistAnswers
+    : {};
+  var skippedLegacyAnswer = false;
+  Object.keys(legacyChecklistAnswers).forEach(function (questionId) {
+    var legacyAnswer = legacyChecklistAnswers[questionId];
+    var auditId = legacyAnswer && String(legacyAnswer.auditId || '').trim();
+    if (!auditId) {
+      skippedLegacyAnswer = true;
+      return;
+    }
+    if (!base.inspectionWorkspaces[auditId]) {
+      base.inspectionWorkspaces[auditId] = deepClone(workspaceDefaults[auditId] || workspaceDefaults['AUD-2026-001']);
+      base.inspectionWorkspaces[auditId].answersByQuestionId = {};
+    }
+    var answers = base.inspectionWorkspaces[auditId].answersByQuestionId;
+    if (!answers[questionId]) {
+      answers[questionId] = Object.assign({}, deepClone(legacyAnswer), {
+        auditId: auditId,
+        questionId: questionId,
+        status: legacyAnswer.status || legacyAnswer.answer || ''
+      });
+    }
+  });
+  base.checklistAnswers = {};
+  if (skippedLegacyAnswer && !base.auditLog.some(function (entry) { return entry.id === 'L-MIG-CHECKLIST-UNSCOPED'; })) {
+    base.auditLog.push({
+      id: 'L-MIG-CHECKLIST-UNSCOPED',
+      time: DEMO_TODAY + ' 00:00',
+      actor: 'AviaSurveil360 demo migration',
+      action: 'Ambiguous legacy checklist answer was not imported without an Audit ID',
+      target: 'checklistAnswers',
+      system: true
+    });
+  }
   if (!source.inspectionWorkspaces && (source.inspectionWorkspaceAnswers || source.inspectionWorkspaceSubmittedAt)) {
     var legacyAuditId = source.params && source.params.auditId ? source.params.auditId : 'AUD-2026-005';
     if (!base.inspectionWorkspaces[legacyAuditId]) base.inspectionWorkspaces[legacyAuditId] = deepClone(workspaceDefaults['AUD-2026-001']);
@@ -1836,6 +1963,7 @@ function freshState() {
     orgs: deepClone(SEED_ORGS),
     audits: deepClone(SEED_AUDITS),
     checklist: deepClone(SEED_CHECKLIST),
+    executionChecklists: deepClone(SEED_EXECUTION_CHECKLISTS),
     questionBank: deepClone(SEED_QUESTION_BANK),
     templateLibrary: deepClone(SEED_TEMPLATE_LIBRARY),
     managedChecklists: deepClone(SEED_MANAGED_CHECKLISTS),
@@ -1944,8 +2072,9 @@ function freshState() {
       ssp: 'all'
     },
     notifications: deepClone(SEED_NOTIFICATIONS),
+    reminderEvents: [],
     auditLog: deepClone(SEED_AUDIT_LOG),
-    checklistAnswers: {},       // { itemId: { answer, comment, findingId } } for the live audit
+    checklistAnswers: {},       // Legacy migration input only; canonical answers live under inspectionWorkspaces[auditId].
     inspectionWorkspaceAnswers: {}, // { rowId: { status, comment } } for the simplified inspector workspace
     inspectionWorkspaceSection: '1.',
     inspectionWorkspaceDownloadedAt: '',
@@ -1964,7 +2093,7 @@ function freshState() {
       downloadedAt: ''
     },
     capReviewUi: {
-      expandedId: 'SEC-2026-002',
+      expandedId: 'CAB-2026-011',
       tab: 'details',
       status: 'all',
       due: 'all',
@@ -1976,7 +2105,7 @@ function freshState() {
       tab: 'overview',
       reminderSentAt: '',
       exportedAt: '',
-      selectedFindingId: '',
+      selectedFindingId: 'CAB-2026-012',
       detailTab: 'details',
       reviewStatus: 'not_effective',
       reviewComments: 'The submitted CAP does not address all required actions. PBE serviceability evidence is still incomplete for the sampled cabin position. Additional corrective actions are required.',
@@ -2075,6 +2204,7 @@ function freshState() {
     auditSeq: 9,                // AUD-2026-00X counter for the New Audit Wizard
     notifSeq: 100,
     logSeq: 100,
+    reminderSeq: 1,
     outboxSeq: 1,
     aiDecisionSeq: 1,
     questionSeq: 7,
@@ -2164,6 +2294,8 @@ function mergeDemoState(saved) {
   });
   normalizeLegacyProviderState(base);
   if (!Array.isArray(base.notifications)) base.notifications = deepClone(SEED_NOTIFICATIONS);
+  if (!Array.isArray(base.reminderEvents)) base.reminderEvents = [];
+  if (!Number.isFinite(base.reminderSeq) || base.reminderSeq < 1) base.reminderSeq = 1;
   base.notifications.forEach(function (notification) {
     if (notification.role === 'auditee' && !notification.organizationId) notification.organizationId = 'ORG-XYZ';
     if (!notification.organizationId) notification.organizationId = '';
@@ -2203,6 +2335,8 @@ function mergeDemoState(saved) {
     });
   });
   base.findings.forEach(function (finding) {
+    if (finding.closureType === 'evidence-accepted') finding.closureType = FINDING_CLOSURE_TYPES.EVIDENCE_VERIFIED;
+    if (finding.closureType === 'authorized-no-cap') finding.closureType = FINDING_CLOSURE_TYPES.AUTHORIZED;
     if (!Array.isArray(finding.evidence)) finding.evidence = [];
     if (!Array.isArray(finding.commentsToAuditee)) finding.commentsToAuditee = [];
     if (!Array.isArray(finding.internalNotes)) finding.internalNotes = [];
@@ -2253,15 +2387,22 @@ function mergeDemoState(saved) {
     if (!exists) base.planningItems.push(deepClone(seedItem));
   });
   base.planningItems.forEach(function (item) {
-    var seed = SEED_PLANNING_ITEMS.filter(function (candidate) { return candidate.id === item.id; })[0] || SEED_PLANNING_ITEMS[0];
-    normalizePlanningApprovalV9(item, seed, saved.demoStateVersion);
+    var seed = SEED_PLANNING_ITEMS.filter(function (candidate) { return candidate.id === item.id; })[0] || null;
+    var normalizationSeed = seed || item;
+    normalizePlanningApprovalV9(item, normalizationSeed, saved.demoStateVersion);
+    if (seed) {
+      ['applicationType', 'inspectionCategory', 'noticePolicy', 'templateId', 'plannedDate', 'mode', 'location', 'scope', 'auditId'].forEach(function (field) {
+        if (item[field] === undefined || item[field] === null || item[field] === '') item[field] = deepClone(seed[field]);
+      });
+    }
     if (!item.preparation) {
-      item.preparation = deepClone(seed.preparation);
+      item.preparation = deepClone(normalizationSeed.preparation);
     }
     if (!Array.isArray(item.preparation.history)) item.preparation.history = [];
-    item.budget = Object.assign({}, deepClone(seed.budget), item.budget || {});
-    if (!Array.isArray(item.budget.lines)) item.budget.lines = deepClone(seed.budget.lines);
+    item.budget = Object.assign({}, deepClone(normalizationSeed.budget), item.budget || {});
+    if (!Array.isArray(item.budget.lines)) item.budget.lines = deepClone(normalizationSeed.budget.lines);
   });
+  base.executionChecklists = deepClone(SEED_EXECUTION_CHECKLISTS);
   if (!Array.isArray(base.managedChecklists)) base.managedChecklists = deepClone(SEED_MANAGED_CHECKLISTS);
   SEED_MANAGED_CHECKLISTS.forEach(function (seedPackage) {
     var current = base.managedChecklists.filter(function (item) { return item.id === seedPackage.id; })[0] || null;
@@ -2511,6 +2652,10 @@ function persistAfterAction() {
 function initializeState() {
   var saved = loadDemoState();
   state = saved ? mergeDemoState(saved) : freshState();
+  if (typeof ensureDeterministicReminderEvents === 'function') {
+    ensureDeterministicReminderEvents(state, DEMO_TODAY);
+    saveDemoState(state);
+  }
 }
 
 /* Option lists for the New Audit Wizard. */

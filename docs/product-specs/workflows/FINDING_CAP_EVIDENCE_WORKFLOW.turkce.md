@@ -6,8 +6,10 @@ Manage finding follow-up from issue to closure.
 
 ## Adımlar
 
-1. Create finding
-2. Issue to auditee
+1. Inspector uygun checklist sonucu ve zorunlu comment'ten audit-scoped bir
+   Potential Finding gönderir
+2. Lead Inspector bunu return, dismiss veya Auditee'ye issue edilen kanonik
+   Finding'e convert eder
 3. Service Provider root cause, corrective action, preventive action,
    responsible person, target completion date ve mock Evidence filename sunar
 4. CAA reviews CAP
@@ -23,6 +25,9 @@ Manage finding follow-up from issue to closure.
 ## Kurallar
 
 - CAP accepted is not closure.
+- Observation varsayılan olarak CAP, Evidence veya Due Date gerektirmez; Lead
+  Inspector conversion bu requirement'lardan herhangi birini açıkça
+  configure edebilir.
 - `Close`, Finding'i `CLOSED` durumuna taşır ve `evidence-verified` closure kaydeder.
 - `Partially Close` ile `Not Close`, Finding'i `EVIDENCE_MORE_INFO` durumuna
   taşır ve `findingClosed: false` kaydeder.
@@ -31,7 +36,8 @@ Manage finding follow-up from issue to closure.
 - Bu demoda CAP verification sonucunu yalnız Inspector veya Lead Inspector kaydeder.
 - Evidence version ve CAP verification history append-only'dir; önceki Evidence
   kaydı overwrite veya delete edilmez.
-- Authorized closure ayrı authority gerektirir ve Evidence verification gibi gösterilmez.
+- Authorized closure Department Manager authority ve reason gerektirir,
+  `authorized` kaydeder ve Evidence verification gibi gösterilmez.
 - Enforcement ayrı authorized review'a referral olarak kalır; otomatik sanction uygulamaz.
 
 ## UX notları

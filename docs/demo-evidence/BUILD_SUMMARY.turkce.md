@@ -29,6 +29,16 @@ başlangıç verisine döndürür.
 
 ---
 
+## Güncel UI kanıtı
+
+19 Temmuz 2026 sayfa bazlı ekran görüntüsü denetimi 86 ekranı masaüstü, tablet
+ve mobil boyutlarda kapsar. Korunan başlangıç sonucu 76 Geçti ve 10 Sorun'du;
+tamamlanan remediation, taze 258 görünüm yerel kanıtıyla 86 Geçti ve 0 Sorun
+kaydediyor:
+[`UI_SCREEN_AUDIT_2026-07-19.turkce.md`](UI_SCREEN_AUDIT_2026-07-19.turkce.md).
+
+---
+
 ## Değişen dosyalar
 
 | Dosya | Amaç |
@@ -37,12 +47,14 @@ başlangıç verisine döndürür.
 | `css/styles.css` | Kısıtlı Department/General Manager workbench'leri, split pane'ler, sticky satır aksiyonları, sınırlandırılmış menü/drawer'lar ve 390px mobil davranış dahil rol bazlı responsive UI. |
 | `js/data.js` | Backend'e yakın sahte kayıtlar, workbook-derived Cabin Inspection verisi, manager/GM demo kayıtları, açık status değerleri ve izole `localStorage` yardımcıları. |
 | `js/helpers.js` | Seçiciler, status yardımcıları, Cabin/PBE regulatory trace lookup, outbox yardımcıları ve demo badge yardımcıları. |
-| `js/work-items.js` | Audit, finding, CAP/evidence alt satırları, approval, planning ve admin kuyrukları için ortak table-first iş öğesi hazırlama katmanı. |
+| `js/work-items.js` | Ortak work-item shaping ile deterministik, organization-scoped browser-local reminder ve manager-attention kayıtları. |
 | `js/manager-workspaces.js` | Saf Department/General Manager projection ve mutation'ları, ayrı rapor kararları, CAP/checklist/risk yardımcıları ve bağımlılıksız demo PDF üretimi. |
 | `js/views.js` | Mevcut ekranlara ek olarak Cabin Inspection akışı, kısıtlı manager/GM dashboard'ları, Findings Review, Inspection Team, Reports Approval, CAP Monitoring, Checklist Management ve Risk Dashboard'ları. |
 | `js/app.js` | Rol bazlı navigasyon, merkezi kalıcılık, manager/GM etkileşim dispatch'i, PDF/CSV indirmeleri, Cabin Inspection lifecycle geçişleri ve stabil ID üretimi. |
 | `docs/demo-evidence/BUILD_SUMMARY.md` | İngilizce kanonik özet. |
 | `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Bu Türkçe paydaş özeti. |
+| `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.md` | 86 ekranlık masaüstü/tablet/mobil kanonik görsel denetim. |
+| `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.turkce.md` | Görsel denetimin Türkçe paydaş sürümü. |
 | `tests/*.test.js` | Cabin Inspection yolu, Department/General Manager workspaces, lifecycle/yetkilendirme sınırları, geçerli PDF üretimi, responsive kontratlar ve demo sınırları için smoke kapsamı. |
 
 Backend, veritabanı, API, framework geçişi, gerçek dosya saklama, gerçek AI
@@ -224,7 +236,14 @@ Gelişmiş yetenekler ekranda açıkça şöyle etiketlenir:
 Korunan ürün kuralları:
 
 - CAP kabulü bulgu kapatma değildir.
-- Bulgu yalnızca kanıt kabulünden sonra veya yetkili kapatma ile kapanır.
+- Checklist exception'ları Lead Inspector review için audit-scoped Potential
+  Finding oluşturur; sessizce Finding issue etmez veya rol değiştirmez.
+- Observation, Lead Inspector requirement'ları açıkça configure etmedikçe CAP,
+  Evidence veya Due Date gerektirmez.
+- Evidence `Close`, `Evidence accepted and verified` kaydeder; Department
+  Manager reason-required authorized closure ayrı kalır.
+- Reminder ve manager-attention history browser-local'dır ve `Demo in-app
+  event; no real delivery` yazar; enforcement başlatmaz.
 - Auditee; Internal CAA Note, denetçi iş yükü, başka kuruluşlar, dahili risk
   skoru, regulatory governance veya AI governance verisi görmez.
 - `Comment to Auditee` ve `Internal CAA Note` ayrı kalır.
@@ -921,6 +940,43 @@ Real-device validation, production accessibility certification, deployment ve
 stakeholder sign-off **not run** kalır. Kapsam **demo-only**;
 **production-readiness not claimed**.
 
+### UI screenshot-audit remediation checkpoint — 2026-07-19
+
+Kanıt durumu **demo-only** ve **verified locally**. Başlangıçtaki 10 Issue route,
+statik HTML/CSS/Vanilla JavaScript mimarisi değiştirilmeden ve backend, servis,
+gerçek AI, gerçek upload veya gerçek notification sınırı eklenmeden giderildi.
+Ortak responsive record card'ları, decision summary'leri, multiline
+reference/question kontrolleri, tablet decision-queue reflow'u, contextual AI
+entry/return, 44px mobile action'lar ve güncellenen typography/long-page
+davranışı direct-Node contract'larıyla kapsandı.
+
+Fresh isolated in-app Browser QA, 86 route'luk envanterin tamamını `1440x1000`,
+`1024x900` ve `390x844` boyutlarında yeniden çekti. 258/258 screenshot kabul
+edildi; 27 contact sheet'in tamamı incelendi. Matris 0 capture error, 0 console
+warning/error, 0 route veya role mismatch, 0 eksik heading, 0 document
+horizontal overflow failure ve 0 istenmeyen nested overflow failure kaydetti.
+Dekoratif report-logo maskeleri ve bilinçli scroller'lar intended behavior
+olarak görsel biçimde incelendi.
+
+Değişen kontrol kanıtı 14/14 senaryoda geçti. Buna Lead card navigation,
+Manager Team ve Findings state değişiklikleri, multiline edit/save, Checklist
+Builder Add/Up/Down, Executive report açma ve aynı Finding'den AI'a giriş/aynı
+Finding'e dönüş dahildir. Browser Tab ve visible-focus kontrolleri değişen 56
+action target'ta geçti. Son mobile denetim, görünür değişen 41 action'ı kapsadı;
+ölçülen en küçük boyut 44 × 44 CSS pixel oldu.
+
+Geçici yerel kanıt
+`/private/tmp/aviasurveil360-ui-audit-remediation-2026-07-19/` altındadır;
+`capture-results.json`, `SUMMARY.md`, 258 screenshot ve 27 contact sheet içerir.
+İzole Browser ve static server kapatıldı; cleanup process araması task-owned
+automation veya server kalıntısı bulmadı. QA-only deep-route wrapper'ı çekim
+sonrasında kaldırıldı.
+
+Ekran okuyucu testi, otomatik kontrast denetimi, gerçek cihaz testi, production
+accessibility certification, deployment ve stakeholder sign-off **not run**
+durumundadır. Bu checkpoint production readiness veya tam accessibility
+compliance iddiası değildir.
+
 ### Unannounced inspection intake alignment checkpoint — 2026-07-20
 
 Kanıt durumu **demo-only** ve **verified locally**;
@@ -980,6 +1036,54 @@ JavaScript olarak kalır. Backend, database, API, real authentication, upload,
 notification delivery veya production Audit service eklenmedi. Regulatory
 validation, deployment, real-device testing ve stakeholder sign-off **not run**
 durumundadır.
+
+### Browser scenario integrity remediation checkpoint — 2026-07-20
+
+Kanıt durumu **demo-only** ve focused davranış **verified locally**;
+**production-readiness not claimed**. Kanonik checklist answer ve Potential
+Finding kayıtları exact Audit'e scoped'dur. Inspector execution, Lead Inspector
+return, dismissal veya conversion için Potential Finding kaydeder; hiçbir
+action sessizce rol değiştirmez. Kanonik `state.findings` kayıtları CAP,
+Evidence, Department Manager, Auditee, report, dashboard ve reminder
+yüzeylerini besler.
+
+Planning preparation yalnız approved/released item ile sınırlıdır; executable
+Audit ancak Department Manager confirmation sonrasında idempotent materialize
+edilir. Configured Flight Operations, Airworthiness, Ramp ve Security package,
+exact Audit için runnable'dır; unavailable template preview açıkça disabled'dır.
+Submitted checklist reopen için Inspector/Lead authority, valid stage ve reason
+gerekir.
+
+Observation varsayılan olarak CAP, Evidence veya Due Date gerektirmez. CAP
+acceptance Finding'i açık bırakır. Evidence `Close`, `evidence-verified`
+kaydeder ve `Evidence accepted and verified` gösterir; Department Manager
+authorized closure reason gerektirir, `authorized` kaydeder ve ayrı bir yol
+olarak kalır. Deterministik 30/15/7-day, due-today, overdue, Level 1
+manager-attention ve overdue manager-escalation event'leri idempotent ve
+organization-scoped'dur. Channel/status `in_app` / `demo_recorded`, görünür
+sınır `Demo in-app event; no real delivery`'dir; enforcement side effect yoktur.
+
+Final automated kanıt **verified locally**. Tüm `js/*.js` syntax check'leri
+geçti; focused scenario-integrity gate 16/16; complete `tests/*.test.js` suite
+88/88 geçti ve failure, cancellation, skip veya todo yoktu. 15 maddelik Task 13
+localhost real-click Browser matrix, `file://` veya direct state mutation
+kullanmadan `http://127.0.0.1:4173/index.html` üzerinden geçti. Final fresh-tab
+console warning/error kaydı döndürmedi. Kritik screenshot'lar, exact matrix ve
+cleanup kanıtı
+[`BROWSER_SCENARIO_INTEGRITY_2026-07-20.turkce.md`](BROWSER_SCENARIO_INTEGRITY_2026-07-20.turkce.md)
+içinde kayıtlıdır.
+
+Browser doğrulaması tamamlanmış assignment'larda bir false control de bulup
+kapattı: Ramp ve Airworthiness `View Report` action'ları generic report listesini
+açıyordu. Exact Inspector report preview bulunana kadar bu kontroller disabled
+`Report preview unavailable` olarak render edilir. Browser tab'ları ve localhost
+server kapatıldı; final process araması task-owned automation veya server
+kalıntısı bulmadı.
+
+Backend, database, API, real authentication/authorization, real upload,
+notification delivery, production scheduling veya automatic enforcement
+eklenmedi. Regulatory validation, deployment, real-device testing ve
+stakeholder sign-off **not run** kalır.
 
 ---
 

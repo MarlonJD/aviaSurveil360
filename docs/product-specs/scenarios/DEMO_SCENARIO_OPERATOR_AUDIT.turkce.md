@@ -8,6 +8,7 @@ Fly Namibia için Cabin Inspection: PBE serviceability ve accessibility doğrula
 
 - CAA Manager
 - CAA Inspector
+- Lead Inspector
 - Fly Namibia Auditee User
 
 ## Data
@@ -27,9 +28,14 @@ Fly Namibia için Cabin Inspection: PBE serviceability ve accessibility doğrula
 2. Fly Namibia için Cabin Inspection planlanmıştır.
 3. Inspector bugünkü assigned Cabin Inspection'ı açar.
 4. Inspector Cabin Inspection checklist başlatır.
-5. Inspector `EM EQ / PBE` sorusunu açar ve Non-Compliant işaretler.
-6. Sistem organization, audit, checklist reference, severity ve expected evidence bağlamı prefilled finding form açar.
-7. Inspector CAB-2026-001 Finding issue eder.
+5. Inspector `EM EQ / PBE` sorusunu açar, Non-Compliant işaretler ve bu exact
+   Audit için zorunlu comment'i kaydeder.
+6. AviaSurveil360, Lead Inspector incelemesi için audit-scoped bir Potential
+   Finding oluşturur; Finding'i sessizce issue etmez veya rol değiştirmez.
+7. Lead Inspector Potential Finding'i return, dismiss veya convert edebilir.
+   Conversion; Audit, organization, configured reference, severity, CAP
+   requirement ve Evidence requirement alanlarını taşıyan kanonik
+   CAB-2026-001 Finding kaydını oluşturur.
 8. Fly Namibia auditee giriş yapar ve sadece kendi kuruluşuna ait My Findings kayıtlarını görür.
 9. Auditee CAP submit eder:
    - Root cause: Pre-flight cabin equipment serviceability checks did not reconcile the PBE position with the deferred defect list.
@@ -38,9 +44,19 @@ Fly Namibia için Cabin Inspection: PBE serviceability ve accessibility doğrula
    - Target completion date: 15 July 2026.
 10. Auditee Fly_Namibia_PBE_Serviceability_Record_CAB-2026-001.pdf yükler ve PBE_Cabin_Position_Photo.jpg dosya adını mock filename olarak referans verebilir.
 11. Inspector CAP'i inceler ve kabul eder. Finding, Evidence Required durumunda açık kalır.
-12. Inspector evidence'ı inceler ve kabul eder.
-13. Finding yalnızca evidence kabulünden sonra kapanır.
+12. Inspector latest Evidence version'ı inceler ve `Close` kaydeder.
+13. Finding, `Evidence accepted and verified` closure basis'i ile kapanır.
+    `Partially Close` ve `Not Close` Finding'i açık tutar.
 14. Manager dashboard güncellenir.
+
+Observation varsayılan olarak CAP, Evidence veya Due Date gerektirmez; Lead
+Inspector conversion sırasında bu requirement'ları açıkça configure edebilir.
+CAP acceptance hiçbir zaman Finding'i kapatmaz. Evidence-verified closure ile
+reason-required ve audit-logged authorized closure ayrı yollardır. 30/15/7-day,
+due-today, overdue ve manager-attention kayıtları deterministik browser-local
+demo event'leridir. `Demo in-app event; no real delivery` sınırını gösterir;
+production scheduling, notification delivery veya automatic enforcement
+değildir.
 
 ## Department ve General Manager oversight uzantısı
 
