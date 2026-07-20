@@ -1,0 +1,155 @@
+package integration_test
+
+import (
+	"context"
+	"fmt"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/database"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/migrations"
+)
+
+var requiredFoundationTables = []string{
+	"identity_references",
+	"session_references",
+	"organizations",
+	"inspections",
+	"checklist_template_versions",
+	"inspection_packages",
+	"checklist_responses",
+	"potential_findings",
+	"findings",
+	"cap_revisions",
+	"evidence_versions",
+	"review_decisions",
+	"report_versions",
+	"report_decisions",
+	"offline_grants",
+	"idempotency_responses",
+	"authorized_sync_changes",
+	"sync_cursors",
+	"object_metadata",
+	"audit_events",
+	"outbox_messages",
+}
+
+func TestMigrationsApplyFromAnEmptyDatabase(t *testing.T) {
+	pool := createTestDatabase(t, "empty")
+
+	if err := migrations.Apply(context.Background(), pool); err != nil {
+		t.Fatalf("apply migrations: %v", err)
+	}
+	assertFoundationSchema(t, pool)
+	if version, err := migrations.CurrentVersion(context.Background(), pool); err != nil || version != 2 {
+		t.Fatalf("migration version = %d, err = %v", version, err)
+	}
+}
+
+func TestEveryRetainedNMinusOneFixtureUpgrades(t *testing.T) {
+	fixtures, err := filepath.Glob(filepath.Join(apiModuleRoot(t), "tests", "fixtures", "n-1", "*.sql"))
+	if err != nil {
+		t.Fatalf("find N-1 fixtures: %v", err)
+	}
+	if len(fixtures) == 0 {
+		t.Fatal("no retained N-1 migration fixture")
+	}
+
+	for _, fixture := range fixtures {
+		fixture := fixture
+		t.Run(strings.TrimSuffix(filepath.Base(fixture), ".sql"), func(t *testing.T) {
+			pool := createTestDatabase(t, "upgrade")
+			contents, err := os.ReadFile(fixture)
+			if err != nil {
+				t.Fatalf("read fixture: %v", err)
+			}
+			if _, err := pool.Exec(context.Background(), string(contents)); err != nil {
+				t.Fatalf("apply fixture: %v", err)
+			}
+			if err := migrations.Apply(context.Background(), pool); err != nil {
+				t.Fatalf("upgrade fixture: %v", err)
+			}
+			assertFoundationSchema(t, pool)
+		})
+	}
+}
+
+func TestMigrationsAreForwardOnly(t *testing.T) {
+	migrationFiles, err := filepath.Glob(filepath.Join(apiModuleRoot(t), "migrations", "*.sql"))
+	if err != nil {
+		t.Fatalf("find migrations: %v", err)
+	}
+	if len(migrationFiles) == 0 {
+		t.Fatal("no migrations")
+	}
+	for _, migrationFile := range migrationFiles {
+		if strings.HasSuffix(migrationFile, ".down.sql") {
+			t.Errorf("down migration is not allowed: %s", migrationFile)
+		}
+		if !strings.HasSuffix(migrationFile, ".up.sql") {
+			t.Errorf("migration is not forward-only: %s", migrationFile)
+		}
+	}
+}
+
+func createTestDatabase(t *testing.T, label string) *database.Pool {
+	t.Helper()
+	ctx := context.Background()
+	baseURL := os.Getenv("AVIA_TEST_DATABASE_URL")
+	if baseURL == "" {
+		baseURL = "postgres://aviasurveil:aviasurveil@127.0.0.1:55432/aviasurveil?sslmode=disable"
+	}
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		t.Fatalf("parse test database URL: %v", err)
+	}
+	adminURL := *parsed
+	adminURL.Path = "/postgres"
+	admin, err := database.Open(ctx, adminURL.String())
+	if err != nil {
+		t.Fatalf("open PostgreSQL admin connection: %v", err)
+	}
+	databaseName := fmt.Sprintf("avia_%s_%d", label, time.Now().UnixNano())
+	if _, err := admin.Exec(ctx, "CREATE DATABASE "+databaseName); err != nil {
+		admin.Close()
+		t.Fatalf("create test database: %v", err)
+	}
+	admin.Close()
+
+	databaseURL := *parsed
+	databaseURL.Path = "/" + databaseName
+	pool, err := database.Open(ctx, databaseURL.String())
+	if err != nil {
+		t.Fatalf("open test database: %v", err)
+	}
+	t.Cleanup(func() {
+		pool.Close()
+		admin, openErr := database.Open(context.Background(), adminURL.String())
+		if openErr != nil {
+			t.Errorf("reopen PostgreSQL admin connection: %v", openErr)
+			return
+		}
+		defer admin.Close()
+		if _, dropErr := admin.Exec(context.Background(), "DROP DATABASE "+databaseName+" WITH (FORCE)"); dropErr != nil {
+			t.Errorf("drop test database: %v", dropErr)
+		}
+	})
+	return pool
+}
+
+func assertFoundationSchema(t *testing.T, pool *database.Pool) {
+	t.Helper()
+	for _, table := range requiredFoundationTables {
+		var relation *string
+		if err := pool.QueryRow(context.Background(), "SELECT to_regclass($1)::text", "public."+table).Scan(&relation); err != nil {
+			t.Fatalf("look up table %s: %v", table, err)
+		}
+		if relation == nil {
+			t.Errorf("required table %s does not exist", table)
+		}
+	}
+}

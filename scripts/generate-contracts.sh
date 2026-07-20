@@ -7,6 +7,7 @@ OUTPUT_ROOT="${AVIA_CONTRACT_OUTPUT_ROOT:-${REPOSITORY_ROOT}}"
 GENERATOR="${REPOSITORY_ROOT}/apps/web/node_modules/.bin/openapi-typescript"
 SPECIFICATION="${REPOSITORY_ROOT}/api/openapi/aviasurveil360.yaml"
 TYPESCRIPT_OUTPUT="${OUTPUT_ROOT}/apps/web/src/generated/transport/api-types.ts"
+GO_OUTPUT="${OUTPUT_ROOT}/apps/api/internal/httpapi/generated/api.gen.go"
 
 if [[ ! -x "${GENERATOR}" ]]; then
   echo "openapi-typescript is not installed; run npm --prefix apps/web ci" >&2
@@ -15,3 +16,5 @@ fi
 
 mkdir -p "$(dirname "${TYPESCRIPT_OUTPUT}")"
 "${GENERATOR}" "${SPECIFICATION}" --output "${TYPESCRIPT_OUTPUT}"
+node "${SCRIPT_DIR}/generate-go-contracts.mjs"
+gofmt -w "${GO_OUTPUT}"

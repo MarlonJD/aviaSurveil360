@@ -3,7 +3,7 @@
   "info": {
     "title": "AviaSurveil360 API",
     "version": "0.1.0-candidate",
-    "description": "Minimal versioned contract for the candidate-only Tasks 2-4 mock-data slice. No real API is implemented in this slice."
+    "description": "Versioned contract for the candidate-only React and Go local release-candidate slices. Production deployment and cutover are outside this contract."
   },
   "servers": [{ "url": "/" }],
   "paths": {
@@ -16,7 +16,7 @@
     "/health/ready": {
       "get": {
         "operationId": "getReadiness",
-        "responses": { "200": { "description": "Ready", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" } } } } }
+        "responses": { "200": { "description": "Ready", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" } } } }, "503": { "$ref": "#/components/responses/Problem" } }
       }
     },
     "/v1/assignments": {

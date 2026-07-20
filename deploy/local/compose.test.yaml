@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    environment:
+      POSTGRES_DB: aviasurveil
+      POSTGRES_USER: aviasurveil
+      POSTGRES_PASSWORD: aviasurveil
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - postgres-test-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aviasurveil -d aviasurveil"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    restart: "no"
+
+volumes:
+  postgres-test-data:

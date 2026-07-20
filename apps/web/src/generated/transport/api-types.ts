@@ -1078,6 +1078,7 @@ export interface operations {
                     "application/json": components["schemas"]["HealthResponse"];
                 };
             };
+            503: components["responses"]["Problem"];
         };
     };
     listAssignments: {

@@ -38,6 +38,10 @@ const expectedPaths = [
 
 assert.equal(document.openapi, "3.1.0");
 assert.deepEqual(Object.keys(document.paths), expectedPaths);
+assert.ok(
+  document.paths["/health/ready"].get.responses["503"],
+  "readiness must contractually fail closed with a 503 problem response",
+);
 
 const schemas = document.components.schemas;
 const referencePrefix = "#/components/schemas/";

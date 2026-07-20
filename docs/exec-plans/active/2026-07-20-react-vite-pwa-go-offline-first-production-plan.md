@@ -8,7 +8,7 @@
 
 **Tech Stack:** React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, Service Worker + Cache Storage, OPFS for staged Inspection Attachments, Vitest, React Testing Library, Playwright, Go modular monolith, `net/http` + `chi`, OpenAPI, PostgreSQL + `pgx`/`sqlc`, S3-compatible object storage, and containerized local integration dependencies.
 
-**Status:** `active` — Tasks 2-4 are implemented, `verified locally`, committed, and pushed as the `candidate-only` mock slice. On 2026-07-21 the current user / plan owner explicitly authorized Tasks 5-13, per-Task commit/push, and the local-candidate owner defaults recorded in the Decision Log. The binding next slice is Task 9. Production deployment, traffic cutover, legacy removal, production hosting/provider selection, production on-call, and any `production-ready` claim remain `blocked` behind the separate release/operations gate.
+**Status:** `active` — Tasks 2-4 are implemented, `verified locally`, committed, and pushed as the `candidate-only` mock slice. Task 9's one-module Go/PostgreSQL foundation is also implemented and `verified locally` as a Task-scoped candidate slice. The binding next slice is Task 10. Production deployment, traffic cutover, legacy removal, production hosting/provider selection, production on-call, and any `production-ready` claim remain `blocked` behind the separate release/operations gate.
 
 ## Global Constraints
 
@@ -1701,7 +1701,7 @@ evidence.
 - Consumes: Task 2 OpenAPI/generated transport, approved Go/auth ADR, frontend Backend operations, and canonical domain vocabulary.
 - Produces: generated Go handler interfaces, one Go module containing API and worker commands, forward-only expand/contract migrations, module-owned stores, transaction/idempotency/audit/outbox boundaries, readiness/liveness endpoints, and reproducible PostgreSQL integration dependencies.
 
-- [ ] **Step 1: Write failing generated-contract, build-graph, migration, and health tests.**
+- [x] **Step 1: Write failing generated-contract, build-graph, migration, and health tests.**
 
   Required assertions:
 
@@ -1715,23 +1715,23 @@ evidence.
   production configuration rejects test identity, test session, and dev-secret bypasses
   ```
 
-- [ ] **Step 2: Create the Go module and dependency lock.**
+- [x] **Step 2: Create the Go module and dependency lock.**
 
   Use Go `1.26` language mode, `chi` for routing, `pgx` for PostgreSQL, `sqlc` for checked module-owned queries, and lock-pinned generated OpenAPI request/response/handler types. Keep HTTP framework code in `internal/httpapi`; both commands import only packages beneath the same `apps/api` module.
 
   Extend `scripts/generate-contracts.sh` and `scripts/check-contracts.sh` so TypeScript and Go generation run from one OpenAPI source and a clean regeneration diff is mandatory.
 
-- [ ] **Step 3: Add forward-only migrations and transaction helpers.**
+- [x] **Step 3: Add forward-only migrations and transaction helpers.**
 
   Initial schemas cover identity/session references, organizations, inspections, immutable checklist template/package snapshots, checklist responses, Potential Findings, Findings, CAP revisions, Evidence versions, review decisions, report versions/decisions, offline grants, idempotency responses, authorized sync changes/cursors, object metadata, audit events, and transactional server outbox.
 
   Each domain owns its generated query/store package. `platform/database` exposes only the pool and transaction primitive. Migrations use expand/contract compatibility; application rollback never depends on a database downgrade.
 
-- [ ] **Step 4: Implement the configuration and deterministic local profile.**
+- [x] **Step 4: Implement the configuration and deterministic local profile.**
 
-  `deploy/local/compose.test.yaml` pins PostgreSQL, isolates its volumes, exposes health checks, and is reset by `scripts/test-http-profile.sh`. A deterministic test principal/session bootstrap exists only under explicit test configuration and cannot start in production mode. The real OIDC provider integration remains blocked until its Task 1 owner decision is accepted and separately verified.
+  `deploy/local/compose.test.yaml` pins PostgreSQL, isolates its volumes, exposes health checks, and is reset by `scripts/test-http-profile.sh`. A deterministic test principal/session bootstrap exists only under explicit test configuration and cannot start in production mode. The candidate OIDC/session decision is accepted; its real handler and local-provider integration remain `not run` until Task 10.
 
-- [ ] **Step 5: Run local integration foundations.**
+- [x] **Step 5: Run local integration foundations.**
 
   Run:
 
@@ -1743,6 +1743,8 @@ evidence.
   ```
 
   Expected: both commands build; migrations apply from empty and retained upgrade fixtures; generated outputs are clean; health/config tests pass; teardown leaves no task-owned process or container. Domain behavior remains `not run` until Task 10.
+
+  Result 2026-07-21: the required red runs failed on the absent Go generator/runtime, missing 503 readiness contract, missing platform boundaries, and missing local profile. The first complete profile then caught and rejected a generated request-type collision before the generator was corrected. The final `./scripts/test-http-profile.sh` run built both commands, passed the full Go race suite including empty-install and retained N-1 PostgreSQL upgrades, passed OpenAPI/TypeScript/Go clean regeneration, passed SQLC clean regeneration, and removed its task-owned container, network, and volume. Evidence is [Go And PostgreSQL Foundation](../../demo-evidence/GO_POSTGRES_FOUNDATION_2026-07-21.md), `verified locally`, and `candidate-only`. Canonical domain transitions, real OIDC, object upload/scan, real HTTP parity, offline behavior, sync, deployment, and production behavior are `not run` in Task 9.
 
 ### Task 10: Implement Canonical Domain, Session, Authorization, And Audit Rules
 
@@ -2153,7 +2155,7 @@ must not start; it does not block unrelated earlier slices.
 
 - Current status: `active`; Tasks 5-13 and per-Task commit/push are explicitly authorized for the local release candidate.
 - Review status: the initial 2026-07-20 adversarial review is complete; verdict was `NO-GO as written`, and its plan-level corrections are incorporated in this revision.
-- Current next todo: execute Task 9 test-first, verify its Go/PostgreSQL foundation, then commit and push that Task before Task 10.
+- Current next todo: execute Task 10 test-first for canonical domain/session/authorization/audit behavior, then commit and push that Task before Task 11.
 - Move to `ready-for-verification` only after the selected implementation objective and every required local gate pass. A required local gate cannot pass through a documented gap.
 - Do not move to `completed/` merely because a local release candidate exists. Completion requires objective completion, required local verification, explicit stakeholder/user acceptance, completed-index entry, tracker reconciliation, and an explicit disposition for the separate production release/operations dependency.
 - `production-ready`, deployment, traffic routing, cutover, and legacy removal remain blocked until the separately approved production release/operations plan passes and the user authorizes the exact action.
