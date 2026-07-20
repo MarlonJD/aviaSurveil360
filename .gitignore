@@ -8,3 +8,10 @@ qa/
 
 # Vercel
 .vercel
+
+# React candidate local dependencies and generated build/test output
+apps/web/node_modules/
+apps/web/dist/
+apps/web/*.tsbuildinfo
+apps/web/playwright-report/
+apps/web/test-results/

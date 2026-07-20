@@ -1,16 +1,22 @@
-# AviaSurveil360 Planlama Paketi ve Frontend Demo
+# AviaSurveil360 Planlama Paketi, Frontend Demo ve React Candidate
 
 Bu depo, Sivil Havacılık Otoriteleri için önerilen surveillance, audit,
-finding, CAP ve evidence management ürününe ait yapılandırılmış planlama paketi
-ile **frontend-only statik clickable demo** içerir.
+Finding, CAP ve Evidence management ürününe ait yapılandırılmış planlama
+paketini, orijinal **frontend-only statik clickable demo**yu ve ayrı bir
+`candidate-only` React mock dilimini içerir.
 
-Çalıştırılabilir demo `index.html`, `css/`, `js/`, mock data, client-side state
-ve `tests/` altındaki hedefli Node smoke testlerinden oluşur.
+Korunan legacy demo `index.html`, `css/`, `js/`, browser-local mock state ve
+`tests/` altındaki Node smoke testlerinden oluşur. Yetkilendirilen ilk
+çalıştırılabilir React dilimi `apps/web/` altındadır; TypeScript, Vite, tek
+`Backend` arkasında deterministik in-memory mock data ve `api/openapi/`
+altındaki versioned OpenAPI contract'ı kullanır.
 
-**Demo-only / production-ready değil:** backend, database, API, gerçek
-authentication, gerçek authorization enforcement, gerçek file upload, gerçek AI
-service, gerçek regulatory ingestion, gerçek notification service, production
-audit log veya framework migration yoktur.
+**Candidate-only / production-ready değil:** real backend, database, deployed
+API, authentication, production authorization enforcement, real file
+upload/storage, production Evidence chain of custody, PWA/offline persistence,
+production synchronization, deployment veya cutover yoktur. `HttpBackend`
+yalnız fake-fetch ile test edilmiştir. Root demo, removal-blocking behavior
+oracle olarak korunur.
 
 ## Ürün tanımı
 
@@ -35,10 +41,21 @@ eden task-based oversight platformudur.
 3. `docs/demo-handoff/CODEX_DEMO_ONLY_PROMPT.md`
 4. `docs/demo-evidence/BUILD_SUMMARY.md`
 5. `docs/exec-plans/index.md`
+6. `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.turkce.md`
 
 Clickable demo için `index.html` dosyasını doğrudan browser'da açın veya bu
 klasörü local static server ile servis edin. Güncel verification status ve demo
 sınırları için `docs/demo-evidence/BUILD_SUMMARY.md` dosyasına bakın.
+
+React mock candidate için:
+
+```bash
+npm --prefix apps/web ci
+npm --prefix apps/web run dev:demo
+```
+
+Doğrulanan exact scope, command, transcript ve exclusion'lar için
+`docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.turkce.md` dosyasına bakın.
 
 
 ## Kaynak Notları

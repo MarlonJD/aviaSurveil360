@@ -1,0 +1,18 @@
+{
+  "schema": "ListAssignmentsOutput",
+  "value": {
+    "items": [
+      {
+        "auditId": "AUD-2026-001",
+        "organizationId": "ORG-FLY-NAMIBIA",
+        "organizationName": "Fly Namibia",
+        "title": "2026 Cabin Inspection - Fly Namibia",
+        "status": "IN_PROGRESS",
+        "dueDate": "2026-06-18",
+        "dueState": "DUE_SOON",
+        "nextAction": "Continue Cabin Inspection checklist"
+      }
+    ],
+    "nextCursor": null
+  }
+}

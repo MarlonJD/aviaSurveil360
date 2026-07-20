@@ -1,12 +1,14 @@
 # AviaSurveil360 Package Manifest
 
-This repository is a planning pack plus a **frontend-only static clickable
-demo**. It is not a production system.
+This repository is a planning pack plus an intact **frontend-only static
+clickable demo** and a separate `candidate-only` React mock slice. It is not a
+production system.
 
-Demo boundary: no backend, database, API, real authentication, real
-authorization enforcement, real file upload/storage, real AI service, real
-regulatory ingestion, real notification service, production audit log, or
-framework migration is included.
+Candidate boundary: no real backend, database, deployed API, authentication,
+production authorization enforcement, real file upload/storage, PWA/offline
+persistence, production synchronization, deployment, cutover, or production
+audit log is included. The typed HTTP adapter is fake-fetch tested only; the
+root Vanilla demo remains intact.
 
 ## Root Files
 
@@ -37,9 +39,39 @@ framework migration is included.
 - `js/app.js` — role routing, UI action handling, mock interactions, and demo
   bootstrapping.
 
+## Versioned Contract And React Candidate
+
+- `api/openapi/aviasurveil360.yaml` — minimal versioned transport contract for
+  the authorized Tasks 2-4 slice.
+- `api/openapi/examples/canonical/` — canonical closed-schema request and
+  response examples.
+- `api/openapi/tests/contract-examples.test.mjs` — OpenAPI example and Auditee
+  projection checks.
+- `scripts/generate-contracts.sh` and `scripts/check-contracts.sh` — checked
+  TypeScript generation, lint, example validation, and drift detection.
+- `tests/parity/behavior-ledger.json` — nine-entry canonical scenario and role
+  entry parity ledger.
+- `tests/parity/react-legacy-parity.test.mjs` — executable ledger and intact
+  legacy-oracle checks.
+- `apps/web/` — React + TypeScript + Vite candidate with build-time-separated
+  demo and HTTP entries.
+- `apps/web/src/backend/` — one capability-composed `Backend`, thin typed HTTP
+  adapter, transport mapping, and boundary invariants.
+- `apps/web/src/mock/` — deterministic `MemoryMockStore`, mock seed, and
+  `MockBackend`; reachable only from the demo build entry.
+- `apps/web/src/features/` — canonical Cabin Inspection assignments,
+  inspection, checklist, Finding, CAP, Evidence, report, and dashboard routes.
+- `apps/web/tests/contract/` — reusable backend contract executed against the
+  deterministic mock harness.
+- `apps/web/tests/e2e/canonical-scenario.spec.ts` — normalized mock-mode Cabin
+  lifecycle and organization-isolation browser scenario.
+- `apps/web/scripts/assert-http-artifact.mjs` — HTTP build input/public-artifact
+  exclusion gate for mock and seed code.
+
 ## Smoke Tests
 
-There is no `package.json`; do not assume `npm test`.
+There is no root `package.json`; root legacy checks use Node directly. The
+separate `apps/web/package.json` owns the React candidate commands.
 
 - `tests/approval-smoke.test.js`
 - `tests/audit-work-queue-smoke.test.js`
@@ -118,6 +150,10 @@ There is no `package.json`; do not assume `npm test`.
   real-click browser matrix, automated gate, console, screenshot, and cleanup evidence.
 - `docs/demo-evidence/BROWSER_SCENARIO_INTEGRITY_2026-07-20.turkce.md` — Turkish
   stakeholder companion for the scenario-integrity evidence.
+- `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.md` — canonical Tasks 2-4
+  React mock slice scope, transcript, local verification, and evidence limits.
+- `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.turkce.md` — Turkish
+  stakeholder companion for the React mock slice evidence.
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.md`
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.turkce.md`
 - `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`
@@ -152,6 +188,7 @@ files in the same folder.
 ## Execution Plans
 
 - `docs/exec-plans/index.md` — active execution-plan tracking index.
+- `docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md`
 - `docs/exec-plans/active/2026-06-14-aviasurveil-demo-only-prototype-plan.md`
 - `docs/exec-plans/active/2026-06-23-ncaa-platform-v2-and-mvp-plan.md`
 - `docs/exec-plans/active/2026-06-28-caa-governance-workflow-and-roles-plan.md`
@@ -180,6 +217,7 @@ files in the same folder.
 
 ## Production Boundary
 
-The files above support stakeholder feedback and local demo verification only.
-They do not prove regulatory, security, enforcement, evidence repository,
-notification, mobile/offline, reporting, audit-log, or production readiness.
+The files above support stakeholder feedback, local demo verification, and a
+`candidate-only` React mock vertical. They do not prove a real HTTP/API service,
+regulatory, security, enforcement, Evidence repository, notification,
+mobile/offline, sync, deployment, audit-log, release, or production readiness.

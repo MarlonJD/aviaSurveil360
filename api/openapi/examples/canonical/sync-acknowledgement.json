@@ -1,0 +1,12 @@
+{
+  "schema": "PushFieldOperationResult",
+  "value": {
+    "operationId": "OP-SYNC-001",
+    "status": "accepted",
+    "authoritativeEntityId": "RESP-CAB-EMEQ-PBE-001",
+    "authoritativeRevision": 1,
+    "errorCode": null,
+    "conflict": null,
+    "acknowledgedAt": "2026-06-15T09:10:00.000Z"
+  }
+}

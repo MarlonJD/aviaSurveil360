@@ -1,0 +1,15 @@
+{
+  "schema": "ReportVersionView",
+  "value": {
+    "reportVersionId": "RPT-CAB-2026-001-V1",
+    "reportId": "RPT-CAB-2026-001",
+    "organizationId": "ORG-FLY-NAMIBIA",
+    "auditId": "AUD-2026-001",
+    "findingIds": ["FND-CAB-2026-001"],
+    "contentHash": "sha256:candidate-report-v1",
+    "version": 1,
+    "status": "DRAFT",
+    "revision": 1,
+    "issuedAt": null
+  }
+}

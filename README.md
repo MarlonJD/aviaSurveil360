@@ -1,16 +1,22 @@
-# AviaSurveil360 Planning Pack And Frontend Demo
+# AviaSurveil360 Planning Pack, Frontend Demo, And React Candidate
 
-This repository contains a structured planning pack plus a **frontend-only static
-clickable demo** for a proposed Civil Aviation Authority surveillance, audit,
-findings, CAP, and evidence management product.
+This repository contains a structured planning pack, the original
+**frontend-only static clickable demo**, and a separate `candidate-only` React
+mock slice for a proposed Civil Aviation Authority surveillance, audit,
+Findings, CAP, and Evidence management product.
 
-The executable demo is `index.html` with `css/`, `js/`, mock data, client-side
-state, and targeted Node smoke tests under `tests/`.
+The intact legacy demo is `index.html` with `css/`, `js/`, browser-local mock
+state, and Node smoke tests under `tests/`. The authorized first executable
+React slice is under `apps/web/`; it uses TypeScript, Vite, deterministic
+in-memory mock data behind one `Backend`, and a versioned OpenAPI contract under
+`api/openapi/`.
 
-**Demo-only / not production-ready:** there is no backend, database, API, real
-authentication, real authorization enforcement, real file upload, real AI
-service, real regulatory ingestion, real notification service, production audit
-log, or framework migration.
+**Candidate-only / not production-ready:** there is no real backend, database,
+deployed API, authentication, production authorization enforcement, real file
+upload/storage, production Evidence chain of custody, PWA/offline persistence,
+production synchronization, deployment, or cutover. `HttpBackend` is
+fake-fetch tested only. The root demo remains the removal-blocking behavior
+oracle.
 
 ## Product definition
 
@@ -35,10 +41,21 @@ Do not build an EMPIC-like complex enterprise screen first. Build a simple, role
 3. `docs/demo-handoff/CODEX_DEMO_ONLY_PROMPT.md`
 4. `docs/demo-evidence/BUILD_SUMMARY.md`
 5. `docs/exec-plans/index.md`
+6. `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.md`
 
 For the clickable demo, open `index.html` directly in a browser or serve this
 folder with a local static server. See `docs/demo-evidence/BUILD_SUMMARY.md` for current
 verification status and known demo limitations.
+
+For the React mock candidate:
+
+```bash
+npm --prefix apps/web ci
+npm --prefix apps/web run dev:demo
+```
+
+See `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.md` for the exact verified
+scope, commands, transcript, and exclusions.
 
 
 ## Source Notes

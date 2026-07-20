@@ -1,0 +1,30 @@
+{
+  "schema": "FindingView",
+  "value": {
+    "id": "FND-CAB-2026-001",
+    "findingNumber": "CAB-2026-001",
+    "auditId": "AUD-2026-001",
+    "organizationId": "ORG-FLY-NAMIBIA",
+    "organizationName": "Fly Namibia",
+    "title": "PBE serviceability and accessibility not confirmed",
+    "description": "PBE serviceability and accessibility were not confirmed against the configured cabin check.",
+    "regulatoryReference": "Configured Cabin Inspection reference — EM EQ / PBE",
+    "findingBasis": "Non-Compliant response and required Inspector comment for CAB-EMEQ-PBE-001",
+    "severity": "LEVEL_1_CRITICAL",
+    "status": "CLOSED",
+    "dueDate": "2026-07-15",
+    "dueState": "NOT_DUE",
+    "currentOwnerType": "CAA",
+    "currentOwnerId": "USR-LEAD-CANER",
+    "currentOwnerRole": "leadInspector",
+    "nextAction": "No action — Finding closed",
+    "capRequired": true,
+    "evidenceRequired": true,
+    "repeatFinding": false,
+    "createdAt": "2026-06-15T09:15:00.000Z",
+    "issuedAt": "2026-06-15T09:20:00.000Z",
+    "closedAt": "2026-06-15T11:00:00.000Z",
+    "closureBasis": "EVIDENCE_VERIFIED",
+    "revision": 6
+  }
+}

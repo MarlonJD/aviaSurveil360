@@ -1,0 +1,86 @@
+{
+  "schema": "InspectionPackage",
+  "value": {
+    "id": "PKG-CAB-2026-001",
+    "auditId": "AUD-2026-001",
+    "organizationId": "ORG-FLY-NAMIBIA",
+    "organizationName": "Fly Namibia",
+    "title": "2026 Cabin Inspection - Fly Namibia",
+    "packageVersion": 1,
+    "schemaVersion": 1,
+    "protocolVersion": 1,
+    "templateVersionId": "CTV-CABIN-1",
+    "packageDigest": "sha256:candidate-cabin-package-v1",
+    "expiresAt": "2026-07-15T23:59:59.000Z",
+    "checklistStatus": "IN_PROGRESS",
+    "checklistRevision": 1,
+    "questions": [
+      {
+        "id": "CAB-GALLEY-001",
+        "sectionId": "GALLEY",
+        "prompt": "Are galley restraints and stowage areas serviceable and secure?",
+        "regulatoryReference": "Configured Cabin Inspection reference — GALLEY",
+        "expectedEvidence": "Inspector observation and comment when an exception is recorded",
+        "allowedAnswers": ["COMPLIANT", "NON_COMPLIANT", "OBSERVATION", "NOT_APPLICABLE", "NOT_CHECKED"],
+        "commentRequiredFor": ["NON_COMPLIANT", "OBSERVATION"],
+        "assignedInspectorUserIds": ["USR-INSPECTOR-DAVID"],
+        "currentResponse": null
+      },
+      {
+        "id": "CAB-LAV-001",
+        "sectionId": "LAV",
+        "prompt": "Are lavatory safety equipment and placards present and serviceable?",
+        "regulatoryReference": "Configured Cabin Inspection reference — LAV",
+        "expectedEvidence": "Inspector observation",
+        "allowedAnswers": ["COMPLIANT", "NON_COMPLIANT", "OBSERVATION", "NOT_APPLICABLE", "NOT_CHECKED"],
+        "commentRequiredFor": ["NON_COMPLIANT", "OBSERVATION"],
+        "assignedInspectorUserIds": ["USR-INSPECTOR-AMINA"],
+        "currentResponse": null
+      },
+      {
+        "id": "CAB-PAX-SEAT-001",
+        "sectionId": "PAX SEAT",
+        "prompt": "Are passenger seats, belts, and adjacent fittings serviceable?",
+        "regulatoryReference": "Configured Cabin Inspection reference — PAX SEAT",
+        "expectedEvidence": "Inspector observation",
+        "allowedAnswers": ["COMPLIANT", "NON_COMPLIANT", "OBSERVATION", "NOT_APPLICABLE", "NOT_CHECKED"],
+        "commentRequiredFor": ["NON_COMPLIANT", "OBSERVATION"],
+        "assignedInspectorUserIds": ["USR-INSPECTOR-AMINA"],
+        "currentResponse": null
+      },
+      {
+        "id": "CAB-EMEQ-PBE-001",
+        "sectionId": "EM EQ / PBE",
+        "prompt": "Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?",
+        "regulatoryReference": "Configured Cabin Inspection reference — EM EQ / PBE",
+        "expectedEvidence": "PBE serviceability record and cabin position confirmation",
+        "allowedAnswers": ["COMPLIANT", "NON_COMPLIANT", "OBSERVATION", "NOT_APPLICABLE", "NOT_CHECKED"],
+        "commentRequiredFor": ["NON_COMPLIANT", "OBSERVATION"],
+        "assignedInspectorUserIds": ["USR-INSPECTOR-AMINA"],
+        "currentResponse": null
+      },
+      {
+        "id": "CAB-VID-CREW-SEAT-001",
+        "sectionId": "VID+CREW SEAT",
+        "prompt": "Are cabin information displays and crew seats serviceable?",
+        "regulatoryReference": "Configured Cabin Inspection reference — VID+CREW SEAT",
+        "expectedEvidence": "Inspector observation",
+        "allowedAnswers": ["COMPLIANT", "NON_COMPLIANT", "OBSERVATION", "NOT_APPLICABLE", "NOT_CHECKED"],
+        "commentRequiredFor": ["NON_COMPLIANT", "OBSERVATION"],
+        "assignedInspectorUserIds": ["USR-INSPECTOR-AMINA"],
+        "currentResponse": null
+      },
+      {
+        "id": "CAB-COCKPIT-GEN-001",
+        "sectionId": "COCKPIT+CAB GEN COND+EXITS",
+        "prompt": "Are cabin general condition and emergency exits satisfactory?",
+        "regulatoryReference": "Configured Cabin Inspection reference — COCKPIT+CAB GEN COND+EXITS",
+        "expectedEvidence": "Inspector observation",
+        "allowedAnswers": ["COMPLIANT", "NON_COMPLIANT", "OBSERVATION", "NOT_APPLICABLE", "NOT_CHECKED"],
+        "commentRequiredFor": ["NON_COMPLIANT", "OBSERVATION"],
+        "assignedInspectorUserIds": ["USR-INSPECTOR-AMINA"],
+        "currentResponse": null
+      }
+    ]
+  }
+}

@@ -99,6 +99,41 @@ Required checks:
   real notification delivery, production audit-log behavior, remote CI, or
   paid automation.
 
+## Production-Application Candidate Lane
+
+This lane is local-only and supplements rather than replaces the static-demo
+levels above. Run only the commands supported by the explicitly authorized
+slice; label unavailable later-slice gates `not run` or `blocked` rather than
+silently skipping them.
+
+For the Tasks 2-4 mock-data first executable slice:
+
+```bash
+npm --prefix apps/web ci
+npm --prefix apps/web run contracts:check
+npm --prefix apps/web run typecheck
+npm --prefix apps/web test
+npm --prefix apps/web run build:demo
+npm --prefix apps/web run build:http
+node apps/web/scripts/assert-http-artifact.mjs apps/web/dist
+node --test api/openapi/tests/contract-examples.test.mjs tests/parity/react-legacy-parity.test.mjs
+npm --prefix apps/web run test:e2e:mock -- canonical-scenario.spec.ts
+node --test tests/*.test.js
+git diff --check
+```
+
+Expected: locked install succeeds; OpenAPI examples and checked generation are
+clean; React type/unit/build and mock browser tests pass; the HTTP artifact has
+no mock/seed or demo-public input; the legacy demo suite remains passing. Real
+HTTP, Go, IndexedDB/OPFS, Service Worker/PWA, offline, sync, deployment, and
+production evidence are `not run` for this slice. The result is
+`candidate-only`.
+
+Future application slices must add their authorized Go build/race/integration,
+Playwright HTTP/offline, fail-on-skip/zero-test, migration/restore, artifact,
+and task-owned process/container cleanup gates before those capabilities can be
+reported as `verified locally`. Remote CI remains separately authorized.
+
 ## Current Harness Completion Gate
 
 For agent harness readiness work, run:

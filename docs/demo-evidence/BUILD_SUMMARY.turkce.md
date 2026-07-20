@@ -11,6 +11,10 @@ gerçek dosya yükleme, gerçek AI servisi, gerçek düzenleyici doküman alma,
 gerçek bildirim servisi, gerçek belge depolama, mobil/çevrimdışı uygulama,
 e-imza veya framework geçişi yoktur.
 
+Yukarıdaki ifadeler yalnız korunan root demo'yu tanımlar. Bunun yanında ayrı
+bir `candidate-only` React mock dilimi bulunur; bkz.
+[React Mock İlk Çalıştırılabilir Dilim Kanıtı](REACT_MOCK_SLICE_2026-07-20.turkce.md).
+
 **Tarih bağlamı:** Uygulama "bugün" olarak **15 Haziran 2026** tarihini kullanır;
 böylece **Due Soon** / **Overdue** hesapları deterministiktir.
 
@@ -1110,6 +1114,31 @@ framework migration, deployment veya production capability eklenmedi.
 Regulatory validation, real-device testing, stakeholder sign-off, release
 approval ve production readiness `not run`.
 
+### React mock ilk çalıştırılabilir dilim checkpoint — 2026-07-20
+
+Durum: Task 2-4 `verified locally` ve `candidate-only`; release durumu
+`release pending`. Korunan root Vanilla JavaScript demo yanında `apps/web/`
+altında ayrı bir React + TypeScript + Vite candidate bulunur. Bu candidate;
+kanonik bilingual contract vocabulary, checked OpenAPI example/generated
+transport type, deterministik mock ve ince fake-fetch HTTP adapter'ları olan
+tek `Backend`, build-time demo/HTTP ayrımı ve mock mode'da tam kanonik Cabin
+Inspection React akışını içerir.
+
+Local gate'ler geçti: locked install; contract generation/diff; TypeScript;
+32/32 Vitest assertion; 7/7 OpenAPI/behavior-ledger Node assertion; page veya
+console warning/error olmadan 1/1 Playwright canonical scenario; iki build;
+mock/seed veya demo-public artifact bulmadan 7 file ve 71 input tarayan HTTP
+artifact check; ve 103/103 root legacy suite. Transcript; Potential Finding
+authority, ayrı CAP submission/review, üç immutable Evidence version,
+organization isolation, ayrı CAA review note'ları, ayrı authorized closure,
+Finding'i kapatmayan report issue ve final `EVIDENCE_VERIFIED` closure'ı korur.
+
+Tam kanıt ve scope sınırları
+[REACT_MOCK_SLICE_2026-07-20.turkce.md](REACT_MOCK_SLICE_2026-07-20.turkce.md)
+içindedir. Real HTTP/API, Go, authentication, IndexedDB, OPFS, PWA/offline,
+sync, deployment, cutover ve production verification `not run`. Task 5-13 ayrı
+authorization olmadan `blocked` kalır. `production-ready` iddiası yoktur.
+
 ---
 
 ## Sahte öğeler ve kısıtlar
@@ -1123,6 +1152,6 @@ approval ve production readiness `not run`.
 - AI önerileri yalnızca taslaktır; resmi çıktı yayımlayamaz.
 - Offline outbox simüledir; mobil/offline-ready implementation değildir.
 - Audit log demo durumudur; değiştirilemez audit evidence değildir.
-- `README.md`, `README.turkce.md` ve `MANIFEST.md` artık mevcut planlama paketi
-  + frontend-only static clickable demo şeklini anlatır; production-readiness
-  yine iddia edilmez.
+- `README.md`, `README.turkce.md` ve `MANIFEST.md` artık planlama paketi,
+  korunan frontend-only static demo ve ayrı `candidate-only` React mock dilimi
+  birlikte anlatır; production-readiness yine iddia edilmez.

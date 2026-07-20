@@ -1,0 +1,12 @@
+{
+  "schema": "ManagerDashboardProjection",
+  "value": {
+    "generatedAt": "2026-06-15T11:00:00.000Z",
+    "openFindings": 0,
+    "closedFindings": 1,
+    "overdueFindings": 0,
+    "pendingCapReviews": 0,
+    "pendingEvidenceReviews": 0,
+    "recentFindingNumbers": ["CAB-2026-001"]
+  }
+}

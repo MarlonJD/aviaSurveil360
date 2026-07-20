@@ -1,0 +1,15 @@
+{
+  "schema": "EvidenceVersionView",
+  "value": {
+    "id": "EV-CAB-2026-001-V1",
+    "findingId": "FND-CAB-2026-001",
+    "organizationId": "ORG-FLY-NAMIBIA",
+    "version": 1,
+    "fileName": "Fly_Namibia_PBE_Serviceability_Record_CAB-2026-001.pdf",
+    "submittedAt": "2026-06-15T10:30:00.000Z",
+    "uploadState": "UPLOADED",
+    "scanState": "CLEAN",
+    "reviewState": "PENDING_CAA_REVIEW",
+    "revision": 1
+  }
+}

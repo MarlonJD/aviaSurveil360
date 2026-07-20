@@ -23,11 +23,12 @@ handoff and local-language review.
 15. `screen-specs/DEPARTMENT_MANAGER_WORKSPACES.md`
 16. `data-and-rules/CONCEPTUAL_DATA_MODEL.md`
 17. `data-and-rules/STATUS_PERMISSION_SECURITY.md`
-18. `analytics/OVERSIGHT_HEALTH_INDEX_AND_KPIS.md`
-19. `analytics/REPORT_CATALOG.md`
-20. `scenarios/DEMO_SCENARIO_OPERATOR_AUDIT.md`
-21. `scenarios/OTHER_DOMAIN_SCENARIOS_AND_EDGE_CASES.md`
-22. `references/GLOSSARY_AND_SOURCE_NOTES.md`
+18. `data-and-rules/PRODUCTION_CONTRACT_VOCABULARY.md`
+19. `analytics/OVERSIGHT_HEALTH_INDEX_AND_KPIS.md`
+20. `analytics/REPORT_CATALOG.md`
+21. `scenarios/DEMO_SCENARIO_OPERATOR_AUDIT.md`
+22. `scenarios/OTHER_DOMAIN_SCENARIOS_AND_EDGE_CASES.md`
+23. `references/GLOSSARY_AND_SOURCE_NOTES.md`
 
 ## Folder Map
 

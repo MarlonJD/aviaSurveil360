@@ -1,0 +1,425 @@
+import type { components } from "../generated/transport/api-types";
+import type { PublicHttpConfig } from "../app/public-http-config";
+import type {
+  Backend,
+  BackendRequestOptions,
+  DecidePotentialFindingInput,
+  FieldSyncOperation,
+} from "./backend";
+import {
+  mapAssignments,
+  mapChecklistResponse,
+  mapCheckout,
+  mapCompleteEvidence,
+  mapCompleteInspectionAttachment,
+  mapEvidenceVersion,
+  mapFinding,
+  mapFindings,
+  mapInspectionPackage,
+  mapManagerDashboard,
+  mapPotentialFinding,
+  mapPotentialFindingDecision,
+  mapPushResult,
+  mapReportVersion,
+  mapReviewCap,
+  mapReviewEvidence,
+  mapSubmitCap,
+  mapSubmitChecklist,
+  mapSyncPull,
+} from "./transport-mappers";
+
+type Schemas = components["schemas"];
+
+export interface BackendProblem {
+  type: string;
+  title: string;
+  status: number;
+  detail: string | null;
+  code: string | null;
+  requestId: string | null;
+}
+
+export class BackendHttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code: string | null,
+    readonly requestId: string | null,
+    readonly problem: BackendProblem | null,
+  ) {
+    super(message);
+    this.name = "BackendHttpError";
+  }
+}
+
+export class BackendAuthenticationError extends BackendHttpError {
+  constructor(problem: BackendProblem | null, requestId: string | null) {
+    super(problem?.title ?? "Authentication required", 401, problem?.code ?? null, requestId, problem);
+    this.name = "BackendAuthenticationError";
+  }
+}
+
+export class BackendAuthorizationError extends BackendHttpError {
+  constructor(problem: BackendProblem | null, requestId: string | null) {
+    super(problem?.title ?? "Forbidden", 403, problem?.code ?? null, requestId, problem);
+    this.name = "BackendAuthorizationError";
+  }
+}
+
+export class BackendProtocolError extends Error {
+  constructor(message: string, readonly requestId: string | null = null) {
+    super(message);
+    this.name = "BackendProtocolError";
+  }
+}
+
+export class BackendCancelledError extends Error {
+  constructor() {
+    super("Backend request was cancelled.");
+    this.name = "BackendCancelledError";
+  }
+}
+
+export class BackendTimeoutError extends Error {
+  constructor() {
+    super("Backend request timed out.");
+    this.name = "BackendTimeoutError";
+  }
+}
+
+export interface HttpBackendDependencies {
+  fetchImplementation?: typeof fetch;
+  csrfToken?: () => string | null;
+  requestTimeoutMs?: number;
+}
+
+interface RequestInput {
+  method?: "GET" | "POST" | "PUT";
+  body?: unknown;
+}
+
+function joinApiPath(apiBaseUrl: string, path: string): string {
+  const prefix = apiBaseUrl === "/" ? "" : apiBaseUrl.replace(/\/$/, "");
+  return `${prefix}${path}`;
+}
+
+function appendQuery<T extends object>(path: string, values: T): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(values as Record<string, unknown>)) {
+    if (typeof value !== "string" && typeof value !== "number" && value != null) continue;
+    if (value !== undefined && value !== null && value !== "") query.set(key, String(value));
+  }
+  const encoded = query.toString();
+  return encoded ? `${path}?${encoded}` : path;
+}
+
+function parseProblem(value: unknown, fallbackStatus: number): BackendProblem | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Record<string, unknown>;
+  if (typeof candidate.title !== "string") return null;
+  return {
+    type: typeof candidate.type === "string" ? candidate.type : "about:blank",
+    title: candidate.title,
+    status: typeof candidate.status === "number" ? candidate.status : fallbackStatus,
+    detail: typeof candidate.detail === "string" ? candidate.detail : null,
+    code: typeof candidate.code === "string" ? candidate.code : null,
+    requestId: typeof candidate.requestId === "string" ? candidate.requestId : null,
+  };
+}
+
+export function createHttpBackend(
+  config: PublicHttpConfig,
+  dependencies: HttpBackendDependencies = {},
+): Backend {
+  const fetchImplementation = dependencies.fetchImplementation ?? fetch;
+  const csrfToken = dependencies.csrfToken ?? (() => null);
+
+  async function request<T>(
+    path: string,
+    requestInput: RequestInput = {},
+    options: BackendRequestOptions = {},
+  ): Promise<T> {
+    const method = requestInput.method ?? "GET";
+    const headers = new Headers({ Accept: "application/json" });
+    if (requestInput.body !== undefined) {
+      headers.set("content-type", "application/json");
+      const token = csrfToken();
+      if (token) headers.set("x-csrf-token", token);
+    }
+
+    let timeoutController: AbortController | null = null;
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    let signal = options.signal;
+    if (dependencies.requestTimeoutMs !== undefined) {
+      timeoutController = new AbortController();
+      timeoutHandle = setTimeout(() => timeoutController?.abort(), dependencies.requestTimeoutMs);
+      signal = options.signal
+        ? AbortSignal.any([options.signal, timeoutController.signal])
+        : timeoutController.signal;
+    }
+
+    let response: Response;
+    try {
+      response = await fetchImplementation(joinApiPath(config.apiBaseUrl, path), {
+        method,
+        credentials: "same-origin",
+        headers,
+        body: requestInput.body === undefined ? undefined : JSON.stringify(requestInput.body),
+        signal,
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        if (timeoutController?.signal.aborted && !options.signal?.aborted) {
+          throw new BackendTimeoutError();
+        }
+        throw new BackendCancelledError();
+      }
+      throw error;
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+    }
+
+    const requestId = response.headers.get("x-request-id");
+    const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+    if (!contentType.includes("application/json") && !contentType.includes("application/problem+json")) {
+      throw new BackendProtocolError(
+        `Backend response ${response.status} did not use a JSON content type.`,
+        requestId,
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      throw new BackendProtocolError("Backend response contained invalid JSON.", requestId);
+    }
+    if (!response.ok) {
+      const problem = parseProblem(body, response.status);
+      const correlatedRequestId = problem?.requestId ?? requestId;
+      if (response.status === 401) throw new BackendAuthenticationError(problem, correlatedRequestId);
+      if (response.status === 403) throw new BackendAuthorizationError(problem, correlatedRequestId);
+      throw new BackendHttpError(
+        problem?.title ?? `Backend request failed with status ${response.status}`,
+        response.status,
+        problem?.code ?? null,
+        correlatedRequestId,
+        problem,
+      );
+    }
+    return body as T;
+  }
+
+  const backend: Backend = {
+    mode: "http",
+    assignments: {
+      list: async (input, options) =>
+        mapAssignments(
+          await request<Schemas["ListAssignmentsOutput"]>(
+            appendQuery("/v1/assignments", input),
+            {},
+            options,
+          ),
+        ),
+    },
+    inspections: {
+      getPackage: async ({ packageId }, options) =>
+        mapInspectionPackage(
+          await request<Schemas["InspectionPackage"]>(
+            `/v1/inspection-packages/${encodeURIComponent(packageId)}`,
+            {},
+            options,
+          ),
+        ),
+      checkout: async (input, options) =>
+        mapCheckout(
+          await request<Schemas["CheckoutInspectionPackageOutput"]>(
+            `/v1/inspection-packages/${encodeURIComponent(input.packageId)}/checkout`,
+            { method: "POST", body: input },
+            options,
+          ),
+        ),
+      upsertChecklistResponse: async (input, options) =>
+        mapChecklistResponse(
+          await request<Schemas["ChecklistResponseView"]>(
+            `/v1/checklist-responses/${encodeURIComponent(input.responseId)}`,
+            { method: "PUT", body: input },
+            options,
+          ),
+        ),
+      submitChecklist: async (input, options) =>
+        mapSubmitChecklist(
+          await request<Schemas["SubmitChecklistOutput"]>(
+            `/v1/checklists/${encodeURIComponent(input.auditId)}/submit`,
+            { method: "POST", body: input },
+            options,
+          ),
+        ),
+      reopenChecklist: async (input, options) =>
+        mapSubmitChecklist(
+          await request<Schemas["SubmitChecklistOutput"]>(
+            `/v1/checklists/${encodeURIComponent(input.auditId)}/reopen`,
+            { method: "POST", body: input },
+            options,
+          ),
+        ),
+    },
+    potentialFindings: {
+      create: async (input, options) =>
+        mapPotentialFinding(
+          await request<Schemas["PotentialFindingView"]>(
+            "/v1/potential-findings",
+            { method: "POST", body: input },
+            options,
+          ),
+        ),
+      decide: async (input, options) =>
+        mapPotentialFindingDecision(
+          await request<Schemas["PotentialFindingDecisionOutput"]>(
+            `/v1/potential-findings/${encodeURIComponent(input.potentialFindingId)}/decisions`,
+            { method: "POST", body: input as DecidePotentialFindingInput },
+            options,
+          ),
+        ),
+    },
+    findings: {
+      list: async (input, options) =>
+        mapFindings(
+          await request<Schemas["ListFindingsOutput"]>(
+            appendQuery("/v1/findings", input),
+            {},
+            options,
+          ),
+        ),
+      get: async ({ findingId }, options) =>
+        mapFinding(
+          await request<Schemas["FindingView"]>(
+            `/v1/findings/${encodeURIComponent(findingId)}`,
+            {},
+            options,
+          ),
+        ),
+      authorizedClose: async (input, options) =>
+        mapFinding(
+          await request<Schemas["FindingView"]>(
+            `/v1/findings/${encodeURIComponent(input.findingId)}/authorized-closure`,
+            { method: "POST", body: input },
+            options,
+          ),
+        ),
+    },
+    caps: {
+      submit: async (input, options) =>
+        mapSubmitCap(
+          await request<Schemas["SubmitCapOutput"]>(
+            "/v1/caps",
+            { method: "POST", body: input },
+            options,
+          ),
+        ),
+      review: async (input, options) =>
+        mapReviewCap(
+          await request<Schemas["ReviewCapOutput"]>(
+            `/v1/caps/${encodeURIComponent(input.capRevisionId)}/reviews`,
+            { method: "POST", body: input },
+            options,
+          ),
+        ),
+    },
+    inspectionAttachments: {
+      beginUpload: async (input, options) =>
+        await request<Schemas["BeginInspectionAttachmentUploadOutput"]>(
+          `/v1/inspection-attachments/${encodeURIComponent(input.inspectionAttachmentId)}/uploads`,
+          { method: "POST", body: input },
+          options,
+        ),
+      completeUpload: async (input, options) =>
+        mapCompleteInspectionAttachment(
+          await request<Schemas["CompleteInspectionAttachmentUploadOutput"]>(
+            `/v1/inspection-attachments/uploads/${encodeURIComponent(input.uploadId)}/complete`,
+            { method: "POST", body: input },
+            options,
+          ),
+        ),
+    },
+    evidence: {
+      beginUpload: async (input, options) =>
+        await request<Schemas["BeginEvidenceUploadOutput"]>(
+          "/v1/evidence/uploads",
+          { method: "POST", body: input },
+          options,
+        ),
+      completeUpload: async (input, options) =>
+        mapCompleteEvidence(
+          await request<Schemas["CompleteEvidenceUploadOutput"]>(
+            `/v1/evidence/uploads/${encodeURIComponent(input.uploadId)}/complete`,
+            { method: "POST", body: input },
+            options,
+          ),
+        ),
+      listVersions: async ({ findingId }, options) => {
+        const output = await request<Schemas["ListEvidenceVersionsOutput"]>(
+          `/v1/findings/${encodeURIComponent(findingId)}/evidence`,
+          {},
+          options,
+        );
+        return output.items.map(mapEvidenceVersion);
+      },
+      review: async (input, options) =>
+        mapReviewEvidence(
+          await request<Schemas["ReviewEvidenceOutput"]>(
+            `/v1/evidence/${encodeURIComponent(input.evidenceVersionId)}/reviews`,
+            { method: "POST", body: input },
+            options,
+          ),
+        ),
+    },
+    reports: {
+      getVersion: async ({ reportVersionId }, options) =>
+        mapReportVersion(
+          await request<Schemas["ReportVersionView"]>(
+            `/v1/report-versions/${encodeURIComponent(reportVersionId)}`,
+            {},
+            options,
+          ),
+        ),
+      decide: async (input, options) =>
+        mapReportVersion(
+          await request<Schemas["ReportVersionView"]>(
+            `/v1/report-versions/${encodeURIComponent(input.reportVersionId)}/decisions`,
+            { method: "POST", body: input },
+            options,
+          ),
+        ),
+    },
+    dashboards: {
+      getManagerProjection: async (input, options) =>
+        mapManagerDashboard(
+          await request<Schemas["ManagerDashboardProjection"]>(
+            appendQuery("/v1/dashboards/manager", input),
+            {},
+            options,
+          ),
+        ),
+    },
+    sync: {
+      pushOperation: async (input, options) =>
+        mapPushResult(
+          await request<Schemas["PushFieldOperationResult"]>(
+            "/v1/sync/operations",
+            { method: "POST", body: { operation: input.operation as FieldSyncOperation } },
+            options,
+          ),
+        ),
+      pull: async (input, options) =>
+        mapSyncPull(
+          await request<Schemas["SyncPullResponse"]>(
+            appendQuery("/v1/sync/changes", input),
+            {},
+            options,
+          ),
+        ),
+    },
+  };
+  return backend;
+}

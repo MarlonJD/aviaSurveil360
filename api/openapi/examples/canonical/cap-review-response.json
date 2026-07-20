@@ -1,0 +1,10 @@
+{
+  "schema": "ReviewCapOutput",
+  "value": {
+    "capRevisionId": "CAP-CAB-2026-001-R1",
+    "capRevision": 2,
+    "capStatus": "ACCEPTED",
+    "findingStatus": "EVIDENCE_REQUIRED",
+    "findingRevision": 4
+  }
+}

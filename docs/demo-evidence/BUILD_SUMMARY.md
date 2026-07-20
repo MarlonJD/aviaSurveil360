@@ -8,6 +8,10 @@ file upload, real AI service, real regulatory ingestion, real notification
 service, real document storage, mobile/offline app, e-signature, or framework
 migration.
 
+The statements above describe the intact root demo only. A separate
+`candidate-only` React mock slice now exists beside it; see
+[React Mock First Executable Slice Evidence](REACT_MOCK_SLICE_2026-07-20.md).
+
 **Demo date context:** the app treats `15 June 2026` as "today" so Due Soon /
 Overdue math is deterministic.
 
@@ -1098,6 +1102,32 @@ migration, deployment, or production capability was added. Regulatory
 validation, real-device testing, stakeholder sign-off, release approval, and
 production readiness are `not run`.
 
+### React mock first executable slice checkpoint — 2026-07-20
+
+Status: Tasks 2-4 are `verified locally` and `candidate-only`; release remains
+`release pending`. A separate React + TypeScript + Vite candidate now exists
+under `apps/web/` beside the intact root Vanilla JavaScript demo. It includes
+canonical bilingual contract vocabulary, checked OpenAPI examples/generated
+transport types, one `Backend` with deterministic mock and thin fake-fetch HTTP
+adapters, build-time demo/HTTP separation, and the complete canonical Cabin
+Inspection React flow in mock mode.
+
+Local gates passed: locked install; contract generation/diff; TypeScript; 32/32
+Vitest assertions; 7/7 OpenAPI/behavior-ledger Node assertions; 1/1 Playwright
+canonical scenario with no page or console warning/error; both builds; an HTTP
+artifact scan covering 7 files and 71 inputs with no mock/seed or demo-public
+artifact; and the intact root legacy suite at 103/103. The transcript preserves
+Potential Finding authority, separate CAP submission/review, three immutable
+Evidence versions, organization isolation, separate CAA review notes, separate
+authorized closure, report issue without closure, and final
+`EVIDENCE_VERIFIED` closure.
+
+The complete evidence and scope boundaries are in
+[REACT_MOCK_SLICE_2026-07-20.md](REACT_MOCK_SLICE_2026-07-20.md). Real HTTP/API,
+Go, authentication, IndexedDB, OPFS, PWA/offline, sync, deployment, cutover,
+and production verification are `not run`. Tasks 5-13 remain `blocked` without
+separate authorization. No `production-ready` claim is made.
+
 ---
 
 ## Mocked items and limitations
@@ -1111,5 +1141,6 @@ production readiness are `not run`.
 - AI suggestions are drafts only and cannot publish official outputs.
 - Offline outbox is simulated and is not a mobile/offline-ready implementation.
 - Audit log is demo state, not immutable audit evidence.
-- README/MANIFEST now describe the current planning pack plus frontend-only
-  static clickable demo shape; production-readiness is still not claimed.
+- README/MANIFEST now describe the planning pack, intact frontend-only static
+  demo, and separate `candidate-only` React mock slice; production-readiness is
+  still not claimed.

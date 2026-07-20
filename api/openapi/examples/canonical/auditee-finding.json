@@ -1,0 +1,19 @@
+{
+  "schema": "AuditeeFindingProjection",
+  "value": {
+    "id": "FND-CAB-2026-001",
+    "findingNumber": "CAB-2026-001",
+    "auditId": "AUD-2026-001",
+    "organizationId": "ORG-FLY-NAMIBIA",
+    "organizationName": "Fly Namibia",
+    "title": "PBE serviceability and accessibility not confirmed",
+    "status": "EVIDENCE_REQUIRED",
+    "severity": "LEVEL_1_CRITICAL",
+    "dueDate": "2026-07-15",
+    "dueState": "NOT_DUE",
+    "currentOwnerType": "AUDITEE",
+    "nextAction": "Submit required Evidence",
+    "commentToAuditee": "CAP accepted. Submit the PBE serviceability record for verification.",
+    "revision": 4
+  }
+}

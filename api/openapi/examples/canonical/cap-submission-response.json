@@ -1,0 +1,10 @@
+{
+  "schema": "SubmitCapOutput",
+  "value": {
+    "capRevisionId": "CAP-CAB-2026-001-R1",
+    "capRevision": 1,
+    "capStatus": "SUBMITTED",
+    "findingStatus": "CAP_SUBMITTED",
+    "findingRevision": 3
+  }
+}

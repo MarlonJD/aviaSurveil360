@@ -1,0 +1,368 @@
+import {
+  createContext,
+  type PropsWithChildren,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import type {
+  AssignmentSummary,
+  ChecklistAnswer,
+  ChecklistResponseView,
+  EvidenceVersionView,
+  FindingSeverity,
+  FindingView,
+  InspectionPackage,
+  ManagerDashboardProjection,
+  PotentialFindingView,
+  ReportVersionView,
+  ReviewCapOutput,
+  ReviewEvidenceOutput,
+  Role,
+  SubmitCapInput,
+  SubmitCapOutput,
+  SubmitChecklistOutput,
+} from "../backend/backend";
+import { useApplicationRuntime } from "./providers";
+
+export interface ScenarioProjection {
+  assignments: AssignmentSummary[];
+  packageView: InspectionPackage | null;
+  response: ChecklistResponseView | null;
+  potentialFinding: PotentialFindingView | null;
+  finding: FindingView | null;
+  auditeeFindings: FindingView[];
+  checklistSubmission: SubmitChecklistOutput | null;
+  capSubmission: SubmitCapOutput | null;
+  capReview: ReviewCapOutput | null;
+  evidenceVersions: EvidenceVersionView[];
+  evidenceReview: ReviewEvidenceOutput | null;
+  report: ReportVersionView | null;
+  dashboard: ManagerDashboardProjection | null;
+}
+
+export interface ScenarioActions {
+  loadAssignments(): Promise<void>;
+  loadPackage(): Promise<void>;
+  saveChecklistResponse(answer: ChecklistAnswer, comment: string): Promise<void>;
+  createPotentialFinding(): Promise<void>;
+  submitChecklist(): Promise<void>;
+  decidePotentialFinding(input: {
+    decision: "RETURN" | "DISMISS";
+    reason: string;
+  }): Promise<void>;
+  convertPotentialFinding(input: {
+    severity: FindingSeverity;
+    capRequired: boolean;
+    evidenceRequired: boolean;
+    dueDate: string | null;
+  }): Promise<void>;
+  refreshFinding(role: Role): Promise<void>;
+  loadAuditeeFindings(): Promise<void>;
+  submitCap(input: Omit<SubmitCapInput, "operationId" | "findingId" | "expectedFindingRevision">): Promise<void>;
+  reviewCap(input: {
+    decision: "ACCEPT" | "REJECT" | "REQUEST_MORE_INFORMATION";
+    commentToAuditee: string;
+    internalCaaNote: string;
+  }): Promise<void>;
+  submitEvidence(file: Pick<File, "name" | "size" | "type">): Promise<void>;
+  loadEvidenceVersions(role: Role): Promise<void>;
+  reviewEvidence(input: {
+    decision: "CLOSE" | "PARTIALLY_CLOSE" | "NOT_CLOSE" | "REQUEST_MORE_INFORMATION";
+    commentToAuditee: string;
+    internalCaaNote: string;
+  }): Promise<void>;
+  authorizedClose(reason: string): Promise<void>;
+  loadReport(role: Role): Promise<void>;
+  issueReport(reason: string): Promise<void>;
+  loadManagerDashboard(): Promise<void>;
+}
+
+interface ScenarioContextValue {
+  projection: ScenarioProjection;
+  actions: ScenarioActions;
+}
+
+const ScenarioContext = createContext<ScenarioContextValue | null>(null);
+
+const initialProjection: ScenarioProjection = {
+  assignments: [],
+  packageView: null,
+  response: null,
+  potentialFinding: null,
+  finding: null,
+  auditeeFindings: [],
+  checklistSubmission: null,
+  capSubmission: null,
+  capReview: null,
+  evidenceVersions: [],
+  evidenceReview: null,
+  report: null,
+  dashboard: null,
+};
+
+export function ScenarioProvider({ children }: PropsWithChildren) {
+  const runtime = useApplicationRuntime();
+  const [projection, setProjection] = useState<ScenarioProjection>(initialProjection);
+  const operationSequence = useRef(1);
+
+  const backendFor = (role: Role) => runtime.backendForRole?.(role) ?? runtime.backend;
+  const operationId = (prefix: string) =>
+    `${prefix}-${String(operationSequence.current++).padStart(3, "0")}`;
+
+  const actions = useMemo<ScenarioActions>(
+    () => ({
+      async loadAssignments() {
+        const result = await backendFor("inspector").assignments.list({});
+        setProjection((current) => ({ ...current, assignments: result.items }));
+      },
+
+      async loadPackage() {
+        const packageView = await backendFor("inspector").inspections.getPackage({
+          packageId: "PKG-CAB-2026-001",
+        });
+        const response =
+          packageView.questions.find((question) => question.id === "CAB-EMEQ-PBE-001")
+            ?.currentResponse ?? null;
+        setProjection((current) => ({ ...current, packageView, response }));
+      },
+
+      async saveChecklistResponse(answer, comment) {
+        const response = await backendFor("inspector").inspections.upsertChecklistResponse({
+          operationId: operationId("OP-RESPONSE"),
+          responseId: "RESP-CAB-EMEQ-PBE-001",
+          auditId: "AUD-2026-001",
+          questionId: "CAB-EMEQ-PBE-001",
+          expectedResponseRevision: projection.response?.revision ?? null,
+          answer,
+          comment,
+        });
+        setProjection((current) => ({ ...current, response }));
+      },
+
+      async createPotentialFinding() {
+        if (!projection.response) throw new Error("Save the exact checklist response first.");
+        const potentialFinding = await backendFor("inspector").potentialFindings.create({
+          operationId: operationId("OP-PF"),
+          auditId: "AUD-2026-001",
+          questionId: "CAB-EMEQ-PBE-001",
+          checklistResponseId: projection.response.id,
+          expectedChecklistResponseRevision: projection.response.revision,
+          title: "PBE serviceability and accessibility not confirmed",
+          description:
+            "The configured cabin check could not confirm that the PBE was serviceable and accessible.",
+          requiredComment: projection.response.comment,
+          inspectionAttachmentIds: [],
+        });
+        setProjection((current) => ({ ...current, potentialFinding }));
+      },
+
+      async submitChecklist() {
+        const packageView = projection.packageView;
+        if (!packageView) throw new Error("Inspection package is unavailable.");
+        const checklistSubmission = await backendFor("inspector").inspections.submitChecklist({
+          operationId: operationId("OP-CHECKLIST-SUBMIT"),
+          auditId: packageView.auditId,
+          expectedChecklistRevision: packageView.checklistRevision,
+        });
+        setProjection((current) => ({ ...current, checklistSubmission }));
+      },
+
+      async decidePotentialFinding(input) {
+        if (!projection.potentialFinding) throw new Error("Potential Finding is unavailable.");
+        const result = await backendFor("leadInspector").potentialFindings.decide({
+          operationId: operationId("OP-PF-DECISION"),
+          potentialFindingId: projection.potentialFinding.id,
+          expectedPotentialFindingRevision: projection.potentialFinding.revision,
+          decision: input.decision,
+          reason: input.reason,
+        });
+        setProjection((current) => ({
+          ...current,
+          potentialFinding: result.potentialFinding,
+          finding: result.finding ?? current.finding,
+        }));
+      },
+
+      async convertPotentialFinding(input) {
+        if (!projection.potentialFinding) throw new Error("Potential Finding is unavailable.");
+        const result = await backendFor("leadInspector").potentialFindings.decide({
+          operationId: operationId("OP-PF-CONVERT"),
+          potentialFindingId: projection.potentialFinding.id,
+          expectedPotentialFindingRevision: projection.potentialFinding.revision,
+          decision: "CONVERT",
+          severity: input.severity,
+          capRequired: input.capRequired,
+          evidenceRequired: input.evidenceRequired,
+          dueDate: input.dueDate,
+        });
+        setProjection((current) => ({
+          ...current,
+          potentialFinding: result.potentialFinding,
+          finding: result.finding,
+        }));
+      },
+
+      async refreshFinding(role) {
+        const finding = await backendFor(role).findings.get({ findingId: "FND-CAB-2026-001" });
+        setProjection((current) => ({ ...current, finding }));
+      },
+
+      async loadAuditeeFindings() {
+        const result = await backendFor("auditee").findings.list({});
+        const finding = result.items.find((candidate) => candidate.id === "FND-CAB-2026-001") ?? null;
+        setProjection((current) => ({
+          ...current,
+          auditeeFindings: result.items,
+          finding: finding ?? current.finding,
+        }));
+      },
+
+      async submitCap(input) {
+        if (!projection.finding) throw new Error("Finding is unavailable.");
+        const capSubmission = await backendFor("auditee").caps.submit({
+          operationId: operationId("OP-CAP-SUBMIT"),
+          findingId: projection.finding.id,
+          expectedFindingRevision: projection.finding.revision,
+          ...input,
+        });
+        const finding = await backendFor("auditee").findings.get({
+          findingId: projection.finding.id,
+        });
+        setProjection((current) => ({ ...current, capSubmission, finding }));
+      },
+
+      async reviewCap(input) {
+        if (!projection.finding || !projection.capSubmission) {
+          throw new Error("Submitted CAP is unavailable.");
+        }
+        const capReview = await backendFor("leadInspector").caps.review({
+          operationId: operationId("OP-CAP-REVIEW"),
+          capRevisionId: projection.capSubmission.capRevisionId,
+          expectedCapRevision: projection.capSubmission.capRevision,
+          findingId: projection.finding.id,
+          expectedFindingRevision: projection.finding.revision,
+          ...input,
+        });
+        const finding = await backendFor("leadInspector").findings.get({
+          findingId: projection.finding.id,
+        });
+        setProjection((current) => ({ ...current, capReview, finding }));
+      },
+
+      async submitEvidence(file) {
+        if (!projection.finding) throw new Error("Finding is unavailable.");
+        const backend = backendFor("auditee");
+        const sha256 = `mock-sha256:${file.name}:${file.size}`;
+        const upload = await backend.evidence.beginUpload({
+          operationId: operationId("OP-EVIDENCE-BEGIN"),
+          findingId: projection.finding.id,
+          expectedFindingRevision: projection.finding.revision,
+          fileName: file.name,
+          declaredMediaType: file.type || "application/octet-stream",
+          byteSize: file.size,
+          sha256,
+        });
+        await backend.evidence.completeUpload({
+          operationId: operationId("OP-EVIDENCE-COMPLETE"),
+          uploadId: upload.uploadId,
+          sha256,
+          byteSize: file.size,
+        });
+        const [evidenceVersions, finding] = await Promise.all([
+          backend.evidence.listVersions({ findingId: projection.finding.id }),
+          backend.findings.get({ findingId: projection.finding.id }),
+        ]);
+        setProjection((current) => ({ ...current, evidenceVersions, finding }));
+      },
+
+      async loadEvidenceVersions(role) {
+        if (!projection.finding) throw new Error("Finding is unavailable.");
+        const evidenceVersions = await backendFor(role).evidence.listVersions({
+          findingId: projection.finding.id,
+        });
+        setProjection((current) => ({ ...current, evidenceVersions }));
+      },
+
+      async reviewEvidence(input) {
+        if (!projection.finding) throw new Error("Finding is unavailable.");
+        const latest = projection.evidenceVersions.at(-1);
+        if (!latest) throw new Error("Evidence version is unavailable.");
+        const backend = backendFor("leadInspector");
+        const evidenceReview = await backend.evidence.review({
+          operationId: operationId("OP-EVIDENCE-REVIEW"),
+          evidenceVersionId: latest.id,
+          expectedEvidenceVersionRevision: latest.revision,
+          findingId: projection.finding.id,
+          expectedFindingRevision: projection.finding.revision,
+          ...input,
+        });
+        const [evidenceVersions, finding] = await Promise.all([
+          backend.evidence.listVersions({ findingId: projection.finding.id }),
+          backend.findings.get({ findingId: projection.finding.id }),
+        ]);
+        setProjection((current) => ({
+          ...current,
+          evidenceReview,
+          evidenceVersions,
+          finding,
+        }));
+      },
+
+      async authorizedClose(reason) {
+        if (!projection.finding) throw new Error("Finding is unavailable.");
+        const finding = await backendFor("manager").findings.authorizedClose({
+          operationId: operationId("OP-AUTHORIZED-CLOSE"),
+          findingId: projection.finding.id,
+          expectedFindingRevision: projection.finding.revision,
+          reason,
+        });
+        setProjection((current) => ({ ...current, finding }));
+      },
+
+      async loadReport(role) {
+        const report = await backendFor(role).reports.getVersion({
+          reportVersionId: "RPT-CAB-2026-001-V1",
+        });
+        setProjection((current) => ({ ...current, report }));
+      },
+
+      async issueReport(reason) {
+        const backend = backendFor("executiveDirector");
+        const currentReport =
+          projection.report ??
+          (await backend.reports.getVersion({ reportVersionId: "RPT-CAB-2026-001-V1" }));
+        const report = await backend.reports.decide({
+          operationId: operationId("OP-REPORT-ISSUE"),
+          reportVersionId: currentReport.reportVersionId,
+          expectedReportVersionRevision: currentReport.revision,
+          decision: "ISSUE_AND_LOCK",
+          reason,
+        });
+        const finding = await backend.findings.get({ findingId: "FND-CAB-2026-001" });
+        setProjection((current) => ({ ...current, report, finding }));
+      },
+
+      async loadManagerDashboard() {
+        const backend = backendFor("manager");
+        const [dashboard, finding, report] = await Promise.all([
+          backend.dashboards.getManagerProjection({}),
+          backend.findings.get({ findingId: "FND-CAB-2026-001" }),
+          backend.reports.getVersion({ reportVersionId: "RPT-CAB-2026-001-V1" }),
+        ]);
+        setProjection((current) => ({ ...current, dashboard, finding, report }));
+      },
+    }),
+    [projection, runtime],
+  );
+
+  return <ScenarioContext.Provider value={{ projection, actions }}>{children}</ScenarioContext.Provider>;
+}
+
+export function useScenario(): ScenarioContextValue {
+  const value = useContext(ScenarioContext);
+  if (!value) throw new Error("Canonical scenario context is unavailable");
+  return value;
+}

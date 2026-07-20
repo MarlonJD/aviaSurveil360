@@ -1,0 +1,42 @@
+{
+  "name": "@aviasurveil360/web",
+  "version": "0.1.0-candidate",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:demo": "AVIA_BUILD_PROFILE=demo vite",
+    "dev:http": "AVIA_BUILD_PROFILE=http vite",
+    "build:demo": "tsc -b && AVIA_BUILD_PROFILE=demo vite build",
+    "build:http": "tsc -b && AVIA_BUILD_PROFILE=http vite build",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "test:e2e:mock": "playwright test --project=mock",
+    "test:e2e:http": "playwright test --project=http",
+    "contracts:check": "../../scripts/check-contracts.sh"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.101.3",
+    "dexie": "4.4.4",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-hook-form": "7.82.0",
+    "react-router-dom": "7.18.1",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@testing-library/jest-dom": "7.0.0",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "14.6.1",
+    "@types/node": "26.1.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.3",
+    "jsdom": "29.1.1",
+    "openapi-typescript": "7.13.0",
+    "playwright": "1.61.1",
+    "typescript": "5.9.3",
+    "vite": "8.1.5",
+    "vitest": "4.1.10"
+  }
+}
