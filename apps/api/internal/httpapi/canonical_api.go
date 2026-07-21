@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,13 +25,13 @@ import (
 	fieldsync "github.com/MarlonJD/aviaSurveil360/apps/api/internal/sync"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/testprofile"
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5"
 )
 
 type CanonicalAPIDependencies struct {
 	Pool              *database.Pool
 	Application       *application.Service
 	GrantService      *fieldsync.GrantService
+	SyncOperations    *fieldsync.OperationService
 	EvidenceUploads   *evidence.UploadService
 	AttachmentUploads *attachments.UploadService
 	Clock             func() time.Time
@@ -42,6 +41,7 @@ type CanonicalAPI struct {
 	pool              *database.Pool
 	application       *application.Service
 	grants            *fieldsync.GrantService
+	syncOperations    *fieldsync.OperationService
 	evidenceUploads   *evidence.UploadService
 	attachmentUploads *attachments.UploadService
 	clock             func() time.Time
@@ -52,8 +52,13 @@ func NewCanonicalAPI(dependencies CanonicalAPIDependencies) *CanonicalAPI {
 	if clock == nil {
 		clock = time.Now
 	}
+	syncOperations := dependencies.SyncOperations
+	if syncOperations == nil {
+		syncOperations = fieldsync.NewOperationService(dependencies.Pool, fieldsync.OperationDependencies{Clock: clock})
+	}
 	return &CanonicalAPI{
 		pool: dependencies.Pool, application: dependencies.Application, grants: dependencies.GrantService,
+		syncOperations:  syncOperations,
 		evidenceUploads: dependencies.EvidenceUploads, attachmentUploads: dependencies.AttachmentUploads,
 		clock: clock,
 	}
@@ -562,17 +567,6 @@ func (api *CanonicalAPI) getManagerDashboard(writer http.ResponseWriter, request
 	api.respond(writer, output, err)
 }
 
-type minimalFieldOperation struct {
-	OperationID      string          `json:"operationId"`
-	OfflineGrantID   string          `json:"offlineGrantId"`
-	PackageID        string          `json:"packageId"`
-	PackageVersion   int64           `json:"packageVersion"`
-	EntityID         string          `json:"entityId"`
-	CommandType      string          `json:"commandType"`
-	DeviceInstanceID string          `json:"deviceInstanceId"`
-	Payload          json.RawMessage `json:"payload"`
-}
-
 func (api *CanonicalAPI) pushFieldOperation(writer http.ResponseWriter, request *http.Request) {
 	actor, ok := requirePrincipal(writer, request)
 	if !ok {
@@ -586,67 +580,59 @@ func (api *CanonicalAPI) pushFieldOperation(writer http.ResponseWriter, request 
 	if !decodeJSON(writer, request, &envelope) {
 		return
 	}
-	var operation minimalFieldOperation
-	if err := json.Unmarshal(envelope.Operation, &operation); err != nil {
-		api.respond(writer, nil, application.ErrInvalid)
-		return
-	}
-	if err := api.grants.Authorize(request.Context(), actor, fieldsync.AuthorizationInput{
-		GrantID: operation.OfflineGrantID, PackageID: operation.PackageID, DeviceInstanceID: operation.DeviceInstanceID,
-		ServerNow: api.clock().UTC(), CommandType: operation.CommandType,
-	}); err != nil {
+	result, err := api.syncOperations.Push(request.Context(), actor, envelope.Operation)
+	if err != nil {
 		api.respond(writer, nil, err)
 		return
 	}
-	result, err := api.minimalSyncAcknowledgement(request.Context(), actor, operation, envelope.Operation)
-	api.respond(writer, result, err)
-}
-
-func (api *CanonicalAPI) minimalSyncAcknowledgement(ctx context.Context, actor identity.Principal, operation minimalFieldOperation, semantic json.RawMessage) (generated.PushFieldOperationResult, error) {
-	hash, err := idempotency.SemanticHash(semantic)
+	encoded, err := json.Marshal(result)
 	if err != nil {
-		return generated.PushFieldOperationResult{}, err
+		api.respond(writer, nil, err)
+		return
 	}
-	scope := actor.SubjectID + ":task11_sync_ack"
 	var output generated.PushFieldOperationResult
-	err = database.WithinTransaction(ctx, api.pool, func(ctx context.Context, transaction pgx.Tx) error {
-		if _, err := transaction.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", scope+":"+operation.OperationID); err != nil {
-			return err
-		}
-		var storedHash string
-		var storedBody []byte
-		err := transaction.QueryRow(ctx, `SELECT semantic_hash, response_body FROM idempotency_responses WHERE scope = $1 AND operation_id = $2`, scope, operation.OperationID).Scan(&storedHash, &storedBody)
-		if err == nil {
-			if storedHash != hash {
-				return idempotency.ErrOperationIDReuse
-			}
-			return json.Unmarshal(storedBody, &output)
-		}
-		if !errors.Is(err, pgx.ErrNoRows) {
-			return err
-		}
-		now := api.clock().UTC()
-		revision := int64(1)
-		entityID := operation.EntityID
-		output = generated.PushFieldOperationResult{
-			OperationId: operation.OperationID, Status: "accepted", AuthoritativeEntityId: &entityID,
-			AuthoritativeRevision: &revision, AcknowledgedAt: now.Format(time.RFC3339Nano),
-		}
-		body, _ := json.Marshal(output)
-		_, err = transaction.Exec(ctx, `
-			INSERT INTO idempotency_responses (scope, operation_id, semantic_hash, response_status, response_headers, response_body, created_at)
-			VALUES ($1, $2, $3, 200, '{}'::jsonb, $4, $5)
-		`, scope, operation.OperationID, hash, body, now)
-		return err
-	})
-	return output, err
+	if err := json.Unmarshal(encoded, &output); err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	api.respond(writer, output, nil)
 }
 
 func (api *CanonicalAPI) pullSyncChanges(writer http.ResponseWriter, request *http.Request) {
-	if _, ok := requirePrincipal(writer, request); !ok {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
 		return
 	}
-	api.respond(writer, generated.SyncPullResponse{Changes: []generated.AuthorizedSyncChange{}, ProjectionVersion: 1}, nil)
+	cursor := optionalQuery(request, "cursor")
+	packageID := optionalQuery(request, "packageId")
+	grantID := optionalQuery(request, "offlineGrantId")
+	limit := optionalIntQuery(request, "limit")
+	if packageID == nil || grantID == nil {
+		api.respond(writer, nil, fmt.Errorf("%w: packageId and offlineGrantId are required", application.ErrInvalid))
+		return
+	}
+	resolvedLimit := 0
+	if limit != nil {
+		resolvedLimit = int(*limit)
+	}
+	result, err := api.syncOperations.Pull(request.Context(), actor, fieldsync.PullInput{
+		PackageID: *packageID, OfflineGrantID: *grantID, Cursor: cursor, Limit: resolvedLimit,
+	})
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	encoded, err := json.Marshal(result)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	var output generated.SyncPullResponse
+	if err := json.Unmarshal(encoded, &output); err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	api.respond(writer, output, nil)
 }
 
 func (api *CanonicalAPI) respond(writer http.ResponseWriter, output any, err error) {
@@ -661,7 +647,7 @@ func (api *CanonicalAPI) respond(writer http.ResponseWriter, output any, err err
 		errors.Is(err, attachments.ErrAttachmentForbidden), errors.Is(err, fieldsync.ErrGrantScope),
 		errors.Is(err, fieldsync.ErrGrantExpired), errors.Is(err, fieldsync.ErrGrantRevoked),
 		errors.Is(err, fieldsync.ErrAssignmentChanged), errors.Is(err, fieldsync.ErrPackageRevoked),
-		errors.Is(err, fieldsync.ErrSessionRevoked):
+		errors.Is(err, fieldsync.ErrSessionRevoked), errors.Is(err, fieldsync.ErrCursorScope):
 		status, code = http.StatusForbidden, "FORBIDDEN"
 	case errors.Is(err, application.ErrNotFound):
 		status, code = http.StatusNotFound, "NOT_FOUND"

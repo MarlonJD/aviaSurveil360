@@ -42,7 +42,10 @@ export default defineConfig({
         },
   projects: [
     { name: "mock", testMatch: "e2e/canonical-scenario.spec.ts" },
-    { name: "http", testMatch: "e2e/canonical-scenario.spec.ts" },
+    {
+      name: "http",
+      testMatch: ["e2e/canonical-scenario.spec.ts", "e2e/offline-sync.http.spec.ts"],
+    },
     {
       name: "offline",
       testMatch: [

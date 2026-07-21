@@ -105,7 +105,9 @@ func TestLocalPostgreSQLProfileIsPinnedAndSelfCleaning(t *testing.T) {
 	for _, required := range []string{
 		"down --volumes", "trap cleanup EXIT", "go -C", "check-contracts.sh", "check-sqlc.sh",
 		"GOTMPDIR", "SHARED_GO_CACHE", "seed_task_go_cache", "cp -al", "test -race -p 1 -count=1 ./...",
-		"go run ./cmd/api", "go run ./cmd/worker", "test:contract:http", "test:e2e:mock", "test:e2e:http",
+		"build -o \"${RUNTIME_DIRECTORY}/api\" ./cmd/api", "build -o \"${RUNTIME_DIRECTORY}/worker\" ./cmd/worker",
+		"exec \"${RUNTIME_DIRECTORY}/api\"", "exec \"${RUNTIME_DIRECTORY}/worker\"",
+		"test:contract:http", "test:e2e:mock", "test:e2e:http",
 	} {
 		if !strings.Contains(script, required) {
 			t.Errorf("HTTP profile script does not contain %q", required)

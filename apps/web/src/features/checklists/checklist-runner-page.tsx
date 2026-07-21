@@ -205,9 +205,33 @@ export function ChecklistRunnerPage() {
         </section>
       </div>
       {projection.fieldMode && projection.fieldPendingOperationCount > 0 ? (
-        <p className="decision-result" data-testid="field-sync-state" role="status">
-          Saved locally — sync pending ({projection.fieldPendingOperationCount})
-        </p>
+        <section className="decision-result" data-testid="field-sync-state" role="status">
+          <span>Saved locally — sync pending ({projection.fieldPendingOperationCount})</span>
+          <button
+            className="secondary-button"
+            disabled={busy || projection.fieldSyncStatus === "resnapshot-required"}
+            onClick={() => void run(() => actions.syncFieldWork("manual"))}
+            type="button"
+          >
+            Sync now
+          </button>
+          {projection.fieldSyncErrorCode ? <span>{projection.fieldSyncErrorCode}</span> : null}
+        </section>
+      ) : null}
+      {projection.fieldSyncStatus === "conflict" && projection.fieldSyncConflict ? (
+        <section className="decision-result" data-testid="field-sync-conflict" role="alert">
+          <strong>Sync conflict — local draft preserved</strong>
+          <span>
+            {projection.fieldSyncConflict.code} at authoritative revision {projection.fieldSyncConflict.authoritativeRevision ?? "unknown"}.
+            Re-enter the decision explicitly against the current server revision; no automatic merge was applied.
+          </span>
+        </section>
+      ) : null}
+      {projection.fieldSyncStatus === "resnapshot-required" ? (
+        <section className="decision-result" data-testid="field-resnapshot-required" role="alert">
+          <strong>Safe package refresh required</strong>
+          <span>Editing is blocked. Pending operations and Inspection Attachment bytes were preserved.</span>
+        </section>
       ) : null}
       {projection.fieldMode && checklistReadOnly ? (
         <p className="decision-result" data-testid="field-reopen-boundary">

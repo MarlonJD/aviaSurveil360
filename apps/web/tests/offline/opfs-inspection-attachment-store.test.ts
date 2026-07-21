@@ -174,7 +174,7 @@ async function setup(
 }
 
 async function acknowledgeAttachmentDependency(database: OfflineFieldDatabase): Promise<void> {
-  await database.transaction("rw", database.outbox, async () => {
+  await database.transaction("rw", database.outbox, database.attachmentManifests, async () => {
     const responseOperation = await database.outbox.get([subjectId, "OP-RESPONSE-ATTACHMENT"]);
     if (!responseOperation) throw new Error("response operation fixture missing");
     await database.outbox.put({ ...responseOperation, state: "ACKNOWLEDGED" });
@@ -183,8 +183,15 @@ async function acknowledgeAttachmentDependency(database: OfflineFieldDatabase): 
     if (!attachmentOperation) throw new Error("attachment operation fixture missing");
     await database.outbox.put({
       ...attachmentOperation,
-      state: "PENDING",
+      state: "ACKNOWLEDGED",
       dependsOnOperationIds: [],
+    });
+    const manifest = await database.attachmentManifests.get([subjectId, stageInput.attachmentId]);
+    if (!manifest) throw new Error("attachment manifest fixture missing");
+    await database.attachmentManifests.put({
+      ...manifest,
+      authoritativeEntityId: "ATT-SERVER-001",
+      syncState: "PENDING",
     });
   });
 }

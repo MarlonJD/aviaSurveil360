@@ -92,7 +92,7 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 	return database.WithinTransaction(ctx, pool, func(ctx context.Context, transaction pgx.Tx) error {
 		if _, err := transaction.Exec(ctx, `
 			TRUNCATE TABLE
-				oidc_login_states, idempotency_responses, authorized_sync_changes, sync_cursors,
+				oidc_login_states, idempotency_responses, authorized_sync_changes, sync_cursors, sync_cursor_tokens,
 				audit_events, outbox_messages, review_decisions, report_decisions,
 				report_approval_states, report_versions, evidence_version_states, evidence_versions,
 				inspection_attachments, upload_sessions, object_metadata, cap_revisions, findings,

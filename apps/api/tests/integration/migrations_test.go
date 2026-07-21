@@ -37,6 +37,7 @@ var requiredFoundationTables = []string{
 	"idempotency_responses",
 	"authorized_sync_changes",
 	"sync_cursors",
+	"sync_cursor_tokens",
 	"object_metadata",
 	"upload_sessions",
 	"evidence_version_states",
@@ -52,7 +53,7 @@ func TestMigrationsApplyFromAnEmptyDatabase(t *testing.T) {
 		t.Fatalf("apply migrations: %v", err)
 	}
 	assertFoundationSchema(t, pool)
-	if version, err := migrations.CurrentVersion(context.Background(), pool); err != nil || version != 4 {
+	if version, err := migrations.CurrentVersion(context.Background(), pool); err != nil || version != 5 {
 		t.Fatalf("migration version = %d, err = %v", version, err)
 	}
 }

@@ -2,6 +2,7 @@ import {
   createContext,
   type PropsWithChildren,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -24,6 +25,7 @@ import type {
   SubmitCapInput,
   SubmitCapOutput,
   SubmitChecklistOutput,
+  AuthorizedConflictDescriptor,
 } from "../backend/backend";
 import {
   createBrowserFieldRepository,
@@ -41,6 +43,14 @@ import {
   createBrowserInspectionAttachmentStore,
   type InspectionAttachmentStore,
 } from "../offline/opfs-inspection-attachment-store";
+import {
+  createBrowserSyncBroadcast,
+  createBrowserSyncOwnerLock,
+  ForegroundSyncEngine,
+  installForegroundSyncTriggers,
+  type FieldSyncTrigger,
+  type SyncStatusBroadcast,
+} from "../offline/sync-engine";
 import { useApplicationRuntime } from "./providers";
 
 export interface ScenarioProjection {
@@ -62,6 +72,9 @@ export interface ScenarioProjection {
   inspectionAttachments: AttachmentManifestRow[];
   attachmentRecoveryBlocking: AttachmentRecoveryBlockingItem[];
   attachmentRecoveryQuarantinedCount: number;
+  fieldSyncStatus: "idle" | "synchronized" | "contended" | "retryable" | "conflict" | "forbidden" | "invalid" | "resnapshot-required";
+  fieldSyncErrorCode: string | null;
+  fieldSyncConflict: AuthorizedConflictDescriptor | null;
 }
 
 export interface ScenarioActions {
@@ -100,6 +113,7 @@ export interface ScenarioActions {
   loadReport(role: Role): Promise<void>;
   issueReport(reason: string): Promise<void>;
   loadManagerDashboard(): Promise<void>;
+  syncFieldWork(trigger?: FieldSyncTrigger): Promise<void>;
 }
 
 interface ScenarioContextValue {
@@ -128,6 +142,9 @@ const initialProjection: ScenarioProjection = {
   inspectionAttachments: [],
   attachmentRecoveryBlocking: [],
   attachmentRecoveryQuarantinedCount: 0,
+  fieldSyncStatus: "idle",
+  fieldSyncErrorCode: null,
+  fieldSyncConflict: null,
 };
 
 const FIELD_SUBJECT_ID = "USR-INSPECTOR-AMINA";
@@ -136,7 +153,7 @@ const FIELD_QUESTION_ID = "CAB-EMEQ-PBE-001";
 
 function toPotentialFindingView(row: PotentialFindingDraftRow): PotentialFindingView {
   return {
-    id: row.id,
+    id: row.authoritativeEntityId ?? row.id,
     auditId: row.auditId,
     questionId: row.questionId,
     organizationId: row.organizationId,
@@ -177,6 +194,7 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
   const runtime = useApplicationRuntime();
   const [projection, setProjection] = useState<ScenarioProjection>(initialProjection);
   const operationSequence = useRef(1);
+  const syncBroadcastRef = useRef<SyncStatusBroadcast | null>(null);
 
   const backendFor = (role: Role) => runtime.backendForRole?.(role) ?? runtime.backend;
   const operationId = (prefix: string) =>
@@ -571,9 +589,77 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
         ]);
         setProjection((current) => ({ ...current, dashboard, finding, report }));
       },
+
+      async syncFieldWork(trigger = "manual") {
+        if (runtime.buildProfile !== "http") return;
+        const repository = fieldRepository();
+        const local = await repository.loadPackage(FIELD_PACKAGE_ID);
+        if (!local) return;
+        const state = await repository.getSyncState(FIELD_PACKAGE_ID);
+        if (!state) throw new Error("The field sync scope is unavailable.");
+        const lock = createBrowserSyncOwnerLock();
+        if (!lock) throw new Error("The approved managed-browser sync lock is unavailable.");
+        const attachmentStore = inspectionAttachmentStore(repository);
+        const engine = new ForegroundSyncEngine({
+          backend: backendFor("inspector"),
+          repository,
+          lock,
+          readAttachmentBytes: (path) => attachmentStore.fileSystem.read(path),
+          broadcast: syncBroadcastRef.current?.broadcast,
+        });
+        const report = await engine.run(
+          { packageId: FIELD_PACKAGE_ID, offlineGrantId: state.grantId },
+          trigger,
+        );
+        let refreshed: FieldPackageView | null = null;
+        if (report.status !== "resnapshot-required") {
+          refreshed = await repository.loadPackage(FIELD_PACKAGE_ID);
+        }
+        setProjection((current) => ({
+          ...current,
+          ...(refreshed ? fieldProjection(refreshed) : {}),
+          fieldSyncStatus: report.status,
+          fieldSyncErrorCode: report.errorCode,
+          fieldSyncConflict: report.conflict,
+        }));
+      },
     }),
     [projection, runtime],
   );
+
+  const actionsRef = useRef(actions);
+  actionsRef.current = actions;
+  useEffect(() => {
+    if (runtime.buildProfile !== "http") return;
+    const broadcast = createBrowserSyncBroadcast();
+    syncBroadcastRef.current = broadcast;
+    const unsubscribe = broadcast?.subscribe((message) => {
+      if (message.packageId !== FIELD_PACKAGE_ID) return;
+      setProjection((current) => ({
+        ...current,
+        fieldSyncStatus: message.report.status,
+        fieldSyncErrorCode: message.report.errorCode,
+        fieldSyncConflict: message.report.conflict,
+      }));
+    });
+    const triggers = installForegroundSyncTriggers({
+      eventTarget: window,
+      documentTarget: document,
+      run: (trigger) => actionsRef.current.syncFieldWork(trigger).catch((cause) => {
+        setProjection((current) => ({
+          ...current,
+          fieldSyncStatus: "retryable",
+          fieldSyncErrorCode: cause instanceof Error ? cause.message : "SYNC_TRIGGER_FAILED",
+        }));
+      }),
+    });
+    return () => {
+      triggers.close();
+      unsubscribe?.();
+      broadcast?.close();
+      if (syncBroadcastRef.current === broadcast) syncBroadcastRef.current = null;
+    };
+  }, [runtime.buildProfile]);
 
   return <ScenarioContext.Provider value={{ projection, actions }}>{children}</ScenarioContext.Provider>;
 }

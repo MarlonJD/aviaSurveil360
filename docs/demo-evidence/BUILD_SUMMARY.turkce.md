@@ -22,6 +22,13 @@ bkz. [Sınırlandırılmış Yükleme Ve HTTP Parity Kanıtı](BOUNDED_UPLOAD_AN
 Task 6 ayrıca ayrı doğrulanmış PWA app-shell ve explicit browser-offline
 readiness foundation ekler; bkz.
 [PWA App Shell Ve Offline Readiness Kanıtı](PWA_OFFLINE_READINESS_2026-07-21.turkce.md).
+Task 7 ve 8 ayrıca doğrulanmış atomic IndexedDB field storage ve manifest-first
+OPFS Inspection Attachment recovery ekler; bkz.
+[IndexedDB Field Storage Ve Outbox Kanıtı](INDEXEDDB_FIELD_STORAGE_2026-07-21.turkce.md)
+ve
+[OPFS Inspection Attachment Recovery Kanıtı](OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.turkce.md).
+Task 12 ayrıca doğrulanmış typed causal foreground push/pull sync ekler; bkz.
+[Idempotent Foreground Sync Kanıtı](IDEMPOTENT_FOREGROUND_SYNC_2026-07-21.turkce.md).
 Bu yan candidate'lar root demo'yu veya genel ürünü `production-ready` yapmaz.
 
 **Tarih bağlamı:** Uygulama "bugün" olarak **15 Haziran 2026** tarihini kullanır;

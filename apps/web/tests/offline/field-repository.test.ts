@@ -294,6 +294,134 @@ describe("IndexedDbFieldRepository atomic writes", () => {
     });
   });
 
+  it("reconciles an acknowledgement into the later frozen edit without overwriting its draft", async () => {
+    const { repository } = createRepository();
+    await checkout(repository);
+    await repository.saveChecklistResponse({
+      operationId: "OP-IN-FLIGHT-001",
+      packageId,
+      responseId: "RESP-CAB-EMEQ-PBE-001",
+      questionId: "CAB-EMEQ-PBE-001",
+      answer: "NON_COMPLIANT",
+      comment: "First operation enters flight.",
+    });
+    await repository.markOperationInFlight("OP-IN-FLIGHT-001");
+    await repository.saveChecklistResponse({
+      operationId: "OP-LATER-EDIT-002",
+      packageId,
+      responseId: "RESP-CAB-EMEQ-PBE-001",
+      questionId: "CAB-EMEQ-PBE-001",
+      answer: "OBSERVATION",
+      comment: "Later local draft must remain visible.",
+    });
+
+    await repository.applyPushResult("OP-IN-FLIGHT-001", {
+      operationId: "OP-IN-FLIGHT-001",
+      status: "accepted",
+      authoritativeEntityId: "RESP-CAB-EMEQ-PBE-001",
+      authoritativeRevision: 1,
+      errorCode: null,
+      conflict: null,
+      acknowledgedAt: now.toISOString(),
+    });
+
+    expect(await repository.getChecklistResponse(packageId, "RESP-CAB-EMEQ-PBE-001")).toMatchObject({
+      answer: "OBSERVATION",
+      comment: "Later local draft must remain visible.",
+      revision: 1,
+      syncState: "PENDING",
+      operationId: "OP-LATER-EDIT-002",
+    });
+    expect(await repository.listDeliverableOperations(packageId)).toEqual([
+      expect.objectContaining({
+        operationId: "OP-LATER-EDIT-002",
+        state: "PENDING",
+        baseRevision: 1,
+        operation: expect.objectContaining({ baseRevision: 1 }),
+      }),
+    ]);
+
+    await repository.markOperationInFlight("OP-LATER-EDIT-002");
+    await repository.applyPushResult("OP-LATER-EDIT-002", {
+      operationId: "OP-LATER-EDIT-002",
+      status: "already_applied",
+      authoritativeEntityId: "RESP-CAB-EMEQ-PBE-001",
+      authoritativeRevision: 2,
+      errorCode: null,
+      conflict: null,
+      acknowledgedAt: now.toISOString(),
+    });
+    expect(await repository.getChecklistResponse(packageId, "RESP-CAB-EMEQ-PBE-001")).toMatchObject({
+      answer: "OBSERVATION",
+      revision: 2,
+      syncState: "ACKNOWLEDGED",
+      operationId: null,
+    });
+  });
+
+  it("rewires causal dependants when the user explicitly re-enters a conflicted response", async () => {
+    const { repository } = createRepository();
+    await checkout(repository);
+    await repository.saveChecklistResponse({
+      operationId: "OP-CONFLICTED-RESPONSE",
+      packageId,
+      responseId: "RESP-CAB-EMEQ-PBE-001",
+      questionId: "CAB-EMEQ-PBE-001",
+      answer: "NON_COMPLIANT",
+      comment: "Initial offline decision.",
+    });
+    await repository.createPotentialFindingDraft({
+      operationId: "OP-CONFLICTED-PF",
+      packageId,
+      localId: "PF-LOCAL-CONFLICT",
+      questionId: "CAB-EMEQ-PBE-001",
+      checklistResponseId: "RESP-CAB-EMEQ-PBE-001",
+      title: "PBE record gap",
+      description: "The record was unavailable during the field check.",
+      requiredComment: "Provide the current serviceability record.",
+      inspectionAttachmentIds: [],
+    });
+    await repository.markOperationInFlight("OP-CONFLICTED-RESPONSE");
+    await repository.applyPushResult("OP-CONFLICTED-RESPONSE", {
+      operationId: "OP-CONFLICTED-RESPONSE",
+      status: "conflict",
+      authoritativeEntityId: null,
+      authoritativeRevision: null,
+      errorCode: null,
+      conflict: {
+        code: "STALE_REVISION",
+        entityId: "RESP-CAB-EMEQ-PBE-001",
+        authoritativeRevision: 4,
+        authoritativeStatus: "OBSERVATION",
+        changedAt: now.toISOString(),
+      },
+      acknowledgedAt: now.toISOString(),
+    });
+
+    await repository.saveChecklistResponse({
+      operationId: "OP-REENTERED-RESPONSE",
+      packageId,
+      responseId: "RESP-CAB-EMEQ-PBE-001",
+      questionId: "CAB-EMEQ-PBE-001",
+      answer: "NON_COMPLIANT",
+      comment: "Explicitly re-entered against the authoritative revision.",
+    });
+
+    const rows = await repository.listOutbox(packageId, { includeTerminal: true });
+    expect(rows.find((row) => row.operationId === "OP-CONFLICTED-RESPONSE")).toMatchObject({
+      state: "SUPERSEDED",
+      supersededByOperationId: "OP-REENTERED-RESPONSE",
+    });
+    expect(rows.find((row) => row.operationId === "OP-REENTERED-RESPONSE")).toMatchObject({
+      state: "PENDING",
+      baseRevision: 4,
+    });
+    expect(rows.find((row) => row.operationId === "OP-CONFLICTED-PF")).toMatchObject({
+      state: "BLOCKED_ON_DEPENDENCY",
+      dependsOnOperationIds: ["OP-REENTERED-RESPONSE"],
+    });
+  });
+
   it("creates Potential Finding and checklist-submit commands with causal dependencies", async () => {
     const { repository } = createRepository();
     await checkout(repository);
@@ -316,6 +444,14 @@ describe("IndexedDbFieldRepository atomic writes", () => {
       requiredComment: "PBE record unavailable.",
       inspectionAttachmentIds: [],
     });
+    await repository.saveChecklistResponse({
+      operationId: "OP-RESPONSE-CAUSAL-REPLACEMENT",
+      packageId,
+      responseId: "RESP-CAB-EMEQ-PBE-001",
+      questionId: "CAB-EMEQ-PBE-001",
+      answer: "OBSERVATION",
+      comment: "The unsent response was revised before delivery.",
+    });
     const submission = await repository.submitChecklist({
       operationId: "OP-SUBMIT-CAUSAL",
       packageId,
@@ -326,11 +462,14 @@ describe("IndexedDbFieldRepository atomic writes", () => {
     const rows = await repository.listOutbox(packageId, { includeTerminal: true });
     expect(rows.find((row) => row.operationId === "OP-PF-CAUSAL")).toMatchObject({
       state: "BLOCKED_ON_DEPENDENCY",
-      dependsOnOperationIds: ["OP-RESPONSE-CAUSAL"],
+      dependsOnOperationIds: ["OP-RESPONSE-CAUSAL-REPLACEMENT"],
     });
     expect(rows.find((row) => row.operationId === "OP-SUBMIT-CAUSAL")).toMatchObject({
       state: "BLOCKED_ON_DEPENDENCY",
-      dependsOnOperationIds: expect.arrayContaining(["OP-RESPONSE-CAUSAL", "OP-PF-CAUSAL"]),
+      dependsOnOperationIds: expect.arrayContaining([
+        "OP-RESPONSE-CAUSAL-REPLACEMENT",
+        "OP-PF-CAUSAL",
+      ]),
     });
   });
 

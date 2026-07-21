@@ -20,6 +20,13 @@ candidate; see
 Task 6 adds a separately verified PWA app-shell and explicit browser-offline
 readiness foundation; see
 [PWA App Shell And Offline Readiness Evidence](PWA_OFFLINE_READINESS_2026-07-21.md).
+Tasks 7 and 8 add separately verified atomic IndexedDB field storage and
+manifest-first OPFS Inspection Attachment recovery; see
+[IndexedDB Field Storage And Outbox Evidence](INDEXEDDB_FIELD_STORAGE_2026-07-21.md)
+and
+[OPFS Inspection Attachment Recovery Evidence](OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md).
+Task 12 adds separately verified typed causal foreground push/pull sync; see
+[Idempotent Foreground Sync Evidence](IDEMPOTENT_FOREGROUND_SYNC_2026-07-21.md).
 These adjacent candidates do not make the root demo or the overall product
 `production-ready`.
 

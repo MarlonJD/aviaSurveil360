@@ -7,6 +7,7 @@ import type {
   FieldSyncOperation,
   InspectionPackage,
   OfflineGrant,
+  PushFieldOperationResult,
   SyncPullResponse,
 } from "../backend/backend";
 import {
@@ -135,6 +136,8 @@ export interface AcknowledgeAttachmentInput {
   authoritativeEntityId: string;
   acknowledgedAt: string;
 }
+
+export interface AcknowledgeUploadedAttachmentInput extends AcknowledgeAttachmentInput {}
 
 export interface FieldChecklistSubmission {
   auditId: string;
@@ -738,10 +741,39 @@ export class IndexedDbFieldRepository {
           (row) => row.commandType === "UPSERT_CHECKLIST_RESPONSE" && !isTerminalOutboxState(row.state),
         );
         const inFlight = activeEntityRows.filter((row) => row.state === "IN_FLIGHT");
+        const supersededOperationIds: string[] = [];
         for (const row of activeEntityRows.filter((candidate) => isUnsentOutboxState(candidate.state))) {
           row.state = "SUPERSEDED";
           row.supersededByOperationId = input.operationId;
           await this.database.outbox.put(row);
+          supersededOperationIds.push(row.operationId);
+        }
+        for (const row of activeEntityRows.filter((candidate) => candidate.state === "CONFLICT")) {
+          row.state = "SUPERSEDED";
+          row.supersededByOperationId = input.operationId;
+          await this.database.outbox.put(row);
+          supersededOperationIds.push(row.operationId);
+        }
+        if (supersededOperationIds.length > 0) {
+          const packageOperations = await this.database.outbox
+            .where("[subjectId+packageId]")
+            .equals([this.subjectId, packageRow.id])
+            .toArray();
+          for (const dependent of packageOperations) {
+            if (!dependent.dependsOnOperationIds.some((candidate) => supersededOperationIds.includes(candidate))) {
+              continue;
+            }
+            dependent.dependsOnOperationIds = [
+              ...new Set([
+                ...dependent.dependsOnOperationIds.filter(
+                  (candidate) => !supersededOperationIds.includes(candidate),
+                ),
+                input.operationId,
+              ]),
+            ].sort();
+            dependent.state = "BLOCKED_ON_DEPENDENCY";
+            await this.database.outbox.put(dependent);
+          }
         }
         const authoritativeRevision = existingResponse?.revision ?? question.currentResponse?.revision ?? 0;
         const baseRevision = inFlight.length > 0 || authoritativeRevision === 0
@@ -1405,20 +1437,22 @@ export class IndexedDbFieldRepository {
       const operation = manifest.operationId
         ? await this.database.outbox.get([this.subjectId, manifest.operationId])
         : undefined;
-      if (manifest.stagingState !== "ready" || !operation || operation.state !== "PENDING") {
+      if (
+        manifest.stagingState !== "ready" ||
+        !manifest.authoritativeEntityId ||
+        !operation ||
+        operation.state !== "ACKNOWLEDGED"
+      ) {
         throw new FieldRepositoryError(
           "ATTACHMENT_UPLOAD_NOT_READY",
-          "Only a dependency-free ready attachment may start upload.",
+          "Only a server-registered ready attachment may start byte upload.",
         );
       }
       await this.fault("before-attachment-upload-start");
       manifest.stagingState = "uploading";
       manifest.uploadStartedAt = this.now().toISOString();
       manifest.updatedAt = manifest.uploadStartedAt;
-      operation.state = "IN_FLIGHT";
-      operation.attemptCount += 1;
       await this.database.attachmentManifests.put(manifest);
-      await this.database.outbox.put(operation);
       await this.fault("after-attachment-upload-start");
       return clone(manifest);
     });
@@ -1433,7 +1467,7 @@ export class IndexedDbFieldRepository {
       if (
         manifest.stagingState !== "uploading" ||
         !operation ||
-        operation.state !== "IN_FLIGHT" ||
+        operation.state !== "ACKNOWLEDGED" ||
         !input.authoritativeEntityId.trim() ||
         parseInstant(input.acknowledgedAt) === null
       ) {
@@ -1448,10 +1482,7 @@ export class IndexedDbFieldRepository {
       manifest.authoritativeEntityId = input.authoritativeEntityId;
       manifest.acknowledgedAt = input.acknowledgedAt;
       manifest.updatedAt = input.acknowledgedAt;
-      operation.state = "ACKNOWLEDGED";
-      operation.lastErrorCode = null;
       await this.database.attachmentManifests.put(manifest);
-      await this.database.outbox.put(operation);
       await this.fault("after-attachment-acknowledgement");
       return clone(manifest);
     });
@@ -1527,9 +1558,272 @@ export class IndexedDbFieldRepository {
       }
       row.state = "IN_FLIGHT";
       row.attemptCount += 1;
+      row.nextAttemptAt = new Date(this.now().getTime() + 30_000).toISOString();
       await this.database.outbox.put(row);
       return clone(row);
     });
+  }
+
+  async recoverInterruptedOperations(packageId: string): Promise<void> {
+    await this.atomic([this.database.outbox], async () => {
+      const rows = await this.database.outbox
+        .where("[subjectId+packageId]")
+        .equals([this.subjectId, packageId])
+        .toArray();
+      for (const row of rows) {
+        if (row.state !== "IN_FLIGHT") continue;
+        row.state = "FAILED_RETRYABLE";
+        row.lastErrorCode = "INTERRUPTED_IN_FLIGHT";
+        row.nextAttemptAt = this.now().toISOString();
+        await this.database.outbox.put(row);
+      }
+    });
+  }
+
+  async releaseRetryableOperations(packageId: string, force: boolean): Promise<void> {
+    const now = this.now().getTime();
+    await this.atomic([this.database.outbox], async () => {
+      const rows = await this.database.outbox
+        .where("[subjectId+packageId]")
+        .equals([this.subjectId, packageId])
+        .toArray();
+      for (const row of rows) {
+        if (
+          row.state !== "FAILED_RETRYABLE" ||
+          (!force && (parseInstant(row.nextAttemptAt) ?? Number.POSITIVE_INFINITY) > now)
+        ) {
+          continue;
+        }
+        row.state = row.dependsOnOperationIds.length > 0 ? "BLOCKED_ON_DEPENDENCY" : "PENDING";
+        await this.database.outbox.put(row);
+      }
+    });
+  }
+
+  private async markEntityPushState(
+    row: OutboxRow,
+    syncState: "CONFLICT" | "REJECTED",
+    result: PushFieldOperationResult,
+  ): Promise<void> {
+    if (row.commandType === "UPSERT_CHECKLIST_RESPONSE") {
+      const response = await this.database.checklistResponses.get([this.subjectId, row.entityId]);
+      if (response) {
+        response.syncState = syncState;
+        if (syncState === "CONFLICT" && result.conflict?.authoritativeRevision != null) {
+          response.revision = result.conflict?.authoritativeRevision ?? response.revision;
+        }
+        await this.database.checklistResponses.put(response);
+      }
+      return;
+    }
+    if (row.commandType === "CREATE_POTENTIAL_FINDING") {
+      const draft = await this.database.potentialFindingDrafts.get([this.subjectId, row.entityId]);
+      if (draft) {
+        draft.syncState = syncState;
+        if (syncState === "CONFLICT" && result.conflict?.authoritativeRevision != null) {
+          draft.baseRevision = result.conflict?.authoritativeRevision ?? draft.baseRevision;
+        }
+        await this.database.potentialFindingDrafts.put(draft);
+      }
+      return;
+    }
+    if (row.commandType === "REGISTER_INSPECTION_ATTACHMENT") {
+      const manifest = await this.database.attachmentManifests.get([this.subjectId, row.entityId]);
+      if (manifest) {
+        manifest.syncState = syncState;
+        await this.database.attachmentManifests.put(manifest);
+      }
+    }
+  }
+
+  private async acknowledgeEntity(
+    row: OutboxRow,
+    result: PushFieldOperationResult,
+  ): Promise<void> {
+    const authoritativeRevision = result.authoritativeRevision;
+    const authoritativeEntityId = result.authoritativeEntityId;
+    if (authoritativeRevision === null || authoritativeEntityId === null) {
+      throw new FieldRepositoryError(
+        "ACKNOWLEDGEMENT_INCOMPLETE",
+        "An applied field operation requires an authoritative entity and revision.",
+      );
+    }
+    if (row.commandType === "UPSERT_CHECKLIST_RESPONSE") {
+      const response = await this.database.checklistResponses.get([this.subjectId, row.entityId]);
+      if (response) {
+        response.revision = authoritativeRevision;
+        if (response.operationId === row.operationId) {
+          response.operationId = null;
+          response.syncState = "ACKNOWLEDGED";
+          response.updatedAt = result.acknowledgedAt;
+        }
+        await this.database.checklistResponses.put(response);
+      }
+      return;
+    }
+    if (row.commandType === "CREATE_POTENTIAL_FINDING") {
+      const draft = await this.database.potentialFindingDrafts.get([this.subjectId, row.entityId]);
+      if (draft) {
+        draft.authoritativeEntityId = authoritativeEntityId;
+        draft.baseRevision = authoritativeRevision;
+        if (draft.operationId === row.operationId) {
+          draft.operationId = null;
+          draft.syncState = "ACKNOWLEDGED";
+          draft.updatedAt = result.acknowledgedAt;
+        }
+        await this.database.potentialFindingDrafts.put(draft);
+      }
+      return;
+    }
+    if (row.commandType === "SUBMIT_CHECKLIST") {
+      const packageRow = await this.database.packages.get([this.subjectId, row.packageId]);
+      if (packageRow && packageRow.pendingSubmissionOperationId === row.operationId) {
+        packageRow.localChecklistStatus = "SUBMITTED";
+        packageRow.localChecklistRevision = authoritativeRevision;
+        packageRow.pendingSubmissionOperationId = null;
+        await this.database.packages.put(packageRow);
+      }
+      return;
+    }
+    const manifest = await this.database.attachmentManifests.get([this.subjectId, row.entityId]);
+    if (manifest) {
+      manifest.authoritativeEntityId = authoritativeEntityId;
+      manifest.syncState = "PENDING";
+      manifest.updatedAt = result.acknowledgedAt;
+      await this.database.attachmentManifests.put(manifest);
+    }
+  }
+
+  private async unblockAcknowledgedDependents(
+    operationId: string,
+    result: PushFieldOperationResult,
+  ): Promise<void> {
+    const rows = await this.database.outbox
+      .where("[subjectId+packageId]")
+      .equals([this.subjectId, (await this.database.outbox.get([this.subjectId, operationId]))!.packageId])
+      .toArray();
+    for (const dependent of rows) {
+      if (!dependent.dependsOnOperationIds.includes(operationId)) continue;
+      dependent.dependsOnOperationIds = dependent.dependsOnOperationIds.filter(
+        (candidate) => candidate !== operationId,
+      );
+      if (result.authoritativeRevision !== null) {
+        if (dependent.commandType === "UPSERT_CHECKLIST_RESPONSE") {
+          dependent.baseRevision = result.authoritativeRevision;
+          dependent.operation.baseRevision = result.authoritativeRevision;
+        } else if (dependent.operation.commandType === "CREATE_POTENTIAL_FINDING") {
+          dependent.operation.payload.expectedChecklistResponseRevision =
+            result.authoritativeRevision;
+        }
+      }
+      dependent.requestDigest = await Dexie.waitFor(
+        fieldOperationRequestDigest(dependent.operation),
+      );
+      if (dependent.dependsOnOperationIds.length === 0) dependent.state = "PENDING";
+      await this.database.outbox.put(dependent);
+    }
+  }
+
+  async applyPushResult(
+    operationId: string,
+    result: PushFieldOperationResult,
+  ): Promise<void> {
+    await this.atomic(
+      [
+        this.database.packages,
+        this.database.checklistResponses,
+        this.database.potentialFindingDrafts,
+        this.database.attachmentManifests,
+        this.database.outbox,
+      ],
+      async () => {
+        const row = await this.database.outbox.get([this.subjectId, operationId]);
+        if (!row || row.state !== "IN_FLIGHT" || result.operationId !== operationId) {
+          throw new FieldRepositoryError(
+            "PUSH_RESULT_SCOPE_MISMATCH",
+            "The push result must target the exact in-flight operation.",
+          );
+        }
+        row.lastErrorCode = result.errorCode ?? result.conflict?.code ?? null;
+        if (result.status === "accepted" || result.status === "already_applied") {
+          row.state = "ACKNOWLEDGED";
+          row.lastErrorCode = null;
+          await this.database.outbox.put(row);
+          await this.acknowledgeEntity(row, result);
+          await this.unblockAcknowledgedDependents(operationId, result);
+          return;
+        }
+        if (result.status === "retryable") {
+          row.state = "FAILED_RETRYABLE";
+          const backoffSeconds = Math.min(300, 2 ** Math.min(row.attemptCount, 8));
+          row.nextAttemptAt = new Date(this.now().getTime() + backoffSeconds * 1_000).toISOString();
+          await this.database.outbox.put(row);
+          return;
+        }
+        row.state = result.status === "conflict" ? "CONFLICT" : "REJECTED";
+        await this.database.outbox.put(row);
+        await this.markEntityPushState(
+          row,
+          result.status === "conflict" ? "CONFLICT" : "REJECTED",
+          result,
+        );
+        if (result.conflict?.code === "PACKAGE_REVOKED") {
+          const packageRow = await this.database.packages.get([this.subjectId, row.packageId]);
+          if (packageRow) {
+            packageRow.accessState = "QUARANTINED";
+            packageRow.unavailableReason = "PACKAGE_REVOKED";
+            await this.database.packages.put(packageRow);
+          }
+        }
+      },
+    );
+  }
+
+  async listRegisteredAttachmentsReadyForUpload(packageId: string): Promise<AttachmentManifestRow[]> {
+    await this.requireReadWrite();
+    const manifests = await this.database.attachmentManifests
+      .where("[subjectId+packageId]")
+      .equals([this.subjectId, packageId])
+      .toArray();
+    const ready: AttachmentManifestRow[] = [];
+    for (const manifest of manifests) {
+      if (
+        manifest.stagingState !== "ready" ||
+        !manifest.authoritativeEntityId ||
+        !manifest.localBytesPresent ||
+        !manifest.finalOpfsPath ||
+        !manifest.operationId
+      ) {
+        continue;
+      }
+      const operation = await this.database.outbox.get([this.subjectId, manifest.operationId]);
+      if (operation?.state === "ACKNOWLEDGED") ready.push(manifest);
+    }
+    return sortByKey(clone(ready), (manifest) => manifest.createdAt);
+  }
+
+  async beginRegisteredAttachmentUpload(attachmentId: string): Promise<AttachmentManifestRow> {
+    return this.beginAttachmentUpload(attachmentId);
+  }
+
+  async markAttachmentUploadRetryable(attachmentId: string, _errorCode: string): Promise<void> {
+    await this.atomic([this.database.attachmentManifests], async () => {
+      const manifest = await this.requireAttachment(attachmentId);
+      if (manifest.stagingState !== "uploading") {
+        throw new FieldRepositoryError(
+          "ATTACHMENT_UPLOAD_STATE_INVALID",
+          "Only an uploading attachment may return to retry-ready state.",
+        );
+      }
+      manifest.stagingState = "ready";
+      manifest.syncState = "PENDING";
+      manifest.updatedAt = this.now().toISOString();
+      await this.database.attachmentManifests.put(manifest);
+    });
+  }
+
+  async acknowledgeUploadedAttachment(input: AcknowledgeUploadedAttachmentInput): Promise<void> {
+    await this.acknowledgeAttachment(input);
   }
 
   async listOutbox(
@@ -1689,6 +1983,17 @@ export class IndexedDbFieldRepository {
         const state = await this.database.syncState.get([this.subjectId, input.packageId]);
         if (!state || state.grantId !== input.grantId || state.cursor !== input.expectedCursor) {
           throw new FieldRepositoryError("PULL_CURSOR_SCOPE_MISMATCH", "Pull cursor is not current.");
+        }
+        if (input.page.resnapshotRequired) {
+          packageRow.accessState = "LOCKED";
+          packageRow.unavailableReason = "RESNAPSHOT_REQUIRED";
+          await this.database.packages.put(packageRow);
+          await this.database.syncState.put({
+            ...state,
+            projectionVersion: input.page.projectionVersion,
+            lastErrorCode: "RESNAPSHOT_REQUIRED",
+          });
+          return;
         }
         for (const change of input.page.changes) {
           await this.applyAuthorizedChange(packageRow, change);

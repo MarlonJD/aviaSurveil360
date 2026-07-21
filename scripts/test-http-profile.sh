@@ -83,20 +83,21 @@ export AVIA_HTTP_TEST_PROFILE="canonical"
 export GOCACHE="${TASK_GO_CACHE}"
 seed_task_go_cache
 
-go -C "${REPOSITORY_ROOT}/apps/api" build ./cmd/api ./cmd/worker
+go -C "${REPOSITORY_ROOT}/apps/api" build -o "${RUNTIME_DIRECTORY}/api" ./cmd/api
+go -C "${REPOSITORY_ROOT}/apps/api" build -o "${RUNTIME_DIRECTORY}/worker" ./cmd/worker
 go -C "${REPOSITORY_ROOT}/apps/api" test -race -p 1 -count=1 ./...
 "${SCRIPT_DIR}/check-contracts.sh"
 "${SCRIPT_DIR}/check-sqlc.sh"
 
 (
   cd "${REPOSITORY_ROOT}/apps/api"
-  exec go run ./cmd/api
+  exec "${RUNTIME_DIRECTORY}/api"
 ) >"${RUNTIME_DIRECTORY}/api.log" 2>&1 &
 API_PID=$!
 
 (
   cd "${REPOSITORY_ROOT}/apps/api"
-  exec go run ./cmd/worker
+  exec "${RUNTIME_DIRECTORY}/worker"
 ) >"${RUNTIME_DIRECTORY}/worker.log" 2>&1 &
 WORKER_PID=$!
 

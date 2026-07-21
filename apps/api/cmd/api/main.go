@@ -123,6 +123,7 @@ func run(ctx context.Context) error {
 						}
 						applicationService := application.NewService(pool, appDependencies)
 						grantService := fieldsync.NewGrantService(pool, fieldsync.GrantDependencies{IDGenerator: generator.Next})
+						syncOperations := fieldsync.NewOperationService(pool, fieldsync.OperationDependencies{IDGenerator: generator.Next})
 						evidenceUploads := evidence.NewUploadService(pool, objects, evidence.UploadServiceConfig{
 							QuarantineBucket: settings.QuarantineBucket, CanonicalBucket: settings.CanonicalBucket,
 							MaximumByteSize: 25 * 1024 * 1024, InstructionTTL: 10 * time.Minute, IDGenerator: generator.Next,
@@ -133,6 +134,7 @@ func run(ctx context.Context) error {
 						})
 						apiHandler := httpapi.NewCanonicalAPI(httpapi.CanonicalAPIDependencies{
 							Pool: pool, Application: applicationService, GrantService: grantService,
+							SyncOperations:  syncOperations,
 							EvidenceUploads: evidenceUploads, AttachmentUploads: attachmentUploads,
 						}).Handler()
 						if settings.CanonicalTestProfile {
