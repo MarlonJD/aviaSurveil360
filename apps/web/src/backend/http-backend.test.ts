@@ -133,4 +133,65 @@ describe("HttpBackend", () => {
     ).rejects.toBeInstanceOf(BackendCancelledError);
     expect(fetchImplementation).toHaveBeenCalledTimes(1);
   });
+
+  it("maps first-production registry and planning requests to exact versioned routes", async () => {
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          items: [{
+            id: "ORG-FLY-NAMIBIA",
+            legalName: "Fly Namibia",
+            organizationType: "OPERATOR",
+            status: "ACTIVE",
+            openFindingCount: 0,
+            lastAuditDate: null,
+            nextAuditDate: "2026-07-15",
+            revision: 1,
+          }],
+          nextCursor: null,
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          id: "PLAN-2026-CAB-001",
+          title: "2026 Cabin Surveillance — Fly Namibia",
+          planYear: 2026,
+          organizationId: "ORG-FLY-NAMIBIA",
+          organizationName: "Fly Namibia",
+          inspectionType: "CABIN",
+          scheduledDate: "2026-07-15",
+          estimatedBudget: 48000,
+          status: "GM_REVIEW",
+          currentOwnerRole: "gm",
+          nextAction: "General Manager to review operational scope",
+          revision: 2,
+        }),
+      );
+    const backend = createHttpBackend(
+      { apiBaseUrl: "/", environmentLabel: "Test" },
+      { fetchImplementation, csrfToken: () => "csrf-test" },
+    );
+
+    const registry = await backend.organizations.list({ limit: 20 });
+    expect(registry.items[0]?.legalName).toBe("Fly Namibia");
+    const updated = await backend.planning.decide({
+      operationId: "OP-PLAN-FINANCE-APPROVE",
+      planningItemId: "PLAN-2026-CAB-001",
+      expectedPlanningRevision: 1,
+      decision: "APPROVE_BUDGET",
+      reason: "Budget envelope confirmed.",
+    });
+    expect(updated).toMatchObject({ status: "GM_REVIEW", currentOwnerRole: "gm", revision: 2 });
+
+    expect(fetchImplementation.mock.calls[0]?.[0]).toBe("/v1/organizations?limit=20");
+    const [decisionURL, decisionInit] = fetchImplementation.mock.calls[1]!;
+    expect(decisionURL).toBe("/v1/planning/items/PLAN-2026-CAB-001/decisions");
+    expect(decisionInit?.method).toBe("POST");
+    expect(JSON.parse(String(decisionInit?.body))).toMatchObject({
+      operationId: "OP-PLAN-FINANCE-APPROVE",
+      decision: "APPROVE_BUDGET",
+      expectedPlanningRevision: 1,
+    });
+  });
 });

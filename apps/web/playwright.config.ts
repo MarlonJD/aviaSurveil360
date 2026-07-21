@@ -41,10 +41,17 @@ export default defineConfig({
           stderr: "pipe",
         },
   projects: [
-    { name: "mock", testMatch: "e2e/canonical-scenario.spec.ts" },
+    {
+      name: "mock",
+      testMatch: ["e2e/canonical-scenario.spec.ts", "e2e/first-production-routes.spec.ts"],
+    },
     {
       name: "http",
-      testMatch: ["e2e/canonical-scenario.spec.ts", "e2e/offline-sync.http.spec.ts"],
+      testMatch: [
+        "e2e/canonical-scenario.spec.ts",
+        "e2e/first-production-routes.spec.ts",
+        "e2e/offline-sync.http.spec.ts",
+      ],
     },
     {
       name: "offline",

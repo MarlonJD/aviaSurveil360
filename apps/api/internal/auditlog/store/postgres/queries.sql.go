@@ -9,6 +9,62 @@ import (
 	"context"
 )
 
+const listAuditEvents = `-- name: ListAuditEvents :many
+SELECT sequence_id, event_id, occurred_at, actor_subject_id, actor_role, organization_id,
+       action, entity_type, entity_id, request_id, details, entity_version, before_status,
+       after_status, reason, operation_id, correlation_id, closure_basis
+FROM audit_events
+WHERE ($1::text = '' OR entity_type = $1)
+  AND ($2::text = '' OR entity_id = $2)
+ORDER BY sequence_id
+LIMIT $3
+`
+
+type ListAuditEventsParams struct {
+	EntityTypeFilter string `json:"entity_type_filter"`
+	EntityIDFilter   string `json:"entity_id_filter"`
+	ResultLimit      int32  `json:"result_limit"`
+}
+
+func (q *Queries) ListAuditEvents(ctx context.Context, arg ListAuditEventsParams) ([]AuditEvent, error) {
+	rows, err := q.db.Query(ctx, listAuditEvents, arg.EntityTypeFilter, arg.EntityIDFilter, arg.ResultLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AuditEvent
+	for rows.Next() {
+		var i AuditEvent
+		if err := rows.Scan(
+			&i.SequenceID,
+			&i.EventID,
+			&i.OccurredAt,
+			&i.ActorSubjectID,
+			&i.ActorRole,
+			&i.OrganizationID,
+			&i.Action,
+			&i.EntityType,
+			&i.EntityID,
+			&i.RequestID,
+			&i.Details,
+			&i.EntityVersion,
+			&i.BeforeStatus,
+			&i.AfterStatus,
+			&i.Reason,
+			&i.OperationID,
+			&i.CorrelationID,
+			&i.ClosureBasis,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAuditEventsForEntity = `-- name: ListAuditEventsForEntity :many
 SELECT sequence_id, event_id, occurred_at, actor_subject_id, actor_role, organization_id,
        action, entity_type, entity_id, request_id, details, entity_version, before_status,

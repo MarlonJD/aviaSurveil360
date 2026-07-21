@@ -1,6 +1,8 @@
 import type { components } from "../generated/transport/api-types";
 import type {
   AssignmentSummary,
+  AuditEventView,
+  ChecklistTemplateVersionView,
   ChecklistResponseView,
   CheckoutInspectionPackageOutput,
   CompleteEvidenceUploadOutput,
@@ -8,13 +10,20 @@ import type {
   EvidenceVersionView,
   FindingView,
   InspectionPackage,
+  ListOrganizationsOutput,
+  ListPlanningItemsOutput,
   ListAssignmentsOutput,
   ListFindingsOutput,
   ManagerDashboardProjection,
+  OrganizationSummary,
+  PageOutput,
+  PlanningItemView,
   PotentialFindingDecisionOutput,
   PotentialFindingView,
   PushFieldOperationResult,
   ReportVersionView,
+  ReminderRuleView,
+  Role,
   ReviewCapOutput,
   ReviewEvidenceOutput,
   SubmitCapOutput,
@@ -191,6 +200,50 @@ export function mapManagerDashboard(
   value: Schemas["ManagerDashboardProjection"],
 ): ManagerDashboardProjection {
   return { ...value, recentFindingNumbers: [...value.recentFindingNumbers] };
+}
+
+export function mapOrganization(value: Schemas["OrganizationSummary"]): OrganizationSummary {
+  return { ...value };
+}
+
+export function mapOrganizations(
+  value: Schemas["ListOrganizationsOutput"],
+): ListOrganizationsOutput {
+  return { items: value.items.map(mapOrganization), nextCursor: value.nextCursor };
+}
+
+export function mapPlanningItem(value: Schemas["PlanningItemView"]): PlanningItemView {
+  return { ...value };
+}
+
+export function mapPlanningItems(
+  value: Schemas["ListPlanningItemsOutput"],
+): ListPlanningItemsOutput {
+  return { items: value.items.map(mapPlanningItem), nextCursor: value.nextCursor };
+}
+
+export function mapChecklistTemplateVersions(
+  value: Schemas["ListChecklistTemplateVersionsOutput"],
+): PageOutput<ChecklistTemplateVersionView> {
+  return { items: value.items.map((item) => ({ ...item })), nextCursor: value.nextCursor };
+}
+
+export function mapReminderRules(
+  value: Schemas["ListReminderRulesOutput"],
+): PageOutput<ReminderRuleView> {
+  return { items: value.items.map((item) => ({ ...item })), nextCursor: value.nextCursor };
+}
+
+export function mapAuditEvents(
+  value: Schemas["ListAuditEventsOutput"],
+): PageOutput<AuditEventView> {
+  return {
+    items: value.items.map((item) => ({
+      ...item,
+      actorRole: item.actorRole as Role | null,
+    })),
+    nextCursor: value.nextCursor,
+  };
 }
 
 export function mapPushResult(

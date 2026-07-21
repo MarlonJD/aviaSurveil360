@@ -32,6 +32,12 @@ const expectedPaths = [
   "/v1/report-versions/{id}",
   "/v1/report-versions/{id}/decisions",
   "/v1/dashboards/manager",
+  "/v1/organizations",
+  "/v1/planning/items",
+  "/v1/planning/items/{id}/decisions",
+  "/v1/configuration/checklist-template-versions",
+  "/v1/configuration/reminder-rules",
+  "/v1/audit-events",
   "/v1/sync/operations",
   "/v1/sync/changes",
 ];
@@ -88,6 +94,7 @@ for (const decisionSchemaName of [
   "AuthorizedCloseInput",
   "DecideReportInput",
   "ReopenChecklistInput",
+  "PlanningDecisionInput",
 ]) {
   const schema = schemas[decisionSchemaName];
   assert.ok(

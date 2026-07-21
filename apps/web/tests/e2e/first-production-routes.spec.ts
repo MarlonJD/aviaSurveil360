@@ -1,0 +1,96 @@
+import { expect, test, type Page } from "@playwright/test";
+
+const viewports = [
+  { name: "desktop", width: 1440, height: 900 },
+  { name: "tablet", width: 820, height: 1180 },
+  { name: "mobile", width: 390, height: 844 },
+] as const;
+
+test.beforeEach(async ({ request }, testInfo) => {
+  if (testInfo.project.name !== "http") return;
+  const apiURL = process.env.AVIA_HTTP_API_URL ?? "http://127.0.0.1:58081";
+  const token = process.env.AVIA_CANONICAL_TEST_TOKEN ?? "";
+  const response = await request.post(`${apiURL}/__test/reset`, {
+    headers: { "x-avia-test-token": token },
+  });
+  expect(response.ok()).toBe(true);
+});
+
+async function expectNoCriticalOverflow(page: Page): Promise<void> {
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
+}
+
+for (const viewport of viewports) {
+  test(`first-production route matrix is actionable at ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    const consoleIssues: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error" || message.type() === "warning") {
+        consoleIssues.push(`${message.type()}: ${message.text()}`);
+      }
+    });
+    page.on("pageerror", (error) => consoleIssues.push(`pageerror: ${error.message}`));
+
+    await page.goto("/");
+    await page.getByRole("link", { name: /Department Manager/i }).click();
+    await expect(page.getByRole("heading", { name: "Department Manager Dashboard" })).toBeVisible();
+    await page.getByRole("link", { name: "Open Organization Registry" }).click();
+    await expect(page.getByRole("heading", { name: "Organization Registry" })).toBeVisible();
+    await expect(page.getByTestId("organization-row")).toHaveCount(2);
+    await expect(page.getByTestId("organization-row").first()).toContainText("Fly Namibia");
+    await expect(page.locator("body")).not.toContainText("Internal CAA Note");
+    await page.getByRole("link", { name: "Open Audit Plan Calendar" }).click();
+    await expect(page.getByRole("heading", { name: "Audit Plan Calendar" })).toBeVisible();
+    await expect(page.getByTestId("planning-status")).toHaveText("FINANCE_REVIEW");
+    await expectNoCriticalOverflow(page);
+
+    await page.getByRole("link", { name: "Switch role" }).click();
+    await page.getByRole("link", { name: /Finance Review/i }).click();
+    await expect(page.getByRole("heading", { name: "Finance Review" })).toBeVisible();
+    await page.getByLabel("Finance decision reason").fill(
+      "Budget envelope confirmed for the configured inspection.",
+    );
+    await page.getByRole("button", { name: "Approve Budget" }).click();
+    await expect(page.getByTestId("planning-status")).toHaveText("GM_REVIEW");
+    await expect(page.getByTestId("planning-owner")).toHaveText("General Manager");
+
+    await page.getByRole("link", { name: "Switch to General Manager" }).click();
+    await expect(page.getByRole("heading", { name: "General Manager Dashboard" })).toBeVisible();
+    await page.getByLabel("General Manager decision reason").fill(
+      "Operational scope is ready for final approval.",
+    );
+    await page.getByRole("button", { name: "Forward for Final Approval" }).click();
+    await expect(page.getByTestId("planning-status")).toHaveText("EXECUTIVE_DIRECTOR_REVIEW");
+
+    await page.getByRole("link", { name: "Switch to Executive Director" }).click();
+    await expect(page.getByRole("heading", { name: "Executive Director Dashboard" })).toBeVisible();
+    await page.getByLabel("Plan decision reason").fill(
+      "The annual surveillance item is approved for release.",
+    );
+    await page.getByRole("button", { name: "Approve Plan" }).click();
+    await expect(page.getByTestId("planning-status")).toHaveText("GM_RELEASE");
+
+    await page.getByRole("link", { name: "Return to General Manager" }).click();
+    await page.getByLabel("General Manager decision reason").fill(
+      "Release the approved item to department preparation.",
+    );
+    await page.getByRole("button", { name: "Release Plan" }).click();
+    await expect(page.getByTestId("planning-status")).toHaveText("RELEASED");
+    await expect(page.getByTestId("planning-owner")).toHaveText("Department Manager");
+
+    await page.getByRole("link", { name: "Switch role" }).click();
+    await page.getByRole("link", { name: /Admin Preview/i }).click();
+    await expect(page.getByRole("heading", { name: "Admin Configuration Preview" })).toBeVisible();
+    await expect(page.getByTestId("template-version")).toHaveText("Version 1");
+    await expect(page.getByTestId("reminder-rule-row")).toHaveCount(5);
+    await expect(page.getByTestId("audit-event-row")).toHaveCount(4);
+    const body = await page.locator("body").innerText();
+    expect(body).not.toMatch(/enforcement deliberation|internal risk|Inspector workload/i);
+    await expectNoCriticalOverflow(page);
+    expect(consoleIssues).toEqual([]);
+  });
+}

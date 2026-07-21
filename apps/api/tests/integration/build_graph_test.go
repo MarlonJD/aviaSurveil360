@@ -63,6 +63,8 @@ func TestAPIModuleHasOneGoModuleAndCheckedGenerationInputs(t *testing.T) {
 		"migrations/000002_workflow_foundation.up.sql",
 		"migrations/000003_authority_foundation.up.sql",
 		"migrations/000004_evidence_upload_foundation.up.sql",
+		"migrations/000005_sync_foundation.up.sql",
+		"migrations/000006_first_production_routes.up.sql",
 		"internal/httpapi/generated/api.gen.go",
 		"internal/platform/session/session.go",
 		"internal/platform/idempotency/idempotency.go",
@@ -70,6 +72,8 @@ func TestAPIModuleHasOneGoModuleAndCheckedGenerationInputs(t *testing.T) {
 		"internal/platform/outbox/outbox.go",
 		"internal/organizations/store/postgres/queries.sql.go",
 		"internal/inspections/store/postgres/queries.sql.go",
+		"internal/planning/store/postgres/queries.sql.go",
+		"internal/configuration/store/postgres/queries.sql.go",
 	} {
 		if _, err := os.Stat(filepath.Join(moduleRoot, relativePath)); err != nil {
 			t.Errorf("required generated/build input %s: %v", relativePath, err)

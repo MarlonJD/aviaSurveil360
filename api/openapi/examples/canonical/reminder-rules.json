@@ -1,0 +1,13 @@
+{
+  "schema": "ListReminderRulesOutput",
+  "value": {
+    "items": [
+      { "id": "REM-30", "label": "30 days before Due Date", "offsetDays": 30, "channel": "IN_APP", "status": "ACTIVE", "revision": 1 },
+      { "id": "REM-15", "label": "15 days before Due Date", "offsetDays": 15, "channel": "IN_APP", "status": "ACTIVE", "revision": 1 },
+      { "id": "REM-7", "label": "7 days before Due Date", "offsetDays": 7, "channel": "IN_APP", "status": "ACTIVE", "revision": 1 },
+      { "id": "REM-DUE", "label": "On the Due Date", "offsetDays": 0, "channel": "IN_APP", "status": "ACTIVE", "revision": 1 },
+      { "id": "REM-OVERDUE", "label": "After the Due Date", "offsetDays": -1, "channel": "IN_APP", "status": "ACTIVE", "revision": 1 }
+    ],
+    "nextCursor": null
+  }
+}

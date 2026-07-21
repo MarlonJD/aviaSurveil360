@@ -262,6 +262,51 @@ h1 {
   margin-top: 20px;
 }
 
+.route-list {
+  display: grid;
+  max-width: 1080px;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.route-list__item {
+  max-width: none;
+}
+
+.compact-list li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid #d3dee3;
+  border-radius: 9px;
+  background: #f8fafb;
+  overflow-wrap: anywhere;
+}
+
+.compact-list small,
+.compact-list span {
+  color: #5d737f;
+}
+
+.workspace-actions,
+.planning-decision .button-row {
+  display: flex;
+  max-width: 1080px;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.planning-decision {
+  margin-top: 20px;
+}
+
+.audit-trail-card {
+  margin-top: 20px;
+}
+
 .card-grid {
   display: grid;
   max-width: 1080px;

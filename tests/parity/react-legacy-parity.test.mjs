@@ -16,12 +16,12 @@ function referencedTests(entry) {
   return [entry.legacyTest, entry.reactTest].flat().filter(Boolean);
 }
 
-test("the behavior ledger freezes only the authorized first executable slice", () => {
+test("the behavior ledger covers the authorized first-production route families", () => {
   const ledger = readLedger();
   assert.equal(ledger.product, "AviaSurveil360");
-  assert.equal(ledger.version, 2);
+  assert.equal(ledger.version, 3);
   assert.equal(ledger.legacyRemovalAllowed, false);
-  assert.equal(ledger.entries.length, 9, "Only the canonical scenario and eight role entries are authorized");
+  assert.ok(ledger.entries.length >= 15, "Route actions must extend the canonical scenario and role entries");
 
   const canonicalScenario = ledger.entries.find((entry) => entry.id === "canonical-cabin-scenario");
   assert.ok(canonicalScenario, "Canonical Cabin scenario entry is required");
@@ -50,6 +50,18 @@ test("the behavior ledger freezes only the authorized first executable slice", (
       "admin:templates",
     ],
   );
+
+  const routeActions = new Set(ledger.entries.map((entry) => entry.action));
+  for (const action of [
+    "view-organization-registry",
+    "approve-planning-budget",
+    "forward-plan-for-final-approval",
+    "approve-plan",
+    "release-plan",
+    "view-versioned-configuration-and-audit-trail",
+  ]) {
+    assert.ok(routeActions.has(action), `Missing executable route action: ${action}`);
+  }
 });
 
 test("every ledger entry is executable and declares the parity contract", () => {

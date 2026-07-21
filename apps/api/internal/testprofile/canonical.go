@@ -92,6 +92,7 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 	return database.WithinTransaction(ctx, pool, func(ctx context.Context, transaction pgx.Tx) error {
 		if _, err := transaction.Exec(ctx, `
 			TRUNCATE TABLE
+				reminder_rules, surveillance_plan_items,
 				oidc_login_states, idempotency_responses, authorized_sync_changes, sync_cursors, sync_cursor_tokens,
 				audit_events, outbox_messages, review_decisions, report_decisions,
 				report_approval_states, report_versions, evidence_version_states, evidence_versions,
@@ -117,8 +118,10 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				('USR-INSPECTOR-DAVID', 'urn:avia:test', 'David Inspector', $1),
 				('USR-LEAD-CANER', 'urn:avia:test', 'Caner Lead Inspector', $1),
 				('USR-MANAGER-NORA', 'urn:avia:test', 'Nora Department Manager', $1),
+				('USR-FINANCE-LINA', 'urn:avia:test', 'Lina Finance Reviewer', $1),
 				('USR-GM-OMAR', 'urn:avia:test', 'Omar General Manager', $1),
 				('USR-ED-ZARA', 'urn:avia:test', 'Zara Executive Director', $1),
+				('USR-ADMIN-ADA', 'urn:avia:test', 'Ada Administrator', $1),
 				('USR-AUDITEE-FLY', 'urn:avia:test', 'Fly Namibia Auditee', $1)
 		`, now); err != nil {
 			return fmt.Errorf("seed canonical identities: %w", err)
@@ -131,8 +134,10 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				('TEST-USR-INSPECTOR-DAVID', 'USR-INSPECTOR-DAVID', 'CAA', $2, $1, $2, ARRAY['inspector'], $1),
 				('TEST-USR-LEAD-CANER', 'USR-LEAD-CANER', 'CAA', $2, $1, $2, ARRAY['leadInspector'], $1),
 				('TEST-USR-MANAGER-NORA', 'USR-MANAGER-NORA', 'CAA', $2, $1, $2, ARRAY['manager'], $1),
+				('TEST-USR-FINANCE-LINA', 'USR-FINANCE-LINA', 'CAA', $2, $1, $2, ARRAY['finance'], $1),
 				('TEST-USR-GM-OMAR', 'USR-GM-OMAR', 'CAA', $2, $1, $2, ARRAY['gm'], $1),
 				('TEST-USR-ED-ZARA', 'USR-ED-ZARA', 'CAA', $2, $1, $2, ARRAY['executiveDirector'], $1),
+				('TEST-USR-ADMIN-ADA', 'USR-ADMIN-ADA', 'CAA', $2, $1, $2, ARRAY['admin'], $1),
 				('TEST-USR-AUDITEE-FLY', 'USR-AUDITEE-FLY', 'ORG-FLY-NAMIBIA', $2, $1, $2, ARRAY['auditee'], $1)
 		`, now, now.Add(8*time.Hour)); err != nil {
 			return fmt.Errorf("seed canonical sessions: %w", err)
@@ -148,6 +153,28 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				 '2026 Cargo Inspection - SkyCargo Air', 'CARGO', 'IN_PROGRESS', '2026-07-30', 1, $1, $1)
 		`, now); err != nil {
 			return fmt.Errorf("seed canonical Audits: %w", err)
+		}
+		if _, err := transaction.Exec(ctx, `
+			INSERT INTO surveillance_plan_items (
+				id, title, plan_year, organization_id, inspection_type, scheduled_date,
+				estimated_budget, status, current_owner_role, next_action, revision, created_at, updated_at
+			) VALUES (
+				'PLAN-2026-CAB-001', '2026 Cabin Surveillance — Fly Namibia', 2026,
+				'ORG-FLY-NAMIBIA', 'CABIN', '2026-07-15', 48000,
+				'FINANCE_REVIEW', 'finance', 'Finance to review budget', 1, $1, $1
+			)
+		`, now); err != nil {
+			return fmt.Errorf("seed canonical surveillance plan: %w", err)
+		}
+		if _, err := transaction.Exec(ctx, `
+			INSERT INTO reminder_rules (id, label, offset_days, channel, status, revision, created_at, updated_at) VALUES
+				('REM-30', '30 days before Due Date', 30, 'IN_APP', 'ACTIVE', 1, $1, $1),
+				('REM-15', '15 days before Due Date', 15, 'IN_APP', 'ACTIVE', 1, $1, $1),
+				('REM-7', '7 days before Due Date', 7, 'IN_APP', 'ACTIVE', 1, $1, $1),
+				('REM-DUE', 'On the Due Date', 0, 'IN_APP', 'ACTIVE', 1, $1, $1),
+				('REM-OVERDUE', 'After the Due Date', -1, 'IN_APP', 'ACTIVE', 1, $1, $1)
+		`, now); err != nil {
+			return fmt.Errorf("seed canonical reminder rules: %w", err)
 		}
 		if _, err := transaction.Exec(ctx, `
 			INSERT INTO checklist_template_versions (id, template_id, version, title, snapshot, published_at)
@@ -227,8 +254,10 @@ func Principal(subjectID string) (identity.Principal, bool) {
 		"USR-INSPECTOR-DAVID": {SubjectID: "USR-INSPECTOR-DAVID", OrganizationID: "CAA", SessionID: "TEST-USR-INSPECTOR-DAVID", Roles: []identity.Role{identity.RoleInspector}},
 		"USR-LEAD-CANER":      {SubjectID: "USR-LEAD-CANER", OrganizationID: "CAA", SessionID: "TEST-USR-LEAD-CANER", Roles: []identity.Role{identity.RoleLeadInspector}},
 		"USR-MANAGER-NORA":    {SubjectID: "USR-MANAGER-NORA", OrganizationID: "CAA", SessionID: "TEST-USR-MANAGER-NORA", Roles: []identity.Role{identity.RoleDepartmentManager}},
+		"USR-FINANCE-LINA":    {SubjectID: "USR-FINANCE-LINA", OrganizationID: "CAA", SessionID: "TEST-USR-FINANCE-LINA", Roles: []identity.Role{identity.RoleFinance}},
 		"USR-GM-OMAR":         {SubjectID: "USR-GM-OMAR", OrganizationID: "CAA", SessionID: "TEST-USR-GM-OMAR", Roles: []identity.Role{identity.RoleGeneralManager}},
 		"USR-ED-ZARA":         {SubjectID: "USR-ED-ZARA", OrganizationID: "CAA", SessionID: "TEST-USR-ED-ZARA", Roles: []identity.Role{identity.RoleExecutiveDirector}},
+		"USR-ADMIN-ADA":       {SubjectID: "USR-ADMIN-ADA", OrganizationID: "CAA", SessionID: "TEST-USR-ADMIN-ADA", Roles: []identity.Role{identity.RoleAdmin}},
 		"USR-AUDITEE-FLY":     {SubjectID: "USR-AUDITEE-FLY", OrganizationID: "ORG-FLY-NAMIBIA", SessionID: "TEST-USR-AUDITEE-FLY", Roles: []identity.Role{identity.RoleAuditee}},
 	}
 	principal, ok := principals[subjectID]

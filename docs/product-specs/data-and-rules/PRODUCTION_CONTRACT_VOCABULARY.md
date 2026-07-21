@@ -1,8 +1,9 @@
 # Production Contract Vocabulary
 
-**Status:** `candidate-only` for the explicitly authorized Tasks 2-4 mock-data
-slice. This document does not approve a real API, authentication, file storage,
-offline behavior, sync, deployment, or production use.
+**Status:** `verified locally` and `candidate-only` for the explicitly
+authorized local candidate through Task 5, including the enabling Tasks 6-12.
+Release is `release pending`. This document does not approve production
+deployment, traffic cutover, legacy removal, hosting, or production use.
 
 This English document is the canonical mapping between current product/source
 language, verified legacy-demo values, the versioned OpenAPI contract, and the
@@ -34,9 +35,10 @@ verified root Vanilla JavaScript demo.
 
 ## Roles and entry routes
 
-Only these eight verified role-entry routes and the canonical Cabin scenario
-are `first-production` for Tasks 2-4. Every other legacy route is `later` or
-`demo-only` and remains available only in the intact root demo.
+These eight verified role-entry routes, the canonical Cabin scenario, and the
+Task 5 Core MVP route families below are `first-production` for the local
+candidate. Every other legacy route is `later` or `demo-only` and remains
+available in the intact root demo.
 
 | Source / legacy role | OpenAPI `Role` | React UI label | Authorized entry route |
 |---|---|---|---|
@@ -48,6 +50,38 @@ are `first-production` for Tasks 2-4. Every other legacy route is `later` or
 | `executiveDirector` | `executiveDirector` | Executive Director | `executive-dashboard` |
 | `auditee` | `auditee` | Auditee / Service Provider | `service-provider-cap` |
 | `admin` | `admin` | Admin Preview | `templates` |
+
+## Task 5 first-production route families
+
+| Route family | Authorized roles | Stable route / operation | Candidate boundary |
+|---|---|---|---|
+| Organization Registry | Department Manager; organization-scoped Auditee projection | `/department-manager/organizations`; `GET /v1/organizations` | Read-only oversight summary; no Internal CAA fields in Auditee projections. |
+| Audit Plan Calendar | Department Manager | `/department-manager/audit-plan`; `GET /v1/planning/items` | Shows current owner/status; cannot bypass approval authority. |
+| Surveillance plan decisions | Finance Review, General Manager, Executive Director | `POST /v1/planning/items/{id}/decisions` | Reason-required, idempotent, exact-revision and role/stage checked. |
+| Versioned checklist configuration | Admin Preview | `GET /v1/configuration/checklist-template-versions` | Published version preview only; broad editing remains `later`. |
+| Due Date reminder configuration | Admin Preview | `GET /v1/configuration/reminder-rules` | Read-only configured rules; no real notification delivery claim. |
+| Planning Audit Trail | Admin Preview | `GET /v1/audit-events` | Append-only local candidate projection; no production tamper-evidence claim. |
+
+### Surveillance planning status and decisions
+
+| Current status | Authorized role and decision | Result status | Next owner |
+|---|---|---|---|
+| `FINANCE_REVIEW` | Finance Review — `APPROVE_BUDGET` | `GM_REVIEW` | General Manager |
+| `GM_REVIEW` | General Manager — `FORWARD_FOR_FINAL_APPROVAL` | `EXECUTIVE_DIRECTOR_REVIEW` | Executive Director |
+| `EXECUTIVE_DIRECTOR_REVIEW` | Executive Director — `APPROVE_PLAN` | `GM_RELEASE` | General Manager |
+| `GM_RELEASE` | General Manager — `RELEASE_PLAN` | `RELEASED` | Department Manager |
+| Any active review stage | Current authorized reviewer — `RETURN_FOR_REVISION` | `REVISION_REQUIRED` | Department Manager |
+
+Every planning decision requires a non-empty reason and the exact current
+planning revision. Finance approval, final plan approval, and GM release are
+separate authorities. Planning approval does not issue a report or close a
+Finding.
+
+### Configured reminder offsets
+
+The local candidate exposes read-only rules at 30, 15, and 7 days before the
+Due Date, on the Due Date (`0`), and after it (`-1`). These rules are configured
+reminder inputs only; real notification delivery remains outside this slice.
 
 ## Canonical transport values
 

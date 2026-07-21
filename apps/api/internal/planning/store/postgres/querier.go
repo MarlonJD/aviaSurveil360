@@ -9,7 +9,10 @@ import (
 )
 
 type Querier interface {
+	GetSurveillancePlanItemForUpdate(ctx context.Context, id string) (GetSurveillancePlanItemForUpdateRow, error)
 	ListPlannedInspections(ctx context.Context, arg ListPlannedInspectionsParams) ([]ListPlannedInspectionsRow, error)
+	ListSurveillancePlanItems(ctx context.Context, limit int32) ([]ListSurveillancePlanItemsRow, error)
+	UpdateSurveillancePlanDecision(ctx context.Context, arg UpdateSurveillancePlanDecisionParams) (UpdateSurveillancePlanDecisionRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

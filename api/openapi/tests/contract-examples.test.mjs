@@ -127,3 +127,41 @@ test("sync request and response payloads use closed discriminated unions", () =>
   assert.equal(schemas.AuthorizedSyncChange.discriminator?.propertyName, "kind");
   assert.equal(schemas.AuthorizedConflictDescriptor.additionalProperties, false);
 });
+
+test("first-production route families have versioned paths, closed schemas, and canonical examples", () => {
+  const document = readRequiredJson(openApiPath);
+  for (const route of [
+    "/v1/organizations",
+    "/v1/planning/items",
+    "/v1/planning/items/{id}/decisions",
+    "/v1/configuration/checklist-template-versions",
+    "/v1/configuration/reminder-rules",
+    "/v1/audit-events",
+  ]) {
+    assert.ok(document.paths[route], `Missing first-production path: ${route}`);
+  }
+  for (const schemaName of [
+    "OrganizationSummary",
+    "PlanningItemView",
+    "PlanningDecisionInput",
+    "ChecklistTemplateVersionView",
+    "ReminderRuleView",
+    "AuditEventView",
+  ]) {
+    assert.equal(
+      document.components.schemas[schemaName]?.additionalProperties,
+      false,
+      `${schemaName} must be a closed schema`,
+    );
+  }
+  const files = fs.readdirSync(examplesDirectory);
+  for (const example of [
+    "organization-list.json",
+    "planning-item.json",
+    "checklist-template-version.json",
+    "reminder-rules.json",
+    "audit-events.json",
+  ]) {
+    assert.ok(files.includes(example), `Missing canonical route-family example: ${example}`);
+  }
+});

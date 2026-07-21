@@ -582,12 +582,18 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
 
       async loadManagerDashboard() {
         const backend = backendFor("manager");
-        const [dashboard, finding, report] = await Promise.all([
+        const [dashboard, findings, report] = await Promise.all([
           backend.dashboards.getManagerProjection({}),
-          backend.findings.get({ findingId: "FND-CAB-2026-001" }),
+          backend.findings.list({}),
           backend.reports.getVersion({ reportVersionId: "RPT-CAB-2026-001-V1" }),
         ]);
-        setProjection((current) => ({ ...current, dashboard, finding, report }));
+        const finding = findings.items.find((candidate) => candidate.id === "FND-CAB-2026-001");
+        setProjection((current) => ({
+          ...current,
+          dashboard,
+          finding: finding ?? current.finding,
+          report,
+        }));
       },
 
       async syncFieldWork(trigger = "manual") {

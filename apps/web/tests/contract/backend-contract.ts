@@ -36,6 +36,16 @@ export const PRINCIPALS = {
     role: "manager",
     organizationId: null,
   },
+  finance: {
+    subjectId: "USR-FINANCE-LINA",
+    role: "finance",
+    organizationId: null,
+  },
+  gm: {
+    subjectId: "USR-GM-OMAR",
+    role: "gm",
+    organizationId: null,
+  },
   executiveDirector: {
     subjectId: "USR-ED-ZARA",
     role: "executiveDirector",
@@ -45,6 +55,11 @@ export const PRINCIPALS = {
     subjectId: "USR-AUDITEE-FLY",
     role: "auditee",
     organizationId: "ORG-FLY-NAMIBIA",
+  },
+  admin: {
+    subjectId: "USR-ADMIN-ADA",
+    role: "admin",
+    organizationId: null,
   },
 } as const satisfies Record<string, BackendPrincipal>;
 
@@ -415,6 +430,133 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
         authoritativeEntityId: "RESP-CAB-EMEQ-PBE-001",
       });
       expect(replay).toEqual(first);
+    });
+
+    it("keeps Organization Registry projections role- and organization-scoped", async () => {
+      const harness = await createHarness();
+      const internal = await harness.backendFor(PRINCIPALS.manager).organizations.list({});
+      expect(internal.items.map(({ id }) => id)).toEqual([
+        "ORG-FLY-NAMIBIA",
+        "ORG-SKYCARGO",
+      ]);
+      expect(internal.items[0]).toMatchObject({
+        legalName: "Fly Namibia",
+        openFindingCount: 0,
+        nextAuditDate: "2026-07-15",
+      });
+
+      const auditee = await harness.backendFor(PRINCIPALS.auditee).organizations.list({});
+      expect(auditee.items).toHaveLength(1);
+      expect(auditee.items[0]?.id).toBe("ORG-FLY-NAMIBIA");
+      expect(JSON.stringify(auditee)).not.toMatch(
+        /SkyCargo|internalRisk|inspectorWorkload|Internal CAA Note/i,
+      );
+    });
+
+    it("advances the exact surveillance plan through Finance, GM, Executive Director, and GM release", async () => {
+      const harness = await createHarness();
+      const finance = harness.backendFor(PRINCIPALS.finance);
+      const initial = (await finance.planning.list({})).items[0]!;
+      expect(initial).toMatchObject({
+        id: "PLAN-2026-CAB-001",
+        status: "FINANCE_REVIEW",
+        currentOwnerRole: "finance",
+        revision: 1,
+      });
+      await expect(
+        harness.backendFor(PRINCIPALS.manager).planning.decide({
+          operationId: "OP-PLAN-WRONG-AUTHORITY",
+          planningItemId: initial.id,
+          expectedPlanningRevision: initial.revision,
+          decision: "APPROVE_BUDGET",
+          reason: "Manager cannot approve the budget gate.",
+        }),
+      ).rejects.toThrow(/Finance/i);
+
+      const budgetApproved = await finance.planning.decide({
+        operationId: "OP-PLAN-FINANCE-APPROVE",
+        planningItemId: initial.id,
+        expectedPlanningRevision: initial.revision,
+        decision: "APPROVE_BUDGET",
+        reason: "Budget envelope confirmed for the configured inspection.",
+      });
+      expect(budgetApproved).toMatchObject({
+        status: "GM_REVIEW",
+        currentOwnerRole: "gm",
+        revision: 2,
+      });
+
+      const gm = harness.backendFor(PRINCIPALS.gm);
+      const forwarded = await gm.planning.decide({
+        operationId: "OP-PLAN-GM-FORWARD",
+        planningItemId: initial.id,
+        expectedPlanningRevision: budgetApproved.revision,
+        decision: "FORWARD_FOR_FINAL_APPROVAL",
+        reason: "Operational scope is ready for final approval.",
+      });
+      expect(forwarded).toMatchObject({
+        status: "EXECUTIVE_DIRECTOR_REVIEW",
+        currentOwnerRole: "executiveDirector",
+        revision: 3,
+      });
+
+      const executive = harness.backendFor(PRINCIPALS.executiveDirector);
+      const approved = await executive.planning.decide({
+        operationId: "OP-PLAN-EXECUTIVE-APPROVE",
+        planningItemId: initial.id,
+        expectedPlanningRevision: forwarded.revision,
+        decision: "APPROVE_PLAN",
+        reason: "The annual surveillance item is approved for release.",
+      });
+      expect(approved).toMatchObject({
+        status: "GM_RELEASE",
+        currentOwnerRole: "gm",
+        revision: 4,
+      });
+
+      const released = await gm.planning.decide({
+        operationId: "OP-PLAN-GM-RELEASE",
+        planningItemId: initial.id,
+        expectedPlanningRevision: approved.revision,
+        decision: "RELEASE_PLAN",
+        reason: "Release the approved item to department preparation.",
+      });
+      expect(released).toMatchObject({
+        status: "RELEASED",
+        currentOwnerRole: "manager",
+        revision: 5,
+      });
+      await expect(
+        finance.planning.decide({
+          operationId: "OP-PLAN-STALE",
+          planningItemId: initial.id,
+          expectedPlanningRevision: 1,
+          decision: "APPROVE_BUDGET",
+          reason: "Stale replay must fail.",
+        }),
+      ).rejects.toThrow(/revision/i);
+
+      const admin = harness.backendFor(PRINCIPALS.admin);
+      const [templates, reminders, auditEvents] = await Promise.all([
+        admin.configuration.listChecklistTemplateVersions({}),
+        admin.configuration.listReminderRules({}),
+        admin.auditTrail.list({ entityType: "SURVEILLANCE_PLAN", entityId: initial.id }),
+      ]);
+      expect(templates.items[0]).toMatchObject({
+        id: "CTV-CABIN-1",
+        templateId: "CABIN",
+        version: 1,
+        status: "PUBLISHED",
+        questionCount: 6,
+      });
+      expect(reminders.items.map(({ offsetDays }) => offsetDays)).toEqual([30, 15, 7, 0, -1]);
+      expect(auditEvents.items.map(({ action }) => action)).toEqual([
+        "PLANNING_BUDGET_APPROVED",
+        "PLANNING_FORWARDED_FOR_FINAL_APPROVAL",
+        "PLANNING_APPROVED",
+        "PLANNING_RELEASED",
+      ]);
+      expect(JSON.stringify(auditEvents)).not.toMatch(/internalCaaNote/i);
     });
   });
 }

@@ -1,0 +1,12 @@
+{
+  "schema": "ChecklistTemplateVersionView",
+  "value": {
+    "id": "CTV-CABIN-1",
+    "templateId": "CABIN",
+    "title": "Cabin Inspection checklist",
+    "version": 1,
+    "status": "PUBLISHED",
+    "publishedAt": "2026-06-15T09:00:00Z",
+    "questionCount": 6
+  }
+}

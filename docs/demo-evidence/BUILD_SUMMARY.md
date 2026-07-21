@@ -27,6 +27,9 @@ and
 [OPFS Inspection Attachment Recovery Evidence](OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md).
 Task 12 adds separately verified typed causal foreground push/pull sync; see
 [Idempotent Foreground Sync Evidence](IDEMPOTENT_FOREGROUND_SYNC_2026-07-21.md).
+Task 5 adds the approved first-production organization, planning,
+configuration, reminder, and audit route families; see
+[First-Production Route Families Evidence](FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.md).
 These adjacent candidates do not make the root demo or the overall product
 `production-ready`.
 
@@ -1190,8 +1193,8 @@ cleanup. The root Vanilla suite remains 103/103.
 The complete evidence and scope boundaries are in
 [BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md](BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md).
 The local object store and deterministic scanner are not production services.
-Browser offline Tasks 6-8, sync, wider route migration, deployment, cutover,
-and production verification remain `not run` or `blocked` as applicable.
+Tasks 6-8, 12, and 5 are subsequently `verified locally`. Task 13 remains
+`not run`; deployment, cutover, and production verification remain `blocked`.
 
 ---
 
@@ -1215,10 +1218,9 @@ artifact scans; HTTP isolation across 10 files and 75 inputs; root Vanilla
 
 The complete evidence and scope boundaries are in
 [PWA_OFFLINE_READINESS_2026-07-21.md](PWA_OFFLINE_READINESS_2026-07-21.md).
-Task 7 is subsequently `verified locally`. Staged Inspection Attachment bytes
-(Task 8), production sync (Task 12), wider route migration, deployment,
-cutover, and production verification remain `not run` or `blocked` as
-applicable. No `production-ready` claim is made.
+Tasks 7-8, 12, and 5 are subsequently `verified locally`. Task 13 local
+release-candidate verification remains `not run`; deployment, cutover, and
+production verification remain `blocked`. No `production-ready` claim is made.
 
 ---
 
@@ -1242,9 +1244,9 @@ transitive development-tool audit findings remain `note-open` for Task 13.
 
 The complete evidence and scope boundaries are in
 [INDEXEDDB_FIELD_STORAGE_2026-07-21.md](INDEXEDDB_FIELD_STORAGE_2026-07-21.md).
-Task 8 is subsequently `verified locally`. Network sync/conflict delivery (Task
-12), deployment, cutover, and production verification remain `not run` or
-`blocked` as applicable. No `production-ready` claim is made.
+Tasks 8, 12, and 5 are subsequently `verified locally`. Task 13 local
+release-candidate verification remains `not run`; deployment, cutover, and
+production verification remain `blocked`. No `production-ready` claim is made.
 
 ---
 
@@ -1269,9 +1271,36 @@ root Vanilla 103/103; and production dependency audit with 0 vulnerabilities.
 
 The complete evidence and scope boundaries are in
 [OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md](OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md).
-Task 12 network sync/conflict delivery, wider route migration, Task 13 release
-packet, deployment, cutover, and production verification remain `not run` or
-`blocked` as applicable. No `production-ready` claim is made.
+Tasks 12 and 5 are subsequently `verified locally`. Task 13 local
+release-candidate verification remains `not run`; deployment, cutover, and
+production verification remain `blocked`. No `production-ready` claim is made.
+
+---
+
+### First-production route-family checkpoint — 2026-07-21
+
+Status: Task 5 is `verified locally` and `candidate-only`; release remains
+`release pending`. The adjacent React/Go candidate now includes the approved
+Organization Registry, Audit Plan Calendar, exact Finance -> GM -> Executive
+Director -> GM planning authority chain, read-only versioned checklist and Due
+Date reminder configuration, and an Admin planning Audit Trail. The behavior
+ledger is version 3 with 15 executable entries. `later` and `demo-only` routes
+remain available in the intact root demo.
+
+The fresh full HTTP profile passed API/worker builds, the full Go race/live
+PostgreSQL/Keycloak/MinIO suite including migration v6 and N-1 upgrade,
+OpenAPI 6/6, clean SQLC generation, React/Vitest 146/146, live Backend contract
+11/11, mock Playwright 4/4, HTTP Playwright 5/5, both builds, HTTP mock/seed
+isolation across 12 files and 89 inputs, and cleanup. The route matrix passed
+mock 3/3 and HTTP 3/3 at desktop/tablet/mobile with no unexpected console
+warnings/errors or critical horizontal overflow. `go vet`, the intact root plus
+parity suite 106/106, and `git diff --check` also passed.
+
+The complete evidence and scope boundaries are in
+[FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.md](FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.md).
+Task 13 remains `not run`. Production deployment, cutover, legacy removal, and
+production-readiness evidence remain `blocked`; no `production-ready` claim is
+made.
 
 ---
 
@@ -1286,7 +1315,8 @@ packet, deployment, cutover, and production verification remain `not run` or
 - SSP/NASP supports monitoring only; it is not an automatic state safety determination.
 - AI suggestions are drafts only and cannot publish official outputs.
 - The root Vanilla demo's offline outbox is simulated. The adjacent React
-  candidate has a real local Task 7 outbox but no Task 12 network sync yet.
+  candidate has the real local Task 7 outbox and Task 12 typed foreground sync;
+  neither is a deployed production synchronization service.
 - Audit log is demo state, not immutable audit evidence.
 - README/MANIFEST now describe the planning pack, intact frontend-only static
   demo, and separate `candidate-only` React/Go application;

@@ -27,6 +27,7 @@ packages=(
   reports
   sync
   auditlog
+  configuration
 )
 
 sed_arguments=()

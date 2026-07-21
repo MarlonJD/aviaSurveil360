@@ -17,6 +17,7 @@ import (
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/httpapi/generated"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/inspections/attachments"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/planning"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/database"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/idempotency"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/objectstore"
@@ -34,6 +35,7 @@ type CanonicalAPIDependencies struct {
 	SyncOperations    *fieldsync.OperationService
 	EvidenceUploads   *evidence.UploadService
 	AttachmentUploads *attachments.UploadService
+	Planning          *planning.Service
 	Clock             func() time.Time
 }
 
@@ -44,6 +46,7 @@ type CanonicalAPI struct {
 	syncOperations    *fieldsync.OperationService
 	evidenceUploads   *evidence.UploadService
 	attachmentUploads *attachments.UploadService
+	planning          *planning.Service
 	clock             func() time.Time
 }
 
@@ -56,11 +59,16 @@ func NewCanonicalAPI(dependencies CanonicalAPIDependencies) *CanonicalAPI {
 	if syncOperations == nil {
 		syncOperations = fieldsync.NewOperationService(dependencies.Pool, fieldsync.OperationDependencies{Clock: clock})
 	}
+	planningService := dependencies.Planning
+	if planningService == nil {
+		planningService = planning.NewService(dependencies.Pool, planning.Dependencies{Clock: clock})
+	}
 	return &CanonicalAPI{
 		pool: dependencies.Pool, application: dependencies.Application, grants: dependencies.GrantService,
 		syncOperations:  syncOperations,
 		evidenceUploads: dependencies.EvidenceUploads, attachmentUploads: dependencies.AttachmentUploads,
-		clock: clock,
+		planning: planningService,
+		clock:    clock,
 	}
 }
 
@@ -88,6 +96,12 @@ func (api *CanonicalAPI) Handler() http.Handler {
 	router.Get("/v1/report-versions/{id}", api.getReportVersion)
 	router.Post("/v1/report-versions/{id}/decisions", api.decideReport)
 	router.Get("/v1/dashboards/manager", api.getManagerDashboard)
+	router.Get("/v1/organizations", api.listOrganizations)
+	router.Get("/v1/planning/items", api.listPlanningItems)
+	router.Post("/v1/planning/items/{id}/decisions", api.decidePlanningItem)
+	router.Get("/v1/configuration/checklist-template-versions", api.listChecklistTemplateVersions)
+	router.Get("/v1/configuration/reminder-rules", api.listReminderRules)
+	router.Get("/v1/audit-events", api.listAuditEvents)
 	router.Post("/v1/sync/operations", api.pushFieldOperation)
 	router.Get("/v1/sync/changes", api.pullSyncChanges)
 	return router

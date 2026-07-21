@@ -29,6 +29,9 @@ ve
 [OPFS Inspection Attachment Recovery Kanıtı](OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.turkce.md).
 Task 12 ayrıca doğrulanmış typed causal foreground push/pull sync ekler; bkz.
 [Idempotent Foreground Sync Kanıtı](IDEMPOTENT_FOREGROUND_SYNC_2026-07-21.turkce.md).
+Task 5 approved first-production organization, planning, configuration,
+reminder ve audit route family'lerini ekler; bkz.
+[First-Production Route Family Kanıtı](FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.turkce.md).
 Bu yan candidate'lar root demo'yu veya genel ürünü `production-ready` yapmaz.
 
 **Tarih bağlamı:** Uygulama "bugün" olarak **15 Haziran 2026** tarihini kullanır;
@@ -1199,9 +1202,8 @@ geçti. Root Vanilla suite 103/103 olarak korunur.
 Tam kanıt ve scope sınırları
 [BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.turkce.md](BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.turkce.md)
 içindedir. Local object store ve deterministik scanner production service
-değildir. Browser offline Task 6-8, sync, wider route migration, deployment,
-cutover ve production verification uygun biçimde `not run` veya `blocked`
-kalır.
+değildir. Tasks 6-8, 12 ve 5 daha sonra `verified locally` oldu. Task 13 `not
+run`; deployment, cutover ve production verification `blocked` kalır.
 
 ---
 
@@ -1225,10 +1227,9 @@ artifact scan; 10 file ve 75 input HTTP isolation; root Vanilla 103/103;
 
 Tam kanıt ve scope sınırları
 [PWA_OFFLINE_READINESS_2026-07-21.turkce.md](PWA_OFFLINE_READINESS_2026-07-21.turkce.md)
-içindedir. Task 7 daha sonra `verified locally` oldu. Staged Inspection
-Attachment byte (Task 8), production sync (Task 12), wider route migration,
-deployment, cutover ve production verification uygun biçimde `not run` veya
-`blocked` kalır. `production-ready` iddiası yoktur.
+içindedir. Tasks 7-8, 12 ve 5 daha sonra `verified locally` oldu. Task 13 local
+release-candidate verification `not run`; deployment, cutover ve production
+verification `blocked` kalır. `production-ready` iddiası yoktur.
 
 ---
 
@@ -1252,9 +1253,9 @@ transitive development-tool audit bulgusu Task 13 için `note-open` kalır.
 
 Tam kanıt ve scope sınırları
 [INDEXEDDB_FIELD_STORAGE_2026-07-21.turkce.md](INDEXEDDB_FIELD_STORAGE_2026-07-21.turkce.md)
-içindedir. Task 8 daha sonra `verified locally` oldu. Network sync/conflict
-delivery (Task 12), deployment, cutover ve production verification uygun
-biçimde `not run` veya `blocked` kalır. `production-ready` iddiası yoktur.
+içindedir. Tasks 8, 12 ve 5 daha sonra `verified locally` oldu. Task 13 local
+release-candidate verification `not run`; deployment, cutover ve production
+verification `blocked` kalır. `production-ready` iddiası yoktur.
 
 ---
 
@@ -1280,9 +1281,36 @@ demo/HTTP app-shell scan; 12 file ve 84 input HTTP isolation; root Vanilla
 
 Tam kanıt ve scope sınırları
 [OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.turkce.md](OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.turkce.md)
-içindedir. Task 12 network sync/conflict delivery, geniş route migration, Task
-13 release packet, deployment, cutover ve production verification uygun
-biçimde `not run` veya `blocked` kalır. `production-ready` iddiası yoktur.
+içindedir. Tasks 12 ve 5 daha sonra `verified locally` oldu. Task 13 local
+release-candidate verification `not run`; deployment, cutover ve production
+verification `blocked` kalır. `production-ready` iddiası yoktur.
+
+---
+
+### First-production route-family checkpoint — 2026-07-21
+
+Durum: Task 5 `verified locally` ve `candidate-only`; release durumu `release
+pending`. Yan React/Go candidate artık approved Organization Registry, Audit
+Plan Calendar, exact Finance -> GM -> Executive Director -> GM planning
+authority zinciri, read-only versioned checklist ve Due Date reminder
+configuration ile Admin planning Audit Trail içerir. Behavior ledger version 3
+ve 15 executable entry içerir. `later` ve `demo-only` route'lar intact root
+demo içinde korunur.
+
+Taze full HTTP profile API/worker build'lerini, migration v6 ve N-1 upgrade
+dahil full Go race/live PostgreSQL/Keycloak/MinIO suite'ini, OpenAPI 6/6,
+clean SQLC generation, React/Vitest 146/146, live Backend contract 11/11, mock
+Playwright 4/4, HTTP Playwright 5/5, iki build, 12 file ve 89 input HTTP
+mock/seed isolation ile cleanup'ı geçti. Route matrix desktop/tablet/mobile'da
+mock 3/3 ve HTTP 3/3 geçti; unexpected console warning/error ve critical
+horizontal overflow yoktu. `go vet`, intact root plus parity suite 106/106 ve
+`git diff --check` de geçti.
+
+Tam kanıt ve scope sınırları
+[FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.turkce.md](FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.turkce.md)
+içindedir. Task 13 `not run`. Production deployment, cutover, legacy removal ve
+production-readiness evidence `blocked` kalır; `production-ready` iddiası
+yoktur.
 
 ---
 
@@ -1297,7 +1325,8 @@ biçimde `not run` veya `blocked` kalır. `production-ready` iddiası yoktur.
 - SSP/NASP yalnızca izlemeyi destekler; otomatik state safety determination değildir.
 - AI önerileri yalnızca taslaktır; resmi çıktı yayımlayamaz.
 - Root Vanilla demo'nun offline outbox'ı simüledir. Yan React candidate gerçek
-  local Task 7 outbox içerir ancak Task 12 network sync henüz yoktur.
+  local Task 7 outbox ve Task 12 typed foreground sync içerir; ikisi de deployed
+  production synchronization service değildir.
 - Audit log demo durumudur; değiştirilemez audit evidence değildir.
 - `README.md`, `README.turkce.md` ve `MANIFEST.md` artık planlama paketi,
   korunan frontend-only static demo ve ayrı `candidate-only` React/Go

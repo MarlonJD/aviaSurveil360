@@ -10,11 +10,11 @@ const testSubjects: Record<Role, string> = {
   inspector: "USR-INSPECTOR-AMINA",
   leadInspector: "USR-LEAD-CANER",
   manager: "USR-MANAGER-NORA",
-  finance: "USR-MANAGER-NORA",
+  finance: "USR-FINANCE-LINA",
   gm: "USR-GM-OMAR",
   executiveDirector: "USR-ED-ZARA",
   auditee: "USR-AUDITEE-FLY",
-  admin: "USR-MANAGER-NORA",
+  admin: "USR-ADMIN-ADA",
 };
 
 async function start(): Promise<void> {

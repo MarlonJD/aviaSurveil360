@@ -193,6 +193,53 @@
         "responses": { "200": { "description": "Manager projection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ManagerDashboardProjection" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
       }
     },
+    "/v1/organizations": {
+      "get": {
+        "operationId": "listOrganizations",
+        "parameters": [{ "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }],
+        "responses": { "200": { "description": "Role- and organization-scoped Organization Registry", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListOrganizationsOutput" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
+      }
+    },
+    "/v1/planning/items": {
+      "get": {
+        "operationId": "listPlanningItems",
+        "parameters": [{ "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }],
+        "responses": { "200": { "description": "Authorized surveillance planning items", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListPlanningItemsOutput" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
+      }
+    },
+    "/v1/planning/items/{id}/decisions": {
+      "post": {
+        "operationId": "decidePlanningItem",
+        "parameters": [{ "$ref": "#/components/parameters/EntityId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanningDecisionInput" } } } },
+        "responses": { "200": { "description": "Planning item after the authorized decision", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanningItemView" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
+      }
+    },
+    "/v1/configuration/checklist-template-versions": {
+      "get": {
+        "operationId": "listChecklistTemplateVersions",
+        "parameters": [{ "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }],
+        "responses": { "200": { "description": "Published checklist template versions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListChecklistTemplateVersionsOutput" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
+      }
+    },
+    "/v1/configuration/reminder-rules": {
+      "get": {
+        "operationId": "listReminderRules",
+        "parameters": [{ "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }],
+        "responses": { "200": { "description": "Configured Due Date reminder rules", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListReminderRulesOutput" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
+      }
+    },
+    "/v1/audit-events": {
+      "get": {
+        "operationId": "listAuditEvents",
+        "parameters": [
+          { "name": "entityType", "in": "query", "schema": { "type": "string" } },
+          { "name": "entityId", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }
+        ],
+        "responses": { "200": { "description": "Authorized append-only audit-event projection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListAuditEventsOutput" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
+      }
+    },
     "/v1/sync/operations": {
       "post": {
         "operationId": "pushFieldOperation",
@@ -279,6 +326,19 @@
       "ReportVersionView": { "type": "object", "additionalProperties": false, "required": ["reportVersionId", "reportId", "organizationId", "auditId", "findingIds", "contentHash", "version", "status", "revision", "issuedAt"], "properties": { "reportVersionId": { "type": "string" }, "reportId": { "type": "string" }, "organizationId": { "type": "string" }, "auditId": { "type": "string" }, "findingIds": { "type": "array", "items": { "type": "string" } }, "contentHash": { "type": "string" }, "version": { "type": "integer" }, "status": { "$ref": "#/components/schemas/ReportApprovalStatus" }, "revision": { "type": "integer" }, "issuedAt": { "type": ["string", "null"], "format": "date-time" } } },
       "DecideReportInput": { "type": "object", "additionalProperties": false, "required": ["operationId", "reportVersionId", "expectedReportVersionRevision", "decision", "reason"], "properties": { "operationId": { "type": "string" }, "reportVersionId": { "type": "string" }, "expectedReportVersionRevision": { "type": "integer" }, "decision": { "type": "string", "enum": ["RETURN", "FORWARD", "ISSUE_AND_LOCK"] }, "reason": { "type": "string" } } },
       "ManagerDashboardProjection": { "type": "object", "additionalProperties": false, "required": ["generatedAt", "openFindings", "closedFindings", "overdueFindings", "pendingCapReviews", "pendingEvidenceReviews", "recentFindingNumbers"], "properties": { "generatedAt": { "type": "string", "format": "date-time" }, "openFindings": { "type": "integer" }, "closedFindings": { "type": "integer" }, "overdueFindings": { "type": "integer" }, "pendingCapReviews": { "type": "integer" }, "pendingEvidenceReviews": { "type": "integer" }, "recentFindingNumbers": { "type": "array", "items": { "type": "string" } } } },
+      "OrganizationSummary": { "type": "object", "additionalProperties": false, "required": ["id", "legalName", "organizationType", "status", "openFindingCount", "lastAuditDate", "nextAuditDate", "revision"], "properties": { "id": { "type": "string" }, "legalName": { "type": "string" }, "organizationType": { "type": "string" }, "status": { "type": "string" }, "openFindingCount": { "type": "integer" }, "lastAuditDate": { "type": ["string", "null"], "format": "date" }, "nextAuditDate": { "type": ["string", "null"], "format": "date" }, "revision": { "type": "integer" } } },
+      "ListOrganizationsOutput": { "type": "object", "additionalProperties": false, "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/OrganizationSummary" } }, "nextCursor": { "type": ["string", "null"] } } },
+      "PlanningStatus": { "type": "string", "enum": ["FINANCE_REVIEW", "GM_REVIEW", "EXECUTIVE_DIRECTOR_REVIEW", "GM_RELEASE", "RELEASED", "RETURNED"] },
+      "PlanningDecision": { "type": "string", "enum": ["APPROVE_BUDGET", "FORWARD_FOR_FINAL_APPROVAL", "APPROVE_PLAN", "RELEASE_PLAN", "RETURN_FOR_REVISION"] },
+      "PlanningItemView": { "type": "object", "additionalProperties": false, "required": ["id", "title", "planYear", "organizationId", "organizationName", "inspectionType", "scheduledDate", "estimatedBudget", "status", "currentOwnerRole", "nextAction", "revision"], "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "planYear": { "type": "integer" }, "organizationId": { "type": "string" }, "organizationName": { "type": "string" }, "inspectionType": { "type": "string" }, "scheduledDate": { "type": "string", "format": "date" }, "estimatedBudget": { "type": "number" }, "status": { "$ref": "#/components/schemas/PlanningStatus" }, "currentOwnerRole": { "$ref": "#/components/schemas/Role" }, "nextAction": { "type": "string" }, "revision": { "type": "integer" } } },
+      "ListPlanningItemsOutput": { "type": "object", "additionalProperties": false, "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/PlanningItemView" } }, "nextCursor": { "type": ["string", "null"] } } },
+      "PlanningDecisionInput": { "type": "object", "additionalProperties": false, "required": ["operationId", "planningItemId", "expectedPlanningRevision", "decision", "reason"], "properties": { "operationId": { "type": "string" }, "planningItemId": { "type": "string" }, "expectedPlanningRevision": { "type": "integer" }, "decision": { "$ref": "#/components/schemas/PlanningDecision" }, "reason": { "type": "string", "minLength": 1 } } },
+      "ChecklistTemplateVersionView": { "type": "object", "additionalProperties": false, "required": ["id", "templateId", "title", "version", "status", "publishedAt", "questionCount"], "properties": { "id": { "type": "string" }, "templateId": { "type": "string" }, "title": { "type": "string" }, "version": { "type": "integer" }, "status": { "type": "string", "enum": ["PUBLISHED"] }, "publishedAt": { "type": "string", "format": "date-time" }, "questionCount": { "type": "integer" } } },
+      "ListChecklistTemplateVersionsOutput": { "type": "object", "additionalProperties": false, "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/ChecklistTemplateVersionView" } }, "nextCursor": { "type": ["string", "null"] } } },
+      "ReminderRuleView": { "type": "object", "additionalProperties": false, "required": ["id", "label", "offsetDays", "channel", "status", "revision"], "properties": { "id": { "type": "string" }, "label": { "type": "string" }, "offsetDays": { "type": "integer" }, "channel": { "type": "string", "enum": ["IN_APP"] }, "status": { "type": "string", "enum": ["ACTIVE"] }, "revision": { "type": "integer" } } },
+      "ListReminderRulesOutput": { "type": "object", "additionalProperties": false, "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/ReminderRuleView" } }, "nextCursor": { "type": ["string", "null"] } } },
+      "AuditEventView": { "type": "object", "additionalProperties": false, "required": ["eventId", "occurredAt", "actorRole", "action", "entityType", "entityId", "beforeStatus", "afterStatus", "reason"], "properties": { "eventId": { "type": "string" }, "occurredAt": { "type": "string", "format": "date-time" }, "actorRole": { "type": ["string", "null"] }, "action": { "type": "string" }, "entityType": { "type": "string" }, "entityId": { "type": "string" }, "beforeStatus": { "type": ["string", "null"] }, "afterStatus": { "type": ["string", "null"] }, "reason": { "type": ["string", "null"] } } },
+      "ListAuditEventsOutput": { "type": "object", "additionalProperties": false, "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/AuditEventView" } }, "nextCursor": { "type": ["string", "null"] } } },
       "FieldCommandType": { "type": "string", "enum": ["UPSERT_CHECKLIST_RESPONSE", "CREATE_POTENTIAL_FINDING", "SUBMIT_CHECKLIST", "REGISTER_INSPECTION_ATTACHMENT"] },
       "UpsertChecklistResponseOperation": { "type": "object", "additionalProperties": false, "required": ["operationId", "protocolVersion", "offlineGrantId", "packageId", "packageVersion", "entityId", "commandType", "baseRevision", "deviceInstanceId", "clientOccurredAt", "payload"], "properties": { "operationId": { "type": "string" }, "protocolVersion": { "type": "integer" }, "offlineGrantId": { "type": "string" }, "packageId": { "type": "string" }, "packageVersion": { "type": "integer" }, "entityId": { "type": "string" }, "commandType": { "type": "string", "enum": ["UPSERT_CHECKLIST_RESPONSE"] }, "baseRevision": { "type": ["integer", "null"] }, "deviceInstanceId": { "type": "string" }, "clientOccurredAt": { "type": "string" }, "payload": { "type": "object", "additionalProperties": false, "required": ["auditId", "questionId", "answer", "comment"], "properties": { "auditId": { "type": "string" }, "questionId": { "type": "string" }, "answer": { "$ref": "#/components/schemas/ChecklistAnswer" }, "comment": { "type": "string" } } } } },
       "CreatePotentialFindingOperation": { "type": "object", "additionalProperties": false, "required": ["operationId", "protocolVersion", "offlineGrantId", "packageId", "packageVersion", "entityId", "commandType", "baseRevision", "deviceInstanceId", "clientOccurredAt", "payload"], "properties": { "operationId": { "type": "string" }, "protocolVersion": { "type": "integer" }, "offlineGrantId": { "type": "string" }, "packageId": { "type": "string" }, "packageVersion": { "type": "integer" }, "entityId": { "type": "string" }, "commandType": { "type": "string", "enum": ["CREATE_POTENTIAL_FINDING"] }, "baseRevision": { "type": ["integer", "null"] }, "deviceInstanceId": { "type": "string" }, "clientOccurredAt": { "type": "string" }, "payload": { "type": "object", "additionalProperties": false, "required": ["auditId", "questionId", "checklistResponseId", "expectedChecklistResponseRevision", "title", "description", "requiredComment", "inspectionAttachmentIds"], "properties": { "auditId": { "type": "string" }, "questionId": { "type": "string" }, "checklistResponseId": { "type": "string" }, "expectedChecklistResponseRevision": { "type": ["integer", "null"] }, "title": { "type": "string" }, "description": { "type": "string" }, "requiredComment": { "type": "string" }, "inspectionAttachmentIds": { "type": "array", "items": { "type": "string" } } } } } },

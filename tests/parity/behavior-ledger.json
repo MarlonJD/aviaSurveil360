@@ -1,6 +1,6 @@
 {
   "product": "AviaSurveil360",
-  "version": 2,
+  "version": 3,
   "status": "candidate-only",
   "legacyRemovalAllowed": false,
   "entries": [
@@ -132,6 +132,108 @@
       "legacyTest": "tests/browser-scenario-contract-smoke.test.js",
       "reactTest": "apps/web/src/app/router.test.tsx",
       "acceptedDifference": "React uses a stable URL; the legacy demo uses client-side view state."
+    },
+    {
+      "id": "organization-registry-view",
+      "classification": "first-production",
+      "role": "manager",
+      "route": "organizations",
+      "action": "view-organization-registry",
+      "entityIdRule": "ORG-FLY-NAMIBIA and ORG-SKYCARGO; Auditee receives only its own organization",
+      "expectedStatus": "ACTIVE",
+      "expectedOwner": "Department Manager",
+      "visibilityInvariant": "auditee-own-organization-only-and-no-internal-caa-fields",
+      "legacyTest": "tests/service-provider-portal-smoke.test.js",
+      "reactTest": [
+        "apps/web/tests/contract/mock-backend.test.ts",
+        "apps/web/tests/e2e/first-production-routes.spec.ts"
+      ],
+      "acceptedDifference": "React uses a typed registry projection and stable route; the legacy demo keeps its broader client-side organization workspace."
+    },
+    {
+      "id": "planning-finance-budget-approval",
+      "classification": "first-production",
+      "role": "finance",
+      "route": "finance-review",
+      "action": "approve-planning-budget",
+      "entityIdRule": "PLAN-2026-CAB-001 at revision 1",
+      "expectedStatus": "GM_REVIEW",
+      "expectedOwner": "General Manager",
+      "visibilityInvariant": "finance-budget-authority-only",
+      "legacyTest": "tests/finance-review-workspace-smoke.test.js",
+      "reactTest": [
+        "apps/web/tests/contract/mock-backend.test.ts",
+        "apps/web/tests/e2e/first-production-routes.spec.ts"
+      ],
+      "acceptedDifference": "React persists an idempotent revision-checked server-shaped decision; the legacy demo records the equivalent browser-local transition."
+    },
+    {
+      "id": "planning-gm-forward",
+      "classification": "first-production",
+      "role": "gm",
+      "route": "gm-dashboard",
+      "action": "forward-plan-for-final-approval",
+      "entityIdRule": "PLAN-2026-CAB-001 at revision 2",
+      "expectedStatus": "EXECUTIVE_DIRECTOR_REVIEW",
+      "expectedOwner": "Executive Director",
+      "visibilityInvariant": "general-manager-intermediate-authority-only",
+      "legacyTest": "tests/general-manager-workspace-smoke.test.js",
+      "reactTest": [
+        "apps/web/tests/contract/mock-backend.test.ts",
+        "apps/web/tests/e2e/first-production-routes.spec.ts"
+      ],
+      "acceptedDifference": "React binds the intermediate decision to an exact planning revision; the legacy demo uses browser-local approval state."
+    },
+    {
+      "id": "planning-executive-approval",
+      "classification": "first-production",
+      "role": "executiveDirector",
+      "route": "executive-dashboard",
+      "action": "approve-plan",
+      "entityIdRule": "PLAN-2026-CAB-001 at revision 3",
+      "expectedStatus": "GM_RELEASE",
+      "expectedOwner": "General Manager",
+      "visibilityInvariant": "executive-final-plan-authority-only",
+      "legacyTest": "tests/executive-director-workspace-smoke.test.js",
+      "reactTest": [
+        "apps/web/tests/contract/mock-backend.test.ts",
+        "apps/web/tests/e2e/first-production-routes.spec.ts"
+      ],
+      "acceptedDifference": "React separates final plan approval from GM release and report issue; the legacy demo uses client-side workflow state."
+    },
+    {
+      "id": "planning-gm-release",
+      "classification": "first-production",
+      "role": "gm",
+      "route": "gm-dashboard",
+      "action": "release-plan",
+      "entityIdRule": "PLAN-2026-CAB-001 at revision 4",
+      "expectedStatus": "RELEASED",
+      "expectedOwner": "Department Manager",
+      "visibilityInvariant": "general-manager-release-after-executive-approval-only",
+      "legacyTest": "tests/planning-release-smoke.test.js",
+      "reactTest": [
+        "apps/web/tests/contract/mock-backend.test.ts",
+        "apps/web/tests/e2e/first-production-routes.spec.ts"
+      ],
+      "acceptedDifference": "React requires a distinct GM release command after Executive Director approval; the legacy demo preserves its equivalent release gate."
+    },
+    {
+      "id": "admin-versioned-configuration-audit-view",
+      "classification": "first-production",
+      "role": "admin",
+      "route": "templates",
+      "action": "view-versioned-configuration-and-audit-trail",
+      "entityIdRule": "CTV-CABIN-1, REM-30/15/7/DUE/OVERDUE, PLAN-2026-CAB-001 audit events",
+      "expectedStatus": "PUBLISHED_ACTIVE_APPEND_ONLY",
+      "expectedOwner": "Admin Preview",
+      "visibilityInvariant": "admin-preview-only-and-no-regulatory-authoring-claim",
+      "legacyTest": "tests/checklist-management-smoke.test.js",
+      "reactTest": [
+        "apps/web/tests/contract/mock-backend.test.ts",
+        "apps/web/tests/e2e/first-production-routes.spec.ts"
+      ],
+      "acceptedDifference": "React exposes read-only versioned configuration and a server-shaped audit projection; broad editing remains only a later or demo-only concept."
     }
   ]
 }

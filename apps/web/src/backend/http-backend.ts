@@ -8,6 +8,8 @@ import type {
 } from "./backend";
 import {
   mapAssignments,
+  mapAuditEvents,
+  mapChecklistTemplateVersions,
   mapChecklistResponse,
   mapCheckout,
   mapCompleteEvidence,
@@ -17,10 +19,14 @@ import {
   mapFindings,
   mapInspectionPackage,
   mapManagerDashboard,
+  mapOrganizations,
+  mapPlanningItem,
+  mapPlanningItems,
   mapPotentialFinding,
   mapPotentialFindingDecision,
   mapPushResult,
   mapReportVersion,
+  mapReminderRules,
   mapReviewCap,
   mapReviewEvidence,
   mapSubmitCap,
@@ -397,6 +403,62 @@ export function createHttpBackend(
         mapManagerDashboard(
           await request<Schemas["ManagerDashboardProjection"]>(
             appendQuery("/v1/dashboards/manager", input),
+            {},
+            options,
+          ),
+        ),
+    },
+    organizations: {
+      list: async (input, options) =>
+        mapOrganizations(
+          await request<Schemas["ListOrganizationsOutput"]>(
+            appendQuery("/v1/organizations", input),
+            {},
+            options,
+          ),
+        ),
+    },
+    planning: {
+      list: async (input, options) =>
+        mapPlanningItems(
+          await request<Schemas["ListPlanningItemsOutput"]>(
+            appendQuery("/v1/planning/items", input),
+            {},
+            options,
+          ),
+        ),
+      decide: async (input, options) =>
+        mapPlanningItem(
+          await request<Schemas["PlanningItemView"]>(
+            `/v1/planning/items/${encodeURIComponent(input.planningItemId)}/decisions`,
+            { method: "POST", body: input },
+            options,
+          ),
+        ),
+    },
+    configuration: {
+      listChecklistTemplateVersions: async (input, options) =>
+        mapChecklistTemplateVersions(
+          await request<Schemas["ListChecklistTemplateVersionsOutput"]>(
+            appendQuery("/v1/configuration/checklist-template-versions", input),
+            {},
+            options,
+          ),
+        ),
+      listReminderRules: async (input, options) =>
+        mapReminderRules(
+          await request<Schemas["ListReminderRulesOutput"]>(
+            appendQuery("/v1/configuration/reminder-rules", input),
+            {},
+            options,
+          ),
+        ),
+    },
+    auditTrail: {
+      list: async (input, options) =>
+        mapAuditEvents(
+          await request<Schemas["ListAuditEventsOutput"]>(
+            appendQuery("/v1/audit-events", input),
             {},
             options,
           ),

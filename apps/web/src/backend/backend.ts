@@ -453,6 +453,100 @@ export interface ManagerDashboardProjection {
   recentFindingNumbers: string[];
 }
 
+export interface OrganizationSummary {
+  id: string;
+  legalName: string;
+  organizationType: string;
+  status: string;
+  openFindingCount: number;
+  lastAuditDate: LocalDate | null;
+  nextAuditDate: LocalDate | null;
+  revision: number;
+}
+
+export interface ListOrganizationsOutput {
+  items: OrganizationSummary[];
+  nextCursor: string | null;
+}
+
+export type PlanningStatus =
+  | "FINANCE_REVIEW"
+  | "GM_REVIEW"
+  | "EXECUTIVE_DIRECTOR_REVIEW"
+  | "GM_RELEASE"
+  | "RELEASED"
+  | "RETURNED";
+
+export type PlanningDecision =
+  | "APPROVE_BUDGET"
+  | "FORWARD_FOR_FINAL_APPROVAL"
+  | "APPROVE_PLAN"
+  | "RELEASE_PLAN"
+  | "RETURN_FOR_REVISION";
+
+export interface PlanningItemView {
+  id: string;
+  title: string;
+  planYear: number;
+  organizationId: string;
+  organizationName: string;
+  inspectionType: string;
+  scheduledDate: LocalDate;
+  estimatedBudget: number;
+  status: PlanningStatus;
+  currentOwnerRole: Role;
+  nextAction: string;
+  revision: number;
+}
+
+export interface ListPlanningItemsOutput {
+  items: PlanningItemView[];
+  nextCursor: string | null;
+}
+
+export interface PlanningDecisionInput extends CommandMeta {
+  planningItemId: string;
+  expectedPlanningRevision: number;
+  decision: PlanningDecision;
+  reason: string;
+}
+
+export interface ChecklistTemplateVersionView {
+  id: string;
+  templateId: string;
+  title: string;
+  version: number;
+  status: "PUBLISHED";
+  publishedAt: Instant;
+  questionCount: number;
+}
+
+export interface ReminderRuleView {
+  id: string;
+  label: string;
+  offsetDays: number;
+  channel: "IN_APP";
+  status: "ACTIVE";
+  revision: number;
+}
+
+export interface AuditEventView {
+  eventId: string;
+  occurredAt: Instant;
+  actorRole: Role | null;
+  action: string;
+  entityType: string;
+  entityId: string;
+  beforeStatus: string | null;
+  afterStatus: string | null;
+  reason: string | null;
+}
+
+export interface PageOutput<T> {
+  items: T[];
+  nextCursor: string | null;
+}
+
 export type FieldCommandType =
   | "UPSERT_CHECKLIST_RESPONSE"
   | "CREATE_POTENTIAL_FINDING"
@@ -661,6 +755,42 @@ export interface DashboardBackend {
   ): Promise<ManagerDashboardProjection>;
 }
 
+export interface OrganizationBackend {
+  list(
+    input: { limit?: number },
+    options?: BackendRequestOptions,
+  ): Promise<ListOrganizationsOutput>;
+}
+
+export interface PlanningBackend {
+  list(
+    input: { limit?: number },
+    options?: BackendRequestOptions,
+  ): Promise<ListPlanningItemsOutput>;
+  decide(
+    input: PlanningDecisionInput,
+    options?: BackendRequestOptions,
+  ): Promise<PlanningItemView>;
+}
+
+export interface ConfigurationBackend {
+  listChecklistTemplateVersions(
+    input: { limit?: number },
+    options?: BackendRequestOptions,
+  ): Promise<PageOutput<ChecklistTemplateVersionView>>;
+  listReminderRules(
+    input: { limit?: number },
+    options?: BackendRequestOptions,
+  ): Promise<PageOutput<ReminderRuleView>>;
+}
+
+export interface AuditTrailBackend {
+  list(
+    input: { entityType?: string; entityId?: string; limit?: number },
+    options?: BackendRequestOptions,
+  ): Promise<PageOutput<AuditEventView>>;
+}
+
 export interface SyncBackend {
   pushOperation(
     input: PushFieldOperationRequest,
@@ -680,5 +810,9 @@ export interface Backend {
   readonly evidence: EvidenceBackend;
   readonly reports: ReportBackend;
   readonly dashboards: DashboardBackend;
+  readonly organizations: OrganizationBackend;
+  readonly planning: PlanningBackend;
+  readonly configuration: ConfigurationBackend;
+  readonly auditTrail: AuditTrailBackend;
   readonly sync: SyncBackend;
 }

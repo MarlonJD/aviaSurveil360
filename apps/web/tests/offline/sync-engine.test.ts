@@ -244,6 +244,10 @@ function backend(input: {
     evidence: {} as Backend["evidence"],
     reports: {} as Backend["reports"],
     dashboards: {} as Backend["dashboards"],
+    organizations: {} as Backend["organizations"],
+    planning: {} as Backend["planning"],
+    configuration: {} as Backend["configuration"],
+    auditTrail: {} as Backend["auditTrail"],
     inspectionAttachments: {
       beginUpload: input.beginUpload ?? (async (request) => ({
         uploadId: `UPLOAD-${request.inspectionAttachmentId}`,

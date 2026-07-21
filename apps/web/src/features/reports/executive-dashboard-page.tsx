@@ -9,6 +9,7 @@ import {
   PageHeader,
   WorkspaceShell,
 } from "../shared/workspace-shell";
+import { PlanningDecisionPanel } from "../planning/planning-workspaces";
 
 export function ExecutiveDashboardPage() {
   const { projection, actions } = useScenario();
@@ -44,6 +45,7 @@ export function ExecutiveDashboardPage() {
         description="Issue and lock the exact report version without changing Finding closure state."
       />
       <CommandError message={error} />
+      <PlanningDecisionPanel role="executiveDirector" />
       <article className="surface-card detail-card">
         <div className="card-heading">
           <div><p className="eyebrow">RPT-CAB-2026-001-V1</p><h2>Cabin Inspection report decision</h2></div>

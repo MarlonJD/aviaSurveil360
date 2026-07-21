@@ -35,6 +35,7 @@ sql:
       - "migrations/000001_foundation.up.sql"
       - "migrations/000002_workflow_foundation.up.sql"
       - "migrations/000003_authority_foundation.up.sql"
+      - "migrations/000006_first_production_routes.up.sql"
     queries: "internal/identity/store/postgres/queries.sql"
     gen:
       go:
@@ -148,6 +149,18 @@ sql:
       go:
         package: "postgres"
         out: "internal/auditlog/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *all_migrations
+    queries: "internal/configuration/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/configuration/store/postgres"
         sql_package: "pgx/v5"
         emit_interface: true
         emit_json_tags: true

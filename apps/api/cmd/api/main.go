@@ -16,6 +16,7 @@ import (
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/httpapi"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/inspections/attachments"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/planning"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/config"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/database"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/objectstore"
@@ -132,10 +133,12 @@ func run(ctx context.Context) error {
 							QuarantineBucket: settings.QuarantineBucket, MaximumByteSize: 25 * 1024 * 1024,
 							InstructionTTL: 10 * time.Minute, IDGenerator: generator.Next,
 						})
+						planningService := planning.NewService(pool, planning.Dependencies{IDGenerator: generator.Next})
 						apiHandler := httpapi.NewCanonicalAPI(httpapi.CanonicalAPIDependencies{
 							Pool: pool, Application: applicationService, GrantService: grantService,
 							SyncOperations:  syncOperations,
 							EvidenceUploads: evidenceUploads, AttachmentUploads: attachmentUploads,
+							Planning: planningService,
 						}).Handler()
 						if settings.CanonicalTestProfile {
 							boundary := httpapi.NewCanonicalTestBoundary(settings.CanonicalTestToken)

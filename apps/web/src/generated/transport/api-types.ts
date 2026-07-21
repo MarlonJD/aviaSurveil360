@@ -388,6 +388,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listOrganizations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/planning/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPlanningItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/planning/items/{id}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["decidePlanningItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/configuration/checklist-template-versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listChecklistTemplateVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/configuration/reminder-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listReminderRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audit-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listAuditEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sync/operations": {
         parameters: {
             query?: never;
@@ -855,6 +951,97 @@ export interface components {
             pendingCapReviews: number;
             pendingEvidenceReviews: number;
             recentFindingNumbers: string[];
+        };
+        OrganizationSummary: {
+            id: string;
+            legalName: string;
+            organizationType: string;
+            status: string;
+            openFindingCount: number;
+            /** Format: date */
+            lastAuditDate: string | null;
+            /** Format: date */
+            nextAuditDate: string | null;
+            revision: number;
+        };
+        ListOrganizationsOutput: {
+            items: components["schemas"]["OrganizationSummary"][];
+            nextCursor: string | null;
+        };
+        /** @enum {string} */
+        PlanningStatus: "FINANCE_REVIEW" | "GM_REVIEW" | "EXECUTIVE_DIRECTOR_REVIEW" | "GM_RELEASE" | "RELEASED" | "RETURNED";
+        /** @enum {string} */
+        PlanningDecision: "APPROVE_BUDGET" | "FORWARD_FOR_FINAL_APPROVAL" | "APPROVE_PLAN" | "RELEASE_PLAN" | "RETURN_FOR_REVISION";
+        PlanningItemView: {
+            id: string;
+            title: string;
+            planYear: number;
+            organizationId: string;
+            organizationName: string;
+            inspectionType: string;
+            /** Format: date */
+            scheduledDate: string;
+            estimatedBudget: number;
+            status: components["schemas"]["PlanningStatus"];
+            currentOwnerRole: components["schemas"]["Role"];
+            nextAction: string;
+            revision: number;
+        };
+        ListPlanningItemsOutput: {
+            items: components["schemas"]["PlanningItemView"][];
+            nextCursor: string | null;
+        };
+        PlanningDecisionInput: {
+            operationId: string;
+            planningItemId: string;
+            expectedPlanningRevision: number;
+            decision: components["schemas"]["PlanningDecision"];
+            reason: string;
+        };
+        ChecklistTemplateVersionView: {
+            id: string;
+            templateId: string;
+            title: string;
+            version: number;
+            /** @enum {string} */
+            status: "PUBLISHED";
+            /** Format: date-time */
+            publishedAt: string;
+            questionCount: number;
+        };
+        ListChecklistTemplateVersionsOutput: {
+            items: components["schemas"]["ChecklistTemplateVersionView"][];
+            nextCursor: string | null;
+        };
+        ReminderRuleView: {
+            id: string;
+            label: string;
+            offsetDays: number;
+            /** @enum {string} */
+            channel: "IN_APP";
+            /** @enum {string} */
+            status: "ACTIVE";
+            revision: number;
+        };
+        ListReminderRulesOutput: {
+            items: components["schemas"]["ReminderRuleView"][];
+            nextCursor: string | null;
+        };
+        AuditEventView: {
+            eventId: string;
+            /** Format: date-time */
+            occurredAt: string;
+            actorRole: string | null;
+            action: string;
+            entityType: string;
+            entityId: string;
+            beforeStatus: string | null;
+            afterStatus: string | null;
+            reason: string | null;
+        };
+        ListAuditEventsOutput: {
+            items: components["schemas"]["AuditEventView"][];
+            nextCursor: string | null;
         };
         /** @enum {string} */
         FieldCommandType: "UPSERT_CHECKLIST_RESPONSE" | "CREATE_POTENTIAL_FINDING" | "SUBMIT_CHECKLIST" | "REGISTER_INSPECTION_ATTACHMENT";
@@ -1640,6 +1827,150 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ManagerDashboardProjection"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listOrganizations: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Role- and organization-scoped Organization Registry */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListOrganizationsOutput"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listPlanningItems: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized surveillance planning items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListPlanningItemsOutput"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    decidePlanningItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["EntityId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanningDecisionInput"];
+            };
+        };
+        responses: {
+            /** @description Planning item after the authorized decision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanningItemView"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listChecklistTemplateVersions: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published checklist template versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListChecklistTemplateVersionsOutput"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listReminderRules: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Configured Due Date reminder rules */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListReminderRulesOutput"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listAuditEvents: {
+        parameters: {
+            query?: {
+                entityType?: string;
+                entityId?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized append-only audit-event projection */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListAuditEventsOutput"];
                 };
             };
             default: components["responses"]["Problem"];

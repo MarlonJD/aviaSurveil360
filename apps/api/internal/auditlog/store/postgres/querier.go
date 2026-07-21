@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	ListAuditEvents(ctx context.Context, arg ListAuditEventsParams) ([]AuditEvent, error)
 	ListAuditEventsForEntity(ctx context.Context, arg ListAuditEventsForEntityParams) ([]AuditEvent, error)
 }
 

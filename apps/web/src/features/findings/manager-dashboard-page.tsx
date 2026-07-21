@@ -41,6 +41,10 @@ export function ManagerDashboardPage() {
         description="See the smallest useful decision set and keep authorized closure separate from Evidence verification."
       />
       <CommandError message={error} />
+      <div className="workspace-actions" aria-label="Department workspaces">
+        <Link className="primary-link" to="/department-manager/organizations">Open Organization Registry</Link>
+        <Link className="secondary-button" to="/department-manager/audit-plan">Open Audit Plan Calendar</Link>
+      </div>
       <section className="metric-grid" aria-label="Finding metrics">
         <article><span>Open Findings</span><strong>{projection.dashboard?.openFindings ?? 0}</strong></article>
         <article><span>Closed Findings</span><strong data-testid="manager-closed-findings">{projection.dashboard?.closedFindings ?? 0}</strong></article>

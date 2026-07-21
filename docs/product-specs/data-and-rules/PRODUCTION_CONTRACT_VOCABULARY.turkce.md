@@ -1,8 +1,9 @@
 # Production Contract Vocabulary — Türkçe Eşlikçi Doküman
 
-**Durum:** Yalnız açıkça yetkilendirilen Tasks 2-4 mock-data dilimi için
-`candidate-only`. Bu doküman gerçek API, authentication, dosya saklama,
-offline, sync, deployment veya production kullanım onayı değildir.
+**Durum:** Task 5'e kadar açıkça yetkilendirilen local candidate ve onu
+destekleyen Tasks 6-12 için `verified locally` ve `candidate-only`. Release
+durumu `release pending`. Bu doküman production deployment, traffic cutover,
+legacy removal, hosting veya production kullanım onayı değildir.
 
 Canonical uygulama kaynağı İngilizce
 `PRODUCTION_CONTRACT_VOCABULARY.md` dokümanıdır. Bu Türkçe doküman stakeholder
@@ -36,9 +37,10 @@ demodur.
 
 ## Roller ve giriş route'ları
 
-Tasks 2-4 için yalnız canonical Cabin scenario ile aşağıdaki sekiz doğrulanmış
-rol giriş route'u `first-production` kapsamındadır. Diğer tüm legacy route'lar
-`later` veya `demo-only` olarak root demoda korunur.
+Canonical Cabin scenario, aşağıdaki sekiz doğrulanmış rol giriş route'u ve Task
+5 Core MVP route family'leri local candidate için `first-production`
+kapsamındadır. Diğer tüm legacy route'lar `later` veya `demo-only` olarak root
+demoda korunur.
 
 | Legacy rol | OpenAPI `Role` | UI etiketi | Yetkilendirilen giriş route'u |
 |---|---|---|---|
@@ -50,6 +52,37 @@ rol giriş route'u `first-production` kapsamındadır. Diğer tüm legacy route'
 | `executiveDirector` | `executiveDirector` | Executive Director | `executive-dashboard` |
 | `auditee` | `auditee` | Auditee / Service Provider | `service-provider-cap` |
 | `admin` | `admin` | Admin Preview | `templates` |
+
+## Task 5 first-production route family'leri
+
+| Route family | Yetkili roller | Kararlı route / operation | Candidate sınırı |
+|---|---|---|---|
+| Organization Registry | Department Manager; organization-scoped Auditee projection | `/department-manager/organizations`; `GET /v1/organizations` | Read-only oversight özeti; Auditee projection'ında Internal CAA alanı yoktur. |
+| Audit Plan Calendar | Department Manager | `/department-manager/audit-plan`; `GET /v1/planning/items` | Current owner/status gösterir; approval authority bypass edilemez. |
+| Surveillance plan kararları | Finance Review, General Manager, Executive Director | `POST /v1/planning/items/{id}/decisions` | Reason-required, idempotent, exact-revision ve role/stage kontrollüdür. |
+| Versioned checklist configuration | Admin Preview | `GET /v1/configuration/checklist-template-versions` | Yalnız published version preview; geniş editing `later` kalır. |
+| Due Date reminder configuration | Admin Preview | `GET /v1/configuration/reminder-rules` | Read-only configured rule; gerçek notification delivery iddiası yoktur. |
+| Planning Audit Trail | Admin Preview | `GET /v1/audit-events` | Append-only local candidate projection; production tamper-evidence iddiası yoktur. |
+
+### Surveillance planning status ve kararları
+
+| Current status | Yetkili rol ve karar | Result status | Next owner |
+|---|---|---|---|
+| `FINANCE_REVIEW` | Finance Review — `APPROVE_BUDGET` | `GM_REVIEW` | General Manager |
+| `GM_REVIEW` | General Manager — `FORWARD_FOR_FINAL_APPROVAL` | `EXECUTIVE_DIRECTOR_REVIEW` | Executive Director |
+| `EXECUTIVE_DIRECTOR_REVIEW` | Executive Director — `APPROVE_PLAN` | `GM_RELEASE` | General Manager |
+| `GM_RELEASE` | General Manager — `RELEASE_PLAN` | `RELEASED` | Department Manager |
+| Her active review stage | Current authorized reviewer — `RETURN_FOR_REVISION` | `REVISION_REQUIRED` | Department Manager |
+
+Her planning kararı non-empty reason ve exact current planning revision ister.
+Finance approval, final plan approval ve GM release ayrı authority'lerdir.
+Planning approval report issue etmez veya Finding kapatmaz.
+
+### Configured reminder offset'leri
+
+Local candidate Due Date'ten 30, 15 ve 7 gün önce, Due Date üzerinde (`0`) ve
+sonrasında (`-1`) read-only rule'lar gösterir. Bunlar yalnız configured reminder
+input'larıdır; gerçek notification delivery bu dilimin dışındadır.
 
 ## Canonical görünen etiketler
 

@@ -30,6 +30,67 @@ func (q *Queries) GetOrganization(ctx context.Context, id string) (Organization,
 	return i, err
 }
 
+const listOrganizationRegistry = `-- name: ListOrganizationRegistry :many
+SELECT organization.id, organization.legal_name, organization.organization_type,
+       organization.status, organization.revision,
+       COUNT(DISTINCT finding.id) FILTER (WHERE finding.status <> 'CLOSED')::bigint AS open_finding_count,
+       COALESCE(to_char(MAX(inspection.due_date) FILTER (WHERE inspection.status IN ('COMPLETED', 'CLOSED')), 'YYYY-MM-DD'), '')::text AS last_audit_date,
+       COALESCE(to_char(MIN(inspection.due_date) FILTER (WHERE inspection.status NOT IN ('COMPLETED', 'CANCELLED')), 'YYYY-MM-DD'), '')::text AS next_audit_date
+FROM organizations organization
+LEFT JOIN findings finding ON finding.organization_id = organization.id
+LEFT JOIN inspections inspection ON inspection.organization_id = organization.id
+WHERE organization.organization_type <> 'AUTHORITY'
+  AND ($1::text = '' OR organization.id = $1)
+GROUP BY organization.id
+ORDER BY organization.legal_name, organization.id
+LIMIT $2
+`
+
+type ListOrganizationRegistryParams struct {
+	OrganizationScope string `json:"organization_scope"`
+	ResultLimit       int32  `json:"result_limit"`
+}
+
+type ListOrganizationRegistryRow struct {
+	ID               string `json:"id"`
+	LegalName        string `json:"legal_name"`
+	OrganizationType string `json:"organization_type"`
+	Status           string `json:"status"`
+	Revision         int64  `json:"revision"`
+	OpenFindingCount int64  `json:"open_finding_count"`
+	LastAuditDate    string `json:"last_audit_date"`
+	NextAuditDate    string `json:"next_audit_date"`
+}
+
+func (q *Queries) ListOrganizationRegistry(ctx context.Context, arg ListOrganizationRegistryParams) ([]ListOrganizationRegistryRow, error) {
+	rows, err := q.db.Query(ctx, listOrganizationRegistry, arg.OrganizationScope, arg.ResultLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListOrganizationRegistryRow
+	for rows.Next() {
+		var i ListOrganizationRegistryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LegalName,
+			&i.OrganizationType,
+			&i.Status,
+			&i.Revision,
+			&i.OpenFindingCount,
+			&i.LastAuditDate,
+			&i.NextAuditDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listOrganizations = `-- name: ListOrganizations :many
 SELECT id, legal_name, organization_type, status, revision, created_at, updated_at
 FROM organizations

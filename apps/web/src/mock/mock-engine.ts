@@ -852,6 +852,169 @@ export class MockBackendEngine implements Backend {
     },
   };
 
+  readonly organizations: Backend["organizations"] = {
+    list: async ({ limit }) => {
+      requireRole(
+        this.principal,
+        ["inspector", "leadInspector", "manager", "gm", "executiveDirector", "auditee", "admin"],
+        "Organization Registry access is not available to this role.",
+      );
+      return this.store.read((state) => {
+        let organizations = state.organizations;
+        if (this.principal.role === "auditee") {
+          organizations = organizations.filter(
+            (organization) => organization.id === this.principal.organizationId,
+          );
+        }
+        const items = organizations
+          .map((organization) => {
+            const openFindingCount = Object.values(state.findings).filter(
+              (finding) =>
+                finding.organizationId === organization.id && finding.status !== "CLOSED",
+            ).length;
+            return {
+              ...organization,
+              openFindingCount,
+            };
+          })
+          .sort((left, right) => left.legalName.localeCompare(right.legalName));
+        return { items: items.slice(0, limit ?? items.length), nextCursor: null };
+      });
+    },
+  };
+
+  readonly planning: Backend["planning"] = {
+    list: async ({ limit }) => {
+      requireRole(
+        this.principal,
+        ["inspector", "leadInspector", "manager", "finance", "gm", "executiveDirector", "admin"],
+        "CAA planning access is required.",
+      );
+      return this.store.read((state) => {
+        const items = Object.values(state.planningItems).sort((left, right) =>
+          left.scheduledDate.localeCompare(right.scheduledDate),
+        );
+        return { items: items.slice(0, limit ?? items.length), nextCursor: null };
+      });
+    },
+
+    decide: async (input) => {
+      requireNonEmpty(input.reason, "Planning decision reason");
+      return this.store.execute(input.operationId, input, (state) => {
+        const item = state.planningItems[input.planningItemId];
+        if (!item) throw new BackendInvariantError("Planning item was not found.");
+        requireRevision(item.revision, input.expectedPlanningRevision, "Planning item");
+        const beforeStatus = item.status;
+        let action: string;
+
+        if (input.decision === "APPROVE_BUDGET") {
+          requireRole(this.principal, ["finance"], "Finance Review authority is required.");
+          if (item.status !== "FINANCE_REVIEW") {
+            throw new BackendConflictError("Planning item is not at Finance Review.");
+          }
+          item.status = "GM_REVIEW";
+          item.currentOwnerRole = "gm";
+          item.nextAction = "General Manager to review operational scope";
+          action = "PLANNING_BUDGET_APPROVED";
+        } else if (input.decision === "FORWARD_FOR_FINAL_APPROVAL") {
+          requireRole(this.principal, ["gm"], "General Manager authority is required.");
+          if (item.status !== "GM_REVIEW") {
+            throw new BackendConflictError("Planning item is not at General Manager review.");
+          }
+          item.status = "EXECUTIVE_DIRECTOR_REVIEW";
+          item.currentOwnerRole = "executiveDirector";
+          item.nextAction = "Executive Director to approve or return plan";
+          action = "PLANNING_FORWARDED_FOR_FINAL_APPROVAL";
+        } else if (input.decision === "APPROVE_PLAN") {
+          requireRole(
+            this.principal,
+            ["executiveDirector"],
+            "Executive Director authority is required.",
+          );
+          if (item.status !== "EXECUTIVE_DIRECTOR_REVIEW") {
+            throw new BackendConflictError("Planning item is not at Executive Director review.");
+          }
+          item.status = "GM_RELEASE";
+          item.currentOwnerRole = "gm";
+          item.nextAction = "General Manager to release approved plan";
+          action = "PLANNING_APPROVED";
+        } else if (input.decision === "RELEASE_PLAN") {
+          requireRole(this.principal, ["gm"], "General Manager authority is required.");
+          if (item.status !== "GM_RELEASE") {
+            throw new BackendConflictError("Planning item is not ready for General Manager release.");
+          }
+          item.status = "RELEASED";
+          item.currentOwnerRole = "manager";
+          item.nextAction = "Department Manager to prepare the scheduled Audit";
+          action = "PLANNING_RELEASED";
+        } else {
+          const allowed =
+            (this.principal.role === "finance" && item.status === "FINANCE_REVIEW") ||
+            (this.principal.role === "gm" && ["GM_REVIEW", "GM_RELEASE"].includes(item.status)) ||
+            (this.principal.role === "executiveDirector" &&
+              item.status === "EXECUTIVE_DIRECTOR_REVIEW");
+          if (!allowed) {
+            throw new BackendAuthorizationInvariantError(
+              "The current role and planning stage cannot return this item.",
+            );
+          }
+          item.status = "RETURNED";
+          item.currentOwnerRole = "manager";
+          item.nextAction = "Department Manager to revise and resubmit plan";
+          action = "PLANNING_RETURNED_FOR_REVISION";
+        }
+        item.revision += 1;
+        state.auditEvents.push({
+          eventId: `AUDIT-PLAN-${pad(state.counters.auditEvent++)}`,
+          occurredAt: this.store.clock(),
+          actorRole: this.principal.role,
+          action,
+          entityType: "SURVEILLANCE_PLAN",
+          entityId: item.id,
+          beforeStatus,
+          afterStatus: item.status,
+          reason: input.reason.trim(),
+        });
+        return item;
+      });
+    },
+  };
+
+  readonly configuration: Backend["configuration"] = {
+    listChecklistTemplateVersions: async ({ limit }) => {
+      requireRole(this.principal, ["admin"], "Admin configuration authority is required.");
+      return this.store.read((state) => ({
+        items: state.checklistTemplateVersions.slice(0, limit ?? state.checklistTemplateVersions.length),
+        nextCursor: null,
+      }));
+    },
+    listReminderRules: async ({ limit }) => {
+      requireRole(this.principal, ["admin"], "Admin configuration authority is required.");
+      return this.store.read((state) => ({
+        items: state.reminderRules.slice(0, limit ?? state.reminderRules.length),
+        nextCursor: null,
+      }));
+    },
+  };
+
+  readonly auditTrail: Backend["auditTrail"] = {
+    list: async ({ entityType, entityId, limit }) => {
+      requireRole(
+        this.principal,
+        ["inspector", "leadInspector", "manager", "gm", "executiveDirector", "admin"],
+        "Internal CAA audit-trail authority is required.",
+      );
+      return this.store.read((state) => {
+        const items = state.auditEvents.filter(
+          (event) =>
+            (!entityType || event.entityType === entityType) &&
+            (!entityId || event.entityId === entityId),
+        );
+        return { items: items.slice(0, limit ?? items.length), nextCursor: null };
+      });
+    },
+  };
+
   readonly sync: Backend["sync"] = {
     pushOperation: async ({ operation }) => {
       requireRole(this.principal, ["inspector"], "CAA Inspector authority is required for sync.");

@@ -1,0 +1,19 @@
+{
+  "schema": "ListAuditEventsOutput",
+  "value": {
+    "items": [
+      {
+        "eventId": "AUDIT-PLAN-001",
+        "occurredAt": "2026-06-15T09:00:00Z",
+        "actorRole": "finance",
+        "action": "PLANNING_BUDGET_APPROVED",
+        "entityType": "SURVEILLANCE_PLAN",
+        "entityId": "PLAN-2026-CAB-001",
+        "beforeStatus": "FINANCE_REVIEW",
+        "afterStatus": "GM_REVIEW",
+        "reason": "Budget envelope confirmed for the configured inspection."
+      }
+    ],
+    "nextCursor": null
+  }
+}

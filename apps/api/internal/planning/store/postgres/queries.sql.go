@@ -11,6 +11,51 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getSurveillancePlanItemForUpdate = `-- name: GetSurveillancePlanItemForUpdate :one
+SELECT plan.id, plan.title, plan.plan_year, plan.organization_id, organization.legal_name,
+       plan.inspection_type, plan.scheduled_date, plan.estimated_budget::float8 AS estimated_budget, plan.status,
+       plan.current_owner_role, plan.next_action, plan.revision
+FROM surveillance_plan_items plan
+JOIN organizations organization ON organization.id = plan.organization_id
+WHERE plan.id = $1
+FOR UPDATE OF plan
+`
+
+type GetSurveillancePlanItemForUpdateRow struct {
+	ID               string      `json:"id"`
+	Title            string      `json:"title"`
+	PlanYear         int32       `json:"plan_year"`
+	OrganizationID   string      `json:"organization_id"`
+	LegalName        string      `json:"legal_name"`
+	InspectionType   string      `json:"inspection_type"`
+	ScheduledDate    pgtype.Date `json:"scheduled_date"`
+	EstimatedBudget  float64     `json:"estimated_budget"`
+	Status           string      `json:"status"`
+	CurrentOwnerRole string      `json:"current_owner_role"`
+	NextAction       string      `json:"next_action"`
+	Revision         int64       `json:"revision"`
+}
+
+func (q *Queries) GetSurveillancePlanItemForUpdate(ctx context.Context, id string) (GetSurveillancePlanItemForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, getSurveillancePlanItemForUpdate, id)
+	var i GetSurveillancePlanItemForUpdateRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.PlanYear,
+		&i.OrganizationID,
+		&i.LegalName,
+		&i.InspectionType,
+		&i.ScheduledDate,
+		&i.EstimatedBudget,
+		&i.Status,
+		&i.CurrentOwnerRole,
+		&i.NextAction,
+		&i.Revision,
+	)
+	return i, err
+}
+
 const listPlannedInspections = `-- name: ListPlannedInspections :many
 SELECT id, organization_id, title, inspection_type, status, due_date, revision
 FROM inspections
@@ -59,4 +104,123 @@ func (q *Queries) ListPlannedInspections(ctx context.Context, arg ListPlannedIns
 		return nil, err
 	}
 	return items, nil
+}
+
+const listSurveillancePlanItems = `-- name: ListSurveillancePlanItems :many
+SELECT plan.id, plan.title, plan.plan_year, plan.organization_id, organization.legal_name,
+       plan.inspection_type, plan.scheduled_date, plan.estimated_budget::float8 AS estimated_budget, plan.status,
+       plan.current_owner_role, plan.next_action, plan.revision
+FROM surveillance_plan_items plan
+JOIN organizations organization ON organization.id = plan.organization_id
+ORDER BY plan.scheduled_date, plan.id
+LIMIT $1
+`
+
+type ListSurveillancePlanItemsRow struct {
+	ID               string      `json:"id"`
+	Title            string      `json:"title"`
+	PlanYear         int32       `json:"plan_year"`
+	OrganizationID   string      `json:"organization_id"`
+	LegalName        string      `json:"legal_name"`
+	InspectionType   string      `json:"inspection_type"`
+	ScheduledDate    pgtype.Date `json:"scheduled_date"`
+	EstimatedBudget  float64     `json:"estimated_budget"`
+	Status           string      `json:"status"`
+	CurrentOwnerRole string      `json:"current_owner_role"`
+	NextAction       string      `json:"next_action"`
+	Revision         int64       `json:"revision"`
+}
+
+func (q *Queries) ListSurveillancePlanItems(ctx context.Context, limit int32) ([]ListSurveillancePlanItemsRow, error) {
+	rows, err := q.db.Query(ctx, listSurveillancePlanItems, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListSurveillancePlanItemsRow
+	for rows.Next() {
+		var i ListSurveillancePlanItemsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.PlanYear,
+			&i.OrganizationID,
+			&i.LegalName,
+			&i.InspectionType,
+			&i.ScheduledDate,
+			&i.EstimatedBudget,
+			&i.Status,
+			&i.CurrentOwnerRole,
+			&i.NextAction,
+			&i.Revision,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateSurveillancePlanDecision = `-- name: UpdateSurveillancePlanDecision :one
+UPDATE surveillance_plan_items
+SET status = $2,
+    current_owner_role = $3,
+    next_action = $4,
+    revision = revision + 1,
+    updated_at = $5
+WHERE id = $1 AND revision = $6
+RETURNING id, title, plan_year, organization_id, inspection_type, scheduled_date,
+          estimated_budget::float8 AS estimated_budget, status, current_owner_role, next_action, revision
+`
+
+type UpdateSurveillancePlanDecisionParams struct {
+	ID               string             `json:"id"`
+	Status           string             `json:"status"`
+	CurrentOwnerRole string             `json:"current_owner_role"`
+	NextAction       string             `json:"next_action"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	Revision         int64              `json:"revision"`
+}
+
+type UpdateSurveillancePlanDecisionRow struct {
+	ID               string      `json:"id"`
+	Title            string      `json:"title"`
+	PlanYear         int32       `json:"plan_year"`
+	OrganizationID   string      `json:"organization_id"`
+	InspectionType   string      `json:"inspection_type"`
+	ScheduledDate    pgtype.Date `json:"scheduled_date"`
+	EstimatedBudget  float64     `json:"estimated_budget"`
+	Status           string      `json:"status"`
+	CurrentOwnerRole string      `json:"current_owner_role"`
+	NextAction       string      `json:"next_action"`
+	Revision         int64       `json:"revision"`
+}
+
+func (q *Queries) UpdateSurveillancePlanDecision(ctx context.Context, arg UpdateSurveillancePlanDecisionParams) (UpdateSurveillancePlanDecisionRow, error) {
+	row := q.db.QueryRow(ctx, updateSurveillancePlanDecision,
+		arg.ID,
+		arg.Status,
+		arg.CurrentOwnerRole,
+		arg.NextAction,
+		arg.UpdatedAt,
+		arg.Revision,
+	)
+	var i UpdateSurveillancePlanDecisionRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.PlanYear,
+		&i.OrganizationID,
+		&i.InspectionType,
+		&i.ScheduledDate,
+		&i.EstimatedBudget,
+		&i.Status,
+		&i.CurrentOwnerRole,
+		&i.NextAction,
+		&i.Revision,
+	)
+	return i, err
 }

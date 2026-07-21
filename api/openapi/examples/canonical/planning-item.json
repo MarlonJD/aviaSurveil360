@@ -1,0 +1,17 @@
+{
+  "schema": "PlanningItemView",
+  "value": {
+    "id": "PLAN-2026-CAB-001",
+    "title": "2026 Cabin Surveillance — Fly Namibia",
+    "planYear": 2026,
+    "organizationId": "ORG-FLY-NAMIBIA",
+    "organizationName": "Fly Namibia",
+    "inspectionType": "CABIN",
+    "scheduledDate": "2026-07-15",
+    "estimatedBudget": 48000,
+    "status": "FINANCE_REVIEW",
+    "currentOwnerRole": "finance",
+    "nextAction": "Finance to review budget",
+    "revision": 1
+  }
+}

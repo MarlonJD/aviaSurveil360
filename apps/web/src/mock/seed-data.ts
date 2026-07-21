@@ -1,6 +1,8 @@
 import type {
   AssignmentSummary,
+  AuditEventView,
   CapStatus,
+  ChecklistTemplateVersionView,
   EvidenceReviewState,
   EvidenceScanState,
   EvidenceUploadState,
@@ -8,8 +10,11 @@ import type {
   FindingView,
   InspectionQuestion,
   InspectionPackage,
+  OrganizationSummary,
+  PlanningItemView,
   PotentialFindingView,
   ReportVersionView,
+  ReminderRuleView,
 } from "../backend/backend";
 
 export interface MockCapRevision {
@@ -70,6 +75,11 @@ export type MockUpload = MockEvidenceUpload | MockInspectionAttachmentUpload;
 
 export interface MockState {
   assignments: AssignmentSummary[];
+  organizations: OrganizationSummary[];
+  planningItems: Record<string, PlanningItemView>;
+  checklistTemplateVersions: ChecklistTemplateVersionView[];
+  reminderRules: ReminderRuleView[];
+  auditEvents: AuditEventView[];
   packages: Record<string, InspectionPackage>;
   checklistResponses: Record<string, import("../backend/backend").ChecklistResponseView>;
   potentialFindings: Record<string, PotentialFindingView>;
@@ -85,6 +95,7 @@ export interface MockState {
     upload: number;
     evidenceReview: number;
     inspectionAttachment: number;
+    auditEvent: number;
   };
 }
 
@@ -213,6 +224,63 @@ export function createCanonicalSeedState(now: string): MockState {
         nextAction: "Continue Cabin Inspection checklist",
       },
     ],
+    organizations: [
+      {
+        id: "ORG-FLY-NAMIBIA",
+        legalName: "Fly Namibia",
+        organizationType: "OPERATOR",
+        status: "ACTIVE",
+        openFindingCount: 0,
+        lastAuditDate: null,
+        nextAuditDate: "2026-07-15",
+        revision: 1,
+      },
+      {
+        id: "ORG-SKYCARGO",
+        legalName: "SkyCargo Air",
+        organizationType: "OPERATOR",
+        status: "ACTIVE",
+        openFindingCount: 1,
+        lastAuditDate: null,
+        nextAuditDate: "2026-07-30",
+        revision: 1,
+      },
+    ],
+    planningItems: {
+      "PLAN-2026-CAB-001": {
+        id: "PLAN-2026-CAB-001",
+        title: "2026 Cabin Surveillance — Fly Namibia",
+        planYear: 2026,
+        organizationId: "ORG-FLY-NAMIBIA",
+        organizationName: "Fly Namibia",
+        inspectionType: "CABIN",
+        scheduledDate: "2026-07-15",
+        estimatedBudget: 48000,
+        status: "FINANCE_REVIEW",
+        currentOwnerRole: "finance",
+        nextAction: "Finance to review budget",
+        revision: 1,
+      },
+    },
+    checklistTemplateVersions: [
+      {
+        id: "CTV-CABIN-1",
+        templateId: "CABIN",
+        title: "Cabin Inspection checklist",
+        version: 1,
+        status: "PUBLISHED",
+        publishedAt: now,
+        questionCount: 6,
+      },
+    ],
+    reminderRules: [
+      { id: "REM-30", label: "30 days before Due Date", offsetDays: 30, channel: "IN_APP", status: "ACTIVE", revision: 1 },
+      { id: "REM-15", label: "15 days before Due Date", offsetDays: 15, channel: "IN_APP", status: "ACTIVE", revision: 1 },
+      { id: "REM-7", label: "7 days before Due Date", offsetDays: 7, channel: "IN_APP", status: "ACTIVE", revision: 1 },
+      { id: "REM-DUE", label: "On the Due Date", offsetDays: 0, channel: "IN_APP", status: "ACTIVE", revision: 1 },
+      { id: "REM-OVERDUE", label: "After the Due Date", offsetDays: -1, channel: "IN_APP", status: "ACTIVE", revision: 1 },
+    ],
+    auditEvents: [],
     packages: { [canonicalPackage.id]: canonicalPackage },
     checklistResponses: {},
     potentialFindings: {},
@@ -241,6 +309,7 @@ export function createCanonicalSeedState(now: string): MockState {
       upload: 1,
       evidenceReview: 1,
       inspectionAttachment: 1,
+      auditEvent: 1,
     },
   };
 }

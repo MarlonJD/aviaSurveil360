@@ -1,0 +1,18 @@
+{
+  "schema": "ListOrganizationsOutput",
+  "value": {
+    "items": [
+      {
+        "id": "ORG-FLY-NAMIBIA",
+        "legalName": "Fly Namibia",
+        "organizationType": "OPERATOR",
+        "status": "ACTIVE",
+        "openFindingCount": 0,
+        "lastAuditDate": null,
+        "nextAuditDate": "2026-07-15",
+        "revision": 1
+      }
+    ],
+    "nextCursor": null
+  }
+}
