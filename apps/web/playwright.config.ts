@@ -76,6 +76,7 @@ export default defineConfig({
     {
       name: "offline",
       testMatch: [
+        "e2e/brand-app-shell-restart.spec.ts",
         "e2e/offline-*.spec.ts",
         "e2e/attachment-restart-recovery.spec.ts",
         "offline/restart-recovery.spec.ts",

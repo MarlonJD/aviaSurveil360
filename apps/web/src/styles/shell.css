@@ -1,0 +1,233 @@
+.role-select-page {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 64px 0;
+  font-family: var(--avia-login-font-family);
+}
+
+.role-select-page::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(120deg, rgb(237 242 244 / 94%), rgb(255 255 255 / 86%)),
+    url("../../../../assets/login/airspace-texture.png") center / cover;
+  content: "";
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 40px;
+}
+
+.brand-mark {
+  display: grid;
+  width: 76px;
+  height: 76px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 70%);
+  border-radius: var(--avia-radius-panel);
+  color: transparent;
+  background: #ffffff url("../../../../assets/login/aviasurveil360-mark.png") center / 72% auto no-repeat;
+  box-shadow: var(--avia-shadow-panel);
+}
+
+.role-select-page h1 {
+  margin-bottom: 10px;
+  color: var(--avia-color-heading);
+  font-size: 3.25rem;
+  letter-spacing: 0;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.role-card {
+  display: flex;
+  min-height: 202px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid var(--avia-color-line);
+  border-radius: var(--avia-radius-panel);
+  background: var(--avia-color-panel);
+  text-decoration: none;
+  box-shadow: var(--avia-shadow-panel);
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.role-card::before {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 4px;
+  background: url("../../../../assets/icons/phosphor/air-traffic-control.svg") center / contain no-repeat;
+  content: "";
+}
+
+.role-card:hover,
+.role-card:focus-visible {
+  border-color: #2b6f88;
+  transform: translateY(-2px);
+}
+
+.role-card strong {
+  color: #123b56;
+  font-size: 1.08rem;
+}
+
+.role-card__kicker {
+  color: #617682;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+}
+
+.role-card__action {
+  margin-top: auto;
+  color: var(--avia-color-action);
+  font-weight: 750;
+}
+
+.legacy-note {
+  margin-top: 28px;
+  color: #5d707b;
+}
+
+.workspace-shell {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: 264px minmax(0, 1fr);
+}
+
+.workspace-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 30px 24px;
+  color: #d8e5ea;
+  background: var(--avia-color-shell);
+}
+
+.workspace-sidebar > div {
+  display: grid;
+  gap: 5px;
+}
+
+.workspace-sidebar nav span {
+  display: block;
+  padding: 12px 14px;
+  border-radius: var(--avia-radius-control);
+  color: #ffffff;
+  background: var(--avia-color-shell-accent);
+}
+
+.sidebar-caption {
+  color: #9fb5c0;
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.sidebar-brand {
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.switch-role {
+  margin-top: auto;
+}
+
+.workspace-content {
+  padding: 32px clamp(24px, 5vw, 72px);
+}
+
+.candidate-boundary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 48px;
+}
+
+.candidate-boundary > span {
+  padding: 7px 11px;
+  border: 1px solid #c5d1d7;
+  border-radius: 999px;
+  color: #4c6471;
+  background: #f7f9fa;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.workspace-purpose {
+  max-width: 680px;
+  color: var(--avia-color-muted);
+  font-size: 1.06rem;
+}
+
+.page-header {
+  display: flex;
+  max-width: var(--avia-content-max);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 30px;
+}
+
+.page-header h1 {
+  margin-bottom: 10px;
+  color: var(--avia-color-heading);
+  font-size: 2.85rem;
+  letter-spacing: 0;
+}
+
+.page-header__action {
+  flex: 0 0 auto;
+}
+
+.placeholder-panel,
+.surface-card {
+  max-width: var(--avia-content-max);
+  padding: 26px;
+  border: 1px solid var(--avia-color-line);
+  border-radius: var(--avia-radius-panel);
+  background: var(--avia-color-panel);
+  box-shadow: var(--avia-shadow-panel);
+}
+
+.surface-card + .surface-card,
+.surface-card + .workflow-footer,
+.workflow-footer + .surface-card {
+  margin-top: 20px;
+}
+
+.placeholder-panel {
+  max-width: 780px;
+  margin-top: 36px;
+}
+
+.placeholder-panel > span {
+  color: var(--avia-color-action);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.route-list {
+  display: grid;
+  max-width: var(--avia-content-max);
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.route-list__item {
+  max-width: none;
+}

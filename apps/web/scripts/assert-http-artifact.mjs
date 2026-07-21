@@ -50,6 +50,10 @@ const files = inventory(artifactRoot);
 for (const forbiddenFile of ["demo-build.json", "demo-config.json", "seed-data.json"]) {
   assert.ok(!files.includes(forbiddenFile), `HTTP artifact contains ${forbiddenFile}`);
 }
+for (const relativePath of files) {
+  assert.doesNotMatch(relativePath, /^css\/styles\.css$/i, "HTTP artifact contains root demo CSS");
+  assert.doesNotMatch(relativePath, /^js\//i, "HTTP artifact contains root demo JavaScript");
+}
 assert.ok(files.includes("http-config.json"), "HTTP artifact must contain its allowlisted public config");
 assert.ok(files.includes(".vite/manifest.json"), "HTTP artifact must contain a Vite manifest");
 

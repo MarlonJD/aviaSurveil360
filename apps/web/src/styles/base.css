@@ -1,0 +1,17 @@
+html {
+  color: var(--avia-color-ink);
+  background: var(--avia-color-page);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  font-family: var(--avia-workbench-font-family);
+}
+
+#root {
+  min-height: 100vh;
+}

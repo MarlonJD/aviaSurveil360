@@ -30,9 +30,27 @@ export function assertAppShellArtifact(suppliedPath) {
   );
   assert.ok(["demo", "http"].includes(manifest.profile), "App-shell profile must be demo or http");
   assert.ok(Array.isArray(manifest.assets) && manifest.assets.length > 0, "App-shell assets are required");
+  const approvedBrandAsset = /^\/assets\/(?:aviasurveil360-mark|airspace-texture|DMSans-Variable|air-traffic-control|buildings|arrow-right|wallet|seal-check|gear|globe-hemisphere-west|compass|bank)-[A-Za-z0-9_-]+\.(?:png|svg|ttf|woff|woff2)$/;
+  const requiredBrandAssets = [
+    /\/assets\/aviasurveil360-mark-[A-Za-z0-9_-]+\.png$/,
+    /\/assets\/air-traffic-control-[A-Za-z0-9_-]+\.svg$/,
+    /\/assets\/DMSans-Variable-[A-Za-z0-9_-]+\.ttf$/,
+  ];
   for (const asset of manifest.assets) {
-    assert.match(asset, /^\/(?:assets\/[A-Za-z0-9_.-]+\.(?:css|js)|demo-build\.json|http-config\.json)$/);
+    assert.match(
+      asset,
+      /^\/(?:assets\/[A-Za-z0-9_.-]+\.(?:css|js|svg|png|jpg|jpeg|webp|ttf|woff|woff2)|demo-build\.json|http-config\.json)$/,
+    );
+    if (/\.(?:svg|png|jpg|jpeg|webp|ttf|woff|woff2)$/.test(asset)) {
+      assert.match(asset, approvedBrandAsset, `App-shell contains an unapproved image/font asset: ${asset}`);
+    }
     assert.ok(files.includes(asset.slice(1)), `App-shell manifest asset is missing: ${asset}`);
+  }
+  for (const required of requiredBrandAssets) {
+    assert.ok(
+      manifest.assets.some((asset) => required.test(asset)),
+      `App-shell manifest is missing required brand asset: ${required}`,
+    );
   }
 
   const worker = fs.readFileSync(path.join(artifactRoot, "sw.js"), "utf8");

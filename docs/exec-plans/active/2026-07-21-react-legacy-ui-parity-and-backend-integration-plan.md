@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Tasks 1-4 are `verified locally`: the independent 86-row inventory/17-route contract is frozen; Potential Finding plus immutable CAP revision read projections pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates; Admin checklist-template-version detail reads pass exact snapshot, mock/HTTP mapping, OpenAPI, sqlc, and Go race gates; and the deterministic tracked visual-parity harness now has 51 hash-verified legacy baselines plus an intentionally red React comparison. Task 5 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `active` — Tasks 1-5 are `verified locally`: the independent 86-row inventory/17-route contract is frozen; Potential Finding plus immutable CAP revision read projections pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates; Admin checklist-template-version detail reads pass exact snapshot, mock/HTTP mapping, OpenAPI, sqlc, and Go race gates; the deterministic tracked visual-parity harness now has 51 hash-verified legacy baselines plus an intentionally red React comparison; and the layered brand system now has a typed approved asset registry, restricted Vite asset access, image/font app-shell manifests, HTTP artifact exclusions, and stopped-origin mark/icon/font recovery. Task 6 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
 
 ## Independent Review Resolution
 
@@ -904,10 +904,10 @@ Add exact package script:
 
 **Red/green cycle**
 
-- [ ] Add failing tests for asset existence, exact relative prefix, semantic icon completeness, CSS layer order, system-font workbench, login-only DM Sans, selector ownership, no root CSS import, no unlayered rules, and no `!important`.
-- [ ] Extend app-shell/SW/artifact tests so an emitted mark, icon, and font are required in both demo and HTTP manifests.
-- [ ] Add a stopped-origin Playwright test: load/build once, verify mark/icon/font, stop the origin through the existing offline server harness, reload offline, and assert the same assets render from Cache Storage without a network response.
-- [ ] Run:
+- [x] Add failing tests for asset existence, exact relative prefix, semantic icon completeness, CSS layer order, system-font workbench, login-only DM Sans, selector ownership, no root CSS import, no unlayered rules, and no `!important`.
+- [x] Extend app-shell/SW/artifact tests so an emitted mark, icon, and font are required in both demo and HTTP manifests.
+- [x] Add a stopped-origin Playwright test: load/build once, verify mark/icon/font, stop the origin through the existing offline server harness, reload offline, and assert the same assets render from Cache Storage without a network response.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/ui/brand-assets.test.ts src/styles/style-ownership.test.ts src/offline/sw-policy.test.ts
@@ -919,14 +919,14 @@ Add exact package script:
   ```
 
   Expected red: asset registry/layers are absent and image/font manifest checks fail.
-- [ ] Implement the registry, tokens, layers, restricted Vite access, asset classifier, and artifact rules. Do not copy root declarations en masse.
+- [x] Implement the registry, tokens, layers, restricted Vite access, asset classifier, and artifact rules. Do not copy root declarations en masse.
 
   ```bash
   mkdir -p apps/web/src/ui
   ```
 
   Create/edit all files through `apply_patch`.
-- [ ] Run the same commands plus:
+- [x] Run the same commands plus:
 
   ```bash
   npm --prefix apps/web run typecheck
@@ -934,6 +934,8 @@ Add exact package script:
   ```
 
   Expected green: layered ownership and online/offline asset behavior pass; the visual product matrix may remain red until Tasks 6 and 9-14.
+
+  Result 2026-07-21: red tests first failed on the absent `brand-assets` registry, missing layered stylesheet files, missing TTF Service Worker classification, and missing required app-shell brand assets. The implemented slice adds the typed approved local asset registry, one binding `app.css` layer/import surface, focused reset/token/base/shell/utility/responsive styles, restricted Vite filesystem access to `apps/web` plus repository `assets/`, non-inlined image/font asset emission, image/font app-shell manifest validation, HTTP root-runtime exclusions, and a stopped-origin brand asset cache check. Fresh green gates passed: focused Vitest 22/22; demo and HTTP builds; demo/HTTP app-shell scans across 16 files and 8 assets each; HTTP artifact scan across 16 files and 89 inputs; `test:e2e:brand-offline` 1/1 after rerunning outside the macOS sandbox because the first Playwright-bundled Chromium launch was denied by the sandbox; TypeScript; and full React/Vitest 180/180. The visual product matrix may remain red until Tasks 6 and 9-14. Task 6 is next.
 
 **Task 5 staging allowlist and commit**
 

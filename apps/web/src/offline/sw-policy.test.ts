@@ -7,6 +7,9 @@ describe("Service Worker request policy", () => {
     ["https://candidate.test/", "navigate", "app-shell-navigation"],
     ["https://candidate.test/inspector/audits/AUD-2026-001", "navigate", "app-shell-navigation"],
     ["https://candidate.test/assets/index-abcd1234.js", "no-cors", "versioned-static-asset"],
+    ["https://candidate.test/assets/aviasurveil360-mark-abcd1234.png", "no-cors", "versioned-static-asset"],
+    ["https://candidate.test/assets/air-traffic-control-abcd1234.svg", "no-cors", "versioned-static-asset"],
+    ["https://candidate.test/assets/DMSans-Variable-abcd1234.ttf", "cors", "versioned-static-asset"],
     ["https://candidate.test/http-config.json", "cors", "versioned-static-asset"],
   ] as const)("classifies %s as %s", (url, mode, expected) => {
     expect(

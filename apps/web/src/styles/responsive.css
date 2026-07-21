@@ -1,0 +1,76 @@
+@media (max-width: 900px) {
+  .role-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-sidebar {
+    min-height: auto;
+  }
+
+  .switch-role {
+    margin-top: 0;
+  }
+
+  .split-layout,
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .role-select-page {
+    width: min(100% - 28px, 1180px);
+    padding: 36px 0;
+  }
+
+  .brand-lockup {
+    align-items: flex-start;
+  }
+
+  .brand-mark {
+    width: 56px;
+    height: 56px;
+  }
+
+  .role-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .role-card {
+    min-height: 168px;
+  }
+
+  .workspace-content {
+    padding: 24px 16px 44px;
+  }
+
+  .page-header,
+  .card-heading,
+  .section-heading,
+  .workflow-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .candidate-boundary {
+    margin-bottom: 34px;
+  }
+
+  .fact-grid,
+  .compact-facts,
+  .form-grid--two {
+    grid-template-columns: 1fr;
+  }
+
+  .field-span-2 {
+    grid-column: auto;
+  }
+}

@@ -28,7 +28,11 @@ function buildProfilePlugin(profile: BuildProfile, entryName: string, localDevel
         source: `${JSON.stringify({ profile, inputs: [...inputs].sort() }, null, 2)}\n`,
       });
       const assets = Object.keys(bundle)
-        .filter((fileName) => fileName.startsWith("assets/") && /\.(?:css|js)$/.test(fileName))
+        .filter(
+          (fileName) =>
+            fileName.startsWith("assets/") &&
+            /\.(?:css|js|svg|png|jpg|jpeg|webp|ttf|woff|woff2)$/.test(fileName),
+        )
         .map((fileName) => `/${fileName}`)
         .sort();
       assets.push(profile === "http" ? "/http-config.json" : "/demo-build.json");
@@ -46,6 +50,7 @@ export default defineConfig(({ command }) => {
   const httpTestProfile = profile === "http" && process.env.AVIA_HTTP_TEST_PROFILE === "canonical";
   const apiTarget = process.env.AVIA_HTTP_API_TARGET;
   const webRoot = fileURLToPath(new URL(".", import.meta.url));
+  const assetsRoot = fileURLToPath(new URL("../../assets", import.meta.url));
 
   return {
     plugins: [
@@ -59,18 +64,22 @@ export default defineConfig(({ command }) => {
         httpTestProfile ? (process.env.AVIA_CANONICAL_TEST_TOKEN ?? "") : "",
       ),
     },
-    server:
-      profile === "http" && apiTarget
-        ? {
-            proxy: {
+    server: {
+      fs: {
+        allow: [webRoot, assetsRoot],
+      },
+      proxy:
+        profile === "http" && apiTarget
+          ? {
               "/v1": { target: apiTarget },
               "/auth": { target: apiTarget },
               "/health": { target: apiTarget },
-            },
-          }
-        : undefined,
+            }
+          : undefined,
+    },
     build: {
       outDir: `dist/${profile}`,
+      assetsInlineLimit: 0,
       emptyOutDir: true,
       manifest: true,
       sourcemap: true,
