@@ -1,0 +1,231 @@
+.workbench-page-header {
+  display: flex;
+  max-width: var(--avia-content-max);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 30px;
+}
+
+.workbench-page-header__main {
+  min-width: 0;
+}
+
+.workbench-page-header__main h1 {
+  margin-bottom: 10px;
+  color: var(--avia-color-heading);
+  font-size: 2.5rem;
+  letter-spacing: 0;
+}
+
+.workbench-page-header__action {
+  flex: 0 0 auto;
+}
+
+.workbench-fact-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 22px 0 0;
+}
+
+.workbench-fact-grid__item {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--avia-color-line);
+  border-radius: var(--avia-radius-control);
+  background: #f8fafb;
+}
+
+.workbench-status-pill {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid #b8d2d3;
+  border-radius: 999px;
+  color: #125f67;
+  background: #effafa;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.workbench-status-pill--success {
+  border-color: #a9ccb4;
+  color: #23613b;
+  background: #eef8f1;
+}
+
+.workbench-status-pill--warning {
+  border-color: #e3c36c;
+  color: #765900;
+  background: #fff8df;
+}
+
+.workbench-status-pill--danger {
+  border-color: #d4a5a0;
+  color: #7c2920;
+  background: #fff3f1;
+}
+
+.workbench-due-state {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  color: #294654;
+  font-weight: 760;
+}
+
+.workbench-data-register {
+  max-width: var(--avia-content-max);
+}
+
+.workbench-data-register table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--avia-color-line);
+  border-radius: var(--avia-radius-panel);
+  background: var(--avia-color-panel);
+  box-shadow: var(--avia-shadow-panel);
+}
+
+.workbench-data-register caption {
+  margin-bottom: 10px;
+  color: var(--avia-color-heading);
+  font-weight: 800;
+  text-align: left;
+}
+
+.workbench-data-register th,
+.workbench-data-register td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--avia-color-line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.workbench-data-register th {
+  color: #4d6875;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.workbench-record-list {
+  display: none;
+  gap: 14px;
+}
+
+.workbench-record-card {
+  padding: 16px;
+  border: 1px solid var(--avia-color-line);
+  border-radius: var(--avia-radius-panel);
+  background: var(--avia-color-panel);
+  box-shadow: var(--avia-shadow-panel);
+}
+
+.workbench-record-card h3 {
+  margin-bottom: 12px;
+  color: var(--avia-color-heading);
+  font-size: 1rem;
+}
+
+.workbench-record-card dl {
+  display: grid;
+  gap: 10px;
+}
+
+.workbench-lifecycle-stepper {
+  display: grid;
+  max-width: var(--avia-content-max);
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workbench-lifecycle-stepper li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  color: #5a717e;
+}
+
+.workbench-lifecycle-stepper li[data-state="current"] {
+  color: var(--avia-color-heading);
+  font-weight: 800;
+}
+
+.workbench-lifecycle-stepper li[data-state="complete"] {
+  color: #23613b;
+}
+
+.workbench-lifecycle-stepper__marker {
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+}
+
+.workbench-decision-panel {
+  display: grid;
+  max-width: var(--avia-content-max);
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--avia-color-line);
+  border-radius: var(--avia-radius-panel);
+  background: var(--avia-color-panel);
+  box-shadow: var(--avia-shadow-panel);
+}
+
+.workbench-decision-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.workbench-decision-panel__action {
+  display: grid;
+  gap: 6px;
+}
+
+.workbench-decision-panel__action p {
+  max-width: 260px;
+  color: #5d737f;
+  font-size: 0.82rem;
+}
+
+.workbench-empty-error-state {
+  max-width: var(--avia-content-max);
+  padding: 22px;
+  border: 1px solid var(--avia-color-line);
+  border-radius: var(--avia-radius-panel);
+  background: var(--avia-color-panel);
+  box-shadow: var(--avia-shadow-panel);
+}
+
+.workbench-empty-error-state--error {
+  border-color: #d4a5a0;
+  background: #fffafa;
+}
+
+@media (max-width: 720px) {
+  .workbench-page-header:is(.workbench-page-header) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .workbench-fact-grid:is(.workbench-fact-grid) {
+    grid-template-columns: 1fr;
+  }
+
+  .workbench-data-register:is(.workbench-data-register) table {
+    display: none;
+  }
+
+  .workbench-record-list:is(.workbench-record-list) {
+    display: grid;
+  }
+}

@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Tasks 1-7 are `verified locally`: the independent 86-row inventory/17-route contract is frozen; Potential Finding plus immutable CAP revision read projections pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates; Admin checklist-template-version detail reads pass exact snapshot, mock/HTTP mapping, OpenAPI, sqlc, and Go race gates; the deterministic tracked visual-parity harness now has 51 hash-verified legacy baselines plus an intentionally red React comparison; the layered brand system now has a typed approved asset registry, restricted Vite asset access, image/font app-shell manifests, HTTP artifact exclusions, and stopped-origin mark/icon/font recovery; the candidate role selection/application shell now uses presentational role/navigation/topbar/mobile components with registry-derived primary navigation, contextual active-parent state, profile/logout callbacks, notification modes, and shell-only geometry checks; and the normal HTTP lane now uses same-origin OIDC session projection, safe route guards, centralized 401 clearing, CSRF logout, canonical/normal lane separation, and session-subject offline checkout. Task 8 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `active` — Tasks 1-8 are `verified locally`: the independent 86-row inventory/17-route contract is frozen; Potential Finding plus immutable CAP revision read projections pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates; Admin checklist-template-version detail reads pass exact snapshot, mock/HTTP mapping, OpenAPI, sqlc, and Go race gates; the deterministic tracked visual-parity harness now has 51 hash-verified legacy baselines plus an intentionally red React comparison; the layered brand system now has a typed approved asset registry, restricted Vite asset access, image/font app-shell manifests, HTTP artifact exclusions, and stopped-origin mark/icon/font recovery; the candidate role selection/application shell now uses presentational role/navigation/topbar/mobile components with registry-derived primary navigation, contextual active-parent state, profile/logout callbacks, notification modes, and shell-only geometry checks; the normal HTTP lane now uses same-origin OIDC session projection, safe route guards, centralized 401 clearing, CSRF logout, canonical/normal lane separation, and session-subject offline checkout; and the shared workbench primitive layer now has semantic page headers, fact grids, registers/cards, lifecycle steppers, decision panels, due/status states, empty/error states, owned CSS, and shell-geometry gallery coverage. Task 9 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
 
 ## Independent Review Resolution
 
@@ -1246,9 +1246,12 @@ git push origin HEAD
 - Create `apps/web/src/ui/workbench/workbench-primitives.test.tsx`
 - Create `apps/web/src/styles/primitives.css`
 - Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/src/styles/style-ownership.test.ts`
 - Modify `apps/web/src/features/shared/workspace-shell.tsx`
 - Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
 - Modify this plan
+- Modify `docs/exec-plans/index.md`
+- Modify `docs/exec-plans/tech-debt-tracker.md`
 
 **Primitive contracts**
 
@@ -1262,9 +1265,9 @@ git push origin HEAD
 
 **Red/green cycle**
 
-- [ ] Add failing RTL tests for semantics, keyboard/focus, responsive card field preservation, lifecycle rules, disabled reasons, pending double-submit prevention, status text+icon, and accessibility names.
-- [ ] Add geometry gallery states to the visual spec for table, cards, stepper, dossier, decision panel, and error/empty state.
-- [ ] Run:
+- [x] Add failing RTL tests for semantics, keyboard/focus, responsive card field preservation, lifecycle rules, disabled reasons, pending double-submit prevention, status text+icon, and accessibility names.
+- [x] Add geometry gallery states to the visual spec for table, cards, stepper, dossier, decision panel, and error/empty state.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/ui/workbench/workbench-primitives.test.tsx src/styles/style-ownership.test.ts
@@ -1272,14 +1275,14 @@ git push origin HEAD
   ```
 
   Expected red: primitives and owned layer are absent.
-- [ ] Implement primitives and import `primitives.css` with `layer(primitives)` before all feature imports.
+- [x] Implement primitives and import `primitives.css` with `layer(primitives)` before all feature imports.
 
   ```bash
   mkdir -p apps/web/src/ui/workbench
   ```
 
   Create/edit all files through `apply_patch`.
-- [ ] Run:
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/ui/workbench/workbench-primitives.test.tsx src/styles/style-ownership.test.ts
@@ -1288,10 +1291,12 @@ git push origin HEAD
 
   Expected green: primitive tests and gallery geometry pass; feature screenshot comparisons remain owned by Tasks 9-14.
 
+  Result 2026-07-21: red tests failed on the absent workbench primitive modules, and typecheck reported the same missing module imports. The implemented slice adds typed PageHeader, FactGrid, StatusPill, DataRegister, MobileRecordCard, LifecycleStepper, DecisionPanel, DueState, EmptyErrorState, an owned `primitives.css` layer imported before utilities/responsive styles, and a shell-only Playwright geometry gallery for table/card, stepper, decision panel, and empty/error states. Fresh green gates passed: focused RTL/CSS ownership 13/13; TypeScript; shell-only legacy visual geometry 7/7 including the primitive gallery. Post-browser process scan found only the scan command itself. Task 9 is next.
+
 **Task 8 staging allowlist and commit**
 
 ```bash
-git add -- apps/web/src/ui/workbench/page-header.tsx apps/web/src/ui/workbench/fact-grid.tsx apps/web/src/ui/workbench/status-pill.tsx apps/web/src/ui/workbench/data-register.tsx apps/web/src/ui/workbench/mobile-record-card.tsx apps/web/src/ui/workbench/lifecycle-stepper.tsx apps/web/src/ui/workbench/decision-panel.tsx apps/web/src/ui/workbench/due-state.tsx apps/web/src/ui/workbench/empty-error-state.tsx apps/web/src/ui/workbench/workbench-primitives.test.tsx apps/web/src/styles/primitives.css apps/web/src/styles/app.css apps/web/src/features/shared/workspace-shell.tsx apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- apps/web/src/ui/workbench/page-header.tsx apps/web/src/ui/workbench/fact-grid.tsx apps/web/src/ui/workbench/status-pill.tsx apps/web/src/ui/workbench/data-register.tsx apps/web/src/ui/workbench/mobile-record-card.tsx apps/web/src/ui/workbench/lifecycle-stepper.tsx apps/web/src/ui/workbench/decision-panel.tsx apps/web/src/ui/workbench/due-state.tsx apps/web/src/ui/workbench/empty-error-state.tsx apps/web/src/ui/workbench/workbench-primitives.test.tsx apps/web/src/styles/primitives.css apps/web/src/styles/app.css apps/web/src/styles/style-ownership.test.ts apps/web/src/features/shared/workspace-shell.tsx apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md
 git commit -m "feat(ui): add oversight workbench primitives"
 git push origin HEAD
 ```
