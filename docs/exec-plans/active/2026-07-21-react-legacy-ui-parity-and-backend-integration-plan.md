@@ -1,1581 +1,1905 @@
 # React Legacy UI Parity And Backend Integration Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Do not dispatch subagents unless the user explicitly authorizes subagent work in the execution task.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to execute this plan task by task. Do not dispatch subagents unless the user explicitly authorizes subagent work for the execution task.
 
-**Goal:** Make the React/Go candidate recognizably and measurably match the accepted root Vanilla AviaSurveil360 interface for every currently backend-supported production surface, connect the normal HTTP build to the existing OIDC browser-session boundary, and classify every remaining legacy screen without creating inert React placeholders or silently expanding production scope.
+**Goal:** Make the 17 already-routed React surfaces recognizably and measurably match the accepted root Vanilla AviaSurveil360 interface, add the missing read contracts needed for direct-load Potential Finding, CAP, and Admin preview behavior, connect the normal HTTP build to the real same-origin OIDC browser-session boundary, and classify every accepted legacy screen without hiding missing Product scope or creating inert React placeholders.
 
-**Architecture:** Preserve the root Vanilla application as the visual and behavioral oracle. Introduce a typed parity manifest, a dual-server screenshot harness, a React design-system layer that reuses the existing local brand assets, and a session-aware application shell shared by demo, canonical-test HTTP, and normal OIDC HTTP modes. Migrate the 17 currently backend-connected React surfaces in independently testable role slices; keep the other legacy screen states in the root demo until Product explicitly promotes a complete route family and its OpenAPI, mock, Go, authorization, React, and dual-profile tests are delivered together.
+**Architecture:** Keep the root Vanilla application intact as the visual and behavioral oracle. Freeze an independently checkable 86-row source inventory and a typed 17-route registry before implementation. Complete the Potential Finding, immutable CAP-revision, and checklist-template-detail read verticals before the pages that consume them. Use one layered React visual system, a session-aware shell, subject-scoped offline repositories, and two intentionally separate HTTP lanes: deterministic canonical-header testing and real local OIDC session testing. The 17 routes are `react-parity` surfaces; they are not all backend-complete at plan start. The other 69 accepted audit rows remain reachable only in the root demo until Product approves a complete route-family slice.
 
-**Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, existing capability-composed `Backend`, existing IndexedDB/OPFS/Service Worker field boundaries, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
+**Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `paused` — detailed plan created after the user rejected the minimal React shell as visually unrelated to the accepted root demo. Implementation must not begin until the independent plan review requested by the user returns `GO` or an accepted `CONDITIONAL GO` and the plan is revised for every Blocking finding.
+**Status:** `active` — Task 1 is `verified locally`: the independent 86-row inventory, typed 17-route registry, 17/69 manifest disposition, Product crosswalk, and English/Turkish parity contract passed the Task 1 green gate on 2026-07-21. Task 2 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+
+## Independent Review Resolution
+
+| Review condition | Binding correction in this revision |
+|---|---|
+| The 17 surfaces were inaccurately called backend-connected. | They are now `react-parity` routes with an explicit `dataBoundary`. Potential Finding, CAP, and Admin detail reads are prerequisites in Tasks 2-3. |
+| Lead Potential Finding and CAP review could not survive a direct load. | Task 2 adds exact list/get read contracts, immutable role-shaped CAP revision views, authorization, mock/HTTP parity, and direct-load tests. |
+| Admin question/reference/evidence preview exceeded its list schema. | Task 3 adds `GET /v1/configuration/checklist-template-versions/{templateVersionId}` and a typed detail projection before Admin UI work. |
+| The canonical test script could not prove normal OIDC. | Task 7 preserves `scripts/test-http-profile.sh` and adds a separate `scripts/test-http-oidc-profile.sh` with canonical seed and canonical-header authentication decoupled. |
+| Routes, cross-role links, expiry, and offline subjects were not safely integrated. | Tasks 1, 6, and 7 add a typed route registry, `RoleGuard`, bounded `RoleHandoff`, central authentication-loss handling, query/projection clearing, and `lockSubject` without deleting offline records. |
+| The screenshot method allowed ignored baselines, weak determinism, broad masks, and relaxed comparison. | Task 4 stores hashed baselines under a tracked app test path, pins the browser environment, caps masks at 5%, expands geometry checks, and adds comparator-integrity tests. |
+| A self-authored 86-row manifest could hide substitutions. | Task 1 adds a deterministic extractor and exact ordered comparison against the 86 rows in `UI_SCREEN_AUDIT_2026-07-19.md` plus a Product-scope crosswalk. |
+| Brand reuse did not prove Vite/SW/offline artifact behavior. | Task 5 fixes the asset path, restricts Vite file access, adds fonts/images to the app-shell manifest, and verifies stopped-origin asset recovery. |
+| The proposed CSS boundaries could become a second unowned stylesheet. | Task 5 defines real `@layer` order, system-font workbench defaults, login-only DM Sans, feature-owned styles, and selector-ownership tests. |
+| Navigation/topbar behavior and visible controls were underspecified. | Tasks 1, 6, and 7 define route metadata, contextual detail routes, active-parent behavior, profile/logout behavior, and a truthful normal-HTTP notification boundary. |
+| Task red/green, staging, docs, and lifecycle boundaries were too broad. | This plan uses 16 dependency-ordered tasks, exact task allowlists, an upstream-aware commit protocol, bilingual evidence, Product index updates, and literal release labels. |
+
+These corrections close the review conditions at the planning level only. They do not constitute implementation evidence or stakeholder acceptance.
 
 ## Global Constraints
 
-- Use `AviaSurveil360` as the canonical product name.
-- Treat `index.html`, `css/styles.css`, `js/`, the root Node smoke tests, and the verified root screenshot evidence as the visual and behavioral source of truth. Do not edit or remove them in this plan except for a separately accepted correction to the reference itself.
-- Preserve the existing React/TypeScript/Vite application and Go modular-monolith backend. This is a controlled UI migration, not another framework or backend rewrite.
-- Do not directly paste the root application's global state, `innerHTML` render functions, event delegation, or browser-local domain mutations into React. Port appearance and verified behavior into typed components and existing explicit data boundaries.
-- Keep every canonical mock mutation behind `Backend`. Keep offline field writes behind the existing `FieldRepository`; do not dual-write `Backend` and `FieldRepository`.
-- Preserve build-time separation: the normal HTTP artifact must not contain mock, seed, canonical-test, or root-demo application code. Shared brand assets and shared presentational components are allowed.
-- Normal HTTP identity uses the existing same-origin OIDC/session/BFF boundary. Demo and canonical-test HTTP may retain explicit role selection; normal HTTP may expose only roles in the authenticated session.
-- Do not add self-registration, public sign-up, invitation delivery, password management, production MFA policy, or a production identity administration surface in this plan. Local Keycloak registration remains disabled.
-- Frontend route visibility is not authorization. Every HTTP read and mutation continues to rely on server-side role, organization, assignment, object, revision, and transition authorization.
-- Preserve the canonical lifecycle: Checklist Response -> Potential Finding -> Lead decision -> Finding -> CAP -> Evidence -> CAA Review -> Closure. CAP acceptance is not Finding closure.
-- Preserve `Comment to Auditee` and `Internal CAA Note` as separate fields and views. Auditee JSON and rendered pages must never contain Internal CAA Notes or another organization's data.
-- Preserve immutable-by-version CAP, Evidence, checklist-template, and report projections. Do not overwrite prior versions for visual convenience.
-- Preserve all existing offline readiness, IndexedDB, OPFS, outbox, sync, conflict, update, and recovery behavior while changing the Inspector UI.
-- A visible control must perform its labelled action, navigate to a real screen, update real application state, download a real generated demo file where already supported, or be clearly disabled with a reason. Do not use inert controls or toast-only substitutes for screen behavior.
-- Reuse the root demo's local DM Sans font, login texture, logo mark, Phosphor icons, navy/blue/teal/gold palette, information hierarchy, dense-but-readable workbench patterns, mobile record cards, lifecycle stepper, dossiers, and decision panels. Do not introduce a second visual direction.
-- Use semantic HTML, visible focus, status text in addition to color, logical heading order, keyboard-operable navigation/dialogs, and minimum `44px` touch targets for primary and icon-only mobile actions touched by this plan.
-- The parity target is controlled equivalence, not blind pixel copying: backend-shaped data, candidate boundary labels, offline state, and security/session state may differ, but shell anatomy, hierarchy, typography, spacing, component language, responsive behavior, and action placement must match the accepted reference.
-- Keep the root demo available throughout implementation. Legacy removal, archival, redirect, and traffic cutover require a separate explicit user action after stakeholder acceptance.
-- Work on the current branch. Do not create, switch, rename, or delete branches.
-- During execution, the user has authorized one Conventional Commit and one push to `origin` after each completed task. Stage only that task's files, inspect the cached diff, commit with the message specified by the task, and push the current branch. Do not stage unrelated changes or protected untracked content.
-- Preserve unrelated `.superpowers/`, `docs/demo-evidence/stakeholder/`, and `outputs/` content.
-- Do not deploy, route traffic, open a PR, post GitHub comments, or claim `production-ready` in this plan.
-- Keep English canonical implementation documents. Add or update a Turkish companion when a stakeholder-facing canonical product/evidence document is created or changed.
-- Use evidence labels literally: `verified locally`, `not run`, `blocked`, `candidate-only`, `release pending`, and `production-ready`.
-
----
+- Treat `index.html`, `css/styles.css`, root `js/`, root Node tests, `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.md`, and critical `qa/screenshots/` as protected reference sources. Do not edit them in this plan.
+- Preserve the root demo until React parity and a later cutover are explicitly accepted. The HTTP artifact may reuse brand image/font assets but must not import root JavaScript, root CSS, mock/seed modules, canonical-test modules, or root-demo runtime code.
+- Do not copy legacy globals, global event wiring, mutable browser authorization, or root CSS wholesale into React.
+- Preserve the canonical lifecycle: Checklist Response -> Potential Finding -> Lead decision -> Finding -> CAP -> Evidence -> CAA Review -> Closure.
+- CAP acceptance is not Finding closure. Report issue does not close Findings. Potential Finding conversion remains Lead Inspector authority.
+- Preserve immutable CAP revisions, Evidence versions, checklist-template versions, and report versions. Never update or overwrite a submitted version to simplify UI state.
+- Keep `Comment to Auditee` and `Internal CAA Note` separate in contracts, storage, projections, components, and tests. Auditee transport shapes must structurally omit `internalCaaNote`.
+- Server authorization remains authoritative. Client route guards reduce exposure and stale UI; they are not a substitute for Go authorization.
+- Auditee data remains organization-scoped. Auditee UI and transport must omit other organizations, internal notes, workload, internal risk, and enforcement deliberations.
+- Official Evidence remains online-first. Offline field bytes remain `InspectionAttachment` data and must not be presented as accepted Evidence.
+- Preserve subject-scoped IndexedDB/OPFS, server-issued offline grants, causal outbox behavior, explicit conflict recovery, and no-delete recovery. Logout/user switch locks the old subject but does not erase pending records.
+- Every visible action must either call an existing or newly approved Backend capability, use an existing explicit local/offline boundary, navigate to a real route, update visible local UI state, or be visibly disabled with a specific reason. Toast-only or inert controls fail.
+- Demo and canonical-test HTTP may expose deterministic role switching. Normal HTTP exposes only authenticated session roles and never fabricates membership.
+- Normal HTTP uses same-origin OIDC/session/CSRF. Do not store provider tokens in React, expose them through `/auth/session`, weaken Secure/HttpOnly/SameSite cookies, or retry a failed mutation without user action.
+- Use the root system-font workbench stack for authenticated screens. Load local DM Sans only for the login/role-selection composition where the accepted reference uses it.
+- Reuse semantic brand assets through typed registries. Do not inline large SVG copies into components.
+- Use literal evidence labels: `verified locally`, `not run`, `blocked`, `candidate-only`, `release pending`, and `production-ready` only when their exact evidence exists.
+- Work on the current branch only. Do not create, switch, rename, or delete branches.
+- Production deployment, cutover, production Identity/MFA/provisioning, records/legal-hold policy, hosting/provider selection, monitoring/SLO/on-call, pilot routing, rollback, and legacy removal remain `blocked` and out of scope.
 
 ## Why This Plan Exists
 
-The local candidate completed the authorized production-transition Tasks 2-13 and passed its technical matrices. Stakeholder visual acceptance did not pass: the user explicitly observed that the React interface was unrelated to the accepted original interface. The cause is concrete:
+The current React/Go candidate passed local technical matrices but failed stakeholder visual acceptance: the user found the React interface visually unrelated to the accepted original. The root demo has a mature branded role-selection page, shell, dense workbench patterns, lifecycle dossiers, and 86 audited screen states. The React candidate has 17 concrete routes but a separate minimal visual language.
 
-- the root demo contains an accepted branded role-selection experience, mature application shell, and 86 verified screen states;
-- `apps/web/src/styles/app.css` currently provides a separate minimal visual language;
-- `apps/web/src/app/router.tsx` exposes 17 concrete React surfaces, but their visual composition was built for functional parity rather than legacy visual parity;
-- the normal HTTP entry creates `HttpBackend` but does not yet gate the React application on `/auth/session`, initiate `/auth/login`, expose authenticated role navigation, or provide the CSRF cookie to mutations;
-- the canonical HTTP browser profile intentionally uses server-owned test subjects and is not a production login experience.
-
-The plan therefore reopens stakeholder acceptance without invalidating the technical evidence already obtained. Existing Tasks 2-13 remain `verified locally`; this plan adds the missing visual/session acceptance layer.
-
-## Objective
-
-Deliver a React application that a stakeholder familiar with the root demo immediately recognizes as the same product while retaining the real backend and offline architecture:
-
-1. Freeze the exact visual source, route disposition, and comparison rules.
-2. Reuse the existing brand assets and design language in typed React primitives.
-3. Replace the minimal role page and shell with the accepted original experience.
-4. Integrate the normal HTTP build with the existing OIDC browser session and CSRF boundary.
-5. Migrate each currently backend-supported role surface without weakening authority, isolation, lifecycle, offline, or artifact-separation rules.
-6. Prove controlled visual parity at desktop, tablet, and mobile in addition to existing behavioral parity.
-7. Keep every other legacy screen explicitly classified and available in the root demo until its complete vertical route family receives separate approval.
+The correction is deliberately narrower than “rebuild all 86 screens in React.” It brings the 17 already-routed candidate surfaces into controlled visual and interaction parity, completes the read contracts those surfaces actually require, and records the remaining Product scope without fake routes. If the expected user outcome is a complete React replacement of every root screen, this plan is insufficient and must be expanded by Product before implementation.
 
 ## Scope
 
+### Exact React-Parity Route Set
+
+| Surface ID | Accepted legacy source | React path | Required role | Placement | Data boundary |
+|---|---|---|---|---|---|
+| `role-select` | Global / Role selection / login | `/` | none | none | `session` |
+| `inspector-home` | CAA Inspector / My Assignments | `/inspector/inspector-assignments` | `inspector` | primary | `backend` |
+| `lead-home` | Lead Inspector / Potential Finding review entry | `/lead-inspector/lead-review` | `leadInspector` | primary | `backend` after Task 2 |
+| `manager-home` | Department Manager / Dashboard | `/department-manager/dashboard` | `manager` | primary | `backend` |
+| `gm-home` | General Manager / dashboard | `/general-manager/gm-dashboard` | `gm` | primary | `backend` |
+| `finance-home` | Finance / review | `/finance/finance-review` | `finance` | primary | `backend` |
+| `executive-home` | Executive Director / dashboard | `/executive-director/executive-dashboard` | `executiveDirector` | primary | `backend` |
+| `auditee-home` | Auditee / My Findings, CAP, Evidence state | `/auditee/service-provider-cap` | `auditee` | primary | `backend` after Task 2 |
+| `admin-home` | Admin Preview / checklist template preview | `/admin/templates` | `admin` | primary | `backend` after Task 3 |
+| `audit-detail` | CAA Inspector / Audit Detail / `AUD-2026-001` | `/inspector/audits/AUD-2026-001` | `inspector` | contextual | `backend` |
+| `checklist-runner` | CAA Inspector / Checklist Runner / `AUD-2026-001` | `/inspector/audits/AUD-2026-001/checklist` | `inspector` | contextual | `backend+field` |
+| `organization-registry` | Department Manager / Organizations | `/department-manager/organizations` | `manager` | primary | `backend` |
+| `audit-plan` | Department Manager / Planning | `/department-manager/audit-plan` | `manager` | primary | `backend` |
+| `finding-detail` | Lead Inspector / Finding Detail / `FND-CAB-2026-001` | `/lead-inspector/findings/FND-CAB-2026-001` | `leadInspector` | contextual | `backend` |
+| `cap-review` | Lead Inspector / CAP Review / `FND-CAB-2026-001` | `/lead-inspector/cap-review/FND-CAB-2026-001` | `leadInspector` | contextual | `backend` after Task 2 |
+| `evidence-review` | Lead Inspector / Evidence Review / `FND-CAB-2026-001` | `/lead-inspector/evidence-review/FND-CAB-2026-001` | `leadInspector` | contextual | `backend` |
+| `report-preview` | Department Manager / report preview / `RPT-CAB-2026-001-V1` | `/department-manager/reports/RPT-CAB-2026-001-V1` | `manager` | contextual | `backend` |
+
+The route registry is the authority for path, role, placement, active parent, label, icon, order, and data boundary. Detail routes are contextual and do not become sidebar entries.
+
+The binding primary audit-row mapping is:
+
+| React surface | Primary audit row | Content parity |
+|---|---|---|
+| `role-select` | `ui-audit-001` Role selection / login | `strict-shell` |
+| `inspector-home` | `ui-audit-002` My Assignments | `content-adapted` |
+| `lead-home` | `ui-audit-013` Lead Assigned Audits | `content-adapted` queue pattern plus critical Potential Finding scenario evidence |
+| `manager-home` | `ui-audit-027` Department Manager Dashboard | `content-adapted` |
+| `gm-home` | `ui-audit-052` General Manager Dashboard | `content-adapted` |
+| `finance-home` | `ui-audit-058` Finance Review | `content-adapted` |
+| `executive-home` | `ui-audit-059` Executive Dashboard | `content-adapted` |
+| `auditee-home` | `ui-audit-066` Auditee Corrective Actions | `content-adapted` |
+| `admin-home` | `ui-audit-076` Admin Template Preview | `content-adapted`; the standalone Templates register row remains legacy-only |
+| `audit-detail` | `ui-audit-007` Inspector Audit Detail | `content-adapted` |
+| `checklist-runner` | `ui-audit-008` Inspector Checklist Runner | `content-adapted` |
+| `organization-registry` | `ui-audit-041` Manager Organizations | `content-adapted` |
+| `audit-plan` | `ui-audit-028` Manager Planning | `content-adapted`; create/intake wizard rows remain legacy-only |
+| `finding-detail` | `ui-audit-009` Inspector Finding Detail | `content-adapted` shared dossier plus critical Lead scenario evidence |
+| `cap-review` | `ui-audit-022` Lead CAP Review Detail | `content-adapted` |
+| `evidence-review` | `ui-audit-044` Manager Inspection Evidence | `content-adapted` shared Evidence dossier plus critical Lead scenario evidence |
+| `report-preview` | `ui-audit-030` Manager Reports Approval | `content-adapted` shared immutable report dossier/decision composition |
+
+Cross-role primary rows are visual composition references only; they never broaden the route’s `requiredRole` or Backend authority. The exact 17-row set above is test data, not an executor choice. Additional critical scenario screenshots may refine a surface but cannot substitute, add, or remove a primary row without a reviewed plan amendment.
+
+### 86-Screen And Product-Scope Reconciliation
+
+- The exact ordered 86 rows come from the Markdown table in `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.md`, not from the new manifest itself.
+- Exactly 17 audit rows or accepted interaction states map to `react-parity` surfaces. Exactly 69 rows remain `later-legacy-only` or `demo-only-legacy` and have `reactPath: null`.
+- The committed source inventory must match the audit document’s ordered audit ID, role, and screen name byte-for-byte after deterministic normalization. A count-only test is insufficient.
+- The extractor reads only the six-column table between `## Preserved pre-remediation screen findings` and `## Prioritized issue list`, derives `ui-audit-NNN` from the numeric first column, and rejects any other table as an inventory source.
+- The Product crosswalk must map every required demo/MVP screen from `AGENTS.md` and `docs/product-specs/screen-specs/SCREEN_INVENTORY_AND_FORMS.md` to a source audit row, an interaction inside that row, and a disposition.
+- `New Inspection Planning Intake` is explicitly cross-mapped to Department Manager Planning plus `ui-audit-047` through `ui-audit-051` (`New Audit Wizard 1-5`). All five wizard rows remain `later-legacy-only` in this plan. Their Routine/Announced and Ad Hoc/Unannounced rules stay in the root demo; no React create/intake control may appear.
+- The 69-screen boundary is justified only for the current candidate scope: those states lack a complete accepted HTTP vertical or are demo-only. It is not a claim that the user accepted permanent removal.
+- Any future promotion requires one reviewed slice containing Product authority, OpenAPI, generated transport, mock, Go persistence/authorization, React route/UI, mock/HTTP browser tests, privacy tests, and updated disposition evidence.
+
+The required Product crosswalk is fixed before execution:
+
+| Repo-required outcome | Delivery in this plan |
+|---|---|
+| Role switch / login | `role-select`; deterministic role switch in demo/canonical and real sign-in/session roles in normal HTTP |
+| Manager Dashboard | `manager-home` |
+| Inspector Dashboard | `inspector-home` |
+| Audit Plan Calendar | `audit-plan` |
+| Audit Detail | `audit-detail` |
+| Checklist Runner | `checklist-runner` |
+| Finding Detail with lifecycle stepper | `finding-detail` |
+| Auditee My Findings | authorized Finding register/summary inside `auditee-home` |
+| CAP Submission Form | versioned submission state inside `auditee-home` |
+| Evidence Upload / Review | online Evidence submission/history inside `auditee-home` and CAA decision at `evidence-review` |
+| Closed Finding / Report Preview | closed lifecycle state at `finding-detail` and immutable report dossier at `report-preview` |
+| Admin Checklist Template Preview | `admin-home` backed by Task 3 detail read |
+| New Inspection Planning Intake | `later-legacy-only`: `ui-audit-047` through `ui-audit-051`; no React control or route |
+
+The first 12 outcomes are delivered through the 17-route set, sometimes as an interaction/state rather than a separate URL. The final intake outcome remains intentionally outside the candidate because no accepted create vertical exists.
+
 ### In Scope
 
-- The 17 concrete React surfaces currently registered by `apps/web/src/app/router.tsx`:
-
-  | ID | Legacy source state | React path | Backend profile |
-  |---|---|---|---|
-  | `role-select` | no role / `login` | `/` | demo role switch; canonical-test role switch; normal HTTP session gate |
-  | `inspector-home` | Inspector / `inspector-assignments` | `/inspector/inspector-assignments` | mock + HTTP |
-  | `lead-home` | Lead Inspector / `lead-review` | `/lead-inspector/lead-review` | mock + HTTP |
-  | `manager-home` | Department Manager / `dashboard` | `/department-manager/dashboard` | mock + HTTP |
-  | `gm-home` | General Manager / `gm-dashboard` | `/general-manager/gm-dashboard` | mock + HTTP |
-  | `finance-home` | Finance / `finance-review` | `/finance/finance-review` | mock + HTTP |
-  | `executive-home` | Executive Director / `executive-dashboard` | `/executive-director/executive-dashboard` | mock + HTTP |
-  | `auditee-home` | Auditee / `service-provider-cap` | `/auditee/service-provider-cap` | mock + HTTP |
-  | `admin-home` | Admin / `templates` | `/admin/templates` | mock + HTTP |
-  | `audit-detail` | Inspector / `audit-detail`, `AUD-2026-001` | `/inspector/audits/AUD-2026-001` | mock + HTTP |
-  | `checklist-runner` | Inspector / `checklist`, `AUD-2026-001` | `/inspector/audits/AUD-2026-001/checklist` | mock + HTTP + field repository |
-  | `organization-registry` | Department Manager / `organizations` | `/department-manager/organizations` | mock + HTTP |
-  | `audit-plan` | Department Manager / `planning` | `/department-manager/audit-plan` | mock + HTTP |
-  | `finding-detail` | Lead Inspector / `finding`, `FND-CAB-2026-001` | `/lead-inspector/findings/FND-CAB-2026-001` | mock + HTTP |
-  | `cap-review` | Lead Inspector / CAP review state for `FND-CAB-2026-001` | `/lead-inspector/cap-review/FND-CAB-2026-001` | mock + HTTP |
-  | `evidence-review` | Lead Inspector / Evidence review state for `FND-CAB-2026-001` | `/lead-inspector/evidence-review/FND-CAB-2026-001` | mock + HTTP |
-  | `report-preview` | Department Manager / `report`, canonical report | `/department-manager/reports/RPT-CAB-2026-001-V1` | mock + HTTP |
-
-- A versioned parity/disposition manifest covering all 86 verified legacy screen states, with each row classified as `backend-connected`, `later-legacy-only`, or `demo-only-legacy`.
-- A deterministic screenshot/reference harness for the 17 migrated surfaces at `1440x900`, `1024x768`, and `390x844` (51 reference/React pairs).
-- Shared React branding, role-selection, shell, navigation, topbar, notification/profile affordances, responsive navigation, and common workbench primitives.
-- Normal HTTP session bootstrap, login redirect, logout, authenticated role selection, CSRF cookie wiring, and expired-session recovery using the existing Go auth boundary.
-- Visual and interaction migration for Inspector, Lead Inspector, Department Manager, General Manager, Finance, Executive Director, Auditee, and Admin surfaces listed above.
-- Existing mock/HTTP/offline/backend contract, browser, root legacy, security, and artifact-isolation regression coverage.
-- Bilingual evidence and plan/tracker reconciliation after verification.
+- Independent 86-row inventory, 17-route registry, Product-scope crosswalk, and bilingual parity contract.
+- Potential Finding list/get, CAP revision list/get, and Admin checklist-template-version detail read verticals.
+- A tracked, hashed, deterministic visual baseline and comparison harness for 17 surfaces at `1440x900`, `1024x768`, and `390x844`.
+- One layered React token/shell/primitives/features CSS system that reuses accepted local assets.
+- Branded role selection/login, application shell, navigation, topbar, profile/logout, responsive navigation, truthful notification state, and contextual role handoffs.
+- Normal OIDC session bootstrap, role guard, CSRF mutation, expiration recovery, logout, subject changes, and a separate local OIDC browser test lane.
+- Visual/interaction migration of the exact 17 routes.
+- Existing mock, canonical HTTP, normal OIDC HTTP, offline, backend, root, security, and artifact-exclusion regressions.
+- English/Turkish verification evidence, Product index, plan index, parent-plan status, and tracker reconciliation.
 
 ### Out Of Scope
 
-- Automatic migration of the other 69 legacy screen states merely to reach the number 86.
-- Adding AI, advanced risk/BI, USOAP/SSP, regulatory editing, generic workflow design, enforcement case management, broad checklist editing, user provisioning, notification delivery, or other `later`/`demo-only` behavior to the HTTP artifact without a separately accepted route-family plan.
-- Public self-registration, user invitation delivery, password reset, account recovery, production MFA configuration, or production user administration.
-- New backend endpoints solely to make an unapproved legacy screen appear populated.
-- Copying legacy global state or browser-local authorization into React.
-- Changing canonical domain rules, authorization ownership, report authority, Evidence policy, offline protocol, or sync conflict policy.
-- Pixel-for-pixel parity where candidate-only boundaries, backend data, browser session state, or offline state require truthful differences.
-- Production deployment, production identity/provider selection, production records/storage policy, pilot routing, traffic cutover, legacy removal, or `production-ready` claims.
+- Creating React routes or placeholders for the remaining 69 audit rows.
+- Adding HTTP user administration, broad checklist editing, AI, advanced risk/BI, USOAP/SSP, regulatory editing, enforcement case management, generic workflow design, or notification delivery.
+- Public sign-up, self-registration, invitations, password reset, account recovery, or production identity administration.
+- New backend writes beyond existing accepted commands.
+- Pixel identity where truthful session, backend, candidate, privacy, or offline state must differ. Such differences require documented semantic equivalence, not a relaxed global threshold.
+- Production deployment, traffic, cutover, release, hosting, records, operations, or legacy archival/removal.
 
 ## Source Precedence
 
-When two sources disagree, apply this order and record the conflict in the parity manifest:
+When sources disagree:
 
-1. Canonical product/security/data documents under `docs/product-specs/`.
-2. Verified behavior in root Node tests and the latest browser-scenario evidence.
-3. The latest accepted root UI in `index.html`, `css/styles.css`, and `js/`.
-4. The 86-screen screenshot audit and critical canonical-scenario captures under `qa/screenshots/`.
-5. Earlier execution plans or historical screenshot sets.
+1. Product/security/data authority under `docs/product-specs/` and repo `AGENTS.md`.
+2. Verified root behavior tests and latest accepted browser-scenario evidence.
+3. Root `index.html`, `css/styles.css`, and `js/` behavior.
+4. The ordered 86-row audit and critical `qa/screenshots/`.
+5. Historical plans or screenshots.
 
-Visual copying never overrides authority, privacy, lifecycle, or truthful candidate boundaries.
+Visual copying never overrides authority, privacy, lifecycle, immutable history, truthful action state, or offline recovery.
 
 ## Acceptance Criteria
 
-- A stakeholder can identify the React role selection, shell, navigation, typography, palette, content hierarchy, tables/cards, lifecycle, dossiers, forms, and responsive patterns as the same AviaSurveil360 product represented by the root demo.
-- The 17 migrated surfaces have one typed parity-manifest row each and no duplicate `(role, legacyView, reactPath)` tuple.
-- All 86 legacy screen states have one explicit disposition. Exactly 17 are `backend-connected` in this plan; the remaining 69 stay legacy-only unless a reviewed plan revision changes the accepted route inventory.
-- All 51 legacy/React viewport pairs are captured. No pair is missing, blank, wrong-role, wrong-route, or affected by an unexpected console warning/error.
-- Every migrated page passes semantic visual contracts for brand font, palette, shell anatomy, first-viewport owner/next-action/status/Due Date information, lifecycle/action placement, and responsive structure.
-- Any automated pixel comparison uses deterministic fonts/data/browser, masks explicitly listed dynamic regions, stores its threshold per surface, and cannot pass solely because a broad mask hides the work area.
-- The role-selection and shell reference targets use a strict `maxDiffPixelRatio <= 0.03`. Data-heavy pages may use `<= 0.08` only when semantic and geometry assertions also pass. A threshold exception must name the exact dynamic region and reviewer rationale in the manifest.
-- No page has document-level horizontal overflow at `1440x900`, `1024x768`, or `390x844`.
-- Primary and icon-only mobile controls touched by this plan expose at least one `44px` dimension, visible focus, an accessible name, and a meaningful action.
-- Demo and canonical-test HTTP retain eight deterministic role entries. Normal HTTP shows a login action when unauthenticated and only authenticated session roles after login.
-- Normal HTTP mutations read the `__Host-avia_csrf` cookie and send `X-CSRF-Token`; access/refresh/ID tokens never enter React state, browser storage, logs, or public configuration.
-- An expired/revoked session returns to a safe login state without exposing stale protected data.
-- Existing canonical Potential Finding, CAP, Evidence, closure, organization-isolation, Internal CAA Note, report, offline, sync, and artifact-exclusion tests remain green.
-- The root demo remains unchanged and its full test suite remains green.
-- Task-owned servers, browsers, and containers are cleaned up after verification; no cleanup deletes the user's persistent browser profile or unrelated Docker resources.
-- Final result is `candidate-only` and `release pending`; production remains `blocked` until the separately approved release/operations gate passes.
+- The source extractor proves the exact ordered 86 audit rows. The manifest has 86 unique `auditId` values, 17 `react-parity` rows, and 69 legacy-only rows with no React path.
+- The Product crosswalk explicitly covers every repo-required screen and calls out `New Inspection Planning Intake` as legacy-only.
+- All 17 registered paths derive from one typed route registry and enforce direct-URL role authorization before page render or data fetch.
+- Potential Finding and CAP review pages load from a fresh URL, refresh, and a new authenticated browser session without relying on `ScenarioProvider` mutation history.
+- CAP revision responses preserve submitted fields and revision history. Auditee response objects cannot contain `internalCaaNote`.
+- Admin preview obtains prompt, configured reference, and expected Evidence only from the new template-detail contract.
+- Normal OIDC login returns a safe session projection; only session roles render; one real CSRF mutation succeeds; logout and an expired read/mutation clear protected in-memory data and return to login.
+- Demo/canonical role handoff remains deterministic. Normal OIDC never switches to a role absent from the session.
+- Logout/user switch calls `lockSubject`, preserves pending offline records, and prevents the next subject from seeing the old subject’s records.
+- Each of 51 automated React screenshots uses a tracked hash-verified legacy viewport baseline, strict environment metadata, bounded masks, semantic assertions, and geometry assertions.
+- Shell diff ratio is at most `0.03`. Adapted content diff ratio is at most `0.08` only for an explicitly named region with semantic/geometry evidence and reviewer rationale. A threshold increase requires a plan revision.
+- The workbench keeps the root system-font stack; DM Sans is limited to login/role selection.
+- Every visible action works through Backend, a declared local/offline boundary, navigation, or explicit local UI state, or is disabled with a reason.
+- Existing Potential Finding authority, CAP/Evidence separation, immutable versioning, organization isolation, Internal CAA Note privacy, report/closure authority, sync/conflict, app-shell recovery, and artifact-exclusion tests remain green.
+- HTTP artifacts contain no root runtime CSS/JS, mock/seed, canonical-test, or root-demo modules. Approved local image/font assets are allowed and app-shell cached.
+- Evidence remains `verified locally` and `candidate-only`. Stakeholder acceptance, release, and production remain separate.
 
 ## Ownership Boundaries
 
 | Owner | Responsibility |
 |---|---|
-| Product/stakeholder owner | Accept the 17-surface parity target, visual source precedence, route dispositions, and final screenshots. |
-| Frontend execution owner | Build typed shell/primitives, migrate surfaces, preserve field/offline boundaries, and produce visual/behavior evidence. |
-| Backend execution owner | Extend only the existing session projection needed by the HTTP shell; preserve auth/authorization and keep provider credentials server-side. |
-| QA | Maintain deterministic reference capture, geometry/semantic assertions, dual-profile behavior tests, and literal evidence labels. |
-| Security + Identity | Own production IdP, MFA, provisioning, session policy, secret rotation, and external security evidence; none is accepted by this UI plan. |
-| Platform + Operations | Own production hosting, reverse proxy, monitoring, backup/restore, on-call, deployment, and cutover. |
-| Records + Legal | Own retention, legal hold, disposition, official Evidence/report records, and signature requirements. |
+| Product/stakeholder owner | Accept the 17-route outcome versus a full 86-screen React replacement, approve visual evidence, and decide later route promotion. |
+| Frontend execution owner | Inventory, route registry, layered styles, shell, session UI, feature parity, visible controls, offline subject isolation, and evidence. |
+| Backend execution owner | Potential Finding/CAP/Admin read projections, OpenAPI, authorization, immutable role-shaped views, session display name, and seed/auth separation. |
+| QA/reviewer | Audit inventory integrity, direct-load/privacy/authority matrices, comparator integrity, 51-pair review, and literal evidence labels. |
+| Identity/platform owner | Local OIDC fixture only in this plan; production provider, MFA, provisioning, secrets, and assurance remain blocked. |
+| Operations/records/security owners | No production action in this plan; hosting, retention, legal hold, monitoring, on-call, DR, and cutover remain blocked. |
 
 ## Dependencies
 
-- `AGENTS.md`
-- `README.md` and `README.turkce.md`
-- `docs/product-specs/index.md`
-- `docs/product-specs/screen-specs/SCREEN_INVENTORY_AND_FORMS.md`
-- `docs/product-specs/screen-specs/DEPARTMENT_MANAGER_WORKSPACES.md`
-- `docs/product-specs/ux-plan/NAVIGATION_AND_INFORMATION_ARCHITECTURE.md`
-- `docs/product-specs/data-and-rules/PRODUCTION_CONTRACT_VOCABULARY.md`
-- `docs/product-specs/data-and-rules/STATUS_PERMISSION_SECURITY.md`
-- `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.md`
-- `docs/demo-evidence/WORKING_SCENARIO_AUDIT_2026-07-20.md`
-- `docs/demo-evidence/LOCAL_RELEASE_CANDIDATE_2026-07-21.md`
-- `docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md`
-- Root reference sources: `index.html`, `css/styles.css`, `js/app.js`, `js/views.js`, `js/data.js`, and root `tests/`.
-- Current candidate sources: `apps/web/src/app/router.tsx`, `apps/web/src/features/`, `apps/web/src/styles/app.css`, `apps/web/src/backend/`, `apps/api/internal/httpapi/`, and `api/openapi/aviasurveil360.yaml`.
+- Current root demo and audited source files remain unchanged.
+- Existing OpenAPI generation and `scripts/check-contracts.sh` remain authoritative.
+- Existing canonical test script remains green while normal OIDC receives a new independent script.
+- Keycloak local realm import supports the pinned test user and disabled registration.
+- Baselines are generated with the Playwright-bundled Chromium from the committed lockfile on the recorded platform; cross-platform comparisons fail closed.
+- Task 1 must pass before route/scope consumers. Tasks 2-3 must pass before Lead/Auditee/Admin feature tasks. Task 4 must produce the initial red React comparison before visual implementation. Tasks 5-8 must pass before feature migration.
 
-## File And Module Map
+## Safe Commit And Push Protocol
 
-### Contract and parity inventory
+This plan records a per-task commit/push workflow because the earlier execution authorization requested it. It is not authorization for this plan-edit turn. At execution time, use these Git steps only if the current user request explicitly authorizes commit and push.
 
-- Create `apps/web/src/parity/legacy-screen-manifest.ts` — typed 86-screen disposition inventory and 17 migrated-surface comparison metadata.
-- Create `apps/web/src/parity/legacy-screen-manifest.test.ts` — uniqueness, count, classification, path, role, and forbidden-placeholder assertions.
-- Create `docs/product-specs/ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.md` and `.turkce.md` — stakeholder-readable source precedence, visual equivalence, route disposition, and acceptance contract.
+Before Task 1:
 
-### Visual test harness
+```bash
+git status --short --branch
+git rev-parse --abbrev-ref HEAD
+git rev-parse --abbrev-ref --symbolic-full-name @{upstream}
+git rev-list --left-right --count @{upstream}...HEAD
+git log --format='%H %s' @{upstream}..HEAD
+```
 
-- Create `apps/web/scripts/serve-legacy.mjs` — read-only static server rooted at the repository for parity capture.
-- Create `apps/web/tests/e2e/support/legacy-parity-fixtures.ts` — deterministic legacy-state preparation, candidate reset, masks, and geometry capture.
-- Create `apps/web/tests/e2e/legacy-visual-parity.spec.ts` — 17 surfaces × 3 viewports, screenshot and semantic/geometry checks.
-- Modify `apps/web/playwright.config.ts` — add an explicit `parity` profile with legacy and React web servers.
-- Modify `apps/web/package.json` — add `serve:legacy` and `test:e2e:parity` scripts.
-- Create `qa/screenshots/react-legacy-parity/README.md` and `qa/screenshots/react-legacy-parity/reference/` — accepted source captures and capture metadata. Store transient actual/diff output under `/private/tmp/aviasurveil360-react-legacy-parity`.
+Record the current branch, upstream, initial ahead count, and exact ahead commits in the Task 1 log. If the upstream is absent, the branch changed, or the ahead set contains an unexplained commit, stop before the first push. Never perform a branch operation.
 
-### Brand and application shell
+For every task:
 
-- Create `apps/web/src/ui/brand/brand-assets.ts` — Vite-resolved URLs for the existing root font, logo, texture, and icon assets without copying binaries.
-- Create `apps/web/src/ui/shell/application-shell.tsx` — responsive shell layout and authenticated/demo role context.
-- Create `apps/web/src/ui/shell/candidate-ribbon.tsx` — truthful demo/canonical/HTTP candidate boundary and reset affordance.
-- Create `apps/web/src/ui/shell/role-navigation.tsx` and `role-navigation.ts` — role-specific navigation contract, active-route matching, and mobile menu behavior.
-- Create `apps/web/src/ui/shell/topbar.tsx` — breadcrumb, notification, identity, role, and logout affordances.
-- Create `apps/web/src/ui/shell/role-select-page.tsx` — accepted split-brand role-selection experience for demo/canonical test.
-- Modify `apps/web/src/features/shared/workspace-shell.tsx` — compatibility exports and shared formatting only; remove duplicate shell markup after all callers migrate.
-- Modify `apps/web/src/app/router.tsx` — route metadata, guarded layout nesting, and removal of the minimal standalone shell.
-- Create `apps/web/src/styles/brand-tokens.css`, `shell.css`, `workbench.css`, and `responsive.css`.
-- Modify `apps/web/src/styles/app.css` — import ordered style layers and keep feature-specific rules only.
+1. Run `git status --short` before staging.
+2. Use only the exact `git add --` command printed in that task. A newly generated baseline subtree is allowed only where Task 4 names it.
+3. Run:
 
-### Identity/session integration
+   ```bash
+   git diff --cached --name-status
+   git diff --cached --
+   git diff --cached --check
+   ```
 
-- Create `apps/web/src/auth/session-client.ts` — `/auth/session`, `/auth/login`, `/auth/logout`, CSRF cookie reader, and typed auth failures.
-- Create `apps/web/src/auth/session-provider.tsx` — session state machine that never stores provider tokens.
-- Create `apps/web/src/auth/http-auth-gate.tsx` — loading, unauthenticated, authenticated, expired, and unavailable states.
-- Create `apps/web/src/auth/login-page.tsx` — branded HTTP sign-in surface; no sign-up control.
-- Modify `apps/web/src/app/providers.tsx` — add the exact identity mode and session client to runtime.
-- Modify `apps/web/src/entry/demo.tsx`, `http-test.tsx`, and `http.tsx` — select `demo-role-switch`, `canonical-test-role-switch`, or `oidc-session` once at bootstrap.
-- Modify `apps/web/src/backend/http-backend.ts` — obtain the CSRF header from the session client without changing domain method signatures.
-- Modify `apps/api/internal/identity/principal.go`, `apps/api/internal/platform/session/manager.go`, and `apps/api/internal/httpapi/auth.go` only as required to return safe display name plus roles/organization from `/auth/session`.
-- Extend existing Go and React auth tests; do not add a user-provisioning endpoint.
+4. Compare every staged path with the task allowlist. If any path is unexpected, stop; do not commit or push. Do not use `git add .`, `git add -A`, broad feature/style/test directories, or a root glob.
+5. Commit with the task’s exact Conventional Commit message.
+6. Before push, rerun:
 
-### Shared workbench primitives
+   ```bash
+   git rev-list --left-right --count @{upstream}...HEAD
+   git log --format='%H %s' @{upstream}..HEAD
+   ```
 
-- Create `apps/web/src/ui/primitives/command-header.tsx`.
-- Create `apps/web/src/ui/primitives/metric-strip.tsx`.
-- Create `apps/web/src/ui/primitives/status-badge.tsx`.
-- Create `apps/web/src/ui/primitives/work-table.tsx`.
-- Create `apps/web/src/ui/primitives/responsive-record-list.tsx`.
-- Create `apps/web/src/ui/primitives/dossier-tabs.tsx`.
-- Create `apps/web/src/ui/primitives/lifecycle-stepper.tsx`.
-- Create `apps/web/src/ui/primitives/decision-panel.tsx`.
-- Create `apps/web/src/ui/primitives/modal-dialog.tsx`.
-- Create `apps/web/src/ui/primitives/primitives.test.tsx` — semantics, keyboard, label, focus hook, and responsive-class contracts.
+   The ahead set may contain only the recorded initial commits plus completed commits from this plan. Otherwise stop.
+7. Run `git push origin HEAD` only after the task tests and cached-diff inspection pass.
+8. Run `git status --short` after push and verify unrelated `.superpowers/`, `docs/demo-evidence/stakeholder/`, `outputs/`, and any other pre-existing content are unchanged.
 
-### Feature migrations
-
-- Modify the existing feature page files under `apps/web/src/features/`; keep data access through `useBackendForRole`, `useScenario`, and the existing domain types.
-- Split a feature file only when it exceeds one clear responsibility; colocate its page tests in the same feature directory.
-- Do not add root `js/` imports to React.
-
-### Evidence and tracking
-
-- Create `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-21.md` and `.turkce.md` only after fresh verification.
-- Modify `README.md`, `README.turkce.md`, `MANIFEST.md`, `docs/index.md`, `docs/demo-evidence/BUILD_SUMMARY.md`, and `.turkce.md` only where final package truth changes.
-- Modify this plan, `docs/exec-plans/index.md`, and `docs/exec-plans/tech-debt-tracker.md` at each material status change.
+If commit/push is not authorized in the execution request, finish each task after verification and plan-log updates without staging.
 
 ## Binding Delivery Order
 
-1. Parity/disposition contract.
-2. Deterministic visual harness and red baseline.
-3. Brand assets/tokens.
-4. Role selection and application shell.
-5. Normal HTTP OIDC/session experience.
-6. Shared workbench primitives.
-7. Inspector surfaces.
-8. Lead Inspector surfaces.
-9. Auditee surface.
-10. Department Manager surfaces.
-11. Finance, General Manager, and Executive Director surfaces.
-12. Admin surface.
-13. Remaining legacy disposition and no-placeholder boundary.
-14. Full local candidate verification and stakeholder handoff.
+1. Independent 86-screen inventory, Product crosswalk, and typed route registry.
+2. Potential Finding and immutable CAP-revision read verticals.
+3. Checklist-template-version detail read vertical.
+4. Deterministic tracked visual harness and initial red comparisons.
+5. Brand assets, app-shell caching, tokens, and CSS ownership layers.
+6. Presentational role selection, shell, navigation, and topbar.
+7. Normal OIDC/session/CSRF, role guards/handoffs, expiry, and offline subject binding.
+8. Shared workbench primitives.
+9. Inspector routes.
+10. Lead Inspector routes.
+11. Auditee route.
+12. Department Manager routes.
+13. Finance, General Manager, and Executive Director routes.
+14. Admin route.
+15. Remaining-legacy/no-placeholder/artifact boundary.
+16. Full candidate matrix, bilingual evidence, and stakeholder handoff.
 
-No role feature task may begin before Tasks 1-6 pass. Do not parallelize tasks that edit the same shell, stylesheet, router, backend contract, OpenAPI, or canonical scenario state.
+No feature task may begin until its prerequisites pass. Tasks that edit OpenAPI, generated types, router/session state, canonical fixtures, `app.css`, or the visual spec are sequential.
 
 ---
 
-### Task 1: Freeze The 86-Screen Disposition And 17-Surface Parity Contract
+### Task 1: Freeze The Independent 86-Screen Inventory And 17-Route Contract
 
-**Files:**
+**Files**
 
-- Create: `apps/web/src/parity/legacy-screen-manifest.ts`
-- Create: `apps/web/src/parity/legacy-screen-manifest.test.ts`
-- Create: `docs/product-specs/ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.md`
-- Create: `docs/product-specs/ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.turkce.md`
-- Modify: `docs/exec-plans/index.md`
-- Modify: `docs/exec-plans/tech-debt-tracker.md`
-- Modify: this plan
+- Create `apps/web/scripts/extract-legacy-screen-inventory.mjs`
+- Create `apps/web/src/parity/legacy-screen-source.json`
+- Create `apps/web/src/parity/legacy-screen-manifest.ts`
+- Create `apps/web/src/parity/legacy-screen-manifest.test.ts`
+- Create `apps/web/src/app/route-contracts.ts`
+- Create `apps/web/src/app/route-contracts.test.ts`
+- Create `docs/product-specs/ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.md`
+- Create `docs/product-specs/ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.turkce.md`
+- Modify `docs/product-specs/index.md`
+- Modify `docs/exec-plans/index.md`
+- Modify `docs/exec-plans/tech-debt-tracker.md`
+- Modify `docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md`
+- Modify this plan
 
-**Interfaces:**
+**Interfaces**
 
-- Produces:
+```ts
+export type LegacyDisposition =
+  | "react-parity"
+  | "later-legacy-only"
+  | "demo-only-legacy";
 
-  ```ts
-  export type LegacyDisposition =
-    | "backend-connected"
-    | "later-legacy-only"
-    | "demo-only-legacy";
+export type VisualParityMode = "strict-shell" | "content-adapted";
+export type DataBoundary = "session" | "backend" | "backend+field";
+export type RoutePlacement = "primary" | "contextual" | "none";
+export type IconKey =
+  | "assignments" | "leadReview" | "dashboard" | "planning"
+  | "organizations" | "finance" | "reports" | "templates"
+  | "profile" | "notifications" | "logout" | "menu";
 
-  export type VisualParityMode = "strict-shell" | "content-adapted";
+export interface RouteContract {
+  id: ReactSurfaceId;
+  path: string;
+  requiredRole: Role | null;
+  placement: RoutePlacement;
+  parentId: ReactSurfaceId | null;
+  label: string;
+  iconKey: IconKey;
+  order: number;
+  dataBoundary: DataBoundary;
+}
 
-  export interface LegacyScreenContract {
-    id: string;
-    role: Role | null;
-    legacyView: string;
-    legacyParams: Readonly<Record<string, string>>;
-    reactPath: string | null;
-    disposition: LegacyDisposition;
-    parityMode: VisualParityMode | null;
-    referenceScreenshotIds: readonly string[];
-    reason: string;
-  }
+export interface LegacyScreenContract {
+  auditId: string;
+  role: string;
+  screenName: string;
+  legacyView: string;
+  legacyParams: Readonly<Record<string, string>>;
+  reactSurfaceId: ReactSurfaceId | null;
+  reactPath: string | null;
+  disposition: LegacyDisposition;
+  dataBoundary: DataBoundary | null;
+  parityMode: VisualParityMode | null;
+  productAuthority: readonly string[];
+  sourceEvidence: readonly string[];
+  referenceScreenshotIds: readonly string[];
+  reason: string;
+}
+```
 
-  export const LEGACY_SCREEN_INVENTORY: readonly LegacyScreenContract[];
-  export const BACKEND_CONNECTED_SURFACES: readonly LegacyScreenContract[];
-  ```
+`legacy-screen-source.json` contains only ordered `auditId`, `role`, and `screenName` source tuples. The extractor parses the English audit Markdown table and `--check` fails on any missing, reordered, renamed, duplicated, or extra tuple. The manifest enriches those tuples but cannot redefine them.
 
-- Consumers: the router tests, visual parity fixtures, evidence generator, and Task 13 no-placeholder boundary.
+**Red/green cycle**
 
-- [ ] **Step 1: Confirm the protected working-tree baseline**
-
-  Run:
-
-  ```bash
-  git status --short --branch
-  git log -5 --oneline
-  ```
-
-  Expected: current branch only; unrelated `.superpowers/`, `docs/demo-evidence/stakeholder/`, and `outputs/` remain untouched; no branch operation.
-
-- [ ] **Step 2: Write the failing manifest contract test**
-
-  Add assertions that require:
-
-  ```ts
-  expect(LEGACY_SCREEN_INVENTORY).toHaveLength(86);
-  expect(BACKEND_CONNECTED_SURFACES).toHaveLength(17);
-  expect(new Set(LEGACY_SCREEN_INVENTORY.map(({ id }) => id)).size).toBe(86);
-  expect(
-    new Set(
-      LEGACY_SCREEN_INVENTORY.map(({ role, legacyView, legacyParams }) =>
-        JSON.stringify([role, legacyView, legacyParams]),
-      ),
-    ).size,
-  ).toBe(86);
-  expect(
-    BACKEND_CONNECTED_SURFACES.every(
-      ({ reactPath, parityMode }) => reactPath?.startsWith("/") && parityMode !== null,
-    ),
-  ).toBe(true);
-  expect(
-    LEGACY_SCREEN_INVENTORY.filter(({ disposition }) => disposition !== "backend-connected")
-      .every(({ reactPath }) => reactPath === null),
-  ).toBe(true);
-  ```
-
-  The test must also assert the exact 17 IDs from the In Scope table and reject empty `reason` or `referenceScreenshotIds` arrays.
-
-- [ ] **Step 3: Run the focused test and record the expected red state**
-
-  Run:
+- [x] Add failing extractor/manifest tests that assert:
+  - exact ordered equality with all 86 Markdown rows;
+  - IDs exactly `ui-audit-001` through `ui-audit-086`;
+  - the exact 17 `react-parity` audit IDs printed in the binding mapping table and 69 legacy-only rows;
+  - all legacy-only rows have `reactPath: null`, `reactSurfaceId: null`, `dataBoundary: null`, and empty `referenceScreenshotIds`;
+  - all React rows match the route registry path/role/data boundary;
+  - all rows have Product authority, source evidence, and a nonempty reason;
+  - exact mapping for every required repo screen;
+  - `New Inspection Planning Intake` maps to Department Manager Planning and exact source rows `ui-audit-047` through `ui-audit-051`; every wizard row remains legacy-only.
+- [x] Run:
 
   ```bash
-  npm --prefix apps/web test -- src/parity/legacy-screen-manifest.test.ts
+  node apps/web/scripts/extract-legacy-screen-inventory.mjs --check
+  npm --prefix apps/web test -- src/parity/legacy-screen-manifest.test.ts src/app/route-contracts.test.ts
   ```
 
-  Expected: FAIL because the manifest module does not exist.
-
-- [ ] **Step 4: Build the complete manifest from the verified route inventory**
-
-  Transcribe the 86 accepted screen-state tuples from `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.md`, `js/app.js` `NAV`/compatibility states, and the audit screenshot index. Use the exact 17 rows in this plan as `backend-connected`. Classify AI, advanced risk/BI, USOAP/SSP, broad regulatory editing, enforcement case handling, and unsupported configuration as `demo-only-legacy`; classify approved product concepts without a complete API vertical as `later-legacy-only`.
-
-  Every non-connected row must have `reactPath: null`; do not create a placeholder path.
-
-- [ ] **Step 5: Write the bilingual stakeholder contract**
-
-  The English/Turkish pair must define:
-
-  - why technical behavioral parity did not equal stakeholder visual acceptance;
-  - the 17 connected surfaces and 69 retained legacy states;
-  - source precedence;
-  - strict-shell vs content-adapted comparison;
-  - visible-control, privacy, lifecycle, candidate-only, and cutover boundaries;
-  - the rule that a future route promotion requires OpenAPI + mock + Go + authorization + React + mock/HTTP browser coverage in one slice.
-
-- [ ] **Step 6: Run focused contract verification**
-
-  Run:
+  Expected red: extractor/source/registry modules are absent.
+- [x] Implement the deterministic parser, committed source JSON, enriched manifest, and exact route registry. Do not infer a screenshot path for any of the 69 retained rows.
 
   ```bash
-  npm --prefix apps/web test -- src/parity/legacy-screen-manifest.test.ts src/app/router.test.tsx
+  mkdir -p apps/web/src/parity
+  ```
+
+  Create/edit all files through `apply_patch` after the expected red run.
+- [x] Write the English/Turkish parity contract. It must state the exact user outcome, the narrower 17-route delivery, the 69-row boundary, the New Inspection Planning Intake disposition, source precedence, visual thresholds, action truth, privacy, candidate-only status, and the complete future route-promotion rule.
+- [x] Add both parity-contract links to `docs/product-specs/index.md`. Reconcile this plan, parent status, active index, and tracker without closing stakeholder or production gates.
+- [x] Run:
+
+  ```bash
+  node apps/web/scripts/extract-legacy-screen-inventory.mjs --check
+  npm --prefix apps/web test -- src/parity/legacy-screen-manifest.test.ts src/app/route-contracts.test.ts src/app/router.test.tsx
+  npm --prefix apps/web run typecheck
+  node --test tests/parity/react-legacy-parity.test.mjs
+  ```
+
+  Expected green: exact inventory and route contracts pass; existing behavior ledger remains green.
+
+**Execution log — 2026-07-21**
+
+- Initial branch/upstream check: branch `main`, upstream `origin/main`, ahead/behind `0/0`, and no commits in `@{upstream}..HEAD`.
+- Preserved pre-existing working-tree content: modified plan/index/tracker docs plus untracked `.superpowers/`, `docs/demo-evidence/stakeholder/`, and `outputs/`.
+- Expected red captured before implementation:
+  - `node apps/web/scripts/extract-legacy-screen-inventory.mjs --check` failed with `MODULE_NOT_FOUND` because the extractor did not exist.
+  - `npm --prefix apps/web test -- src/parity/legacy-screen-manifest.test.ts src/app/route-contracts.test.ts` failed with no matching test files.
+- Implemented deterministic source extraction, committed 86-row source inventory, typed 17-route registry, enriched manifest/crosswalk tests, and English/Turkish parity contracts.
+- Green gate passed:
+  - `node apps/web/scripts/extract-legacy-screen-inventory.mjs --check`
+  - `npm --prefix apps/web test -- src/parity/legacy-screen-manifest.test.ts src/app/route-contracts.test.ts src/app/router.test.tsx` passed 3 files / 10 tests.
+  - `npm --prefix apps/web run typecheck`
+  - `node --test tests/parity/react-legacy-parity.test.mjs` passed 3 tests.
+
+**Task 1 staging allowlist and commit**
+
+```bash
+git add -- apps/web/scripts/extract-legacy-screen-inventory.mjs apps/web/src/parity/legacy-screen-source.json apps/web/src/parity/legacy-screen-manifest.ts apps/web/src/parity/legacy-screen-manifest.test.ts apps/web/src/app/route-contracts.ts apps/web/src/app/route-contracts.test.ts docs/product-specs/ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.md docs/product-specs/ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.turkce.md docs/product-specs/index.md docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "test(ui): freeze independent parity inventory"
+git push origin HEAD
+```
+
+---
+
+### Task 2: Add Potential Finding And Immutable CAP Revision Reads
+
+**Files**
+
+- Modify `api/openapi/aviasurveil360.yaml`
+- Create `api/openapi/examples/canonical/potential-findings-response.json`
+- Create `api/openapi/examples/canonical/cap-revision-caa.json`
+- Create `api/openapi/examples/canonical/cap-revision-auditee.json`
+- Modify `api/openapi/tests/contract-examples.test.mjs`
+- Modify `apps/web/src/generated/transport/api-types.ts`
+- Modify `apps/api/internal/httpapi/generated/api.gen.go`
+- Modify `apps/web/src/backend/backend.ts`
+- Modify `apps/web/src/backend/http-backend.ts`
+- Modify `apps/web/src/backend/http-backend.test.ts`
+- Modify `apps/web/src/backend/transport-mappers.ts`
+- Modify `apps/web/src/backend/transport-mappers.test.ts`
+- Modify `apps/web/src/mock/create-mock-backend.ts`
+- Modify `apps/web/src/mock/memory-mock-store.ts`
+- Modify `apps/web/tests/contract/backend-contract.ts`
+- Modify `apps/web/tests/contract/mock-backend.test.ts`
+- Modify `apps/web/tests/contract/http-backend-live.test.ts`
+- Create `apps/api/internal/potentialfindings/authorization.go`
+- Create `apps/api/internal/potentialfindings/authorization_test.go`
+- Create `apps/api/internal/caps/authorization.go`
+- Create `apps/api/internal/caps/authorization_test.go`
+- Modify `apps/api/internal/potentialfindings/store/postgres/queries.sql`
+- Modify `apps/api/internal/potentialfindings/store/postgres/queries.sql.go`
+- Modify `apps/api/internal/potentialfindings/store/postgres/models.go`
+- Modify `apps/api/internal/potentialfindings/store/postgres/querier.go`
+- Modify `apps/api/internal/caps/store/postgres/queries.sql`
+- Modify `apps/api/internal/caps/store/postgres/queries.sql.go`
+- Modify `apps/api/internal/caps/store/postgres/models.go`
+- Modify `apps/api/internal/caps/store/postgres/querier.go`
+- Modify `apps/api/internal/httpapi/api_projections.go`
+- Modify `apps/api/internal/httpapi/canonical_api.go`
+- Modify `apps/api/internal/httpapi/canonical_api_test.go`
+- Modify this plan
+
+**Exact HTTP contracts**
+
+- `GET /v1/potential-findings?status=PENDING_LEAD_REVIEW&limit=50` -> `ListPotentialFindingsOutput`.
+- `GET /v1/potential-findings/{potentialFindingId}` -> `PotentialFindingView`.
+- `GET /v1/findings/{findingId}/cap-revisions` -> `ListCapRevisionsOutput` ordered by immutable revision ascending.
+- `GET /v1/cap-revisions/{capRevisionId}` -> discriminated `CapRevisionView`.
+
+```ts
+export interface ListPotentialFindingsInput {
+  status?: PotentialFindingStatus;
+  limit?: number;
+}
+
+export type ListPotentialFindingsOutput = PageOutput<PotentialFindingView>;
+export type CapRevisionView = CaaCapRevisionView | AuditeeCapRevisionView;
+
+export interface CapRevisionSubmission {
+  id: string;
+  capId: string;
+  findingId: string;
+  organizationId: string;
+  revision: number;
+  status: CapStatus;
+  rootCause: string;
+  correctiveAction: string;
+  preventiveAction: string;
+  responsiblePerson: string;
+  targetCompletionDate: LocalDate;
+  commentToCaa: string;
+  submittedAt: Instant;
+}
+
+export interface CaaCapRevisionView extends CapRevisionSubmission {
+  audience: "CAA";
+  latestReview: null | {
+    decision: "ACCEPT" | "REJECT" | "REQUEST_MORE_INFORMATION";
+    commentToAuditee: string;
+    internalCaaNote: string;
+    decidedAt: Instant;
+  };
+}
+
+export interface AuditeeCapRevisionView extends CapRevisionSubmission {
+  audience: "AUDITEE";
+  latestReview: null | {
+    decision: "ACCEPT" | "REJECT" | "REQUEST_MORE_INFORMATION";
+    commentToAuditee: string;
+    decidedAt: Instant;
+  };
+}
+
+export interface ListCapRevisionsOutput {
+  items: CapRevisionView[];
+  nextCursor: null;
+}
+
+export interface PotentialFindingBackend {
+  list(input: ListPotentialFindingsInput, options?: BackendRequestOptions):
+    Promise<ListPotentialFindingsOutput>;
+  get(input: { potentialFindingId: string }, options?: BackendRequestOptions):
+    Promise<PotentialFindingView>;
+}
+
+export interface CapBackend {
+  listRevisions(input: { findingId: string }, options?: BackendRequestOptions):
+    Promise<ListCapRevisionsOutput>;
+  getRevision(input: { capRevisionId: string }, options?: BackendRequestOptions):
+    Promise<CapRevisionView>;
+}
+```
+
+These snippets add read members to the existing interfaces; the current fully typed `create`/`decide` and `submit`/`review` members remain unchanged.
+
+Authorization is exact:
+
+- Lead Inspector may list/get Potential Findings and decide them.
+- Inspector may get only a Potential Finding originating from an inspection/question assignment authorized to that subject; Inspector cannot list a Lead queue or decide.
+- Inspector, Lead Inspector, and Department Manager may read CAA-shaped CAP revisions only when existing Finding authority permits the record.
+- Auditee may read only its own organization’s CAP revisions and receives `audience: "AUDITEE"` with no `internalCaaNote` property.
+- Finance, GM, Executive Director, and Admin receive `403` for these lifecycle reads.
+- Authorization is checked before projecting record content. Not-found/forbidden behavior must not leak another organization.
+
+**Red/green cycle**
+
+- [ ] Add OpenAPI examples/tests for exact list/detail shapes, discriminator behavior, pagination, and structural absence of Auditee internal notes.
+- [ ] Add failing Backend contract tests for mock/HTTP mapping, direct get/list, abort behavior, and role-shaped CAP output.
+- [ ] Add failing Go authorization/projection tests for allowed roles, forbidden roles, other organization, missing record, ordered revisions, two immutable revisions, and Internal CAA Note separation.
+- [ ] Run:
+
+  ```bash
+  node api/openapi/tests/contract-examples.test.mjs
+  npm --prefix apps/web test -- src/backend/http-backend.test.ts src/backend/transport-mappers.test.ts tests/contract/mock-backend.test.ts
+  GOCACHE=/private/tmp/aviasurveil360-parity-go-cache go -C apps/api test ./internal/potentialfindings ./internal/caps ./internal/httpapi
+  ```
+
+  Expected red: paths, generated operations, Backend methods, and projections are absent.
+- [ ] Implement OpenAPI first, regenerate TypeScript/Go, then implement mock/HTTP adapters and Go stores/projections/authorization. Do not add a migration or mutable CAP update.
+- [ ] Ensure list/get values come from persisted state, not canonical fixture objects or React scenario memory.
+- [ ] Run:
+
+  ```bash
+  ./scripts/check-contracts.sh
+  ./scripts/check-sqlc.sh
+  node api/openapi/tests/contract-examples.test.mjs
+  npm --prefix apps/web test -- src/backend/http-backend.test.ts src/backend/transport-mappers.test.ts tests/contract/mock-backend.test.ts
+  npm --prefix apps/web run typecheck
+  GOCACHE=/private/tmp/aviasurveil360-parity-go-cache go -C apps/api test -race -count=1 ./internal/potentialfindings ./internal/caps ./internal/httpapi ./internal/application
+  ```
+
+  Expected green: both adapters and Go return the same authorized, immutable shapes.
+
+**Task 2 staging allowlist and commit**
+
+```bash
+git add -- api/openapi/aviasurveil360.yaml api/openapi/examples/canonical/potential-findings-response.json api/openapi/examples/canonical/cap-revision-caa.json api/openapi/examples/canonical/cap-revision-auditee.json api/openapi/tests/contract-examples.test.mjs apps/web/src/generated/transport/api-types.ts apps/api/internal/httpapi/generated/api.gen.go apps/web/src/backend/backend.ts apps/web/src/backend/http-backend.ts apps/web/src/backend/http-backend.test.ts apps/web/src/backend/transport-mappers.ts apps/web/src/backend/transport-mappers.test.ts apps/web/src/mock/create-mock-backend.ts apps/web/src/mock/memory-mock-store.ts apps/web/tests/contract/backend-contract.ts apps/web/tests/contract/mock-backend.test.ts apps/web/tests/contract/http-backend-live.test.ts apps/api/internal/potentialfindings/authorization.go apps/api/internal/potentialfindings/authorization_test.go apps/api/internal/caps/authorization.go apps/api/internal/caps/authorization_test.go apps/api/internal/potentialfindings/store/postgres/queries.sql apps/api/internal/potentialfindings/store/postgres/queries.sql.go apps/api/internal/potentialfindings/store/postgres/models.go apps/api/internal/potentialfindings/store/postgres/querier.go apps/api/internal/caps/store/postgres/queries.sql apps/api/internal/caps/store/postgres/queries.sql.go apps/api/internal/caps/store/postgres/models.go apps/api/internal/caps/store/postgres/querier.go apps/api/internal/httpapi/api_projections.go apps/api/internal/httpapi/canonical_api.go apps/api/internal/httpapi/canonical_api_test.go docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "feat(api): add lifecycle read projections"
+git push origin HEAD
+```
+
+---
+
+### Task 3: Add Checklist Template Version Detail Read
+
+**Files**
+
+- Modify `api/openapi/aviasurveil360.yaml`
+- Create `api/openapi/examples/canonical/checklist-template-version-detail.json`
+- Modify `api/openapi/tests/contract-examples.test.mjs`
+- Modify `apps/web/src/generated/transport/api-types.ts`
+- Modify `apps/api/internal/httpapi/generated/api.gen.go`
+- Modify `apps/web/src/backend/backend.ts`
+- Modify `apps/web/src/backend/http-backend.ts`
+- Modify `apps/web/src/backend/http-backend.test.ts`
+- Modify `apps/web/src/backend/transport-mappers.ts`
+- Modify `apps/web/src/backend/transport-mappers.test.ts`
+- Modify `apps/web/src/mock/create-mock-backend.ts`
+- Modify `apps/web/src/mock/memory-mock-store.ts`
+- Modify `apps/web/tests/contract/backend-contract.ts`
+- Modify `apps/web/tests/contract/mock-backend.test.ts`
+- Modify `apps/web/tests/contract/http-backend-live.test.ts`
+- Modify `apps/api/internal/configuration/authorization.go`
+- Create `apps/api/internal/configuration/authorization_test.go`
+- Modify `apps/api/internal/configuration/store/postgres/queries.sql`
+- Modify `apps/api/internal/configuration/store/postgres/queries.sql.go`
+- Modify `apps/api/internal/configuration/store/postgres/models.go`
+- Modify `apps/api/internal/configuration/store/postgres/querier.go`
+- Modify `apps/api/internal/httpapi/route_families_api.go`
+- Modify `apps/api/internal/httpapi/canonical_api.go`
+- Modify `apps/api/internal/httpapi/canonical_api_test.go`
+- Modify `apps/api/internal/testprofile/canonical.go`
+- Modify this plan
+
+**Exact contract**
+
+- `GET /v1/configuration/checklist-template-versions/{templateVersionId}` -> `ChecklistTemplateVersionDetailView`.
+
+```ts
+export interface ChecklistTemplateQuestionView {
+  id: string;
+  sectionId: string;
+  prompt: string;
+  regulatoryReference: string | null;
+  expectedEvidence: string | null;
+  allowedAnswers: ChecklistAnswer[];
+  commentRequiredFor: ChecklistAnswer[];
+}
+
+export interface ChecklistTemplateVersionDetailView
+  extends ChecklistTemplateVersionView {
+  questions: ChecklistTemplateQuestionView[];
+}
+
+export interface ConfigurationBackend {
+  getChecklistTemplateVersion(
+    input: { templateVersionId: string },
+    options?: BackendRequestOptions,
+  ): Promise<ChecklistTemplateVersionDetailView>;
+}
+```
+
+This snippet adds one member to the existing `ConfigurationBackend`; its current fully typed list members remain unchanged.
+
+Only Admin may read this detail. All other roles receive `403`. The projection parses the immutable published snapshot; it never invents question text from UI fixtures and never exposes inspector assignments, draft editing state, secrets, or user administration. The canonical snapshot fixture must persist exact `allowedAnswers` and `commentRequiredFor` arrays in addition to its existing prompt/reference/evidence fields so the HTTP test proves the same schema as mock.
+
+**Red/green cycle**
+
+- [ ] Add failing OpenAPI/example, Backend adapter, Go authorization, exact snapshot parsing, malformed snapshot, not-found, and direct-load tests.
+- [ ] Run:
+
+  ```bash
+  node api/openapi/tests/contract-examples.test.mjs
+  npm --prefix apps/web test -- src/backend/http-backend.test.ts src/backend/transport-mappers.test.ts tests/contract/mock-backend.test.ts
+  GOCACHE=/private/tmp/aviasurveil360-parity-go-cache go -C apps/api test ./internal/configuration ./internal/httpapi
+  ```
+
+  Expected red: detail operation and types are absent.
+- [ ] Implement OpenAPI/generation, mock/HTTP mapping, immutable snapshot projection, and Admin-only authorization.
+- [ ] Run:
+
+  ```bash
+  ./scripts/check-contracts.sh
+  ./scripts/check-sqlc.sh
+  node api/openapi/tests/contract-examples.test.mjs
+  npm --prefix apps/web test -- src/backend/http-backend.test.ts src/backend/transport-mappers.test.ts tests/contract/mock-backend.test.ts
+  npm --prefix apps/web run typecheck
+  GOCACHE=/private/tmp/aviasurveil360-parity-go-cache go -C apps/api test -race -count=1 ./internal/configuration ./internal/httpapi
+  ```
+
+  Expected green: Admin receives exact immutable question/reference/evidence data; every other role is forbidden.
+
+**Task 3 staging allowlist and commit**
+
+```bash
+git add -- api/openapi/aviasurveil360.yaml api/openapi/examples/canonical/checklist-template-version-detail.json api/openapi/tests/contract-examples.test.mjs apps/web/src/generated/transport/api-types.ts apps/api/internal/httpapi/generated/api.gen.go apps/web/src/backend/backend.ts apps/web/src/backend/http-backend.ts apps/web/src/backend/http-backend.test.ts apps/web/src/backend/transport-mappers.ts apps/web/src/backend/transport-mappers.test.ts apps/web/src/mock/create-mock-backend.ts apps/web/src/mock/memory-mock-store.ts apps/web/tests/contract/backend-contract.ts apps/web/tests/contract/mock-backend.test.ts apps/web/tests/contract/http-backend-live.test.ts apps/api/internal/configuration/authorization.go apps/api/internal/configuration/authorization_test.go apps/api/internal/configuration/store/postgres/queries.sql apps/api/internal/configuration/store/postgres/queries.sql.go apps/api/internal/configuration/store/postgres/models.go apps/api/internal/configuration/store/postgres/querier.go apps/api/internal/httpapi/route_families_api.go apps/api/internal/httpapi/canonical_api.go apps/api/internal/httpapi/canonical_api_test.go apps/api/internal/testprofile/canonical.go docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "feat(api): add template detail projection"
+git push origin HEAD
+```
+
+---
+
+### Task 4: Build A Deterministic Tracked Visual-Parity Harness
+
+**Files**
+
+- Create `apps/web/scripts/serve-legacy.mjs`
+- Create `apps/web/scripts/verify-visual-baselines.mjs`
+- Create `apps/web/tests/e2e/support/legacy-parity-fixtures.ts`
+- Create `apps/web/tests/e2e/legacy-baseline-update.spec.ts`
+- Create `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Create `apps/web/tests/visual/visual-contract.test.ts`
+- Create `apps/web/tests/visual-baselines/react-legacy-parity/baseline-manifest.json`
+- Create the 51 PNG files named by that manifest under `apps/web/tests/visual-baselines/react-legacy-parity/`
+- Modify `apps/web/playwright.config.ts`
+- Modify `apps/web/package.json`
+- Modify this plan
+
+**Determinism contract**
+
+- Automated comparisons use Playwright-bundled `chromium`, never `channel: "chrome"`.
+- Each project pins `timezoneId: "UTC"`, `locale: "en-GB"`, `colorScheme: "light"`, `reducedMotion: "reduce"`, `deviceScaleFactor: 1`, exact viewport, headless mode, and one worker.
+- Before either application script runs, install the same Playwright clock at `2026-06-15T09:00:00Z`, use a new isolated context, clear Cache Storage/IndexedDB/localStorage/sessionStorage/service workers, and then apply only the manifest-declared deterministic legacy or React fixture state.
+- Before capture, wait for network idle where finite, `document.fonts.ready`, every `img.decode()`, and the manifest-declared stable heading/content selector. Inject CSS that disables animation, transition, smooth scrolling, blinking carets, and text selection highlights.
+- Automated screenshots are viewport-sized with `fullPage: false`. Full-page captures/contact sheets are reviewer evidence only and never comparator inputs.
+- The manifest records audit/surface ID, viewport, relative file, PNG SHA-256, source route/view/params, source commit, SHA-256 for `index.html`/`css/styles.css`/`js/app.js`/`js/views.js`/`js/data.js` and the audit document, Playwright version, Chromium version, Node version, OS/platform/arch, and `package-lock.json` SHA-256.
+- `verify-visual-baselines.mjs` fails on a missing/extra file, hash drift, route mismatch, metadata mismatch, ignored path, or unexpected baseline update mode.
+- Default tests are read-only. Only `npm --prefix apps/web run visual:baseline:update` may rewrite baselines, and it requires `AVIA_UPDATE_LEGACY_BASELINES=1` inside the script. A threshold or source change requires a reviewed plan amendment and a new manifest hash.
+- `AVIA_VISUAL_SURFACES` may contain a validated comma-separated subset of registry IDs for a task’s focused red/green cycle; an unknown, duplicate, or explicitly empty value fails. Omission always runs all 17 surfaces. `AVIA_VISUAL_REGIONS=shell` is allowed only for Task 6’s shell checkpoint; omission means all regions. Task 16 never sets either filter.
+- Package scripts are exact:
+
+  ```json
+  "test:e2e:visual-parity": "AVIA_E2E_PROFILE=visual-parity playwright test --project=legacy-parity",
+  "visual:baseline:update": "AVIA_E2E_PROFILE=visual-parity AVIA_UPDATE_LEGACY_BASELINES=1 playwright test --project=legacy-baseline-update"
+  ```
+
+**Mask and comparison contract**
+
+- Masks are an explicit per-surface array of stable selectors with rationale.
+- Reject `html`, `body`, `#root`, shell/sidebar/topbar/work-content containers, wildcard selectors, and any ancestor containing more than the intended dynamic leaf.
+- Reject missing or multi-match selectors unless the contract names the exact expected count.
+- The union of mask rectangles may cover at most 5% of viewport pixels.
+- `strict-shell` uses `maxDiffPixelRatio: 0.03` for the viewport and named shell regions.
+- `content-adapted` may use at most `0.08` only for the named content region; shell remains `0.03`. Every adapted region needs a written semantic reason.
+- Geometry snapshots include shell, sidebar, topbar, content origin, primary action, first data table/register, lifecycle stepper when present, role mark, key typography metrics, and palette tokens.
+- Semantic assertions cover heading, role, owner, next action, status, Due Date, primary action label/state, candidate boundary, and expected privacy absence.
+
+**Red/green cycle**
+
+- [ ] Add failing integrity tests that prove:
+  - an unmasked deterministic patch outside the allowlist that exceeds the strict region ratio fails;
+  - a perturbation inside one allowlisted dynamic leaf is tolerated only in that leaf;
+  - a 4 px shell/geometry shift fails;
+  - a broad mask or mask ratio above 5% fails;
+  - a missing baseline, altered PNG, stale hash, changed lockfile hash, wrong browser/platform metadata, or full-page comparator input fails;
+  - the ordinary test command cannot update a baseline.
+  - unknown/duplicate/empty focused surface filters and unsupported region filters fail.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- tests/visual/visual-contract.test.ts
+  npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected red: harness and tracked baselines do not exist.
+- [ ] Implement the legacy static server on `127.0.0.1:4173` with explicit root-only read paths and no mutation. Add isolated Playwright projects for baseline update and React comparison.
+
+  ```bash
+  mkdir -p apps/web/tests/visual apps/web/tests/visual-baselines/react-legacy-parity
+  ```
+
+  Create/edit all files through `apply_patch`.
+- [ ] Generate the 51 legacy viewport baselines with the explicit update command. Verify the path is tracked:
+
+  ```bash
+  npm --prefix apps/web run visual:baseline:update
+  node apps/web/scripts/verify-visual-baselines.mjs
+  if git check-ignore -q apps/web/tests/visual-baselines/react-legacy-parity/baseline-manifest.json; then exit 1; fi
+  ```
+
+- [ ] Run the current React comparison:
+
+  ```bash
+  npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected red: current minimal React shell fails at least one strict shell/geometry comparison. Record the first failing surface, viewport, region, and ratio in this plan. Do not weaken a threshold or add a mask to make the red state green.
+- [ ] Run harness integrity:
+
+  ```bash
+  npm --prefix apps/web test -- tests/visual/visual-contract.test.ts
+  node apps/web/scripts/verify-visual-baselines.mjs
   npm --prefix apps/web run typecheck
   ```
 
-  Expected: manifest and router tests PASS; typecheck PASS.
+  Expected green: harness-integrity tests pass while the product parity test remains intentionally red.
 
-- [ ] **Step 7: Update plan tracking truth**
+**Task 4 staging allowlist and commit**
 
-  Set this plan to `active` only after the independent review is accepted. Add a `note-open` parity/stakeholder-acceptance item; link the parent production-transition plan without marking production blocked work accepted.
+The baseline directory is a new task-owned subtree. Its manifest must list every staged PNG; no other file may exist in that subtree.
 
-- [ ] **Step 8: Commit and push only Task 1**
+```bash
+git add -- apps/web/scripts/serve-legacy.mjs apps/web/scripts/verify-visual-baselines.mjs apps/web/tests/e2e/support/legacy-parity-fixtures.ts apps/web/tests/e2e/legacy-baseline-update.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts apps/web/tests/visual/visual-contract.test.ts apps/web/tests/visual-baselines/react-legacy-parity/baseline-manifest.json apps/web/tests/visual-baselines/react-legacy-parity/ apps/web/playwright.config.ts apps/web/package.json docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "test(ui): add deterministic parity harness"
+git push origin HEAD
+```
 
-  ```bash
-  git add apps/web/src/parity/legacy-screen-manifest.ts apps/web/src/parity/legacy-screen-manifest.test.ts docs/product-specs/ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.md docs/product-specs/ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.turkce.md docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git diff --cached --stat
-  git commit -m "test(ui): freeze legacy parity contract"
-  git push origin HEAD
-  ```
+### Task 5: Reuse Brand Assets And Establish One Layered Style System
 
-  Expected: one Conventional Commit; push succeeds; unrelated files are not staged.
+**Files**
 
----
+- Create `apps/web/src/ui/brand-assets.ts`
+- Create `apps/web/src/ui/brand-assets.test.ts`
+- Create `apps/web/src/styles/reset.css`
+- Create `apps/web/src/styles/tokens.css`
+- Create `apps/web/src/styles/base.css`
+- Create `apps/web/src/styles/shell.css`
+- Create `apps/web/src/styles/utilities.css`
+- Create `apps/web/src/styles/responsive.css`
+- Create `apps/web/src/styles/style-ownership.test.ts`
+- Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/vite.config.ts`
+- Modify `apps/web/src/sw.ts`
+- Modify `apps/web/src/offline/sw-policy.test.ts`
+- Modify `apps/web/scripts/assert-app-shell-artifact.mjs`
+- Modify `apps/web/scripts/assert-http-artifact.mjs`
+- Create `apps/web/tests/e2e/brand-app-shell-restart.spec.ts`
+- Modify `apps/web/playwright.config.ts`
+- Modify `apps/web/package.json`
+- Modify this plan
 
-### Task 2: Add The Deterministic Legacy/React Visual Comparison Harness
+**Asset and CSS contracts**
 
-**Files:**
+`apps/web/src/ui/brand-assets.ts` resolves root assets with the correct source-relative prefix `../../../../assets/`. It exports semantic mark/texture/font/icon keys; components do not embed filesystem strings or choose icons by role labels.
 
-- Create: `apps/web/scripts/serve-legacy.mjs`
-- Create: `apps/web/tests/e2e/support/legacy-parity-fixtures.ts`
-- Create: `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
-- Create: `qa/screenshots/react-legacy-parity/README.md`
-- Create: `qa/screenshots/react-legacy-parity/reference/` metadata and accepted PNGs
-- Modify: `apps/web/playwright.config.ts`
-- Modify: `apps/web/package.json`
-- Modify: this plan
+```ts
+import type { IconKey } from "../app/route-contracts";
 
-**Interfaces:**
+export const BRAND_ASSETS: {
+  mark: string;
+  loginTexture: string;
+  dmSansVariable: string;
+  icons: Readonly<Record<IconKey, string>>;
+};
+```
 
-- Produces:
+`app.css` contains only the layer declaration and ordered imports:
 
-  ```ts
-  export interface ParityViewport {
-    name: "desktop" | "tablet" | "mobile";
-    width: number;
-    height: number;
-  }
+```css
+@layer reset, tokens, base, shell, primitives, features, utilities, responsive;
+@import "./reset.css" layer(reset);
+@import "./tokens.css" layer(tokens);
+@import "./base.css" layer(base);
+@import "./shell.css" layer(shell);
+@import "./utilities.css" layer(utilities);
+@import "./responsive.css" layer(responsive);
+```
 
-  export interface GeometrySnapshot {
-    documentWidth: number;
-    viewportWidth: number;
-    shellColumns: number;
-    visiblePrimaryActions: number;
-    minimumActionHeight: number;
-  }
+- `base.css` alone may style `html`, `body`, and `#root`.
+- Authenticated workbench pages use the accepted root system stack. Only the login/role-selection selector receives local `"DM Sans"`.
+- Feature selectors must live in exact feature stylesheets created by Tasks 9-14 and be imported into `layer(features)`. Shared primitives belong only to Task 8’s `primitives.css`.
+- No production stylesheet may import `css/styles.css`, use `!important`, define an unlayered rule, or duplicate an owned selector across files.
+- Status colors must have a text/icon cue and readable foreground; color alone is not state.
 
-  export async function prepareLegacySurface(page: Page, surface: LegacyScreenContract): Promise<void>;
-  export async function prepareReactSurface(page: Page, surface: LegacyScreenContract): Promise<void>;
-  export async function captureGeometry(page: Page): Promise<GeometrySnapshot>;
-  ```
+Vite development access is restricted to `apps/web` and the repository `assets/` directory. Do not allow the repository root as a general filesystem server root. Build output may emit only approved image/font assets from the asset registry.
 
-- Reference server: `http://127.0.0.1:4173/index.html`.
-- React demo server: `http://127.0.0.1:4174/`.
-- Transient output: `/private/tmp/aviasurveil360-react-legacy-parity`.
+The app-shell asset manifest and Service Worker classifier include `svg|png|jpg|jpeg|webp|ttf|woff|woff2` in addition to CSS/JS. The HTTP artifact scan allows emitted approved image/font files but still rejects root `css/styles.css`, any root `js/` module, `src/mock`, `seed-data`, `http-test`, canonical test token/boundary, and root-demo runtime paths.
 
-- [ ] **Step 1: Write a failing package-script/config test**
+Add exact package script:
 
-  Extend `legacy-screen-manifest.test.ts` or create a small Node test that asserts:
+```json
+"test:e2e:brand-offline": "npm run build:demo && AVIA_E2E_PROFILE=offline playwright test tests/e2e/brand-app-shell-restart.spec.ts --project=offline"
+```
 
-  ```ts
-  expect(packageJson.scripts["serve:legacy"]).toBe("node scripts/serve-legacy.mjs");
-  expect(packageJson.scripts["test:e2e:parity"]).toContain("AVIA_E2E_PROFILE=parity");
-  ```
+**Red/green cycle**
 
-  Run it and expect FAIL before adding scripts.
-
-- [ ] **Step 2: Implement a read-only static server**
-
-  `serve-legacy.mjs` must:
-
-  - resolve repository root with `fileURLToPath(new URL("../../..", import.meta.url))`;
-  - bind only `127.0.0.1:4173`;
-  - normalize and reject traversal outside the root;
-  - serve known MIME types for HTML, CSS, JS, SVG, PNG, JPG, and TTF;
-  - never write files or expose dot-directories;
-  - return `404` for missing files and `405` for non-GET/HEAD methods.
-
-- [ ] **Step 3: Add the parity Playwright profile**
-
-  Add `AVIA_E2E_PROFILE=parity` handling with two web servers:
-
-  ```ts
-  [
-    {
-      command: "npm run serve:legacy",
-      url: "http://127.0.0.1:4173/index.html",
-      reuseExistingServer: false,
-    },
-    {
-      command: "npm run dev:demo -- --host 127.0.0.1 --port 4174 --strictPort",
-      url: "http://127.0.0.1:4174/",
-      reuseExistingServer: false,
-    },
-  ]
-  ```
-
-  The parity project must match only `e2e/legacy-visual-parity.spec.ts`.
-
-- [ ] **Step 4: Implement deterministic surface preparation**
-
-  For the root reference, clear `aviasurveil360:v2-demo-state`, reload, choose the exact role through the visible role card, and navigate through visible controls where possible. Use a narrowly scoped state fixture only for deep canonical states that would otherwise require mutating the full lifecycle in every screenshot; fixture state must come from `freshState()` semantics and must be documented in the screenshot metadata.
-
-  For React, reset mock runtime by starting a fresh browser context per test, then navigate by the manifest's exact `reactPath`. Do not inject React component state.
-
-- [ ] **Step 5: Capture and freeze the 51 source-reference images**
-
-  Use:
-
-  ```ts
-  const PARITY_VIEWPORTS = [
-    { name: "desktop", width: 1440, height: 900 },
-    { name: "tablet", width: 1024, height: 768 },
-    { name: "mobile", width: 390, height: 844 },
-  ] as const;
-  ```
-
-  Store only accepted legacy PNGs plus a JSON metadata file containing surface ID, role, legacy view/params, viewport, source commit, browser version, and masked dynamic selectors. Do not store transient React actual/diff images in Git.
-
-- [ ] **Step 6: Write the initial red visual parity test**
-
-  For each connected surface and viewport, assert:
-
-  - correct heading/role/path;
-  - zero document overflow;
-  - no warning/error console events;
-  - reference and React screenshots exist;
-  - shell/role-selection comparison uses `maxDiffPixelRatio: 0.03`;
-  - content-adapted pages use geometry/semantic assertions and an initial `0.08` cap;
-  - dynamic masks cover only candidate ribbon timestamps, transient toast regions, or explicitly named server-shaped values.
-
-  Run:
+- [ ] Add failing tests for asset existence, exact relative prefix, semantic icon completeness, CSS layer order, system-font workbench, login-only DM Sans, selector ownership, no root CSS import, no unlayered rules, and no `!important`.
+- [ ] Extend app-shell/SW/artifact tests so an emitted mark, icon, and font are required in both demo and HTTP manifests.
+- [ ] Add a stopped-origin Playwright test: load/build once, verify mark/icon/font, stop the origin through the existing offline server harness, reload offline, and assert the same assets render from Cache Storage without a network response.
+- [ ] Run:
 
   ```bash
-  npm --prefix apps/web run test:e2e:parity
-  ```
-
-  Expected: FAIL on the current minimal React role-selection/shell visual comparison. Record the first failing surface and diff ratio in the plan; do not weaken the threshold.
-
-- [ ] **Step 7: Verify harness integrity**
-
-  Deliberately perturb one reference copy in `/private/tmp`, prove the comparison fails, restore the copy, and rerun the harness. This prevents a test that reports success without comparing pixels/geometry.
-
-- [ ] **Step 8: Commit and push only Task 2**
-
-  ```bash
-  git add apps/web/scripts/serve-legacy.mjs apps/web/tests/e2e/support/legacy-parity-fixtures.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts apps/web/playwright.config.ts apps/web/package.json apps/web/package-lock.json qa/screenshots/react-legacy-parity docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git commit -m "test(ui): add legacy visual parity harness"
-  git push origin HEAD
-  ```
-
----
-
-### Task 3: Reuse The Accepted Brand Assets And Token System
-
-**Files:**
-
-- Create: `apps/web/src/ui/brand/brand-assets.ts`
-- Create: `apps/web/src/styles/brand-tokens.css`
-- Create: `apps/web/src/styles/shell.css`
-- Create: `apps/web/src/styles/workbench.css`
-- Create: `apps/web/src/styles/responsive.css`
-- Modify: `apps/web/src/styles/app.css`
-- Create or modify: `apps/web/src/ui/brand/brand-assets.test.ts`
-- Modify: `apps/web/scripts/assert-http-artifact.mjs`
-- Modify: this plan
-
-**Interfaces:**
-
-- Produces:
-
-  ```ts
-  export const BRAND_ASSETS: Readonly<{
-    mark: string;
-    airspaceTexture: string;
-    icons: Readonly<Record<Role, string>>;
-  }>;
-  ```
-
-- CSS token contract includes root-compatible `--navy-900`, `--navy-800`, `--blue-500`, `--ink`, `--muted`, `--line`, `--bg`, `--surface`, status tokens, radius, shadows, and `"DM Sans"` as the primary application font.
-
-- [ ] **Step 1: Write failing asset/token tests**
-
-  Assert that `BRAND_ASSETS` resolves the root mark, texture, and eight local SVG role icons through Vite asset URLs; assert the CSS contains the accepted token values and a local `@font-face` source for `DMSans-Variable.ttf`.
-
-- [ ] **Step 2: Run the focused red test**
-
-  ```bash
-  npm --prefix apps/web test -- src/ui/brand/brand-assets.test.ts
-  ```
-
-  Expected: FAIL because the asset module/token layer is absent.
-
-- [ ] **Step 3: Implement asset reuse without binary duplication**
-
-  Use `new URL("../../../../../assets/...", import.meta.url).href` in `brand-assets.ts`. Vite must fingerprint the files into both builds. Do not copy or modify the root PNG, SVG, or TTF files.
-
-- [ ] **Step 4: Introduce ordered style layers**
-
-  `app.css` must import in this order:
-
-  ```css
-  @import "./brand-tokens.css";
-  @import "./shell.css";
-  @import "./workbench.css";
-  @import "./responsive.css";
-  ```
-
-  Until Tasks 4 and 6 create the latter files, add empty files with only layer comments in this task so the build remains green. Do not move page rules yet.
-
-- [ ] **Step 5: Verify build graph and HTTP isolation**
-
-  ```bash
-  npm --prefix apps/web run typecheck
+  npm --prefix apps/web test -- src/ui/brand-assets.test.ts src/styles/style-ownership.test.ts src/offline/sw-policy.test.ts
   npm --prefix apps/web run build:demo
   npm --prefix apps/web run build:http
+  npm --prefix apps/web run check:app-shell
   node apps/web/scripts/assert-http-artifact.mjs apps/web/dist/http
+  npm --prefix apps/web run test:e2e:brand-offline
   ```
 
-  Expected: both builds PASS; local brand assets are emitted; root `js/`, mock, seed, and canonical-test code are absent from HTTP inputs.
-
-- [ ] **Step 6: Commit and push only Task 3**
+  Expected red: asset registry/layers are absent and image/font manifest checks fail.
+- [ ] Implement the registry, tokens, layers, restricted Vite access, asset classifier, and artifact rules. Do not copy root declarations en masse.
 
   ```bash
-  git add apps/web/src/ui/brand apps/web/src/styles apps/web/scripts/assert-http-artifact.mjs docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git commit -m "feat(ui): align brand assets and tokens"
-  git push origin HEAD
+  mkdir -p apps/web/src/ui
   ```
 
----
-
-### Task 4: Replace The Minimal Role Page And Shell With The Accepted Interface
-
-**Files:**
-
-- Create: `apps/web/src/ui/shell/role-select-page.tsx`
-- Create: `apps/web/src/ui/shell/application-shell.tsx`
-- Create: `apps/web/src/ui/shell/candidate-ribbon.tsx`
-- Create: `apps/web/src/ui/shell/role-navigation.ts`
-- Create: `apps/web/src/ui/shell/role-navigation.tsx`
-- Create: `apps/web/src/ui/shell/topbar.tsx`
-- Create: `apps/web/src/ui/shell/shell.test.tsx`
-- Modify: `apps/web/src/app/router.tsx`
-- Modify: `apps/web/src/features/shared/workspace-shell.tsx`
-- Modify: `apps/web/src/styles/shell.css`
-- Modify: `apps/web/src/styles/responsive.css`
-- Modify: `apps/web/tests/e2e/release-candidate-gates.spec.ts`
-- Modify: this plan
-
-**Interfaces:**
-
-- Produces:
-
-  ```ts
-  export interface RoleNavigationItem {
-    id: string;
-    label: string;
-    to: string;
-    iconUrl: string;
-    capability: "connected" | "disabled";
-    disabledReason?: string;
-  }
-
-  export interface ApplicationShellProps extends PropsWithChildren {
-    role: Role;
-    pageTitle: string;
-    breadcrumbs: readonly { label: string; to?: string }[];
-    primaryAction?: ReactNode;
-  }
-  ```
-
-- `roleNavigation(role)` returns only connected routes in React. It never fabricates a route for a legacy-only screen.
-
-- [ ] **Step 1: Write failing shell tests**
-
-  Require:
-
-  - the split login/role-selection layout with mark, texture, `Safer oversight, from plan to closure.`, three role groups, and eight keyboard-reachable role cards;
-  - the dark navy sidebar, product mark/title, role identity, active item, topbar breadcrumb, notification/profile controls, logout/switch action, and candidate boundary;
-  - `aria-expanded` mobile navigation and focus return after close;
-  - no link to a `later-legacy-only` or `demo-only-legacy` path;
-  - every role home path remains exact.
-
-- [ ] **Step 2: Run the focused red tests**
+  Create/edit all files through `apply_patch`.
+- [ ] Run the same commands plus:
 
   ```bash
-  npm --prefix apps/web test -- src/ui/shell/shell.test.tsx src/app/router.test.tsx
-  ```
-
-  Expected: FAIL because the accepted shell components do not exist.
-
-- [ ] **Step 3: Implement the role-selection experience**
-
-  Use the accepted root structure rather than the current four-column generic card grid:
-
-  - desktop: branded navy visual panel + light role selector panel;
-  - tablet: balanced stacked/two-column composition without lost role cards;
-  - mobile: brand summary first, all role cards in document order, no fixed-height clipping;
-  - role cards use the existing local icons, label, purpose, and exact route;
-  - candidate text remains literal and never says production-ready.
-
-- [ ] **Step 4: Implement role-aware shell navigation**
-
-  Build navigation from `BACKEND_CONNECTED_SURFACES`, not a duplicate hand-written route list. For a normal authenticated HTTP session, intersect connected role routes with session roles. Demo/canonical-test mode retains `Switch role`; normal HTTP uses `Switch role` only when the session has multiple supported roles.
-
-- [ ] **Step 5: Add mobile navigation behavior**
-
-  Use React state local to `ApplicationShell`; lock only the application overlay, not browser scrolling globally; close on Escape, backdrop, navigation, and logout; return focus to the menu button.
-
-- [ ] **Step 6: Migrate existing pages through a compatibility wrapper**
-
-  Keep `WorkspaceShell` as a thin adapter to `ApplicationShell` during Tasks 7-12. Remove its old sidebar markup now so there is only one shell implementation.
-
-- [ ] **Step 7: Run focused and visual checkpoint tests**
-
-  ```bash
-  npm --prefix apps/web test -- src/ui/shell/shell.test.tsx src/app/router.test.tsx
-  npm --prefix apps/web run test:e2e:mock
-  npm --prefix apps/web run test:e2e:parity -- --grep "role-select|shell"
-  ```
-
-  Expected: role-selection/shell tests PASS at all three viewports; no console issues or overflow; strict shell diff meets `<= 0.03` or has a reviewer-approved exact exception recorded in the manifest.
-
-- [ ] **Step 8: Commit and push only Task 4**
-
-  ```bash
-  git add apps/web/src/ui/shell apps/web/src/app/router.tsx apps/web/src/features/shared/workspace-shell.tsx apps/web/src/styles/shell.css apps/web/src/styles/responsive.css apps/web/tests/e2e/release-candidate-gates.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git commit -m "feat(ui): port legacy application shell"
-  git push origin HEAD
-  ```
-
-  **Review checkpoint:** obtain focused stakeholder review of the role-selection and shell screenshots before feature-page migration. A rejected shell blocks Tasks 5-14.
-
----
-
-### Task 5: Connect The Normal HTTP Build To OIDC Session And CSRF
-
-**Files:**
-
-- Create: `apps/web/src/auth/session-client.ts`
-- Create: `apps/web/src/auth/session-client.test.ts`
-- Create: `apps/web/src/auth/session-provider.tsx`
-- Create: `apps/web/src/auth/session-provider.test.tsx`
-- Create: `apps/web/src/auth/http-auth-gate.tsx`
-- Create: `apps/web/src/auth/login-page.tsx`
-- Modify: `apps/web/src/app/providers.tsx`
-- Modify: `apps/web/src/app/bootstrap.tsx`
-- Modify: `apps/web/src/entry/demo.tsx`
-- Modify: `apps/web/src/entry/http-test.tsx`
-- Modify: `apps/web/src/entry/http.tsx`
-- Modify: `apps/web/src/backend/http-backend.ts`
-- Modify: `apps/api/internal/identity/principal.go`
-- Modify: `apps/api/internal/platform/session/manager.go`
-- Modify: `apps/api/internal/httpapi/auth.go`
-- Modify: matching Go/React tests and OpenAPI behavior documentation if the session projection contract is recorded there
-- Modify: this plan
-
-**Interfaces:**
-
-- Produces:
-
-  ```ts
-  export type IdentityMode =
-    | "demo-role-switch"
-    | "canonical-test-role-switch"
-    | "oidc-session";
-
-  export interface SessionProjection {
-    subjectId: string;
-    displayName: string;
-    organizationId: string;
-    roles: Role[];
-  }
-
-  export interface SessionClient {
-    get(): Promise<SessionProjection>;
-    login(returnTo: string): void;
-    logout(): Promise<void>;
-    csrfToken(): string | null;
-  }
-  ```
-
-- Go `/auth/session` returns only subject ID, display name, organization ID, and supported roles. It never returns provider tokens, cookie values, email claims, secrets, or Internal CAA data.
-
-- [ ] **Step 1: Write failing React session tests**
-
-  Cover:
-
-  - `401` -> unauthenticated branded login page;
-  - successful projection -> authenticated routes only;
-  - unsupported/empty roles -> closed authorization error;
-  - expired session during API call -> protected data cleared and login action shown;
-  - `login()` uses `/auth/login?returnTo=` with a same-origin path;
-  - `logout()` includes credentials and CSRF;
-  - cookie parser returns only `__Host-avia_csrf` and never stores it.
-
-- [ ] **Step 2: Write failing Go session-projection tests**
-
-  Extend `apps/api/internal/httpapi/auth_test.go` so the session response requires `displayName`, supported roles, and organization while explicitly rejecting serialized token/secret/cookie fields.
-
-- [ ] **Step 3: Run red tests**
-
-  ```bash
-  npm --prefix apps/web test -- src/auth/session-client.test.ts src/auth/session-provider.test.tsx
-  GOCACHE=/private/tmp/aviasurveil360-ui-parity-go-cache go -C apps/api test ./internal/httpapi ./internal/platform/session ./internal/identity
-  ```
-
-  Expected: React modules absent and Go display-name assertion fails.
-
-- [ ] **Step 4: Implement the safe server session projection**
-
-  Add `DisplayName` to the authenticated principal/session query only if it can be derived from the existing identity reference. Do not trust a client display name and do not add provider tokens to the principal. Keep session and OIDC persistence encrypted/server-side.
-
-- [ ] **Step 5: Implement the React session state machine**
-
-  States are exactly `loading`, `unauthenticated`, `authenticated`, `unavailable`, and `expired`. Only `oidc-session` uses the gate. Demo and canonical-test modes never call `/auth/session`.
-
-- [ ] **Step 6: Wire CSRF into normal `HttpBackend` mutations**
-
-  Pass `sessionClient.csrfToken` to `createHttpBackend`. Preserve existing request mapping and problem types. A missing token must result in the existing server `403` and an actionable UI error; do not silently retry a mutation.
-
-- [ ] **Step 7: Verify real local Keycloak login**
-
-  Extend the local HTTP profile browser gate to:
-
-  - open normal HTTP entry without a session;
-  - click `Sign in with organization account`;
-  - authenticate with the pinned local Keycloak Inspector fixture;
-  - complete callback and receive secure browser cookies;
-  - render only Inspector-connected navigation;
-  - perform one CSRF-protected mutation;
-  - log out and verify the session projection returns `401`.
-
-  Registration must remain disabled and no sign-up link may render.
-
-- [ ] **Step 8: Run focused/full auth gates**
-
-  ```bash
-  npm --prefix apps/web test -- src/auth src/backend/http-backend.test.ts
-  GOCACHE=/private/tmp/aviasurveil360-ui-parity-go-cache go -C apps/api test ./internal/httpapi ./internal/platform/session ./internal/identity
-  ./scripts/test-http-profile.sh
-  ```
-
-  Expected: focused tests PASS; full profile PASS; canonical-test profile remains isolated; normal HTTP tokens are absent from React/public artifacts.
-
-- [ ] **Step 9: Commit and push only Task 5**
-
-  ```bash
-  git add apps/web/src/auth apps/web/src/app/providers.tsx apps/web/src/app/bootstrap.tsx apps/web/src/entry apps/web/src/backend/http-backend.ts apps/api/internal/identity apps/api/internal/platform/session apps/api/internal/httpapi/auth.go apps/api/internal/httpapi/auth_test.go docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git commit -m "feat(auth): connect browser session experience"
-  git push origin HEAD
-  ```
-
----
-
-### Task 6: Build Shared Oversight Workbench Primitives
-
-**Files:**
-
-- Create: `apps/web/src/ui/primitives/*.tsx` files named in the File Map
-- Create: `apps/web/src/ui/primitives/primitives.test.tsx`
-- Modify: `apps/web/src/styles/workbench.css`
-- Modify: `apps/web/src/styles/responsive.css`
-- Modify: `apps/web/src/features/shared/workspace-shell.tsx`
-- Modify: this plan
-
-**Interfaces:**
-
-- `CommandHeader` requires title, purpose, status/owner/next-action metadata, and optional primary action.
-- `WorkTable<T>` requires stable row ID, semantic columns, and an exact row action; `ResponsiveRecordList<T>` renders the same records below the configured breakpoint.
-- `DossierTabs` uses real buttons with `aria-selected` and a labelled tabpanel.
-- `LifecycleStepper` receives typed stages and never infers closure from CAP acceptance.
-- `DecisionPanel` keeps public and internal comments in distinct labelled inputs.
-- `ModalDialog` traps focus, closes on Escape/cancel, restores focus, and never closes on an invalid submit.
-
-- [ ] **Step 1: Write failing primitive tests**
-
-  Cover exact semantics, status text, mobile card facts, tab keyboard behavior, modal focus restoration, distinct comment labels, disabled reason, and `44px` class hooks.
-
-- [ ] **Step 2: Run red tests**
-
-  ```bash
-  npm --prefix apps/web test -- src/ui/primitives/primitives.test.tsx
-  ```
-
-  Expected: FAIL because the primitives are absent.
-
-- [ ] **Step 3: Implement minimal complete primitives**
-
-  Keep primitives presentation-only. They receive domain values and callbacks; they never call `Backend`, mutate scenario context, select a role, or know build profile.
-
-- [ ] **Step 4: Port shared formatting helpers**
-
-  Move date/severity/status label formatting from `workspace-shell.tsx` into focused helpers used by primitives. Keep transport enums out of JSX class-name construction.
-
-- [ ] **Step 5: Verify component accessibility and visual gallery states**
-
-  Render each primitive in at least default, warning, error, disabled, empty, and long-content states where applicable. Assert no truncated finding reference, organization, Due Date, or action label.
-
-- [ ] **Step 6: Run focused tests and builds**
-
-  ```bash
-  npm --prefix apps/web test -- src/ui/primitives src/ui/shell
-  npm --prefix apps/web run typecheck
-  npm --prefix apps/web run build:demo
-  npm --prefix apps/web run build:http
-  ```
-
-- [ ] **Step 7: Commit and push only Task 6**
-
-  ```bash
-  git add apps/web/src/ui/primitives apps/web/src/styles/workbench.css apps/web/src/styles/responsive.css apps/web/src/features/shared/workspace-shell.tsx docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git commit -m "feat(ui): add oversight workbench primitives"
-  git push origin HEAD
-  ```
-
----
-
-### Task 7: Migrate Inspector Assignments, Audit Detail, And Checklist Runner
-
-**Files:**
-
-- Modify: `apps/web/src/features/assignments/inspector-assignments-page.tsx`
-- Modify: `apps/web/src/features/inspections/audit-detail-page.tsx`
-- Modify: `apps/web/src/features/checklists/checklist-runner-page.tsx`
-- Modify: `apps/web/src/features/inspections/offline-readiness-panel.tsx`
-- Create/modify: colocated component tests
-- Modify: `apps/web/tests/e2e/canonical-scenario.spec.ts`
-- Modify: `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
-- Modify: this plan
-
-**Interfaces:**
-
-- Consumes existing `Backend.assignments`, `Backend.inspections`, `useScenario`, `FieldRepository`, offline readiness, OPFS attachment, and sync interfaces without signature changes.
-- Produces root-compatible Inspector workbench, selected Audit dossier, six-question Cabin checklist, Potential Finding creation surface, visible local/sync/conflict state, and responsive records.
-
-- [ ] **Step 1: Add failing Inspector component assertions**
-
-  Require the root-compatible command header, assignment register + mobile cards, organization/status/Due Date/next action, Audit dossier facts, checklist sections, exact response controls, required-comment state, Inspection Attachment filename, Potential Finding action, and visible offline/sync status.
-
-- [ ] **Step 2: Run focused red tests**
-
-  ```bash
-  npm --prefix apps/web test -- src/features/assignments src/features/inspections src/features/checklists
-  ```
-
-  Expected: FAIL on missing parity components/classes, not on changed domain behavior.
-
-- [ ] **Step 3: Migrate My Assignments**
-
-  Match the original table-first workbench at desktop and responsive record-card pattern at mobile. Preserve the exact backend-derived assignment list; do not add decorative mock counters not supported by the projection.
-
-- [ ] **Step 4: Migrate Audit Detail**
-
-  Show Audit identity, organization, assigned Inspector, status, Due Date, checklist package, progress, owner, next action, and one primary `Continue Cabin Inspection` control above the first viewport.
-
-- [ ] **Step 5: Migrate Checklist Runner without breaking offline**
-
-  Preserve atomic local response/Potential Finding/outbox behavior, attachment recovery gates, server acknowledgement, conflict presentation, and re-entry. A local save must remain visibly distinct from server acknowledgement.
-
-- [ ] **Step 6: Run mock, HTTP, offline, and visual tests**
-
-  ```bash
-  npm --prefix apps/web test -- src/features/assignments src/features/inspections src/features/checklists src/app/scenario-context.offline.test.tsx
-  npm --prefix apps/web run test:e2e:mock
-  npm --prefix apps/web run test:e2e:parity -- --grep "inspector-home|audit-detail|checklist-runner"
-  npm --prefix apps/web run test:e2e:offline
-  ./scripts/test-http-profile.sh
-  ```
-
-  Expected: all focused/dual/offline gates PASS; Inspector visual ratios and geometry pass at three viewports.
-
-- [ ] **Step 7: Commit and push only Task 7**
-
-  ```bash
-  git add apps/web/src/features/assignments apps/web/src/features/inspections apps/web/src/features/checklists apps/web/tests/e2e/canonical-scenario.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git commit -m "feat(ui): align inspector workspaces"
-  git push origin HEAD
-  ```
-
----
-
-### Task 8: Migrate Lead Inspector Potential Finding, CAP, And Evidence Review
-
-**Files:**
-
-- Modify: `apps/web/src/features/findings/lead-review-page.tsx`
-- Modify: `apps/web/src/features/findings/finding-detail-page.tsx`
-- Modify: `apps/web/src/features/caps/cap-review-page.tsx`
-- Modify: `apps/web/src/features/evidence/evidence-review-page.tsx`
-- Create/modify: colocated tests
-- Modify: canonical mock/HTTP Playwright scenario and parity spec
-- Modify: this plan
-
-**Interfaces:**
-
-- Consumes existing Potential Finding, Finding, CAP review, Evidence version, Evidence review, and authorized closure Backend capabilities.
-- Produces root-compatible review queue/dossier, lifecycle stepper, exact authority decisions, immutable Evidence history, and distinct public/internal comments.
-
-- [ ] **Step 1: Write failing Lead UI tests**
-
-  Require:
-
-  - Potential Finding is visibly pending Lead authority;
-  - Inspector cannot select severity or issue a Finding;
-  - Lead `Convert`, `Return`, and `Dismiss` actions use reason/required fields;
-  - CAP acceptance text explicitly states it does not close the Finding;
-  - Evidence versions render newest and prior versions without overwrite;
-  - `Close`, `Partially Close`, and `Not Close` results are distinct;
-  - `Comment to Auditee` and `Internal CAA Note` are separate labelled controls;
-  - owner, next action, Due Date, status, severity, Audit, and organization appear in the dossier.
-
-- [ ] **Step 2: Run focused red tests**
-
-  ```bash
-  npm --prefix apps/web test -- src/features/findings src/features/caps/cap-review-page.test.tsx src/features/evidence
-  ```
-
-- [ ] **Step 3: Migrate queue and Finding dossier**
-
-  Use the root Findings queue + selected dossier composition. Keep one obvious primary decision and place the lifecycle/authority facts before supporting history.
-
-- [ ] **Step 4: Migrate CAP review**
-
-  Preserve submitted CAP fields, revision, separate acceptance authority, reason-required more-information/rejection paths, and immutable prior revisions.
-
-- [ ] **Step 5: Migrate Evidence review**
-
-  Preserve clean-scan gating, exact Evidence version selection, public/internal comments, closure basis, and open status for partial/not-close outcomes.
-
-- [ ] **Step 6: Run lifecycle and visual matrices**
-
-  ```bash
-  npm --prefix apps/web test -- src/features/findings src/features/caps src/features/evidence
-  npm --prefix apps/web run test:e2e:mock
-  npm --prefix apps/web run test:e2e:parity -- --grep "lead-home|finding-detail|cap-review|evidence-review"
-  ./scripts/test-http-profile.sh
-  node --test tests/scenario-integrity-regression.test.js tests/working-scenario-audit-remediation.test.js
-  ```
-
-- [ ] **Step 7: Commit and push only Task 8**
-
-  ```bash
-  git add apps/web/src/features/findings apps/web/src/features/caps/cap-review-page.tsx apps/web/src/features/evidence apps/web/tests/e2e docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git commit -m "feat(ui): align lead review workspaces"
-  git push origin HEAD
-  ```
-
-  **Review checkpoint:** replay the full Checklist -> Potential Finding -> Finding -> CAP -> Evidence -> Closure scenario in the visible browser before migrating management surfaces.
-
----
-
-### Task 9: Migrate The Auditee Corrective Action Workspace
-
-**Files:**
-
-- Modify: `apps/web/src/features/caps/auditee-cap-page.tsx`
-- Modify: `apps/web/src/features/caps/auditee-projection.tsx`
-- Modify: matching tests
-- Modify: canonical scenario and parity spec
-- Modify: this plan
-
-**Interfaces:**
-
-- Consumes the existing organization-scoped Auditee Backend projections and upload/version capabilities.
-- Produces the accepted Service Provider portal visual language for the connected CAP surface only.
-
-- [ ] **Step 1: Add failing Auditee privacy/visual tests**
-
-  Require portal identity, organization scope, CAA request summary, Finding facts, CAP form helper text, Evidence version/filename state, Due Date/status/next action, and absence of Internal CAA Note, other organization, workload, internal risk, and enforcement deliberation strings.
-
-- [ ] **Step 2: Run red tests**
-
-  ```bash
-  npm --prefix apps/web test -- src/features/caps/auditee-projection.test.tsx src/features/caps/auditee-cap-page.test.tsx
-  ```
-
-- [ ] **Step 3: Migrate portal layout and CAP form**
-
-  Use the root Service Provider shell anatomy and scope note. Keep root cause, corrective action, preventive action, responsible person, Target completion date, and comment to CAA as explicit fields with inline errors.
-
-- [ ] **Step 4: Preserve official Evidence behavior**
-
-  Official Evidence stays online/server-authoritative. Show selected filename, upload/scan/review state, and version history; do not expose OPFS Inspection Attachments as official Evidence.
-
-- [ ] **Step 5: Run Auditee isolation and parity gates**
-
-  ```bash
-  npm --prefix apps/web test -- src/features/caps
-  npm --prefix apps/web run test:e2e:mock
-  npm --prefix apps/web run test:e2e:parity -- --grep "auditee-home"
-  ./scripts/test-http-profile.sh
-  ```
-
-- [ ] **Step 6: Commit and push only Task 9**
-
-  ```bash
-  git add apps/web/src/features/caps apps/web/tests/e2e docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git commit -m "feat(ui): align auditee workspace"
-  git push origin HEAD
-  ```
-
----
-
-### Task 10: Migrate Department Manager Dashboard, Organizations, Planning, And Report Preview
-
-**Files:**
-
-- Modify: `apps/web/src/features/findings/manager-dashboard-page.tsx`
-- Modify: `apps/web/src/features/organizations/organization-registry-page.tsx`
-- Modify: `apps/web/src/features/planning/planning-workspaces.tsx`
-- Modify: `apps/web/src/features/reports/report-preview-page.tsx`
-- Create/modify: colocated tests
-- Modify: first-production and parity Playwright specs
-- Modify: this plan
-
-**Interfaces:**
-
-- Consumes existing manager dashboard, organizations, planning items, planning decisions, report versions, and audit events.
-- Produces a compact management attention workbench, organization register, plan dossier/calendar, and immutable report preview matching accepted root patterns.
-
-- [ ] **Step 1: Write failing Manager tests**
-
-  Require compact attention metrics, actionable rows, organization status and exact scope, plan status/owner/next action/revision, report version/status/approval facts, and mobile records without document overflow.
-
-- [ ] **Step 2: Run focused red tests**
-
-  ```bash
-  npm --prefix apps/web test -- src/features/findings/manager-dashboard-page.test.tsx src/features/organizations src/features/planning src/features/reports/report-preview-page.test.tsx
-  ```
-
-- [ ] **Step 3: Migrate the manager dashboard**
-
-  Follow the root's smallest useful decision set. Do not recreate unsupported advanced-risk charts; show only server-shaped counts/attention items and connected navigation.
-
-- [ ] **Step 4: Migrate organization registry**
-
-  Provide desktop table and mobile cards with exact organization identity, type, status, open Finding/next Audit context available from the projection. Preserve Auditee isolation at API level.
-
-- [ ] **Step 5: Migrate Audit Plan Calendar/dossier**
-
-  Show the exact Finance -> GM -> Executive Director -> GM Release chain, current owner, reason-required decision, revision, and history. Department Manager does not perform another role's decision.
-
-- [ ] **Step 6: Migrate report preview**
-
-  Keep exact report version, status, Finding linkage, approval state, and candidate-only document boundary. Report issue does not close Findings.
-
-- [ ] **Step 7: Run focused, route, and visual gates**
-
-  ```bash
-  npm --prefix apps/web test -- src/features/findings src/features/organizations src/features/planning src/features/reports
-  npm --prefix apps/web run test:e2e:parity -- --grep "manager-home|organization-registry|audit-plan|report-preview"
-  npm --prefix apps/web run test:e2e:mock
-  ./scripts/test-http-profile.sh
-  ```
-
-- [ ] **Step 8: Commit and push only Task 10**
-
-  ```bash
-  git add apps/web/src/features/findings apps/web/src/features/organizations apps/web/src/features/planning apps/web/src/features/reports/report-preview-page.tsx apps/web/tests/e2e docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git commit -m "feat(ui): align manager workspaces"
-  git push origin HEAD
-  ```
-
----
-
-### Task 11: Migrate Finance, General Manager, And Executive Director Decision Workspaces
-
-**Files:**
-
-- Modify: `apps/web/src/features/planning/planning-workspaces.tsx`
-- Modify: `apps/web/src/features/reports/executive-dashboard-page.tsx`
-- Create/modify: colocated tests
-- Modify: first-production route and parity specs
-- Modify: this plan
-
-**Interfaces:**
-
-- Consumes the existing shared planning item and exact revision/decision Backend operations.
-- Produces root-compatible Finance budget dossier, General Manager intermediate/release workspace, and Executive Director final plan decision workspace.
-
-- [ ] **Step 1: Write failing authority/visual tests**
-
-  Require role-specific title/navigation, exact current owner, planning status, requested budget, reason field, allowed decision buttons, history, and no cross-role decision control.
-
-- [ ] **Step 2: Run focused red tests**
-
-  ```bash
-  npm --prefix apps/web test -- src/features/planning src/features/reports/executive-dashboard-page.test.tsx
-  ```
-
-- [ ] **Step 3: Migrate Finance Review**
-
-  Show one queue/dossier, `Approve Budget`, and `Return for Revision`. Finance cannot edit scope, approve the final plan, or release it.
-
-- [ ] **Step 4: Migrate General Manager workspace**
-
-  Show GM Review and GM Release as distinct stages. GM cannot act as Executive Director and cannot release before ED approval.
-
-- [ ] **Step 5: Migrate Executive Director workspace**
-
-  Show eligible final plan decisions, literal candidate-only approval mark language, and next owner GM Release. Do not add enforcement action to planning.
-
-- [ ] **Step 6: Run full authority chain at all viewports**
-
-  ```bash
-  npm --prefix apps/web run test:e2e:parity -- --grep "finance-home|gm-home|executive-home"
-  npm --prefix apps/web run test:e2e:mock
-  ./scripts/test-http-profile.sh
-  ```
-
-  Expected chain: `FINANCE_REVIEW -> GM_REVIEW -> EXECUTIVE_DIRECTOR_REVIEW -> GM_RELEASE -> RELEASED`, with exact owner and reason at every stage.
-
-- [ ] **Step 7: Commit and push only Task 11**
-
-  ```bash
-  git add apps/web/src/features/planning apps/web/src/features/reports/executive-dashboard-page.tsx apps/web/tests/e2e docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git commit -m "feat(ui): align leadership workspaces"
-  git push origin HEAD
-  ```
-
----
-
-### Task 12: Migrate The Connected Admin Configuration Preview
-
-**Files:**
-
-- Modify: `apps/web/src/features/admin/admin-configuration-page.tsx`
-- Create/modify: `apps/web/src/features/admin/admin-configuration-page.test.tsx`
-- Modify: first-production and parity specs
-- Modify: this plan
-
-**Interfaces:**
-
-- Consumes read-only checklist-template versions, reminder rules, and audit events.
-- Produces the accepted root configuration-studio visual pattern without implying production user/configuration editing.
-
-- [ ] **Step 1: Write failing Admin tests**
-
-  Require selected template/version preview, configured question/reference/evidence fields, reminder rule rows, audit-event rows, readable empty/error states, and explicit read-only/candidate boundaries. Reject enabled create/edit/publish/user-management controls.
-
-- [ ] **Step 2: Run focused red tests**
-
-  ```bash
-  npm --prefix apps/web test -- src/features/admin/admin-configuration-page.test.tsx
-  ```
-
-- [ ] **Step 3: Migrate the configuration-studio layout**
-
-  Match the root Admin Question Bank/Template Preview composition: register/selection on the left, selected record preview on the right, responsive stacking on mobile. Show only Backend-provided version/rule/event data.
-
-- [ ] **Step 4: Verify Admin isolation and parity**
-
-  ```bash
-  npm --prefix apps/web test -- src/features/admin
-  npm --prefix apps/web run test:e2e:parity -- --grep "admin-home"
-  npm --prefix apps/web run test:e2e:mock
-  ./scripts/test-http-profile.sh
-  ```
-
-- [ ] **Step 5: Commit and push only Task 12**
-
-  ```bash
-  git add apps/web/src/features/admin apps/web/tests/e2e docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git commit -m "feat(ui): align admin configuration preview"
-  git push origin HEAD
-  ```
-
-  **Review checkpoint:** stakeholder reviews the complete 17-surface desktop/tablet/mobile contact sheets. Rejected surfaces return to their owning task; do not continue to final acceptance by merely raising diff thresholds.
-
----
-
-### Task 13: Enforce The Remaining-Legacy And No-Placeholder Boundary
-
-**Files:**
-
-- Modify: `apps/web/src/parity/legacy-screen-manifest.ts`
-- Modify: `apps/web/src/parity/legacy-screen-manifest.test.ts`
-- Modify: `apps/web/src/app/router.test.tsx`
-- Modify: `apps/web/scripts/assert-http-artifact.mjs`
-- Modify: `docs/product-specs/ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.md`
-- Modify: matching Turkish companion
-- Modify: `docs/exec-plans/tech-debt-tracker.md`
-- Modify: this plan
-
-**Interfaces:**
-
-- Produces a machine-enforced rule that every React route is connected and every non-connected legacy route has no React path.
-- Produces a reviewer-facing promotion template for future complete route-family plans.
-
-- [ ] **Step 1: Write failing no-placeholder assertions**
-
-  Assert:
-
-  ```ts
-  expect(appRoutes.sort()).toEqual(
-    BACKEND_CONNECTED_SURFACES.map(({ reactPath }) => reactPath).sort(),
-  );
-  expect(sourceText).not.toMatch(/RoleEntryPlaceholder|coming soon|implement later/i);
-  expect(
-    LEGACY_SCREEN_INVENTORY.filter(({ reactPath }) => reactPath === null),
-  ).toHaveLength(69);
-  ```
-
-  Add the HTTP artifact scan rule that rejects root `js/`, `css/styles.css`, role fixture, canonical-test, mock, and seed inputs.
-
-- [ ] **Step 2: Run the red boundary test**
-
-  ```bash
-  npm --prefix apps/web test -- src/parity/legacy-screen-manifest.test.ts src/app/router.test.tsx
-  ```
-
-  Expected: FAIL if `RoleEntryPlaceholder` or any unclassified route remains.
-
-- [ ] **Step 3: Remove placeholder routes/components**
-
-  A connected route renders a real feature. A non-connected route does not exist in React navigation/router. The root demo remains the reachable reference for its classified legacy surfaces.
-
-- [ ] **Step 4: Document the promotion gate**
-
-  A future route family may change from legacy-only to connected only when one reviewed slice includes:
-
-  1. canonical vocabulary and owner decision;
-  2. OpenAPI paths/schemas/examples and generated drift checks;
-  3. Backend capability and deterministic mock behavior;
-  4. Go domain/storage/authorization/audit/outbox behavior;
-  5. React route/action/state/visibility behavior;
-  6. the same mock and real HTTP browser scenario;
-  7. visual parity reference and three-viewport evidence;
-  8. updated disposition count and stakeholder acceptance.
-
-- [ ] **Step 5: Run boundary and artifact gates**
-
-  ```bash
-  npm --prefix apps/web test -- src/parity src/app/router.test.tsx
-  npm --prefix apps/web run build:http
-  node apps/web/scripts/assert-http-artifact.mjs apps/web/dist/http
-  node --test tests/demo-boundary-smoke.test.js
-  ```
-
-- [ ] **Step 6: Commit and push only Task 13**
-
-  ```bash
-  git add apps/web/src/parity apps/web/src/app/router.test.tsx apps/web/scripts/assert-http-artifact.mjs docs/product-specs/ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.md docs/product-specs/ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.turkce.md docs/exec-plans/tech-debt-tracker.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git commit -m "docs(ui): classify remaining legacy surfaces"
-  git push origin HEAD
-  ```
-
----
-
-### Task 14: Run The Full Candidate Matrix And Request Stakeholder Acceptance
-
-**Files:**
-
-- Create: `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-21.md`
-- Create: `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-21.turkce.md`
-- Modify: `README.md`
-- Modify: `README.turkce.md`
-- Modify: `MANIFEST.md`
-- Modify: `docs/index.md`
-- Modify: `docs/demo-evidence/BUILD_SUMMARY.md`
-- Modify: `docs/demo-evidence/BUILD_SUMMARY.turkce.md`
-- Modify: parent production-transition plan
-- Modify: `docs/exec-plans/index.md`
-- Modify: `docs/exec-plans/tech-debt-tracker.md`
-- Modify: this plan
-
-**Interfaces:**
-
-- Produces a local evidence packet and stakeholder acceptance request; it does not produce deployment or cutover authority.
-
-- [ ] **Step 1: Run clean JavaScript dependency and contract gates**
-
-  ```bash
-  npm --prefix apps/web ci
-  npm --prefix apps/web run contracts:check
   npm --prefix apps/web run typecheck
   npm --prefix apps/web test
   ```
 
-  Expected: clean install, contract drift, typecheck, and all React unit/component tests PASS with zero skips.
+  Expected green: layered ownership and online/offline asset behavior pass; the visual product matrix may remain red until Tasks 6 and 9-14.
 
-- [ ] **Step 2: Run builds and artifact isolation**
+**Task 5 staging allowlist and commit**
+
+```bash
+git add -- apps/web/src/ui/brand-assets.ts apps/web/src/ui/brand-assets.test.ts apps/web/src/styles/reset.css apps/web/src/styles/tokens.css apps/web/src/styles/base.css apps/web/src/styles/shell.css apps/web/src/styles/utilities.css apps/web/src/styles/responsive.css apps/web/src/styles/style-ownership.test.ts apps/web/src/styles/app.css apps/web/vite.config.ts apps/web/src/sw.ts apps/web/src/offline/sw-policy.test.ts apps/web/scripts/assert-app-shell-artifact.mjs apps/web/scripts/assert-http-artifact.mjs apps/web/tests/e2e/brand-app-shell-restart.spec.ts apps/web/playwright.config.ts apps/web/package.json docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "feat(ui): establish layered brand system"
+git push origin HEAD
+```
+
+---
+
+### Task 6: Build The Presentational Role Selection And Application Shell
+
+This task is presentational. It accepts identity/session presentation as props and does not claim normal OIDC integration before Task 7.
+
+**Files**
+
+- Create `apps/web/src/ui/role-select-page.tsx`
+- Create `apps/web/src/ui/role-select-page.test.tsx`
+- Create `apps/web/src/ui/application-shell.tsx`
+- Create `apps/web/src/ui/application-shell.test.tsx`
+- Create `apps/web/src/ui/role-navigation.tsx`
+- Create `apps/web/src/ui/role-navigation.test.tsx`
+- Create `apps/web/src/ui/application-topbar.tsx`
+- Create `apps/web/src/ui/application-topbar.test.tsx`
+- Create `apps/web/src/ui/mobile-navigation.tsx`
+- Create `apps/web/src/ui/candidate-boundary.tsx`
+- Modify `apps/web/src/features/shared/workspace-shell.tsx`
+- Modify `apps/web/src/app/router.tsx`
+- Modify `apps/web/src/app/router.test.tsx`
+- Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify this plan
+
+**Presentational contracts**
+
+```ts
+export interface ShellIdentityPresentation {
+  mode: "demo-role-switch" | "canonical-test-role-switch" | "oidc-session";
+  displayName: string;
+  organizationLabel: string;
+  activeRole: Role;
+  availableRoles: readonly Role[];
+}
+
+export interface ApplicationShellProps {
+  identity: ShellIdentityPresentation;
+  activeRouteId: ReactSurfaceId;
+  onRoleRequest(role: Role): void;
+  onLogout(): void;
+  notificationState:
+    | { kind: "local"; unreadCount: number; onOpen(): void }
+    | { kind: "unavailable"; reason: string };
+}
+```
+
+- Role selection matches the root navy visual panel/light selector composition, accepted mark/texture, purpose copy, eight deterministic role cards in demo/canonical mode, keyboard focus, and responsive stacking.
+- Primary navigation is derived only from the typed registry. Contextual detail routes never appear as primary items; their `parentId` remains active.
+- Profile menu shows supplied display name, organization, active role, and a working logout callback.
+- Demo/canonical notification control opens explicit local UI state. Normal HTTP uses `unavailable` and is hidden or disabled with the exact reason: “Notification delivery is not connected in this candidate.”
+- A disabled control remains focusable only when needed to expose its reason; otherwise it is omitted. Dropdown-looking controls use a real menu/listbox interaction.
+- Mobile navigation traps no focus, restores focus to the opener, closes on Escape/selection, and does not hide the primary action.
+- Candidate boundary says `Candidate-only` and `No production-readiness claim` without obscuring work.
+
+**Red/green cycle**
+
+- [ ] Add failing tests for all eight role cards, registry order, icon keys, contextual route active parent, profile menu, logout callback, notification local/unavailable modes, mobile focus/Escape, 44 px touch targets, and every visible control.
+- [ ] Add failing semantic/geometry assertions for root and one shell route at all three viewports.
+- [ ] Run:
 
   ```bash
-  npm --prefix apps/web run build:demo
-  npm --prefix apps/web run build:http
-  node apps/web/scripts/assert-http-artifact.mjs apps/web/dist/http
-  npm --prefix apps/web run check:app-shell
+  npm --prefix apps/web test -- src/ui/role-select-page.test.tsx src/ui/application-shell.test.tsx src/ui/role-navigation.test.tsx src/ui/application-topbar.test.tsx src/app/router.test.tsx
+  AVIA_VISUAL_REGIONS=shell npm --prefix apps/web run test:e2e:visual-parity
   ```
 
-  Expected: both artifacts PASS; HTTP contains no mock/seed/test/root-demo runtime inputs; CSP and app-shell inventories remain valid.
-
-- [ ] **Step 3: Run the 51-pair visual matrix**
+  Expected red: current minimal role page/shell fails composition and control contracts.
+- [ ] Implement the presentational shell and adapt `WorkspaceShell` as a compatibility wrapper that delegates to it. Do not read `/auth/session` or infer normal roles here.
+- [ ] Run:
 
   ```bash
-  npm --prefix apps/web run test:e2e:parity
+  npm --prefix apps/web test -- src/ui/role-select-page.test.tsx src/ui/application-shell.test.tsx src/ui/role-navigation.test.tsx src/ui/application-topbar.test.tsx src/app/router.test.tsx
+  npm --prefix apps/web run typecheck
+  AVIA_VISUAL_REGIONS=shell npm --prefix apps/web run test:e2e:visual-parity
   ```
 
-  Expected: 17 surfaces × 3 viewports PASS; all captures present; exact role/path/heading; zero unexpected console issues; zero document overflow; threshold exceptions explicitly enumerated.
+  Expected green: role-select and strict shell regions pass; content regions for unmigrated feature tasks may remain recorded red.
 
-- [ ] **Step 4: Run mock, HTTP, and real-offline browser matrices**
+**Task 6 staging allowlist and commit**
+
+```bash
+git add -- apps/web/src/ui/role-select-page.tsx apps/web/src/ui/role-select-page.test.tsx apps/web/src/ui/application-shell.tsx apps/web/src/ui/application-shell.test.tsx apps/web/src/ui/role-navigation.tsx apps/web/src/ui/role-navigation.test.tsx apps/web/src/ui/application-topbar.tsx apps/web/src/ui/application-topbar.test.tsx apps/web/src/ui/mobile-navigation.tsx apps/web/src/ui/candidate-boundary.tsx apps/web/src/features/shared/workspace-shell.tsx apps/web/src/app/router.tsx apps/web/src/app/router.test.tsx apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "feat(ui): rebuild candidate application shell"
+git push origin HEAD
+```
+
+---
+
+### Task 7: Integrate Normal OIDC Session, Route Authority, And Offline Subjects
+
+**Files**
+
+- Create `apps/web/src/auth/session-client.ts`
+- Create `apps/web/src/auth/session-client.test.ts`
+- Create `apps/web/src/auth/session-provider.tsx`
+- Create `apps/web/src/auth/session-provider.test.tsx`
+- Create `apps/web/src/auth/http-auth-gate.tsx`
+- Create `apps/web/src/auth/login-page.tsx`
+- Create `apps/web/src/auth/role-guard.tsx`
+- Create `apps/web/src/auth/role-handoff.tsx`
+- Create `apps/web/src/auth/role-authorization.test.tsx`
+- Create `apps/web/src/auth/offline-subject-boundary.test.tsx`
+- Modify `apps/web/src/app/providers.tsx`
+- Modify `apps/web/src/app/bootstrap.tsx`
+- Modify `apps/web/src/app/router.tsx`
+- Modify `apps/web/src/app/router.test.tsx`
+- Modify `apps/web/src/app/scenario-context.tsx`
+- Modify `apps/web/src/app/scenario-context.offline.test.tsx`
+- Modify `apps/web/src/features/inspections/audit-detail-page.tsx`
+- Modify `apps/web/src/features/checklists/checklist-runner-page.tsx`
+- Modify `apps/web/src/entry/demo.tsx`
+- Modify `apps/web/src/entry/http-test.tsx`
+- Modify `apps/web/src/entry/http.tsx`
+- Modify `apps/web/src/backend/http-backend.ts`
+- Modify `apps/web/src/backend/http-backend.test.ts`
+- Modify `apps/web/src/offline/field-repository.ts`
+- Modify `apps/web/tests/offline/field-repository.test.ts`
+- Create `apps/web/tests/e2e/oidc-session.spec.ts`
+- Modify `apps/web/tests/e2e/offline-sync.http.spec.ts`
+- Modify `apps/web/playwright.config.ts`
+- Modify `apps/web/package.json`
+- Create `scripts/test-http-oidc-profile.sh`
+- Modify `scripts/test-http-profile.sh`
+- Modify `deploy/local/keycloak/realm.json`
+- Modify `apps/api/cmd/api/main.go`
+- Modify `apps/api/internal/platform/config/config.go`
+- Modify `apps/api/internal/platform/config/config_test.go`
+- Modify `apps/api/internal/testprofile/canonical.go`
+- Modify `apps/api/internal/identity/principal.go`
+- Modify `apps/api/internal/identity/principal_test.go`
+- Modify `apps/api/internal/platform/session/manager.go`
+- Modify `apps/api/internal/platform/session/session_test.go`
+- Modify `apps/api/internal/httpapi/auth.go`
+- Modify `apps/api/internal/httpapi/auth_test.go`
+- Modify this plan
+
+**Session and routing interfaces**
+
+```ts
+export type IdentityMode =
+  | "demo-role-switch"
+  | "canonical-test-role-switch"
+  | "oidc-session";
+
+export interface SessionProjection {
+  subjectId: string;
+  displayName: string;
+  organizationId: string;
+  roles: Role[];
+}
+
+export type SessionState =
+  | { status: "loading" }
+  | { status: "unauthenticated" }
+  | { status: "authenticated"; session: SessionProjection; activeRole: Role }
+  | { status: "unavailable"; message: string }
+  | { status: "expired" };
+
+export interface SessionClient {
+  get(signal?: AbortSignal): Promise<SessionProjection>;
+  login(returnTo: string): void;
+  logout(): Promise<void>;
+  csrfToken(): string | null;
+}
+
+export interface HttpBackendDependencies {
+  fetchImplementation?: typeof fetch;
+  csrfToken?: () => string | null;
+  requestTimeoutMs?: number;
+  onAuthenticationLost?: (error: BackendAuthenticationError) => void;
+}
+```
+
+- `onAuthenticationLost` fires once for any protected read or mutation `401` before the error reaches the page.
+- On authentication loss/logout/user switch: abort active requests, call `queryClient.clear()`, discard in-memory scenario/projection state by remounting it with the authenticated subject key, and render no stale protected DOM.
+- `ScenarioProvider` is inside the successful authentication gate in normal HTTP. Demo/canonical modes retain deterministic providers.
+- Every protected route uses `RoleGuard` before its element mounts or fetches. Test every one of the 16 protected registry routes with its allowed role, one disallowed role, and a direct URL. Test `/` separately for each identity mode.
+- `RoleHandoff` switches Backend/subject and navigates only in demo/canonical mode. In normal OIDC it navigates only if the session contains the target role; otherwise render a noninteractive next-owner state or disabled control with a reason.
+- Unknown/unsupported/empty roles fail closed. A `returnTo` value must be a same-origin registered path.
+
+**Offline subject contract**
+
+- `ApplicationRuntime` receives subject-bound `fieldRepositoryForSubject` and `inspectionAttachmentStoreForSubject` factories.
+- Normal HTTP obtains the subject only from `SessionProjection.subjectId`. Demo/canonical uses its explicit fixed test subject mapping.
+- `AuditDetailPage`, `ChecklistRunnerPage`, `ScenarioProvider`, and HTTP sync fixtures must remove `USR-INSPECTOR-AMINA` constants from runtime authority decisions. Demo may keep that value only in its explicit mock subject map; canonical Inspector and normal OIDC use the pinned UUID.
+- Before subject A is replaced or logged out, await `fieldRepositoryForSubject(A).lockSubject("USER_SWITCH" | "LOGOUT")`.
+- Locking preserves packages, responses, Potential Finding drafts, attachments, outbox, and sync metadata. Subject B queries cannot see subject A rows or OPFS paths.
+- Relogin as subject A may recover pending state through existing readiness/grant checks. No automatic deletion is added.
+
+**Separate HTTP lanes**
+
+- Preserve `scripts/test-http-profile.sh` as canonical-header authentication with:
+  - `AVIA_ENABLE_CANONICAL_SEED=true`;
+  - `AVIA_ENABLE_CANONICAL_TEST_PROFILE=true`;
+  - canonical test token and role headers.
+- Add `scripts/test-http-oidc-profile.sh` with:
+  - `AVIA_ENABLE_CANONICAL_SEED=true`;
+  - `AVIA_ENABLE_CANONICAL_TEST_PROFILE=false`;
+  - no canonical token/header;
+  - callback `http://127.0.0.1:4174/auth/callback` through the Vite `/auth` proxy;
+  - normal `src/entry/http.tsx`;
+  - Keycloak UI login and Secure session/CSRF cookies.
+- Add exact package script:
+
+  ```json
+  "test:e2e:oidc": "AVIA_E2E_PROFILE=oidc playwright test --project=oidc"
+  ```
+
+  `scripts/test-http-oidc-profile.sh` invokes this script only after its API/worker/dependency readiness checks pass.
+- `AVIA_ENABLE_CANONICAL_SEED` is test-only and forbidden in production. Canonical seed reset/IDs are no longer conditional on enabling canonical-header authentication.
+- Configuration validation requires the seed flag to run only in `test`, requires canonical-header mode to enable the seed explicitly, keeps the canonical token conditional on canonical-header mode, and permits deterministic scanner/server-managed local object-store CORS only in these test lanes. Every seed/test flag remains forbidden in production.
+- Pin `testprofile.CanonicalInspectorSubjectID` to UUID `154ec5ac-6f97-4f55-916f-d2f142fc6211`. Use that exact ID in the seed, canonical Inspector header fixture, Keycloak imported user `id`, inspection/question assignment, session reference, and offline grant. Set the Keycloak organization claim to exact `CAA`. The browser test asserts `/auth/session` returns the same subject and a nonempty Inspector assignment.
+- Keycloak retains `registrationAllowed: false`, `resetPasswordAllowed: false`, direct grants disabled, PKCE S256, and exact local callback/post-logout allowlists for `127.0.0.1:4174`. Do not add wildcards outside that local origin.
+- Keep Secure/HttpOnly/SameSite cookies. Do not weaken cookie flags to make the local lane pass.
+
+**Red/green cycle**
+
+- [ ] Add failing React tests for session states, safe projection, same-origin login, CSRF cookie parsing, logout, read/mutation `401` callback, stale DOM clearing, 16 route matrices, contextual handoff, and no normal role fabrication.
+- [ ] Add failing offline tests for logout/user switch lock, subject-B invisibility, pending record preservation, and subject-A recovery.
+- [ ] Add failing Go tests for `displayName`, no token/cookie/secret serialization, seed/auth flag independence, production rejection, stable OIDC subject alignment, and callback return.
+- [ ] Add the OIDC browser spec:
+  1. unauthenticated normal HTTP shows branded sign-in and no protected content;
+  2. click organization sign-in;
+  3. authenticate `inspector.local` through the local Keycloak form;
+  4. callback to `4174` and assert safe `/auth/session`;
+  5. render only Inspector primary navigation;
+  6. direct-load a disallowed Lead route and prove no Lead fetch/content;
+  7. execute one existing CSRF-protected Inspector checkout/checklist mutation;
+  8. prove real server-time expiry in Go tests; in browser/unit integration, make separate protected read and mutation calls return `401` from an expired/revoked session fixture and prove clearing before either page can retain protected DOM;
+  9. log in again, log out normally, and assert `/auth/session` returns `401`;
+  10. assert no registration/reset/password-management link.
+- [ ] Run red:
 
   ```bash
+  npm --prefix apps/web test -- src/auth src/app/router.test.tsx src/app/scenario-context.offline.test.tsx src/backend/http-backend.test.ts tests/offline/field-repository.test.ts
+  GOCACHE=/private/tmp/aviasurveil360-parity-go-cache go -C apps/api test ./internal/httpapi ./internal/platform/session ./internal/identity ./internal/platform/config
+  ```
+
+  Expected red: auth/session modules, callback, route guards, and seed flag are absent.
+- [ ] Implement the central session state, route guards/handoffs, subject lock/remount, safe Go projection, deterministic flag separation, and local fixture alignment.
+
+  ```bash
+  mkdir -p apps/web/src/auth
+  ```
+
+  Create/edit all files through `apply_patch`.
+- [ ] Set and verify the new script’s executable mode:
+
+  ```bash
+  chmod 0755 scripts/test-http-oidc-profile.sh
+  test -x scripts/test-http-oidc-profile.sh
+  ```
+
+- [ ] Run focused green:
+
+  ```bash
+  npm --prefix apps/web test -- src/auth src/app/router.test.tsx src/app/scenario-context.offline.test.tsx src/backend/http-backend.test.ts tests/offline/field-repository.test.ts
+  npm --prefix apps/web run typecheck
+  GOCACHE=/private/tmp/aviasurveil360-parity-go-cache go -C apps/api test -race -count=1 ./internal/httpapi ./internal/platform/session ./internal/identity ./internal/platform/config ./internal/testprofile
+  ./scripts/test-http-profile.sh
+  ./scripts/test-http-oidc-profile.sh
+  ```
+
+  Expected green: canonical and real OIDC lanes both pass independently; no normal-session role switch or stale subject data appears.
+
+**Task 7 staging allowlist and commit**
+
+```bash
+git add -- apps/web/src/auth/session-client.ts apps/web/src/auth/session-client.test.ts apps/web/src/auth/session-provider.tsx apps/web/src/auth/session-provider.test.tsx apps/web/src/auth/http-auth-gate.tsx apps/web/src/auth/login-page.tsx apps/web/src/auth/role-guard.tsx apps/web/src/auth/role-handoff.tsx apps/web/src/auth/role-authorization.test.tsx apps/web/src/auth/offline-subject-boundary.test.tsx apps/web/src/app/providers.tsx apps/web/src/app/bootstrap.tsx apps/web/src/app/router.tsx apps/web/src/app/router.test.tsx apps/web/src/app/scenario-context.tsx apps/web/src/app/scenario-context.offline.test.tsx apps/web/src/features/inspections/audit-detail-page.tsx apps/web/src/features/checklists/checklist-runner-page.tsx apps/web/src/entry/demo.tsx apps/web/src/entry/http-test.tsx apps/web/src/entry/http.tsx apps/web/src/backend/http-backend.ts apps/web/src/backend/http-backend.test.ts apps/web/src/offline/field-repository.ts apps/web/tests/offline/field-repository.test.ts apps/web/tests/e2e/oidc-session.spec.ts apps/web/tests/e2e/offline-sync.http.spec.ts apps/web/playwright.config.ts apps/web/package.json scripts/test-http-oidc-profile.sh scripts/test-http-profile.sh deploy/local/keycloak/realm.json apps/api/cmd/api/main.go apps/api/internal/platform/config/config.go apps/api/internal/platform/config/config_test.go apps/api/internal/testprofile/canonical.go apps/api/internal/identity/principal.go apps/api/internal/identity/principal_test.go apps/api/internal/platform/session/manager.go apps/api/internal/platform/session/session_test.go apps/api/internal/httpapi/auth.go apps/api/internal/httpapi/auth_test.go docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "feat(auth): integrate normal oidc session"
+git push origin HEAD
+```
+
+---
+
+### Task 8: Build Shared Oversight Workbench Primitives
+
+**Files**
+
+- Create `apps/web/src/ui/workbench/page-header.tsx`
+- Create `apps/web/src/ui/workbench/fact-grid.tsx`
+- Create `apps/web/src/ui/workbench/status-pill.tsx`
+- Create `apps/web/src/ui/workbench/data-register.tsx`
+- Create `apps/web/src/ui/workbench/mobile-record-card.tsx`
+- Create `apps/web/src/ui/workbench/lifecycle-stepper.tsx`
+- Create `apps/web/src/ui/workbench/decision-panel.tsx`
+- Create `apps/web/src/ui/workbench/due-state.tsx`
+- Create `apps/web/src/ui/workbench/empty-error-state.tsx`
+- Create `apps/web/src/ui/workbench/workbench-primitives.test.tsx`
+- Create `apps/web/src/styles/primitives.css`
+- Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/src/features/shared/workspace-shell.tsx`
+- Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify this plan
+
+**Primitive contracts**
+
+- `PageHeader` keeps purpose, owner/next-action/status/Due Date context, and one primary action in the first viewport.
+- `FactGrid` uses semantic `dl/dt/dd` and a stable mobile order.
+- `DataRegister` renders a semantic table at desktop and explicit record cards at the configured responsive boundary; it never hides right-hand decision fields.
+- `LifecycleStepper` receives typed stages and an explicit current stage. It cannot infer Finding closure from CAP acceptance.
+- `DecisionPanel` receives typed, authorized actions and explicit pending/error/success state. It cannot render an action without a handler or disabled reason.
+- `DueState` uses `Due Date`, `Due Soon`, and `Overdue` language.
+- Error/empty/loading states preserve page identity and do not leak another role’s last data.
+
+**Red/green cycle**
+
+- [ ] Add failing RTL tests for semantics, keyboard/focus, responsive card field preservation, lifecycle rules, disabled reasons, pending double-submit prevention, status text+icon, and accessibility names.
+- [ ] Add geometry gallery states to the visual spec for table, cards, stepper, dossier, decision panel, and error/empty state.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/ui/workbench/workbench-primitives.test.tsx src/styles/style-ownership.test.ts
+  npm --prefix apps/web run typecheck
+  ```
+
+  Expected red: primitives and owned layer are absent.
+- [ ] Implement primitives and import `primitives.css` with `layer(primitives)` before all feature imports.
+
+  ```bash
+  mkdir -p apps/web/src/ui/workbench
+  ```
+
+  Create/edit all files through `apply_patch`.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/ui/workbench/workbench-primitives.test.tsx src/styles/style-ownership.test.ts
+  npm --prefix apps/web run typecheck
+  ```
+
+  Expected green: primitive tests and gallery geometry pass; feature screenshot comparisons remain owned by Tasks 9-14.
+
+**Task 8 staging allowlist and commit**
+
+```bash
+git add -- apps/web/src/ui/workbench/page-header.tsx apps/web/src/ui/workbench/fact-grid.tsx apps/web/src/ui/workbench/status-pill.tsx apps/web/src/ui/workbench/data-register.tsx apps/web/src/ui/workbench/mobile-record-card.tsx apps/web/src/ui/workbench/lifecycle-stepper.tsx apps/web/src/ui/workbench/decision-panel.tsx apps/web/src/ui/workbench/due-state.tsx apps/web/src/ui/workbench/empty-error-state.tsx apps/web/src/ui/workbench/workbench-primitives.test.tsx apps/web/src/styles/primitives.css apps/web/src/styles/app.css apps/web/src/features/shared/workspace-shell.tsx apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "feat(ui): add oversight workbench primitives"
+git push origin HEAD
+```
+
+### Task 9: Migrate Inspector Assignments, Audit Detail, And Checklist Runner
+
+**Files**
+
+- Modify `apps/web/src/features/assignments/inspector-assignments-page.tsx`
+- Create `apps/web/src/features/assignments/inspector-assignments-page.test.tsx`
+- Modify `apps/web/src/features/inspections/audit-detail-page.tsx`
+- Create `apps/web/src/features/inspections/audit-detail-page.test.tsx`
+- Modify `apps/web/src/features/checklists/checklist-runner-page.tsx`
+- Create `apps/web/src/features/checklists/checklist-runner-page.test.tsx`
+- Create `apps/web/src/styles/features/inspector.css`
+- Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/src/app/scenario-context.tsx`
+- Modify `apps/web/src/app/scenario-context.offline.test.tsx`
+- Modify `apps/web/tests/e2e/canonical-scenario.spec.ts`
+- Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
+- Modify `apps/web/tests/e2e/offline-startup.spec.ts`
+- Modify `apps/web/tests/e2e/offline-sync.http.spec.ts`
+- Modify `apps/web/tests/e2e/attachment-restart-recovery.spec.ts`
+- Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify this plan
+
+**Required behavior**
+
+- Assignments render a root-compatible attention header, decision-first register, and mobile cards with Audit, organization, status, Due Date, due state, and next action.
+- Audit Detail renders a dossier with organization, inspection type, status, assigned Inspector, Due Date, checklist/package state, offline eligibility, and one real path to the runner.
+- Checklist Runner preserves all six canonical Cabin questions, configured references, expected Evidence, exact response controls, required comment rules, selected Inspection Attachment filename, local-save/server-ack distinction, offline readiness, sync/conflict status, and Potential Finding creation.
+- Local writes remain atomic through `FieldRepository`. A pending local command is never styled as globally accepted.
+- Potential Finding creation remains an Inspector field action; conversion is absent. Inspector handoff to Lead uses `RoleHandoff`, not an unconditional cross-role link.
+- No New Inspection Planning Intake or unrelated legacy control is added.
+
+**Red/green cycle**
+
+- [ ] Add failing RTL tests for direct load, owner/next-action/status/Due Date, register/mobile equivalence, required comments, real select/radio behavior, attachment filename, local/server state, conflict recovery, and Potential Finding handoff.
+- [ ] Extend browser tests for online mock, canonical HTTP, stopped-origin recovery, lost acknowledgement, stale revision, pending outbox, subject relogin, and no cross-role direct link.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/features/assignments/inspector-assignments-page.test.tsx src/features/inspections/audit-detail-page.test.tsx src/features/checklists/checklist-runner-page.test.tsx src/app/scenario-context.offline.test.tsx
+  npm --prefix apps/web run test:e2e:mock
+  AVIA_VISUAL_SURFACES=inspector-home,audit-detail,checklist-runner npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected red: accepted hierarchy/geometry and new tests fail against current pages.
+- [ ] Migrate composition with shared primitives and `inspector.css` only. Do not add selectors to `shell.css` or copy root CSS.
+
+  ```bash
+  mkdir -p apps/web/src/styles/features
+  ```
+
+  Create/edit all files through `apply_patch`. Later feature tasks reuse this exact directory and create only their named stylesheet.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/features/assignments/inspector-assignments-page.test.tsx src/features/inspections/audit-detail-page.test.tsx src/features/checklists/checklist-runner-page.test.tsx src/app/scenario-context.offline.test.tsx src/styles/style-ownership.test.ts
+  npm --prefix apps/web run typecheck
   npm --prefix apps/web run test:e2e:mock
   ./scripts/test-http-profile.sh
   npm --prefix apps/web run test:e2e:offline
+  AVIA_VISUAL_SURFACES=inspector-home,audit-detail,checklist-runner npm --prefix apps/web run test:e2e:visual-parity
   ```
 
-  Expected: canonical lifecycle, first-production routes, normal/canonical auth, backend contracts, real PostgreSQL/Keycloak/MinIO, worker, sync, conflict, and offline recovery PASS without skipped required tests.
+  Expected green: three Inspector routes pass mock/HTTP/offline and three-viewport parity without weakening shared thresholds.
 
-- [ ] **Step 5: Run root legacy oracle and syntax gates**
+**Task 9 staging allowlist and commit**
+
+```bash
+git add -- apps/web/src/features/assignments/inspector-assignments-page.tsx apps/web/src/features/assignments/inspector-assignments-page.test.tsx apps/web/src/features/inspections/audit-detail-page.tsx apps/web/src/features/inspections/audit-detail-page.test.tsx apps/web/src/features/checklists/checklist-runner-page.tsx apps/web/src/features/checklists/checklist-runner-page.test.tsx apps/web/src/styles/features/inspector.css apps/web/src/styles/app.css apps/web/src/app/scenario-context.tsx apps/web/src/app/scenario-context.offline.test.tsx apps/web/tests/e2e/canonical-scenario.spec.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/offline-startup.spec.ts apps/web/tests/e2e/offline-sync.http.spec.ts apps/web/tests/e2e/attachment-restart-recovery.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "feat(ui): migrate inspector workbench"
+git push origin HEAD
+```
+
+---
+
+### Task 10: Migrate Lead Potential Finding, Finding, CAP, And Evidence Review
+
+**Files**
+
+- Modify `apps/web/src/features/findings/lead-review-page.tsx`
+- Create `apps/web/src/features/findings/lead-review-page.test.tsx`
+- Modify `apps/web/src/features/findings/finding-detail-page.tsx`
+- Create `apps/web/src/features/findings/finding-detail-page.test.tsx`
+- Modify `apps/web/src/features/caps/cap-review-page.tsx`
+- Create `apps/web/src/features/caps/cap-review-page.test.tsx`
+- Modify `apps/web/src/features/evidence/evidence-review-page.tsx`
+- Create `apps/web/src/features/evidence/evidence-review-page.test.tsx`
+- Create `apps/web/src/styles/features/lead-review.css`
+- Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/src/app/scenario-context.tsx`
+- Modify `apps/web/src/app/canonical-scenario.contract.test.ts`
+- Modify `apps/web/tests/e2e/canonical-scenario.spec.ts`
+- Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
+- Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify this plan
+
+**Required behavior**
+
+- Lead home loads `potentialFindings.list({status: "PENDING_LEAD_REVIEW"})` on entry and `get` for selection. Empty state means no authorized persisted records, not “nothing happened in this React session.”
+- Potential Finding decisions remain Return, Dismiss, and Convert. Return/Dismiss require a reason; Convert requires severity and explicit CAP/Evidence requirements. Only Lead renders/calls them.
+- Finding Detail loads `findings.get` directly and displays all canonical finding facts, lifecycle, owner, next action, Due Date, organization, audit, severity, configured reference, and finding basis.
+- CAP Review loads Finding plus `caps.listRevisions` and `caps.getRevision`. It shows every submitted field, revision number/history, latest public review state, separate `Comment to Auditee` and `Internal CAA Note` inputs, and reason-required reject/more-information actions. It never relies on `projection.capSubmission`.
+- Evidence Review loads `evidence.listVersions` and Finding directly, preserves immutable versions/scan/review states, requires a reason where configured, and makes authorized closure separate and explicit.
+- CAP acceptance text must say the Finding remains open and Evidence is required where applicable. Evidence acceptance alone does not bypass verification/authorized closure.
+- All direct routes work after refresh/new authenticated browser state. Cross-role handoffs use `RoleHandoff`.
+
+**Red/green cycle**
+
+- [ ] Add failing tests for fresh direct load of all four routes, persisted Potential Finding queue, no session-history dependency, two CAP revisions, immutable old values, CAA/Auditee shape distinction, reason requirements, no premature closure, Evidence version history, and forbidden roles.
+- [ ] Add mock/HTTP browser replay from checklist Potential Finding through Lead conversion, CAP review, Evidence review, and authorized closure. Reload the Lead home and CAP route before decision.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/features/findings/lead-review-page.test.tsx src/features/findings/finding-detail-page.test.tsx src/features/caps/cap-review-page.test.tsx src/features/evidence/evidence-review-page.test.tsx src/app/canonical-scenario.contract.test.ts
+  AVIA_VISUAL_SURFACES=lead-home,finding-detail,cap-review,evidence-review npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected red: current Lead/CAP pages depend on in-memory scenario state and lack accepted composition.
+- [ ] Replace those read dependencies with Task 2 Backend reads and migrate with shared primitives/`lead-review.css`.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/features/findings/lead-review-page.test.tsx src/features/findings/finding-detail-page.test.tsx src/features/caps/cap-review-page.test.tsx src/features/evidence/evidence-review-page.test.tsx src/app/canonical-scenario.contract.test.ts src/styles/style-ownership.test.ts
+  npm --prefix apps/web run typecheck
+  npm --prefix apps/web run test:e2e:mock
+  ./scripts/test-http-profile.sh
+  AVIA_VISUAL_SURFACES=lead-home,finding-detail,cap-review,evidence-review npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected green: four Lead routes direct-load from Backend, protect authority/versioning, and pass three-viewport parity.
+
+**Task 10 staging allowlist and commit**
+
+```bash
+git add -- apps/web/src/features/findings/lead-review-page.tsx apps/web/src/features/findings/lead-review-page.test.tsx apps/web/src/features/findings/finding-detail-page.tsx apps/web/src/features/findings/finding-detail-page.test.tsx apps/web/src/features/caps/cap-review-page.tsx apps/web/src/features/caps/cap-review-page.test.tsx apps/web/src/features/evidence/evidence-review-page.tsx apps/web/src/features/evidence/evidence-review-page.test.tsx apps/web/src/styles/features/lead-review.css apps/web/src/styles/app.css apps/web/src/app/scenario-context.tsx apps/web/src/app/canonical-scenario.contract.test.ts apps/web/tests/e2e/canonical-scenario.spec.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "feat(ui): migrate lead review workspaces"
+git push origin HEAD
+```
+
+---
+
+### Task 11: Migrate The Auditee Corrective Action Workspace
+
+**Files**
+
+- Modify `apps/web/src/features/caps/auditee-cap-page.tsx`
+- Create `apps/web/src/features/caps/auditee-cap-page.test.tsx`
+- Modify `apps/web/src/features/caps/auditee-projection.tsx`
+- Modify `apps/web/src/features/caps/auditee-projection.test.tsx`
+- Create `apps/web/src/styles/features/auditee.css`
+- Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/src/app/scenario-context.tsx`
+- Modify `apps/web/tests/e2e/canonical-scenario.spec.ts`
+- Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
+- Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify this plan
+
+**Required behavior**
+
+- The page loads authorized Findings, CAP revisions, and Evidence versions from Backend on direct entry; organization name comes from session/authorized projections, never hardcoded role switching.
+- It presents My Findings, CAA request summary, Finding facts, lifecycle, CAP form/revision history, Evidence versions/selected filename, Due Date/status/owner/next action, and CAA-visible review comments.
+- CAP form preserves root cause, corrective action, preventive action, responsible person, target completion date, and Comment to CAA. Revisions remain immutable and prior values stay visible.
+- Official Evidence submission stays online-first through the existing bounded upload/version Backend. In demo it is explicitly marked deterministic; in normal HTTP it is real candidate HTTP behavior. It is not called a mock upload in normal HTTP.
+- `Internal CAA Note`, CAA workload, internal risk, other organizations, enforcement deliberations, reviewer-private identity, and unrelated report state are absent from both object shape and DOM.
+- Other-organization IDs return forbidden/not-found without rendering stale Fly Namibia data.
+- Handoffs to CAA are noninteractive next-owner state in one-role normal OIDC and `RoleHandoff` in demo/canonical mode.
+
+**Red/green cycle**
+
+- [ ] Add failing tests for direct load, own-org list, other-org isolation, structural `internalCaaNote` absence using `Object.hasOwn`/serialized transport, full CAP fields/revisions, Evidence history, online-only control state, and exact handoff behavior.
+- [ ] Extend canonical browser scenario with refresh before CAP submission, refresh after submission, second CAP revision after more information, and privacy DOM/network assertions.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/features/caps/auditee-cap-page.test.tsx src/features/caps/auditee-projection.test.tsx
+  AVIA_VISUAL_SURFACES=auditee-home npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected red: current page has hardcoded scope/cross-role links and incomplete persisted CAP hydration.
+- [ ] Migrate with Task 2 role-shaped reads, shared primitives, and `auditee.css`.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/features/caps/auditee-cap-page.test.tsx src/features/caps/auditee-projection.test.tsx src/styles/style-ownership.test.ts
+  npm --prefix apps/web run typecheck
+  npm --prefix apps/web run test:e2e:mock
+  ./scripts/test-http-profile.sh
+  AVIA_VISUAL_SURFACES=auditee-home npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected green: Auditee route passes direct-load, organization/privacy, immutable revision, action, and visual gates.
+
+**Task 11 staging allowlist and commit**
+
+```bash
+git add -- apps/web/src/features/caps/auditee-cap-page.tsx apps/web/src/features/caps/auditee-cap-page.test.tsx apps/web/src/features/caps/auditee-projection.tsx apps/web/src/features/caps/auditee-projection.test.tsx apps/web/src/styles/features/auditee.css apps/web/src/styles/app.css apps/web/src/app/scenario-context.tsx apps/web/tests/e2e/canonical-scenario.spec.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "feat(ui): migrate auditee corrective actions"
+git push origin HEAD
+```
+
+---
+
+### Task 12: Migrate Department Manager Oversight Surfaces
+
+**Files**
+
+- Modify `apps/web/src/features/findings/manager-dashboard-page.tsx`
+- Create `apps/web/src/features/findings/manager-dashboard-page.test.tsx`
+- Modify `apps/web/src/features/organizations/organization-registry-page.tsx`
+- Create `apps/web/src/features/organizations/organization-registry-page.test.tsx`
+- Modify `apps/web/src/features/planning/planning-workspaces.tsx`
+- Create `apps/web/src/features/planning/audit-plan-calendar-page.test.tsx`
+- Modify `apps/web/src/features/reports/report-preview-page.tsx`
+- Create `apps/web/src/features/reports/report-preview-page.test.tsx`
+- Create `apps/web/src/styles/features/management.css`
+- Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
+- Modify `apps/web/tests/e2e/release-candidate-gates.spec.ts`
+- Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify this plan
+
+**Required behavior**
+
+- Dashboard answers where the department is exposed, delayed, or overloaded with the smallest useful decision set. Oversight Health Index is visibly advisory and never an automatic enforcement/closure decision.
+- Organization Registry uses the authorized list projection and responsive register/cards without implying organization editing.
+- Audit Plan Calendar uses authorized planning list/decide actions only. It must not render a create button, New Inspection Planning Intake, Ad Hoc/Unannounced intake, or any fake edit control because that route family is legacy-only in this plan.
+- Report Preview uses the immutable report-version projection, decision history/state, finding references, and exact Department Manager authority. It does not imply issue, signature, or closure authority.
+- All routes keep owner, next action, status, Due Date, organization scope, and candidate boundary visible.
+
+**Red/green cycle**
+
+- [ ] Add failing tests for direct load, manager-only access, KPI/advisory wording, organization register/card equivalence, planning action authority/reasons, explicit absence of intake/create, report immutable version/authority, and all visible controls.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/features/findings/manager-dashboard-page.test.tsx src/features/organizations/organization-registry-page.test.tsx src/features/planning/audit-plan-calendar-page.test.tsx src/features/reports/report-preview-page.test.tsx
+  AVIA_VISUAL_SURFACES=manager-home,organization-registry,audit-plan,report-preview npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected red: accepted table/dossier composition and explicit scope assertions fail.
+- [ ] Migrate four routes with shared primitives and `management.css`; do not add a write vertical.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/features/findings/manager-dashboard-page.test.tsx src/features/organizations/organization-registry-page.test.tsx src/features/planning/audit-plan-calendar-page.test.tsx src/features/reports/report-preview-page.test.tsx src/styles/style-ownership.test.ts
+  npm --prefix apps/web run typecheck
+  npm --prefix apps/web run test:e2e:mock
+  ./scripts/test-http-profile.sh
+  AVIA_VISUAL_SURFACES=manager-home,organization-registry,audit-plan,report-preview npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected green: all four Manager routes pass authority, scope, action, responsive, and visual gates.
+
+**Task 12 staging allowlist and commit**
+
+```bash
+git add -- apps/web/src/features/findings/manager-dashboard-page.tsx apps/web/src/features/findings/manager-dashboard-page.test.tsx apps/web/src/features/organizations/organization-registry-page.tsx apps/web/src/features/organizations/organization-registry-page.test.tsx apps/web/src/features/planning/planning-workspaces.tsx apps/web/src/features/planning/audit-plan-calendar-page.test.tsx apps/web/src/features/reports/report-preview-page.tsx apps/web/src/features/reports/report-preview-page.test.tsx apps/web/src/styles/features/management.css apps/web/src/styles/app.css apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/release-candidate-gates.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "feat(ui): migrate manager oversight surfaces"
+git push origin HEAD
+```
+
+---
+
+### Task 13: Migrate Finance, General Manager, And Executive Director Surfaces
+
+**Files**
+
+- Modify `apps/web/src/features/planning/planning-workspaces.tsx`
+- Create `apps/web/src/features/planning/finance-review-page.test.tsx`
+- Create `apps/web/src/features/planning/general-manager-dashboard-page.test.tsx`
+- Modify `apps/web/src/features/reports/executive-dashboard-page.tsx`
+- Create `apps/web/src/features/reports/executive-dashboard-page.test.tsx`
+- Create `apps/web/src/styles/features/executive-review.css`
+- Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
+- Modify `apps/web/tests/e2e/release-candidate-gates.spec.ts`
+- Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify this plan
+
+**Required behavior**
+
+- Finance renders only Finance-owned plan decisions and reason-required return/reject behavior available in the existing contract.
+- General Manager renders only intermediate forward/return authority and cannot issue a report or close a Finding.
+- Executive Director renders only eligible final plan/report decisions. Report issue locks the immutable report version and never closes Findings.
+- Each page shows current owner, next action, status, Due Date/target where applicable, revision, decision history/context, and truthful disabled states.
+- Cross-role workflow continuation uses `RoleHandoff`; normal OIDC with a single role shows the next owner without impersonation.
+
+**Red/green cycle**
+
+- [ ] Add failing tests for exact role authority, stale revision, reason requirements, report-version immutability, no closure side effect, direct URL guard, handoff modes, and all visible actions.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/features/planning/finance-review-page.test.tsx src/features/planning/general-manager-dashboard-page.test.tsx src/features/reports/executive-dashboard-page.test.tsx
+  AVIA_VISUAL_SURFACES=finance-home,gm-home,executive-home npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected red: root-compatible decision composition and handoff boundaries fail.
+- [ ] Migrate three routes with shared primitives and `executive-review.css`.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/features/planning/finance-review-page.test.tsx src/features/planning/general-manager-dashboard-page.test.tsx src/features/reports/executive-dashboard-page.test.tsx src/styles/style-ownership.test.ts
+  npm --prefix apps/web run typecheck
+  npm --prefix apps/web run test:e2e:mock
+  ./scripts/test-http-profile.sh
+  AVIA_VISUAL_SURFACES=finance-home,gm-home,executive-home npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected green: three authority workspaces pass mock/HTTP/direct-load/responsive/visual tests.
+
+**Task 13 staging allowlist and commit**
+
+```bash
+git add -- apps/web/src/features/planning/planning-workspaces.tsx apps/web/src/features/planning/finance-review-page.test.tsx apps/web/src/features/planning/general-manager-dashboard-page.test.tsx apps/web/src/features/reports/executive-dashboard-page.tsx apps/web/src/features/reports/executive-dashboard-page.test.tsx apps/web/src/styles/features/executive-review.css apps/web/src/styles/app.css apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/release-candidate-gates.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "feat(ui): migrate executive review surfaces"
+git push origin HEAD
+```
+
+---
+
+### Task 14: Migrate The Admin Checklist Template Preview
+
+**Files**
+
+- Modify `apps/web/src/features/admin/admin-configuration-page.tsx`
+- Create `apps/web/src/features/admin/admin-configuration-page.test.tsx`
+- Create `apps/web/src/styles/features/admin.css`
+- Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
+- Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify this plan
+
+**Required behavior**
+
+- Admin route lists published versions through `listChecklistTemplateVersions`, selects one, and direct-loads its exact detail through `getChecklistTemplateVersion`.
+- Desktop uses accepted register/selection plus detail preview; mobile stacks without clipping.
+- Preview shows version/status/published date and Backend-provided question prompt, configured regulatory reference, expected Evidence, allowed answers, and comment rules.
+- It does not render edit/publish/delete/user/role/configuration controls, draft claims, or invented question content.
+- Non-Admin direct URL fails before any configuration fetch.
+
+**Red/green cycle**
+
+- [ ] Add failing tests for list/detail calls, direct load, exact question/reference/evidence content, Admin-only guard, responsive order, immutable preview, no editing controls, and empty/malformed error states.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/features/admin/admin-configuration-page.test.tsx
+  AVIA_VISUAL_SURFACES=admin-home npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected red: current list-only contract cannot render the required detail.
+- [ ] Migrate with Task 3’s detail read, shared primitives, and `admin.css`.
+- [ ] Run:
+
+  ```bash
+  npm --prefix apps/web test -- src/features/admin/admin-configuration-page.test.tsx src/styles/style-ownership.test.ts
+  npm --prefix apps/web run typecheck
+  npm --prefix apps/web run test:e2e:mock
+  ./scripts/test-http-profile.sh
+  AVIA_VISUAL_SURFACES=admin-home npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected green: Admin route passes direct-load, authority, schema, action, responsive, and visual gates.
+
+**Task 14 staging allowlist and commit**
+
+```bash
+git add -- apps/web/src/features/admin/admin-configuration-page.tsx apps/web/src/features/admin/admin-configuration-page.test.tsx apps/web/src/styles/features/admin.css apps/web/src/styles/app.css apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "feat(ui): migrate admin template preview"
+git push origin HEAD
+```
+
+### Task 15: Enforce The Remaining-Legacy, Visible-Action, And Artifact Boundary
+
+**Files**
+
+- Create `apps/web/scripts/assert-parity-boundary.mjs`
+- Create `apps/web/tests/e2e/visible-action-contract.spec.ts`
+- Modify `apps/web/src/parity/legacy-screen-manifest.test.ts`
+- Modify `apps/web/src/app/route-contracts.test.ts`
+- Modify `apps/web/src/app/router.test.tsx`
+- Modify `apps/web/src/app/build-profile.test.ts`
+- Modify `apps/web/src/app/canonical-scenario.contract.test.ts`
+- Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
+- Modify `apps/web/tests/e2e/release-candidate-gates.spec.ts`
+- Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify `apps/web/playwright.config.ts`
+- Modify `apps/web/package.json`
+- Modify `apps/web/scripts/assert-app-shell-artifact.mjs`
+- Modify `apps/web/scripts/assert-http-artifact.mjs`
+- Modify `tests/parity/behavior-ledger.json`
+- Modify `tests/parity/react-legacy-parity.test.mjs`
+- Modify this plan
+
+**Boundary rules**
+
+- Router paths equal the exact 17 registry entries. No `RoleEntryPlaceholder`, placeholder route, “coming soon” page, generic card, or hidden path exists for the other 69 rows.
+- The exact 69 legacy-only rows remain `reactPath: null` and have a reason/source/Product classification.
+- `assert-parity-boundary.mjs` scans source imports and both build manifests. It fails if HTTP inputs/artifacts contain:
+  - root `css/styles.css` or root `js/`;
+  - `src/mock/`, `seed-data`, `http-test`, canonical test token/boundary, test subject maps, or root-demo state;
+  - an undeclared React route or visible placeholder label;
+  - a brand file not present in the semantic registry/app-shell manifest.
+- Approved emitted image/font assets are allowed; runtime root code is not.
+- The visible-action browser contract inventories visible `button`, `a`, `input`, `select`, `textarea`, menuitem, tab, and button-role elements on every 17 surface/viewport. Each must have a stable accessible name and one of: verified navigation, visible state change, Backend/local boundary call, form behavior, or explicit disabled reason.
+- Add the visible-action spec to both `mock` and canonical `http` project test matches. The normal OIDC-only controls remain covered by Task 7’s `oidc-session.spec.ts`.
+- A toast without durable state/navigation/download/form change does not satisfy the contract.
+- Normal HTTP notification delivery stays hidden/disabled with its reason. Admin editing, New Inspection Planning Intake, self-registration, user provisioning, and unsupported legacy actions remain absent.
+
+Add exact package script:
+
+```json
+"test:e2e:visible-actions": "AVIA_E2E_PROFILE=mock playwright test tests/e2e/visible-action-contract.spec.ts --project=mock"
+```
+
+**Red/green cycle**
+
+- [ ] Add failing tests by asserting the exact registry/manifest set, source/build exclusion strings, and action inventory. Include fixture mutations that add one undeclared route, one inert button, one broad root import, and one HTTP mock import; every mutation must make the boundary test fail.
+- [ ] Run:
+
+  ```bash
+  node apps/web/scripts/assert-parity-boundary.mjs
+  npm --prefix apps/web test -- src/parity/legacy-screen-manifest.test.ts src/app/route-contracts.test.ts src/app/router.test.tsx src/app/build-profile.test.ts src/app/canonical-scenario.contract.test.ts
+  npm --prefix apps/web run test:e2e:visible-actions
+  ```
+
+  Expected red: boundary script/action spec are absent.
+- [ ] Implement the fail-closed source/build/action checks and update the behavior ledger with exact React/legacy disposition and Backend/local action ownership.
+- [ ] Build both profiles and run:
+
+  ```bash
+  npm --prefix apps/web run typecheck
+  npm --prefix apps/web test
+  npm --prefix apps/web run build:demo
+  npm --prefix apps/web run build:http
+  npm --prefix apps/web run check:app-shell
+  node apps/web/scripts/assert-http-artifact.mjs apps/web/dist/http
+  node apps/web/scripts/assert-parity-boundary.mjs
+  node --test tests/parity/react-legacy-parity.test.mjs
+  npm --prefix apps/web run test:e2e:visible-actions
+  ./scripts/test-http-profile.sh
+  ```
+
+  Expected green: exact route/action/artifact boundaries pass with approved brand assets and no hidden placeholders.
+
+**Task 15 staging allowlist and commit**
+
+```bash
+git add -- apps/web/scripts/assert-parity-boundary.mjs apps/web/tests/e2e/visible-action-contract.spec.ts apps/web/src/parity/legacy-screen-manifest.test.ts apps/web/src/app/route-contracts.test.ts apps/web/src/app/router.test.tsx apps/web/src/app/build-profile.test.ts apps/web/src/app/canonical-scenario.contract.test.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/release-candidate-gates.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts apps/web/playwright.config.ts apps/web/package.json apps/web/scripts/assert-app-shell-artifact.mjs apps/web/scripts/assert-http-artifact.mjs tests/parity/behavior-ledger.json tests/parity/react-legacy-parity.test.mjs docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "test(ui): enforce parity scope boundary"
+git push origin HEAD
+```
+
+---
+
+### Task 16: Run The Full Candidate Matrix And Prepare Stakeholder Handoff
+
+**Files**
+
+- Create `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-21.md`
+- Create `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-21.turkce.md`
+- Modify `docs/demo-evidence/BUILD_SUMMARY.md`
+- Modify `docs/demo-evidence/BUILD_SUMMARY.turkce.md`
+- Modify `docs/index.md`
+- Modify `MANIFEST.md`
+- Modify `docs/exec-plans/index.md`
+- Modify `docs/exec-plans/tech-debt-tracker.md`
+- Modify `docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md`
+- Modify this plan
+
+The evidence filenames use the planned verification date. If Task 16 executes after 2026-07-21, do not backdate evidence: first make a reviewed plan amendment replacing both exact filenames and all references with the actual execution date.
+
+**Required matrix**
+
+- [ ] **Clean install and generated-contract gate**
+
+  ```bash
+  npm --prefix apps/web ci
+  ./scripts/check-contracts.sh
+  ./scripts/check-sqlc.sh
+  node api/openapi/tests/contract-examples.test.mjs
+  ```
+
+- [ ] **Go authority/security gate**
+
+  ```bash
+  GOCACHE=/private/tmp/aviasurveil360-parity-go-cache go -C apps/api test -race -p 1 -count=1 ./...
+  ```
+
+- [ ] **React/unit/contract/build gate**
+
+  ```bash
+  npm --prefix apps/web run typecheck
+  npm --prefix apps/web test
+  npm --prefix apps/web run build:demo
+  npm --prefix apps/web run build:http
+  npm --prefix apps/web run check:app-shell
+  node apps/web/scripts/assert-http-artifact.mjs apps/web/dist/http
+  node apps/web/scripts/assert-parity-boundary.mjs
+  node apps/web/scripts/verify-visual-baselines.mjs
+  ```
+
+- [ ] **Root oracle and parity ledger gate**
 
   ```bash
   node --test tests/*.test.js tests/parity/react-legacy-parity.test.mjs
-  node --check js/data.js
-  node --check js/helpers.js
-  node --check js/approval.js
-  node --check js/planning.js
-  node --check js/checklists.js
-  node --check js/inspection.js
-  node --check js/reports.js
-  node --check js/manager-workspaces.js
-  node --check js/work-items.js
-  node --check js/views.js
-  node --check js/app.js
   ```
 
-  Expected: root demo unchanged and all legacy/parity tests PASS.
-
-- [ ] **Step 6: Run security, dependency, and recovery gates**
+- [ ] **Mock browser gate**
 
   ```bash
-  npm --prefix apps/web audit --json
-  npm --prefix apps/web audit --omit=dev --json
-  GOCACHE=/private/tmp/aviasurveil360-ui-parity-go-cache go -C apps/api vet ./...
+  npm --prefix apps/web run test:e2e:mock
+  npm --prefix apps/web run test:e2e:visible-actions
+  ```
+
+- [ ] **Canonical-header HTTP gate**
+
+  ```bash
+  ./scripts/test-http-profile.sh
+  ```
+
+- [ ] **Normal OIDC session gate**
+
+  ```bash
+  ./scripts/test-http-oidc-profile.sh
+  ```
+
+- [ ] **Real offline/recovery gate**
+
+  ```bash
+  npm --prefix apps/web run test:e2e:offline
   ./scripts/test-local-recovery.sh
   ```
 
-  Expected: audits report zero vulnerabilities; Go vet and isolated PostgreSQL/object recovery PASS. If registry/network access prevents a fresh audit, label only that check `blocked` or `not run`; do not reuse an old date as fresh evidence.
-
-- [ ] **Step 7: Inspect runtime cleanup**
-
-  Check for task-owned Vite, Go API, worker, Playwright, Chrome, webdriver, and Docker processes. Stop only task-owned resources. Do not terminate the user's unrelated browser/profile or unrelated containers.
-
-- [ ] **Step 8: Write bilingual evidence**
-
-  Record exact commands, counts, browser/tool versions, reference commit, diff thresholds/exceptions, screenshots, console/overflow/accessibility results, auth profile distinctions, artifact boundary, root demo status, cleanup, and production exclusions. Use literal evidence labels.
-
-- [ ] **Step 9: Reconcile plan lifecycle**
-
-  - If every local gate passes, set this plan to `ready-for-verification`; do not move it to completed until the user explicitly accepts the React visual parity.
-  - Keep the parent production-transition plan `active` or `ready-for-verification` according to actual stakeholder acceptance; do not claim acceptance from automated tests alone.
-  - Keep production release/operations, production Identity/MFA/provisioning, records, hosting, monitoring/on-call, pilot, cutover, and legacy removal notes open and `blocked`.
-
-- [ ] **Step 10: Commit and push only Task 14**
+- [ ] **51-pair visual gate**
 
   ```bash
-  git add README.md README.turkce.md MANIFEST.md docs/index.md docs/demo-evidence/BUILD_SUMMARY.md docs/demo-evidence/BUILD_SUMMARY.turkce.md docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-21.md docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-21.turkce.md docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-  git diff --cached --check
-  git diff --cached --stat
-  git commit -m "test(release): verify react legacy ui parity"
-  git push origin HEAD
+  npm --prefix apps/web run test:e2e:visual-parity
   ```
 
-  Expected: local candidate evidence is pushed; no deployment, PR, comment, traffic, or branch action occurs.
+  Require 17 surfaces × 3 viewports, zero missing/hash/metadata/mask/geometry failures, shell ratio at most 0.03, and only predeclared adapted regions at most 0.08.
+
+- [ ] **Dependency gate**
+
+  ```bash
+  npm --prefix apps/web audit
+  npm --prefix apps/web audit --omit=dev
+  ```
+
+  Record exact results. Do not use a broad forced upgrade to clear an unrelated advisory.
+
+- [ ] **Manual reviewer evidence**
+
+  Review 51 legacy/React viewport pairs plus contact sheets. For each route record source audit ID, browser metadata, baseline/React file, diff ratio, masks and masked ratio, geometry result, semantic result, visible-action result, reviewer, and disposition. Review the complete canonical lifecycle and the normal OIDC login/logout path. Manual full-page images may support review but never replace automated viewport comparisons.
+
+- [ ] **Cleanup**
+
+  Confirm task-owned scripts stopped their own API, worker, Vite, static server, Keycloak/PostgreSQL/object-store containers, and Playwright/Chromium processes. Do not stop unrelated user processes. Record cleanup evidence and any externally owned residue as `blocked`.
+
+**Evidence and lifecycle rules**
+
+- English/Turkish evidence must report exact command/result counts, the 17/69 scope reconciliation, three new read verticals, canonical versus OIDC lane results, privacy/authority/offline results, visual environment/hash/mask/ratio results, artifact exclusions, manual reviewer result, and cleanup.
+- Use `verified locally` only for commands actually run and passing. Use `not run` or `blocked` literally for missing checks.
+- The artifact remains `candidate-only` and `release pending`. Do not write `production-ready`.
+- If all local gates pass, set this plan to `ready-for-verification` and leave stakeholder acceptance as the next todo. Do not move it to completed until the user explicitly accepts the React outcome.
+- The parent plan stays `active` and points to this `ready-for-verification` remediation. Production deployment/cutover remains `blocked`.
+- If any required gate fails, leave this plan `active` or mark `blocked` only for a genuine external blocker, record the exact failed gate, and do not request acceptance.
+
+**Task 16 staging allowlist and commit**
+
+```bash
+git add -- docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-21.md docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-21.turkce.md docs/demo-evidence/BUILD_SUMMARY.md docs/demo-evidence/BUILD_SUMMARY.turkce.md docs/index.md MANIFEST.md docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git commit -m "docs(evidence): record react legacy parity"
+git push origin HEAD
+```
+
+Expected: evidence is pushed only if authorized; no deployment, branch, PR, GitHub comment, traffic, cutover, or legacy action occurs.
 
 ## Verification Matrix
 
-| Layer | Required evidence |
+| Area | Required proof |
 |---|---|
-| Contract/disposition | 86 unique legacy rows, 17 connected, 69 legacy-only, no placeholder path |
-| Brand/shell | Local assets, accepted tokens, eight role cards in demo/test, session roles in normal HTTP, strict visual ratio |
-| Auth/session | Real local Keycloak Authorization Code + PKCE, safe session projection, CSRF mutation, logout/revocation, no browser tokens |
-| React components | Typecheck and all unit/component tests with zero skips |
-| Visual parity | 51 reference/React pairs, thresholds, geometry, headings, roles, console, overflow, mobile targets |
-| Mock behavior | Complete canonical lifecycle and first-production route matrix |
-| Real HTTP behavior | Same Backend contract/scenarios against Go/PostgreSQL/MinIO/worker |
-| Offline | Readiness, IndexedDB, OPFS, outbox, sync/conflict, restart/update recovery unchanged |
-| Security/privacy | Role/org/assignment/direct-ID/list/pull isolation; Auditee forbidden-field scan; CSP/rate/session/CSRF tests |
-| Artifact boundary | HTTP build excludes mock, seed, canonical-test, and root-demo runtime code |
-| Legacy oracle | Root Node/parity suite green; root demo files unchanged |
-| Operations-local | Dependency audits, Go vet/race via HTTP profile, worker drain, recovery drill, task-owned cleanup |
-| Stakeholder | Explicit acceptance of role selection, shell, 17 surfaces, and route disposition; automated tests alone do not satisfy this row |
+| Scope truth | Exact ordered 86 audit rows; 17 `react-parity`; 69 null-path legacy rows; required Product screen crosswalk; New Inspection Planning Intake explicit |
+| Read completeness | Potential Finding list/get, CAP revision list/get, Admin template detail, mock/HTTP parity, fresh direct loads |
+| Route authority | All 16 protected routes allowed/disallowed/direct URL; root by identity mode; no pre-guard fetch or stale DOM |
+| Normal identity | Safe session projection, stable local subject, real Keycloak UI login, session roles only, CSRF mutation, expiry, logout `401` |
+| Canonical identity | Existing deterministic header lane remains isolated and green |
+| Privacy | Auditee org isolation and structural Internal CAA Note omission; no workload/risk/enforcement leakage |
+| Lifecycle | Lead-only Potential Finding decision; CAP not closure; immutable CAP/Evidence; Evidence/verification/authorized closure; report authority |
+| Offline | Session subject binding, logout/user-switch lock, pending record preservation, other-subject invisibility, recovery |
+| Visual | Tracked SHA-256 baselines, pinned environment, 51 viewport pairs, mask ≤5%, shell ≤0.03, adapted region ≤0.08, geometry/semantic checks |
+| CSS/assets | One layer order, selector ownership, workbench system font, login-only DM Sans, restricted Vite asset access, stopped-origin mark/icon/font |
+| Actions | Every visible control works or is disabled with exact reason; no toast-only substitute |
+| Artifact | HTTP excludes root runtime/mock/seed/canonical-test; approved brand assets cached |
+| Regression | Full Go, React, OpenAPI, sqlc, root, mock, HTTP, OIDC, offline, recovery, dependency gates |
+| Evidence | English/Turkish exact results, literal labels, lifecycle/tracker/index reconciliation, cleanup |
+
+## Security, Privacy, And Offline Regression Assessment
+
+The plan adds no new write authority. The read additions are the principal security risk and therefore precede UI work with role and organization tests. CAP uses discriminated role-shaped views so Auditee serialization cannot accidentally include `Internal CAA Note`. Route guards reduce client exposure, while Go authorization remains authoritative.
+
+Normal identity never uses canonical role headers. Session expiry clears in-memory/query projections, but offline records are locked rather than deleted. Subject IDs originate from the authenticated session in normal HTTP. Provider tokens remain encrypted/server-side and absent from React.
+
+Offline field behavior stays limited to existing Inspector package/checklist/Potential Finding/Inspection Attachment commands. CAP, official Evidence, management, configuration, reports, and closure remain online-first. Production browser/device policy, encryption/key ownership, records retention, legal hold, monitoring, and incident response remain blocked outside this candidate.
+
+## Visual-Parity Harness Assessment
+
+The harness is meaningful only when source and candidate use the same pinned viewport/browser/platform/locale/time/font/image state and when the baseline is tracked and hash verified. Broad masking, full-page comparator inputs, unrecorded baseline rewrites, cross-platform drift, and threshold increases fail closed. Pixel evidence is paired with semantic and geometry assertions so a visually similar but behaviorally false screen cannot pass.
+
+`0.08` is not a general page threshold. It is available only to a named content region whose truthful backend/session state differs from the root demo; the shell stays at `0.03`. Any new mask or ratio relaxation requires a plan revision and reviewer rationale.
+
+## Execution And Commit-Boundary Assessment
+
+Tasks 1-4 establish truth/contracts before visual implementation. Tasks 2-3 unblock direct-load data. Tasks 5-8 establish assets, CSS ownership, shell, session/route/offline safety, and primitives before feature edits. Tasks 9-14 own nonoverlapping feature styles and route families. Tasks 15-16 enforce scope/artifacts, then run the full matrix.
+
+The shared router, OpenAPI/generated files, canonical scenario, `app.css`, and visual spec are intentionally sequential. Each task has a focused red state, bounded green state, exact file allowlist, cached-diff review, and an upstream-ahead check before any authorized push. Pre-existing working-tree content is never staged by a broad repository command.
 
 ## Risks And Mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| Copying 19k lines of CSS creates a second unmaintainable legacy layer | React becomes another global stylesheet clone | Extract accepted tokens and focused primitives; prohibit wholesale CSS copy; add component ownership and style-layer tests |
-| Pixel tests are flaky or meaningless | False failure or false confidence | Pin browser/font/data/viewports, mask only named dynamic regions, combine image ratios with semantic/geometry assertions, prove harness failure by perturbation |
-| Visual parity weakens domain rules | Attractive but incorrect workflow | Product/security docs outrank screenshots; retain existing Backend and authority tests in every role slice |
-| Role switch leaks into real auth | User can impersonate roles client-side | Role selection only in demo/canonical-test entries; normal HTTP intersects routes with server session roles |
-| CSRF/session integration breaks mutations | HTTP UI appears connected but cannot act | Add focused session client tests and one real Keycloak CSRF mutation browser gate before role migration |
-| Full 86-screen expectation silently expands backend | Huge unreviewed scope and fake routes | Inventory all 86, connect only 17 accepted surfaces, enforce null React paths for the other 69, require complete future vertical plans |
-| Inspector UI refactor breaks offline recovery | Field work loss or false acknowledgement | Keep FieldRepository/OPFS/outbox interfaces unchanged and run the real offline matrix in Task 7 and Task 14 |
-| Normal HTTP only has one local Keycloak role | Incomplete eight-role production demo | Keep eight-role canonical-test profile for deterministic demonstration; normal HTTP truthfully shows only issued session roles; provisioning remains out of scope |
-| Existing user changes are staged accidentally | Workspace loss or polluted commits | Explicit per-task path staging, cached diff/stat review, protected untracked paths, no broad `git add .` |
-| Stakeholder rejects another broad pass late | Rework across all screens | Review checkpoints after shell, canonical lifecycle, and complete contact sheets; rejected slice blocks downstream tasks |
+| User expects all 86 screens in React | 17-route result still feels incomplete | State exact outcome before execution; map all 86 and required Product screens; expand only by explicit Product plan |
+| Read APIs leak internal/other-org data | Privacy breach | Role-shaped CAP union, structural omission, authorize before projection, other-org tests |
+| UI still relies on scenario mutation history | Refresh/direct URL fails | Complete read verticals first; fresh-provider/direct-load tests |
+| Canonical lane is mistaken for OIDC | False identity evidence | Separate flags, scripts, entries, browser tests, and evidence sections |
+| OIDC fixture does not align with assignments | Empty/false test | One pinned UUID across Keycloak, seed, header fixture, assignment, session, and offline grant; assert it |
+| Expiry leaves stale protected data | Cross-user exposure | Central auth-loss callback, abort, Query clear, keyed provider remount, route guard tests |
+| Logout erases or exposes offline work | Data loss/privacy | Await `lockSubject`; never delete; subject-B invisibility and subject-A recovery tests |
+| Masks/thresholds hide visual failure | False parity | Tracked hashes, mask selector denylist, 5% cap, integrity perturbations, plan revision for increases |
+| Asset reuse imports root runtime | HTTP artifact contamination | Typed asset-only registry, restricted Vite FS, build-input scan, artifact denylist |
+| CSS becomes unmaintainable | Second legacy global system | Real layers, selector ownership, feature files, system-font rule, no root import/`!important` |
+| Visible controls overpromise scope | Stakeholder distrust | Browser action inventory; remove or exact disabled reason; no placeholder/intake/Admin CRUD |
+| Per-task push includes unrelated work | Workspace corruption/publication | Exact add allowlist, cached name/diff check, recorded upstream/ahead set, stop on mismatch |
+| Local success is presented as release | Governance error | Literal `candidate-only`/`release pending`; production gates remain blocked |
 
 ## Decision Log
 
 | Date | Decision | Status |
 |---|---|---|
-| 2026-07-21 | Current user rejected the minimal React shell as unrelated to the original interface. | accepted input |
-| 2026-07-21 | Preserve root Vanilla demo as visual/behavior oracle and keep Go/React technical architecture. | proposed; review required |
-| 2026-07-21 | Target controlled visual parity for 17 backend-connected surfaces; inventory but do not fake-migrate the other 69 legacy states. | proposed; review required |
-| 2026-07-21 | Demo/canonical-test may switch among eight deterministic roles; normal HTTP must use OIDC session roles and CSRF. | proposed; review required |
-| 2026-07-21 | One Conventional Commit and push per completed task on the current branch; no branch operations. | user-authorized execution rule |
-| 2026-07-21 | Production deployment/cutover and legacy removal remain outside this plan. | retained boundary |
+| 2026-07-21 | Preserve the root Vanilla demo as visual/behavior oracle and keep the React/Go candidate architecture. | accepted for this plan |
+| 2026-07-21 | Treat the 17 paths as `react-parity` surfaces, not as already backend-complete. | accepted review correction |
+| 2026-07-21 | Keep 69 audit rows legacy-only for current scope, while explicitly recording required Product screens and New Inspection Planning Intake. | accepted for current candidate; not permanent removal |
+| 2026-07-21 | Add Potential Finding list/get, immutable role-shaped CAP revision list/get, and Admin template detail before UI migration. | accepted review correction |
+| 2026-07-21 | Separate canonical-header and normal local OIDC scripts; decouple deterministic seed from test authentication. | accepted review correction |
+| 2026-07-21 | Use a typed route registry, client guard, bounded handoff, central auth-loss clearing, and subject lock. | accepted review correction |
+| 2026-07-21 | Store hash-verified baselines under `apps/web/tests/visual-baselines/` with strict mask/ratio/environment gates. | accepted review correction |
+| 2026-07-21 | Use one CSS layer/ownership model; authenticated workbench keeps system fonts and login alone uses DM Sans. | accepted review correction |
+| 2026-07-21 | Commit/push steps are conditional on explicit execution-time authorization and must use exact allowlists/upstream checks. | binding safety rule |
+| 2026-07-21 | Production deployment, cutover, Identity/MFA/provisioning, records, hosting, monitoring/on-call, and legacy removal remain blocked. | unchanged |
 
 ## Plan Self-Review Checklist
 
-- [x] Covers the user's concrete objection: role-selection, shell, and connected pages must match the accepted root product language.
-- [x] Separates visual parity from unapproved production route expansion.
-- [x] Maps exact current React surfaces, roles, source states, and paths.
-- [x] Preserves backend, auth, privacy, lifecycle, offline, sync, artifact, and root-demo constraints.
-- [x] Includes test-first red/green cycles, exact commands, review checkpoints, per-task commit/push points, and final evidence.
-- [x] Defines normal HTTP OIDC/session behavior instead of calling canonical test headers a membership system.
-- [x] Leaves production Identity/MFA/provisioning, hosting, records, operations, deployment, cutover, and removal blocked.
-- [x] Contains no implementation placeholder or instruction to weaken a failing gate.
-
-## Independent Plan Review Prompt
-
-Copy the following prompt into a new Codex task for review only:
-
-```text
-Perform an independent, evidence-based review of the AviaSurveil360 plan at:
-docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
-
-This is a review-only task. Do not edit files, implement code, start or stop servers/containers, stage, commit, push, deploy, create/switch branches, open a PR, or post GitHub comments. Do not dispatch subagents.
-
-Before reviewing:
-1. Read AGENTS.md completely and then the repository source-of-truth documents it requires.
-2. Read the entire reviewed plan.
-3. Read the entire parent production-transition plan at docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md.
-4. Inspect the accepted root Vanilla interface and behavior sources: index.html, css/styles.css, js/app.js, js/views.js, js/data.js, relevant root tests, docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.md, and the critical screenshots under qa/screenshots/.
-5. Inspect the current React/Go candidate surfaces: apps/web/src/app/router.tsx, apps/web/src/features/, apps/web/src/styles/app.css, apps/web/src/backend/, apps/web/src/entry/, apps/api/internal/httpapi/, apps/api/internal/identity/, apps/api/internal/platform/session/, api/openapi/aviasurveil360.yaml, and docs/demo-evidence/LOCAL_RELEASE_CANDIDATE_2026-07-21.md.
-
-Review the plan for correctness, completeness, feasibility, task ordering, testability, and scope control. In particular determine whether:
-- it directly solves the user's complaint that the React interface is visually unrelated to the original;
-- the 17 backend-connected surfaces and 86-screen disposition model are accurate and do not hide missing required screens;
-- keeping 69 screens legacy-only is justified by current Product scope or conflicts with the user's requested outcome;
-- the visual comparison approach is deterministic, meaningful, and resistant to broad masks or relaxed thresholds;
-- the proposed React component/style boundaries avoid copying legacy globals or creating a second unmaintainable CSS system;
-- normal HTTP OIDC/session/CSRF integration is technically correct and clearly separated from demo/canonical-test role switching;
-- every visible action remains backed by Backend or an existing explicit local/offline boundary;
-- Potential Finding authority, CAP/Evidence separation, immutable versions, organization isolation, Internal CAA Note separation, report/closure authority, and offline recovery remain protected;
-- the HTTP artifact can still exclude mock/seed/canonical-test/root-demo runtime code while reusing brand assets;
-- every task is independently reviewable, has a credible red/green cycle, and uses exact files/interfaces/commands;
-- per-task commit/push instructions preserve unrelated working-tree content;
-- required docs, bilingual evidence, plan lifecycle, and literal evidence labels are complete;
-- production deployment, cutover, Identity/MFA/provisioning, records, hosting, monitoring/on-call, and legacy removal remain correctly blocked.
-
-Return findings first, ordered by severity and labelled Blocking, Suggestion, Nit, or FYI. For every finding cite the exact plan section and supporting repository file/line. Do not approve based on intent; verify claims against source.
-
-Then return:
-1. Verdict: GO, CONDITIONAL GO, or NO-GO.
-2. Scope reconciliation: expected user outcome versus the plan's exact delivered outcome.
-3. Missing task/interface/test list, if any.
-4. Security/privacy/offline regression assessment.
-5. Visual-parity harness assessment.
-6. Execution-order and commit-boundary assessment.
-7. Exact plan edits required before execution.
-
-Use GO only if there are no Blocking findings. Use CONDITIONAL GO only when every condition is concrete, bounded, and can be applied to the plan before implementation. Do not claim production readiness.
-```
+- [x] Directly addresses the complaint that React is visually unrelated to the accepted original.
+- [x] Reconciles the expected 17-route outcome with a possible full-86-screen expectation.
+- [x] Uses an independent ordered source for 86 rows instead of a self-validating count.
+- [x] Explicitly maps required Product screens and New Inspection Planning Intake.
+- [x] Corrects the false backend-connected claim and adds the three missing read projections.
+- [x] Protects Potential Finding authority, immutable CAP/Evidence, organization isolation, Internal CAA Note separation, report/closure authority, and offline recovery.
+- [x] Separates canonical-header and real OIDC session evidence.
+- [x] Defines direct-route guards, handoffs, expiry clearing, and session-subject offline behavior.
+- [x] Defines deterministic tracked visual evidence with bounded masks and integrity tests.
+- [x] Defines real CSS layer/ownership boundaries and offline brand asset behavior.
+- [x] Gives each task exact files, interfaces, red/green commands, staging allowlist, and commit message.
+- [x] Updates Product docs/index, bilingual evidence, active index, parent status, tracker, and literal lifecycle labels.
+- [x] Keeps all production/release/cutover/legacy actions blocked.
+- [x] Ends with an exact Execution Prompt.
 
 ## Execution Prompt
 
-After independent review findings are applied and the user accepts the revised plan, execute with this exact prompt:
+Use `superpowers:executing-plans` and execute `docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md` exactly in its 16-task binding order. Do not dispatch subagents unless I explicitly authorize them for the execution task.
 
-```text
-Execute docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md task-by-task for AviaSurveil360.
+Before Task 1, read `AGENTS.md` and its complete source-of-truth reading list, then read this entire plan, the parent production-transition plan, the accepted root UI/behavior sources, and the current React/Go/OpenAPI/session/offline sources named here. Confirm the current branch/upstream/ahead set and preserve all unrelated working-tree content. Do not create, switch, rename, or delete a branch.
 
-Before implementation, read AGENTS.md and every source-of-truth document it requires, read the entire reviewed plan and its accepted review findings, and use the superpowers:executing-plans skill. Do not dispatch subagents unless the user explicitly authorizes them in this execution task.
+First freeze the independent ordered 86-screen inventory, required Product crosswalk, New Inspection Planning Intake legacy-only disposition, and typed 17-route registry. Then implement the Potential Finding list/get, immutable role-shaped CAP revision list/get, and Admin checklist-template detail read verticals before any dependent UI. Do not describe the 17 routes as already backend-connected.
 
-Work on the current branch. Do not create, switch, rename, or delete branches. Preserve all unrelated working-tree changes and untracked .superpowers/, docs/demo-evidence/stakeholder/, and outputs/ content. Use apply_patch for text edits.
+Build the tracked hash-verified 51-baseline visual harness before changing the interface. Use Playwright-bundled Chromium, pinned timezone/locale/color/reduced-motion/device scale, viewport-only comparator images, font/image readiness, mask denylist and 5% cap, shell ratio no greater than 0.03, and content ratio no greater than 0.08 only for predeclared regions. Do not broaden a mask, update a baseline, or relax a threshold except through the plan’s explicit update command and a reviewed plan amendment.
 
-Follow the binding task order and TDD cycle exactly. After each task passes its focused and broader gates, stage only that task's files, inspect the cached diff, create the specified Conventional Commit, and push the current branch to origin. Stop on a failed required gate, an unresolved Blocking owner decision, or a change that would expand a later/demo-only route into production without a complete reviewed vertical slice.
+Reuse only approved local brand assets through the typed registry. Keep the HTTP artifact free of root runtime CSS/JS, mock/seed, and canonical-test code. Use the binding CSS layer order, root system-font workbench stack, login-only DM Sans, shared primitives, and exact feature-owned stylesheets.
 
-Keep the root Vanilla demo intact as the visual and behavioral oracle. Build controlled visual parity for the 17 backend-connected React surfaces, inventory all 86 legacy screen states, and do not create inert React placeholders for the other 69. Reuse existing brand assets without copying legacy global state or root JavaScript into React.
+Keep canonical-header HTTP and normal OIDC HTTP separate. Normal HTTP must use the same-origin session projection, authenticated roles, route guards, CSRF, central `401` clearing, logout, bounded handoff, and session subject for IndexedDB/OPFS. Await `lockSubject` on logout/user switch without deleting pending offline work. Do not weaken cookies, expose provider tokens, add self-registration, or fabricate role membership.
 
-Normal HTTP must use the existing same-origin OIDC browser session, session roles, and CSRF boundary. Demo and canonical-test HTTP may retain deterministic role switching. Do not add self-registration, public sign-up, password management, production MFA/provisioning, deployment, traffic routing, cutover, or legacy removal.
+Preserve Potential Finding Lead authority, CAP/Evidence separation, immutable versions, Auditee organization isolation, structural Internal CAA Note omission, report/closure authority, and explicit offline/local/server acknowledgement. Every visible control must work through Backend, an existing local/offline boundary, navigation, or visible local UI state, or be disabled with an exact reason. Do not create React placeholders or routes for the remaining 69 screens.
 
-Preserve Backend, FieldRepository, offline, sync, authority, privacy, Potential Finding, CAP, Evidence version, Internal CAA Note, report, closure, artifact-separation, and candidate-only boundaries. Every visible control must work or be explicitly disabled with a reason.
+Run each task’s red test before implementation and its focused green tests afterward. Do not start a dependent task on a failed gate. Use the plan’s exact per-task staging allowlist, inspect staged names and the full cached diff, and check the upstream-ahead set before any commit/push. Commit and push only if my execution request explicitly authorizes those Git actions; otherwise do not stage.
 
-At each review checkpoint, present the exact screenshots/evidence requested by the plan and wait for stakeholder acceptance before continuing. Use verified locally, not run, blocked, candidate-only, release pending, and production-ready literally. The final result may be ready-for-verification and candidate-only; it may not be deployed or called production-ready.
-```
+At Task 16 run the complete clean-install, OpenAPI/sqlc, Go race, React, root, mock, canonical HTTP, normal OIDC, offline/recovery, visual, visible-action, artifact, dependency, reviewer, and cleanup matrix. If the execution date is later than 2026-07-21, amend the exact evidence filenames before creating evidence rather than backdating them. Produce synchronized English/Turkish evidence and reconcile this plan, the parent plan, Product/docs indexes, build summary, manifest, active index, and tracker.
+
+The result may be labelled only `verified locally`, `candidate-only`, and `release pending` when supported. Do not claim stakeholder acceptance, deploy, route traffic, cut over, remove/archive the legacy demo, configure production Identity/MFA/provisioning, or claim `production-ready`. Production deployment, records, hosting, monitoring/on-call, disaster recovery, cutover, and legacy removal remain `blocked`.

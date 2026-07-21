@@ -13,22 +13,24 @@ handoff and local-language review.
 5. `product-plan/MODULE_ARCHITECTURE.md`
 6. `ux-plan/UX_PRINCIPLES.md`
 7. `ux-plan/NAVIGATION_AND_INFORMATION_ARCHITECTURE.md`
-8. `workflows/MASTER_WORKFLOW.md`
-9. `workflows/SURVEILLANCE_PLANNING_WORKFLOW.md`
-10. `workflows/AUDIT_CHECKLIST_WORKFLOW.md`
-11. `workflows/FINDING_CAP_EVIDENCE_WORKFLOW.md`
-12. `workflows/REMINDERS_AND_ESCALATION_WORKFLOW.md`
-13. `modules/`
-14. `screen-specs/SCREEN_INVENTORY_AND_FORMS.md`
-15. `screen-specs/DEPARTMENT_MANAGER_WORKSPACES.md`
-16. `data-and-rules/CONCEPTUAL_DATA_MODEL.md`
-17. `data-and-rules/STATUS_PERMISSION_SECURITY.md`
-18. `data-and-rules/PRODUCTION_CONTRACT_VOCABULARY.md`
-19. `analytics/OVERSIGHT_HEALTH_INDEX_AND_KPIS.md`
-20. `analytics/REPORT_CATALOG.md`
-21. `scenarios/DEMO_SCENARIO_OPERATOR_AUDIT.md`
-22. `scenarios/OTHER_DOMAIN_SCENARIOS_AND_EDGE_CASES.md`
-23. `references/GLOSSARY_AND_SOURCE_NOTES.md`
+8. `ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.md`
+9. `ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.turkce.md`
+10. `workflows/MASTER_WORKFLOW.md`
+11. `workflows/SURVEILLANCE_PLANNING_WORKFLOW.md`
+12. `workflows/AUDIT_CHECKLIST_WORKFLOW.md`
+13. `workflows/FINDING_CAP_EVIDENCE_WORKFLOW.md`
+14. `workflows/REMINDERS_AND_ESCALATION_WORKFLOW.md`
+15. `modules/`
+16. `screen-specs/SCREEN_INVENTORY_AND_FORMS.md`
+17. `screen-specs/DEPARTMENT_MANAGER_WORKSPACES.md`
+18. `data-and-rules/CONCEPTUAL_DATA_MODEL.md`
+19. `data-and-rules/STATUS_PERMISSION_SECURITY.md`
+20. `data-and-rules/PRODUCTION_CONTRACT_VOCABULARY.md`
+21. `analytics/OVERSIGHT_HEALTH_INDEX_AND_KPIS.md`
+22. `analytics/REPORT_CATALOG.md`
+23. `scenarios/DEMO_SCENARIO_OPERATOR_AUDIT.md`
+24. `scenarios/OTHER_DOMAIN_SCENARIOS_AND_EDGE_CASES.md`
+25. `references/GLOSSARY_AND_SOURCE_NOTES.md`
 
 ## Folder Map
 
@@ -36,7 +38,7 @@ handoff and local-language review.
 |---|---|
 | `research-and-positioning/` | Market context, product positioning, and differentiators. |
 | `product-plan/` | Product vision, MVP scope, roadmap, and module architecture. |
-| `ux-plan/` | UX principles, navigation, and role information architecture. |
+| `ux-plan/` | UX principles, navigation, role information architecture, and React legacy UI parity boundaries. |
 | `workflows/` | Surveillance, checklist, Finding, CAP, Evidence, reminders, and escalation lifecycle rules. |
 | `modules/` | Module-level fields, states, actions, and acceptance criteria. |
 | `screen-specs/` | Screen inventory, form-level expectations, and the Department/General Manager oversight workspaces design. |
