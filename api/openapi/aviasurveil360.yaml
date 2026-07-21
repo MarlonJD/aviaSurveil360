@@ -70,10 +70,25 @@
       }
     },
     "/v1/potential-findings": {
+      "get": {
+        "operationId": "listPotentialFindings",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "$ref": "#/components/schemas/PotentialFindingStatus" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }
+        ],
+        "responses": { "200": { "description": "Authorized Potential Finding queue", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListPotentialFindingsOutput" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
+      },
       "post": {
         "operationId": "createPotentialFinding",
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePotentialFindingInput" } } } },
         "responses": { "201": { "description": "Potential Finding", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PotentialFindingView" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
+      }
+    },
+    "/v1/potential-findings/{potentialFindingId}": {
+      "get": {
+        "operationId": "getPotentialFinding",
+        "parameters": [{ "name": "potentialFindingId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Potential Finding", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PotentialFindingView" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
       }
     },
     "/v1/potential-findings/{id}/decisions": {
@@ -109,6 +124,13 @@
         "responses": { "200": { "description": "Authorized immutable Evidence versions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListEvidenceVersionsOutput" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
       }
     },
+    "/v1/findings/{findingId}/cap-revisions": {
+      "get": {
+        "operationId": "listCapRevisions",
+        "parameters": [{ "name": "findingId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Authorized immutable CAP revisions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListCapRevisionsOutput" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
+      }
+    },
     "/v1/findings/{id}/authorized-closure": {
       "post": {
         "operationId": "authorizedCloseFinding",
@@ -122,6 +144,13 @@
         "operationId": "submitCap",
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubmitCapInput" } } } },
         "responses": { "201": { "description": "Submitted CAP", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubmitCapOutput" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
+      }
+    },
+    "/v1/cap-revisions/{capRevisionId}": {
+      "get": {
+        "operationId": "getCapRevision",
+        "parameters": [{ "name": "capRevisionId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Authorized immutable CAP revision", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CapRevisionView" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
       }
     },
     "/v1/caps/{capRevisionId}/reviews": {
@@ -298,6 +327,7 @@
       "CheckoutInspectionPackageOutput": { "type": "object", "additionalProperties": false, "required": ["inspectionPackage", "offlineGrant"], "properties": { "inspectionPackage": { "$ref": "#/components/schemas/InspectionPackage" }, "offlineGrant": { "$ref": "#/components/schemas/OfflineGrant" } } },
       "CreatePotentialFindingInput": { "type": "object", "additionalProperties": false, "required": ["operationId", "auditId", "questionId", "checklistResponseId", "expectedChecklistResponseRevision", "title", "description", "requiredComment", "inspectionAttachmentIds"], "properties": { "operationId": { "type": "string" }, "auditId": { "type": "string" }, "questionId": { "type": "string" }, "checklistResponseId": { "type": "string" }, "expectedChecklistResponseRevision": { "type": "integer" }, "title": { "type": "string" }, "description": { "type": "string" }, "requiredComment": { "type": "string", "minLength": 1 }, "inspectionAttachmentIds": { "type": "array", "items": { "type": "string" } } } },
       "PotentialFindingView": { "type": "object", "additionalProperties": false, "required": ["id", "auditId", "questionId", "organizationId", "title", "description", "status", "revision", "convertedFindingId"], "properties": { "id": { "type": "string" }, "auditId": { "type": "string" }, "questionId": { "type": "string" }, "organizationId": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" }, "status": { "$ref": "#/components/schemas/PotentialFindingStatus" }, "revision": { "type": "integer" }, "convertedFindingId": { "type": ["string", "null"] } } },
+      "ListPotentialFindingsOutput": { "type": "object", "additionalProperties": false, "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/PotentialFindingView" } }, "nextCursor": { "type": ["string", "null"] } } },
       "ReturnOrDismissPotentialFindingInput": { "type": "object", "additionalProperties": false, "required": ["operationId", "potentialFindingId", "expectedPotentialFindingRevision", "decision", "reason"], "properties": { "operationId": { "type": "string" }, "potentialFindingId": { "type": "string" }, "expectedPotentialFindingRevision": { "type": "integer" }, "decision": { "type": "string", "enum": ["RETURN", "DISMISS"] }, "reason": { "type": "string", "minLength": 1 } } },
       "ConvertPotentialFindingInput": { "type": "object", "additionalProperties": false, "required": ["operationId", "potentialFindingId", "expectedPotentialFindingRevision", "decision", "severity", "capRequired", "evidenceRequired", "dueDate"], "properties": { "operationId": { "type": "string" }, "potentialFindingId": { "type": "string" }, "expectedPotentialFindingRevision": { "type": "integer" }, "decision": { "type": "string", "enum": ["CONVERT"] }, "severity": { "$ref": "#/components/schemas/FindingSeverity" }, "capRequired": { "type": "boolean" }, "evidenceRequired": { "type": "boolean" }, "dueDate": { "type": ["string", "null"], "format": "date" } } },
       "DecidePotentialFindingInput": { "oneOf": [{ "$ref": "#/components/schemas/ReturnOrDismissPotentialFindingInput" }, { "$ref": "#/components/schemas/ConvertPotentialFindingInput" }], "discriminator": { "propertyName": "decision" } },
@@ -309,6 +339,13 @@
       "AuthorizedCloseInput": { "type": "object", "additionalProperties": false, "required": ["operationId", "findingId", "expectedFindingRevision", "reason"], "properties": { "operationId": { "type": "string" }, "findingId": { "type": "string" }, "expectedFindingRevision": { "type": "integer" }, "reason": { "type": "string", "minLength": 1 } } },
       "SubmitCapInput": { "type": "object", "additionalProperties": false, "required": ["operationId", "findingId", "expectedFindingRevision", "rootCause", "correctiveAction", "preventiveAction", "responsiblePerson", "targetCompletionDate", "commentToCaa"], "properties": { "operationId": { "type": "string" }, "findingId": { "type": "string" }, "expectedFindingRevision": { "type": "integer" }, "rootCause": { "type": "string" }, "correctiveAction": { "type": "string" }, "preventiveAction": { "type": "string" }, "responsiblePerson": { "type": "string" }, "targetCompletionDate": { "type": "string", "format": "date" }, "commentToCaa": { "type": "string" } } },
       "SubmitCapOutput": { "type": "object", "additionalProperties": false, "required": ["capRevisionId", "capRevision", "capStatus", "findingStatus", "findingRevision"], "properties": { "capRevisionId": { "type": "string" }, "capRevision": { "type": "integer" }, "capStatus": { "type": "string", "enum": ["SUBMITTED", "PENDING_CAA_REVIEW"] }, "findingStatus": { "$ref": "#/components/schemas/FindingStatus" }, "findingRevision": { "type": "integer" } } },
+      "CapReviewDecisionSummaryCaa": { "type": "object", "additionalProperties": false, "required": ["decision", "commentToAuditee", "internalCaaNote", "decidedAt"], "properties": { "decision": { "type": "string", "enum": ["ACCEPT", "REJECT", "REQUEST_MORE_INFORMATION"] }, "commentToAuditee": { "type": "string" }, "internalCaaNote": { "type": "string" }, "decidedAt": { "type": "string", "format": "date-time" } } },
+      "CapReviewDecisionSummaryAuditee": { "type": "object", "additionalProperties": false, "required": ["decision", "commentToAuditee", "decidedAt"], "properties": { "decision": { "type": "string", "enum": ["ACCEPT", "REJECT", "REQUEST_MORE_INFORMATION"] }, "commentToAuditee": { "type": "string" }, "decidedAt": { "type": "string", "format": "date-time" } } },
+      "CapRevisionSubmission": { "type": "object", "additionalProperties": false, "required": ["id", "capId", "findingId", "organizationId", "revision", "status", "rootCause", "correctiveAction", "preventiveAction", "responsiblePerson", "targetCompletionDate", "commentToCaa", "submittedAt"], "properties": { "id": { "type": "string" }, "capId": { "type": "string" }, "findingId": { "type": "string" }, "organizationId": { "type": "string" }, "revision": { "type": "integer" }, "status": { "$ref": "#/components/schemas/CapStatus" }, "rootCause": { "type": "string" }, "correctiveAction": { "type": "string" }, "preventiveAction": { "type": "string" }, "responsiblePerson": { "type": "string" }, "targetCompletionDate": { "type": "string", "format": "date" }, "commentToCaa": { "type": "string" }, "submittedAt": { "type": "string", "format": "date-time" } } },
+      "CaaCapRevisionView": { "type": "object", "additionalProperties": false, "required": ["audience", "id", "capId", "findingId", "organizationId", "revision", "status", "rootCause", "correctiveAction", "preventiveAction", "responsiblePerson", "targetCompletionDate", "commentToCaa", "submittedAt", "latestReview"], "properties": { "audience": { "type": "string", "enum": ["CAA"] }, "id": { "type": "string" }, "capId": { "type": "string" }, "findingId": { "type": "string" }, "organizationId": { "type": "string" }, "revision": { "type": "integer" }, "status": { "$ref": "#/components/schemas/CapStatus" }, "rootCause": { "type": "string" }, "correctiveAction": { "type": "string" }, "preventiveAction": { "type": "string" }, "responsiblePerson": { "type": "string" }, "targetCompletionDate": { "type": "string", "format": "date" }, "commentToCaa": { "type": "string" }, "submittedAt": { "type": "string", "format": "date-time" }, "latestReview": { "oneOf": [{ "$ref": "#/components/schemas/CapReviewDecisionSummaryCaa" }, { "type": "null" }] } } },
+      "AuditeeCapRevisionView": { "type": "object", "additionalProperties": false, "required": ["audience", "id", "capId", "findingId", "organizationId", "revision", "status", "rootCause", "correctiveAction", "preventiveAction", "responsiblePerson", "targetCompletionDate", "commentToCaa", "submittedAt", "latestReview"], "properties": { "audience": { "type": "string", "enum": ["AUDITEE"] }, "id": { "type": "string" }, "capId": { "type": "string" }, "findingId": { "type": "string" }, "organizationId": { "type": "string" }, "revision": { "type": "integer" }, "status": { "$ref": "#/components/schemas/CapStatus" }, "rootCause": { "type": "string" }, "correctiveAction": { "type": "string" }, "preventiveAction": { "type": "string" }, "responsiblePerson": { "type": "string" }, "targetCompletionDate": { "type": "string", "format": "date" }, "commentToCaa": { "type": "string" }, "submittedAt": { "type": "string", "format": "date-time" }, "latestReview": { "oneOf": [{ "$ref": "#/components/schemas/CapReviewDecisionSummaryAuditee" }, { "type": "null" }] } } },
+      "CapRevisionView": { "oneOf": [{ "$ref": "#/components/schemas/CaaCapRevisionView" }, { "$ref": "#/components/schemas/AuditeeCapRevisionView" }], "discriminator": { "propertyName": "audience", "mapping": { "CAA": "#/components/schemas/CaaCapRevisionView", "AUDITEE": "#/components/schemas/AuditeeCapRevisionView" } }, "additionalProperties": false },
+      "ListCapRevisionsOutput": { "type": "object", "additionalProperties": false, "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/CapRevisionView" } }, "nextCursor": { "type": ["string", "null"] } } },
       "ReviewCapInput": { "type": "object", "additionalProperties": false, "required": ["operationId", "capRevisionId", "expectedCapRevision", "findingId", "expectedFindingRevision", "decision", "commentToAuditee", "internalCaaNote"], "properties": { "operationId": { "type": "string" }, "capRevisionId": { "type": "string" }, "expectedCapRevision": { "type": "integer" }, "findingId": { "type": "string" }, "expectedFindingRevision": { "type": "integer" }, "decision": { "type": "string", "enum": ["ACCEPT", "REJECT", "REQUEST_MORE_INFORMATION"] }, "commentToAuditee": { "type": "string" }, "internalCaaNote": { "type": "string" } } },
       "ReviewCapOutput": { "type": "object", "additionalProperties": false, "required": ["capRevisionId", "capRevision", "capStatus", "findingStatus", "findingRevision"], "properties": { "capRevisionId": { "type": "string" }, "capRevision": { "type": "integer" }, "capStatus": { "$ref": "#/components/schemas/CapStatus" }, "findingStatus": { "$ref": "#/components/schemas/FindingStatus" }, "findingRevision": { "type": "integer" } } },
       "BeginInspectionAttachmentUploadInput": { "type": "object", "additionalProperties": false, "required": ["operationId", "inspectionAttachmentId", "packageId", "byteSize", "sha256", "fileName", "declaredMediaType"], "properties": { "operationId": { "type": "string" }, "inspectionAttachmentId": { "type": "string" }, "packageId": { "type": "string" }, "byteSize": { "type": "integer" }, "sha256": { "type": "string" }, "fileName": { "type": "string" }, "declaredMediaType": { "type": "string" } } },

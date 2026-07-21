@@ -51,6 +51,13 @@ function validateValue(document, schemaInput, value, pointer = "$") {
     assert.ok(schema.enum.includes(value), `${pointer} is not an approved enum value: ${value}`);
   }
 
+  const declaredTypes = Array.isArray(schema.type) ? schema.type : [schema.type];
+  if (value === null && declaredTypes.includes("null")) return;
+  if (schema.type === "null") {
+    assert.equal(value, null, `${pointer} must be null`);
+    return;
+  }
+
   if (schema.type === "object") {
     assert.equal(typeof value, "object", `${pointer} must be an object`);
     assert.notEqual(value, null, `${pointer} must not be null`);
@@ -65,9 +72,7 @@ function validateValue(document, schemaInput, value, pointer = "$") {
       }
     }
     for (const [key, child] of Object.entries(schema.properties ?? {})) {
-      if (Object.hasOwn(value, key) && value[key] !== null) {
-        validateValue(document, child, value[key], `${pointer}.${key}`);
-      }
+      if (Object.hasOwn(value, key)) validateValue(document, child, value[key], `${pointer}.${key}`);
     }
     return;
   }
@@ -164,4 +169,70 @@ test("first-production route families have versioned paths, closed schemas, and 
   ]) {
     assert.ok(files.includes(example), `Missing canonical route-family example: ${example}`);
   }
+});
+
+test("lifecycle read projections expose Potential Finding and role-shaped CAP revision contracts", () => {
+  const document = readRequiredJson(openApiPath);
+  for (const route of [
+    "/v1/potential-findings",
+    "/v1/potential-findings/{potentialFindingId}",
+    "/v1/findings/{findingId}/cap-revisions",
+    "/v1/cap-revisions/{capRevisionId}",
+  ]) {
+    assert.ok(document.paths[route], `Missing lifecycle read path: ${route}`);
+  }
+
+  assert.ok(
+    document.paths["/v1/potential-findings"].get,
+    "Potential Findings must have a read list operation",
+  );
+  assert.ok(
+    document.paths["/v1/potential-findings/{potentialFindingId}"].get,
+    "Potential Findings must have a direct get operation",
+  );
+  assert.ok(
+    document.paths["/v1/findings/{findingId}/cap-revisions"].get,
+    "CAP revisions must be listable from a Finding",
+  );
+  assert.ok(
+    document.paths["/v1/cap-revisions/{capRevisionId}"].get,
+    "CAP revisions must support direct get",
+  );
+
+  for (const schemaName of [
+    "ListPotentialFindingsOutput",
+    "CapRevisionSubmission",
+    "CaaCapRevisionView",
+    "AuditeeCapRevisionView",
+    "CapRevisionView",
+    "ListCapRevisionsOutput",
+  ]) {
+    assert.equal(
+      document.components.schemas[schemaName]?.additionalProperties,
+      false,
+      `${schemaName} must be closed`,
+    );
+  }
+
+  const capUnion = document.components.schemas.CapRevisionView;
+  assert.equal(capUnion.discriminator?.propertyName, "audience");
+  assert.equal(
+    JSON.stringify(document.components.schemas.AuditeeCapRevisionView).includes("internalCaaNote"),
+    false,
+    "Auditee CAP revision schema must structurally omit Internal CAA Note",
+  );
+
+  const files = fs.readdirSync(examplesDirectory);
+  for (const example of [
+    "potential-findings-response.json",
+    "cap-revision-caa.json",
+    "cap-revision-auditee.json",
+  ]) {
+    assert.ok(files.includes(example), `Missing canonical lifecycle read example: ${example}`);
+  }
+
+  const caaExample = readRequiredJson(path.join(examplesDirectory, "cap-revision-caa.json"));
+  const auditeeExample = readRequiredJson(path.join(examplesDirectory, "cap-revision-auditee.json"));
+  assert.match(JSON.stringify(caaExample.value), /internalCaaNote/);
+  assert.doesNotMatch(JSON.stringify(auditeeExample.value), /internalCaaNote/);
 });

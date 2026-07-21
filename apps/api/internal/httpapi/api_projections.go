@@ -9,8 +9,12 @@ import (
 	"time"
 
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/application"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/caps"
+	capstore "github.com/MarlonJD/aviaSurveil360/apps/api/internal/caps/store/postgres"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/httpapi/generated"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/potentialfindings"
+	pfstore "github.com/MarlonJD/aviaSurveil360/apps/api/internal/potentialfindings/store/postgres"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -169,6 +173,65 @@ func (api *CanonicalAPI) potentialFindingProjection(ctx context.Context, potenti
 	return view, nil
 }
 
+func potentialFindingView(record pfstore.PotentialFinding) generated.PotentialFindingView {
+	return generated.PotentialFindingView{
+		Id: record.ID, AuditId: record.InspectionID, QuestionId: record.QuestionID,
+		OrganizationId: record.OrganizationID, Title: record.Title, Description: record.Description,
+		Status: generated.PotentialFindingStatus(record.Status), Revision: record.Revision,
+		ConvertedFindingId: record.ConvertedFindingID,
+	}
+}
+
+func (api *CanonicalAPI) potentialFindingsProjection(ctx context.Context, actor identity.Principal, status *string, limit *int64) (generated.ListPotentialFindingsOutput, error) {
+	if err := potentialfindings.AuthorizeList(actor); err != nil {
+		return generated.ListPotentialFindingsOutput{}, fmt.Errorf("%w: %v", application.ErrForbidden, err)
+	}
+	resultLimit := int32(50)
+	if limit != nil && *limit > 0 && *limit < 100 {
+		resultLimit = int32(*limit)
+	} else if limit != nil && *limit >= 100 {
+		resultLimit = 100
+	}
+	statusFilter := ""
+	if status != nil {
+		statusFilter = *status
+	}
+	records, err := pfstore.New(api.pool).ListPotentialFindings(ctx, pfstore.ListPotentialFindingsParams{
+		StatusFilter: statusFilter,
+		ResultLimit:  resultLimit,
+	})
+	if err != nil {
+		return generated.ListPotentialFindingsOutput{}, err
+	}
+	items := make([]generated.PotentialFindingView, 0, len(records))
+	for _, record := range records {
+		items = append(items, potentialFindingView(record))
+	}
+	return generated.ListPotentialFindingsOutput{Items: items}, nil
+}
+
+func (api *CanonicalAPI) authorizedPotentialFindingProjection(ctx context.Context, actor identity.Principal, potentialFindingID string) (generated.PotentialFindingView, error) {
+	store := pfstore.New(api.pool)
+	record, err := store.GetPotentialFinding(ctx, potentialFindingID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return generated.PotentialFindingView{}, application.ErrNotFound
+	}
+	if err != nil {
+		return generated.PotentialFindingView{}, err
+	}
+	assignments, err := store.ListAssignedInspectorSubjectIDs(ctx, potentialFindingID)
+	if err != nil {
+		return generated.PotentialFindingView{}, err
+	}
+	if err := potentialfindings.AuthorizeRead(potentialfindings.ReadAuthorizationInput{
+		Actor:                       actor,
+		AssignedInspectorSubjectIDs: assignments,
+	}); err != nil {
+		return generated.PotentialFindingView{}, fmt.Errorf("%w: %v", application.ErrForbidden, err)
+	}
+	return potentialFindingView(record), nil
+}
+
 func (api *CanonicalAPI) findingProjection(ctx context.Context, actor identity.Principal, findingID string) (generated.FindingView, error) {
 	if _, err := api.application.GetFinding(ctx, actor, findingID); err != nil {
 		return generated.FindingView{}, err
@@ -246,6 +309,145 @@ func (api *CanonicalAPI) findingsProjection(ctx context.Context, actor identity.
 		items = items[:*limit]
 	}
 	return generated.ListFindingsOutput{Items: items}, nil
+}
+
+type capReviewSummary struct {
+	decision         string
+	commentToAuditee string
+	internalCAANote  string
+	decidedAt        time.Time
+}
+
+func (api *CanonicalAPI) latestCAPReview(ctx context.Context, capRevisionID string) (*capReviewSummary, error) {
+	var summary capReviewSummary
+	if err := api.pool.QueryRow(ctx, `
+		SELECT decision, COALESCE(comment_to_auditee, ''), COALESCE(internal_caa_note, ''), decided_at
+		FROM review_decisions
+		WHERE entity_type = 'cap_revision' AND entity_id = $1
+		ORDER BY decided_at DESC, id DESC
+		LIMIT 1
+	`, capRevisionID).Scan(&summary.decision, &summary.commentToAuditee, &summary.internalCAANote, &summary.decidedAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &summary, nil
+}
+
+func capDate(value any) string {
+	switch typed := value.(type) {
+	case interface{ TimeValue() (time.Time, bool) }:
+		if t, ok := typed.TimeValue(); ok {
+			return t.UTC().Format("2006-01-02")
+		}
+	}
+	return ""
+}
+
+func capRevisionInstant(value any) string {
+	switch typed := value.(type) {
+	case interface{ TimeValue() (time.Time, bool) }:
+		if t, ok := typed.TimeValue(); ok {
+			return t.UTC().Format(time.RFC3339Nano)
+		}
+	}
+	return ""
+}
+
+func (api *CanonicalAPI) capRevisionProjection(ctx context.Context, record capstore.CapRevision, audience caps.RevisionAudience) (generated.CapRevisionView, error) {
+	review, err := api.latestCAPReview(ctx, record.ID)
+	if err != nil {
+		return nil, err
+	}
+	responsiblePerson := valueOr(record.ResponsiblePerson, "")
+	commentToCAA := valueOr(record.CommentToCaa, "")
+	if audience == caps.AudienceAuditee {
+		view := generated.AuditeeCapRevisionView{
+			Audience: "AUDITEE", Id: record.ID, CapId: record.CapID, FindingId: record.FindingID,
+			OrganizationId: record.OrganizationID, Revision: int64(record.Revision), Status: generated.CapStatus(record.Status),
+			RootCause: record.RootCause, CorrectiveAction: record.CorrectiveAction, PreventiveAction: record.PreventiveAction,
+			ResponsiblePerson: responsiblePerson, TargetCompletionDate: record.TargetCompletionDate.Time.Format("2006-01-02"),
+			CommentToCaa: commentToCAA, SubmittedAt: record.SubmittedAt.Time.UTC().Format(time.RFC3339Nano),
+		}
+		if review != nil {
+			view.LatestReview = &generated.CapReviewDecisionSummaryAuditee{
+				Decision: review.decision, CommentToAuditee: review.commentToAuditee,
+				DecidedAt: review.decidedAt.UTC().Format(time.RFC3339Nano),
+			}
+		}
+		return json.Marshal(view)
+	}
+	view := generated.CaaCapRevisionView{
+		Audience: "CAA", Id: record.ID, CapId: record.CapID, FindingId: record.FindingID,
+		OrganizationId: record.OrganizationID, Revision: int64(record.Revision), Status: generated.CapStatus(record.Status),
+		RootCause: record.RootCause, CorrectiveAction: record.CorrectiveAction, PreventiveAction: record.PreventiveAction,
+		ResponsiblePerson: responsiblePerson, TargetCompletionDate: record.TargetCompletionDate.Time.Format("2006-01-02"),
+		CommentToCaa: commentToCAA, SubmittedAt: record.SubmittedAt.Time.UTC().Format(time.RFC3339Nano),
+	}
+	if review != nil {
+		view.LatestReview = &generated.CapReviewDecisionSummaryCaa{
+			Decision: review.decision, CommentToAuditee: review.commentToAuditee,
+			InternalCaaNote: review.internalCAANote, DecidedAt: review.decidedAt.UTC().Format(time.RFC3339Nano),
+		}
+	}
+	return json.Marshal(view)
+}
+
+func (api *CanonicalAPI) capReadAudience(ctx context.Context, actor identity.Principal, findingID string, organizationID string) (caps.RevisionAudience, error) {
+	_, findingErr := api.application.GetFinding(ctx, actor, findingID)
+	findingAuthorized := findingErr == nil
+	if findingErr != nil && !actor.HasRole(identity.RoleAuditee) {
+		return "", findingErr
+	}
+	audience, err := caps.AuthorizeRevisionRead(caps.RevisionReadAuthorizationInput{
+		Actor: actor, FindingOrganizationID: organizationID, FindingAuthorized: findingAuthorized,
+	})
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", application.ErrForbidden, err)
+	}
+	return audience, nil
+}
+
+func (api *CanonicalAPI) capRevisionsProjection(ctx context.Context, actor identity.Principal, findingID string) (generated.ListCapRevisionsOutput, error) {
+	records, err := capstore.New(api.pool).ListCAPRevisionsForFinding(ctx, findingID)
+	if err != nil {
+		return generated.ListCapRevisionsOutput{}, err
+	}
+	if len(records) == 0 {
+		if _, err := api.application.GetFinding(ctx, actor, findingID); err != nil {
+			return generated.ListCapRevisionsOutput{}, err
+		}
+		return generated.ListCapRevisionsOutput{Items: []generated.CapRevisionView{}}, nil
+	}
+	audience, err := api.capReadAudience(ctx, actor, findingID, records[0].OrganizationID)
+	if err != nil {
+		return generated.ListCapRevisionsOutput{}, err
+	}
+	items := make([]generated.CapRevisionView, 0, len(records))
+	for _, record := range records {
+		view, err := api.capRevisionProjection(ctx, record, audience)
+		if err != nil {
+			return generated.ListCapRevisionsOutput{}, err
+		}
+		items = append(items, view)
+	}
+	return generated.ListCapRevisionsOutput{Items: items}, nil
+}
+
+func (api *CanonicalAPI) capRevisionByIDProjection(ctx context.Context, actor identity.Principal, capRevisionID string) (generated.CapRevisionView, error) {
+	record, err := capstore.New(api.pool).GetCAPRevision(ctx, capRevisionID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, application.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	audience, err := api.capReadAudience(ctx, actor, record.FindingID, record.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+	return api.capRevisionProjection(ctx, record, audience)
 }
 
 func (api *CanonicalAPI) reportProjection(ctx context.Context, actor identity.Principal, reportVersionID string) (generated.ReportVersionView, error) {

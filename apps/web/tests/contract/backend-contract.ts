@@ -251,6 +251,42 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
       );
     });
 
+    it("exposes Potential Finding reads without giving Inspectors Lead queue authority", async () => {
+      const harness = await createHarness();
+      const inspector = harness.backendFor(PRINCIPALS.inspector);
+      const response = await inspector.inspections.upsertChecklistResponse({
+        operationId: "OP-RESPONSE-PF-READS",
+        responseId: "RESP-CAB-EMEQ-PBE-001",
+        auditId: "AUD-2026-001",
+        questionId: "CAB-EMEQ-PBE-001",
+        expectedResponseRevision: null,
+        answer: "NON_COMPLIANT",
+        comment: "Required exact-Audit comment for Potential Finding reads.",
+      });
+      const potential = await inspector.potentialFindings.create({
+        operationId: "OP-PF-READS",
+        auditId: "AUD-2026-001",
+        questionId: "CAB-EMEQ-PBE-001",
+        checklistResponseId: response.id,
+        expectedChecklistResponseRevision: response.revision,
+        title: "PBE serviceability and accessibility not confirmed",
+        description: "Configured check exception.",
+        requiredComment: response.comment,
+        inspectionAttachmentIds: [],
+      });
+
+      const lead = harness.backendFor(PRINCIPALS.leadInspector);
+      await expect(inspector.potentialFindings.list({ status: "PENDING_LEAD_REVIEW", limit: 50 }))
+        .rejects.toThrow(/Lead Inspector/i);
+      expect(await inspector.potentialFindings.get({ potentialFindingId: potential.id })).toEqual(potential);
+      const queue = await lead.potentialFindings.list({ status: "PENDING_LEAD_REVIEW", limit: 50 });
+      expect(queue).toEqual({ items: [potential], nextCursor: null });
+      expect(await lead.potentialFindings.get({ potentialFindingId: potential.id })).toEqual(potential);
+      await expect(harness.backendFor(PRINCIPALS.finance).potentialFindings.get({
+        potentialFindingId: potential.id,
+      })).rejects.toThrow(/Forbidden|Lead Inspector|authority/i);
+    });
+
     it("separates Auditee CAP submission from CAA acceptance and keeps the Finding open", async () => {
       const harness = await createHarness();
       const finding = await createCanonicalFinding(harness);
@@ -260,6 +296,67 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
       expect(accepted.capStatus).toBe("ACCEPTED");
       expect(accepted.findingStatus).toBe("EVIDENCE_REQUIRED");
       expect(accepted.findingStatus).not.toBe("CLOSED");
+    });
+
+    it("returns immutable role-shaped CAP revisions and omits Internal CAA Notes for Auditee", async () => {
+      const harness = await createHarness();
+      const finding = await createCanonicalFinding(harness);
+      const auditee = harness.backendFor(PRINCIPALS.auditee);
+      const first = await auditee.caps.submit({
+        operationId: "OP-CAP-SUBMIT-READS-R1",
+        findingId: finding.id,
+        expectedFindingRevision: finding.revision,
+        rootCause: "Initial root cause",
+        correctiveAction: "Initial corrective action",
+        preventiveAction: "Initial preventive action",
+        responsiblePerson: "Fly Namibia Cabin Safety Manager",
+        targetCompletionDate: "2026-07-15",
+        commentToCaa: "Initial CAP submitted for CAA review.",
+      });
+      const lead = harness.backendFor(PRINCIPALS.leadInspector);
+      const moreInfo = await lead.caps.review({
+        operationId: "OP-CAP-MORE-INFO-READS-R1",
+        capRevisionId: first.capRevisionId,
+        expectedCapRevision: first.capRevision,
+        findingId: finding.id,
+        expectedFindingRevision: first.findingRevision,
+        decision: "REQUEST_MORE_INFORMATION",
+        commentToAuditee: "Clarify the implementation sequence and resubmit.",
+        internalCaaNote: "Revision 1 needs stronger preventive-action sequencing.",
+      });
+      const second = await auditee.caps.submit({
+        operationId: "OP-CAP-SUBMIT-READS-R2",
+        findingId: finding.id,
+        expectedFindingRevision: moreInfo.findingRevision,
+        rootCause: "Revised root cause",
+        correctiveAction: "Revised corrective action",
+        preventiveAction: "Revised preventive action",
+        responsiblePerson: "Fly Namibia Cabin Safety Manager",
+        targetCompletionDate: "2026-07-20",
+        commentToCaa: "Revised CAP submitted for CAA review.",
+      });
+
+      const caaList = await lead.caps.listRevisions({ findingId: finding.id });
+      expect(caaList.items.map(({ id, revision, audience }) => [id, revision, audience])).toEqual([
+        [first.capRevisionId, 1, "CAA"],
+        [second.capRevisionId, 2, "CAA"],
+      ]);
+      expect(caaList.nextCursor).toBeNull();
+      expect(caaList.items[0]?.latestReview).toMatchObject({
+        decision: "REQUEST_MORE_INFORMATION",
+        internalCaaNote: "Revision 1 needs stronger preventive-action sequencing.",
+      });
+      expect(await lead.caps.getRevision({ capRevisionId: first.capRevisionId })).toEqual(caaList.items[0]);
+
+      const auditeeList = await auditee.caps.listRevisions({ findingId: finding.id });
+      expect(auditeeList.items.map(({ audience }) => audience)).toEqual(["AUDITEE", "AUDITEE"]);
+      expect(JSON.stringify(auditeeList)).not.toMatch(/internalCaaNote|Internal CAA Note/i);
+      const auditeeDetail = await auditee.caps.getRevision({ capRevisionId: first.capRevisionId });
+      expect(auditeeDetail.audience).toBe("AUDITEE");
+      expect(JSON.stringify(auditeeDetail)).not.toMatch(/internalCaaNote|Internal CAA Note/i);
+      await expect(harness.backendFor(PRINCIPALS.gm).caps.getRevision({
+        capRevisionId: first.capRevisionId,
+      })).rejects.toThrow(/Forbidden|authority/i);
     });
 
     it("preserves immutable Evidence versions and closes only the exact latest accepted version", async () => {

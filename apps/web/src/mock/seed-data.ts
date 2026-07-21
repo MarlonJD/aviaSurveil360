@@ -19,6 +19,7 @@ import type {
 
 export interface MockCapRevision {
   id: string;
+  capId: string;
   findingId: string;
   organizationId: string;
   version: number;
@@ -32,6 +33,7 @@ export interface MockCapRevision {
   commentToCaa: string;
   commentToAuditee: string;
   internalCaaNote: string;
+  reviewDecision: "ACCEPT" | "REJECT" | "REQUEST_MORE_INFORMATION" | null;
   submittedAt: string;
   reviewedAt: string | null;
 }

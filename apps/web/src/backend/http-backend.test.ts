@@ -134,6 +134,76 @@ describe("HttpBackend", () => {
     expect(fetchImplementation).toHaveBeenCalledTimes(1);
   });
 
+  it("maps lifecycle read routes and preserves AbortSignal for direct loads", async () => {
+    const controller = new AbortController();
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          items: [{
+            id: "PF-2026-001",
+            auditId: "AUD-2026-001",
+            questionId: "CAB-EMEQ-PBE-001",
+            organizationId: "ORG-FLY-NAMIBIA",
+            title: "PBE serviceability and accessibility not confirmed",
+            description: "Configured check exception.",
+            status: "PENDING_LEAD_REVIEW",
+            revision: 1,
+            convertedFindingId: null,
+          }],
+          nextCursor: null,
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          audience: "AUDITEE",
+          id: "CAP-CAB-2026-001-R1",
+          capId: "CAP-CAB-2026-001",
+          findingId: "FND-CAB-2026-001",
+          organizationId: "ORG-FLY-NAMIBIA",
+          revision: 1,
+          status: "ACCEPTED",
+          rootCause: "Root cause",
+          correctiveAction: "Corrective action",
+          preventiveAction: "Preventive action",
+          responsiblePerson: "Fly Namibia Cabin Safety Manager",
+          targetCompletionDate: "2026-07-15",
+          commentToCaa: "CAP submitted for CAA review.",
+          submittedAt: "2026-06-15T09:00:00.000Z",
+          latestReview: {
+            decision: "ACCEPT",
+            commentToAuditee: "CAP accepted.",
+            decidedAt: "2026-06-15T09:00:00.000Z",
+          },
+        }),
+      );
+    const backend = createHttpBackend(
+      { apiBaseUrl: "/", environmentLabel: "Test" },
+      { fetchImplementation, csrfToken: () => "csrf-test" },
+    );
+
+    const queue = await backend.potentialFindings.list(
+      { status: "PENDING_LEAD_REVIEW", limit: 50 },
+      { signal: controller.signal },
+    );
+    expect(queue.items[0]?.id).toBe("PF-2026-001");
+    const cap = await backend.caps.getRevision(
+      { capRevisionId: "CAP-CAB-2026-001-R1" },
+      { signal: controller.signal },
+    );
+    expect(cap.audience).toBe("AUDITEE");
+    expect(JSON.stringify(cap)).not.toMatch(/internalCaaNote/i);
+
+    expect(fetchImplementation.mock.calls[0]?.[0]).toBe(
+      "/v1/potential-findings?status=PENDING_LEAD_REVIEW&limit=50",
+    );
+    expect(fetchImplementation.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
+    expect(fetchImplementation.mock.calls[1]?.[0]).toBe(
+      "/v1/cap-revisions/CAP-CAB-2026-001-R1",
+    );
+    expect(fetchImplementation.mock.calls[1]?.[1]?.signal).toBe(controller.signal);
+  });
+
   it("maps first-production registry and planning requests to exact versioned routes", async () => {
     const fetchImplementation = vi
       .fn<typeof fetch>()

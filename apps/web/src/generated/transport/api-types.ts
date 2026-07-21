@@ -139,9 +139,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["listPotentialFindings"];
         put?: never;
         post: operations["createPotentialFinding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/potential-findings/{potentialFindingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPotentialFinding"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -212,6 +228,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/findings/{findingId}/cap-revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listCapRevisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/findings/{id}/authorized-closure": {
         parameters: {
             query?: never;
@@ -238,6 +270,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["submitCap"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cap-revisions/{capRevisionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCapRevision"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -686,6 +734,10 @@ export interface components {
             revision: number;
             convertedFindingId: string | null;
         };
+        ListPotentialFindingsOutput: {
+            items: components["schemas"]["PotentialFindingView"][];
+            nextCursor: string | null;
+        };
         ReturnOrDismissPotentialFindingInput: {
             operationId: string;
             potentialFindingId: string;
@@ -800,6 +852,89 @@ export interface components {
             capStatus: "SUBMITTED" | "PENDING_CAA_REVIEW";
             findingStatus: components["schemas"]["FindingStatus"];
             findingRevision: number;
+        };
+        CapReviewDecisionSummaryCaa: {
+            /** @enum {string} */
+            decision: "ACCEPT" | "REJECT" | "REQUEST_MORE_INFORMATION";
+            commentToAuditee: string;
+            internalCaaNote: string;
+            /** Format: date-time */
+            decidedAt: string;
+        };
+        CapReviewDecisionSummaryAuditee: {
+            /** @enum {string} */
+            decision: "ACCEPT" | "REJECT" | "REQUEST_MORE_INFORMATION";
+            commentToAuditee: string;
+            /** Format: date-time */
+            decidedAt: string;
+        };
+        CapRevisionSubmission: {
+            id: string;
+            capId: string;
+            findingId: string;
+            organizationId: string;
+            revision: number;
+            status: components["schemas"]["CapStatus"];
+            rootCause: string;
+            correctiveAction: string;
+            preventiveAction: string;
+            responsiblePerson: string;
+            /** Format: date */
+            targetCompletionDate: string;
+            commentToCaa: string;
+            /** Format: date-time */
+            submittedAt: string;
+        };
+        CaaCapRevisionView: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            audience: "CAA";
+            id: string;
+            capId: string;
+            findingId: string;
+            organizationId: string;
+            revision: number;
+            status: components["schemas"]["CapStatus"];
+            rootCause: string;
+            correctiveAction: string;
+            preventiveAction: string;
+            responsiblePerson: string;
+            /** Format: date */
+            targetCompletionDate: string;
+            commentToCaa: string;
+            /** Format: date-time */
+            submittedAt: string;
+            latestReview: components["schemas"]["CapReviewDecisionSummaryCaa"] | null;
+        };
+        AuditeeCapRevisionView: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            audience: "AUDITEE";
+            id: string;
+            capId: string;
+            findingId: string;
+            organizationId: string;
+            revision: number;
+            status: components["schemas"]["CapStatus"];
+            rootCause: string;
+            correctiveAction: string;
+            preventiveAction: string;
+            responsiblePerson: string;
+            /** Format: date */
+            targetCompletionDate: string;
+            commentToCaa: string;
+            /** Format: date-time */
+            submittedAt: string;
+            latestReview: components["schemas"]["CapReviewDecisionSummaryAuditee"] | null;
+        };
+        CapRevisionView: components["schemas"]["CaaCapRevisionView"] | components["schemas"]["AuditeeCapRevisionView"];
+        ListCapRevisionsOutput: {
+            items: components["schemas"]["CapRevisionView"][];
+            nextCursor: string | null;
         };
         ReviewCapInput: {
             operationId: string;
@@ -1424,6 +1559,30 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
+    listPotentialFindings: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["PotentialFindingStatus"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized Potential Finding queue */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListPotentialFindingsOutput"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
     createPotentialFinding: {
         parameters: {
             query?: never;
@@ -1439,6 +1598,29 @@ export interface operations {
         responses: {
             /** @description Potential Finding */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PotentialFindingView"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getPotentialFinding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                potentialFindingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Potential Finding */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1547,6 +1729,29 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
+    listCapRevisions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                findingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized immutable CAP revisions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCapRevisionsOutput"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
     authorizedCloseFinding: {
         parameters: {
             query?: never;
@@ -1594,6 +1799,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubmitCapOutput"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getCapRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                capRevisionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized immutable CAP revision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapRevisionView"];
                 };
             };
             default: components["responses"]["Problem"];

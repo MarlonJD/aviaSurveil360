@@ -94,3 +94,86 @@ func (q *Queries) GetPotentialFindingForUpdate(ctx context.Context, id string) (
 	)
 	return i, err
 }
+
+const listAssignedInspectorSubjectIDs = `-- name: ListAssignedInspectorSubjectIDs :many
+SELECT assignment.subject_id
+FROM potential_findings potential
+JOIN inspection_question_assignments assignment
+  ON assignment.inspection_id = potential.inspection_id
+ AND assignment.question_id = potential.question_id
+WHERE potential.id = $1
+ORDER BY assignment.subject_id
+`
+
+func (q *Queries) ListAssignedInspectorSubjectIDs(ctx context.Context, id string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listAssignedInspectorSubjectIDs, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var subject_id string
+		if err := rows.Scan(&subject_id); err != nil {
+			return nil, err
+		}
+		items = append(items, subject_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPotentialFindings = `-- name: ListPotentialFindings :many
+SELECT id, inspection_id, checklist_response_id, organization_id, status, finding_basis,
+       expected_evidence, comment_to_auditee, internal_caa_note, converted_finding_id,
+       revision, created_at, updated_at, question_id, title, description, created_by_subject_id
+FROM potential_findings
+WHERE ($1::text = '' OR status = $1::text)
+ORDER BY id
+LIMIT $2
+`
+
+type ListPotentialFindingsParams struct {
+	StatusFilter string `json:"status_filter"`
+	ResultLimit  int32  `json:"result_limit"`
+}
+
+func (q *Queries) ListPotentialFindings(ctx context.Context, arg ListPotentialFindingsParams) ([]PotentialFinding, error) {
+	rows, err := q.db.Query(ctx, listPotentialFindings, arg.StatusFilter, arg.ResultLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PotentialFinding
+	for rows.Next() {
+		var i PotentialFinding
+		if err := rows.Scan(
+			&i.ID,
+			&i.InspectionID,
+			&i.ChecklistResponseID,
+			&i.OrganizationID,
+			&i.Status,
+			&i.FindingBasis,
+			&i.ExpectedEvidence,
+			&i.CommentToAuditee,
+			&i.InternalCaaNote,
+			&i.ConvertedFindingID,
+			&i.Revision,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.QuestionID,
+			&i.Title,
+			&i.Description,
+			&i.CreatedBySubjectID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

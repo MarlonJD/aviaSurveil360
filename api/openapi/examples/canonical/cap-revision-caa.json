@@ -1,0 +1,25 @@
+{
+  "schema": "CapRevisionView",
+  "value": {
+    "audience": "CAA",
+    "id": "CAP-CAB-2026-001-R1",
+    "capId": "CAP-CAB-2026-001",
+    "findingId": "FND-CAB-2026-001",
+    "organizationId": "ORG-FLY-NAMIBIA",
+    "revision": 1,
+    "status": "ACCEPTED",
+    "rootCause": "Pre-flight cabin equipment serviceability checks did not reconcile the PBE position with the deferred defect list.",
+    "correctiveAction": "Replace or service the affected PBE, update the cabin defect record, and confirm serviceability before release.",
+    "preventiveAction": "Add a supervisor review of emergency equipment checks and monthly sampling of PBE serviceability records.",
+    "responsiblePerson": "Fly Namibia Cabin Safety Manager",
+    "targetCompletionDate": "2026-07-15",
+    "commentToCaa": "CAP submitted for CAA review.",
+    "submittedAt": "2026-06-15T09:00:00.000Z",
+    "latestReview": {
+      "decision": "ACCEPT",
+      "commentToAuditee": "CAP accepted. Submit the required PBE serviceability record.",
+      "internalCaaNote": "CAP actions are credible; Evidence verification remains required.",
+      "decidedAt": "2026-06-15T09:00:00.000Z"
+    }
+  }
+}

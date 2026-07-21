@@ -226,6 +226,13 @@ export interface PotentialFindingView {
   convertedFindingId: string | null;
 }
 
+export interface ListPotentialFindingsInput {
+  status?: PotentialFindingStatus;
+  limit?: number;
+}
+
+export type ListPotentialFindingsOutput = PageOutput<PotentialFindingView>;
+
 export type DecidePotentialFindingInput =
   | (CommandMeta & {
       potentialFindingId: string;
@@ -328,6 +335,48 @@ export interface ReviewCapOutput {
   capStatus: CapStatus;
   findingStatus: FindingStatus;
   findingRevision: number;
+}
+
+export interface CapRevisionSubmission {
+  id: string;
+  capId: string;
+  findingId: string;
+  organizationId: string;
+  revision: number;
+  status: CapStatus;
+  rootCause: string;
+  correctiveAction: string;
+  preventiveAction: string;
+  responsiblePerson: string;
+  targetCompletionDate: LocalDate;
+  commentToCaa: string;
+  submittedAt: Instant;
+}
+
+export interface CaaCapRevisionView extends CapRevisionSubmission {
+  audience: "CAA";
+  latestReview: null | {
+    decision: "ACCEPT" | "REJECT" | "REQUEST_MORE_INFORMATION";
+    commentToAuditee: string;
+    internalCaaNote: string;
+    decidedAt: Instant;
+  };
+}
+
+export interface AuditeeCapRevisionView extends CapRevisionSubmission {
+  audience: "AUDITEE";
+  latestReview: null | {
+    decision: "ACCEPT" | "REJECT" | "REQUEST_MORE_INFORMATION";
+    commentToAuditee: string;
+    decidedAt: Instant;
+  };
+}
+
+export type CapRevisionView = CaaCapRevisionView | AuditeeCapRevisionView;
+
+export interface ListCapRevisionsOutput {
+  items: CapRevisionView[];
+  nextCursor: null;
 }
 
 export interface BeginInspectionAttachmentUploadInput extends CommandMeta {
@@ -683,6 +732,14 @@ export interface InspectionBackend {
 }
 
 export interface PotentialFindingBackend {
+  list(
+    input: ListPotentialFindingsInput,
+    options?: BackendRequestOptions,
+  ): Promise<ListPotentialFindingsOutput>;
+  get(
+    input: { potentialFindingId: string },
+    options?: BackendRequestOptions,
+  ): Promise<PotentialFindingView>;
   create(
     input: CreatePotentialFindingInput,
     options?: BackendRequestOptions,
@@ -706,6 +763,14 @@ export interface FindingBackend {
 }
 
 export interface CapBackend {
+  listRevisions(
+    input: { findingId: string },
+    options?: BackendRequestOptions,
+  ): Promise<ListCapRevisionsOutput>;
+  getRevision(
+    input: { capRevisionId: string },
+    options?: BackendRequestOptions,
+  ): Promise<CapRevisionView>;
   submit(input: SubmitCapInput, options?: BackendRequestOptions): Promise<SubmitCapOutput>;
   review(input: ReviewCapInput, options?: BackendRequestOptions): Promise<ReviewCapOutput>;
 }

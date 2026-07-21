@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	GetCAPRevision(ctx context.Context, id string) (CapRevision, error)
 	GetLatestCAPRevisionForFinding(ctx context.Context, findingID string) (CapRevision, error)
+	ListCAPRevisionsForFinding(ctx context.Context, findingID string) ([]CapRevision, error)
 }
 
 var _ Querier = (*Queries)(nil)

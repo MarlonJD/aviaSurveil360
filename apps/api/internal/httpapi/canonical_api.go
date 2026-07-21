@@ -80,13 +80,17 @@ func (api *CanonicalAPI) Handler() http.Handler {
 	router.Put("/v1/checklist-responses/{responseId}", api.upsertChecklistResponse)
 	router.Post("/v1/checklists/{auditId}/submit", api.submitChecklist)
 	router.Post("/v1/checklists/{auditId}/reopen", api.reopenChecklist)
+	router.Get("/v1/potential-findings", api.listPotentialFindings)
 	router.Post("/v1/potential-findings", api.createPotentialFinding)
+	router.Get("/v1/potential-findings/{potentialFindingId}", api.getPotentialFinding)
 	router.Post("/v1/potential-findings/{id}/decisions", api.decidePotentialFinding)
 	router.Get("/v1/findings", api.listFindings)
 	router.Get("/v1/findings/{id}", api.getFinding)
 	router.Get("/v1/findings/{id}/evidence", api.listEvidenceVersions)
+	router.Get("/v1/findings/{findingId}/cap-revisions", api.listCapRevisions)
 	router.Post("/v1/findings/{id}/authorized-closure", api.authorizedCloseFinding)
 	router.Post("/v1/caps", api.submitCAP)
+	router.Get("/v1/cap-revisions/{capRevisionId}", api.getCapRevision)
 	router.Post("/v1/caps/{capRevisionId}/reviews", api.reviewCAP)
 	router.Post("/v1/inspection-attachments/{id}/uploads", api.beginInspectionAttachmentUpload)
 	router.Post("/v1/inspection-attachments/uploads/{uploadId}/complete", api.completeInspectionAttachmentUpload)
@@ -235,6 +239,24 @@ func (api *CanonicalAPI) reopenChecklist(writer http.ResponseWriter, request *ht
 	api.respond(writer, generated.SubmitChecklistOutput{AuditId: result.InspectionID, ChecklistStatus: string(result.Status), ChecklistRevision: result.Revision}, err)
 }
 
+func (api *CanonicalAPI) listPotentialFindings(writer http.ResponseWriter, request *http.Request) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	output, err := api.potentialFindingsProjection(request.Context(), actor, optionalQuery(request, "status"), optionalIntQuery(request, "limit"))
+	api.respond(writer, output, err)
+}
+
+func (api *CanonicalAPI) getPotentialFinding(writer http.ResponseWriter, request *http.Request) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	output, err := api.authorizedPotentialFindingProjection(request.Context(), actor, chi.URLParam(request, "potentialFindingId"))
+	api.respond(writer, output, err)
+}
+
 func (api *CanonicalAPI) createPotentialFinding(writer http.ResponseWriter, request *http.Request) {
 	actor, ok := requirePrincipal(writer, request)
 	if !ok {
@@ -368,6 +390,24 @@ func (api *CanonicalAPI) authorizedCloseFinding(writer http.ResponseWriter, requ
 		return
 	}
 	output, err := api.findingProjection(request.Context(), actor, input.FindingId)
+	api.respond(writer, output, err)
+}
+
+func (api *CanonicalAPI) listCapRevisions(writer http.ResponseWriter, request *http.Request) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	output, err := api.capRevisionsProjection(request.Context(), actor, chi.URLParam(request, "findingId"))
+	api.respond(writer, output, err)
+}
+
+func (api *CanonicalAPI) getCapRevision(writer http.ResponseWriter, request *http.Request) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	output, err := api.capRevisionByIDProjection(request.Context(), actor, chi.URLParam(request, "capRevisionId"))
 	api.respond(writer, output, err)
 }
 

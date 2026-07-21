@@ -12,6 +12,8 @@ type Querier interface {
 	GetPotentialFinding(ctx context.Context, id string) (PotentialFinding, error)
 	GetPotentialFindingByResponse(ctx context.Context, checklistResponseID string) (GetPotentialFindingByResponseRow, error)
 	GetPotentialFindingForUpdate(ctx context.Context, id string) (PotentialFinding, error)
+	ListAssignedInspectorSubjectIDs(ctx context.Context, id string) ([]string, error)
+	ListPotentialFindings(ctx context.Context, arg ListPotentialFindingsParams) ([]PotentialFinding, error)
 }
 
 var _ Querier = (*Queries)(nil)

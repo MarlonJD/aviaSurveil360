@@ -70,3 +70,47 @@ func (q *Queries) GetLatestCAPRevisionForFinding(ctx context.Context, findingID 
 	)
 	return i, err
 }
+
+const listCAPRevisionsForFinding = `-- name: ListCAPRevisionsForFinding :many
+SELECT id, cap_id, finding_id, organization_id, revision, status, root_cause, corrective_action,
+       preventive_action, target_completion_date, submitted_by_subject_id, submitted_at,
+       responsible_person, comment_to_caa
+FROM cap_revisions
+WHERE finding_id = $1
+ORDER BY revision ASC
+`
+
+func (q *Queries) ListCAPRevisionsForFinding(ctx context.Context, findingID string) ([]CapRevision, error) {
+	rows, err := q.db.Query(ctx, listCAPRevisionsForFinding, findingID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CapRevision
+	for rows.Next() {
+		var i CapRevision
+		if err := rows.Scan(
+			&i.ID,
+			&i.CapID,
+			&i.FindingID,
+			&i.OrganizationID,
+			&i.Revision,
+			&i.Status,
+			&i.RootCause,
+			&i.CorrectiveAction,
+			&i.PreventiveAction,
+			&i.TargetCompletionDate,
+			&i.SubmittedBySubjectID,
+			&i.SubmittedAt,
+			&i.ResponsiblePerson,
+			&i.CommentToCaa,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

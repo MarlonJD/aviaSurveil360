@@ -2,6 +2,7 @@ import type { components } from "../generated/transport/api-types";
 import type {
   AssignmentSummary,
   AuditEventView,
+  CapRevisionView,
   ChecklistTemplateVersionView,
   ChecklistResponseView,
   CheckoutInspectionPackageOutput,
@@ -13,7 +14,9 @@ import type {
   ListOrganizationsOutput,
   ListPlanningItemsOutput,
   ListAssignmentsOutput,
+  ListCapRevisionsOutput,
   ListFindingsOutput,
+  ListPotentialFindingsOutput,
   ManagerDashboardProjection,
   OrganizationSummary,
   PageOutput,
@@ -119,6 +122,12 @@ export function mapPotentialFinding(
   return { ...value };
 }
 
+export function mapPotentialFindings(
+  value: Schemas["ListPotentialFindingsOutput"],
+): ListPotentialFindingsOutput {
+  return { items: value.items.map(mapPotentialFinding), nextCursor: value.nextCursor };
+}
+
 export function mapFinding(value: Schemas["FindingView"]): FindingView {
   return {
     id: value.id,
@@ -168,6 +177,23 @@ export function mapSubmitCap(value: Schemas["SubmitCapOutput"]): SubmitCapOutput
 
 export function mapReviewCap(value: Schemas["ReviewCapOutput"]): ReviewCapOutput {
   return { ...value };
+}
+
+export function mapCapRevision(value: Schemas["CapRevisionView"]): CapRevisionView {
+  if (value.audience === "AUDITEE") {
+    return {
+      ...value,
+      latestReview: value.latestReview ? { ...value.latestReview } : null,
+    };
+  }
+  return {
+    ...value,
+    latestReview: value.latestReview ? { ...value.latestReview } : null,
+  };
+}
+
+export function mapCapRevisions(value: Schemas["ListCapRevisionsOutput"]): ListCapRevisionsOutput {
+  return { items: value.items.map(mapCapRevision), nextCursor: null };
 }
 
 export function mapCompleteInspectionAttachment(

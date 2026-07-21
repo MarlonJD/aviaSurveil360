@@ -12,6 +12,8 @@ import {
   mapChecklistTemplateVersions,
   mapChecklistResponse,
   mapCheckout,
+  mapCapRevision,
+  mapCapRevisions,
   mapCompleteEvidence,
   mapCompleteInspectionAttachment,
   mapEvidenceVersion,
@@ -24,6 +26,7 @@ import {
   mapPlanningItems,
   mapPotentialFinding,
   mapPotentialFindingDecision,
+  mapPotentialFindings,
   mapPushResult,
   mapReportVersion,
   mapReminderRules,
@@ -271,6 +274,22 @@ export function createHttpBackend(
         ),
     },
     potentialFindings: {
+      list: async (input, options) =>
+        mapPotentialFindings(
+          await request<Schemas["ListPotentialFindingsOutput"]>(
+            appendQuery("/v1/potential-findings", input),
+            {},
+            options,
+          ),
+        ),
+      get: async ({ potentialFindingId }, options) =>
+        mapPotentialFinding(
+          await request<Schemas["PotentialFindingView"]>(
+            `/v1/potential-findings/${encodeURIComponent(potentialFindingId)}`,
+            {},
+            options,
+          ),
+        ),
       create: async (input, options) =>
         mapPotentialFinding(
           await request<Schemas["PotentialFindingView"]>(
@@ -315,6 +334,22 @@ export function createHttpBackend(
         ),
     },
     caps: {
+      listRevisions: async ({ findingId }, options) =>
+        mapCapRevisions(
+          await request<Schemas["ListCapRevisionsOutput"]>(
+            `/v1/findings/${encodeURIComponent(findingId)}/cap-revisions`,
+            {},
+            options,
+          ),
+        ),
+      getRevision: async ({ capRevisionId }, options) =>
+        mapCapRevision(
+          await request<Schemas["CapRevisionView"]>(
+            `/v1/cap-revisions/${encodeURIComponent(capRevisionId)}`,
+            {},
+            options,
+          ),
+        ),
       submit: async (input, options) =>
         mapSubmitCap(
           await request<Schemas["SubmitCapOutput"]>(

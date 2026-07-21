@@ -1,6 +1,7 @@
 import type {
   Backend,
   BackendPrincipal,
+  CapRevisionView,
   ChecklistResponseView,
   EvidenceReviewState,
   FindingStatus,
@@ -68,6 +69,22 @@ function findingForPrincipal(
   return finding;
 }
 
+function potentialFindingForPrincipal(
+  state: Readonly<MockState>,
+  principal: BackendPrincipal,
+  potentialFindingId: string,
+): PotentialFindingView {
+  const potential = state.potentialFindings[potentialFindingId];
+  if (!potential) throw new BackendInvariantError(`Potential Finding ${potentialFindingId} was not found.`);
+  if (principal.role === "leadInspector") return potential;
+  if (principal.role === "inspector") {
+    const packageView = packageForAudit(state, potential.auditId);
+    const question = packageView.questions.find((candidate) => candidate.id === potential.questionId);
+    if (question?.assignedInspectorUserIds.includes(principal.subjectId)) return potential;
+  }
+  throw new BackendAuthorizationInvariantError("Potential Finding read authority is unavailable.");
+}
+
 function mutableFinding(state: MockState, findingId: string): FindingView {
   const finding = state.findings[findingId];
   if (!finding) throw new BackendInvariantError(`Finding ${findingId} was not found.`);
@@ -84,6 +101,54 @@ function requireAuditeeOrganization(principal: BackendPrincipal, organizationId:
 function requireSeparateReviewComments(commentToAuditee: string, internalCaaNote: string): void {
   requireNonEmpty(commentToAuditee, "Comment to Auditee");
   requireNonEmpty(internalCaaNote, "Internal CAA Note");
+}
+
+function capReadAudience(principal: BackendPrincipal, organizationId: string): "CAA" | "AUDITEE" {
+  if (principal.role === "inspector" || principal.role === "leadInspector" || principal.role === "manager") {
+    return "CAA";
+  }
+  if (principal.role === "auditee" && principal.organizationId === organizationId) {
+    return "AUDITEE";
+  }
+  throw new BackendAuthorizationInvariantError("CAP revision read authority is unavailable.");
+}
+
+function capRevisionView(
+  cap: Readonly<MockState>["capRevisions"][number],
+  audience: "CAA" | "AUDITEE",
+): CapRevisionView {
+  const latestReview =
+    cap.reviewDecision && cap.reviewedAt
+      ? audience === "CAA"
+        ? {
+            decision: cap.reviewDecision,
+            commentToAuditee: cap.commentToAuditee,
+            internalCaaNote: cap.internalCaaNote,
+            decidedAt: cap.reviewedAt,
+          }
+        : {
+            decision: cap.reviewDecision,
+            commentToAuditee: cap.commentToAuditee,
+            decidedAt: cap.reviewedAt,
+          }
+      : null;
+  return {
+    audience,
+    id: cap.id,
+    capId: cap.capId,
+    findingId: cap.findingId,
+    organizationId: cap.organizationId,
+    revision: cap.version,
+    status: cap.status,
+    rootCause: cap.rootCause,
+    correctiveAction: cap.correctiveAction,
+    preventiveAction: cap.preventiveAction,
+    responsiblePerson: cap.responsiblePerson,
+    targetCompletionDate: cap.targetCompletionDate,
+    commentToCaa: cap.commentToCaa,
+    submittedAt: cap.submittedAt,
+    latestReview,
+  } as CapRevisionView;
 }
 
 export class MockBackendEngine implements Backend {
@@ -261,6 +326,21 @@ export class MockBackendEngine implements Backend {
   };
 
   readonly potentialFindings: Backend["potentialFindings"] = {
+    list: async (input) =>
+      this.store.read((state) => {
+        requireRole(this.principal, ["leadInspector"], "Lead Inspector authority is required.");
+        let items = Object.values(state.potentialFindings);
+        if (input.status) items = items.filter((potential) => potential.status === input.status);
+        items = items.sort((left, right) => left.id.localeCompare(right.id));
+        const limit = input.limit ?? items.length;
+        return { items: items.slice(0, limit), nextCursor: null };
+      }),
+
+    get: async ({ potentialFindingId }) =>
+      this.store.read((state) =>
+        potentialFindingForPrincipal(state, this.principal, potentialFindingId),
+      ),
+
     create: async (input) => {
       requireRole(this.principal, ["inspector"], "CAA Inspector authority is required.");
       return this.store.execute(input.operationId, input, (state) => {
@@ -428,6 +508,26 @@ export class MockBackendEngine implements Backend {
   };
 
   readonly caps: Backend["caps"] = {
+    listRevisions: async ({ findingId }) =>
+      this.store.read((state) => {
+        const finding = state.findings[findingId];
+        if (!finding) throw new BackendInvariantError(`Finding ${findingId} was not found.`);
+        const audience = capReadAudience(this.principal, finding.organizationId);
+        const items = state.capRevisions
+          .filter((cap) => cap.findingId === finding.id)
+          .sort((left, right) => left.version - right.version)
+          .map((cap) => capRevisionView(cap, audience));
+        return { items, nextCursor: null };
+      }),
+
+    getRevision: async ({ capRevisionId }) =>
+      this.store.read((state) => {
+        const cap = state.capRevisions.find((revision) => revision.id === capRevisionId);
+        if (!cap) throw new BackendInvariantError("CAP revision was not found.");
+        const audience = capReadAudience(this.principal, cap.organizationId);
+        return capRevisionView(cap, audience);
+      }),
+
     submit: async (input) => {
       requireRole(this.principal, ["auditee"], "Auditee authority is required to submit CAP.");
       for (const [value, label] of [
@@ -458,8 +558,10 @@ export class MockBackendEngine implements Backend {
         }
         const version = existingVersions.length + 1;
         const capRevisionId = `CAP-${finding.findingNumber}-R${version}`;
+        const capId = existingVersions[0]?.capId ?? `CAP-${finding.findingNumber}`;
         state.capRevisions.push({
           id: capRevisionId,
+          capId,
           findingId: finding.id,
           organizationId: finding.organizationId,
           version,
@@ -473,6 +575,7 @@ export class MockBackendEngine implements Backend {
           commentToCaa: input.commentToCaa.trim(),
           commentToAuditee: "",
           internalCaaNote: "",
+          reviewDecision: null,
           submittedAt: this.store.clock(),
           reviewedAt: null,
         });
@@ -512,6 +615,7 @@ export class MockBackendEngine implements Backend {
         }
         cap.commentToAuditee = input.commentToAuditee.trim();
         cap.internalCaaNote = input.internalCaaNote.trim();
+        cap.reviewDecision = input.decision;
         cap.reviewedAt = this.store.clock();
         cap.revision += 1;
 

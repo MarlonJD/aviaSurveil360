@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Task 1 is `verified locally`: the independent 86-row inventory, typed 17-route registry, 17/69 manifest disposition, Product crosswalk, and English/Turkish parity contract passed the Task 1 green gate on 2026-07-21. Task 2 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `active` — Tasks 1-2 are `verified locally`: the independent 86-row inventory/17-route contract is frozen, and Potential Finding plus immutable CAP revision read projections now pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates. Task 3 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
 
 ## Independent Review Resolution
 
@@ -422,6 +422,8 @@ git push origin HEAD
 - Modify `apps/web/src/backend/transport-mappers.test.ts`
 - Modify `apps/web/src/mock/create-mock-backend.ts`
 - Modify `apps/web/src/mock/memory-mock-store.ts`
+- Modify `apps/web/src/mock/mock-engine.ts`
+- Modify `apps/web/src/mock/seed-data.ts`
 - Modify `apps/web/tests/contract/backend-contract.ts`
 - Modify `apps/web/tests/contract/mock-backend.test.ts`
 - Modify `apps/web/tests/contract/http-backend-live.test.ts`
@@ -440,6 +442,10 @@ git push origin HEAD
 - Modify `apps/api/internal/httpapi/api_projections.go`
 - Modify `apps/api/internal/httpapi/canonical_api.go`
 - Modify `apps/api/internal/httpapi/canonical_api_test.go`
+- Modify `scripts/lint-openapi.mjs`
+- Modify `docs/exec-plans/index.md`
+- Modify `docs/exec-plans/tech-debt-tracker.md`
+- Modify `docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md`
 - Modify this plan
 
 **Exact HTTP contracts**
@@ -526,10 +532,10 @@ Authorization is exact:
 
 **Red/green cycle**
 
-- [ ] Add OpenAPI examples/tests for exact list/detail shapes, discriminator behavior, pagination, and structural absence of Auditee internal notes.
-- [ ] Add failing Backend contract tests for mock/HTTP mapping, direct get/list, abort behavior, and role-shaped CAP output.
-- [ ] Add failing Go authorization/projection tests for allowed roles, forbidden roles, other organization, missing record, ordered revisions, two immutable revisions, and Internal CAA Note separation.
-- [ ] Run:
+- [x] Add OpenAPI examples/tests for exact list/detail shapes, discriminator behavior, pagination, and structural absence of Auditee internal notes.
+- [x] Add failing Backend contract tests for mock/HTTP mapping, direct get/list, abort behavior, and role-shaped CAP output.
+- [x] Add failing Go authorization/projection tests for allowed roles, forbidden roles, other organization, missing record, ordered revisions, two immutable revisions, and Internal CAA Note separation.
+- [x] Run:
 
   ```bash
   node api/openapi/tests/contract-examples.test.mjs
@@ -538,9 +544,9 @@ Authorization is exact:
   ```
 
   Expected red: paths, generated operations, Backend methods, and projections are absent.
-- [ ] Implement OpenAPI first, regenerate TypeScript/Go, then implement mock/HTTP adapters and Go stores/projections/authorization. Do not add a migration or mutable CAP update.
-- [ ] Ensure list/get values come from persisted state, not canonical fixture objects or React scenario memory.
-- [ ] Run:
+- [x] Implement OpenAPI first, regenerate TypeScript/Go, then implement mock/HTTP adapters and Go stores/projections/authorization. Do not add a migration or mutable CAP update.
+- [x] Ensure list/get values come from persisted state, not canonical fixture objects or React scenario memory.
+- [x] Run:
 
   ```bash
   ./scripts/check-contracts.sh
@@ -553,10 +559,27 @@ Authorization is exact:
 
   Expected green: both adapters and Go return the same authorized, immutable shapes.
 
+**Execution log — 2026-07-21**
+
+- Baseline Task 2 commands were green before adding failing assertions, confirming the required tests were not yet present.
+- Expected red captured after adding Task 2 tests/examples:
+  - `node api/openapi/tests/contract-examples.test.mjs` failed on missing `CapRevisionView` and missing lifecycle read paths.
+  - `npm --prefix apps/web test -- src/backend/http-backend.test.ts src/backend/transport-mappers.test.ts tests/contract/mock-backend.test.ts` failed on missing Backend read methods and CAP mapper functions.
+  - `GOCACHE=/private/tmp/aviasurveil360-parity-go-cache go -C apps/api test ./internal/potentialfindings ./internal/caps ./internal/httpapi` failed on missing Potential Finding and CAP authorization helpers.
+- `scripts/lint-openapi.mjs` was added to this task's file list and staging allowlist because `./scripts/check-contracts.sh` failed until the explicit route registry included the three new OpenAPI read paths.
+- `./scripts/check-sqlc.sh` failed inside the sandbox because Go tried to use `/Users/marlonjd/Library/Caches/go-build`; the same required command passed after approved escalation.
+- Green gate passed:
+  - `./scripts/check-contracts.sh`
+  - `./scripts/check-sqlc.sh`
+  - `node api/openapi/tests/contract-examples.test.mjs` passed 6 tests.
+  - `npm --prefix apps/web test -- src/backend/http-backend.test.ts src/backend/transport-mappers.test.ts tests/contract/mock-backend.test.ts` passed 3 files / 24 tests.
+  - `npm --prefix apps/web run typecheck`
+  - `GOCACHE=/private/tmp/aviasurveil360-parity-go-cache go -C apps/api test -race -count=1 ./internal/potentialfindings ./internal/caps ./internal/httpapi ./internal/application`
+
 **Task 2 staging allowlist and commit**
 
 ```bash
-git add -- api/openapi/aviasurveil360.yaml api/openapi/examples/canonical/potential-findings-response.json api/openapi/examples/canonical/cap-revision-caa.json api/openapi/examples/canonical/cap-revision-auditee.json api/openapi/tests/contract-examples.test.mjs apps/web/src/generated/transport/api-types.ts apps/api/internal/httpapi/generated/api.gen.go apps/web/src/backend/backend.ts apps/web/src/backend/http-backend.ts apps/web/src/backend/http-backend.test.ts apps/web/src/backend/transport-mappers.ts apps/web/src/backend/transport-mappers.test.ts apps/web/src/mock/create-mock-backend.ts apps/web/src/mock/memory-mock-store.ts apps/web/tests/contract/backend-contract.ts apps/web/tests/contract/mock-backend.test.ts apps/web/tests/contract/http-backend-live.test.ts apps/api/internal/potentialfindings/authorization.go apps/api/internal/potentialfindings/authorization_test.go apps/api/internal/caps/authorization.go apps/api/internal/caps/authorization_test.go apps/api/internal/potentialfindings/store/postgres/queries.sql apps/api/internal/potentialfindings/store/postgres/queries.sql.go apps/api/internal/potentialfindings/store/postgres/models.go apps/api/internal/potentialfindings/store/postgres/querier.go apps/api/internal/caps/store/postgres/queries.sql apps/api/internal/caps/store/postgres/queries.sql.go apps/api/internal/caps/store/postgres/models.go apps/api/internal/caps/store/postgres/querier.go apps/api/internal/httpapi/api_projections.go apps/api/internal/httpapi/canonical_api.go apps/api/internal/httpapi/canonical_api_test.go docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- api/openapi/aviasurveil360.yaml api/openapi/examples/canonical/potential-findings-response.json api/openapi/examples/canonical/cap-revision-caa.json api/openapi/examples/canonical/cap-revision-auditee.json api/openapi/tests/contract-examples.test.mjs apps/web/src/generated/transport/api-types.ts apps/api/internal/httpapi/generated/api.gen.go apps/web/src/backend/backend.ts apps/web/src/backend/http-backend.ts apps/web/src/backend/http-backend.test.ts apps/web/src/backend/transport-mappers.ts apps/web/src/backend/transport-mappers.test.ts apps/web/src/mock/create-mock-backend.ts apps/web/src/mock/memory-mock-store.ts apps/web/src/mock/mock-engine.ts apps/web/src/mock/seed-data.ts apps/web/tests/contract/backend-contract.ts apps/web/tests/contract/mock-backend.test.ts apps/web/tests/contract/http-backend-live.test.ts apps/api/internal/potentialfindings/authorization.go apps/api/internal/potentialfindings/authorization_test.go apps/api/internal/caps/authorization.go apps/api/internal/caps/authorization_test.go apps/api/internal/potentialfindings/store/postgres/queries.sql apps/api/internal/potentialfindings/store/postgres/queries.sql.go apps/api/internal/potentialfindings/store/postgres/models.go apps/api/internal/potentialfindings/store/postgres/querier.go apps/api/internal/caps/store/postgres/queries.sql apps/api/internal/caps/store/postgres/queries.sql.go apps/api/internal/caps/store/postgres/models.go apps/api/internal/caps/store/postgres/querier.go apps/api/internal/httpapi/api_projections.go apps/api/internal/httpapi/canonical_api.go apps/api/internal/httpapi/canonical_api_test.go scripts/lint-openapi.mjs docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
 git commit -m "feat(api): add lifecycle read projections"
 git push origin HEAD
 ```

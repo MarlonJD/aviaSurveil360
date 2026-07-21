@@ -1,0 +1,19 @@
+{
+  "schema": "ListPotentialFindingsOutput",
+  "value": {
+    "items": [
+      {
+        "id": "PF-2026-001",
+        "auditId": "AUD-2026-001",
+        "questionId": "CAB-EMEQ-PBE-001",
+        "organizationId": "ORG-FLY-NAMIBIA",
+        "title": "PBE serviceability and accessibility not confirmed",
+        "description": "The configured cabin check could not confirm that the PBE was serviceable and accessible.",
+        "status": "PENDING_LEAD_REVIEW",
+        "revision": 1,
+        "convertedFindingId": null
+      }
+    ],
+    "nextCursor": null
+  }
+}
