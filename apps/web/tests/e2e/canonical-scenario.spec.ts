@@ -73,16 +73,18 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
     .getByLabel("Inspector comment")
     .fill("PBE serviceability and accessibility could not be confirmed for this Audit.");
   await page.getByRole("button", { name: "Save response" }).click();
-  await expect(page.getByTestId("response-status")).toHaveText("NON_COMPLIANT");
+  await expect(page.getByTestId("response-status")).toContainText("Server acknowledged");
+  await expect(page.getByTestId("response-status")).toContainText("NON COMPLIANT");
   await page.getByRole("button", { name: "Create Potential Finding" }).click();
   await expect(page.getByTestId("potential-finding-id")).toHaveText("PF-2026-001");
   await expect(page.getByTestId("potential-finding-status")).toHaveText(
     "PENDING_LEAD_REVIEW",
   );
+  await expect(page.getByRole("button", { name: "Switch to Lead Inspector" })).toHaveCount(0);
   await expect(page.getByTestId("active-role")).toHaveText("CAA Inspector");
   await page.getByRole("button", { name: "Submit checklist to Lead Inspector" }).click();
   await expect(page.getByTestId("checklist-status")).toHaveText("SUBMITTED");
-  await page.getByRole("link", { name: "Switch to Lead Inspector" }).click();
+  await page.getByRole("button", { name: "Switch to Lead Inspector" }).click();
 
   await expect(page).toHaveURL(/\/lead-inspector\/lead-review$/);
   await expect(page.getByText("PF-2026-001")).toBeVisible();

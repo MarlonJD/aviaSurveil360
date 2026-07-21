@@ -1,19 +1,41 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { useApplicationRuntime } from "../../app/providers";
 import type { ChecklistAnswer } from "../../backend/backend";
 import { useScenario } from "../../app/scenario-context";
-import {
-  CommandError,
-  errorMessage,
-  PageHeader,
-  StatusPill,
-  WorkspaceShell,
-} from "../shared/workspace-shell";
+import { RoleHandoff } from "../../auth/role-handoff";
+import { useOptionalSession } from "../../auth/session-provider";
+import { DueState } from "../../ui/workbench/due-state";
+import { PageHeader } from "../../ui/workbench/page-header";
+import { StatusPill } from "../../ui/workbench/status-pill";
+import { createRoleEntryPath } from "../../ui/role-select-page";
+import { CommandError, errorMessage, WorkspaceShell } from "../shared/workspace-shell";
+
+const canonicalAuditDueDate = "2026-06-18";
+
+function answerLabel(answer: ChecklistAnswer): string {
+  return answer.replaceAll("_", " ");
+}
+
+function responseStateLabel({
+  answer,
+  fieldMode,
+  pendingCount,
+}: {
+  answer: ChecklistAnswer;
+  fieldMode: boolean;
+  pendingCount: number;
+}): string {
+  if (!fieldMode) return `Server acknowledged - ${answerLabel(answer)}`;
+  if (pendingCount > 0) return `Saved locally - sync pending - ${answerLabel(answer)}`;
+  return `Server acknowledged - ${answerLabel(answer)}`;
+}
 
 export function ChecklistRunnerPage() {
   const runtime = useApplicationRuntime();
+  const session = useOptionalSession();
+  const navigate = useNavigate();
   const { projection, actions } = useScenario();
   const [selectedQuestionId, setSelectedQuestionId] = useState("CAB-EMEQ-PBE-001");
   const [answer, setAnswer] = useState<ChecklistAnswer>("NOT_CHECKED");
@@ -41,6 +63,20 @@ export function ChecklistRunnerPage() {
   const selectedQuestionAssignedHere = selectedQuestion?.assignedInspectorUserIds.includes(activeSubjectId) ?? false;
   const checklistReadOnly = packageView?.checklistStatus === "SUBMITTED";
   const attachmentRecoveryBlocked = projection.attachmentRecoveryBlocking.length > 0;
+  const commentRequired = selectedQuestion?.commentRequiredFor.includes(answer) ?? false;
+  const responseState = projection.response
+    ? responseStateLabel({
+        answer: projection.response.answer,
+        fieldMode: projection.fieldMode,
+        pendingCount: projection.fieldPendingOperationCount,
+      })
+    : null;
+  const answeredCount = projection.response ? 1 : 0;
+  const questionCount = packageView?.questions.length ?? 6;
+  const progress = questionCount > 0 ? Math.round((answeredCount / questionCount) * 100) : 0;
+  const identityMode =
+    session?.identityMode ??
+    (runtime.buildProfile === "http" ? "canonical-test-role-switch" : "demo-role-switch");
 
   async function run(command: () => Promise<void>): Promise<void> {
     setBusy(true);
@@ -54,17 +90,51 @@ export function ChecklistRunnerPage() {
     }
   }
 
+  function saveResponse(): void {
+    if (commentRequired && !comment.trim()) {
+      setError("Inspector comment is required");
+      return;
+    }
+    void run(() => actions.saveChecklistResponse(answer, comment));
+  }
+
   return (
     <WorkspaceShell roleLabel="CAA Inspector" routeLabel="Checklist Runner">
       <PageHeader
-        eyebrow="AUD-2026-001 · Flight Operations"
+        eyebrow="Fly Namibia - AUD-2026-001"
         title="Cabin Inspection checklist"
         description="Record an answer against the exact assigned question. Exceptions require an Inspector comment."
-        action={<StatusPill>{projection.checklistSubmission?.checklistStatus ?? packageView?.checklistStatus ?? "IN_PROGRESS"}</StatusPill>}
+        facts={[
+          { label: "Current owner", value: "CAA Inspector" },
+          { label: "Next action", value: projection.potentialFinding ? "Submit to Lead Inspector" : "Choose an answer" },
+          {
+            label: "Status",
+            value: projection.checklistSubmission?.checklistStatus ?? packageView?.checklistStatus ?? "IN_PROGRESS",
+          },
+          { label: "Due Date", value: <DueState dueDate={canonicalAuditDueDate} today="2026-06-15" /> },
+        ]}
+        primaryAction={
+          <StatusPill
+            label={projection.checklistSubmission?.checklistStatus ?? packageView?.checklistStatus ?? "IN_PROGRESS"}
+            tone={projection.checklistSubmission ? "success" : "warning"}
+          />
+        }
       />
       <CommandError message={error} />
+      <section className="inspector-progress-band" aria-label="Checklist progress">
+        <strong>
+          {answeredCount} of {questionCount} answered
+        </strong>
+        <div className="inspector-progress-track" aria-hidden="true">
+          <span style={{ width: `${progress}%` }} />
+        </div>
+        <p>
+          Demo scenario: mark EM EQ / PBE serviceability as Non-Compliant, add the
+          required Inspector comment, and create the Potential Finding for Lead review.
+        </p>
+      </section>
       {attachmentRecoveryBlocked ? (
-        <section className="decision-result" data-testid="attachment-recovery-blocking" role="alert">
+        <section className="inspector-sync-panel" data-testid="attachment-recovery-blocking" role="alert">
           <strong>Inspection Attachment recovery required</strong>
           <span>
             Referenced local bytes are missing. Editing is blocked; preserve site data and use the
@@ -73,38 +143,60 @@ export function ChecklistRunnerPage() {
         </section>
       ) : null}
       {projection.attachmentRecoveryQuarantinedCount > 0 ? (
-        <p className="decision-result" data-testid="attachment-recovery-quarantine" role="status">
+        <p className="inspector-sync-panel" data-testid="attachment-recovery-quarantine" role="status">
           Quarantined local attachment bytes require review. They were not automatically deleted.
         </p>
       ) : null}
-      <div className="split-layout split-layout--questions">
-        <section className="question-list" aria-label="Cabin checklist questions">
+      <div className="inspector-checklist-grid">
+        <section className="inspector-question-list" aria-label="Cabin checklist questions">
           {packageView?.questions.map((question) => {
             const assignedHere = question.assignedInspectorUserIds.includes(activeSubjectId);
             return (
               <button
-                className={`question-row${selectedQuestionId === question.id ? " question-row--selected" : ""}`}
+                aria-pressed={selectedQuestionId === question.id}
+                className={`inspector-question-button${selectedQuestionId === question.id ? " inspector-question-button--selected" : ""}`}
                 data-testid="checklist-question-row"
                 disabled={!assignedHere}
                 key={question.id}
                 onClick={() => assignedHere && setSelectedQuestionId(question.id)}
                 type="button"
               >
-                <span className="question-row__content" data-testid={`question-${question.id}`}>
-                  <span className="question-row__section">{question.sectionId}</span>
+                <span className="inspector-question-button__content" data-testid={`question-${question.id}`}>
+                  <span className="inspector-question-button__section">{question.sectionId}</span>
                   <strong>{question.prompt}</strong>
-                  <span>{assignedHere ? "Assigned to you" : "Assigned to another Inspector — read-only"}</span>
+                  <span className="inspector-question-button__meta">
+                    {assignedHere ? "Assigned to you" : "Assigned to another Inspector — read-only"}
+                  </span>
                 </span>
               </button>
             );
           })}
         </section>
-        <section className="surface-card response-panel">
+        <section className="inspector-response-panel" data-testid="checklist-response-panel">
           {selectedQuestion ? (
             <>
               <p className="eyebrow">{selectedQuestion.id}</p>
               <h2>{selectedQuestion.sectionId}</h2>
               <p>{selectedQuestion.prompt}</p>
+              <div className="inspector-reference-box">
+                <span>{selectedQuestion.regulatoryReference ?? "Configured checklist reference"}</span>
+                <span>{selectedQuestion.expectedEvidence ?? "Inspector observation and required exception comment"}</span>
+                <span>Comments required for Non Compliant and Observation</span>
+              </div>
+              <div className="inspector-state-row">
+                <span>
+                  <strong>Current owner</strong>
+                  CAA Inspector
+                </span>
+                <span>
+                  <strong>Next action</strong>
+                  {projection.response ? "Confirm response and Finding path" : "Choose an answer"}
+                </span>
+                <span>
+                  <strong>Finding path</strong>
+                  {projection.potentialFinding ? "Potential Finding created" : "No Finding yet"}
+                </span>
+              </div>
               <label>
                 Checklist answer
                 <select
@@ -120,27 +212,38 @@ export function ChecklistRunnerPage() {
               <label>
                 Inspector comment
                 <textarea
+                  aria-describedby="checklist-comment-rule"
                   disabled={!selectedQuestionAssignedHere || checklistReadOnly || attachmentRecoveryBlocked}
                   rows={5}
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
                 />
               </label>
+              <p className="inspector-comment-rule" id="checklist-comment-rule">
+                {commentRequired
+                  ? "Inspector comment is required for this answer before saving."
+                  : "Optional for Compliant, Not Applicable, and Not Checked answers."}
+              </p>
               <div className="button-row">
                 <button
                   className="primary-button"
                   disabled={busy || !selectedQuestionAssignedHere || checklistReadOnly || attachmentRecoveryBlocked}
-                  onClick={() => void run(() => actions.saveChecklistResponse(answer, comment))}
+                  onClick={saveResponse}
                   type="button"
                 >
                   Save response
                 </button>
-                {projection.response ? (
-                  <span data-testid="response-status">{projection.response.answer}</span>
+                {responseState ? (
+                  <span data-testid="response-status">{responseState}</span>
                 ) : null}
               </div>
+              {responseState ? (
+                <p className="inspector-acknowledgement" data-testid="local-server-state">
+                  {responseState}
+                </p>
+              ) : null}
               {projection.fieldMode && projection.response && projection.potentialFinding && !checklistReadOnly ? (
-                <section className="attachment-staging" aria-labelledby="inspection-attachment-title">
+                <section className="inspector-attachment-panel" aria-labelledby="inspection-attachment-title">
                   <h3 id="inspection-attachment-title">Inspection Attachment</h3>
                   <p>
                     Stage PDF, JPEG, or PNG bytes against this Potential Finding. Local bytes
@@ -155,6 +258,9 @@ export function ChecklistRunnerPage() {
                       type="file"
                     />
                   </label>
+                  <span data-testid="selected-inspection-attachment">
+                    {inspectionAttachment?.name ?? "No Inspection Attachment selected"}
+                  </span>
                   <button
                     className="secondary-button"
                     disabled={busy || !inspectionAttachment || attachmentRecoveryBlocked}
@@ -183,6 +289,22 @@ export function ChecklistRunnerPage() {
                     bytes. Automatic local-byte deletion is disabled in this candidate.
                   </p>
                 </section>
+              ) : projection.response && projection.potentialFinding ? (
+                <section className="inspector-attachment-panel" aria-labelledby="inspection-attachment-title">
+                  <h3 id="inspection-attachment-title">Inspection Attachment</h3>
+                  <label>
+                    Attachment file
+                    <input
+                      accept="application/pdf,image/jpeg,image/png"
+                      disabled={busy || attachmentRecoveryBlocked}
+                      onChange={(event) => setInspectionAttachment(event.target.files?.[0] ?? null)}
+                      type="file"
+                    />
+                  </label>
+                  <span data-testid="selected-inspection-attachment">
+                    {inspectionAttachment?.name ?? "No Inspection Attachment selected"}
+                  </span>
+                </section>
               ) : null}
               {projection.response && !projection.potentialFinding ? (
                 <button
@@ -195,7 +317,7 @@ export function ChecklistRunnerPage() {
                 </button>
               ) : null}
               {projection.potentialFinding ? (
-                <div className="decision-result">
+                <div className="inspector-finding-result">
                   <span>Potential Finding</span>
                   <strong data-testid="potential-finding-id">{projection.potentialFinding.id}</strong>
                   <span data-testid="potential-finding-status">{projection.potentialFinding.status}</span>
@@ -206,7 +328,7 @@ export function ChecklistRunnerPage() {
         </section>
       </div>
       {projection.fieldMode && projection.fieldPendingOperationCount > 0 ? (
-        <section className="decision-result" data-testid="field-sync-state" role="status">
+        <section className="inspector-sync-panel" data-testid="field-sync-state" role="status">
           <span>Saved locally — sync pending ({projection.fieldPendingOperationCount})</span>
           <button
             className="secondary-button"
@@ -220,7 +342,7 @@ export function ChecklistRunnerPage() {
         </section>
       ) : null}
       {projection.fieldSyncStatus === "conflict" && projection.fieldSyncConflict ? (
-        <section className="decision-result" data-testid="field-sync-conflict" role="alert">
+        <section className="inspector-sync-panel" data-testid="field-sync-conflict" role="alert">
           <strong>Sync conflict — local draft preserved</strong>
           <span>
             {projection.fieldSyncConflict.code} at authoritative revision {projection.fieldSyncConflict.authoritativeRevision ?? "unknown"}.
@@ -229,18 +351,18 @@ export function ChecklistRunnerPage() {
         </section>
       ) : null}
       {projection.fieldSyncStatus === "resnapshot-required" ? (
-        <section className="decision-result" data-testid="field-resnapshot-required" role="alert">
+        <section className="inspector-sync-panel" data-testid="field-resnapshot-required" role="alert">
           <strong>Safe package refresh required</strong>
           <span>Editing is blocked. Pending operations and Inspection Attachment bytes were preserved.</span>
         </section>
       ) : null}
       {projection.fieldMode && checklistReadOnly ? (
-        <p className="decision-result" data-testid="field-reopen-boundary">
+        <p className="inspector-sync-panel" data-testid="field-reopen-boundary">
           Reconnect to request a reasoned checklist reopen. Reopen is not an offline command.
         </p>
       ) : null}
       {projection.potentialFinding ? (
-        <section className="workflow-footer">
+        <section className="inspector-workflow-footer">
           <div>
             <span>Checklist status</span>
             <strong data-testid="checklist-status">
@@ -259,9 +381,17 @@ export function ChecklistRunnerPage() {
           ) : projection.fieldMode ? (
             <span data-testid="field-submit-status">Saved locally — sync pending</span>
           ) : (
-            <Link className="primary-link" to="/lead-inspector/lead-review">
+            <RoleHandoff
+              identityMode={identityMode}
+              onRoleRequest={(role) => {
+                session?.setActiveRole(role);
+                navigate(createRoleEntryPath(role));
+              }}
+              session={session?.state ?? { status: "unauthenticated" }}
+              targetRole="leadInspector"
+            >
               Switch to Lead Inspector
-            </Link>
+            </RoleHandoff>
           )}
         </section>
       ) : null}

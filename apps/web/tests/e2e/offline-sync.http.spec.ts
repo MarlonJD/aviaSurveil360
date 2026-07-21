@@ -132,7 +132,8 @@ test("offline field work survives a lost acknowledgement and foreground-syncs th
   await expect(page.getByTestId("field-sync-state")).toContainText("sync pending (1)");
   await context.setOffline(false);
   await expect(page.getByTestId("field-sync-state")).toHaveCount(0);
-  await expect(page.getByTestId("response-status")).toHaveText("OBSERVATION");
+  await expect(page.getByTestId("response-status")).toContainText("Server acknowledged");
+  await expect(page.getByTestId("response-status")).toContainText("OBSERVATION");
 
   const updatedPackageResponse = await request.get(
     `${apiURL}/v1/inspection-packages/PKG-CAB-2026-001`,
@@ -237,7 +238,8 @@ test("a stale field response preserves the local draft until explicit re-entry r
   const conflict = page.getByTestId("field-sync-conflict");
   await expect(conflict).toContainText("STALE_REVISION at authoritative revision 1");
   await expect(conflict).toContainText("local draft preserved");
-  await expect(page.getByTestId("response-status")).toHaveText("NON_COMPLIANT");
+  await expect(page.getByTestId("response-status")).toContainText("Saved locally");
+  await expect(page.getByTestId("response-status")).toContainText("NON COMPLIANT");
   await expect(page.getByLabel("Inspector comment")).toHaveValue(
     "Local draft must survive the stale revision.",
   );
@@ -249,7 +251,8 @@ test("a stale field response preserves the local draft until explicit re-entry r
   await page.getByRole("button", { name: "Sync now" }).click();
   await expect(page.getByTestId("field-sync-conflict")).toHaveCount(0);
   await expect(page.getByTestId("field-sync-state")).toHaveCount(0);
-  await expect(page.getByTestId("response-status")).toHaveText("NON_COMPLIANT");
+  await expect(page.getByTestId("response-status")).toContainText("Server acknowledged");
+  await expect(page.getByTestId("response-status")).toContainText("NON COMPLIANT");
 
   const packageResponse = await request.get(`${apiURL}/v1/inspection-packages/PKG-CAB-2026-001`, {
     headers: {

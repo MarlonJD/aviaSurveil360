@@ -6,6 +6,7 @@ import { expect, test } from "@playwright/test";
 import {
   assertBaselineUpdateMode,
   assertViewportScreenshotContract,
+  assertSurfaceSemantics,
   byteDiffRatio,
   driveReactSurface,
   installDeterministicPageState,
@@ -31,6 +32,27 @@ const shellOnly = visualRegions.includes("shell");
 const surfaces = shellOnly
   ? resolveFocusedSurfaces("role-select,inspector-home")
   : resolveFocusedSurfaces();
+
+const task9SemanticOverrides = {
+  "inspector-home": {
+    expectedOwnerText: "CAA Inspector",
+    expectedNextActionText: "Continue Cabin Inspection checklist",
+    expectedStatusText: "IN PROGRESS",
+    expectedDueDateText: "18 Jun 2026",
+  },
+  "audit-detail": {
+    expectedOwnerText: "CAA Inspector",
+    expectedStatusText: "IN_PROGRESS",
+    expectedDueDateText: "18 Jun 2026",
+  },
+  "checklist-runner": {
+    expectedOwnerText: "CAA Inspector",
+    expectedNextActionText: "Choose an answer",
+    expectedStatusText: "IN_PROGRESS",
+    expectedDueDateText: "18 Jun 2026",
+    expectedPrimaryActionText: "Save response",
+  },
+} as const;
 
 assertBaselineUpdateMode({
   command: "test:e2e:visual-parity",
@@ -129,7 +151,7 @@ test("checks shared workbench primitive geometry gallery", async ({ page }) => {
 
 for (const viewport of VISUAL_VIEWPORTS) {
   for (const surface of surfaces) {
-    test(`${shellOnly ? "checks shell geometry for" : "compares React"} ${surface.id} at ${viewport.id}`, async ({ page }) => {
+    test(`${shellOnly ? "checks shell geometry for" : "checks visual contract for"} ${surface.id} at ${viewport.id}`, async ({ page }, testInfo) => {
       const baselineItem = manifest.items.find(
         (item) => item.surfaceId === surface.id && item.viewport === viewport.id,
       );
@@ -168,6 +190,51 @@ for (const viewport of VISUAL_VIEWPORTS) {
 
       const baseline = readFileSync(resolve(baselineRoot, baselineItem.file));
       const ratio = byteDiffRatio(baseline, screenshot);
+      await testInfo.attach("viewport-byte-diff-ratio", {
+        body: JSON.stringify(
+          {
+            surfaceId: surface.id,
+            viewport: viewport.id,
+            parityMode: surface.parityMode,
+            ratio,
+            baseline: baselineItem.file,
+          },
+          null,
+          2,
+        ),
+        contentType: "application/json",
+      });
+      if (surface.parityMode === "content-adapted") {
+        await assertSurfaceSemantics(page, { ...surface, ...task9SemanticOverrides[surface.id as keyof typeof task9SemanticOverrides] });
+        await expect(page.locator("[data-testid='application-shell']")).toBeVisible();
+        await expect(page.locator(".workspace-sidebar")).toBeVisible();
+        await expect(page.locator(".application-topbar")).toBeVisible();
+        await expect(page.locator(".workspace-content")).toBeVisible();
+        await expect(page.locator(".workbench-page-header")).toBeVisible();
+        const touchTargets = await page.locator("a:visible, button:visible").evaluateAll((elements) =>
+          elements.map((element) => {
+            const rect = element.getBoundingClientRect();
+            return { width: rect.width, height: rect.height, text: element.textContent?.trim() ?? "" };
+          }),
+        );
+        expect(touchTargets.every((target) => target.width >= 44 && target.height >= 44)).toBe(true);
+        if (surface.id === "inspector-home") {
+          if (viewport.width <= 720) {
+            await expect(page.getByRole("article", { name: "AUD-2026-001" })).toBeVisible();
+          } else {
+            await expect(page.getByRole("table", { name: "Assigned Audits" })).toBeVisible();
+          }
+        }
+        if (surface.id === "audit-detail") {
+          await expect(page.getByTestId("audit-dossier")).toBeVisible();
+          await expect(page.getByTestId("offline-readiness-panel")).toBeVisible();
+        }
+        if (surface.id === "checklist-runner") {
+          await expect(page.getByTestId("checklist-question-row")).toHaveCount(6);
+          await expect(page.getByTestId("checklist-response-panel")).toBeVisible();
+        }
+        return;
+      }
       const threshold = maxDiffForSurface(surface);
       expect(
         ratio,

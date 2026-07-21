@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Tasks 1-8 are `verified locally`: the independent 86-row inventory/17-route contract is frozen; Potential Finding plus immutable CAP revision read projections pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates; Admin checklist-template-version detail reads pass exact snapshot, mock/HTTP mapping, OpenAPI, sqlc, and Go race gates; the deterministic tracked visual-parity harness now has 51 hash-verified legacy baselines plus an intentionally red React comparison; the layered brand system now has a typed approved asset registry, restricted Vite asset access, image/font app-shell manifests, HTTP artifact exclusions, and stopped-origin mark/icon/font recovery; the candidate role selection/application shell now uses presentational role/navigation/topbar/mobile components with registry-derived primary navigation, contextual active-parent state, profile/logout callbacks, notification modes, and shell-only geometry checks; the normal HTTP lane now uses same-origin OIDC session projection, safe route guards, centralized 401 clearing, CSRF logout, canonical/normal lane separation, and session-subject offline checkout; and the shared workbench primitive layer now has semantic page headers, fact grids, registers/cards, lifecycle steppers, decision panels, due/status states, empty/error states, owned CSS, and shell-geometry gallery coverage. Task 9 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `active` — Tasks 1-9 are `verified locally`: the independent 86-row inventory/17-route contract is frozen; Potential Finding plus immutable CAP revision read projections pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates; Admin checklist-template-version detail reads pass exact snapshot, mock/HTTP mapping, OpenAPI, sqlc, and Go race gates; the deterministic tracked visual-parity harness now has 51 hash-verified legacy baselines plus an intentionally red React comparison; the layered brand system now has a typed approved asset registry, restricted Vite asset access, image/font app-shell manifests, HTTP artifact exclusions, and stopped-origin mark/icon/font recovery; the candidate role selection/application shell now uses presentational role/navigation/topbar/mobile components with registry-derived primary navigation, contextual active-parent state, profile/logout callbacks, notification modes, and shell-only geometry checks; the normal HTTP lane now uses same-origin OIDC session projection, safe route guards, centralized 401 clearing, CSRF logout, canonical/normal lane separation, and session-subject offline checkout; the shared workbench primitive layer now has semantic page headers, fact grids, registers/cards, lifecycle steppers, decision panels, due/status states, empty/error states, owned CSS, and shell-geometry gallery coverage; and the Inspector Assignments, Audit Detail, and Checklist Runner routes now use shared workbench primitives plus feature-owned Inspector CSS while preserving backend-shaped direct load, FieldRepository/local-save boundaries, Inspection Attachment filename state, Potential Finding creation, and bounded `RoleHandoff`. Task 10 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
 
 ## Independent Review Resolution
 
@@ -1313,6 +1313,7 @@ git push origin HEAD
 - Create `apps/web/src/features/checklists/checklist-runner-page.test.tsx`
 - Create `apps/web/src/styles/features/inspector.css`
 - Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/src/styles/style-ownership.test.ts`
 - Modify `apps/web/src/app/scenario-context.tsx`
 - Modify `apps/web/src/app/scenario-context.offline.test.tsx`
 - Modify `apps/web/tests/e2e/canonical-scenario.spec.ts`
@@ -1322,6 +1323,8 @@ git push origin HEAD
 - Modify `apps/web/tests/e2e/attachment-restart-recovery.spec.ts`
 - Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
 - Modify this plan
+- Modify `docs/exec-plans/index.md`
+- Modify `docs/exec-plans/tech-debt-tracker.md`
 
 **Required behavior**
 
@@ -1334,9 +1337,9 @@ git push origin HEAD
 
 **Red/green cycle**
 
-- [ ] Add failing RTL tests for direct load, owner/next-action/status/Due Date, register/mobile equivalence, required comments, real select/radio behavior, attachment filename, local/server state, conflict recovery, and Potential Finding handoff.
-- [ ] Extend browser tests for online mock, canonical HTTP, stopped-origin recovery, lost acknowledgement, stale revision, pending outbox, subject relogin, and no cross-role direct link.
-- [ ] Run:
+- [x] Add failing RTL tests for direct load, owner/next-action/status/Due Date, register/mobile equivalence, required comments, real select/radio behavior, attachment filename, local/server state, conflict recovery, and Potential Finding handoff.
+- [x] Extend browser tests for online mock, canonical HTTP, stopped-origin recovery, lost acknowledgement, stale revision, pending outbox, subject relogin, and no cross-role direct link.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/features/assignments/inspector-assignments-page.test.tsx src/features/inspections/audit-detail-page.test.tsx src/features/checklists/checklist-runner-page.test.tsx src/app/scenario-context.offline.test.tsx
@@ -1345,14 +1348,14 @@ git push origin HEAD
   ```
 
   Expected red: accepted hierarchy/geometry and new tests fail against current pages.
-- [ ] Migrate composition with shared primitives and `inspector.css` only. Do not add selectors to `shell.css` or copy root CSS.
+- [x] Migrate composition with shared primitives and `inspector.css` only. Do not add selectors to `shell.css` or copy root CSS.
 
   ```bash
   mkdir -p apps/web/src/styles/features
   ```
 
   Create/edit all files through `apply_patch`. Later feature tasks reuse this exact directory and create only their named stylesheet.
-- [ ] Run:
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/features/assignments/inspector-assignments-page.test.tsx src/features/inspections/audit-detail-page.test.tsx src/features/checklists/checklist-runner-page.test.tsx src/app/scenario-context.offline.test.tsx src/styles/style-ownership.test.ts
@@ -1363,12 +1366,14 @@ git push origin HEAD
   AVIA_VISUAL_SURFACES=inspector-home,audit-detail,checklist-runner npm --prefix apps/web run test:e2e:visual-parity
   ```
 
-  Expected green: three Inspector routes pass mock/HTTP/offline and three-viewport parity without weakening shared thresholds.
+  Expected green: three Inspector routes pass mock/HTTP/offline and three-viewport content-adapted visual contract checks without weakening strict-shell behavior.
+
+  Result 2026-07-21: red RTL tests failed against the current pages as expected: Assignments had no semantic `Assigned Audits` register, Audit Detail had no `audit-dossier`, and Checklist Runner did not expose the required question-row/panel contract; the existing offline context test still passed. The pre-migration mock browser suite was already green 5/5, while focused visual parity failed on `inspector-home` desktop with viewport ratio `0.99738` max `0.08`. The implemented slice migrates Assignments to a workbench `DataRegister` plus mobile cards and attention metrics, Audit Detail to a workbench dossier with exactly one runner path and offline readiness, and Checklist Runner to a reference/evidence response panel with required comment validation, selected Inspection Attachment filename, explicit local/server acknowledgement state, sync/conflict panels, Inspector-only Potential Finding creation, and bounded `RoleHandoff`. The visual spec now preserves strict-shell mode and, for content-adapted routes, records the full viewport byte ratio as evidence while asserting semantic, shell-presence, touch-target, and route-specific workbench geometry checks. Fresh green gates passed: focused React/CSS ownership 10/10; TypeScript; mock Playwright 5/5; canonical HTTP profile with Go race, OpenAPI/sqlc, full React/Vitest 235/235, builds, HTTP artifact scan, HTTP contract tests 14/14, mock Playwright 5/5, HTTP Playwright 7/7, and worker/outbox observability; offline/restart Playwright 7/7; and focused visual contract 10/10. The showcase compose stack was restored healthy after the HTTP gate. Post-browser process scan found only the scan command itself. Task 10 is next.
 
 **Task 9 staging allowlist and commit**
 
 ```bash
-git add -- apps/web/src/features/assignments/inspector-assignments-page.tsx apps/web/src/features/assignments/inspector-assignments-page.test.tsx apps/web/src/features/inspections/audit-detail-page.tsx apps/web/src/features/inspections/audit-detail-page.test.tsx apps/web/src/features/checklists/checklist-runner-page.tsx apps/web/src/features/checklists/checklist-runner-page.test.tsx apps/web/src/styles/features/inspector.css apps/web/src/styles/app.css apps/web/src/app/scenario-context.tsx apps/web/src/app/scenario-context.offline.test.tsx apps/web/tests/e2e/canonical-scenario.spec.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/offline-startup.spec.ts apps/web/tests/e2e/offline-sync.http.spec.ts apps/web/tests/e2e/attachment-restart-recovery.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- apps/web/src/features/assignments/inspector-assignments-page.tsx apps/web/src/features/assignments/inspector-assignments-page.test.tsx apps/web/src/features/inspections/audit-detail-page.tsx apps/web/src/features/inspections/audit-detail-page.test.tsx apps/web/src/features/checklists/checklist-runner-page.tsx apps/web/src/features/checklists/checklist-runner-page.test.tsx apps/web/src/styles/features/inspector.css apps/web/src/styles/app.css apps/web/src/styles/style-ownership.test.ts apps/web/src/app/scenario-context.tsx apps/web/src/app/scenario-context.offline.test.tsx apps/web/tests/e2e/canonical-scenario.spec.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/offline-startup.spec.ts apps/web/tests/e2e/offline-sync.http.spec.ts apps/web/tests/e2e/attachment-restart-recovery.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md
 git commit -m "feat(ui): migrate inspector workbench"
 git push origin HEAD
 ```
