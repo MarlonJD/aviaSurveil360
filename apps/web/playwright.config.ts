@@ -43,7 +43,11 @@ export default defineConfig({
   projects: [
     {
       name: "mock",
-      testMatch: ["e2e/canonical-scenario.spec.ts", "e2e/first-production-routes.spec.ts"],
+      testMatch: [
+        "e2e/canonical-scenario.spec.ts",
+        "e2e/first-production-routes.spec.ts",
+        "e2e/release-candidate-gates.spec.ts",
+      ],
     },
     {
       name: "http",
@@ -51,6 +55,7 @@ export default defineConfig({
         "e2e/canonical-scenario.spec.ts",
         "e2e/first-production-routes.spec.ts",
         "e2e/offline-sync.http.spec.ts",
+        "e2e/release-candidate-gates.spec.ts",
       ],
     },
     {
@@ -60,6 +65,7 @@ export default defineConfig({
         "e2e/attachment-restart-recovery.spec.ts",
         "offline/restart-recovery.spec.ts",
       ],
+      testIgnore: ["e2e/offline-sync.http.spec.ts"],
     },
   ],
 });

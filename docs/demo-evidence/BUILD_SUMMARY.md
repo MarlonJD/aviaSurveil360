@@ -30,8 +30,11 @@ Task 12 adds separately verified typed causal foreground push/pull sync; see
 Task 5 adds the approved first-production organization, planning,
 configuration, reminder, and audit route families; see
 [First-Production Route Families Evidence](FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.md).
-These adjacent candidates do not make the root demo or the overall product
-`production-ready`.
+Task 13 completes the local release-candidate matrix; see
+[Local Release-Candidate Evidence](LOCAL_RELEASE_CANDIDATE_2026-07-21.md).
+The local recommendation is `GO`, the artifact remains `candidate-only`, and
+release is `release pending`. These adjacent candidates do not make the root
+demo or the overall product `production-ready`; production remains `blocked`.
 
 **Demo date context:** the app treats `15 June 2026` as "today" so Due Soon /
 Overdue math is deterministic.
@@ -1301,6 +1304,40 @@ The complete evidence and scope boundaries are in
 Task 13 remains `not run`. Production deployment, cutover, legacy removal, and
 production-readiness evidence remain `blocked`; no `production-ready` claim is
 made.
+
+---
+
+### Local release-candidate checkpoint — 2026-07-21
+
+Status: Task 13 is `verified locally`; the local recommendation is `GO`, the
+artifact remains `candidate-only`, and release remains `release pending`.
+Production deployment/cutover is `NO-GO` and `blocked` because this slice does
+not contain a separately approved production release/operations plan or the
+required production Identity, hosting, security, records, monitoring, pilot,
+and release-authority evidence.
+
+The fresh clean-install matrix passed OpenAPI/generated contracts 6/6,
+React/Vitest 148/148, live HTTP Backend contract 11/11, mock Playwright 5/5,
+HTTP Playwright 7/7, real offline Playwright 6/6, HTTP isolation across 12 files
+and 89 inputs, demo/HTTP app-shell scans, full Go race/live
+PostgreSQL/Keycloak/MinIO integration, `go vet`, worker/outbox drain checks,
+root legacy/parity 106/106, and task-owned cleanup. Full and production-only
+npm audits each report 0 vulnerabilities. A CycloneDX npm SBOM covers 158
+components; the Go API/worker runtime inventory covers 30 modules.
+
+The isolated recovery drill restored the canonical PostgreSQL fingerprint and
+an exact 47-byte private object with matching metadata and SHA-256. API CSP,
+security headers, login/mutation rate limits, session/CSRF/authentication,
+raw Auditee projection scans, upload/quarantine/scan/download gates, managed
+browser readiness, typed conflict presentation/re-entry, prior-shell rollback,
+and worker batch observability are included in the local evidence.
+
+The complete matrix, hashes, tool/browser versions, red-to-green record, owner
+gaps, and scope boundaries are in
+[LOCAL_RELEASE_CANDIDATE_2026-07-21.md](LOCAL_RELEASE_CANDIDATE_2026-07-21.md).
+The intact root demo remains the removal-blocking behavior oracle. No
+deployment, traffic routing, cutover, legacy removal, or `production-ready`
+claim is authorized.
 
 ---
 

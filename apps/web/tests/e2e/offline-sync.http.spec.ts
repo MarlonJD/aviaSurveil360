@@ -1,7 +1,27 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const apiURL = process.env.AVIA_HTTP_API_URL ?? "http://127.0.0.1:58081";
 const token = process.env.AVIA_CANONICAL_TEST_TOKEN ?? "";
+
+async function markBrowserRestartVerified(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const open = indexedDB.open("aviasurveil360-offline-foundation");
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction("foundation", "readwrite");
+      transaction.objectStore("foundation").put({
+        key: "restart-canary",
+        value: { bootId: "verified-prior-browser-boot", verified: false },
+      });
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+    database.close();
+  });
+}
 
 test.beforeEach(async ({ context, request }) => {
   const reset = await request.post(`${apiURL}/__test/reset`, {
@@ -42,23 +62,7 @@ test("offline field work survives a lost acknowledgement and foreground-syncs th
 
   await page.goto("/inspector/audits/AUD-2026-001");
   await expect(page.getByTestId("audit-id")).toHaveText("AUD-2026-001");
-  await page.evaluate(async () => {
-    const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const open = indexedDB.open("aviasurveil360-offline-foundation");
-      open.onsuccess = () => resolve(open.result);
-      open.onerror = () => reject(open.error);
-    });
-    await new Promise<void>((resolve, reject) => {
-      const transaction = database.transaction("foundation", "readwrite");
-      transaction.objectStore("foundation").put({
-        key: "restart-canary",
-        value: { bootId: "verified-prior-browser-boot", verified: false },
-      });
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error);
-    });
-    database.close();
-  });
+  await markBrowserRestartVerified(page);
   await page.getByLabel(/managed Chrome policy/i).check();
   await page.getByLabel(/encrypted managed profile/i).check();
   await page.getByRole("button", { name: "Check out for offline use" }).click();
@@ -167,4 +171,101 @@ test("offline field work survives a lost acknowledgement and foreground-syncs th
   });
   expect(consoleIssues.some((issue) => issue.includes("net::ERR_FAILED"))).toBe(true);
   expect(consoleIssues.filter((issue) => !issue.includes("net::ERR_FAILED"))).toEqual([]);
+});
+
+test("a stale field response preserves the local draft until explicit re-entry resolves the conflict", async ({
+  context,
+  page,
+  request,
+}) => {
+  test.setTimeout(120_000);
+  const consoleIssues: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error" || message.type() === "warning") {
+      consoleIssues.push(`${message.type()}: ${message.text()}`);
+    }
+  });
+  page.on("pageerror", (error) => consoleIssues.push(`pageerror: ${error.message}`));
+
+  await page.goto("/inspector/audits/AUD-2026-001");
+  await markBrowserRestartVerified(page);
+  await page.getByLabel(/managed Chrome policy/i).check();
+  await page.getByLabel(/encrypted managed profile/i).check();
+  await page.getByRole("button", { name: "Check out for offline use" }).click();
+  await expect(page.locator('[data-readiness-code="ready"]')).toBeVisible();
+  await page.getByRole("link", { name: "Run Cabin checklist" }).click();
+
+  await context.setOffline(true);
+  await page.getByLabel("Checklist answer").selectOption("NON_COMPLIANT");
+  await page.getByLabel("Inspector comment").fill("Local draft must survive the stale revision.");
+  await page.getByRole("button", { name: "Save response" }).click();
+  await expect(page.getByTestId("field-sync-state")).toContainText("sync pending (1)");
+
+  const authoritativeMutation = await request.post(`${apiURL}/v1/sync/operations`, {
+    headers: {
+      "x-avia-test-token": token,
+      "x-avia-test-subject": "USR-INSPECTOR-AMINA",
+    },
+    data: {
+      operation: {
+        operationId: "OP-RC-AUTHORITATIVE-RESPONSE-001",
+        protocolVersion: 1,
+        offlineGrantId: "GRANT-CANDIDATE-001",
+        packageId: "PKG-CAB-2026-001",
+        packageVersion: 1,
+        entityId: "RESP-CAB-EMEQ-PBE-001",
+        commandType: "UPSERT_CHECKLIST_RESPONSE",
+        baseRevision: null,
+        deviceInstanceId: "DEVICE-CANDIDATE-001",
+        clientOccurredAt: "2026-07-21T09:00:00Z",
+        payload: {
+          auditId: "AUD-2026-001",
+          questionId: "CAB-EMEQ-PBE-001",
+          answer: "OBSERVATION",
+          comment: "Authoritative concurrent field observation.",
+        },
+      },
+    },
+  });
+  expect(authoritativeMutation.ok()).toBe(true);
+  await expect(authoritativeMutation.json()).resolves.toMatchObject({
+    status: "accepted",
+    authoritativeRevision: 1,
+  });
+
+  await context.setOffline(false);
+  const conflict = page.getByTestId("field-sync-conflict");
+  await expect(conflict).toContainText("STALE_REVISION at authoritative revision 1");
+  await expect(conflict).toContainText("local draft preserved");
+  await expect(page.getByTestId("response-status")).toHaveText("NON_COMPLIANT");
+  await expect(page.getByLabel("Inspector comment")).toHaveValue(
+    "Local draft must survive the stale revision.",
+  );
+
+  await page
+    .getByLabel("Inspector comment")
+    .fill("Explicitly re-entered after reviewing authoritative revision 1.");
+  await page.getByRole("button", { name: "Save response" }).click();
+  await page.getByRole("button", { name: "Sync now" }).click();
+  await expect(page.getByTestId("field-sync-conflict")).toHaveCount(0);
+  await expect(page.getByTestId("field-sync-state")).toHaveCount(0);
+  await expect(page.getByTestId("response-status")).toHaveText("NON_COMPLIANT");
+
+  const packageResponse = await request.get(`${apiURL}/v1/inspection-packages/PKG-CAB-2026-001`, {
+    headers: {
+      "x-avia-test-token": token,
+      "x-avia-test-subject": "USR-INSPECTOR-AMINA",
+    },
+  });
+  expect(packageResponse.ok()).toBe(true);
+  const inspectionPackage = await packageResponse.json();
+  const response = inspectionPackage.questions.find(
+    (candidate: { id: string }) => candidate.id === "CAB-EMEQ-PBE-001",
+  ).currentResponse;
+  expect(response).toMatchObject({
+    answer: "NON_COMPLIANT",
+    comment: "Explicitly re-entered after reviewing authoritative revision 1.",
+    revision: 2,
+  });
+  expect(consoleIssues).toEqual([]);
 });

@@ -112,7 +112,6 @@ h1 {
 .role-card:hover,
 .role-card:focus-visible {
   border-color: #2b6f88;
-  outline: none;
   transform: translateY(-2px);
 }
 

@@ -16,10 +16,13 @@ Keycloak, MinIO, and a deterministic scanner adapter.
 **Candidate-only / not production-ready:** the Go/PostgreSQL authority layer,
 private bounded object upload, deterministic scan worker, full canonical HTTP
 scenario, PWA/readiness, atomic offline field repository/outbox, and
-manifest-first OPFS Inspection Attachment recovery are `verified locally`;
-they are not deployed production services. There is no production OIDC/MFA,
-production object store/scanner or Evidence records policy, production sync,
-deployment, cutover, or legacy removal. The root demo remains the
+manifest-first OPFS Inspection Attachment recovery, typed foreground sync,
+approved first-production route families, and the complete local
+release-candidate matrix are `verified locally`; they are not deployed
+production services. The local recommendation is `GO` for a `candidate-only`
+artifact whose release remains `release pending`. Production OIDC/MFA,
+production object store/scanner or Evidence records policy, deployment,
+cutover, and legacy removal remain `blocked`. The root demo remains the
 removal-blocking behavior oracle.
 
 ## Product definition
@@ -50,6 +53,7 @@ Do not build an EMPIC-like complex enterprise screen first. Build a simple, role
 8. `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md`
 9. `docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.md`
 10. `docs/demo-evidence/OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md`
+11. `docs/demo-evidence/LOCAL_RELEASE_CANDIDATE_2026-07-21.md`
 
 For the clickable demo, open `index.html` directly in a browser or serve this
 folder with a local static server. See `docs/demo-evidence/BUILD_SUMMARY.md` for current
@@ -94,6 +98,14 @@ See
 `docs/demo-evidence/OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md` for the
 Task 8 manifest-first OPFS lifecycle, startup reconciliation, no-delete policy,
 and server-stopped attachment restart evidence.
+
+For the complete local release-candidate decision, security/operational matrix,
+dependency/SBOM review, browser profiles, and PostgreSQL/object-store recovery
+drill, see
+`docs/demo-evidence/LOCAL_RELEASE_CANDIDATE_2026-07-21.md`. The decision is
+local `GO`, `candidate-only`, and `release pending`; production remains
+`blocked` pending a separately approved release/operations plan and explicit
+authorization.
 
 
 ## Source Notes

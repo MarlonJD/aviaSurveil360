@@ -17,6 +17,10 @@ import (
 	"github.com/MarlonJD/aviaSurveil360/apps/api/migrations"
 )
 
+type scanProcessor interface {
+	ProcessNext(context.Context) (bool, error)
+}
+
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -74,16 +78,28 @@ func run(ctx context.Context) error {
 			if err := objects.Check(ctx); err != nil {
 				return fmt.Errorf("worker object-store check: %w", err)
 			}
-			for {
-				processed, err := worker.ProcessNext(ctx)
-				if err != nil {
-					slog.Error("scan work item failed", "error", err)
-					break
-				}
-				if !processed {
-					break
-				}
+			processed, err := processAvailable(ctx, worker)
+			if err != nil {
+				slog.Error("scan work batch failed", "processed", processed, "error", err)
+				continue
+			}
+			if processed > 0 {
+				slog.Info("scan work batch completed", "processed", processed)
 			}
 		}
+	}
+}
+
+func processAvailable(ctx context.Context, processor scanProcessor) (int, error) {
+	processedCount := 0
+	for {
+		processed, err := processor.ProcessNext(ctx)
+		if err != nil {
+			return processedCount, err
+		}
+		if !processed {
+			return processedCount, nil
+		}
+		processedCount++
 	}
 }

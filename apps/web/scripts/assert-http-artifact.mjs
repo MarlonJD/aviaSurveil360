@@ -53,6 +53,13 @@ for (const forbiddenFile of ["demo-build.json", "demo-config.json", "seed-data.j
 assert.ok(files.includes("http-config.json"), "HTTP artifact must contain its allowlisted public config");
 assert.ok(files.includes(".vite/manifest.json"), "HTTP artifact must contain a Vite manifest");
 
+const indexSource = fs.readFileSync(path.join(artifactRoot, "index.html"), "utf8");
+assert.match(indexSource, /http-equiv="Content-Security-Policy"/);
+assert.match(indexSource, /script-src 'self'/);
+assert.match(indexSource, /object-src 'none'/);
+assert.match(indexSource, /connect-src 'self' https:/);
+assert.doesNotMatch(indexSource, /unsafe-inline|unsafe-eval|127\.0\.0\.1|__AVIA_CSP__/);
+
 const publicConfig = readJson("http-config.json");
 assert.deepEqual(Object.keys(publicConfig).sort(), ["apiBaseUrl", "environmentLabel"]);
 assert.ok(!Object.keys(publicConfig).some((key) => /backend|mode|token|secret|password/i.test(key)));

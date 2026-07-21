@@ -16,11 +16,13 @@ Keycloak, MinIO ve deterministik scanner adapter kullanır.
 **Candidate-only / production-ready değil:** Go/PostgreSQL authority layer,
 private bounded object upload, deterministik scan worker, full canonical HTTP
 scenario, PWA/readiness, atomic offline field repository/outbox ve
-manifest-first OPFS Inspection Attachment recovery `verified locally`
-durumundadır; deployed production service değildir. Production OIDC/MFA,
-production object store/scanner veya Evidence records policy, production sync,
-deployment, cutover veya legacy removal yoktur. Root demo, removal-blocking
-behavior oracle olarak korunur.
+manifest-first OPFS Inspection Attachment recovery, typed foreground sync,
+approved first-production route family'leri ve complete local release-candidate
+matrix `verified locally` durumundadır; deployed production service değildir.
+Local öneri `candidate-only` artifact için `GO`, release durumu `release
+pending`'dir. Production OIDC/MFA, production object store/scanner veya Evidence
+records policy, deployment, cutover ve legacy removal `blocked` kalır. Root
+demo, removal-blocking behavior oracle olarak korunur.
 
 ## Ürün tanımı
 
@@ -50,6 +52,7 @@ eden task-based oversight platformudur.
 8. `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.turkce.md`
 9. `docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.turkce.md`
 10. `docs/demo-evidence/OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.turkce.md`
+11. `docs/demo-evidence/LOCAL_RELEASE_CANDIDATE_2026-07-21.turkce.md`
 
 Clickable demo için `index.html` dosyasını doğrudan browser'da açın veya bu
 klasörü local static server ile servis edin. Güncel verification status ve demo
@@ -95,6 +98,14 @@ Task 8 manifest-first OPFS lifecycle, startup reconciliation, no-delete policy
 ve server-stopped attachment restart kanıtı için
 `docs/demo-evidence/OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.turkce.md`
 dosyasına bakın.
+
+Complete local release-candidate kararı, security/operational matrix,
+dependency/SBOM review, browser profile'ları ve PostgreSQL/object-store recovery
+drill için
+`docs/demo-evidence/LOCAL_RELEASE_CANDIDATE_2026-07-21.turkce.md` dosyasına
+bakın. Karar local `GO`, `candidate-only` ve `release pending`; production,
+ayrı onaylı release/operations plan ve explicit authorization gelene kadar
+`blocked` kalır.
 
 
 ## Kaynak Notları

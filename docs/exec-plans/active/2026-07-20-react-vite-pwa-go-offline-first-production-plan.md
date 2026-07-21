@@ -8,7 +8,7 @@
 
 **Tech Stack:** React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, Service Worker + Cache Storage, OPFS for staged Inspection Attachments, Vitest, React Testing Library, Playwright, Go modular monolith, `net/http` + `chi`, OpenAPI, PostgreSQL + `pgx`/`sqlc`, S3-compatible object storage, and containerized local integration dependencies.
 
-**Status:** `active` — Tasks 2-12 are implemented and `verified locally` as a `candidate-only` local application: the React mock scenario, Go/PostgreSQL authority, bounded upload/scan and HTTP parity, PWA/readiness, atomic IndexedDB field storage, manifest-first OPFS Inspection Attachment recovery, typed foreground sync, and the approved Task 5 `first-production` route families. The binding next slice is Task 13's local release-candidate verification packet. Release is `release pending`. Production deployment, traffic cutover, legacy removal, production hosting/provider selection, production on-call, and any `production-ready` claim remain `blocked` behind the separate release/operations gate.
+**Status:** `ready-for-verification` — Tasks 2-13 are implemented and `verified locally` as a `candidate-only` local application. Task 13 returns local `GO` after the complete clean-install, mock, HTTP, real-offline, security, dependency/SBOM, recovery, and legacy-parity matrices. Release is `release pending`. Production deployment, traffic cutover, legacy removal, production hosting/provider selection, production on-call, and any `production-ready` claim remain `blocked` behind explicit authorization and a separately approved release/operations plan.
 
 ## Global Constraints
 
@@ -1532,7 +1532,7 @@ evidence.
 
   Expected: no removal or overwrite of root demo assets; `later`/`demo-only` routes stay reachable there; cutover remains blocked on the separately approved runbook and stakeholder acceptance.
 
-  Result 2026-07-21: red contract and ledger tests first failed on the absent organization route, behavior-ledger v2, and missing organization/planning Backend capabilities. The first complete HTTP run then caught two unexpected 404 console records per viewport because the Department Manager dashboard requested a canonical Finding before the scenario had created it; the dashboard now consumes the server-shaped list projection and selects that Finding only when present. The completed OpenAPI/Backend/Go/React increment adds an organization registry, Audit Plan Calendar, exact Finance -> GM -> Executive Director -> GM plan authority chain, read-only versioned checklist/reminder configuration, and an Admin planning Audit Trail. Planning decisions are reason-required, idempotent, revision- and role/stage-checked, and transactionally record the update, audit event, idempotency result, and outbox message. The behavior ledger is version 3 with 15 executable entries. The fresh full HTTP profile passed API/worker builds, the full Go race/live PostgreSQL/Keycloak/MinIO suite including migration v6 and retained N-1 upgrade, OpenAPI 6/6, clean SQLC generation, TypeScript, React/Vitest 146/146, live Backend contract 11/11, mock Playwright 4/4, HTTP Playwright 5/5, both builds, HTTP mock/seed isolation across 12 files and 89 inputs, and cleanup. The first-production matrix passed mock 3/3 and HTTP 3/3 at desktop/tablet/mobile with no unexpected console warnings/errors or critical horizontal overflow. `go vet ./...`, the intact root plus parity suite 106/106, `git diff --check`, and task-owned process/container cleanup also passed. Evidence is [First-Production Route Families](../../demo-evidence/FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.md), `verified locally`, and `candidate-only`. Task 13 remains `not run`; release is `release pending`, while production deployment, cutover, legacy removal, and `production-ready` evidence remain `blocked`. The next binding slice is Task 13.
+  Result 2026-07-21: red contract and ledger tests first failed on the absent organization route, behavior-ledger v2, and missing organization/planning Backend capabilities. The first complete HTTP run then caught two unexpected 404 console records per viewport because the Department Manager dashboard requested a canonical Finding before the scenario had created it; the dashboard now consumes the server-shaped list projection and selects that Finding only when present. The completed OpenAPI/Backend/Go/React increment adds an organization registry, Audit Plan Calendar, exact Finance -> GM -> Executive Director -> GM plan authority chain, read-only versioned checklist/reminder configuration, and an Admin planning Audit Trail. Planning decisions are reason-required, idempotent, revision- and role/stage-checked, and transactionally record the update, audit event, idempotency result, and outbox message. The behavior ledger is version 3 with 15 executable entries. The fresh full HTTP profile passed API/worker builds, the full Go race/live PostgreSQL/Keycloak/MinIO suite including migration v6 and retained N-1 upgrade, OpenAPI 6/6, clean SQLC generation, TypeScript, React/Vitest 146/146, live Backend contract 11/11, mock Playwright 4/4, HTTP Playwright 5/5, both builds, HTTP mock/seed isolation across 12 files and 89 inputs, and cleanup. The first-production matrix passed mock 3/3 and HTTP 3/3 at desktop/tablet/mobile with no unexpected console warnings/errors or critical horizontal overflow. `go vet ./...`, the intact root plus parity suite 106/106, `git diff --check`, and task-owned process/container cleanup also passed. Evidence is [First-Production Route Families](../../demo-evidence/FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.md), `verified locally`, and `candidate-only`. Task 13 subsequently completed the local release-candidate packet; release remains `release pending`, while production deployment, cutover, legacy removal, and `production-ready` evidence remain `blocked`.
 
 ## Phase 4 — Add The Browser Offline-First Field Foundation
 
@@ -1942,7 +1942,7 @@ evidence.
 - Consumes: completed approved React, HTTP, Evidence, offline, sync, and local-security slices.
 - Produces: evidence-backed `GO`, `CONDITIONAL GO`, or `NO-GO` for a local release candidate, explicit external production gaps, and reconciled plan tracking. It does not produce a production cutover authorization.
 
-- [ ] **Step 1: Run static/type/unit verification.**
+- [x] **Step 1: Run static/type/unit verification.**
 
   ```bash
   npm --prefix apps/web ci
@@ -1961,15 +1961,15 @@ evidence.
 
   Expected: exit `0` for every command; generated output is clean; no test is skipped or reports zero executed cases; the HTTP artifact has no mock/seed input; both Go commands build; cleanup leaves no task-owned processes or containers.
 
-- [ ] **Step 2: Run mock-mode browser verification.**
+- [x] **Step 2: Run mock-mode browser verification.**
 
   Verify every approved `first-production` ledger entry, canonical lifecycle, stable reset, no production claims, desktop/tablet/mobile, no critical overflow, accessibility/keyboard basics, and zero unexpected console warnings/errors. Persistent IndexedDB mock-server behavior is not required unless separately approved.
 
-- [ ] **Step 3: Run HTTP-mode browser verification against real local dependencies.**
+- [x] **Step 3: Run HTTP-mode browser verification against real local dependencies.**
 
   Run the exact same scenario files against Go/PostgreSQL/S3-compatible storage. Fail when the HTTP profile is unavailable or skipped. Compare normalized invariant transcripts for exact IDs/scopes, lifecycle transitions, revisions, Potential Finding authority, CAP review, Evidence versions/scan/review, report decisions, audit events, dashboards, and denial outcomes. Add raw-wire forbidden-field, direct-ID/list isolation, migration, upload, and worker-retry paths.
 
-- [ ] **Step 4: Run real offline browser/device verification.**
+- [x] **Step 4: Run real offline browser/device verification.**
 
   Required cases:
 
@@ -1990,13 +1990,15 @@ evidence.
   managed-browser clear-on-exit/policy enforcement
   ```
 
-- [ ] **Step 5: Run security and operational verification.**
+- [x] **Step 5: Run security and operational verification.**
 
   Include same-origin session/CSRF/authorization review, raw Auditee response scans, upload/quarantine/scan/download controls, approved local-data/key handling, CSP, rate limits, dependency/SBOM review, PostgreSQL plus object-store backup/restore drill, worker/outbox observability, supported managed-browser evidence, and rollback rehearsal. Real configured OIDC/MFA, production hosting, disaster recovery, retention/legal-hold execution, external penetration review, and production monitoring remain separate evidence unless actually run.
 
-- [ ] **Step 6: Reconcile local release-candidate status.**
+- [x] **Step 6: Reconcile local release-candidate status.**
 
   Move this plan at most to `ready-for-verification` after the selected implementation objective and every required local gate pass. Do not label it `production-ready`, archive the legacy demo, deploy, route traffic, or mark production cutover complete. Required local gates cannot pass through a documented gap; only explicitly non-blocking external gaps may remain and each must have a named owner, tracker note, and separately approved production release/operations plan.
+
+  Result 2026-07-21: the Task 13 red runs first exposed absent API security/rate-limit middleware, an untestable worker batch boundary, a missing recovery drill, an absent build CSP source, a checkout test without its restart-canary precondition, and an offline Playwright pattern that selected HTTP-only tests. Those defects were corrected without weakening readiness or adding skips. A narrow lock-compatible `js-yaml` 4.3.0 override also closes the two prior high-severity development-tool audit findings while preserving clean contract generation. The fresh clean-install packet passed OpenAPI/generated contracts 6/6, TypeScript, React/Vitest 148/148, API/worker build and `go vet`, the full Go race/live PostgreSQL/Keycloak/MinIO suite, HTTP Backend contract 11/11, mock Playwright 5/5, HTTP Playwright 7/7 including typed stale-revision presentation/local-draft preservation/explicit re-entry, real offline Playwright 6/6, HTTP isolation across 12 files and 89 inputs, both app-shell scans, worker/outbox drain, root legacy/parity 106/106, full and production-only npm audits with 0 vulnerabilities, CycloneDX npm SBOM review, Go runtime inventory, and task-owned cleanup. The isolated recovery drill restored the canonical PostgreSQL fingerprint and exact 47-byte private object with matching metadata/hash. Evidence is [Local Release-Candidate Evidence](../../demo-evidence/LOCAL_RELEASE_CANDIDATE_2026-07-21.md), `verified locally`, and `candidate-only`. The local decision is `GO`; release remains `release pending`. Production deployment/cutover is `NO-GO` and `blocked`: no production release/operations plan was authorized or created in this slice, and production Identity, hosting, records, security, monitoring/on-call, pilot, and release-authority evidence remains external.
 
 ## Verification Strategy
 
@@ -2173,9 +2175,9 @@ must not start; it does not block unrelated earlier slices.
 
 ## Plan Lifecycle
 
-- Current status: `active`; Tasks 5-13 and per-Task commit/push are explicitly authorized for the local release candidate.
+- Current status: `ready-for-verification`; Tasks 2-13 are implemented and `verified locally` for the `candidate-only` local release candidate.
 - Review status: the initial 2026-07-20 adversarial review is complete; verdict was `NO-GO as written`, and its plan-level corrections are incorporated in this revision.
-- Current next todo: commit and push the `verified locally` Task 5 checkpoint, then execute Task 13's complete local release-candidate verification packet.
+- Current next todo: obtain explicit stakeholder/user acceptance of the local candidate; before any production action, separately authorize and approve a production release/operations plan and its owner evidence.
 - Move to `ready-for-verification` only after the selected implementation objective and every required local gate pass. A required local gate cannot pass through a documented gap.
 - Do not move to `completed/` merely because a local release candidate exists. Completion requires objective completion, required local verification, explicit stakeholder/user acceptance, completed-index entry, tracker reconciliation, and an explicit disposition for the separate production release/operations dependency.
 - `production-ready`, deployment, traffic routing, cutover, and legacy removal remain blocked until the separately approved production release/operations plan passes and the user authorizes the exact action.

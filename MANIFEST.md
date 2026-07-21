@@ -7,10 +7,13 @@ not a production system.
 Candidate boundary: a local Go/PostgreSQL API/worker, pinned local Keycloak,
 private MinIO upload, deterministic scan adapter, real canonical HTTP scenario,
 PWA/readiness, atomic offline field/outbox persistence, and manifest-first OPFS
-Inspection Attachment recovery are `verified locally`. They are not deployed
-production services. Production OIDC/MFA, production storage/scanning/records
-policy, production synchronization, deployment, cutover, legacy removal, and a
-`production-ready` claim remain excluded or `blocked`.
+Inspection Attachment recovery, typed foreground sync, approved
+first-production routes, and the complete local release-candidate matrix are
+`verified locally`. The artifact is `candidate-only`, the local decision is
+`GO`, and release is `release pending`. They are not deployed production
+services. Production OIDC/MFA, production storage/scanning/records policy,
+deployment, cutover, legacy removal, and a `production-ready` claim remain
+excluded or `blocked`.
 The root Vanilla demo remains intact.
 
 ## Root Files
@@ -52,8 +55,8 @@ The root Vanilla demo remains intact.
   projection checks.
 - `scripts/generate-contracts.sh` and `scripts/check-contracts.sh` — checked
   TypeScript generation, lint, example validation, and drift detection.
-- `tests/parity/behavior-ledger.json` — nine-entry canonical scenario and role
-  entry parity ledger.
+- `tests/parity/behavior-ledger.json` — fifteen-entry canonical scenario,
+  eight-role entry, and approved first-production route parity ledger.
 - `tests/parity/react-legacy-parity.test.mjs` — executable ledger and intact
   legacy-oracle checks.
 - `apps/web/` — React + TypeScript + Vite candidate with build-time-separated
@@ -64,6 +67,8 @@ The root Vanilla demo remains intact.
   `MockBackend`; reachable only from the demo build entry.
 - `apps/web/src/features/` — canonical Cabin Inspection assignments,
   inspection, checklist, Finding, CAP, Evidence, report, and dashboard routes.
+- `apps/web/src/app/csp-policy.ts` — build-profile-aware CSP source; production
+  artifacts exclude unsafe inline/eval and wildcard sources.
 - `apps/web/src/sw.ts` — version-fenced app-shell-only Service Worker; it does
   not cache authenticated API or business-record responses.
 - `apps/web/src/offline/storage-readiness.ts` — thirteen-result explicit
@@ -88,13 +93,21 @@ The root Vanilla demo remains intact.
   under mock and HTTP Playwright projects.
 - `apps/web/tests/e2e/offline-*.spec.ts` — dedicated persistent-profile Chrome
   restart/server-stop startup and two-client update/site-data recovery checks.
+- `apps/web/tests/e2e/release-candidate-gates.spec.ts` — dual-profile role,
+  stable-reset, literal-boundary, keyboard, focus, and target-size gate.
+- `apps/web/tests/e2e/offline-readiness-denials.spec.ts` — real-browser
+  managed-policy, persistence-denied, online-fallback, and quota checks.
 - `apps/web/scripts/assert-app-shell-artifact.mjs` — generated manifest/asset,
   version marker, and forbidden Service Worker behavior gate.
 - `apps/web/scripts/assert-http-artifact.mjs` — HTTP build input/public-artifact
   exclusion gate for mock, seed, and test-profile code plus app-shell policy.
 - `apps/api/go.mod` — the single Go module and pinned runtime dependencies.
 - `apps/api/cmd/api/` and `apps/api/cmd/worker/` — production-shaped HTTP and
-  worker command entry points.
+  observable worker command entry points.
+- `apps/api/cmd/local-recovery-drill/` — fail-closed, test-environment-only
+  exact object backup/delete/restore verifier; not a production command.
+- `apps/api/internal/httpapi/security.go` — API security headers and bounded
+  in-memory local-candidate rate-limit classes.
 - `apps/api/internal/` — canonical domain/authority modules, module-owned
   PostgreSQL stores, same-origin OIDC/session boundary, private object-store
   adapter, Evidence and Inspection Attachment upload services, deterministic
@@ -110,7 +123,10 @@ The root Vanilla demo remains intact.
 - `deploy/local/compose.test.yaml` — digest-pinned, isolated local PostgreSQL,
   Keycloak, and MinIO verification services.
 - `scripts/test-http-profile.sh` — fresh Go race/generation, live API/worker,
-  React contract/build, mock/HTTP Playwright, and task-owned cleanup profile.
+  React contract/build, mock/HTTP Playwright, worker/outbox drain assertion,
+  and task-owned cleanup profile.
+- `scripts/test-local-recovery.sh` — isolated local PostgreSQL dump/restore and
+  exact private object backup/restore drill with dedicated cleanup.
 
 ## Smoke Tests
 
@@ -214,6 +230,15 @@ separate `apps/web/package.json` owns the React candidate commands.
 - `docs/demo-evidence/OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md` and
   `.turkce.md` — Task 8 manifest-first OPFS staging, startup reconciliation,
   no-delete policy, and server-stopped attachment restart evidence.
+- `docs/demo-evidence/IDEMPOTENT_FOREGROUND_SYNC_2026-07-21.md` and
+  `.turkce.md` — Task 12 one-operation causal sync, exact replay, typed
+  conflict, authorized pull, and foreground recovery evidence.
+- `docs/demo-evidence/FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.md` and
+  `.turkce.md` — Task 5 approved route-family and responsive dual-profile
+  parity evidence.
+- `docs/demo-evidence/LOCAL_RELEASE_CANDIDATE_2026-07-21.md` and `.turkce.md` —
+  Task 13 local `GO`, complete verification matrix, dependency/SBOM review,
+  restore rehearsal, and explicit production blockers.
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.md`
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.turkce.md`
 - `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`

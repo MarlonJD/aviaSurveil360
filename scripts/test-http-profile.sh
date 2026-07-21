@@ -122,3 +122,21 @@ node "${REPOSITORY_ROOT}/apps/web/scripts/assert-http-artifact.mjs" "${REPOSITOR
 npm --prefix "${REPOSITORY_ROOT}/apps/web" run test:contract:http
 npm --prefix "${REPOSITORY_ROOT}/apps/web" run test:e2e:mock
 npm --prefix "${REPOSITORY_ROOT}/apps/web" run test:e2e:http
+
+for _ in {1..120}; do
+  PENDING_SCAN_COUNT="$(docker compose --project-name "${COMPOSE_PROJECT}" --file "${COMPOSE_FILE}" exec --no-TTY postgres psql --username aviasurveil --dbname aviasurveil --tuples-only --no-align --command "SELECT count(*) FROM outbox_messages WHERE topic IN ('evidence.scan_requested', 'inspection_attachment.scan_requested') AND delivered_at IS NULL AND terminal_state IS NULL")"
+  if [[ "${PENDING_SCAN_COUNT}" == "0" ]]; then
+    break
+  fi
+  sleep 0.25
+done
+TERMINAL_SCAN_COUNT="$(docker compose --project-name "${COMPOSE_PROJECT}" --file "${COMPOSE_FILE}" exec --no-TTY postgres psql --username aviasurveil --dbname aviasurveil --tuples-only --no-align --command "SELECT count(*) FROM outbox_messages WHERE topic IN ('evidence.scan_requested', 'inspection_attachment.scan_requested') AND terminal_state IS NOT NULL")"
+if [[ "${PENDING_SCAN_COUNT}" != "0" || "${TERMINAL_SCAN_COUNT}" != "0" ]]; then
+  echo "Worker outbox is not drained: pending=${PENDING_SCAN_COUNT} terminal=${TERMINAL_SCAN_COUNT}" >&2
+  exit 1
+fi
+if ! grep -q "scan work batch completed" "${RUNTIME_DIRECTORY}/worker.log"; then
+  echo "Worker log has no completed-batch observability event" >&2
+  exit 1
+fi
+echo "Worker/outbox observability: verified locally"

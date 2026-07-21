@@ -3,14 +3,17 @@ import { defineConfig, type Plugin } from "vite";
 import { fileURLToPath } from "node:url";
 
 import { resolveBuildProfile, type BuildProfile } from "./src/app/build-profile";
+import { contentSecurityPolicy } from "./src/app/csp-policy";
 
-function buildProfilePlugin(profile: BuildProfile, entryName: string): Plugin {
+function buildProfilePlugin(profile: BuildProfile, entryName: string, localDevelopment: boolean): Plugin {
   return {
     name: "aviasurveil360-build-profile",
     transformIndexHtml: {
       order: "pre",
       handler(html) {
-        return html.replace("__AVIA_ENTRY__", entryName);
+        return html
+          .replace("__AVIA_ENTRY__", entryName)
+          .replace("__AVIA_CSP__", contentSecurityPolicy(profile, localDevelopment));
       },
     },
     generateBundle(_options, bundle) {
@@ -38,14 +41,17 @@ function buildProfilePlugin(profile: BuildProfile, entryName: string): Plugin {
   };
 }
 
-export default defineConfig(() => {
+export default defineConfig(({ command }) => {
   const profile = resolveBuildProfile(process.env.AVIA_BUILD_PROFILE, Boolean(process.env.VITEST));
   const httpTestProfile = profile === "http" && process.env.AVIA_HTTP_TEST_PROFILE === "canonical";
   const apiTarget = process.env.AVIA_HTTP_API_TARGET;
   const webRoot = fileURLToPath(new URL(".", import.meta.url));
 
   return {
-    plugins: [react(), buildProfilePlugin(profile, httpTestProfile ? "http-test" : profile)],
+    plugins: [
+      react(),
+      buildProfilePlugin(profile, httpTestProfile ? "http-test" : profile, command === "serve"),
+    ],
     publicDir: `public/${profile}`,
     define: {
       __AVIA_BUILD_PROFILE__: JSON.stringify(profile),

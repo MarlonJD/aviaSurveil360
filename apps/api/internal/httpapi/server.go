@@ -7,6 +7,10 @@ func NewServerHandler(readiness ReadinessProbe, authentication http.Handler) htt
 }
 
 func NewApplicationHandler(readiness ReadinessProbe, authentication, api, testAdministration http.Handler) http.Handler {
+	return newApplicationHandler(readiness, authentication, api, testAdministration, applicationSecurityOptions{})
+}
+
+func newApplicationHandler(readiness ReadinessProbe, authentication, api, testAdministration http.Handler, options applicationSecurityOptions) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/health/", NewHealthHandler(readiness))
 	if authentication == nil {
@@ -21,5 +25,5 @@ func NewApplicationHandler(readiness ReadinessProbe, authentication, api, testAd
 	if testAdministration != nil {
 		mux.Handle("/__test/", testAdministration)
 	}
-	return mux
+	return withSecurityHeaders(newApplicationRateLimiter(options).protect(mux))
 }

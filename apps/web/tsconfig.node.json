@@ -12,5 +12,10 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "src/app/build-profile.ts"]
+  "include": [
+    "vite.config.ts",
+    "playwright.config.ts",
+    "src/app/build-profile.ts",
+    "src/app/csp-policy.ts"
+  ]
 }

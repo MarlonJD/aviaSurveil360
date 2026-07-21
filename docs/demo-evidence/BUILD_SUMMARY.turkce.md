@@ -32,7 +32,11 @@ Task 12 ayrıca doğrulanmış typed causal foreground push/pull sync ekler; bkz
 Task 5 approved first-production organization, planning, configuration,
 reminder ve audit route family'lerini ekler; bkz.
 [First-Production Route Family Kanıtı](FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.turkce.md).
-Bu yan candidate'lar root demo'yu veya genel ürünü `production-ready` yapmaz.
+Task 13 local release-candidate matrix'i tamamlar; bkz.
+[Local Release-Candidate Kanıtı](LOCAL_RELEASE_CANDIDATE_2026-07-21.turkce.md).
+Local öneri `GO`, artifact `candidate-only` ve release `release pending` olarak
+kalır. Bu yan candidate'lar root demo'yu veya genel ürünü `production-ready`
+yapmaz; production `blocked` kalır.
 
 **Tarih bağlamı:** Uygulama "bugün" olarak **15 Haziran 2026** tarihini kullanır;
 böylece **Due Soon** / **Overdue** hesapları deterministiktir.
@@ -1311,6 +1315,39 @@ Tam kanıt ve scope sınırları
 içindedir. Task 13 `not run`. Production deployment, cutover, legacy removal ve
 production-readiness evidence `blocked` kalır; `production-ready` iddiası
 yoktur.
+
+---
+
+### Local release-candidate checkpoint — 2026-07-21
+
+Durum: Task 13 `verified locally`; local öneri `GO`, artifact `candidate-only`
+ve release `release pending` olarak kalır. Bu dilimde ayrı onaylı production
+release/operations plan ile production Identity, hosting, security, records,
+monitoring, pilot ve release-authority kanıtı bulunmadığı için production
+deployment/cutover `NO-GO` ve `blocked` durumundadır.
+
+Taze clean-install matrix OpenAPI/generated contract 6/6, React/Vitest 148/148,
+live HTTP Backend contract 11/11, mock Playwright 5/5, HTTP Playwright 7/7,
+real offline Playwright 6/6, 12 file ve 89 input üzerinde HTTP isolation,
+demo/HTTP app-shell scan, full Go race/live PostgreSQL/Keycloak/MinIO
+integration, `go vet`, worker/outbox drain, root legacy/parity 106/106 ve
+task-owned cleanup'ı geçti. Full ve production-only npm audit'leri 0
+vulnerability raporlar. CycloneDX npm SBOM 158 component, Go API/worker runtime
+inventory 30 module kapsar.
+
+Isolated recovery drill canonical PostgreSQL fingerprint'i ve matching
+metadata/SHA-256 ile exact 47-byte private object'i restore etti. API CSP,
+security header, login/mutation rate limit, session/CSRF/authentication, raw
+Auditee projection scan, upload/quarantine/scan/download gate, managed-browser
+readiness, typed conflict presentation/re-entry, prior-shell rollback ve worker
+batch observability local kanıta dahildir.
+
+Tam matrix, hash'ler, tool/browser version'ları, red-to-green record, owner gap
+ve scope sınırları
+[LOCAL_RELEASE_CANDIDATE_2026-07-21.turkce.md](LOCAL_RELEASE_CANDIDATE_2026-07-21.turkce.md)
+içindedir. Intact root demo removal-blocking behavior oracle olarak kalır.
+Deployment, traffic routing, cutover, legacy removal veya `production-ready`
+iddiası authorize edilmedi.
 
 ---
 
