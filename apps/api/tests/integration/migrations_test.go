@@ -17,11 +17,14 @@ import (
 var requiredFoundationTables = []string{
 	"identity_references",
 	"session_references",
+	"oidc_login_states",
 	"organizations",
 	"inspections",
 	"checklist_template_versions",
 	"inspection_packages",
 	"checklist_responses",
+	"inspection_question_assignments",
+	"inspection_checklists",
 	"potential_findings",
 	"findings",
 	"cap_revisions",
@@ -29,6 +32,7 @@ var requiredFoundationTables = []string{
 	"review_decisions",
 	"report_versions",
 	"report_decisions",
+	"report_approval_states",
 	"offline_grants",
 	"idempotency_responses",
 	"authorized_sync_changes",
@@ -45,7 +49,7 @@ func TestMigrationsApplyFromAnEmptyDatabase(t *testing.T) {
 		t.Fatalf("apply migrations: %v", err)
 	}
 	assertFoundationSchema(t, pool)
-	if version, err := migrations.CurrentVersion(context.Background(), pool); err != nil || version != 2 {
+	if version, err := migrations.CurrentVersion(context.Background(), pool); err != nil || version != 3 {
 		t.Fatalf("migration version = %d, err = %v", version, err)
 	}
 }
@@ -63,7 +67,7 @@ func TestEveryRetainedNMinusOneFixtureUpgrades(t *testing.T) {
 		fixture := fixture
 		t.Run(strings.TrimSuffix(filepath.Base(fixture), ".sql"), func(t *testing.T) {
 			pool := createTestDatabase(t, "upgrade")
-			contents, err := os.ReadFile(fixture)
+			contents, err := loadFixture(apiModuleRoot(t), fixture)
 			if err != nil {
 				t.Fatalf("read fixture: %v", err)
 			}
@@ -76,6 +80,29 @@ func TestEveryRetainedNMinusOneFixtureUpgrades(t *testing.T) {
 			assertFoundationSchema(t, pool)
 		})
 	}
+}
+
+func loadFixture(moduleRoot, fixture string) ([]byte, error) {
+	contents, err := os.ReadFile(fixture)
+	if err != nil {
+		return nil, err
+	}
+	var expanded strings.Builder
+	for _, line := range strings.Split(string(contents), "\n") {
+		const includePrefix = "-- avia-include: "
+		if !strings.HasPrefix(line, includePrefix) {
+			expanded.WriteString(line)
+			expanded.WriteByte('\n')
+			continue
+		}
+		included, err := os.ReadFile(filepath.Join(moduleRoot, strings.TrimPrefix(line, includePrefix)))
+		if err != nil {
+			return nil, err
+		}
+		expanded.Write(included)
+		expanded.WriteByte('\n')
+	}
+	return []byte(expanded.String()), nil
 }
 
 func TestMigrationsAreForwardOnly(t *testing.T) {

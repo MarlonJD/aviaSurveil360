@@ -17,5 +17,31 @@ services:
       start_period: 5s
     restart: "no"
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.4@sha256:2b32a51a31e8d780d9fa9a69a59ead69975263c61b5dd13559090e22aa26f100
+    command: ["start-dev", "--import-realm", "--health-enabled=true"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: local-admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: local-admin-password
+    ports:
+      - "127.0.0.1:58080:8080"
+      - "127.0.0.1:59000:9000"
+    volumes:
+      - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000;
+          printf 'GET /health/ready HTTP/1.1\r\nHost: 127.0.0.1:9000\r\nConnection: close\r\n\r\n' >&3;
+          grep -q 'HTTP/1.1 200 OK' <&3
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: 15s
+    restart: "no"
+
 volumes:
   postgres-test-data:

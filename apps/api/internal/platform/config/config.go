@@ -1,7 +1,9 @@
 package config
 
 import (
+	"encoding/base64"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -10,24 +12,39 @@ import (
 type LookupEnv func(string) (string, bool)
 
 type Settings struct {
-	Environment      string
-	DatabaseURL      string
-	HTTPAddress      string
-	WorkerInterval   time.Duration
-	TestPrincipal    string
-	TestSession      string
-	DevSessionSecret string
+	Environment             string
+	DatabaseURL             string
+	HTTPAddress             string
+	WorkerInterval          time.Duration
+	TestPrincipal           string
+	TestSession             string
+	DevSessionSecret        string
+	OIDCIssuerURL           string
+	OIDCClientID            string
+	OIDCClientSecret        string
+	OIDCRedirectURL         string
+	SessionEncryptionKey    []byte
+	SessionIdleDuration     time.Duration
+	SessionAbsoluteDuration time.Duration
+	CookieSecure            bool
 }
 
 func Load(lookup LookupEnv) (Settings, error) {
 	environment := valueOrDefault(lookup, "AVIA_ENVIRONMENT", "development")
 	settings := Settings{
-		Environment:      environment,
-		DatabaseURL:      value(lookup, "AVIA_DATABASE_URL"),
-		HTTPAddress:      valueOrDefault(lookup, "AVIA_HTTP_ADDRESS", ":8080"),
-		TestPrincipal:    value(lookup, "AVIA_TEST_PRINCIPAL"),
-		TestSession:      value(lookup, "AVIA_TEST_SESSION"),
-		DevSessionSecret: value(lookup, "AVIA_DEV_SESSION_SECRET"),
+		Environment:             environment,
+		DatabaseURL:             value(lookup, "AVIA_DATABASE_URL"),
+		HTTPAddress:             valueOrDefault(lookup, "AVIA_HTTP_ADDRESS", ":8080"),
+		TestPrincipal:           value(lookup, "AVIA_TEST_PRINCIPAL"),
+		TestSession:             value(lookup, "AVIA_TEST_SESSION"),
+		DevSessionSecret:        value(lookup, "AVIA_DEV_SESSION_SECRET"),
+		OIDCIssuerURL:           value(lookup, "AVIA_OIDC_ISSUER_URL"),
+		OIDCClientID:            value(lookup, "AVIA_OIDC_CLIENT_ID"),
+		OIDCClientSecret:        value(lookup, "AVIA_OIDC_CLIENT_SECRET"),
+		OIDCRedirectURL:         value(lookup, "AVIA_OIDC_REDIRECT_URL"),
+		SessionIdleDuration:     30 * time.Minute,
+		SessionAbsoluteDuration: 8 * time.Hour,
+		CookieSecure:            true,
 	}
 
 	if settings.Environment == "production" {
@@ -51,6 +68,47 @@ func Load(lookup LookupEnv) (Settings, error) {
 	}
 	if !contains([]string{"development", "test", "production"}, settings.Environment) {
 		return Settings{}, fmt.Errorf("AVIA_ENVIRONMENT must be development, test, or production")
+	}
+
+	oidcKeys := []struct {
+		name  string
+		value string
+	}{
+		{name: "AVIA_OIDC_ISSUER_URL", value: settings.OIDCIssuerURL},
+		{name: "AVIA_OIDC_CLIENT_ID", value: settings.OIDCClientID},
+		{name: "AVIA_OIDC_CLIENT_SECRET", value: settings.OIDCClientSecret},
+		{name: "AVIA_OIDC_REDIRECT_URL", value: settings.OIDCRedirectURL},
+		{name: "AVIA_SESSION_ENCRYPTION_KEY", value: value(lookup, "AVIA_SESSION_ENCRYPTION_KEY")},
+	}
+	oidcConfigured := false
+	for _, entry := range oidcKeys {
+		if entry.value != "" {
+			oidcConfigured = true
+			break
+		}
+	}
+	if settings.Environment == "production" || oidcConfigured {
+		for _, entry := range oidcKeys {
+			if entry.value == "" {
+				return Settings{}, fmt.Errorf("%s is required when OIDC authentication is enabled", entry.name)
+			}
+		}
+		key, err := base64.StdEncoding.DecodeString(value(lookup, "AVIA_SESSION_ENCRYPTION_KEY"))
+		if err != nil || len(key) != 32 {
+			return Settings{}, fmt.Errorf("AVIA_SESSION_ENCRYPTION_KEY must be base64 for exactly 32 bytes")
+		}
+		settings.SessionEncryptionKey = key
+		issuerURL, err := url.Parse(settings.OIDCIssuerURL)
+		if err != nil || issuerURL.Scheme == "" || issuerURL.Host == "" {
+			return Settings{}, fmt.Errorf("AVIA_OIDC_ISSUER_URL must be an absolute URL")
+		}
+		redirectURL, err := url.Parse(settings.OIDCRedirectURL)
+		if err != nil || redirectURL.Scheme == "" || redirectURL.Host == "" {
+			return Settings{}, fmt.Errorf("AVIA_OIDC_REDIRECT_URL must be an absolute URL")
+		}
+		if settings.Environment == "production" && (issuerURL.Scheme != "https" || redirectURL.Scheme != "https") {
+			return Settings{}, fmt.Errorf("production OIDC issuer and redirect URLs must use HTTPS")
+		}
 	}
 
 	workerMilliseconds := valueOrDefault(lookup, "AVIA_WORKER_INTERVAL_MS", "1000")

@@ -1,0 +1,213 @@
+package httpapi
+
+import (
+	"context"
+	"crypto/subtle"
+	"errors"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/session"
+	"github.com/go-chi/chi/v5"
+)
+
+const (
+	SessionCookieName = "__Host-avia_session"
+	CSRFCookieName    = "__Host-avia_csrf"
+	CSRFHeaderName    = "X-CSRF-Token"
+)
+
+type AuthSessionManager interface {
+	NewLoginState(context.Context, string) (session.LoginRequest, error)
+	ConsumeLoginState(context.Context, string) (session.LoginState, error)
+	Create(context.Context, session.CreateInput) (session.BrowserSession, error)
+	Authenticate(context.Context, string) (identity.Principal, error)
+	ValidateCSRF(context.Context, string, string) error
+	Revoke(context.Context, string) error
+}
+
+type AuthBoundary struct {
+	provider identity.OIDCProvider
+	sessions AuthSessionManager
+}
+
+func NewAuthBoundary(provider identity.OIDCProvider, sessions AuthSessionManager) *AuthBoundary {
+	return &AuthBoundary{provider: provider, sessions: sessions}
+}
+
+func NewAuthHandler(provider identity.OIDCProvider, sessions AuthSessionManager) http.Handler {
+	return NewAuthBoundary(provider, sessions).Handler()
+}
+
+func (boundary *AuthBoundary) Handler() http.Handler {
+	router := chi.NewRouter()
+	router.Get("/auth/login", boundary.login)
+	router.Get("/auth/callback", boundary.callback)
+	router.Get("/auth/session", boundary.sessionProjection)
+	router.Post("/auth/logout", boundary.logout)
+	return router
+}
+
+func (boundary *AuthBoundary) Protect(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		principal, ok := boundary.authenticate(writer, request)
+		if !ok {
+			return
+		}
+		if isMutation(request.Method) && !boundary.validateCSRF(writer, request, principal.SessionID) {
+			return
+		}
+		ctx := context.WithValue(request.Context(), principalContextKey{}, principal)
+		next.ServeHTTP(writer, request.WithContext(ctx))
+	})
+}
+
+func PrincipalFromContext(ctx context.Context) (identity.Principal, bool) {
+	principal, ok := ctx.Value(principalContextKey{}).(identity.Principal)
+	return principal, ok
+}
+
+func (boundary *AuthBoundary) login(writer http.ResponseWriter, request *http.Request) {
+	if boundary.provider == nil || boundary.sessions == nil {
+		writeProblem(writer, http.StatusServiceUnavailable, "Authentication unavailable", "OIDC authentication is not configured", "AUTH_UNAVAILABLE")
+		return
+	}
+	login, err := boundary.sessions.NewLoginState(request.Context(), request.URL.Query().Get("returnTo"))
+	if err != nil {
+		writeProblem(writer, http.StatusServiceUnavailable, "Authentication unavailable", "login state could not be created", "AUTH_UNAVAILABLE")
+		return
+	}
+	location := boundary.provider.AuthorizationURL(login.State, login.Nonce, login.PKCEChallenge)
+	http.Redirect(writer, request, location, http.StatusFound)
+}
+
+func (boundary *AuthBoundary) callback(writer http.ResponseWriter, request *http.Request) {
+	if boundary.provider == nil || boundary.sessions == nil {
+		writeProblem(writer, http.StatusServiceUnavailable, "Authentication unavailable", "OIDC authentication is not configured", "AUTH_UNAVAILABLE")
+		return
+	}
+	stateValue := strings.TrimSpace(request.URL.Query().Get("state"))
+	code := strings.TrimSpace(request.URL.Query().Get("code"))
+	if stateValue == "" || code == "" {
+		writeProblem(writer, http.StatusBadRequest, "Invalid authentication response", "state and authorization code are required", "INVALID_OIDC_CALLBACK")
+		return
+	}
+	loginState, err := boundary.sessions.ConsumeLoginState(request.Context(), stateValue)
+	if err != nil {
+		writeProblem(writer, http.StatusUnauthorized, "Authentication failed", "OIDC state is invalid or expired", "INVALID_OIDC_STATE")
+		return
+	}
+	authenticated, err := boundary.provider.Exchange(request.Context(), code, loginState.PKCEVerifier, loginState.Nonce)
+	if err != nil {
+		writeProblem(writer, http.StatusUnauthorized, "Authentication failed", "OIDC token verification failed", "INVALID_OIDC_TOKEN")
+		return
+	}
+	browserSession, err := boundary.sessions.Create(request.Context(), session.CreateInput{
+		SubjectID: authenticated.SubjectID, Issuer: authenticated.Issuer, DisplayName: authenticated.DisplayName,
+		OrganizationID: authenticated.OrganizationID, Roles: authenticated.Roles,
+		ProviderSessionID: authenticated.ProviderSessionID, ProviderTokens: authenticated.Tokens,
+	})
+	if err != nil {
+		writeProblem(writer, http.StatusInternalServerError, "Authentication failed", "browser session could not be created", "SESSION_CREATE_FAILED")
+		return
+	}
+	setBrowserSessionCookies(writer, browserSession)
+	http.Redirect(writer, request, loginState.ReturnTo, http.StatusFound)
+}
+
+func (boundary *AuthBoundary) sessionProjection(writer http.ResponseWriter, request *http.Request) {
+	principal, ok := boundary.authenticate(writer, request)
+	if !ok {
+		return
+	}
+	writeJSON(writer, http.StatusOK, struct {
+		SubjectID      string          `json:"subjectId"`
+		OrganizationID string          `json:"organizationId"`
+		Roles          []identity.Role `json:"roles"`
+	}{SubjectID: principal.SubjectID, OrganizationID: principal.OrganizationID, Roles: principal.Roles})
+}
+
+func (boundary *AuthBoundary) logout(writer http.ResponseWriter, request *http.Request) {
+	principal, ok := boundary.authenticate(writer, request)
+	if !ok {
+		return
+	}
+	if !boundary.validateCSRF(writer, request, principal.SessionID) {
+		return
+	}
+	if err := boundary.sessions.Revoke(request.Context(), principal.SessionID); err != nil {
+		writeProblem(writer, http.StatusInternalServerError, "Logout failed", "session revocation could not be recorded", "SESSION_REVOKE_FAILED")
+		return
+	}
+	expireBrowserSessionCookies(writer)
+	writer.WriteHeader(http.StatusNoContent)
+}
+
+func (boundary *AuthBoundary) authenticate(writer http.ResponseWriter, request *http.Request) (identity.Principal, bool) {
+	if boundary.sessions == nil {
+		writeProblem(writer, http.StatusUnauthorized, "Authentication required", "no active browser session", "UNAUTHENTICATED")
+		return identity.Principal{}, false
+	}
+	cookie, err := request.Cookie(SessionCookieName)
+	if err != nil || strings.TrimSpace(cookie.Value) == "" {
+		writeProblem(writer, http.StatusUnauthorized, "Authentication required", "no active browser session", "UNAUTHENTICATED")
+		return identity.Principal{}, false
+	}
+	principal, err := boundary.sessions.Authenticate(request.Context(), cookie.Value)
+	if err != nil {
+		if errors.Is(err, session.ErrUnauthenticated) {
+			expireBrowserSessionCookies(writer)
+		}
+		writeProblem(writer, http.StatusUnauthorized, "Authentication required", "browser session is expired, revoked, or invalid", "UNAUTHENTICATED")
+		return identity.Principal{}, false
+	}
+	return principal, true
+}
+
+func (boundary *AuthBoundary) validateCSRF(writer http.ResponseWriter, request *http.Request, sessionID string) bool {
+	headerToken := strings.TrimSpace(request.Header.Get(CSRFHeaderName))
+	cookie, err := request.Cookie(CSRFCookieName)
+	if err != nil || headerToken == "" || strings.TrimSpace(cookie.Value) == "" || subtle.ConstantTimeCompare([]byte(headerToken), []byte(cookie.Value)) != 1 {
+		writeProblem(writer, http.StatusForbidden, "Request forbidden", "CSRF token is missing or invalid", "CSRF_INVALID")
+		return false
+	}
+	if err := boundary.sessions.ValidateCSRF(request.Context(), sessionID, headerToken); err != nil {
+		writeProblem(writer, http.StatusForbidden, "Request forbidden", "CSRF token is missing or invalid", "CSRF_INVALID")
+		return false
+	}
+	return true
+}
+
+func setBrowserSessionCookies(writer http.ResponseWriter, browserSession session.BrowserSession) {
+	http.SetCookie(writer, &http.Cookie{
+		Name: SessionCookieName, Value: browserSession.Token, Path: "/", Secure: true, HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
+	http.SetCookie(writer, &http.Cookie{
+		Name: CSRFCookieName, Value: browserSession.CSRFToken, Path: "/", Secure: true, HttpOnly: false,
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func expireBrowserSessionCookies(writer http.ResponseWriter) {
+	expiredAt := time.Unix(1, 0).UTC()
+	for _, cookie := range []*http.Cookie{
+		{Name: SessionCookieName, Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteStrictMode, Expires: expiredAt, MaxAge: -1},
+		{Name: CSRFCookieName, Path: "/", Secure: true, HttpOnly: false, SameSite: http.SameSiteStrictMode, Expires: expiredAt, MaxAge: -1},
+	} {
+		http.SetCookie(writer, cookie)
+	}
+}
+
+func isMutation(method string) bool {
+	switch method {
+	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		return true
+	default:
+		return false
+	}
+}
+
+type principalContextKey struct{}

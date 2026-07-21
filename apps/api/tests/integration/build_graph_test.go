@@ -61,6 +61,7 @@ func TestAPIModuleHasOneGoModuleAndCheckedGenerationInputs(t *testing.T) {
 		"sqlc.yaml",
 		"migrations/000001_foundation.up.sql",
 		"migrations/000002_workflow_foundation.up.sql",
+		"migrations/000003_authority_foundation.up.sql",
 		"internal/httpapi/generated/api.gen.go",
 		"internal/platform/session/session.go",
 		"internal/platform/idempotency/idempotency.go",

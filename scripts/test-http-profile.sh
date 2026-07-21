@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPOSITORY_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 COMPOSE_FILE="${REPOSITORY_ROOT}/deploy/local/compose.test.yaml"
-COMPOSE_PROJECT="aviasurveil360-task9"
+COMPOSE_PROJECT="aviasurveil360-task10"
 
 cleanup() {
   docker compose --project-name "${COMPOSE_PROJECT}" --file "${COMPOSE_FILE}" down --volumes --remove-orphans
@@ -12,9 +12,13 @@ cleanup() {
 trap cleanup EXIT
 
 cleanup
-docker compose --project-name "${COMPOSE_PROJECT}" --file "${COMPOSE_FILE}" up --detach --wait postgres
+docker compose --project-name "${COMPOSE_PROJECT}" --file "${COMPOSE_FILE}" up --detach --wait postgres keycloak
 
 export AVIA_TEST_DATABASE_URL="postgres://aviasurveil:aviasurveil@127.0.0.1:55432/aviasurveil?sslmode=disable"
+export AVIA_TEST_OIDC_ISSUER_URL="http://127.0.0.1:58080/realms/aviasurveil360"
+export AVIA_TEST_OIDC_CLIENT_ID="aviasurveil360-local"
+export AVIA_TEST_OIDC_CLIENT_SECRET="local-keycloak-client-secret"
+export AVIA_TEST_OIDC_REDIRECT_URL="http://127.0.0.1:58081/auth/callback"
 export GOCACHE="${GOCACHE:-/private/tmp/aviasurveil360-go-cache}"
 export GOMODCACHE="${GOMODCACHE:-/private/tmp/aviasurveil360-go-mod-cache}"
 

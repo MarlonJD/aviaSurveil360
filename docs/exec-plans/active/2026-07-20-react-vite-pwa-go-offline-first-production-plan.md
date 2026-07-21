@@ -8,7 +8,7 @@
 
 **Tech Stack:** React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, Service Worker + Cache Storage, OPFS for staged Inspection Attachments, Vitest, React Testing Library, Playwright, Go modular monolith, `net/http` + `chi`, OpenAPI, PostgreSQL + `pgx`/`sqlc`, S3-compatible object storage, and containerized local integration dependencies.
 
-**Status:** `active` — Tasks 2-4 are implemented, `verified locally`, committed, and pushed as the `candidate-only` mock slice. Task 9's one-module Go/PostgreSQL foundation is also implemented and `verified locally` as a Task-scoped candidate slice. The binding next slice is Task 10. Production deployment, traffic cutover, legacy removal, production hosting/provider selection, production on-call, and any `production-ready` claim remain `blocked` behind the separate release/operations gate.
+**Status:** `active` — Tasks 2-4 are implemented, `verified locally`, committed, and pushed as the `candidate-only` mock slice. Task 9's one-module Go/PostgreSQL foundation and Task 10's canonical domain/session/authorization/audit foundation are also implemented and `verified locally` as Task-scoped candidate slices. The binding next slice is Task 11. Production deployment, traffic cutover, legacy removal, production hosting/provider selection, production on-call, and any `production-ready` claim remain `blocked` behind the separate release/operations gate.
 
 ## Global Constraints
 
@@ -1763,7 +1763,7 @@ evidence.
 - Consumes: generated OpenAPI interfaces, platform transaction/idempotency/audit/outbox primitives, approved vocabulary, product permission rules, and approved OIDC/session/offline-grant policy.
 - Produces: authoritative domain transitions, same-origin session principal, server-issued offline grants, object/field-level authorization, exact audit events, and Auditee-safe projections.
 
-- [ ] **Step 1: Write failing domain state-machine tests.**
+- [x] **Step 1: Write failing domain state-machine tests.**
 
   Cover every allowed and blocked transition, including:
 
@@ -1784,13 +1784,13 @@ evidence.
   checklist/template/package snapshots remain immutable for existing Audits
   ```
 
-- [ ] **Step 2: Write failing authorization tests.**
+- [x] **Step 2: Write failing authorization tests.**
 
   Required assertions include list filtering and direct-ID access for Auditee organization isolation, per-question assignment scope for Inspectors, Lead Potential Finding authority, intermediate-only GM permissions, Finance budget-only permissions, Executive Director report issue authority, and Department Manager authorized closure.
 
   Raw JSON assertions cover Findings, CAPs, Evidence, reports, assignments, messages/notifications when added, dashboard projections, files, sync changes, and conflict payloads. Auditee responses must not contain any forbidden key/value for `Internal CAA Note`, other organizations, internal workload/risk, unreleased reports, or enforcement deliberations.
 
-- [ ] **Step 3: Implement domain services independently of HTTP.**
+- [x] **Step 3: Implement domain services independently of HTTP.**
 
   HTTP handlers parse/validate generated inputs and map problems; domain/application services own transitions, authorization context, module-owned store calls, and transactions. Every mutating command supplies `operationId` plus explicitly named expected revisions.
 
@@ -1798,17 +1798,19 @@ evidence.
 
   Each audit event records authenticated actor, organization, entity/version, before/after status, reason, server timestamp, operation/correlation ID, and closure basis where relevant. Append-only is the only claim until Records/Security approve stronger tamper evidence.
 
-- [ ] **Step 4: Implement authentication boundary.**
+- [x] **Step 4: Implement authentication boundary.**
 
   Implement the approved same-origin session/BFF boundary: Go completes OIDC Authorization Code flow, retains provider tokens server-side, issues a Secure/HttpOnly/SameSite session cookie, validates CSRF on state changes, maps the session to a server principal, and enforces expiry/revocation. Permit deterministic test sessions only in explicit test configuration; production startup fails when any test/dev identity bypass is enabled.
 
-- [ ] **Step 5: Implement server-issued offline grants.**
+- [x] **Step 5: Implement server-issued offline grants.**
 
   Checkout authenticates and authorizes the current assignment, records the grant server-side, and returns the exact `OfflineGrant` from the architecture section. Tests cover expiry, clock skew, assignment change, package withdrawal, user switch, logout, session revoke, device-loss revoke, and late sync. Client actor/device/time fields never override the authenticated principal or server authorization.
 
-- [ ] **Step 6: Run Go unit, integration, race, authorization, and raw-wire tests.**
+- [x] **Step 6: Run Go unit, integration, race, authorization, and raw-wire tests.**
 
   Expected: zero failures; both Go commands build; direct-object/list/field isolation and forbidden-key tests pass; lost acknowledgement yields one mutation/transition event; unauthorized transitions produce no mutation or successful-transition audit event; CAP acceptance/report issue cannot close a Finding.
+
+  Result 2026-07-21: the required domain, authorization, projection, idempotency, session, OIDC, migration, and offline-grant tests were written against missing behavior before implementation. The complete `./scripts/test-http-profile.sh` run built both commands, passed the full Go race and live PostgreSQL suite, applied empty and retained N-1 migrations, completed a real Authorization Code + PKCE exchange against the pinned local Keycloak provider, passed OpenAPI and all module-owned SQLC clean-regeneration checks, and removed every Task-owned container, network, and volume. `go vet ./...`, React/Vitest 32/32, the intact root Vanilla suite 103/103, both React builds, and `git diff --check` also passed. Evidence is [Canonical Authority Foundation](../../demo-evidence/CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.md), `verified locally`, and `candidate-only`. Object bytes/storage, malware scanning, real HTTP scenario parity, browser offline persistence, sync, deployment, and production behavior remain `not run` in Task 10.
 
 ### Task 11: Implement Bounded Attachment/Evidence Upload, Scan, And Real HTTP Parity
 
@@ -2155,7 +2157,7 @@ must not start; it does not block unrelated earlier slices.
 
 - Current status: `active`; Tasks 5-13 and per-Task commit/push are explicitly authorized for the local release candidate.
 - Review status: the initial 2026-07-20 adversarial review is complete; verdict was `NO-GO as written`, and its plan-level corrections are incorporated in this revision.
-- Current next todo: execute Task 10 test-first for canonical domain/session/authorization/audit behavior, then commit and push that Task before Task 11.
+- Current next todo: execute Task 11 test-first for bounded Inspection Attachment/Evidence upload, scan/worker recovery, and real HTTP parity, then commit and push that Task before Task 12.
 - Move to `ready-for-verification` only after the selected implementation objective and every required local gate pass. A required local gate cannot pass through a documented gap.
 - Do not move to `completed/` merely because a local release candidate exists. Completion requires objective completion, required local verification, explicit stakeholder/user acceptance, completed-index entry, tracker reconciliation, and an explicit disposition for the separate production release/operations dependency.
 - `production-ready`, deployment, traffic routing, cutover, and legacy removal remain blocked until the separately approved production release/operations plan passes and the user authorizes the exact action.

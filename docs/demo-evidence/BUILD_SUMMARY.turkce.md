@@ -14,6 +14,9 @@ e-imza veya framework geçişi yoktur.
 Yukarıdaki ifadeler yalnız korunan root demo'yu tanımlar. Bunun yanında ayrı
 bir `candidate-only` React mock dilimi bulunur; bkz.
 [React Mock İlk Çalıştırılabilir Dilim Kanıtı](REACT_MOCK_SLICE_2026-07-20.turkce.md).
+Ayrı Go/PostgreSQL ve canonical authority candidate temelleri de bulunur; bkz.
+[Kanonik Yetki Temeli Kanıtı](CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.turkce.md).
+Bunlar root demo'yu veya genel ürünü `production-ready` yapmaz.
 
 **Tarih bağlamı:** Uygulama "bugün" olarak **15 Haziran 2026** tarihini kullanır;
 böylece **Due Soon** / **Overdue** hesapları deterministiktir.
@@ -1136,8 +1139,31 @@ Finding'i kapatmayan report issue ve final `EVIDENCE_VERIFIED` closure'ı korur.
 Tam kanıt ve scope sınırları
 [REACT_MOCK_SLICE_2026-07-20.turkce.md](REACT_MOCK_SLICE_2026-07-20.turkce.md)
 içindedir. Real HTTP/API, Go, authentication, IndexedDB, OPFS, PWA/offline,
-sync, deployment, cutover ve production verification `not run`. Task 5-13 ayrı
-authorization olmadan `blocked` kalır. `production-ready` iddiası yoktur.
+sync, deployment, cutover ve production verification bu checkpoint'te
+`not run`. Daha sonra authorize edilen candidate çalışma active
+production-transition planında takip edilir. `production-ready` iddiası yoktur.
+
+### Kanonik yetki temeli checkpoint — 2026-07-21
+
+Durum: Task 10 `verified locally` ve `candidate-only`; release durumu
+`release pending`. Go modular monolith artık authoritative domain transition'ları,
+organization/assignment/role kontrollerini, Auditee-safe projection'ları,
+transactional idempotency/audit/sync-change/outbox yazımlarını, append-only
+audit row'larını, same-origin OIDC session/CSRF sınırını ve server-issued
+offline grant'leri içerir. Pinned local Keycloak gerçek Authorization Code +
+PKCE flow'u doğrular; bu production OIDC/MFA kanıtı değildir.
+
+Tam HTTP profile; iki Go build'ini, full race ve live PostgreSQL integration
+suite'i, empty/N-1 migration yollarını, pinned local Keycloak'ı,
+OpenAPI/Go/TypeScript ile on iki module SQLC clean regeneration'ını ve tüm
+task-owned dependency cleanup'ını geçti. Ek gate'ler de geçti: `go vet`,
+React/Vitest 32/32, korunan root suite 103/103 ve iki React production build.
+
+Tam kanıt ve scope sınırları
+[CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.turkce.md](CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.turkce.md)
+içindedir. Object storage/upload/scan, real HTTP canonical scenario parity,
+IndexedDB, OPFS, PWA offline behavior, sync, deployment, cutover ve production
+verification `not run`. `production-ready` iddiası yoktur.
 
 ---
 

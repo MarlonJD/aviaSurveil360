@@ -4,6 +4,7 @@ sql:
     schema:
       - "migrations/000001_foundation.up.sql"
       - "migrations/000002_workflow_foundation.up.sql"
+      - "migrations/000003_authority_foundation.up.sql"
     queries: "internal/organizations/store/postgres/queries.sql"
     gen:
       go:
@@ -13,10 +14,12 @@ sql:
         emit_interface: true
         emit_json_tags: true
         emit_pointers_for_null_types: true
+        omit_unused_structs: true
   - engine: "postgresql"
     schema:
       - "migrations/000001_foundation.up.sql"
       - "migrations/000002_workflow_foundation.up.sql"
+      - "migrations/000003_authority_foundation.up.sql"
     queries: "internal/inspections/store/postgres/queries.sql"
     gen:
       go:
@@ -26,3 +29,127 @@ sql:
         emit_interface: true
         emit_json_tags: true
         emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: &all_migrations
+      - "migrations/000001_foundation.up.sql"
+      - "migrations/000002_workflow_foundation.up.sql"
+      - "migrations/000003_authority_foundation.up.sql"
+    queries: "internal/identity/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/identity/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *all_migrations
+    queries: "internal/planning/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/planning/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *all_migrations
+    queries: "internal/checklists/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/checklists/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *all_migrations
+    queries: "internal/potentialfindings/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/potentialfindings/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *all_migrations
+    queries: "internal/findings/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/findings/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *all_migrations
+    queries: "internal/caps/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/caps/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *all_migrations
+    queries: "internal/evidence/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/evidence/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *all_migrations
+    queries: "internal/reports/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/reports/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *all_migrations
+    queries: "internal/sync/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/sync/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *all_migrations
+    queries: "internal/auditlog/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/auditlog/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true

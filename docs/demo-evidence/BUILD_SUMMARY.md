@@ -11,6 +11,9 @@ migration.
 The statements above describe the intact root demo only. A separate
 `candidate-only` React mock slice now exists beside it; see
 [React Mock First Executable Slice Evidence](REACT_MOCK_SLICE_2026-07-20.md).
+Separate Go/PostgreSQL and canonical authority candidate foundations also exist;
+see [Canonical Authority Foundation Evidence](CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.md).
+They do not make the root demo or the overall product `production-ready`.
 
 **Demo date context:** the app treats `15 June 2026` as "today" so Due Soon /
 Overdue math is deterministic.
@@ -1125,8 +1128,31 @@ authorized closure, report issue without closure, and final
 The complete evidence and scope boundaries are in
 [REACT_MOCK_SLICE_2026-07-20.md](REACT_MOCK_SLICE_2026-07-20.md). Real HTTP/API,
 Go, authentication, IndexedDB, OPFS, PWA/offline, sync, deployment, cutover,
-and production verification are `not run`. Tasks 5-13 remain `blocked` without
-separate authorization. No `production-ready` claim is made.
+and production verification are `not run` in that checkpoint. Later authorized
+candidate work is tracked in the active production-transition plan. No
+`production-ready` claim is made.
+
+### Canonical authority foundation checkpoint — 2026-07-21
+
+Status: Task 10 is `verified locally` and `candidate-only`; release remains
+`release pending`. The Go modular monolith now contains authoritative domain
+transitions, organization/assignment/role checks, Auditee-safe projections,
+transactional idempotency/audit/sync-change/outbox writes, append-only audit
+rows, a same-origin OIDC session/CSRF boundary, and server-issued offline
+grants. A pinned local Keycloak instance verifies a real Authorization Code +
+PKCE flow; this is not production OIDC/MFA evidence.
+
+The complete HTTP profile passed both Go builds, the full race and live
+PostgreSQL integration suite, empty/N-1 migration paths, pinned local Keycloak,
+OpenAPI/Go/TypeScript and twelve-module SQLC clean regeneration, plus complete
+task-owned dependency cleanup. Additional gates passed: `go vet`, React/Vitest
+32/32, the intact root suite 103/103, and both React production builds.
+
+The complete evidence and scope boundaries are in
+[CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.md](CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.md).
+Object storage/upload/scan, real HTTP canonical scenario parity, IndexedDB,
+OPFS, PWA offline behavior, sync, deployment, cutover, and production
+verification are `not run`. No `production-ready` claim is made.
 
 ---
 

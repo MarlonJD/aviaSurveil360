@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/httpapi"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/config"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/database"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/session"
@@ -42,11 +43,30 @@ func run(ctx context.Context) error {
 	}
 
 	var probe httpapi.ReadinessProbe = unavailableReadiness{err: errors.New("PostgreSQL initialization has not completed")}
+	var authentication http.Handler
 	pool, databaseErr := database.Open(ctx, settings.DatabaseURL)
 	if databaseErr == nil {
 		if migrationErr := migrations.Apply(ctx, pool); migrationErr == nil {
 			if bootstrapErr := session.BootstrapTestProfile(ctx, pool, settings, time.Now()); bootstrapErr == nil {
 				probe = database.Readiness{Pool: pool, RequiredMigrationVersion: migrations.LatestVersion}
+				if settings.OIDCIssuerURL != "" {
+					sessionManager, managerErr := session.NewManager(pool, settings.SessionEncryptionKey, session.ManagerDependencies{})
+					if managerErr != nil {
+						probe = unavailableReadiness{err: managerErr}
+						slog.Error("session manager unavailable; readiness will fail closed", "error", managerErr)
+					} else {
+						provider, providerErr := identity.NewRemoteOIDCProvider(ctx, identity.RemoteOIDCConfig{
+							IssuerURL: settings.OIDCIssuerURL, ClientID: settings.OIDCClientID,
+							ClientSecret: settings.OIDCClientSecret, RedirectURL: settings.OIDCRedirectURL,
+						})
+						if providerErr != nil {
+							probe = unavailableReadiness{err: providerErr}
+							slog.Error("OIDC provider unavailable; readiness will fail closed", "error", providerErr)
+						} else {
+							authentication = httpapi.NewAuthHandler(provider, sessionManager)
+						}
+					}
+				}
 			} else {
 				probe = unavailableReadiness{err: bootstrapErr}
 				slog.Error("test profile bootstrap failed; readiness will fail closed", "error", bootstrapErr)
@@ -65,7 +85,7 @@ func run(ctx context.Context) error {
 
 	server := &http.Server{
 		Addr:              settings.HTTPAddress,
-		Handler:           httpapi.NewHealthHandler(probe),
+		Handler:           httpapi.NewServerHandler(probe, authentication),
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}

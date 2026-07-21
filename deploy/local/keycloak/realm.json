@@ -1,0 +1,111 @@
+{
+  "realm": "aviasurveil360",
+  "enabled": true,
+  "displayName": "AviaSurveil360 Local Test Identity",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "eventsEnabled": true,
+  "eventsListeners": ["jboss-logging"],
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": true,
+  "roles": {
+    "realm": [
+      { "name": "inspector" },
+      { "name": "leadInspector" },
+      { "name": "manager" },
+      { "name": "gm" },
+      { "name": "finance" },
+      { "name": "executiveDirector" },
+      { "name": "auditee" },
+      { "name": "admin" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "aviasurveil360-local",
+      "name": "AviaSurveil360 Local BFF",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "local-keycloak-client-secret",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://127.0.0.1:58081/auth/callback"],
+      "webOrigins": [],
+      "attributes": {
+        "post.logout.redirect.uris": "http://127.0.0.1:58081/*",
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "AviaSurveil360 roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "AviaSurveil360 organization",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "organization_id",
+            "claim.name": "organization_id",
+            "jsonType.label": "String",
+            "multivalued": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "provider session id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "SESSION_ID",
+            "claim.name": "sid",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "inspector.local",
+      "enabled": true,
+      "email": "inspector.local@example.test",
+      "emailVerified": true,
+      "firstName": "Local",
+      "lastName": "Inspector",
+      "attributes": {
+        "organization_id": ["caa"]
+      },
+      "realmRoles": ["inspector"],
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "LocalInspectorPass123!",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

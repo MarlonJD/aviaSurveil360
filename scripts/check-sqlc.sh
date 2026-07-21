@@ -14,17 +14,35 @@ cleanup() {
 }
 trap cleanup EXIT
 
-sed \
-  -e "s|out: \"internal/organizations/store/postgres\"|out: \"${TEMPORARY_RELATIVE}/organizations\"|" \
-  -e "s|out: \"internal/inspections/store/postgres\"|out: \"${TEMPORARY_RELATIVE}/inspections\"|" \
-  "${API_ROOT}/sqlc.yaml" > "${TEMPORARY_CONFIG}"
+packages=(
+  organizations
+  inspections
+  identity
+  planning
+  checklists
+  potentialfindings
+  findings
+  caps
+  evidence
+  reports
+  sync
+  auditlog
+)
+
+sed_arguments=()
+for package in "${packages[@]}"; do
+  sed_arguments+=(
+    -e "s|out: \"internal/${package}/store/postgres\"|out: \"${TEMPORARY_RELATIVE}/${package}\"|"
+  )
+done
+sed "${sed_arguments[@]}" "${API_ROOT}/sqlc.yaml" > "${TEMPORARY_CONFIG}"
 
 (
   cd "${API_ROOT}"
   go tool sqlc generate -f "${TEMPORARY_CONFIG}"
 )
 
-for package in organizations inspections; do
+for package in "${packages[@]}"; do
   for generated_file in db.go models.go querier.go queries.sql.go; do
     diff -u \
       "${API_ROOT}/internal/${package}/store/postgres/${generated_file}" \

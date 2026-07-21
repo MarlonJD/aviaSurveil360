@@ -1,0 +1,139 @@
+package integration_test
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/session"
+)
+
+func TestBrowserSessionHashesOpaqueCredentialsEncryptsProviderTokensAndEnforcesPolicy(t *testing.T) {
+	pool := canonicalDatabase(t, "browser_session")
+	now := canonicalNow
+	randomCall := byte(0)
+	idCounts := map[string]int{}
+	manager, err := session.NewManager(pool, []byte("0123456789abcdef0123456789abcdef"), session.ManagerDependencies{
+		Clock: func() time.Time { return now },
+		IDGenerator: func(prefix string) string {
+			idCounts[prefix]++
+			return fmt.Sprintf("%s-auth-%03d", prefix, idCounts[prefix])
+		},
+		RandomBytes: func(size int) ([]byte, error) {
+			randomCall++
+			return bytes.Repeat([]byte{randomCall}, size), nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("new session manager: %v", err)
+	}
+
+	created, err := manager.Create(context.Background(), session.CreateInput{
+		SubjectID: "oidc-inspector", Issuer: "https://identity.example/realms/avia", DisplayName: "OIDC Inspector",
+		OrganizationID: "caa", Roles: []identity.Role{identity.RoleInspector}, ProviderSessionID: "provider-session-001",
+		ProviderTokens: identity.ProviderTokens{AccessToken: "plain-access-secret", RefreshToken: "plain-refresh-secret", IDToken: "plain-id-secret", Expiry: now.Add(time.Hour)},
+	})
+	if err != nil {
+		t.Fatalf("create browser session: %v", err)
+	}
+	if created.Token == "" || created.CSRFToken == "" || created.Token == created.CSRFToken {
+		t.Fatalf("opaque browser credentials = %+v", created)
+	}
+	if created.ExpiresAt != now.Add(30*time.Minute) || created.AbsoluteExpiresAt != now.Add(8*time.Hour) {
+		t.Fatalf("session expiry = idle %s absolute %s", created.ExpiresAt, created.AbsoluteExpiresAt)
+	}
+
+	var tokenHash, csrfHash string
+	var providerCiphertext []byte
+	if err := pool.QueryRow(context.Background(), `
+		SELECT session_token_hash, csrf_token_hash, provider_tokens_ciphertext
+		FROM session_references WHERE id = $1
+	`, created.ID).Scan(&tokenHash, &csrfHash, &providerCiphertext); err != nil {
+		t.Fatalf("read persisted session: %v", err)
+	}
+	if tokenHash == created.Token || csrfHash == created.CSRFToken || bytes.Contains(providerCiphertext, []byte("plain-access-secret")) || bytes.Contains(providerCiphertext, []byte("plain-refresh-secret")) {
+		t.Fatal("raw browser/provider secret was persisted")
+	}
+
+	principal, err := manager.Authenticate(context.Background(), created.Token)
+	if err != nil {
+		t.Fatalf("authenticate session: %v", err)
+	}
+	if principal.SubjectID != "oidc-inspector" || principal.OrganizationID != "caa" || principal.SessionID != created.ID || !principal.HasRole(identity.RoleInspector) {
+		t.Fatalf("authenticated principal = %+v", principal)
+	}
+	if err := manager.ValidateCSRF(context.Background(), principal.SessionID, created.CSRFToken); err != nil {
+		t.Fatalf("validate CSRF: %v", err)
+	}
+	if err := manager.ValidateCSRF(context.Background(), principal.SessionID, "wrong-csrf"); !errors.Is(err, session.ErrCSRF) {
+		t.Fatalf("wrong CSRF error = %v", err)
+	}
+
+	now = canonicalNow.Add(29 * time.Minute)
+	if _, err := manager.Authenticate(context.Background(), created.Token); err != nil {
+		t.Fatalf("refresh idle session: %v", err)
+	}
+	now = canonicalNow.Add(58 * time.Minute)
+	if _, err := manager.Authenticate(context.Background(), created.Token); err != nil {
+		t.Fatalf("rolling idle session: %v", err)
+	}
+	now = canonicalNow.Add(8 * time.Hour)
+	if _, err := manager.Authenticate(context.Background(), created.Token); !errors.Is(err, session.ErrUnauthenticated) {
+		t.Fatalf("absolute-expired session error = %v", err)
+	}
+
+	now = canonicalNow
+	second, err := manager.Create(context.Background(), session.CreateInput{
+		SubjectID: "oidc-inspector", Issuer: "https://identity.example/realms/avia", DisplayName: "OIDC Inspector",
+		OrganizationID: "caa", Roles: []identity.Role{identity.RoleInspector},
+	})
+	if err != nil {
+		t.Fatalf("create revocable session: %v", err)
+	}
+	if err := manager.Revoke(context.Background(), second.ID); err != nil {
+		t.Fatalf("revoke session: %v", err)
+	}
+	if _, err := manager.Authenticate(context.Background(), second.Token); !errors.Is(err, session.ErrUnauthenticated) {
+		t.Fatalf("revoked session error = %v", err)
+	}
+}
+
+func TestOIDCLoginStateIsOneTimeHashedAndRejectsUnsafeReturnTargets(t *testing.T) {
+	pool := canonicalDatabase(t, "oidc_login_state")
+	manager, err := session.NewManager(pool, []byte("0123456789abcdef0123456789abcdef"), session.ManagerDependencies{
+		Clock:       func() time.Time { return canonicalNow },
+		IDGenerator: func(prefix string) string { return prefix + "-login-001" },
+		RandomBytes: func(size int) ([]byte, error) { return bytes.Repeat([]byte{7}, size), nil },
+	})
+	if err != nil {
+		t.Fatalf("new session manager: %v", err)
+	}
+	request, err := manager.NewLoginState(context.Background(), "https://attacker.example/phish")
+	if err != nil {
+		t.Fatalf("new login state: %v", err)
+	}
+	if request.ReturnTo != "/" || request.State == "" || request.Nonce == "" || request.PKCEChallenge == "" {
+		t.Fatalf("login request = %+v", request)
+	}
+	var storedState string
+	if err := pool.QueryRow(context.Background(), "SELECT state_hash FROM oidc_login_states").Scan(&storedState); err != nil {
+		t.Fatalf("read login state: %v", err)
+	}
+	if storedState == request.State {
+		t.Fatal("raw OIDC state was persisted")
+	}
+	consumed, err := manager.ConsumeLoginState(context.Background(), request.State)
+	if err != nil {
+		t.Fatalf("consume login state: %v", err)
+	}
+	if consumed.Nonce != request.Nonce || consumed.PKCEVerifier == "" || consumed.ReturnTo != "/" {
+		t.Fatalf("consumed state = %+v", consumed)
+	}
+	if _, err := manager.ConsumeLoginState(context.Background(), request.State); !errors.Is(err, session.ErrUnauthenticated) {
+		t.Fatalf("replayed OIDC state error = %v", err)
+	}
+}
