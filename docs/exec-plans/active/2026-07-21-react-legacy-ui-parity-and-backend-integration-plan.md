@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Tasks 1-3 are `verified locally`: the independent 86-row inventory/17-route contract is frozen; Potential Finding plus immutable CAP revision read projections pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates; and Admin checklist-template-version detail reads now pass exact snapshot, mock/HTTP mapping, OpenAPI, sqlc, and Go race gates. Task 4 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `active` — Tasks 1-4 are `verified locally`: the independent 86-row inventory/17-route contract is frozen; Potential Finding plus immutable CAP revision read projections pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates; Admin checklist-template-version detail reads pass exact snapshot, mock/HTTP mapping, OpenAPI, sqlc, and Go race gates; and the deterministic tracked visual-parity harness now has 51 hash-verified legacy baselines plus an intentionally red React comparison. Task 5 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
 
 ## Independent Review Resolution
 
@@ -720,6 +720,9 @@ git push origin HEAD
 - Create the 51 PNG files named by that manifest under `apps/web/tests/visual-baselines/react-legacy-parity/`
 - Modify `apps/web/playwright.config.ts`
 - Modify `apps/web/package.json`
+- Modify `docs/exec-plans/index.md`
+- Modify `docs/exec-plans/tech-debt-tracker.md`
+- Modify `docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md`
 - Modify this plan
 
 **Determinism contract**
@@ -753,7 +756,7 @@ git push origin HEAD
 
 **Red/green cycle**
 
-- [ ] Add failing integrity tests that prove:
+- [x] Add failing integrity tests that prove:
   - an unmasked deterministic patch outside the allowlist that exceeds the strict region ratio fails;
   - a perturbation inside one allowlisted dynamic leaf is tolerated only in that leaf;
   - a 4 px shell/geometry shift fails;
@@ -761,7 +764,7 @@ git push origin HEAD
   - a missing baseline, altered PNG, stale hash, changed lockfile hash, wrong browser/platform metadata, or full-page comparator input fails;
   - the ordinary test command cannot update a baseline.
   - unknown/duplicate/empty focused surface filters and unsupported region filters fail.
-- [ ] Run:
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- tests/visual/visual-contract.test.ts
@@ -769,14 +772,14 @@ git push origin HEAD
   ```
 
   Expected red: harness and tracked baselines do not exist.
-- [ ] Implement the legacy static server on `127.0.0.1:4173` with explicit root-only read paths and no mutation. Add isolated Playwright projects for baseline update and React comparison.
+- [x] Implement the legacy static server on `127.0.0.1:4173` with explicit root-only read paths and no mutation. Add isolated Playwright projects for baseline update and React comparison.
 
   ```bash
   mkdir -p apps/web/tests/visual apps/web/tests/visual-baselines/react-legacy-parity
   ```
 
   Create/edit all files through `apply_patch`.
-- [ ] Generate the 51 legacy viewport baselines with the explicit update command. Verify the path is tracked:
+- [x] Generate the 51 legacy viewport baselines with the explicit update command. Verify the path is tracked:
 
   ```bash
   npm --prefix apps/web run visual:baseline:update
@@ -784,14 +787,14 @@ git push origin HEAD
   if git check-ignore -q apps/web/tests/visual-baselines/react-legacy-parity/baseline-manifest.json; then exit 1; fi
   ```
 
-- [ ] Run the current React comparison:
+- [x] Run the current React comparison:
 
   ```bash
   npm --prefix apps/web run test:e2e:visual-parity
   ```
 
   Expected red: current minimal React shell fails at least one strict shell/geometry comparison. Record the first failing surface, viewport, region, and ratio in this plan. Do not weaken a threshold or add a mask to make the red state green.
-- [ ] Run harness integrity:
+- [x] Run harness integrity:
 
   ```bash
   npm --prefix apps/web test -- tests/visual/visual-contract.test.ts
@@ -801,12 +804,33 @@ git push origin HEAD
 
   Expected green: harness-integrity tests pass while the product parity test remains intentionally red.
 
+**Execution log — 2026-07-21**
+
+- Expected red captured before implementation:
+  - `npm --prefix apps/web test -- tests/visual/visual-contract.test.ts` failed because `../e2e/support/legacy-parity-fixtures` did not exist.
+  - `npm --prefix apps/web run test:e2e:visual-parity` failed because the package script did not exist.
+- Implemented the read-only legacy oracle server, shared fixture registry, synthetic comparator/mask/geometry/manifest integrity checks, guarded baseline update project, read-only React comparison project, verifier script, exact package scripts, and Playwright bundled-Chromium visual projects.
+- `npm --prefix apps/web run visual:baseline:update` first failed in the sandbox with the macOS Chromium `MachPortRendezvousServer` permission error before the first PNG. The same required command passed after approved escalation: 51/51 baseline captures.
+- Baseline verification passed:
+  - `node apps/web/scripts/verify-visual-baselines.mjs` verified 51 PNGs after approved escalation for Chromium metadata validation.
+  - `if git check-ignore -q apps/web/tests/visual-baselines/react-legacy-parity/baseline-manifest.json; then exit 1; fi`
+  - `find apps/web/tests/visual-baselines/react-legacy-parity -type f | sort | wc -l` returned 52 files: 51 PNGs plus `baseline-manifest.json`.
+- Current React comparison produced the required intentional red without threshold or mask relaxation:
+  - `npm --prefix apps/web run test:e2e:visual-parity`
+  - First failure: `role-select` / `desktop` / `viewport` ratio `0.99850`, max `0.03`.
+- Harness integrity passed while product parity remains intentionally red:
+  - `npm --prefix apps/web test -- tests/visual/visual-contract.test.ts` passed 1 file / 7 tests.
+  - `node apps/web/scripts/verify-visual-baselines.mjs` verified 51 PNGs after approved escalation.
+  - `npm --prefix apps/web run typecheck`
+- Browser/test process hygiene check after the Playwright runs matched only the process-check command itself; no leftover Playwright, webdriver, headless Chrome, or remote-debugging Chrome process was found.
+- `docs/exec-plans/index.md`, `docs/exec-plans/tech-debt-tracker.md`, and the parent React/Vite plan were added to this task's file list and staging allowlist because repo-local plan tracking requires the next todo to move from Task 4 to Task 5 when the harness task is verified.
+
 **Task 4 staging allowlist and commit**
 
 The baseline directory is a new task-owned subtree. Its manifest must list every staged PNG; no other file may exist in that subtree.
 
 ```bash
-git add -- apps/web/scripts/serve-legacy.mjs apps/web/scripts/verify-visual-baselines.mjs apps/web/tests/e2e/support/legacy-parity-fixtures.ts apps/web/tests/e2e/legacy-baseline-update.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts apps/web/tests/visual/visual-contract.test.ts apps/web/tests/visual-baselines/react-legacy-parity/baseline-manifest.json apps/web/tests/visual-baselines/react-legacy-parity/ apps/web/playwright.config.ts apps/web/package.json docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- apps/web/scripts/serve-legacy.mjs apps/web/scripts/verify-visual-baselines.mjs apps/web/tests/e2e/support/legacy-parity-fixtures.ts apps/web/tests/e2e/legacy-baseline-update.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts apps/web/tests/visual/visual-contract.test.ts apps/web/tests/visual-baselines/react-legacy-parity/baseline-manifest.json apps/web/tests/visual-baselines/react-legacy-parity/ apps/web/playwright.config.ts apps/web/package.json docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
 git commit -m "test(ui): add deterministic parity harness"
 git push origin HEAD
 ```

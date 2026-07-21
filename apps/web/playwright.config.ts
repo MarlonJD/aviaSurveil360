@@ -1,15 +1,31 @@
 import { defineConfig } from "@playwright/test";
 
+const e2eProfile = process.env.AVIA_E2E_PROFILE;
 const profile =
-  process.env.AVIA_E2E_PROFILE === "http"
+  e2eProfile === "http"
     ? "http"
-    : process.env.AVIA_E2E_PROFILE === "offline"
+    : e2eProfile === "offline"
       ? "offline"
-      : "mock";
+      : e2eProfile === "visual-parity"
+        ? "visual-parity"
+        : "mock";
 const command =
   profile === "http"
     ? "AVIA_HTTP_TEST_PROFILE=canonical npm run dev:http -- --host 127.0.0.1 --port 4174 --strictPort"
     : "npm run dev:demo -- --host 127.0.0.1 --port 4174 --strictPort";
+const shouldStartWebServer =
+  profile !== "offline" && process.env.AVIA_UPDATE_LEGACY_BASELINES !== "1";
+const visualUse = {
+  browserName: "chromium" as const,
+  colorScheme: "light" as const,
+  deviceScaleFactor: 1,
+  headless: true,
+  locale: "en-GB",
+  reducedMotion: "reduce" as const,
+  serviceWorkers: "block" as const,
+  timezoneId: "UTC",
+  viewport: { width: 1440, height: 900 },
+};
 
 export default defineConfig({
   testDir: "./tests",
@@ -22,7 +38,6 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:4174",
     browserName: "chromium",
-    channel: "chrome",
     headless: true,
     viewport: { width: 1440, height: 900 },
     trace: "retain-on-failure",
@@ -30,7 +45,7 @@ export default defineConfig({
     video: "off",
   },
   webServer:
-    profile === "offline"
+    !shouldStartWebServer
       ? undefined
       : {
           command,
@@ -66,6 +81,16 @@ export default defineConfig({
         "offline/restart-recovery.spec.ts",
       ],
       testIgnore: ["e2e/offline-sync.http.spec.ts"],
+    },
+    {
+      name: "legacy-baseline-update",
+      testMatch: ["e2e/legacy-baseline-update.spec.ts"],
+      use: visualUse,
+    },
+    {
+      name: "legacy-parity",
+      testMatch: ["e2e/legacy-visual-parity.spec.ts"],
+      use: visualUse,
     },
   ],
 });
