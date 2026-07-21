@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import type { Role } from "../backend/backend";
@@ -7,9 +8,13 @@ import {
   type ReactSurfaceId,
   type RouteContract,
 } from "../app/route-contracts";
-import { BRAND_ASSETS } from "./brand-assets";
 
 export function activePrimaryRouteId(activeRouteId: ReactSurfaceId): ReactSurfaceId {
+  if (
+    activeRouteId === "finding-detail" ||
+    activeRouteId === "cap-review" ||
+    activeRouteId === "evidence-review"
+  ) return activeRouteId;
   const active = REACT_ROUTE_CONTRACT_BY_ID.get(activeRouteId);
   return active?.parentId ?? activeRouteId;
 }
@@ -20,29 +25,145 @@ export function primaryRoutesForRole(role: Role): readonly RouteContract[] {
     .sort((left, right) => left.order - right.order);
 }
 
+type NavigationIcon =
+  | "dashboard"
+  | "assignment"
+  | "finding"
+  | "evidence"
+  | "message"
+  | "calendar"
+  | "report"
+  | "analytics"
+  | "settings"
+  | "planning"
+  | "organization";
+
+interface AcceptedNavigationItem {
+  label: string;
+  icon: NavigationIcon;
+  routeId?: ReactSurfaceId;
+  badge?: string;
+}
+
+const ACCEPTED_NAVIGATION: Readonly<Record<Role, readonly AcceptedNavigationItem[]>> = {
+  inspector: [
+    { label: "Dashboard", icon: "dashboard" },
+    { label: "My Assignments", icon: "assignment", routeId: "inspector-home", badge: "8" },
+    { label: "Findings", icon: "finding", badge: "14" },
+    { label: "Evidence Review", icon: "evidence", badge: "3" },
+    { label: "Messages", icon: "message", badge: "2" },
+    { label: "Calendar", icon: "calendar", badge: "2" },
+    { label: "Reports", icon: "report" },
+  ],
+  leadInspector: [
+    { label: "Assigned Audits", icon: "assignment", routeId: "lead-home" },
+    { label: "Evidence Review", icon: "evidence", routeId: "evidence-review" },
+    { label: "Preliminary Reports", icon: "report", badge: "6" },
+    { label: "Final Reports", icon: "report", badge: "4" },
+    { label: "Calendar", icon: "calendar", badge: "5" },
+    { label: "Messages", icon: "message" },
+    { label: "Analytics & Reports", icon: "analytics" },
+    { label: "Settings", icon: "settings" },
+  ],
+  manager: [
+    { label: "Dashboard", icon: "dashboard", routeId: "manager-home" },
+    { label: "Planning", icon: "planning", routeId: "audit-plan" },
+    { label: "Organizations", icon: "organization", routeId: "organization-registry" },
+    { label: "Reports Approval", icon: "report", badge: "2" },
+    { label: "Risk Dashboard", icon: "analytics" },
+    { label: "Inspection Team", icon: "assignment" },
+    { label: "Findings Review", icon: "finding" },
+    { label: "CAP Monitoring", icon: "evidence" },
+  ],
+  gm: [
+    { label: "Dashboard", icon: "dashboard", routeId: "gm-home" },
+    { label: "Planning", icon: "planning" },
+    { label: "Report Approvals", icon: "report" },
+    { label: "Departments", icon: "organization" },
+    { label: "Risk Dashboard", icon: "analytics" },
+    { label: "Settings", icon: "settings" },
+  ],
+  finance: [{ label: "Finance Review", icon: "planning", routeId: "finance-home" }],
+  executiveDirector: [
+    { label: "Dashboard", icon: "dashboard", routeId: "executive-home" },
+    { label: "Planning", icon: "planning" },
+    { label: "Preliminary Reports", icon: "report" },
+    { label: "Final Reports", icon: "report" },
+    { label: "Notifications", icon: "message" },
+    { label: "Settings", icon: "settings" },
+  ],
+  auditee: [
+    { label: "Inspection Coordination", icon: "calendar", badge: "1" },
+    { label: "Corrective Actions (CAP)", icon: "finding", routeId: "auditee-home", badge: "4" },
+    { label: "Preliminary Reports", icon: "report" },
+    { label: "Final Reports", icon: "report" },
+    { label: "Messages", icon: "message", badge: "1" },
+    { label: "Documents", icon: "evidence" },
+    { label: "Settings", icon: "settings" },
+  ],
+  admin: [
+    { label: "NAMCARS Library", icon: "report" },
+    { label: "Checklist Builder", icon: "assignment" },
+    { label: "Question Bank", icon: "finding" },
+    { label: "Version History", icon: "calendar" },
+    { label: "Templates", icon: "evidence", routeId: "admin-home" },
+    { label: "Users / Roles", icon: "organization" },
+    { label: "Configurations", icon: "settings" },
+  ],
+};
+
+function NavigationGlyph({ icon }: { icon: NavigationIcon }) {
+  const paths: Readonly<Record<NavigationIcon, ReactNode>> = {
+    dashboard: <><path d="M4 5h7v6H4z" /><path d="M13 5h7v4h-7z" /><path d="M13 11h7v8h-7z" /><path d="M4 13h7v6H4z" /></>,
+    assignment: <><path d="M9 5h6" /><path d="M9 3h6l1 2h3v16H5V5h3l1-2z" /><path d="M9 11h6" /><path d="M9 15h4" /></>,
+    finding: <><path d="M6 3h8l4 4v5" /><path d="M14 3v5h5" /><path d="M6 3v18h7" /><path d="M9 11h4" /><path d="M9 15h2" /><path d="m17.5 19.5 3 3" /><path d="M16 19a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /></>,
+    evidence: <path d="m21 11-9 9a6 6 0 0 1-8.5-8.5l9.5-9.5a4 4 0 0 1 5.7 5.7l-9.5 9.5a2 2 0 0 1-2.8-2.8l8.7-8.7" />,
+    message: <><path d="M4 6h16v12H4z" /><path d="m4 7 8 6 8-6" /></>,
+    calendar: <><path d="M7 3v4" /><path d="M17 3v4" /><path d="M4 8h16" /><path d="M5 5h14v16H5z" /></>,
+    report: <><path d="M14 3H7v18h10V8z" /><path d="M14 3v5h5" /><path d="M9 13h6" /><path d="M9 17h4" /></>,
+    analytics: <><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 16v-5" /><path d="M12 16V8" /><path d="M16 16v-8" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M19 13.5v-3l-2-.7-.8-1.9.9-1.9-2.1-2.1-1.9.9-1.9-.8-.7-2h-3l-.7 2-1.9.8-1.9-.9L3.9 6l.9 1.9L4 9.8l-2 .7v3l2 .7.8 1.9-.9 1.9L6 20.1l1.9-.9 1.9.8.7 2h3l.7-2 1.9-.8 1.9.9 2.1-2.1-.9-1.9.8-1.9z" /></>,
+    planning: <><path d="M5 4h14v17H5z" /><path d="M8 2v5" /><path d="M16 2v5" /><path d="M8 11h8" /><path d="M8 15h6" /></>,
+    organization: <><path d="M4 21V7l8-4 8 4v14" /><path d="M8 10h2" /><path d="M14 10h2" /><path d="M8 14h2" /><path d="M14 14h2" /><path d="M10 21v-3h4v3" /></>,
+  };
+  return <span className="nav-item__icon" aria-hidden="true"><svg viewBox="0 0 24 24">{paths[icon]}</svg></span>;
+}
+
 export function RoleNavigation({
   activeRole,
   activeRouteId,
+  onNavigate,
 }: {
   activeRole: Role;
   activeRouteId: ReactSurfaceId;
+  onNavigate?: () => void;
 }) {
   const activePrimary = activePrimaryRouteId(activeRouteId);
-  const routes = primaryRoutesForRole(activeRole);
   return (
     <nav className="role-navigation" aria-label="Primary role navigation">
-      {routes.map((route) => (
-        <Link
-          className="primary-link"
-          key={route.id}
-          to={route.path}
-          aria-current={route.id === activePrimary ? "page" : undefined}
-          data-icon-key={route.iconKey}
-        >
-          <img src={BRAND_ASSETS.icons[route.iconKey]} alt="" aria-hidden="true" width="18" height="18" />
-          <span>{route.label}</span>
-        </Link>
-      ))}
+      {ACCEPTED_NAVIGATION[activeRole].map((item) => {
+        const route = item.routeId ? REACT_ROUTE_CONTRACT_BY_ID.get(item.routeId) : null;
+        const active =
+          item.routeId === activePrimary ||
+          (activeRole === "inspector" && activeRouteId === "audit-plan" && item.label === "Calendar");
+        const content = <><NavigationGlyph icon={item.icon} /><span>{item.label}</span>{item.badge ? <span className="nav-item__badge">{item.badge}</span> : null}</>;
+        return route ? (
+          <Link aria-label={item.label} className={`nav-item${active ? " active" : ""}`} key={item.label} to={route.path} aria-current={active ? "page" : undefined} onClick={onNavigate}>
+            {content}
+          </Link>
+        ) : (
+          <button
+            aria-label={`${item.label} unavailable: this screen remains in the accepted legacy demo`}
+            className={`nav-item${active ? " active" : ""}`}
+            disabled
+            key={item.label}
+            title="This screen remains in the accepted legacy demo."
+            type="button"
+          >
+            {content}
+          </button>
+        );
+      })}
     </nav>
   );
 }

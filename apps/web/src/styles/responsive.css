@@ -1,18 +1,139 @@
 @media (max-width: 900px) {
-  .role-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .role-select-page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .login-hero {
+    min-height: 460px;
+    padding: 40px 32px 36px;
+  }
+
+  .login-hero__texture {
+    object-position: center 64%;
+  }
+
+  .login-hero__story {
+    margin-top: 56px;
+  }
+
+  .login-hero h1 {
+    max-width: 640px;
+    font-size: clamp(44px, 8vw, 62px);
+  }
+
+  .login-hero__foot {
+    margin-top: 64px;
+  }
+
+  .login-selector {
+    padding: 48px 32px 64px;
+  }
+
+  .login-selector__groups {
+    max-width: none;
   }
 
   .workspace-shell {
-    grid-template-columns: 1fr;
+    display: block;
   }
 
   .workspace-sidebar {
-    min-height: auto;
+    position: fixed;
+    z-index: 90;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 268px;
+    height: 100%;
+    transform: translateX(-100%);
   }
 
-  .switch-role {
-    margin-top: 0;
+  .workspace-content {
+    width: 100%;
+    padding: 70px 14px 46px;
+  }
+
+  .application-topbar {
+    top: 12px;
+    right: 14px;
+    left: 76px;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .application-topbar > .topbar-icon-button:first-child {
+    transform: translateX(13px);
+  }
+
+  .workspace-content .application-topbar > .topbar-control:first-of-type {
+    transform: none;
+  }
+
+  .workspace-content .application-topbar > .topbar-control:last-of-type {
+    transform: none;
+  }
+
+  .mobile-navigation {
+    display: block;
+  }
+
+  .mobile-navigation__opener {
+    position: absolute;
+    z-index: 22;
+    top: 13px;
+    left: 11px;
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 0;
+    color: var(--avia-color-ink);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .mobile-navigation__opener::before {
+    position: absolute;
+    inset: 3px;
+    z-index: -1;
+    border: 1px solid var(--avia-color-line);
+    border-radius: 8px;
+    background: #f8fafc;
+    content: "";
+  }
+
+  .mobile-navigation__backdrop {
+    position: fixed;
+    z-index: 85;
+    inset: 0;
+    background: rgb(11 31 58 / 50%);
+  }
+
+  .mobile-navigation__drawer {
+    position: fixed;
+    z-index: 90;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(268px, 86vw);
+    padding-top: 54px;
+    overflow-y: auto;
+    color: #c6d3ea;
+    background: linear-gradient(180deg, #081d35 0%, #09223e 100%);
+    box-shadow: 0 18px 60px rgb(0 0 0 / 45%);
+  }
+
+  .mobile-navigation__close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    color: #fff;
+    background: transparent;
+    font-size: 24px;
+    cursor: pointer;
   }
 
   .split-layout,
@@ -27,29 +148,101 @@
 
 @media (max-width: 560px) {
   .role-select-page {
-    width: min(100% - 28px, 1180px);
-    padding: 36px 0;
+    width: auto;
+    padding: 0;
   }
 
-  .brand-lockup {
+  .login-hero {
+    min-height: 420px;
+    padding: 28px 20px;
+  }
+
+  .login-hero__brand {
     align-items: flex-start;
   }
 
-  .brand-mark {
-    width: 56px;
-    height: 56px;
+  .login-hero__logo {
+    width: 52px;
+    height: 52px;
+    border-radius: 15px;
   }
 
-  .role-grid {
-    grid-template-columns: 1fr;
+  .login__title {
+    font-size: 25px;
+  }
+
+  .login__sub {
+    margin-top: 4px;
+    font-size: 13px;
+  }
+
+  .login-hero__story {
+    margin-top: 40px;
+  }
+
+  .login-hero h1 {
+    margin-top: 22px;
+    font-size: clamp(36px, 11vw, 48px);
+  }
+
+  .login-hero__rule {
+    margin-top: 24px;
+  }
+
+  .login-hero__explore {
+    margin-top: 12px;
+    font-size: 16px;
+  }
+
+  .login-hero__foot {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 48px;
+    padding-top: 24px;
+  }
+
+  .login-hero__foot p {
+    max-width: none;
+  }
+
+  .login-hero__foot button {
+    padding-left: 0;
+  }
+
+  .login-selector {
+    padding: 36px 20px 56px;
+  }
+
+  .login-selector__head h2 {
+    font-size: 32px;
+  }
+
+  .login-selector__head p {
+    font-size: 16px;
+  }
+
+  .login-selector__groups {
+    margin-top: 28px;
+  }
+
+  .role-group + .role-group {
+    margin-top: 24px;
   }
 
   .role-card {
-    min-height: 168px;
+    min-height: 72px;
+    grid-template-columns: 44px minmax(0, 1fr) 20px;
+    gap: 12px;
+    padding: 12px 8px;
   }
 
-  .workspace-content {
-    padding: 24px 16px 44px;
+  .role-card--recommended {
+    padding-left: 10px;
+  }
+
+  .role-card__desc {
+    font-size: 14px;
   }
 
   .page-header,
@@ -58,10 +251,6 @@
   .workflow-footer {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .candidate-boundary {
-    margin-bottom: 34px;
   }
 
   .fact-grid,

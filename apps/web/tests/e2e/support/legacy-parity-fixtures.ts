@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { relative, resolve, sep } from "node:path";
+import { inflateSync } from "node:zlib";
 
 import { expect, type Page } from "@playwright/test";
 
@@ -12,6 +13,7 @@ export const VISUAL_BASELINE_VERSION = "react-legacy-parity-v1";
 export const VISUAL_BASELINE_ROOT = "apps/web/tests/visual-baselines/react-legacy-parity";
 export const VISUAL_LEGACY_BASE_URL = "http://127.0.0.1:4173";
 export const VISUAL_REACT_BASE_URL = "http://127.0.0.1:4174";
+export const VISUAL_MAX_CHANNEL_DELTA = 40;
 
 export type VisualViewportId = "desktop" | "tablet" | "mobile";
 export type VisualRegionFilter = "all" | "shell";
@@ -46,6 +48,12 @@ export interface VisualComparisonResult {
   diffPixels: number;
   comparedPixels: number;
   diffPixelRatio: number;
+}
+
+export interface VisualRegionComparisonContract {
+  region: RegionRect;
+  maxDiffPixelRatio: number;
+  maxChannelDelta: number;
 }
 
 export interface LegacyRouteFixture {
@@ -188,15 +196,15 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     auditId: "ui-audit-013",
     parityMode: "content-adapted",
     reactPath: "/lead-inspector/lead-review",
-    legacy: { role: "leadInspector", view: "lead-review", params: { auditId: "AUD-2026-001" } },
+    legacy: { role: "leadInspector", view: "lead-review", params: {} },
     stableSelector: "main.content",
-    expectedHeading: "Lead Inspector Review",
+    expectedHeading: "Assigned Audits",
     expectedRoleText: "Lead Inspector",
     expectedOwnerText: "Caner Yildiz",
-    expectedNextActionText: "review",
-    expectedStatusText: "report",
-    expectedDueDateText: "15 Jun 2026",
-    expectedPrimaryActionText: "Review",
+    expectedNextActionText: "Convert to Finding",
+    expectedStatusText: "Pending lead review",
+    expectedDueDateText: "15 Jul 2026",
+    expectedPrimaryActionText: "Convert to Finding",
     expectedPrivacyAbsence: ["SkyCargo Air", "enforcement deliberation"],
     contentAdaptationReason: "Potential Finding review uses the accepted lead queue pattern.",
     masks: [],
@@ -392,12 +400,12 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     reactPath: "/lead-inspector/findings/FND-CAB-2026-001",
     legacy: { role: "leadInspector", view: "finding", params: { findingId: "CAB-2026-011" } },
     stableSelector: "main.content",
-    expectedHeading: "Finding CAB-2026-011",
+    expectedHeading: "Finding CAB-2026-001",
     expectedRoleText: "Lead Inspector",
     expectedOwnerText: "Fly Namibia",
     expectedNextActionText: "Review CAP",
     expectedStatusText: "CAP Submitted",
-    expectedDueDateText: "19 Jun 2026",
+    expectedDueDateText: "15 Jul 2026",
     expectedPrimaryActionText: "Review CAP",
     expectedPrivacyAbsence: ["SkyCargo Air", "enforcement deliberation"],
     contentAdaptationReason: "A seeded legacy finding supplies the shared lifecycle dossier without live mutation.",
@@ -415,7 +423,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     expectedOwnerText: "Fly Namibia",
     expectedNextActionText: "Accept",
     expectedStatusText: "CAP Submitted",
-    expectedDueDateText: "19 Jun 2026",
+    expectedDueDateText: "15 Jul 2026",
     expectedPrimaryActionText: "Accept",
     expectedPrivacyAbsence: ["SkyCargo Air", "enforcement deliberation"],
     contentAdaptationReason: "CAP review detail uses a seeded submitted CAP while preserving immutable revision semantics.",
@@ -512,6 +520,7 @@ export function compareVisualFrames(
     region: RegionRect;
     masks: readonly RectMask[];
     maxDiffPixelRatio: number;
+    maxChannelDelta: number;
   },
 ): VisualComparisonResult {
   if (baseline.width !== candidate.width || baseline.height !== candidate.height) {
@@ -527,11 +536,15 @@ export function compareVisualFrames(
       if (isMasked(options.masks, x, y)) continue;
       comparedPixels += 1;
       const offset = (y * baseline.width + x) * 4;
+      const redDelta = Math.abs(baseline.data[offset] - candidate.data[offset]);
+      const greenDelta = Math.abs(baseline.data[offset + 1] - candidate.data[offset + 1]);
+      const blueDelta = Math.abs(baseline.data[offset + 2] - candidate.data[offset + 2]);
+      const alphaDelta = Math.abs(baseline.data[offset + 3] - candidate.data[offset + 3]);
       if (
-        baseline.data[offset] !== candidate.data[offset] ||
-        baseline.data[offset + 1] !== candidate.data[offset + 1] ||
-        baseline.data[offset + 2] !== candidate.data[offset + 2] ||
-        baseline.data[offset + 3] !== candidate.data[offset + 3]
+        redDelta > options.maxChannelDelta ||
+        greenDelta > options.maxChannelDelta ||
+        blueDelta > options.maxChannelDelta ||
+        alphaDelta > 0
       ) {
         diffPixels += 1;
       }
@@ -544,6 +557,194 @@ export function compareVisualFrames(
     comparedPixels,
     diffPixelRatio,
   };
+}
+
+function paethPredictor(left: number, up: number, upperLeft: number): number {
+  const prediction = left + up - upperLeft;
+  const leftDistance = Math.abs(prediction - left);
+  const upDistance = Math.abs(prediction - up);
+  const upperLeftDistance = Math.abs(prediction - upperLeft);
+  if (leftDistance <= upDistance && leftDistance <= upperLeftDistance) return left;
+  if (upDistance <= upperLeftDistance) return up;
+  return upperLeft;
+}
+
+export function decodePngFrame(input: Uint8Array): VisualFrame {
+  const bytes = Buffer.from(input);
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (bytes.length < signature.length || !bytes.subarray(0, 8).equals(signature)) {
+    throw new Error("Visual comparator requires a valid PNG input.");
+  }
+
+  let width = 0;
+  let height = 0;
+  let bitDepth = 0;
+  let colorType = -1;
+  let interlaceMethod = -1;
+  const idatChunks: Buffer[] = [];
+  let offset = 8;
+  while (offset + 12 <= bytes.length) {
+    const length = bytes.readUInt32BE(offset);
+    const type = bytes.toString("ascii", offset + 4, offset + 8);
+    const dataStart = offset + 8;
+    const dataEnd = dataStart + length;
+    if (dataEnd + 4 > bytes.length) throw new Error(`Malformed PNG ${type} chunk.`);
+    const data = bytes.subarray(dataStart, dataEnd);
+    if (type === "IHDR") {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      bitDepth = data[8] ?? 0;
+      colorType = data[9] ?? -1;
+      if ((data[10] ?? -1) !== 0 || (data[11] ?? -1) !== 0) {
+        throw new Error("Unsupported PNG compression or filter method.");
+      }
+      interlaceMethod = data[12] ?? -1;
+    } else if (type === "IDAT") {
+      idatChunks.push(data);
+    } else if (type === "IEND") {
+      break;
+    }
+    offset = dataEnd + 4;
+  }
+
+  if (!width || !height || !idatChunks.length) throw new Error("PNG is missing IHDR or IDAT data.");
+  if (bitDepth !== 8 || interlaceMethod !== 0) {
+    throw new Error("Visual comparator supports only non-interlaced 8-bit PNGs.");
+  }
+  const channelsByColorType: Record<number, number> = { 0: 1, 2: 3, 4: 2, 6: 4 };
+  const channels = channelsByColorType[colorType];
+  if (!channels) throw new Error(`Unsupported PNG color type ${colorType}.`);
+
+  const inflated = inflateSync(Buffer.concat(idatChunks));
+  const stride = width * channels;
+  const expectedLength = height * (stride + 1);
+  if (inflated.length !== expectedLength) {
+    throw new Error(`Unexpected PNG scanline length ${inflated.length}; expected ${expectedLength}.`);
+  }
+  const reconstructed = Buffer.alloc(height * stride);
+  let sourceOffset = 0;
+  for (let row = 0; row < height; row += 1) {
+    const filter = inflated[sourceOffset] ?? -1;
+    sourceOffset += 1;
+    const rowOffset = row * stride;
+    for (let column = 0; column < stride; column += 1) {
+      const raw = inflated[sourceOffset + column] ?? 0;
+      const left = column >= channels ? reconstructed[rowOffset + column - channels] ?? 0 : 0;
+      const up = row > 0 ? reconstructed[rowOffset - stride + column] ?? 0 : 0;
+      const upperLeft = row > 0 && column >= channels
+        ? reconstructed[rowOffset - stride + column - channels] ?? 0
+        : 0;
+      let predictor = 0;
+      if (filter === 1) predictor = left;
+      else if (filter === 2) predictor = up;
+      else if (filter === 3) predictor = Math.floor((left + up) / 2);
+      else if (filter === 4) predictor = paethPredictor(left, up, upperLeft);
+      else if (filter !== 0) throw new Error(`Unsupported PNG row filter ${filter}.`);
+      reconstructed[rowOffset + column] = (raw + predictor) & 0xff;
+    }
+    sourceOffset += stride;
+  }
+
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  for (let pixel = 0; pixel < width * height; pixel += 1) {
+    const source = pixel * channels;
+    const target = pixel * 4;
+    if (colorType === 6) {
+      rgba[target] = reconstructed[source] ?? 0;
+      rgba[target + 1] = reconstructed[source + 1] ?? 0;
+      rgba[target + 2] = reconstructed[source + 2] ?? 0;
+      rgba[target + 3] = reconstructed[source + 3] ?? 255;
+    } else if (colorType === 2) {
+      rgba[target] = reconstructed[source] ?? 0;
+      rgba[target + 1] = reconstructed[source + 1] ?? 0;
+      rgba[target + 2] = reconstructed[source + 2] ?? 0;
+      rgba[target + 3] = 255;
+    } else {
+      const grey = reconstructed[source] ?? 0;
+      rgba[target] = grey;
+      rgba[target + 1] = grey;
+      rgba[target + 2] = grey;
+      rgba[target + 3] = colorType === 4 ? reconstructed[source + 1] ?? 255 : 255;
+    }
+  }
+  return { width, height, data: rgba };
+}
+
+export function visualComparisonRegions(
+  viewport: Size & { id?: string },
+  parityMode: VisualParityMode,
+): VisualRegionComparisonContract[] {
+  if (parityMode === "strict-shell") {
+    return [{
+      region: { id: "viewport", x: 0, y: 0, width: viewport.width, height: viewport.height },
+      maxDiffPixelRatio: 0.03,
+      maxChannelDelta: VISUAL_MAX_CHANNEL_DELTA,
+    }];
+  }
+  const desktop = viewport.width > 900;
+  const sidebarWidth = desktop ? 230 : 0;
+  const topbarHeight = desktop ? 64 : 52;
+  const regions: VisualRegionComparisonContract[] = [];
+  if (desktop) {
+    regions.push({
+      region: { id: "sidebar", x: 0, y: 0, width: sidebarWidth, height: viewport.height },
+      maxDiffPixelRatio: 0.03,
+      maxChannelDelta: VISUAL_MAX_CHANNEL_DELTA,
+    });
+  }
+  const shellControlWidth = desktop ? Math.min(260, viewport.width - sidebarWidth) : viewport.width;
+  regions.push({
+    region: {
+      id: "topbar",
+      x: viewport.width - shellControlWidth,
+      y: 0,
+      width: shellControlWidth,
+      height: Math.min(topbarHeight, viewport.height),
+    },
+    maxDiffPixelRatio: 0.03,
+    maxChannelDelta: VISUAL_MAX_CHANNEL_DELTA,
+  });
+  if (desktop) {
+    regions.push({
+      region: {
+        id: "content-header",
+        x: sidebarWidth,
+        y: 0,
+        width: Math.max(0, viewport.width - sidebarWidth),
+        height: Math.min(topbarHeight, viewport.height),
+      },
+      maxDiffPixelRatio: 0.08,
+      maxChannelDelta: VISUAL_MAX_CHANNEL_DELTA,
+    });
+  }
+  regions.push({
+    region: {
+      id: "content",
+      x: sidebarWidth,
+      y: Math.min(topbarHeight, viewport.height),
+      width: viewport.width - sidebarWidth,
+      height: Math.max(0, viewport.height - topbarHeight),
+    },
+    maxDiffPixelRatio: 0.08,
+    maxChannelDelta: VISUAL_MAX_CHANNEL_DELTA,
+  });
+  return regions;
+}
+
+export function assertVisualSpecFailClosed(source: string): void {
+  if (source.includes("byteDiffRatio")) {
+    throw new Error("Visual spec must use decoded-pixel comparison, not compressed PNG byte ratios.");
+  }
+  for (const required of ["decodePngFrame", "compareVisualFrames", "visualComparisonRegions"]) {
+    if (!source.includes(required)) throw new Error(`Visual spec is missing decoded-pixel contract ${required}.`);
+  }
+  const adaptedBranch = /surface\.parityMode\s*===\s*["']content-adapted["'][\s\S]{0,5000}?\breturn\s*;/m;
+  if (adaptedBranch.test(source)) {
+    throw new Error("Visual spec contains a content-adapted comparison bypass.");
+  }
+  if (!source.includes("react-candidate-viewport") || !source.includes("decoded-pixel-region-results")) {
+    throw new Error("Visual spec must attach candidate PNG and decoded-pixel region results.");
+  }
 }
 
 function rejectBroadSelector(selector: string): void {
@@ -881,6 +1082,7 @@ export async function driveLegacySurface(page: Page, surface: VisualSurfaceFixtu
         view: string;
         params: Record<string, string>;
         selectedFilters?: Record<string, string>;
+        potentialFindings?: Array<Record<string, unknown>>;
         managerReportsUi?: { selectedReportId?: string; tab?: string };
         serviceProviderUi?: { cap?: { selectedFindingId?: string } };
         ui?: { notifOpen?: boolean; menuOpen?: boolean };
@@ -892,6 +1094,23 @@ export async function driveLegacySurface(page: Page, surface: VisualSurfaceFixtu
     win.state.role = fixture.role;
     win.state.view = fixture.view;
     win.state.params = { ...fixture.params };
+    if (fixture.view === "lead-review" && !fixture.params.auditId) {
+      win.state.potentialFindings = [{
+        id: "PF-2026-001",
+        auditId: "AUD-2026-001",
+        orgId: "ORG-XYZ",
+        questionId: "cab-em-eq-pbe",
+        checklistText: "Is protective breathing equipment serviceable and accessible?",
+        result: "noncompliant",
+        comment: "PBE serviceability and accessibility could not be confirmed.",
+        evidenceFiles: [],
+        status: "pending_lead_review",
+        createdBy: "Aylin Sezer",
+        createdDate: "2026-06-15",
+        leadDecision: null,
+        findingId: null,
+      }];
+    }
     if (fixture.params.filter) {
       win.state.selectedFilters = { ...(win.state.selectedFilters ?? {}), [fixture.view]: fixture.params.filter };
       if (fixture.view === "findings") win.state.selectedFilters.findings = fixture.params.filter;

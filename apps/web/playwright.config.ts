@@ -16,6 +16,8 @@ const command =
     ? "AVIA_HTTP_TEST_PROFILE=canonical npm run dev:http -- --host 127.0.0.1 --port 4174 --strictPort"
     : profile === "oidc"
       ? "AVIA_HTTP_TEST_PROFILE= npm run dev:http -- --host 127.0.0.1 --port 4174 --strictPort"
+      : profile === "visual-parity"
+        ? "VITE_AVIA_VISUAL_FIXTURES=1 npm run dev:demo -- --host 127.0.0.1 --port 4174 --strictPort"
     : "npm run dev:demo -- --host 127.0.0.1 --port 4174 --strictPort";
 const shouldStartWebServer =
   profile !== "offline" && process.env.AVIA_UPDATE_LEGACY_BASELINES !== "1";

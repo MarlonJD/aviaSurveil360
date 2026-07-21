@@ -3,6 +3,9 @@ html {
   background: var(--avia-color-page);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 body {

@@ -14,10 +14,10 @@ export function CandidateBoundary({
         ? environmentLabel
         : "Browser session candidate";
   return (
-    <div className="candidate-boundary">
+    <p className="candidate-boundary">
       <span>Candidate-only</span>
       <span>{modeLabel}</span>
       <span>No production-readiness claim</span>
-    </div>
+    </p>
   );
 }

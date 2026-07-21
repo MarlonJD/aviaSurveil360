@@ -4,9 +4,8 @@ import { Link } from "react-router-dom";
 import { useScenario } from "../../app/scenario-context";
 import { DataRegister, type DataRegisterColumn } from "../../ui/workbench/data-register";
 import { DueState } from "../../ui/workbench/due-state";
-import { PageHeader } from "../../ui/workbench/page-header";
 import { StatusPill, type StatusPillTone } from "../../ui/workbench/status-pill";
-import { CommandError, errorMessage, WorkspaceShell } from "../shared/workspace-shell";
+import { CommandError, errorMessage, formatLocalDate, WorkspaceShell } from "../shared/workspace-shell";
 
 interface AssignmentRegisterRow extends Record<string, ReactNode> {
   audit: ReactNode;
@@ -19,7 +18,7 @@ interface AssignmentRegisterRow extends Record<string, ReactNode> {
 }
 
 const assignmentColumns: readonly DataRegisterColumn<AssignmentRegisterRow>[] = [
-  { key: "audit", header: "Audit" },
+  { key: "audit", header: "Audit", mobileRender: (row) => row.rowId },
   { key: "organization", header: "Organization" },
   { key: "status", header: "Status" },
   { key: "dueDate", header: "Due Date" },
@@ -41,6 +40,11 @@ function formatStatus(value: string): string {
 export function InspectorAssignmentsPage() {
   const { projection, actions } = useScenario();
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [organizationFilter, setOrganizationFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
 
   useEffect(() => {
     void actions.loadAssignments().catch((cause) => setError(errorMessage(cause)));
@@ -55,11 +59,38 @@ export function InspectorAssignmentsPage() {
     (assignment) => assignment.status === "IN_PROGRESS",
   ).length;
   const primaryAssignment = projection.assignments[0] ?? null;
+  const completedCount = projection.assignments.filter((assignment) => assignment.status.includes("COMPLETED")).length;
+  const overdueCount = projection.assignments.filter((assignment) => assignment.dueState === "OVERDUE").length;
+  const visibleAssignments = projection.assignments.filter((assignment) => {
+    if (statusFilter === "OVERDUE" && assignment.dueState !== "OVERDUE") return false;
+    if (statusFilter !== "all" && statusFilter !== "OVERDUE" && assignment.status !== statusFilter) return false;
+    if (typeFilter === "cabin" && !assignment.title.toLowerCase().includes("cabin")) return false;
+    if (organizationFilter !== "all" && assignment.organizationName !== organizationFilter) return false;
+    if (dateFilter === "due-soon" && assignment.dueState !== "DUE_SOON") return false;
+    const normalizedQuery = query.trim().toLowerCase();
+    return !normalizedQuery || [assignment.auditId, assignment.title, assignment.organizationName]
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedQuery);
+  });
+
+  function resetFilters(): void {
+    setQuery("");
+    setStatusFilter("all");
+    setTypeFilter("all");
+    setOrganizationFilter("all");
+    setDateFilter("all");
+  }
   const rows = useMemo<AssignmentRegisterRow[]>(
     () =>
-      projection.assignments.map((assignment) => ({
+      visibleAssignments.map((assignment) => ({
         rowId: assignment.auditId,
-        audit: assignment.auditId,
+        audit: (
+          <span className="inspector-register-audit">
+            <strong aria-hidden="true">{assignment.title}</strong>
+            <small>{assignment.auditId}</small>
+          </span>
+        ),
         organization: assignment.organizationName,
         status: (
           <StatusPill
@@ -67,7 +98,7 @@ export function InspectorAssignmentsPage() {
             tone={statusTone(assignment.status)}
           />
         ),
-        dueDate: assignment.dueDate ?? "Not set",
+        dueDate: formatLocalDate(assignment.dueDate),
         dueState: <DueState dueDate={assignment.dueDate} today="2026-06-15" />,
         nextAction: (
           <span className="inspector-register-action">
@@ -78,36 +109,43 @@ export function InspectorAssignmentsPage() {
           </span>
         ),
       })),
-    [projection.assignments],
+    [visibleAssignments],
   );
 
   return (
     <WorkspaceShell roleLabel="CAA Inspector" routeLabel="My Assignments">
-      <PageHeader
-        eyebrow="Inspection execution"
-        title="My Assignments"
-        description="Open the exact assigned Audit and continue its Cabin Inspection checklist."
-        facts={[
-          { label: "Current owner", value: "CAA Inspector" },
-          { label: "Open assignments", value: String(projection.assignments.length) },
-          { label: "In progress", value: String(inProgressCount) },
-          { label: "Due Soon", value: String(dueSoonCount) },
-        ]}
-      />
+      <div className="inspector-assignment-page">
+        <header className="inspector-assignment-head workbench-page-header">
+          <div>
+            <h1>My Assignments</h1>
+            <p>View and manage all audits and tasks assigned to you.</p>
+          </div>
+        </header>
       <CommandError message={error} />
-      <section className="inspector-attention-strip" aria-label="Assignment attention">
-        <div className="inspector-attention-tile">
-          <span>Ready to inspect</span>
-          <strong>{projection.assignments.length}</strong>
-        </div>
-        <div className="inspector-attention-tile inspector-attention-tile--warning">
-          <span>Due Soon</span>
-          <strong>{dueSoonCount}</strong>
-        </div>
-        <div className="inspector-attention-tile">
-          <span>Next action</span>
-          <strong>{primaryAssignment?.title ?? "Start Cabin checklist"}</strong>
-        </div>
+      <section className="inspector-assignment-kpis" aria-label="Assignment attention">
+        <button className={statusFilter === "all" ? "is-active" : ""} onClick={() => setStatusFilter("all")} type="button">
+          <span className="inspector-assignment-kpi__icon" aria-hidden="true">📄</span><span><b>Open Assignments</b><strong>{projection.assignments.length}</strong><em>Audits</em></span>
+        </button>
+        <button className={statusFilter === "IN_PROGRESS" ? "is-active is-warn" : "is-warn"} onClick={() => setStatusFilter("IN_PROGRESS")} type="button">
+          <span className="inspector-assignment-kpi__icon" aria-hidden="true">◴</span><span><b>In Progress</b><strong>{inProgressCount}</strong><em>Audits</em></span>
+        </button>
+        <button className={statusFilter === "COMPLETED" ? "is-active is-ok" : "is-ok"} onClick={() => setStatusFilter("COMPLETED")} type="button">
+          <span className="inspector-assignment-kpi__icon" aria-hidden="true">✓</span><span><b>Completed</b><strong>{completedCount}</strong><em>Audits</em></span>
+        </button>
+        <button className={statusFilter === "OVERDUE" ? "is-active is-danger" : "is-danger"} onClick={() => setStatusFilter("OVERDUE")} type="button">
+          <span className="inspector-assignment-kpi__icon" aria-hidden="true">📅</span><span><b>Overdue</b><strong>{overdueCount}</strong><em>Audits</em></span>
+        </button>
+        <button className="is-neutral" onClick={resetFilters} type="button">
+          <span className="inspector-assignment-kpi__icon" aria-hidden="true">🗄</span><span><b>Total Assigned</b><strong>{projection.assignments.length}</strong><em>Audits</em></span>
+        </button>
+      </section>
+      <section className="inspector-assignment-filters" aria-label="Assignment filters">
+        <label className="inspector-assignment-filter inspector-assignment-filter--search"><span>Search audits</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search audits..." /><b aria-hidden="true">⌕</b></label>
+        <label className="inspector-assignment-filter"><span>Status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">All Status</option><option value="IN_PROGRESS">In Progress</option><option value="COMPLETED">Completed</option><option value="OVERDUE">Overdue</option></select></label>
+        <label className="inspector-assignment-filter"><span>Type</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">All Types</option><option value="cabin">Cabin Safety</option></select></label>
+        <label className="inspector-assignment-filter"><span>Organization</span><select value={organizationFilter} onChange={(event) => setOrganizationFilter(event.target.value)}><option value="all">All Organizations</option>{[...new Set(projection.assignments.map((assignment) => assignment.organizationName))].map((organization) => <option key={organization} value={organization}>{organization}</option>)}</select></label>
+        <label className="inspector-assignment-filter"><span>Date</span><select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}><option value="all">Date Range</option><option value="due-soon">Due Soon</option></select></label>
+        <button aria-label="Reset assignment filters" className="inspector-filter-action" type="button" onClick={resetFilters}>↺ Reset</button>
       </section>
       <section className="inspector-register" aria-label="Assigned Audits">
         <DataRegister
@@ -117,6 +155,11 @@ export function InspectorAssignmentsPage() {
           rows={rows}
         />
       </section>
+      {rows.length === 0 ? <p className="inspector-empty-state">No assignments match these filters.</p> : null}
+      <span className="candidate-boundary">
+        Inspector Workspace. Current owner: CAA Inspector. {dueSoonCount} Due Soon. Next action: {primaryAssignment?.nextAction ?? "None"}
+      </span>
+      </div>
     </WorkspaceShell>
   );
 }

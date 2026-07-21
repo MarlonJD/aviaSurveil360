@@ -52,7 +52,7 @@ export function WorkspaceShell({
       : fallbackMode;
   const identity: ShellIdentityPresentation = {
     mode,
-    displayName: authenticatedSession?.session.displayName ?? roleLabel,
+    displayName: authenticatedSession?.session.displayName ?? deterministicDisplayName(activeRole),
     organizationLabel:
       authenticatedSession?.session.organizationId ??
       (activeRole === "auditee" ? "Fly Namibia" : "Namibia Civil Aviation Authority"),
@@ -93,6 +93,21 @@ const roleLabels: Record<string, Role> = {
   "Auditee — Fly Namibia": "auditee",
   "Admin Preview": "admin",
 };
+
+const deterministicNames: Record<Role, string> = {
+  inspector: "Aylin Sezer",
+  leadInspector: "Caner Yildiz",
+  manager: "Mehmet Kaya",
+  gm: "Okan Demir",
+  finance: "Derya Acar",
+  executiveDirector: "Ufuk Aslan",
+  auditee: "Fly Namibia",
+  admin: "Admin Preview",
+};
+
+function deterministicDisplayName(role: Role): string {
+  return deterministicNames[role];
+}
 
 const routeLabels: Record<string, ReactSurfaceId> = {
   "My Assignments": "inspector-home",

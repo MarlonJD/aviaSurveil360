@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 
 import type { Role } from "../backend/backend";
 import type { ReactSurfaceId } from "../app/route-contracts";
-import { activePrimaryRouteId, primaryRoutesForRole } from "./role-navigation";
+import { RoleNavigation } from "./role-navigation";
 
 export function MobileNavigation({
   activeRole,
@@ -14,7 +13,6 @@ export function MobileNavigation({
 }) {
   const [open, setOpen] = useState(false);
   const openerRef = useRef<HTMLButtonElement | null>(null);
-  const activePrimary = activePrimaryRouteId(activeRouteId);
   const close = () => {
     setOpen(false);
     openerRef.current?.focus();
@@ -32,36 +30,27 @@ export function MobileNavigation({
       <button
         aria-expanded={open}
         aria-haspopup="dialog"
-        className="secondary-button"
+        aria-label="Open navigation"
+        className="mobile-navigation__opener"
         onClick={() => setOpen((value) => !value)}
         ref={openerRef}
         type="button"
       >
-        Open navigation
+        <span aria-hidden="true">☰</span>
       </button>
+      {open ? <div className="mobile-navigation__backdrop" onClick={close} aria-hidden="true" /> : null}
       {open ? (
-        <div
+        <aside
           aria-label="Primary navigation"
-          className="surface-card"
+          className="mobile-navigation__drawer"
           onKeyDown={(event) => {
             if (event.key === "Escape") close();
           }}
           role="dialog"
         >
-          <nav aria-label="Mobile primary navigation">
-            {primaryRoutesForRole(activeRole).map((route) => (
-              <Link
-                className="primary-link"
-                key={route.id}
-                onClick={close}
-                to={route.path}
-                aria-current={route.id === activePrimary ? "page" : undefined}
-              >
-                {route.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
+          <button className="mobile-navigation__close" onClick={close} type="button" aria-label="Close navigation">×</button>
+          <RoleNavigation activeRole={activeRole} activeRouteId={activeRouteId} onNavigate={close} />
+        </aside>
       ) : null}
     </div>
   );

@@ -17,10 +17,10 @@ describe("RoleNavigation", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual([
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("aria-label"))).toEqual([
       "Dashboard",
+      "Planning",
       "Organizations",
-      "Audit Plan Calendar",
     ]);
     expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
   });
@@ -32,7 +32,7 @@ describe("RoleNavigation", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual(["My Assignments"]);
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("aria-label"))).toEqual(["My Assignments"]);
     expect(screen.queryByRole("link", { name: "Audit Detail" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "My Assignments" })).toHaveAttribute("aria-current", "page");
   });

@@ -6,6 +6,7 @@ export interface DataRegisterColumn<Row> {
   key: keyof Row & string;
   header: string;
   render?: (row: Row) => ReactNode;
+  mobileRender?: (row: Row) => ReactNode;
 }
 
 export interface DataRegisterProps<Row extends Record<string, ReactNode>> {
@@ -56,7 +57,7 @@ export function DataRegister<Row extends Record<string, ReactNode>>({
           <MobileRecordCard
             fields={columns.map((column) => ({
               label: column.header,
-              value: cellValue(row, column),
+              value: column.mobileRender ? column.mobileRender(row) : cellValue(row, column),
             }))}
             key={rowKey(row)}
             title={rowKey(row)}

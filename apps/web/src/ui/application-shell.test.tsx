@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -85,7 +85,7 @@ describe("ApplicationShell", () => {
 
     await user.click(screen.getByRole("button", { name: /Asha Inspector/i }));
     await user.click(screen.getByRole("button", { name: "Department Manager" }));
-    await user.click(screen.getByRole("button", { name: "Logout" }));
+    await user.click(within(screen.getByRole("menu", { name: "Profile menu" })).getByRole("button", { name: "Logout" }));
     expect(onRoleRequest).toHaveBeenCalledWith("manager");
     expect(onLogout).toHaveBeenCalledOnce();
   });

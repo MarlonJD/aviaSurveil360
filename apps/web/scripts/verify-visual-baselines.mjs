@@ -42,7 +42,7 @@ const expectedSurfaces = {
     parityMode: "content-adapted",
     reactPath: "/lead-inspector/lead-review",
     legacyView: "lead-review",
-    legacyParams: { auditId: "AUD-2026-001" },
+    legacyParams: {},
   },
   "manager-home": {
     auditId: "ui-audit-027",

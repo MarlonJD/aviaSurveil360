@@ -87,7 +87,7 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
   await page.getByRole("button", { name: "Switch to Lead Inspector" }).click();
 
   await expect(page).toHaveURL(/\/lead-inspector\/lead-review$/);
-  await expect(page.getByText("PF-2026-001")).toBeVisible();
+  await expect(page.getByTestId("potential-finding-dossier")).toContainText("PF-2026-001");
   await page.getByLabel("Finding severity").selectOption("LEVEL_1_CRITICAL");
   await expect(page.getByLabel("CAP required")).toBeChecked();
   await expect(page.getByLabel("Evidence required")).toBeChecked();
@@ -105,7 +105,7 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
   ]) {
     await expect(page.getByTestId("finding-dossier")).toContainText(expected);
   }
-  await page.getByRole("link", { name: "Switch to Fly Namibia Auditee" }).click();
+  await page.getByRole("button", { name: "Switch to Fly Namibia Auditee" }).click();
 
   await expect(page).toHaveURL(/\/auditee\/service-provider-cap$/);
   await expect(page.getByRole("heading", { name: "Corrective Actions (CAP)" })).toBeVisible();
@@ -113,29 +113,29 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
   await expect(page.locator("body")).not.toContainText("SkyCargo Air");
   await expect(page.locator("body")).not.toContainText("Internal CAA Note");
   await page
-    .getByLabel("Root cause")
+    .getByLabel("Root cause", { exact: true })
     .fill(
       "Pre-flight cabin equipment serviceability checks did not reconcile the PBE position with the deferred defect list.",
     );
   await page
-    .getByLabel("Corrective action")
+    .getByLabel("Corrective action", { exact: true })
     .fill(
       "Replace or service the affected PBE, update the cabin defect record, and confirm serviceability before release.",
     );
   await page
-    .getByLabel("Preventive action")
+    .getByLabel("Preventive action", { exact: true })
     .fill(
       "Add a supervisor review of emergency equipment checks and monthly sampling of PBE serviceability records.",
     );
-  await page.getByLabel("Responsible person").fill("Fly Namibia Cabin Safety Manager");
-  await page.getByLabel("Target completion date").fill("2026-07-15");
-  await page.getByLabel("Comment to CAA").fill("CAP submitted for CAA review.");
+  await page.getByLabel("Responsible person", { exact: true }).fill("Fly Namibia Cabin Safety Manager");
+  await page.getByLabel("Target completion date", { exact: true }).fill("2026-07-15");
+  await page.getByLabel("Comment to CAA", { exact: true }).fill("CAP submitted for CAA review.");
   await page.getByRole("button", { name: "Submit CAP" }).click();
   await expect(page.getByTestId("finding-status")).toHaveText("CAP_SUBMITTED");
   await expect(page.getByRole("button", { name: /Accept CAP/i })).toHaveCount(0);
   await page.getByRole("link", { name: "Switch to CAA CAP Review" }).click();
 
-  await expect(page.getByRole("heading", { name: "CAP Review" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /^CAP Review/ })).toBeVisible();
   await page
     .getByLabel("Comment to Auditee")
     .fill("CAP accepted. Submit the required PBE serviceability record.");
@@ -146,7 +146,7 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
   await expect(page.getByTestId("finding-status")).toHaveText("EVIDENCE_REQUIRED");
   await expect(page.getByTestId("closure-state")).toHaveText("Finding remains open");
 
-  await page.getByRole("link", { name: "Check report authority" }).click();
+  await page.getByRole("button", { name: "Check report authority" }).click();
   await expect(page.getByRole("heading", { name: "Executive Director Dashboard" })).toBeVisible();
   await page.getByLabel("Report decision reason").fill("Issue the exact candidate report version.");
   await page.getByRole("button", { name: "Issue and lock report" }).click();
@@ -179,7 +179,7 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
   );
   await expect(page.getByTestId("closure-state")).toHaveText("Finding remains open");
 
-  await page.getByRole("link", { name: "Return to Auditee Evidence" }).click();
+  await page.getByRole("button", { name: "Return to Auditee Evidence" }).click();
   await submitEvidence(
     page,
     2,
@@ -198,7 +198,7 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
   );
   await expect(page.getByTestId("closure-state")).toHaveText("Finding remains open");
 
-  await page.getByRole("link", { name: "Return to Auditee Evidence" }).click();
+  await page.getByRole("button", { name: "Return to Auditee Evidence" }).click();
   await submitEvidence(page, 3, "Fly_Namibia_PBE_Signed_Record_CAB-2026-001.pdf");
   await page.getByRole("link", { name: "Switch to Evidence Review" }).click();
   await expect(page.getByTestId("reviewing-evidence-version")).toHaveText("Version 3");
@@ -213,7 +213,7 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
   await expect(page.getByTestId("closure-basis")).toHaveText("EVIDENCE_VERIFIED");
   await expect(page.getByTestId("evidence-history-row")).toHaveCount(3);
 
-  await page.getByRole("link", { name: "Open updated Manager Dashboard" }).click();
+  await page.getByRole("button", { name: "Open updated Manager Dashboard" }).click();
   await expect(page.getByTestId("manager-closed-findings")).toHaveText("1");
   await expect(page.getByTestId("manager-canonical-status")).toHaveText("CLOSED");
   await page.getByRole("link", { name: "Open report preview" }).click();

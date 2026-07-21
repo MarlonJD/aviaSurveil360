@@ -8,7 +8,24 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Tasks 1-9 are `verified locally`: the independent 86-row inventory/17-route contract is frozen; Potential Finding plus immutable CAP revision read projections pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates; Admin checklist-template-version detail reads pass exact snapshot, mock/HTTP mapping, OpenAPI, sqlc, and Go race gates; the deterministic tracked visual-parity harness now has 51 hash-verified legacy baselines plus an intentionally red React comparison; the layered brand system now has a typed approved asset registry, restricted Vite asset access, image/font app-shell manifests, HTTP artifact exclusions, and stopped-origin mark/icon/font recovery; the candidate role selection/application shell now uses presentational role/navigation/topbar/mobile components with registry-derived primary navigation, contextual active-parent state, profile/logout callbacks, notification modes, and shell-only geometry checks; the normal HTTP lane now uses same-origin OIDC session projection, safe route guards, centralized 401 clearing, CSRF logout, canonical/normal lane separation, and session-subject offline checkout; the shared workbench primitive layer now has semantic page headers, fact grids, registers/cards, lifecycle steppers, decision panels, due/status states, empty/error states, owned CSS, and shell-geometry gallery coverage; and the Inspector Assignments, Audit Detail, and Checklist Runner routes now use shared workbench primitives plus feature-owned Inspector CSS while preserving backend-shaped direct load, FieldRepository/local-save boundaries, Inspection Attachment filename state, Potential Finding creation, and bounded `RoleHandoff`. Task 10 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `active` — Tasks 1-9 are committed and pushed. Task 10 repaired the fail-open visual harness, corrected and hash-verified the `lead-home` oracle, restored the accepted root-demo shell and Inspector composition, and migrated the four Lead review routes. Task 10 is `verified locally`: the focused React/CSS suite passes 10 files / 19 tests, typecheck passes, mock Playwright passes 5/5, the complete canonical HTTP profile passes including React 244/244 and HTTP Playwright 7/7, and the repaired fail-closed visual gate passes 24/24 selected surface/viewport pairs plus the shared primitive gallery. Task 10 is the current exact commit/push unit; Task 11 must not start until that commit is pushed. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+
+## Reviewed Plan Amendment — Fail-Closed Demo Visual Recovery (2026-07-21)
+
+The stakeholder explicitly rejected the React result because it introduced a new interface instead of migrating the accepted root demo. This amendment is reviewed and authorized in the active execution thread. It changes the remaining execution contract without changing the 16-task order or Task 10's required commit message.
+
+Binding corrections:
+
+- The root demo is the visual oracle, not a loose inspiration source. React may replace state ownership, data access, and component boundaries, but authenticated shell dimensions, navigation density, topbar placement, typography scale, page spacing, table/card hierarchy, status treatment, and primary-action placement must visibly derive from the accepted root composition.
+- `content-adapted` permits truthful Backend text, counts, status, and explicitly required controls to differ. It does not permit a new shell, new information architecture, generic dashboard cards, a new workbench visual language, or deletion of accepted hierarchy.
+- Compressed PNG byte comparison is invalid visual evidence and is removed. The comparator must decode both PNGs to RGBA pixels and call the fail-closed `compareVisualFrames` contract. Decoded comparison uses a fixed maximum per-channel delta of `40` to exclude Chromium gradient dithering and antialias noise; alpha remains exact, the regional `0.03`/`0.08` ratios remain unchanged, and mutation tests must prove that a delta of `41`, substantive patches, and geometry shifts still fail.
+- Every `content-adapted` surface must execute, not bypass, region assertions: named shell regions each use `maxDiffPixelRatio <= 0.03`; the single predeclared content region may use `<= 0.08`. No early return may skip those assertions. Masks remain explicit, denylisted, and capped at 5%.
+- Comparator output must attach the candidate viewport PNG plus machine-readable region results. A missing region, decode failure, dimension mismatch, broad mask, threshold breach, or absent result fails the test.
+- `lead-home` currently captures the wrong legacy state because the fixture supplies an `auditId`, which opens the Preliminary Report editor instead of the audited Assigned Audits/Potential Finding queue. Task 10 changes the fixture to `view: "lead-review", params: {}` and uses the plan's explicit baseline-update command to regenerate and hash-verify the corrected 51-item manifest. This is the only baseline-source change authorized by this amendment.
+- Tasks 5, 6, 8, and 9 remain historically committed, but their visual claims are not accepted. Task 10 owns the scoped remediation of shared shell/primitives and the three Inspector routes before the four Lead routes can pass.
+- Tasks 11-14 must start from the exact corresponding root screen composition and include a failing decoded-pixel comparison before implementation. Shared shell geometry is frozen after Task 10; later tasks may add only their feature-owned content styles unless a new reviewed amendment proves a shared defect.
+- Task 15 must fail if the production visual spec imports or calls `byteDiffRatio`, contains a parity-mode branch that bypasses region assertions, omits any of the 51 pairs, or lacks candidate PNG/region-result evidence.
+- Task 16 retains the 51-pair gate and manual review, but `verified locally` is forbidden unless decoded-pixel shell/content results pass for every pair and the reviewer confirms that the React result is recognizably the accepted demo interface.
 
 ## Independent Review Resolution
 
@@ -182,7 +199,7 @@ Visual copying never overrides authority, privacy, lifecycle, immutable history,
 - Demo/canonical role handoff remains deterministic. Normal OIDC never switches to a role absent from the session.
 - Logout/user switch calls `lockSubject`, preserves pending offline records, and prevents the next subject from seeing the old subject’s records.
 - Each of 51 automated React screenshots uses a tracked hash-verified legacy viewport baseline, strict environment metadata, bounded masks, semantic assertions, and geometry assertions.
-- Shell diff ratio is at most `0.03`. Adapted content diff ratio is at most `0.08` only for an explicitly named region with semantic/geometry evidence and reviewer rationale. A threshold increase requires a plan revision.
+- Shell diff ratio is at most `0.03`. Adapted content diff ratio is at most `0.08` only for an explicitly named region with semantic/geometry evidence and reviewer rationale. Both ratios use the reviewed fixed per-channel delta of `40`, with exact alpha comparison, to exclude deterministic Chromium paint dithering rather than count one-channel shade noise as structural drift. A ratio or channel-delta increase requires a plan revision.
 - The workbench keeps the root system-font stack; DM Sans is limited to login/role selection.
 - Every visible action works through Backend, a declared local/offline boundary, navigation, or explicit local UI state, or is disabled with a reason.
 - Existing Potential Finding authority, CAP/Evidence separation, immutable versioning, organization isolation, Internal CAA Note privacy, report/closure authority, sync/conflict, app-shell recovery, and artifact-exclusion tests remain green.
@@ -1049,8 +1066,13 @@ git push origin HEAD
 - Create `apps/web/src/auth/role-authorization.test.tsx`
 - Create `apps/web/src/auth/offline-subject-boundary.test.tsx`
 - Modify `apps/web/src/ui/application-shell.tsx`
+- Modify `apps/web/src/ui/application-shell.test.tsx`
 - Modify `apps/web/src/ui/role-navigation.tsx`
+- Modify `apps/web/src/ui/role-navigation.test.tsx`
 - Modify `apps/web/src/features/shared/workspace-shell.tsx`
+- Modify `apps/web/src/entry/demo.tsx`
+- Create `apps/web/src/mock/seed-visual-runtime.ts`
+- Modify `apps/web/playwright.config.ts`
 - Modify `apps/web/src/app/providers.tsx`
 - Modify `apps/web/src/app/bootstrap.tsx`
 - Modify `apps/web/src/app/router.tsx`
@@ -1380,10 +1402,29 @@ git push origin HEAD
 
 ---
 
-### Task 10: Migrate Lead Potential Finding, Finding, CAP, And Evidence Review
+### Task 10: Repair Shared Demo Parity And Migrate Lead Potential Finding, Finding, CAP, And Evidence Review
 
 **Files**
 
+- Modify `apps/web/src/ui/role-select-page.tsx`
+- Modify `apps/web/src/ui/application-shell.tsx`
+- Modify `apps/web/src/ui/role-navigation.tsx`
+- Modify `apps/web/src/ui/application-topbar.tsx`
+- Modify `apps/web/src/ui/mobile-navigation.tsx`
+- Modify `apps/web/src/ui/candidate-boundary.tsx`
+- Modify `apps/web/src/features/shared/workspace-shell.tsx`
+- Modify `apps/web/src/ui/workbench/page-header.tsx`
+- Modify `apps/web/src/ui/workbench/fact-grid.tsx`
+- Modify `apps/web/src/ui/workbench/status-pill.tsx`
+- Modify `apps/web/src/ui/workbench/data-register.tsx`
+- Modify `apps/web/src/ui/workbench/mobile-record-card.tsx`
+- Modify `apps/web/src/ui/workbench/lifecycle-stepper.tsx`
+- Modify `apps/web/src/ui/workbench/decision-panel.tsx`
+- Modify `apps/web/src/ui/workbench/due-state.tsx`
+- Modify `apps/web/src/ui/workbench/empty-error-state.tsx`
+- Modify `apps/web/src/features/assignments/inspector-assignments-page.tsx`
+- Modify `apps/web/src/features/inspections/audit-detail-page.tsx`
+- Modify `apps/web/src/features/checklists/checklist-runner-page.tsx`
 - Modify `apps/web/src/features/findings/lead-review-page.tsx`
 - Create `apps/web/src/features/findings/lead-review-page.test.tsx`
 - Modify `apps/web/src/features/findings/finding-detail-page.tsx`
@@ -1393,13 +1434,40 @@ git push origin HEAD
 - Modify `apps/web/src/features/evidence/evidence-review-page.tsx`
 - Create `apps/web/src/features/evidence/evidence-review-page.test.tsx`
 - Create `apps/web/src/styles/features/lead-review.css`
+- Modify `apps/web/src/styles/tokens.css`
+- Modify `apps/web/src/styles/base.css`
+- Modify `apps/web/src/styles/shell.css`
+- Modify `apps/web/src/styles/primitives.css`
+- Modify `apps/web/src/styles/responsive.css`
+- Modify `apps/web/src/styles/utilities.css`
+- Modify `apps/web/src/styles/features/inspector.css`
 - Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/src/styles/style-ownership.test.ts`
 - Modify `apps/web/src/app/scenario-context.tsx`
 - Modify `apps/web/src/app/canonical-scenario.contract.test.ts`
 - Modify `apps/web/tests/e2e/canonical-scenario.spec.ts`
 - Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
 - Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify `apps/web/tests/e2e/support/legacy-parity-fixtures.ts`
+- Modify `apps/web/tests/visual/visual-contract.test.ts`
+- Modify `apps/web/scripts/verify-visual-baselines.mjs`
+- Modify `apps/web/tests/visual-baselines/react-legacy-parity/baseline-manifest.json`
+- Modify `apps/web/tests/visual-baselines/react-legacy-parity/desktop/lead-home.png`
+- Modify `apps/web/tests/visual-baselines/react-legacy-parity/tablet/lead-home.png`
+- Modify `apps/web/tests/visual-baselines/react-legacy-parity/mobile/lead-home.png`
+- Modify `docs/exec-plans/index.md`
+- Modify `docs/exec-plans/tech-debt-tracker.md`
 - Modify this plan
+
+**Accepted demo composition recovery**
+
+- Role selection keeps the accepted split navy hero/light role selector, accepted mark/texture, eight row-style role choices, and matching responsive stacking.
+- Authenticated desktop shell uses the accepted 230-234 px navy sidebar, accepted brand/nav density, accepted topbar/user controls, and accepted 22-34 px content insets. Tablet/mobile use the accepted off-canvas navigation behavior and compact topbar rather than a second layout system.
+- Shared primitives are implementation helpers only. Their rendered appearance must use accepted root page-head, KPI/register, dossier, badge, form, lifecycle, and action-bar geometry. Primitive names do not justify a generic replacement design.
+- Inspector Assignments restores the accepted five-metric attention row, filter bar, dense desktop register, responsive record cards, and action placement while binding candidate data and controls truthfully.
+- Audit Detail and Checklist Runner restore the accepted Inspector chrome, compact context header, dossier/question-table hierarchy, and active-question/action composition while preserving the current Backend/offline behavior.
+- The four Lead routes use the accepted Lead navigation/chrome and the closest audited queue/dossier/review compositions. The corrected `lead-home` oracle must show Assigned Audits plus the Potential Finding decision panel, not the Preliminary Report editor.
+- Candidate/release labels remain present but use the existing root demo ribbon/footer treatment; they must not introduce large pills or a new top-of-page block that changes the accepted hierarchy.
 
 **Required behavior**
 
@@ -1413,9 +1481,18 @@ git push origin HEAD
 
 **Red/green cycle**
 
-- [ ] Add failing tests for fresh direct load of all four routes, persisted Potential Finding queue, no session-history dependency, two CAP revisions, immutable old values, CAA/Auditee shape distinction, reason requirements, no premature closure, Evidence version history, and forbidden roles.
-- [ ] Add mock/HTTP browser replay from checklist Potential Finding through Lead conversion, CAP review, Evidence review, and authorized closure. Reload the Lead home and CAP route before decision.
-- [ ] Run:
+- [x] Add failing comparator tests for real PNG decode, missing/shifted shell and content regions, threshold enforcement, candidate screenshot attachment, and a `content-adapted` branch that attempts to bypass comparison.
+- [x] Correct the `lead-home` fixture and run the reviewed baseline update command. Verify all 51 hashes and confirm only the three `lead-home` PNG contents changed from the prior oracle set; manifest metadata/hash changes are expected and reviewed.
+- [x] Run the repaired focused visual gate before UI remediation:
+
+  ```bash
+  AVIA_VISUAL_SURFACES=role-select,inspector-home,audit-detail,checklist-runner,lead-home,finding-detail,cap-review,evidence-review npm --prefix apps/web run test:e2e:visual-parity
+  ```
+
+  Expected red: decoded-pixel shell/content comparisons expose the current unrelated React shell/workbench. Record every surface/viewport/region ratio; do not add a mask or relax a threshold.
+- [x] Add failing tests for fresh direct load of all four routes, persisted Potential Finding queue, no session-history dependency, two CAP revisions, immutable old values, CAA/Auditee shape distinction, reason requirements, no premature closure, Evidence version history, and forbidden roles.
+- [x] Add mock/HTTP browser replay from checklist Potential Finding through Lead conversion, CAP review, Evidence review, and authorized closure. Reload the Lead home and CAP route before decision.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/features/findings/lead-review-page.test.tsx src/features/findings/finding-detail-page.test.tsx src/features/caps/cap-review-page.test.tsx src/features/evidence/evidence-review-page.test.tsx src/app/canonical-scenario.contract.test.ts
@@ -1423,23 +1500,33 @@ git push origin HEAD
   ```
 
   Expected red: current Lead/CAP pages depend on in-memory scenario state and lack accepted composition.
-- [ ] Replace those read dependencies with Task 2 Backend reads and migrate with shared primitives/`lead-review.css`.
-- [ ] Run:
+- [x] Repair the shared shell/primitives and three Inspector routes against the accepted root composition, then replace the Lead read dependencies with Task 2 Backend reads and migrate with accepted-root-derived `lead-review.css`. Do not proceed to Lead content while any shared/Inspector shell region remains above `0.03`.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/features/findings/lead-review-page.test.tsx src/features/findings/finding-detail-page.test.tsx src/features/caps/cap-review-page.test.tsx src/features/evidence/evidence-review-page.test.tsx src/app/canonical-scenario.contract.test.ts src/styles/style-ownership.test.ts
   npm --prefix apps/web run typecheck
   npm --prefix apps/web run test:e2e:mock
   ./scripts/test-http-profile.sh
-  AVIA_VISUAL_SURFACES=lead-home,finding-detail,cap-review,evidence-review npm --prefix apps/web run test:e2e:visual-parity
+  AVIA_VISUAL_SURFACES=role-select,inspector-home,audit-detail,checklist-runner,lead-home,finding-detail,cap-review,evidence-review npm --prefix apps/web run test:e2e:visual-parity
   ```
 
-  Expected green: four Lead routes direct-load from Backend, protect authority/versioning, and pass three-viewport parity.
+  Expected green: the accepted demo shell and Inspector composition are restored, four Lead routes direct-load from Backend, authority/versioning remains protected, and all 24 focused viewport pairs pass decoded-pixel region assertions.
+
+**Execution log — 2026-07-21, Task 10 verified locally**
+
+- The original Task 10 red gate failed four route tests while the canonical contract passed. The first focused green gate passed 6 files / 11 tests; after the HTTP adapter-stability regression test it passes 6 files / 12 tests. Typecheck passes.
+- The reviewed comparator red cycle proved decoded RGBA thresholds, per-channel delta `40`, missing/shifted shell and content rejection, candidate PNG plus JSON result attachments, and fail-closed `content-adapted` handling. The Lead fixture was corrected to the Assigned Audits/Potential Finding queue; the baseline updater changed only the three authorized `lead-home` PNGs plus reviewed manifest metadata/hashes, and the verifier accepts all 51 tracked PNGs.
+- The first fail-closed recovery runs rejected the unrelated shared/Inspector composition. During recovery, Audit Detail mobile content was `0.11535`; Checklist Runner content was `0.10130` desktop, `0.12489` tablet, and `0.16627` mobile, while shell/sidebar checks also rejected incorrect active navigation. No mask or threshold was broadened. The accepted 230 px shell, root navigation/topbar, role selector, Inspector assignment register, Audit dossier, Checklist question dossier, Lead queue, Finding dossier, CAP review, and Evidence review compositions were restored against the root oracle.
+- The final selected visual run passes 25/25 tests: the primitive gallery plus 24 surface/viewport pairs for `role-select`, `inspector-home`, `audit-detail`, `checklist-runner`, `lead-home`, `finding-detail`, `cap-review`, and `evidence-review`. Every pair enforces shell `<= 0.03` and content `<= 0.08`; touch targets are at least 44 px and no compressed-byte bypass remains.
+- The expanded focused gate passes 10 files / 19 tests and typecheck. Mock Playwright passes 5/5 after restoring the canonical Audit ID, checklist accessible-name, assignment, and `NON COMPLIANT` status contracts disturbed by the visual rewrite.
+- The fresh complete HTTP profile passes Go race/unit/integration, OpenAPI lint/examples/code generation, sqlc, React 244/244, demo and HTTP builds, HTTP artifact scan, contract 14/14, mock Playwright 5/5, HTTP Playwright 7/7, and worker/outbox observability. Its temporary Postgres, Keycloak, object-store, network, and volumes were removed by the script trap.
+- The post-browser process scan found no leftover Playwright, webdriver, headless Chrome, or remote-debugging Chrome process. Task 10 implementation and verification are complete; the exact commit/push boundary below is next, followed by Task 11.
 
 **Task 10 staging allowlist and commit**
 
 ```bash
-git add -- apps/web/src/features/findings/lead-review-page.tsx apps/web/src/features/findings/lead-review-page.test.tsx apps/web/src/features/findings/finding-detail-page.tsx apps/web/src/features/findings/finding-detail-page.test.tsx apps/web/src/features/caps/cap-review-page.tsx apps/web/src/features/caps/cap-review-page.test.tsx apps/web/src/features/evidence/evidence-review-page.tsx apps/web/src/features/evidence/evidence-review-page.test.tsx apps/web/src/styles/features/lead-review.css apps/web/src/styles/app.css apps/web/src/app/scenario-context.tsx apps/web/src/app/canonical-scenario.contract.test.ts apps/web/tests/e2e/canonical-scenario.spec.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- apps/web/playwright.config.ts apps/web/src/entry/demo.tsx apps/web/src/mock/seed-visual-runtime.ts apps/web/src/ui/role-select-page.tsx apps/web/src/ui/application-shell.tsx apps/web/src/ui/application-shell.test.tsx apps/web/src/ui/role-navigation.tsx apps/web/src/ui/role-navigation.test.tsx apps/web/src/ui/application-topbar.tsx apps/web/src/ui/mobile-navigation.tsx apps/web/src/ui/candidate-boundary.tsx apps/web/src/features/shared/workspace-shell.tsx apps/web/src/ui/workbench/page-header.tsx apps/web/src/ui/workbench/fact-grid.tsx apps/web/src/ui/workbench/status-pill.tsx apps/web/src/ui/workbench/data-register.tsx apps/web/src/ui/workbench/mobile-record-card.tsx apps/web/src/ui/workbench/lifecycle-stepper.tsx apps/web/src/ui/workbench/decision-panel.tsx apps/web/src/ui/workbench/due-state.tsx apps/web/src/ui/workbench/empty-error-state.tsx apps/web/src/features/assignments/inspector-assignments-page.tsx apps/web/src/features/inspections/audit-detail-page.tsx apps/web/src/features/checklists/checklist-runner-page.tsx apps/web/src/features/findings/lead-review-page.tsx apps/web/src/features/findings/lead-review-page.test.tsx apps/web/src/features/findings/finding-detail-page.tsx apps/web/src/features/findings/finding-detail-page.test.tsx apps/web/src/features/caps/cap-review-page.tsx apps/web/src/features/caps/cap-review-page.test.tsx apps/web/src/features/evidence/evidence-review-page.tsx apps/web/src/features/evidence/evidence-review-page.test.tsx apps/web/src/styles/tokens.css apps/web/src/styles/base.css apps/web/src/styles/shell.css apps/web/src/styles/primitives.css apps/web/src/styles/responsive.css apps/web/src/styles/utilities.css apps/web/src/styles/features/inspector.css apps/web/src/styles/features/lead-review.css apps/web/src/styles/app.css apps/web/src/styles/style-ownership.test.ts apps/web/src/app/scenario-context.tsx apps/web/src/app/canonical-scenario.contract.test.ts apps/web/tests/e2e/canonical-scenario.spec.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts apps/web/tests/e2e/support/legacy-parity-fixtures.ts apps/web/tests/visual/visual-contract.test.ts apps/web/scripts/verify-visual-baselines.mjs apps/web/tests/visual-baselines/react-legacy-parity/baseline-manifest.json apps/web/tests/visual-baselines/react-legacy-parity/desktop/lead-home.png apps/web/tests/visual-baselines/react-legacy-parity/tablet/lead-home.png apps/web/tests/visual-baselines/react-legacy-parity/mobile/lead-home.png docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
 git commit -m "feat(ui): migrate lead review workspaces"
 git push origin HEAD
 ```
@@ -1447,6 +1534,10 @@ git push origin HEAD
 ---
 
 ### Task 11: Migrate The Auditee Corrective Action Workspace
+
+**Remaining visual implementation contract (Tasks 11-14)**
+
+For every remaining feature task, first open the exact baseline PNGs and the corresponding root `js/views.js`/`css/styles.css` composition. Record the accepted page shell, first-viewport hierarchy, dense desktop register/dossier, responsive card/stack behavior, and action placement in that task's execution log. The implementation must reuse those patterns visibly; shared React primitives may organize code but must not substitute a new visual design. Each focused visual command must emit decoded-pixel results and candidate PNGs for all three viewports. A semantic-only, geometry-only, compressed-byte-only, or screenshot-existence-only pass is red.
 
 **Files**
 
@@ -1471,6 +1562,7 @@ git push origin HEAD
 - `Internal CAA Note`, CAA workload, internal risk, other organizations, enforcement deliberations, reviewer-private identity, and unrelated report state are absent from both object shape and DOM.
 - Other-organization IDs return forbidden/not-found without rendering stale Fly Namibia data.
 - Handoffs to CAA are noninteractive next-owner state in one-role normal OIDC and `RoleHandoff` in demo/canonical mode.
+- The React page visibly preserves the accepted Service Provider Portal chrome, selected-Finding context, CAP/Evidence work package hierarchy, review-status treatment, and bottom/side action placement. Combining candidate reads on one route may change values, but may not replace the root composition with generic fact cards.
 
 **Red/green cycle**
 
@@ -1495,7 +1587,7 @@ git push origin HEAD
   AVIA_VISUAL_SURFACES=auditee-home npm --prefix apps/web run test:e2e:visual-parity
   ```
 
-  Expected green: Auditee route passes direct-load, organization/privacy, immutable revision, action, and visual gates.
+  Expected green: Auditee route passes direct-load, organization/privacy, immutable revision, action, and decoded-pixel demo-composition gates at all three viewports.
 
 **Task 11 staging allowlist and commit**
 
@@ -1533,6 +1625,7 @@ git push origin HEAD
 - Audit Plan Calendar uses authorized planning list/decide actions only. It must not render a create button, New Inspection Planning Intake, Ad Hoc/Unannounced intake, or any fake edit control because that route family is legacy-only in this plan.
 - Report Preview uses the immutable report-version projection, decision history/state, finding references, and exact Department Manager authority. It does not imply issue, signature, or closure authority.
 - All routes keep owner, next action, status, Due Date, organization scope, and candidate boundary visible.
+- Each route visibly retains its audited root composition: Manager Dashboard attention/KPI hierarchy, Organizations register/detail density, Planning queue/decision layout, and Reports Approval dossier/decision placement. Candidate scope may remove unsupported actions, but removal must not collapse the surrounding accepted layout into generic cards.
 
 **Red/green cycle**
 
@@ -1556,7 +1649,7 @@ git push origin HEAD
   AVIA_VISUAL_SURFACES=manager-home,organization-registry,audit-plan,report-preview npm --prefix apps/web run test:e2e:visual-parity
   ```
 
-  Expected green: all four Manager routes pass authority, scope, action, responsive, and visual gates.
+  Expected green: all four Manager routes pass authority, scope, action, responsive, and decoded-pixel demo-composition gates.
 
 **Task 12 staging allowlist and commit**
 
@@ -1591,6 +1684,7 @@ git push origin HEAD
 - Executive Director renders only eligible final plan/report decisions. Report issue locks the immutable report version and never closes Findings.
 - Each page shows current owner, next action, status, Due Date/target where applicable, revision, decision history/context, and truthful disabled states.
 - Cross-role workflow continuation uses `RoleHandoff`; normal OIDC with a single role shows the next owner without impersonation.
+- Finance, General Manager, and Executive Director retain the corresponding root queue, decision-summary, workflow, and top-level authority-card compositions. A role-specific candidate action may differ, but the route must not share one generic dashboard composition across all three roles.
 
 **Red/green cycle**
 
@@ -1614,7 +1708,7 @@ git push origin HEAD
   AVIA_VISUAL_SURFACES=finance-home,gm-home,executive-home npm --prefix apps/web run test:e2e:visual-parity
   ```
 
-  Expected green: three authority workspaces pass mock/HTTP/direct-load/responsive/visual tests.
+  Expected green: three authority workspaces pass mock/HTTP/direct-load/responsive tests plus decoded-pixel role-specific demo-composition checks.
 
 **Task 13 staging allowlist and commit**
 
@@ -1645,6 +1739,7 @@ git push origin HEAD
 - Preview shows version/status/published date and Backend-provided question prompt, configured regulatory reference, expected Evidence, allowed answers, and comment rules.
 - It does not render edit/publish/delete/user/role/configuration controls, draft claims, or invented question content.
 - Non-Admin direct URL fails before any configuration fetch.
+- The route visibly retains the accepted Administration shell and Template Preview register/selection/detail composition, including dense question/reference/evidence rows. It must not become a generic page header followed by disconnected cards.
 
 **Red/green cycle**
 
@@ -1668,7 +1763,7 @@ git push origin HEAD
   AVIA_VISUAL_SURFACES=admin-home npm --prefix apps/web run test:e2e:visual-parity
   ```
 
-  Expected green: Admin route passes direct-load, authority, schema, action, responsive, and visual gates.
+  Expected green: Admin route passes direct-load, authority, schema, action, responsive, and decoded-pixel demo-composition gates.
 
 **Task 14 staging allowlist and commit**
 
@@ -1714,6 +1809,8 @@ git push origin HEAD
 - Add the visible-action spec to both `mock` and canonical `http` project test matches. The normal OIDC-only controls remain covered by Task 7’s `oidc-session.spec.ts`.
 - A toast without durable state/navigation/download/form change does not satisfy the contract.
 - Normal HTTP notification delivery stays hidden/disabled with its reason. Admin editing, New Inspection Planning Intake, self-registration, user provisioning, and unsupported legacy actions remain absent.
+- The boundary scan fails if `legacy-visual-parity.spec.ts` imports or calls `byteDiffRatio`, contains a `content-adapted` branch that returns before decoded-pixel region assertions, or can complete without 51 candidate PNG attachments and 51 machine-readable region-result attachments.
+- Harness mutation tests must prove that removing one shell assertion, removing one content assertion, replacing decoded pixels with compressed bytes, or skipping one viewport causes a red gate.
 
 Add exact package script:
 
@@ -1746,10 +1843,11 @@ Add exact package script:
   node apps/web/scripts/assert-parity-boundary.mjs
   node --test tests/parity/react-legacy-parity.test.mjs
   npm --prefix apps/web run test:e2e:visible-actions
+  npm --prefix apps/web run test:e2e:visual-parity
   ./scripts/test-http-profile.sh
   ```
 
-  Expected green: exact route/action/artifact boundaries pass with approved brand assets and no hidden placeholders.
+  Expected green: exact route/action/artifact boundaries pass with approved brand assets, no hidden placeholders, and all 51 decoded-pixel visual pairs enforced fail-closed.
 
 **Task 15 staging allowlist and commit**
 
@@ -1847,6 +1945,7 @@ The evidence filenames use the planned verification date. If Task 16 executes af
   ```
 
   Require 17 surfaces × 3 viewports, zero missing/hash/metadata/mask/geometry failures, shell ratio at most 0.03, and only predeclared adapted regions at most 0.08.
+  The command must produce 51 candidate viewport PNGs and 51 region-result records. Any use of compressed PNG byte ratios, any parity-mode bypass, or any missing shell/content region result fails the matrix.
 
 - [ ] **Dependency gate**
 
@@ -1859,7 +1958,7 @@ The evidence filenames use the planned verification date. If Task 16 executes af
 
 - [ ] **Manual reviewer evidence**
 
-  Review 51 legacy/React viewport pairs plus contact sheets. For each route record source audit ID, browser metadata, baseline/React file, diff ratio, masks and masked ratio, geometry result, semantic result, visible-action result, reviewer, and disposition. Review the complete canonical lifecycle and the normal OIDC login/logout path. Manual full-page images may support review but never replace automated viewport comparisons.
+  Review 51 legacy/React viewport pairs plus contact sheets. For each route record source audit ID, browser metadata, baseline/React file, shell-region ratios, content-region ratio, masks and masked ratio, geometry result, semantic result, visible-action result, reviewer, and disposition. The reviewer must explicitly answer whether the React surface is recognizably the accepted root demo rather than a newly invented interface. Review the complete canonical lifecycle and the normal OIDC login/logout path. Manual full-page images may support review but never replace automated viewport comparisons.
 
 - [ ] **Cleanup**
 

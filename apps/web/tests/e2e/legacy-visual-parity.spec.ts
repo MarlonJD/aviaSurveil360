@@ -7,21 +7,20 @@ import {
   assertBaselineUpdateMode,
   assertViewportScreenshotContract,
   assertSurfaceSemantics,
-  byteDiffRatio,
+  compareVisualFrames,
+  decodePngFrame,
   driveReactSurface,
   installDeterministicPageState,
-  maxDiffForSurface,
   resolveFocusedSurfaces,
   resolveVisualRegions,
   validateBaselineManifest,
+  visualComparisonRegions,
   VISUAL_BASELINE_ROOT,
   VISUAL_SURFACE_BY_ID,
   VISUAL_VIEWPORTS,
   VISUAL_VIEWPORT_BY_ID,
   type BaselineManifest,
 } from "./support/legacy-parity-fixtures";
-
-test.describe.configure({ mode: "serial" });
 
 const appRoot = process.cwd();
 const repoRoot = resolve(appRoot, "../..");
@@ -189,21 +188,46 @@ for (const viewport of VISUAL_VIEWPORTS) {
       });
 
       const baseline = readFileSync(resolve(baselineRoot, baselineItem.file));
-      const ratio = byteDiffRatio(baseline, screenshot);
-      await testInfo.attach("viewport-byte-diff-ratio", {
+      await testInfo.attach("react-candidate-viewport", {
+        body: screenshot,
+        contentType: "image/png",
+      });
+      const baselineFrame = decodePngFrame(baseline);
+      const candidateFrame = decodePngFrame(screenshot);
+      const comparisons = visualComparisonRegions(viewport, surface.parityMode).map((contract) => {
+        const result = compareVisualFrames(baselineFrame, candidateFrame, {
+          region: contract.region,
+          masks: surface.masks,
+          maxDiffPixelRatio: contract.maxDiffPixelRatio,
+          maxChannelDelta: contract.maxChannelDelta,
+        });
+        return {
+          region: contract.region,
+          maxDiffPixelRatio: contract.maxDiffPixelRatio,
+          maxChannelDelta: contract.maxChannelDelta,
+          ...result,
+        };
+      });
+      await testInfo.attach("decoded-pixel-region-results", {
         body: JSON.stringify(
           {
             surfaceId: surface.id,
             viewport: viewport.id,
             parityMode: surface.parityMode,
-            ratio,
             baseline: baselineItem.file,
+            comparisons,
           },
           null,
           2,
         ),
         contentType: "application/json",
       });
+      for (const comparison of comparisons) {
+        expect.soft(
+          comparison.passed,
+          `${surface.id}/${viewport.id}/${comparison.region.id} ratio ${comparison.diffPixelRatio.toFixed(5)} max ${comparison.maxDiffPixelRatio.toFixed(2)}`,
+        ).toBe(true);
+      }
       if (surface.parityMode === "content-adapted") {
         await assertSurfaceSemantics(page, { ...surface, ...task9SemanticOverrides[surface.id as keyof typeof task9SemanticOverrides] });
         await expect(page.locator("[data-testid='application-shell']")).toBeVisible();
@@ -217,9 +241,12 @@ for (const viewport of VISUAL_VIEWPORTS) {
             return { width: rect.width, height: rect.height, text: element.textContent?.trim() ?? "" };
           }),
         );
-        expect(touchTargets.every((target) => target.width >= 44 && target.height >= 44)).toBe(true);
+        expect(
+          touchTargets.every((target) => target.width >= 44 && target.height >= 44),
+          `undersized touch targets: ${JSON.stringify(touchTargets.filter((target) => target.width < 44 || target.height < 44))}`,
+        ).toBe(true);
         if (surface.id === "inspector-home") {
-          if (viewport.width <= 720) {
+          if (viewport.width <= 1100) {
             await expect(page.getByRole("article", { name: "AUD-2026-001" })).toBeVisible();
           } else {
             await expect(page.getByRole("table", { name: "Assigned Audits" })).toBeVisible();
@@ -233,13 +260,7 @@ for (const viewport of VISUAL_VIEWPORTS) {
           await expect(page.getByTestId("checklist-question-row")).toHaveCount(6);
           await expect(page.getByTestId("checklist-response-panel")).toBeVisible();
         }
-        return;
       }
-      const threshold = maxDiffForSurface(surface);
-      expect(
-        ratio,
-        `${surface.id}/${viewport.id}/viewport ratio ${ratio.toFixed(5)} max ${threshold.toFixed(2)}`,
-      ).toBeLessThanOrEqual(threshold);
     });
   }
 }

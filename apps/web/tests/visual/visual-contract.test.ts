@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -6,8 +6,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertBaselineUpdateMode,
+  assertVisualSpecFailClosed,
   assertViewportScreenshotContract,
   compareVisualFrames,
+  decodePngFrame,
   hashBytes,
   patchedFrame,
   resolveFocusedSurfaces,
@@ -16,6 +18,8 @@ import {
   validateBaselineManifest,
   validateGeometrySnapshot,
   validateMaskContract,
+  visualComparisonRegions,
+  VISUAL_MAX_CHANNEL_DELTA,
   type BaselineManifest,
   type RectMask,
 } from "../e2e/support/legacy-parity-fixtures";
@@ -79,6 +83,52 @@ function singleItemManifest(fileSha256: string): BaselineManifest {
 }
 
 describe("visual parity contract", () => {
+  it("decodes tracked PNGs to RGBA pixels and defines fail-closed shell/content regions", () => {
+    const baseline = readFileSync(
+      join(process.cwd(), "tests/visual-baselines/react-legacy-parity/desktop/inspector-home.png"),
+    );
+    const frame = decodePngFrame(baseline);
+    const regions = visualComparisonRegions(
+      { id: "desktop", width: 1440, height: 900 },
+      "content-adapted",
+    );
+
+    expect(frame).toMatchObject({ width: 1440, height: 900 });
+    expect(frame.data).toHaveLength(1440 * 900 * 4);
+    expect(regions.map((item) => [item.region.id, item.maxDiffPixelRatio])).toEqual([
+      ["sidebar", 0.03],
+      ["topbar", 0.03],
+      ["content-header", 0.08],
+      ["content", 0.08],
+    ]);
+    expect(regions.find((item) => item.region.id === "topbar")?.region).toEqual({
+      id: "topbar",
+      x: 1180,
+      y: 0,
+      width: 260,
+      height: 64,
+    });
+    expect(regions.find((item) => item.region.id === "content-header")?.region).toEqual({
+      id: "content-header",
+      x: 230,
+      y: 0,
+      width: 1210,
+      height: 64,
+    });
+  });
+
+  it("rejects a production visual spec that compares compressed bytes or bypasses adapted regions", () => {
+    const specPath = join(process.cwd(), "tests/e2e/legacy-visual-parity.spec.ts");
+    expect(() => assertVisualSpecFailClosed(readFileSync(specPath, "utf8"))).not.toThrow();
+
+    expect(() =>
+      assertVisualSpecFailClosed(`
+        const ratio = byteDiffRatio(baseline, screenshot);
+        if (surface.parityMode === "content-adapted") return;
+      `),
+    ).toThrow(/decoded-pixel|bypass/i);
+  });
+
   it("fails an unmasked deterministic patch outside the strict region ratio", () => {
     const baseline = solidFrame(100, 100, [11, 12, 13, 255]);
     const candidate = patchedFrame(baseline, { x: 0, y: 0, width: 20, height: 20 }, [240, 240, 240, 255]);
@@ -87,6 +137,7 @@ describe("visual parity contract", () => {
       region: { id: "viewport", x: 0, y: 0, width: 100, height: 100 },
       masks: [],
       maxDiffPixelRatio: 0.03,
+      maxChannelDelta: VISUAL_MAX_CHANNEL_DELTA,
     });
 
     expect(result.passed).toBe(false);
@@ -118,6 +169,7 @@ describe("visual parity contract", () => {
         region: { id: "viewport", x: 0, y: 0, width: 100, height: 100 },
         masks: [mask],
         maxDiffPixelRatio: 0.03,
+        maxChannelDelta: VISUAL_MAX_CHANNEL_DELTA,
       }).passed,
     ).toBe(true);
     expect(
@@ -125,8 +177,24 @@ describe("visual parity contract", () => {
         region: { id: "viewport", x: 0, y: 0, width: 100, height: 100 },
         masks: [mask],
         maxDiffPixelRatio: 0.03,
+        maxChannelDelta: VISUAL_MAX_CHANNEL_DELTA,
       }).passed,
     ).toBe(false);
+  });
+
+  it("ignores bounded Chromium gradient dithering but still counts a visible channel change", () => {
+    const baseline = solidFrame(10, 10, [8, 29, 54, 255]);
+    const dithered = solidFrame(10, 10, [9, 30, 54, 255]);
+    const changed = solidFrame(10, 10, [49, 29, 54, 255]);
+    const options = {
+      region: { id: "viewport", x: 0, y: 0, width: 10, height: 10 },
+      masks: [],
+      maxDiffPixelRatio: 0.03,
+      maxChannelDelta: VISUAL_MAX_CHANNEL_DELTA,
+    } as const;
+
+    expect(compareVisualFrames(baseline, dithered, options).diffPixelRatio).toBe(0);
+    expect(compareVisualFrames(baseline, changed, options).diffPixelRatio).toBe(1);
   });
 
   it("fails a four-pixel shell geometry shift", () => {

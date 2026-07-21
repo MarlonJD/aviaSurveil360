@@ -1,5 +1,4 @@
 import type { PropsWithChildren } from "react";
-import { Link } from "react-router-dom";
 
 import type { Role } from "../backend/backend";
 import type { ReactSurfaceId } from "../app/route-contracts";
@@ -29,14 +28,31 @@ export function ApplicationShell({
   children,
 }: PropsWithChildren<ApplicationShellProps>) {
   return (
-    <main className="workspace-shell" data-testid="application-shell">
+    <main className="workspace-shell" data-active-role={identity.activeRole} data-testid="application-shell">
       <aside className="workspace-sidebar">
-        <Link className="sidebar-brand primary-link" to="/">AviaSurveil360</Link>
+        <div className="sidebar-brand">
+          <span className="sidebar-brand-mark" aria-hidden="true">
+            <span className="sidebar-brand-mark__wing sidebar-brand-mark__wing--primary" />
+            <span className="sidebar-brand-mark__wing sidebar-brand-mark__wing--secondary" />
+            <span className="sidebar-brand-mark__code">AS</span>
+          </span>
+          <span><strong>AviaSurveil360</strong><small>Aviation Audit System</small></span>
+        </div>
         <RoleNavigation activeRole={identity.activeRole} activeRouteId={activeRouteId} />
-        <MobileNavigation activeRole={identity.activeRole} activeRouteId={activeRouteId} />
-        <Link className="switch-role primary-link" to="/">Switch role</Link>
+        <div className="sidebar-footer">
+          <button className="nav-item" onClick={onLogout} type="button">
+            <span className="nav-item__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M10 17 5 12l5-5" /><path d="M5 12h12" /><path d="M14 4h5v16h-5" /></svg>
+            </span>
+            <span>Logout</span>
+          </button>
+        </div>
       </aside>
       <section className="workspace-content">
+        <span className="candidate-boundary" data-testid="active-role">
+          {identity.activeRole === "inspector" ? "CAA Inspector" : identity.activeRole === "leadInspector" ? "Lead Inspector" : identity.activeRole}
+        </span>
+        <MobileNavigation activeRole={identity.activeRole} activeRouteId={activeRouteId} />
         <ApplicationTopbar
           identity={identity}
           onRoleRequest={onRoleRequest}
