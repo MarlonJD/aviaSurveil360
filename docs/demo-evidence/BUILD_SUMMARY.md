@@ -17,6 +17,9 @@ and [Canonical Authority Foundation Evidence](CANONICAL_AUTHORITY_FOUNDATION_202
 Task 11 also adds a separately verified local upload/scan and real HTTP
 candidate; see
 [Bounded Upload And HTTP Parity Evidence](BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md).
+Task 6 adds a separately verified PWA app-shell and explicit browser-offline
+readiness foundation; see
+[PWA App Shell And Offline Readiness Evidence](PWA_OFFLINE_READINESS_2026-07-21.md).
 These adjacent candidates do not make the root demo or the overall product
 `production-ready`.
 
@@ -1182,6 +1185,33 @@ The complete evidence and scope boundaries are in
 The local object store and deterministic scanner are not production services.
 Browser offline Tasks 6-8, sync, wider route migration, deployment, cutover,
 and production verification remain `not run` or `blocked` as applicable.
+
+---
+
+### PWA app-shell and offline-readiness checkpoint — 2026-07-21
+
+Status: Task 6 is `verified locally` and `candidate-only`; release remains
+`release pending`. The adjacent React candidate now has a version-fenced module
+Service Worker, shell/static-only cache policy, explicit thirteen-result
+managed-profile readiness gate, restart canary, exact server-grant/version
+checks, online fallback, site-data-loss messaging, and N/N-1 multi-tab update
+safety. The foundation IndexedDB stores only device/restart data and an
+exact-subject immutable checkout snapshot; it is not the Task 7 field
+repository or outbox. OPFS is used only for the Task 6 health canary.
+
+Fresh gates passed: React/Vitest 76/76; offline Playwright 2/2 using a dedicated
+persistent Chrome profile and a genuinely stopped origin server; canonical mock
+and HTTP Playwright 1/1 each; live HTTP Backend contract 9/9; full Go race/live
+integration; OpenAPI 5/5 and SQLC clean generation; demo and HTTP app-shell
+artifact scans; HTTP isolation across 10 files and 75 inputs; root Vanilla
+103/103; `go vet`; and task-owned browser/container/process cleanup.
+
+The complete evidence and scope boundaries are in
+[PWA_OFFLINE_READINESS_2026-07-21.md](PWA_OFFLINE_READINESS_2026-07-21.md).
+Atomic offline field/outbox persistence (Task 7), staged Inspection Attachment
+bytes (Task 8), production sync (Task 12), wider route migration, deployment,
+cutover, and production verification remain `not run` or `blocked` as
+applicable. No `production-ready` claim is made.
 
 ---
 

@@ -129,10 +129,28 @@ HTTP, Go, IndexedDB/OPFS, Service Worker/PWA, offline, sync, deployment, and
 production evidence are `not run` for this slice. The result is
 `candidate-only`.
 
-Future application slices must add their authorized Go build/race/integration,
-Playwright HTTP/offline, fail-on-skip/zero-test, migration/restore, artifact,
-and task-owned process/container cleanup gates before those capabilities can be
-reported as `verified locally`. Remote CI remains separately authorized.
+For the Task 6 PWA app-shell and offline-readiness slice, add:
+
+```bash
+npm --prefix apps/web run check:app-shell
+npm --prefix apps/web run test:e2e:offline
+./scripts/test-http-profile.sh
+```
+
+Expected: both generated app-shell manifests match their worker version marker;
+the worker has no automatic activation/cache deletion or API-response caching;
+the dedicated persistent-profile browser tests pass real restart/server-stop
+startup and two-client N/N-1 preservation; and the complete live HTTP profile
+still passes and cleans up task-owned dependencies. Task 6 is `verified locally`
+and `candidate-only`; atomic field/outbox persistence, staged attachment bytes,
+sync, production deployment, and production evidence remain `not run` or
+`blocked`.
+
+Remaining application slices must add their authorized field-storage,
+attachment, sync, route, security, migration/restore, artifact, responsive,
+accessibility, and task-owned process/container cleanup gates before those
+capabilities can be reported as `verified locally`. Remote CI remains separately
+authorized.
 
 ## Current Harness Completion Gate
 

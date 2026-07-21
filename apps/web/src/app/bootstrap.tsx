@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AppProviders, type ApplicationRuntime } from "./providers";
 import { AppRouter } from "./router";
 import { ScenarioProvider } from "./scenario-context";
+import { registerAppShellServiceWorker } from "../offline/update-coordinator";
 import "../styles/app.css";
 
 export function bootstrap(runtime: ApplicationRuntime): void {
@@ -22,4 +23,8 @@ export function bootstrap(runtime: ApplicationRuntime): void {
       </AppProviders>
     </StrictMode>,
   );
+
+  void registerAppShellServiceWorker().catch(() => {
+    window.dispatchEvent(new CustomEvent("avia:app-shell-registration-failed"));
+  });
 }

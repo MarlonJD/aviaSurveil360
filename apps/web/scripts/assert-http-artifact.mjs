@@ -3,12 +3,15 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 
+import { assertAppShellArtifact } from "./assert-app-shell-artifact.mjs";
+
 const suppliedPath = path.resolve(process.argv[2] ?? "dist");
 const artifactRoot = fs.existsSync(path.join(suppliedPath, "http"))
   ? path.join(suppliedPath, "http")
   : suppliedPath;
 
 assert.ok(fs.existsSync(artifactRoot), `HTTP artifact directory is missing: ${artifactRoot}`);
+assertAppShellArtifact(artifactRoot);
 
 function readJson(relativePath) {
   const filePath = path.join(artifactRoot, relativePath);

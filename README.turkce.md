@@ -14,12 +14,13 @@ API/worker `apps/api/` altındadır. Local verification profile pinned PostgreSQ
 Keycloak, MinIO ve deterministik scanner adapter kullanır.
 
 **Candidate-only / production-ready değil:** Go/PostgreSQL authority layer,
-private bounded object upload, deterministik scan worker ve full canonical HTTP
-scenario `verified locally` durumundadır; deployed production service değildir.
-Production OIDC/MFA, production object store/scanner veya Evidence records
-policy, browser offline persistence, production sync, deployment, cutover veya
-legacy removal yoktur. Root demo, removal-blocking behavior oracle olarak
-korunur.
+private bounded object upload, deterministik scan worker, full canonical HTTP
+scenario ve Task 6 PWA app-shell/offline-readiness foundation `verified locally`
+durumundadır; deployed production service değildir. Production OIDC/MFA,
+production object store/scanner veya Evidence records policy, atomic offline
+field repository/outbox, staged offline attachment store, production sync,
+deployment, cutover veya legacy removal yoktur. Root demo, removal-blocking
+behavior oracle olarak korunur.
 
 ## Ürün tanımı
 
@@ -46,6 +47,7 @@ eden task-based oversight platformudur.
 5. `docs/exec-plans/index.md`
 6. `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.turkce.md`
 7. `docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.turkce.md`
+8. `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.turkce.md`
 
 Clickable demo için `index.html` dosyasını doğrudan browser'da açın veya bu
 klasörü local static server ile servis edin. Güncel verification status ve demo
@@ -71,6 +73,16 @@ Bounded upload/scan contract, real HTTP parity, taze local gate'ler ve explicit
 production exclusion'lar için
 `docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.turkce.md`
 dosyasına bakın.
+
+Dedicated persistent-profile PWA/offline foundation kontrolü için:
+
+```bash
+npm --prefix apps/web run test:e2e:offline
+```
+
+Exact readiness, app-shell caching, browser-restart, two-client update ve
+explicit site-data-loss kanıtı ile exclusion'lar için
+`docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.turkce.md` dosyasına bakın.
 
 
 ## Kaynak Notları

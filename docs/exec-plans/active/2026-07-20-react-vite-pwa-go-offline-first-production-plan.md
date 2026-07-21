@@ -8,7 +8,7 @@
 
 **Tech Stack:** React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, Service Worker + Cache Storage, OPFS for staged Inspection Attachments, Vitest, React Testing Library, Playwright, Go modular monolith, `net/http` + `chi`, OpenAPI, PostgreSQL + `pgx`/`sqlc`, S3-compatible object storage, and containerized local integration dependencies.
 
-**Status:** `active` — Tasks 2-4 are implemented, `verified locally`, committed, and pushed as the `candidate-only` mock slice. Tasks 9-11 now provide the `verified locally` Go/PostgreSQL foundation, canonical authority/session boundary, bounded upload/scan worker, and real HTTP parity as Task-scoped candidate slices. The binding next slice is Task 6. Production deployment, traffic cutover, legacy removal, production hosting/provider selection, production on-call, and any `production-ready` claim remain `blocked` behind the separate release/operations gate.
+**Status:** `active` — Tasks 2-4 are implemented, `verified locally`, committed, and pushed as the `candidate-only` mock slice. Tasks 9-11 provide the `verified locally` Go/PostgreSQL foundation, canonical authority/session boundary, bounded upload/scan worker, and real HTTP parity. Task 6 now provides the `verified locally` PWA app-shell, explicit managed-profile readiness gate, restart survival, and N/N-1 update-safety foundation. The binding next slice is Task 7. Production deployment, traffic cutover, legacy removal, production hosting/provider selection, production on-call, and any `production-ready` claim remain `blocked` behind the separate release/operations gate.
 
 ## Global Constraints
 
@@ -1552,7 +1552,7 @@ evidence.
 - Consumes: proven HTTP vertical, server-issued `OfflineGrant`, React shell, and approved managed browser/offline/local-data policy.
 - Produces: `assessOfflineReadiness()`, version-fenced app-shell caching/update behavior, and an explicit online-only fallback.
 
-- [ ] **Step 1: Write failing readiness tests for all result states.**
+- [x] **Step 1: Write failing readiness tests for all result states.**
 
   ```ts
   export type OfflineReadinessCode =
@@ -1571,27 +1571,29 @@ evidence.
     | "protocol-version-incompatible";
   ```
 
-- [ ] **Step 2: Implement the explicit check-out gate.**
+- [x] **Step 2: Implement the explicit check-out gate.**
 
   The gate checks secure context, approved browser/device/profile policy, Service Worker readiness, separate IndexedDB and OPFS write/read/hash/delete canaries, `navigator.storage.persisted()`, user-initiated `persist()`, advisory `estimate()`, package/attachment estimate plus owner-approved conservative headroom, a successful browser-restart canary, app/schema/protocol compatibility, and the server-issued grant. It does not claim reserved capacity or infer private browsing.
 
   A denial blocks checkout with a specific recovery action while preserving online use. After explicit site-data deletion, the server's outstanding checkout record may report `local package missing`; the UI must state that unsynced single-device work cannot be recovered.
 
-- [ ] **Step 3: Implement app-shell caching without business-record response caching.**
+- [x] **Step 3: Implement app-shell caching without business-record response caching.**
 
   Cache only versioned build assets and the offline shell. Do not apply generic stale-while-revalidate to authenticated API responses.
 
-- [ ] **Step 4: Implement update safety.**
+- [x] **Step 4: Implement update safety.**
 
   Version app shell, IndexedDB schema, package schema, and sync protocol independently with an explicit N/N-1 compatibility range. Do not automatically call `skipWaiting`, claim clients, or delete an old cache while incompatible tabs or unsynced packages exist. Use an approved single migration/update owner across tabs, pause edits during an incompatible migration, use expand/contract schemas, and preserve a read-only recovery path if migration fails.
 
-- [ ] **Step 5: Verify actual offline startup.**
+- [x] **Step 5: Verify actual offline startup.**
 
   Serve over localhost/HTTPS-equivalent secure context, visit once online, check out a package, stop network/server access, reload, and verify the field shell/package still opens. Do not use DevTools page-only offline mode as the sole evidence.
 
-- [ ] **Step 6: Verify multi-client update and rollback safety.**
+- [x] **Step 6: Verify multi-client update and rollback safety.**
 
   Test two tabs on N/N-1 shells, termination at each migration boundary, update with pending outbox and OPFS manifests, rollback to the previous shell without a database downgrade, persistence denial, quota/headroom rejection, unsupported/managed-policy rejection, and explicit site-data clearing. Expected: no silent edit under an incompatible schema and no deletion of pending local bytes.
+
+  Result 2026-07-21: readiness, Service Worker policy, update coordinator, UI, and browser tests were written against absent behavior before implementation. The final gate covers all thirteen readiness codes, explicit user-only persistence requests, IndexedDB and OPFS health canaries, restart survival, exact offline-grant scope, positive N/N-1 versions, app-shell-only caching, migration read-only recovery, pending-work deferral, and a single cross-tab update owner. `npm --prefix apps/web run test:e2e:offline` passed 2/2 using a dedicated persistent Chrome profile: the checked-out Audit shell/package reopened in a fresh browser process after the origin server stopped, and a separate two-page update test preserved N/N-1 caches plus IndexedDB/OPFS sentinels until explicit site-data clearing. The full HTTP profile passed Go race/live integration, OpenAPI 5/5, SQLC regeneration, React 76/76, live HTTP contract 9/9, mock/HTTP Playwright 1/1 each, both builds, and cleanup. App-shell scans passed for demo and HTTP; the HTTP artifact remained mock/seed-free across 10 files and 75 inputs. Evidence is [PWA App Shell And Offline Readiness](../../demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md), `verified locally`, and `candidate-only`. Task 7 atomic field storage/outbox, Task 8 staged attachment bytes, Task 12 sync, production MDM/security operations, deployment, cutover, and `production-ready` evidence remain `not run` or `blocked` as applicable. The next binding slice is Task 7.
 
 ### Task 7: Implement Atomic IndexedDB Field Storage And Outbox
 
@@ -1866,7 +1868,7 @@ evidence.
 
   Expected: upload bytes, metadata, checksum, scan state, review state, Evidence versions, Finding transitions, report/dashboard projections, and audit events remain consistent across retry/restart. Mock and HTTP agree on public invariants; production OIDC/MFA, managed-device offline, deployment, and production-readiness remain `not run`.
 
-  Result 2026-07-21: upload, object-store, worker, HTTP-contract, and shared-browser tests were written against absent behavior before implementation. The fresh `./scripts/test-http-profile.sh` run built API and worker, passed the full Go race and live PostgreSQL/Keycloak/MinIO integration suite, passed OpenAPI generation 5/5 and all module-owned SQLC clean generation, passed React/Vitest 32/32, passed the live `HttpBackend` contract 9/9, and passed the same canonical Playwright scenario under mock 1/1 and HTTP 1/1. The normal HTTP artifact scan passed across 7 files and 71 inputs without mock/seed or test-profile code. Upload expiry/retry, non-overwriting keys, hash/type/size enforcement, immutable Evidence versions, Inspection Attachment separation, scan clean/quarantine/failure/timeout, crash recovery, clean-only review/download, organization isolation, and task-owned cleanup are covered. `go vet ./...`, the intact root Vanilla suite 103/103, and `git diff --check` also passed. Evidence is [Bounded Upload And HTTP Parity](../../demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md), `verified locally`, and `candidate-only`. The deterministic scanner and local S3-compatible profile are not production services. Browser offline Tasks 6-8, Task 12 sync, Task 5 wider route migration, Task 13 release packet, deployment, cutover, and `production-ready` evidence remain `not run` or `blocked` as applicable. The next binding slice is Task 6.
+  Result 2026-07-21: upload, object-store, worker, HTTP-contract, and shared-browser tests were written against absent behavior before implementation. The fresh `./scripts/test-http-profile.sh` run built API and worker, passed the full Go race and live PostgreSQL/Keycloak/MinIO integration suite, passed OpenAPI generation 5/5 and all module-owned SQLC clean generation, passed React/Vitest 32/32, passed the live `HttpBackend` contract 9/9, and passed the same canonical Playwright scenario under mock 1/1 and HTTP 1/1. The normal HTTP artifact scan passed across 7 files and 71 inputs without mock/seed or test-profile code. Upload expiry/retry, non-overwriting keys, hash/type/size enforcement, immutable Evidence versions, Inspection Attachment separation, scan clean/quarantine/failure/timeout, crash recovery, clean-only review/download, organization isolation, and task-owned cleanup are covered. `go vet ./...`, the intact root Vanilla suite 103/103, and `git diff --check` also passed. Evidence is [Bounded Upload And HTTP Parity](../../demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md), `verified locally`, and `candidate-only`. The deterministic scanner and local S3-compatible profile are not production services. At the Task 11 checkpoint, browser offline Tasks 6-8, Task 12 sync, Task 5 wider route migration, Task 13 release packet, deployment, cutover, and `production-ready` evidence were `not run` or `blocked` as applicable. Task 6 subsequently completed its local PWA/readiness foundation; the current binding next slice is Task 7.
 
 ## Phase 6 — Implement Production Sync And Conflict Handling
 
@@ -2153,7 +2155,7 @@ must not start; it does not block unrelated earlier slices.
 | Contract generation and demo/HTTP build-profile ownership | Current user / plan owner | accepted | Tasks 2-4 established the minimal versioned OpenAPI, checked TypeScript generation, and build-time-separated React/Vite demo/HTTP entries. Tasks 9-11 added checked Go generation and a real local API profile; the HTTP artifact excludes mock/seed and test-profile inputs. This is `candidate-only`, not a production API authorization. |
 | React/Vite and one-module Go ownership ADR | Engineering + Platform | accepted | Current user / plan owner acceptance dated 2026-07-21 for the local candidate: React/Vite browser client plus one Go `1.26` modular-monolith module with API and worker commands. Production maintenance, on-call, and deployment ownership remain external release blockers. |
 | Same-origin OIDC session/BFF, MFA, cookie, CSRF, expiry, and revocation | Security + Identity | accepted | Candidate policy accepted 2026-07-21: provider-neutral OIDC Authorization Code BFF, local Keycloak integration, provider-enforced MFA, server-side provider tokens, Secure/HttpOnly/SameSite cookie, CSRF on mutations, 30-minute idle and 8-hour absolute session, explicit logout/revoke, and fail-closed production configuration. |
-| Managed browser/device/profile and local-data protection | Security + CAA Operations + Records | accepted | Candidate policy accepted 2026-07-21: current managed Chrome on an encrypted OS/profile, clear-on-exit disabled, subject-scoped local records, no cross-subject render, and explicit refusal of official checkout when policy attestation or storage health is absent. App-level encryption and production MDM evidence remain external release decisions. |
+| Managed browser/device/profile and local-data protection | Security + CAA Operations + Records | accepted | Candidate policy accepted 2026-07-21: current managed Chrome on an encrypted OS/profile, clear-on-exit disabled, subject-scoped local records, no cross-subject render, and explicit refusal of official checkout when policy attestation or storage health is absent. Task 6 implements and locally verifies the policy attestation, storage canaries, persistence/headroom, restart, grant, version, and site-data-loss boundary; see [PWA App Shell And Offline Readiness](../../demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md). App-level encryption and production MDM evidence remain external release decisions. |
 | Offline grant/package duration, scope, reassignment/revoke/late-sync behavior | Product + Security + CAA Operations | accepted | Candidate policy accepted 2026-07-21: 24-hour grant, 72-hour checked-out package, 5-minute clock-skew tolerance, exact subject/device/package/assignment scope, late or revoked sync rejected without deleting local recovery data, logout locks the package, and user switch never exposes it. |
 | Inspection Attachment versus official Evidence; size/media/checksum/upload/scan | Product + Records + Security | accepted | Candidate policy accepted 2026-07-21: offline `InspectionAttachment` remains distinct from online official `EvidenceVersion`; PDF/JPEG/PNG only, 25 MB per object, SHA-256, server MIME sniffing, private non-overwriting object keys, bounded whole-object retry, and clean-scan gate. Archives and multipart/resume remain out of scope. |
 | Conflict policy | Product + CAA Operations | accepted | Candidate policy accepted 2026-07-21: no automatic merge; preserve the local draft, return an authorized typed conflict, and require explicit user re-entry/resolution against the authoritative revision. |
@@ -2165,7 +2167,7 @@ must not start; it does not block unrelated earlier slices.
 
 - Current status: `active`; Tasks 5-13 and per-Task commit/push are explicitly authorized for the local release candidate.
 - Review status: the initial 2026-07-20 adversarial review is complete; verdict was `NO-GO as written`, and its plan-level corrections are incorporated in this revision.
-- Current next todo: execute Task 6 test-first for the PWA app shell, managed-browser offline-readiness gate, update safety, restart canary, and real offline startup; then commit and push that Task before Task 7.
+- Current next todo: execute Task 7 test-first for atomic subject-scoped IndexedDB field storage, causal outbox writes, migrations, and restart recovery; then commit and push that Task before Task 8.
 - Move to `ready-for-verification` only after the selected implementation objective and every required local gate pass. A required local gate cannot pass through a documented gap.
 - Do not move to `completed/` merely because a local release candidate exists. Completion requires objective completion, required local verification, explicit stakeholder/user acceptance, completed-index entry, tracker reconciliation, and an explicit disposition for the separate production release/operations dependency.
 - `production-ready`, deployment, traffic routing, cutover, and legacy removal remain blocked until the separately approved production release/operations plan passes and the user authorizes the exact action.

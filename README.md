@@ -14,11 +14,12 @@ under `apps/api/`. Its local verification profile uses pinned PostgreSQL,
 Keycloak, MinIO, and a deterministic scanner adapter.
 
 **Candidate-only / not production-ready:** the Go/PostgreSQL authority layer,
-private bounded object upload, deterministic scan worker, and full canonical
-HTTP scenario are `verified locally`; they are not deployed production
-services. There is no production OIDC/MFA, production object store/scanner or
-Evidence records policy, browser offline persistence, production sync,
-deployment, cutover, or legacy removal. The root demo remains the
+private bounded object upload, deterministic scan worker, full canonical HTTP
+scenario, and Task 6 PWA app-shell/offline-readiness foundation are `verified
+locally`; they are not deployed production services. There is no production
+OIDC/MFA, production object store/scanner or Evidence records policy, atomic
+offline field repository/outbox, staged offline attachment store, production
+sync, deployment, cutover, or legacy removal. The root demo remains the
 removal-blocking behavior oracle.
 
 ## Product definition
@@ -46,6 +47,7 @@ Do not build an EMPIC-like complex enterprise screen first. Build a simple, role
 5. `docs/exec-plans/index.md`
 6. `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.md`
 7. `docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md`
+8. `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md`
 
 For the clickable demo, open `index.html` directly in a browser or serve this
 folder with a local static server. See `docs/demo-evidence/BUILD_SUMMARY.md` for current
@@ -71,6 +73,16 @@ See
 `docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md` for the
 bounded upload/scan contract, real HTTP parity, fresh local gates, and explicit
 production exclusions.
+
+For the dedicated persistent-profile PWA/offline foundation check:
+
+```bash
+npm --prefix apps/web run test:e2e:offline
+```
+
+See `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md` for the exact
+readiness, app-shell caching, browser-restart, two-client update, and explicit
+site-data-loss evidence and exclusions.
 
 
 ## Source Notes

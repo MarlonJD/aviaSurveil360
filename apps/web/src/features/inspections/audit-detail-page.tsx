@@ -9,6 +9,7 @@ import {
   StatusPill,
   WorkspaceShell,
 } from "../shared/workspace-shell";
+import { OfflineReadinessPanel } from "./offline-readiness-panel";
 
 export function AuditDetailPage() {
   const { projection, actions } = useScenario();
@@ -47,6 +48,12 @@ export function AuditDetailPage() {
           Run Cabin checklist
         </Link>
       </article>
+      {packageView ? (
+        <OfflineReadinessPanel
+          inspectionPackage={packageView}
+          subjectId="USR-INSPECTOR-AMINA"
+        />
+      ) : null}
     </WorkspaceShell>
   );
 }

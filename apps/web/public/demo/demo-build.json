@@ -2,5 +2,6 @@
   "product": "AviaSurveil360",
   "profile": "demo",
   "status": "candidate-only",
-  "persistence": "memory-only"
+  "canonicalBackendPersistence": "memory-only",
+  "offlineFoundation": "indexeddb-readiness-snapshot-only"
 }

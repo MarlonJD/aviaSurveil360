@@ -19,6 +19,9 @@ Ayrı Go/PostgreSQL ve canonical authority candidate temelleri de bulunur; bkz.
 ve [Kanonik Yetki Temeli Kanıtı](CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.turkce.md).
 Task 11 ayrıca ayrı doğrulanmış local upload/scan ve real HTTP candidate ekler;
 bkz. [Sınırlandırılmış Yükleme Ve HTTP Parity Kanıtı](BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.turkce.md).
+Task 6 ayrıca ayrı doğrulanmış PWA app-shell ve explicit browser-offline
+readiness foundation ekler; bkz.
+[PWA App Shell Ve Offline Readiness Kanıtı](PWA_OFFLINE_READINESS_2026-07-21.turkce.md).
 Bu yan candidate'lar root demo'yu veya genel ürünü `production-ready` yapmaz.
 
 **Tarih bağlamı:** Uygulama "bugün" olarak **15 Haziran 2026** tarihini kullanır;
@@ -1192,6 +1195,33 @@ içindedir. Local object store ve deterministik scanner production service
 değildir. Browser offline Task 6-8, sync, wider route migration, deployment,
 cutover ve production verification uygun biçimde `not run` veya `blocked`
 kalır.
+
+---
+
+### PWA app-shell ve offline-readiness checkpoint — 2026-07-21
+
+Durum: Task 6 `verified locally` ve `candidate-only`; release durumu
+`release pending`. Yan React candidate artık version-fenced module Service
+Worker, yalnız shell/static cache policy, explicit on üç-result managed-profile
+readiness gate, restart canary, exact server-grant/version check, online
+fallback, site-data-loss message ve N/N-1 multi-tab update safety içerir.
+Foundation IndexedDB yalnız device/restart verisi ve exact-subject immutable
+checkout snapshot saklar; Task 7 field repository veya outbox değildir. OPFS
+yalnız Task 6 health canary için kullanılır.
+
+Taze gate'ler geçti: React/Vitest 76/76; dedicated persistent Chrome profile ve
+gerçekten durdurulmuş origin server kullanan offline Playwright 2/2; canonical
+mock/HTTP Playwright 1/1 + 1/1; live HTTP Backend contract 9/9; full Go
+race/live integration; OpenAPI 5/5 ve SQLC clean generation; demo/HTTP app-shell
+artifact scan; 10 file ve 75 input HTTP isolation; root Vanilla 103/103;
+`go vet`; ve task-owned browser/container/process cleanup.
+
+Tam kanıt ve scope sınırları
+[PWA_OFFLINE_READINESS_2026-07-21.turkce.md](PWA_OFFLINE_READINESS_2026-07-21.turkce.md)
+içindedir. Atomic offline field/outbox persistence (Task 7), staged Inspection
+Attachment byte (Task 8), production sync (Task 12), wider route migration,
+deployment, cutover ve production verification uygun biçimde `not run` veya
+`blocked` kalır. `production-ready` iddiası yoktur.
 
 ---
 

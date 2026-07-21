@@ -5,12 +5,13 @@ clickable demo** and a separate `candidate-only` React/Go application. It is
 not a production system.
 
 Candidate boundary: a local Go/PostgreSQL API/worker, pinned local Keycloak,
-private MinIO upload, deterministic scan adapter, and real canonical HTTP
-scenario are `verified locally`. They are not deployed production services.
-Production OIDC/MFA, production storage/scanning/records policy, PWA/offline
-persistence, production synchronization, deployment, cutover, legacy removal,
-and a `production-ready` claim remain excluded or `blocked`. The root Vanilla
-demo remains intact.
+private MinIO upload, deterministic scan adapter, real canonical HTTP scenario,
+and Task 6 PWA app-shell/offline-readiness foundation are `verified locally`.
+They are not deployed production services. Production OIDC/MFA, production
+storage/scanning/records policy, atomic offline field/outbox persistence,
+staged offline attachments, production synchronization, deployment, cutover,
+legacy removal, and a `production-ready` claim remain excluded or `blocked`.
+The root Vanilla demo remains intact.
 
 ## Root Files
 
@@ -44,7 +45,7 @@ demo remains intact.
 ## Versioned Contract, React Candidate, And Go Candidate
 
 - `api/openapi/aviasurveil360.yaml` — minimal versioned transport contract for
-  the authorized Tasks 2-4 slice.
+  the authorized local candidate slices.
 - `api/openapi/examples/canonical/` — canonical closed-schema request and
   response examples.
 - `api/openapi/tests/contract-examples.test.mjs` — OpenAPI example and Auditee
@@ -63,13 +64,28 @@ demo remains intact.
   `MockBackend`; reachable only from the demo build entry.
 - `apps/web/src/features/` — canonical Cabin Inspection assignments,
   inspection, checklist, Finding, CAP, Evidence, report, and dashboard routes.
+- `apps/web/src/sw.ts` — version-fenced app-shell-only Service Worker; it does
+  not cache authenticated API or business-record responses.
+- `apps/web/src/offline/storage-readiness.ts` — thirteen-result explicit
+  managed-profile gate, browser storage canaries, restart proof, exact grant
+  checks, and foundation checkout snapshot boundary.
+- `apps/web/src/offline/update-coordinator.ts` — positive N/N-1 compatibility,
+  pending-work deferral, cross-tab owner lock/broadcast, migration pause,
+  read-only recovery, and shell-only rollback policy.
+- `apps/web/src/features/inspections/offline-readiness-panel.tsx` — explicit
+  policy attestations, online fallback, advisory capacity, checkout result, and
+  site-data-loss messaging.
 - `apps/web/tests/contract/` — reusable backend contract executed against the
   deterministic mock harness and the seeded live HTTP profile.
 - `apps/web/tests/e2e/canonical-scenario.spec.ts` — normalized mock-mode Cabin
   lifecycle and organization-isolation browser scenario, executed unchanged
   under mock and HTTP Playwright projects.
+- `apps/web/tests/e2e/offline-*.spec.ts` — dedicated persistent-profile Chrome
+  restart/server-stop startup and two-client update/site-data recovery checks.
+- `apps/web/scripts/assert-app-shell-artifact.mjs` — generated manifest/asset,
+  version marker, and forbidden Service Worker behavior gate.
 - `apps/web/scripts/assert-http-artifact.mjs` — HTTP build input/public-artifact
-  exclusion gate for mock, seed, and test-profile code.
+  exclusion gate for mock, seed, and test-profile code plus app-shell policy.
 - `apps/api/go.mod` — the single Go module and pinned runtime dependencies.
 - `apps/api/cmd/api/` and `apps/api/cmd/worker/` — production-shaped HTTP and
   worker command entry points.
@@ -183,6 +199,9 @@ separate `apps/web/package.json` owns the React candidate commands.
 - `docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md` and
   `.turkce.md` — Task 11 bounded upload/scan, live `HttpBackend`, and shared
   mock/HTTP scenario evidence.
+- `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md` and `.turkce.md` —
+  Task 6 app-shell caching, explicit readiness, restart survival, multi-client
+  update, and actual server-stopped startup evidence.
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.md`
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.turkce.md`
 - `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`
@@ -248,8 +267,9 @@ files in the same folder.
 
 The files above support stakeholder feedback, local demo verification, and a
 `candidate-only` React/Go vertical. They prove the scoped local HTTP/API,
-authority, audit-event, private upload, deterministic scan, and scenario
-contracts recorded in Task 9-11 evidence. They do not prove production
-identity/MFA, production storage/scanning or records operations, regulatory or
-enforcement approval, notification delivery, browser offline behavior, sync,
-deployment, cutover, release, or production readiness.
+authority, audit-event, private upload, deterministic scan, scenario contracts,
+and Task 6 app-shell/readiness/restart behavior recorded in Task evidence. They
+do not prove production identity/MFA, production storage/scanning or records
+operations, regulatory or enforcement approval, notification delivery, atomic
+offline field/outbox or attachment persistence, production sync, deployment,
+cutover, release, or production readiness.

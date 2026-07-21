@@ -37,9 +37,11 @@ evidence afterward. It is an inventory, not a new product specification.
 | `../exec-plans/index.md` | Active plan status and one next concrete todo per active plan. |
 | `../exec-plans/active/2026-06-29-agent-harness-readiness-completion-plan.md` | Current harness completion plan and execution prompt. |
 | `../exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md` | Historical partial-adaptation record superseded by the readiness completion plan. |
+| `../exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md` | Active authorized local-candidate task order, scope boundaries, decisions, and next todo. |
 | `../exec-plans/tech-debt-tracker.md` | Durable blocker, accepted-risk, missing-evidence, and technical-debt tracker. |
 | `../demo-evidence/BUILD_SUMMARY.md` | Current demo evidence, local verification status, and production gaps. |
 | `../demo-evidence/BUILD_SUMMARY.turkce.md` | Turkish stakeholder companion summary when demo evidence changes. |
+| `../demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md` | Task 6 app-shell, readiness, restart, multi-client update, and actual offline startup evidence. |
 
 ## Static Demo Surfaces
 
@@ -88,11 +90,12 @@ There is no `package.json`; run tests directly with `node`.
 | UI/visual QA | UX docs, screen specs, active plan | Screenshot/browser evidence and demo summary when accepted. |
 | Plan lifecycle | `../../AGENTS.md`, `../exec-plans/index.md`, target plan | Plan file, index row, and tech-debt tracker entry if a durable gap exists. |
 
-## Forbidden Production Surfaces
+## Authorization Boundary
 
-The current repo must not gain backend services, database migrations, API
-servers, real auth, real upload/storage, real AI integrations, real regulatory
-ingestion, notification delivery services, production audit-log infrastructure,
-GitHub Actions, hosted runners, scheduled workflows, remote CI, package-manager
-test scripts, branch changes, commits, pushes, PRs, or GitHub comments unless a
-future user request explicitly asks for that exact action.
+The repository now contains explicitly authorized `candidate-only` React/Go,
+local-database, local-OIDC, local-object-storage, upload/scan, and PWA-readiness
+slices recorded by the active production-transition plan. Do not expand these
+into production integrations, production deployment, real notification or
+regulatory ingestion, hosted automation/remote CI, branch changes, PRs, or
+GitHub comments without exact current authorization. Commit and push are allowed
+only where the current user request explicitly requires them.

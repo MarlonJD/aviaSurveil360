@@ -633,6 +633,59 @@ textarea {
   text-align: left;
 }
 
+.offline-readiness {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.offline-readiness__attestations {
+  display: grid;
+  gap: 10px;
+}
+
+.offline-readiness__attestations label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: #273d4b;
+}
+
+.offline-readiness__attestations input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+}
+
+.offline-readiness__result {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid #d7a2a2;
+  border-radius: 10px;
+  color: #6e2525;
+  background: #fff5f5;
+}
+
+.offline-readiness__result.is-ready {
+  border-color: #87b8a8;
+  color: #143f42;
+  background: #edf8f4;
+}
+
+.offline-readiness__snapshot {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 4px solid #26736a;
+  background: #edf8f4;
+}
+
+.offline-readiness__warning {
+  margin: 0;
+  color: #6e6246;
+  font-size: 0.86rem;
+}
+
 @media (max-width: 900px) {
   .role-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

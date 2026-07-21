@@ -1,5 +1,6 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
+import { fileURLToPath } from "node:url";
 
 import { resolveBuildProfile, type BuildProfile } from "./src/app/build-profile";
 
@@ -23,6 +24,16 @@ function buildProfilePlugin(profile: BuildProfile, entryName: string): Plugin {
         fileName: "build-inputs.json",
         source: `${JSON.stringify({ profile, inputs: [...inputs].sort() }, null, 2)}\n`,
       });
+      const assets = Object.keys(bundle)
+        .filter((fileName) => fileName.startsWith("assets/") && /\.(?:css|js)$/.test(fileName))
+        .map((fileName) => `/${fileName}`)
+        .sort();
+      assets.push(profile === "http" ? "/http-config.json" : "/demo-build.json");
+      this.emitFile({
+        type: "asset",
+        fileName: "app-shell-assets.json",
+        source: `${JSON.stringify({ appShellVersion: 1, profile, assets }, null, 2)}\n`,
+      });
     },
   };
 }
@@ -31,6 +42,7 @@ export default defineConfig(() => {
   const profile = resolveBuildProfile(process.env.AVIA_BUILD_PROFILE, Boolean(process.env.VITEST));
   const httpTestProfile = profile === "http" && process.env.AVIA_HTTP_TEST_PROFILE === "canonical";
   const apiTarget = process.env.AVIA_HTTP_API_TARGET;
+  const webRoot = fileURLToPath(new URL(".", import.meta.url));
 
   return {
     plugins: [react(), buildProfilePlugin(profile, httpTestProfile ? "http-test" : profile)],
@@ -56,6 +68,16 @@ export default defineConfig(() => {
       emptyOutDir: true,
       manifest: true,
       sourcemap: true,
+      rollupOptions: {
+        input: {
+          app: `${webRoot}index.html`,
+          sw: `${webRoot}src/sw.ts`,
+        },
+        output: {
+          entryFileNames: (chunk) =>
+            chunk.name === "sw" ? "sw.js" : "assets/[name]-[hash].js",
+        },
+      },
     },
     test: {
       environment: "node",
