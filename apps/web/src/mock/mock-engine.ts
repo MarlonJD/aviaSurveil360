@@ -667,11 +667,11 @@ export class MockBackendEngine implements Backend {
           commentToAuditee: "",
         };
         state.evidenceVersions.push(evidenceVersion);
-        finding.status = "EVIDENCE_SUBMITTED";
+        finding.status = "PENDING_CAA_REVIEW";
         finding.currentOwnerType = "CAA";
         finding.currentOwnerId = "USR-LEAD-CANER";
         finding.currentOwnerRole = "leadInspector";
-        finding.nextAction = "CAA to review latest Evidence version";
+        finding.nextAction = "CAA reviews Evidence";
         finding.revision += 1;
         return {
           evidenceVersionId: evidenceVersion.id,
@@ -841,7 +841,7 @@ export class MockBackendEngine implements Backend {
           ).length,
           pendingCapReviews: findings.filter((finding) => finding.status === "CAP_SUBMITTED").length,
           pendingEvidenceReviews: findings.filter(
-            (finding) => finding.status === "EVIDENCE_SUBMITTED",
+            (finding) => finding.status === "PENDING_CAA_REVIEW",
           ).length,
           recentFindingNumbers: findings
             .slice()

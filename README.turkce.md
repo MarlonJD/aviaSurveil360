@@ -1,22 +1,25 @@
-# AviaSurveil360 Planlama Paketi, Frontend Demo ve React Candidate
+# AviaSurveil360 Planlama Paketi, Frontend Demo ve React/Go Candidate
 
 Bu depo, Sivil Havacılık Otoriteleri için önerilen surveillance, audit,
 Finding, CAP ve Evidence management ürününe ait yapılandırılmış planlama
 paketini, orijinal **frontend-only statik clickable demo**yu ve ayrı bir
-`candidate-only` React mock dilimini içerir.
+`candidate-only` React/Go uygulamasını içerir.
 
 Korunan legacy demo `index.html`, `css/`, `js/`, browser-local mock state ve
 `tests/` altındaki Node smoke testlerinden oluşur. Yetkilendirilen ilk
-çalıştırılabilir React dilimi `apps/web/` altındadır; TypeScript, Vite, tek
-`Backend` arkasında deterministik in-memory mock data ve `api/openapi/`
-altındaki versioned OpenAPI contract'ı kullanır.
+çalıştırılabilir React uygulaması `apps/web/` altındadır; TypeScript, Vite,
+build-time ayrılmış mock/HTTP entry'leri, capability-composed tek `Backend` ve
+`api/openapi/` altındaki versioned OpenAPI contract'ı kullanır. Tek modüllü Go
+API/worker `apps/api/` altındadır. Local verification profile pinned PostgreSQL,
+Keycloak, MinIO ve deterministik scanner adapter kullanır.
 
-**Candidate-only / production-ready değil:** real backend, database, deployed
-API, authentication, production authorization enforcement, real file
-upload/storage, production Evidence chain of custody, PWA/offline persistence,
-production synchronization, deployment veya cutover yoktur. `HttpBackend`
-yalnız fake-fetch ile test edilmiştir. Root demo, removal-blocking behavior
-oracle olarak korunur.
+**Candidate-only / production-ready değil:** Go/PostgreSQL authority layer,
+private bounded object upload, deterministik scan worker ve full canonical HTTP
+scenario `verified locally` durumundadır; deployed production service değildir.
+Production OIDC/MFA, production object store/scanner veya Evidence records
+policy, browser offline persistence, production sync, deployment, cutover veya
+legacy removal yoktur. Root demo, removal-blocking behavior oracle olarak
+korunur.
 
 ## Ürün tanımı
 
@@ -42,6 +45,7 @@ eden task-based oversight platformudur.
 4. `docs/demo-evidence/BUILD_SUMMARY.md`
 5. `docs/exec-plans/index.md`
 6. `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.turkce.md`
+7. `docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.turkce.md`
 
 Clickable demo için `index.html` dosyasını doğrudan browser'da açın veya bu
 klasörü local static server ile servis edin. Güncel verification status ve demo
@@ -56,6 +60,17 @@ npm --prefix apps/web run dev:demo
 
 Doğrulanan exact scope, command, transcript ve exclusion'lar için
 `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.turkce.md` dosyasına bakın.
+
+Tam local HTTP candidate profile için:
+
+```bash
+./scripts/test-http-profile.sh
+```
+
+Bounded upload/scan contract, real HTTP parity, taze local gate'ler ve explicit
+production exclusion'lar için
+`docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.turkce.md`
+dosyasına bakın.
 
 
 ## Kaynak Notları

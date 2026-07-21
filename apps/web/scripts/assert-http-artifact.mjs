@@ -57,4 +57,21 @@ assert.ok(!Object.keys(publicConfig).some((key) => /backend|mode|token|secret|pa
 const manifestSource = JSON.stringify(readJson(".vite/manifest.json"));
 assert.doesNotMatch(manifestSource, /src\/mock|seed-data|create-mock-backend/i);
 
+const forbiddenArtifactPatterns = [
+  /x-avia-test-token/i,
+  /x-avia-test-subject/i,
+  /candidate-canonical-test-token/i,
+  /src\/test-profile/i,
+];
+for (const relativePath of files.filter((file) => /\.(?:js|map)$/.test(file))) {
+  const contents = fs.readFileSync(path.join(artifactRoot, relativePath), "utf8");
+  for (const forbidden of forbiddenArtifactPatterns) {
+    assert.doesNotMatch(
+      contents,
+      forbidden,
+      `HTTP artifact contains local canonical-test boundary data in ${relativePath}`,
+    );
+  }
+}
+
 console.log(`http-artifact-scan: ok (${files.length} files, ${buildInputs.inputs.length} inputs)`);

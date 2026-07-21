@@ -3,6 +3,10 @@ package httpapi
 import "net/http"
 
 func NewServerHandler(readiness ReadinessProbe, authentication http.Handler) http.Handler {
+	return NewApplicationHandler(readiness, authentication, nil, nil)
+}
+
+func NewApplicationHandler(readiness ReadinessProbe, authentication, api, testAdministration http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/health/", NewHealthHandler(readiness))
 	if authentication == nil {
@@ -11,5 +15,11 @@ func NewServerHandler(readiness ReadinessProbe, authentication http.Handler) htt
 		})
 	}
 	mux.Handle("/auth/", authentication)
+	if api != nil {
+		mux.Handle("/v1/", api)
+	}
+	if testAdministration != nil {
+		mux.Handle("/__test/", testAdministration)
+	}
 	return mux
 }

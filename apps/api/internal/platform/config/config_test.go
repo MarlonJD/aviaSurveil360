@@ -19,6 +19,8 @@ func TestProductionRejectsTestAndDevelopmentBypasses(t *testing.T) {
 		{name: "test identity", key: "AVIA_TEST_PRINCIPAL"},
 		{name: "test session", key: "AVIA_TEST_SESSION"},
 		{name: "development session secret", key: "AVIA_DEV_SESSION_SECRET"},
+		{name: "canonical test profile", key: "AVIA_ENABLE_CANONICAL_TEST_PROFILE"},
+		{name: "canonical test token", key: "AVIA_CANONICAL_TEST_TOKEN"},
 	}
 
 	for _, test := range tests {
@@ -36,6 +38,44 @@ func TestProductionRejectsTestAndDevelopmentBypasses(t *testing.T) {
 			}
 			if !strings.Contains(err.Error(), test.key) {
 				t.Fatalf("Load() error %q does not identify %s", err, test.key)
+			}
+		})
+	}
+}
+
+func TestCanonicalHTTPProfileRequiresExplicitTestOnlyObjectStoreConfiguration(t *testing.T) {
+	t.Parallel()
+	values := map[string]string{
+		"AVIA_ENVIRONMENT":                   "test",
+		"AVIA_DATABASE_URL":                  "postgres://127.0.0.1/avia",
+		"AVIA_ENABLE_CANONICAL_TEST_PROFILE": "true",
+		"AVIA_CANONICAL_TEST_TOKEN":          "candidate-test-token-1234",
+		"AVIA_OBJECT_STORE_ENDPOINT":         "127.0.0.1:59001",
+		"AVIA_OBJECT_STORE_ACCESS_KEY":       "local-access",
+		"AVIA_OBJECT_STORE_SECRET_KEY":       "local-secret",
+		"AVIA_OBJECT_STORE_CORS_ORIGINS":     "http://127.0.0.1:4173",
+		"AVIA_SCANNER_MODE":                  "deterministic-test",
+	}
+	settings, err := config.Load(mapLookup(values))
+	if err != nil {
+		t.Fatalf("Load() canonical HTTP profile: %v", err)
+	}
+	if !settings.CanonicalTestProfile || settings.CanonicalTestToken != values["AVIA_CANONICAL_TEST_TOKEN"] {
+		t.Fatalf("canonical profile = %+v", settings)
+	}
+	if settings.ObjectStoreEndpoint != "127.0.0.1:59001" || len(settings.ObjectStoreCORSOrigins) != 1 || !settings.AllowServerManagedCORS {
+		t.Fatalf("object-store profile = %+v", settings)
+	}
+
+	for _, missing := range []string{
+		"AVIA_CANONICAL_TEST_TOKEN", "AVIA_OBJECT_STORE_ENDPOINT", "AVIA_OBJECT_STORE_ACCESS_KEY",
+		"AVIA_OBJECT_STORE_SECRET_KEY", "AVIA_OBJECT_STORE_CORS_ORIGINS",
+	} {
+		t.Run("missing "+missing, func(t *testing.T) {
+			candidate := cloneValues(values)
+			delete(candidate, missing)
+			if _, err := config.Load(mapLookup(candidate)); err == nil || !strings.Contains(err.Error(), missing) {
+				t.Fatalf("missing %s error = %v", missing, err)
 			}
 		})
 	}
@@ -65,13 +105,18 @@ func TestProductionRequiresCompleteHTTPSOIDCAndSessionConfiguration(t *testing.T
 	t.Parallel()
 
 	base := map[string]string{
-		"AVIA_ENVIRONMENT":            "production",
-		"AVIA_DATABASE_URL":           "postgres://example.invalid/avia",
-		"AVIA_OIDC_ISSUER_URL":        "https://identity.example/realms/avia",
-		"AVIA_OIDC_CLIENT_ID":         "aviasurveil360",
-		"AVIA_OIDC_CLIENT_SECRET":     "provider-secret",
-		"AVIA_OIDC_REDIRECT_URL":      "https://avia.example/auth/callback",
-		"AVIA_SESSION_ENCRYPTION_KEY": base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")),
+		"AVIA_ENVIRONMENT":               "production",
+		"AVIA_DATABASE_URL":              "postgres://example.invalid/avia",
+		"AVIA_OIDC_ISSUER_URL":           "https://identity.example/realms/avia",
+		"AVIA_OIDC_CLIENT_ID":            "aviasurveil360",
+		"AVIA_OIDC_CLIENT_SECRET":        "provider-secret",
+		"AVIA_OIDC_REDIRECT_URL":         "https://avia.example/auth/callback",
+		"AVIA_SESSION_ENCRYPTION_KEY":    base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")),
+		"AVIA_OBJECT_STORE_ENDPOINT":     "objects.example:443",
+		"AVIA_OBJECT_STORE_ACCESS_KEY":   "production-access",
+		"AVIA_OBJECT_STORE_SECRET_KEY":   "production-secret",
+		"AVIA_OBJECT_STORE_CORS_ORIGINS": "https://avia.example",
+		"AVIA_OBJECT_STORE_TLS":          "true",
 	}
 	settings, err := config.Load(mapLookup(base))
 	if err != nil {
@@ -104,13 +149,18 @@ func TestProductionRequiresCompleteHTTPSOIDCAndSessionConfiguration(t *testing.T
 func TestProductionRejectsInsecureOIDCEndpointsAndInvalidEncryptionKey(t *testing.T) {
 	t.Parallel()
 	base := map[string]string{
-		"AVIA_ENVIRONMENT":            "production",
-		"AVIA_DATABASE_URL":           "postgres://example.invalid/avia",
-		"AVIA_OIDC_ISSUER_URL":        "https://identity.example/realms/avia",
-		"AVIA_OIDC_CLIENT_ID":         "aviasurveil360",
-		"AVIA_OIDC_CLIENT_SECRET":     "provider-secret",
-		"AVIA_OIDC_REDIRECT_URL":      "https://avia.example/auth/callback",
-		"AVIA_SESSION_ENCRYPTION_KEY": base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")),
+		"AVIA_ENVIRONMENT":               "production",
+		"AVIA_DATABASE_URL":              "postgres://example.invalid/avia",
+		"AVIA_OIDC_ISSUER_URL":           "https://identity.example/realms/avia",
+		"AVIA_OIDC_CLIENT_ID":            "aviasurveil360",
+		"AVIA_OIDC_CLIENT_SECRET":        "provider-secret",
+		"AVIA_OIDC_REDIRECT_URL":         "https://avia.example/auth/callback",
+		"AVIA_SESSION_ENCRYPTION_KEY":    base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")),
+		"AVIA_OBJECT_STORE_ENDPOINT":     "objects.example:443",
+		"AVIA_OBJECT_STORE_ACCESS_KEY":   "production-access",
+		"AVIA_OBJECT_STORE_SECRET_KEY":   "production-secret",
+		"AVIA_OBJECT_STORE_CORS_ORIGINS": "https://avia.example",
+		"AVIA_OBJECT_STORE_TLS":          "true",
 	}
 	for name, mutation := range map[string]func(map[string]string){
 		"HTTP issuer":   func(values map[string]string) { values["AVIA_OIDC_ISSUER_URL"] = "http://identity.example/realms/avia" },

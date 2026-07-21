@@ -9,7 +9,7 @@ async function submitEvidence(page: Page, version: number, fileName: string): Pr
   await page.getByTestId("evidence-file").setInputFiles({
     name: fileName,
     mimeType: "application/pdf",
-    buffer: Buffer.from(`mock Evidence version ${version}`),
+    buffer: Buffer.from(`%PDF-1.7\n1 0 obj\n<</Type/Catalog/Version(${version})>>\nendobj\n%%EOF\n`),
   });
   await expect(page.getByTestId("selected-evidence-file")).toHaveText(fileName);
   await page.getByRole("button", { name: "Submit Evidence version" }).click();
@@ -28,7 +28,17 @@ async function recordEvidenceDecision(
   await page.getByRole("button", { name: "Record Evidence review" }).click();
 }
 
-test("canonical Cabin Inspection lifecycle is backend-shaped and organization-safe in mock mode", async ({
+test.beforeEach(async ({ request }, testInfo) => {
+  if (testInfo.project.name !== "http") return;
+  const apiURL = process.env.AVIA_HTTP_API_URL ?? "http://127.0.0.1:58081";
+  const token = process.env.AVIA_CANONICAL_TEST_TOKEN ?? "";
+  const response = await request.post(`${apiURL}/__test/reset`, {
+    headers: { "x-avia-test-token": token },
+  });
+  expect(response.ok()).toBe(true);
+});
+
+test("canonical Cabin Inspection lifecycle is backend-shaped and organization-safe", async ({
   page,
 }, testInfo) => {
   const consoleIssues: string[] = [];

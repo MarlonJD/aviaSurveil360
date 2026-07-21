@@ -67,7 +67,7 @@ export interface ScenarioActions {
     commentToAuditee: string;
     internalCaaNote: string;
   }): Promise<void>;
-  submitEvidence(file: Pick<File, "name" | "size" | "type">): Promise<void>;
+  submitEvidence(file: File): Promise<void>;
   loadEvidenceVersions(role: Role): Promise<void>;
   reviewEvidence(input: {
     decision: "CLOSE" | "PARTIALLY_CLOSE" | "NOT_CLOSE" | "REQUEST_MORE_INFORMATION";
@@ -255,7 +255,10 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
       async submitEvidence(file) {
         if (!projection.finding) throw new Error("Finding is unavailable.");
         const backend = backendFor("auditee");
-        const sha256 = `mock-sha256:${file.name}:${file.size}`;
+        const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+        const sha256 = `sha256:${Array.from(new Uint8Array(digest), (byte) =>
+          byte.toString(16).padStart(2, "0"),
+        ).join("")}`;
         const upload = await backend.evidence.beginUpload({
           operationId: operationId("OP-EVIDENCE-BEGIN"),
           findingId: projection.finding.id,
@@ -265,16 +268,33 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
           byteSize: file.size,
           sha256,
         });
+        if (backend.mode === "http") {
+          const uploadResponse = await fetch(upload.uploadUrl, {
+            method: "PUT",
+            headers: upload.requiredHeaders,
+            body: file,
+          });
+          if (!uploadResponse.ok) {
+            throw new Error(`Evidence object upload failed with status ${uploadResponse.status}.`);
+          }
+        }
         await backend.evidence.completeUpload({
           operationId: operationId("OP-EVIDENCE-COMPLETE"),
           uploadId: upload.uploadId,
           sha256,
           byteSize: file.size,
         });
-        const [evidenceVersions, finding] = await Promise.all([
-          backend.evidence.listVersions({ findingId: projection.finding.id }),
-          backend.findings.get({ findingId: projection.finding.id }),
-        ]);
+        let evidenceVersions: EvidenceVersionView[] = [];
+        let finding = await backend.findings.get({ findingId: projection.finding.id });
+        for (let attempt = 0; attempt < 100; attempt += 1) {
+          evidenceVersions = await backend.evidence.listVersions({ findingId: projection.finding.id });
+          finding = await backend.findings.get({ findingId: projection.finding.id });
+          if (backend.mode === "mock" || evidenceVersions.at(-1)?.scanState === "CLEAN") break;
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        if (evidenceVersions.at(-1)?.scanState !== "CLEAN") {
+          throw new Error("Evidence scan did not reach CLEAN before the review timeout.");
+        }
         setProjection((current) => ({ ...current, evidenceVersions, finding }));
       },
 
@@ -313,6 +333,7 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
 
       async authorizedClose(reason) {
         if (!projection.finding) throw new Error("Finding is unavailable.");
+        if (!reason.trim()) throw new Error("Authorized closure reason is required.");
         const finding = await backendFor("manager").findings.authorizedClose({
           operationId: operationId("OP-AUTHORIZED-CLOSE"),
           findingId: projection.finding.id,

@@ -53,9 +53,9 @@ func Review(input ReviewInput) (ReviewResult, error) {
 	case DecisionClose:
 		return ReviewResult{FindingStatus: findings.StatusClosed, ClosureBasis: findings.ClosureBasisEvidenceVerified}, nil
 	case DecisionPartiallyClose:
-		return ReviewResult{FindingStatus: findings.StatusPendingClosure}, nil
+		return ReviewResult{FindingStatus: findings.StatusEvidenceMoreInformationRequested}, nil
 	case DecisionNotClose:
-		return ReviewResult{FindingStatus: findings.StatusEvidenceRequired}, nil
+		return ReviewResult{FindingStatus: findings.StatusEvidenceMoreInformationRequested}, nil
 	case DecisionRequestInformation:
 		return ReviewResult{FindingStatus: findings.StatusEvidenceMoreInformationRequested}, nil
 	default:

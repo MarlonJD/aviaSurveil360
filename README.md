@@ -1,22 +1,25 @@
-# AviaSurveil360 Planning Pack, Frontend Demo, And React Candidate
+# AviaSurveil360 Planning Pack, Frontend Demo, And React/Go Candidate
 
 This repository contains a structured planning pack, the original
-**frontend-only static clickable demo**, and a separate `candidate-only` React
-mock slice for a proposed Civil Aviation Authority surveillance, audit,
-Findings, CAP, and Evidence management product.
+**frontend-only static clickable demo**, and a separate `candidate-only`
+React/Go application for a proposed Civil Aviation Authority surveillance,
+audit, Findings, CAP, and Evidence management product.
 
 The intact legacy demo is `index.html` with `css/`, `js/`, browser-local mock
 state, and Node smoke tests under `tests/`. The authorized first executable
-React slice is under `apps/web/`; it uses TypeScript, Vite, deterministic
-in-memory mock data behind one `Backend`, and a versioned OpenAPI contract under
-`api/openapi/`.
+React application is under `apps/web/`; it uses TypeScript, Vite, build-time
+separated mock and HTTP entries, one capability-composed `Backend`, and a
+versioned OpenAPI contract under `api/openapi/`. The one-module Go API/worker is
+under `apps/api/`. Its local verification profile uses pinned PostgreSQL,
+Keycloak, MinIO, and a deterministic scanner adapter.
 
-**Candidate-only / not production-ready:** there is no real backend, database,
-deployed API, authentication, production authorization enforcement, real file
-upload/storage, production Evidence chain of custody, PWA/offline persistence,
-production synchronization, deployment, or cutover. `HttpBackend` is
-fake-fetch tested only. The root demo remains the removal-blocking behavior
-oracle.
+**Candidate-only / not production-ready:** the Go/PostgreSQL authority layer,
+private bounded object upload, deterministic scan worker, and full canonical
+HTTP scenario are `verified locally`; they are not deployed production
+services. There is no production OIDC/MFA, production object store/scanner or
+Evidence records policy, browser offline persistence, production sync,
+deployment, cutover, or legacy removal. The root demo remains the
+removal-blocking behavior oracle.
 
 ## Product definition
 
@@ -42,6 +45,7 @@ Do not build an EMPIC-like complex enterprise screen first. Build a simple, role
 4. `docs/demo-evidence/BUILD_SUMMARY.md`
 5. `docs/exec-plans/index.md`
 6. `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.md`
+7. `docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md`
 
 For the clickable demo, open `index.html` directly in a browser or serve this
 folder with a local static server. See `docs/demo-evidence/BUILD_SUMMARY.md` for current
@@ -56,6 +60,17 @@ npm --prefix apps/web run dev:demo
 
 See `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.md` for the exact verified
 scope, commands, transcript, and exclusions.
+
+For the complete local HTTP candidate profile:
+
+```bash
+./scripts/test-http-profile.sh
+```
+
+See
+`docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md` for the
+bounded upload/scan contract, real HTTP parity, fresh local gates, and explicit
+production exclusions.
 
 
 ## Source Notes

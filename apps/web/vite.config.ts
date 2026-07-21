@@ -3,13 +3,13 @@ import { defineConfig, type Plugin } from "vite";
 
 import { resolveBuildProfile, type BuildProfile } from "./src/app/build-profile";
 
-function buildProfilePlugin(profile: BuildProfile): Plugin {
+function buildProfilePlugin(profile: BuildProfile, entryName: string): Plugin {
   return {
     name: "aviasurveil360-build-profile",
     transformIndexHtml: {
       order: "pre",
       handler(html) {
-        return html.replace("__AVIA_ENTRY__", profile);
+        return html.replace("__AVIA_ENTRY__", entryName);
       },
     },
     generateBundle(_options, bundle) {
@@ -29,13 +29,28 @@ function buildProfilePlugin(profile: BuildProfile): Plugin {
 
 export default defineConfig(() => {
   const profile = resolveBuildProfile(process.env.AVIA_BUILD_PROFILE, Boolean(process.env.VITEST));
+  const httpTestProfile = profile === "http" && process.env.AVIA_HTTP_TEST_PROFILE === "canonical";
+  const apiTarget = process.env.AVIA_HTTP_API_TARGET;
 
   return {
-    plugins: [react(), buildProfilePlugin(profile)],
+    plugins: [react(), buildProfilePlugin(profile, httpTestProfile ? "http-test" : profile)],
     publicDir: `public/${profile}`,
     define: {
       __AVIA_BUILD_PROFILE__: JSON.stringify(profile),
+      __AVIA_CANONICAL_TEST_TOKEN__: JSON.stringify(
+        httpTestProfile ? (process.env.AVIA_CANONICAL_TEST_TOKEN ?? "") : "",
+      ),
     },
+    server:
+      profile === "http" && apiTarget
+        ? {
+            proxy: {
+              "/v1": { target: apiTarget },
+              "/auth": { target: apiTarget },
+              "/health": { target: apiTarget },
+            },
+          }
+        : undefined,
     build: {
       outDir: `dist/${profile}`,
       emptyOutDir: true,
@@ -44,7 +59,12 @@ export default defineConfig(() => {
     },
     test: {
       environment: "node",
-      exclude: ["tests/e2e/**", "node_modules/**", "dist/**"],
+      exclude: [
+        "tests/e2e/**",
+        "tests/contract/http-backend-live.test.ts",
+        "node_modules/**",
+        "dist/**",
+      ],
       restoreMocks: true,
     },
   };

@@ -129,22 +129,44 @@ async function submitEvidence(
 ): Promise<EvidenceVersionView> {
   const auditee = harness.backendFor(PRINCIPALS.auditee);
   const finding = await auditee.findings.get({ findingId: "FND-CAB-2026-001" });
+  const body = new TextEncoder().encode(
+    `%PDF-1.7\n1 0 obj\n<</Type/Catalog/Label(${operationSuffix})>>\nendobj\n%%EOF\n`,
+  );
+  const digest = await crypto.subtle.digest("SHA-256", body);
+  const sha256 = `sha256:${Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("")}`;
   const upload = await auditee.evidence.beginUpload({
     operationId: `OP-EVIDENCE-BEGIN-${operationSuffix}`,
     findingId: finding.id,
     expectedFindingRevision: finding.revision,
     fileName,
     declaredMediaType: "application/pdf",
-    byteSize: 4096,
-    sha256: `sha256-${operationSuffix}`,
+    byteSize: body.byteLength,
+    sha256,
   });
+  if (auditee.mode === "http") {
+    const response = await fetch(upload.uploadUrl, {
+      method: "PUT",
+      headers: upload.requiredHeaders,
+      body,
+    });
+    expect(response.ok).toBe(true);
+  }
   const completed = await auditee.evidence.completeUpload({
     operationId: `OP-EVIDENCE-COMPLETE-${operationSuffix}`,
     uploadId: upload.uploadId,
-    sha256: `sha256-${operationSuffix}`,
-    byteSize: 4096,
+    sha256,
+    byteSize: body.byteLength,
   });
-  const versions = await auditee.evidence.listVersions({ findingId: finding.id });
+  let versions: EvidenceVersionView[] = [];
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    versions = await auditee.evidence.listVersions({ findingId: finding.id });
+    if (auditee.mode === "mock" || versions.find(({ id }) => id === completed.evidenceVersionId)?.scanState === "CLEAN") {
+      break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
   const version = versions.find((candidate) => candidate.id === completed.evidenceVersionId);
   expect(version).toBeDefined();
   return version!;
@@ -175,7 +197,7 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
           answer: "COMPLIANT",
           comment: "",
         }),
-      ).rejects.toThrow(/assigned Inspector/i);
+      ).rejects.toThrow(/(?:assigned Inspector|Inspector.*assigned)/i);
     });
 
     it("requires a separate Lead conversion before a canonical Finding exists", async () => {
@@ -236,6 +258,7 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
       );
       const lead = harness.backendFor(PRINCIPALS.leadInspector);
       let current = await lead.findings.get({ findingId: finding.id });
+      expect(current.status).toBe("PENDING_CAA_REVIEW");
       const partial = await lead.evidence.review({
         operationId: "OP-EVIDENCE-PARTIAL-V1",
         evidenceVersionId: versionOne.id,

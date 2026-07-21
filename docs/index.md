@@ -14,15 +14,22 @@ This is the canonical docs map for AviaSurveil360. Use it after the root
 | `demo-handoff/` | Demo prompts, stakeholder acceptance criteria, and full-MVP handoff prompt. |
 | `demo-evidence/BUILD_SUMMARY.md` | Current local demo evidence, known limitations, and production gaps. |
 | `demo-evidence/REACT_MOCK_SLICE_2026-07-20.md` | Tasks 2-4 React mock candidate scope, canonical transcript, local gates, and explicit exclusions. |
-| `../api/openapi/aviasurveil360.yaml` | Minimal versioned transport source for the authorized React mock slice. |
-| `../apps/web/` | Build-time-separated React/Vite demo and HTTP candidate entries; no real API or offline behavior. |
+| `demo-evidence/GO_POSTGRES_FOUNDATION_2026-07-21.md` | Task 9 one-module Go, forward-only PostgreSQL, generation, and local profile evidence. |
+| `demo-evidence/CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.md` | Task 10 domain authority, isolation, session/OIDC, idempotency, audit, and migration evidence. |
+| `demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md` | Task 11 private bounded upload, deterministic scan, live HTTP contract, and mock/HTTP parity evidence. |
+| `../api/openapi/aviasurveil360.yaml` | Minimal versioned transport source for the authorized local candidate slices. |
+| `../apps/web/` | Build-time-separated React/Vite mock and HTTP candidate entries; browser offline behavior is not implemented yet. |
+| `../apps/api/` | One-module Go API/worker candidate with canonical authority, local OIDC/session, PostgreSQL stores, and bounded upload/scan services. |
+| `../deploy/local/compose.test.yaml` | Pinned isolated PostgreSQL, Keycloak, and MinIO local verification profile. |
 
 ## Demo Boundary
 
 AviaSurveil360 remains a planning pack with the intact frontend-only static
-clickable demo plus a separate `candidate-only` React mock vertical. The typed
-HTTP adapter is fake-fetch tested only. The docs do not claim a real backend,
-database, deployed API, authentication, production authorization enforcement,
-real upload/storage, PWA/offline persistence, real regulatory ingestion,
-production synchronization, notification delivery, deployment, production
-audit-log behavior, remote CI, cutover, or production readiness.
+clickable demo plus a separate `candidate-only` React/Go vertical. A real local
+Go/PostgreSQL HTTP path, pinned local Keycloak exchange, private MinIO upload,
+deterministic scan worker, and canonical mock/HTTP browser parity are `verified
+locally`. These are not deployed production services. The docs do not claim
+production OIDC/MFA, production authorization operations, production
+storage/scanning or Evidence records management, PWA/offline persistence, real
+regulatory ingestion, production synchronization, notification delivery,
+deployment, remote CI, cutover, legacy removal, or production readiness.

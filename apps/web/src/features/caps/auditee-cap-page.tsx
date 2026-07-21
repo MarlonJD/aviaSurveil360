@@ -174,7 +174,7 @@ export function AuditeeCapPage() {
               </button>
             </div>
           ) : null}
-          {projection.finding?.status === "EVIDENCE_SUBMITTED" ? (
+          {projection.finding?.status === "PENDING_CAA_REVIEW" ? (
             <Link className="primary-link" to="/lead-inspector/evidence-review/FND-CAB-2026-001">
               Switch to Evidence Review
             </Link>

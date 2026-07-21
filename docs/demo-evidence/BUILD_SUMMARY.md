@@ -12,8 +12,13 @@ The statements above describe the intact root demo only. A separate
 `candidate-only` React mock slice now exists beside it; see
 [React Mock First Executable Slice Evidence](REACT_MOCK_SLICE_2026-07-20.md).
 Separate Go/PostgreSQL and canonical authority candidate foundations also exist;
-see [Canonical Authority Foundation Evidence](CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.md).
-They do not make the root demo or the overall product `production-ready`.
+see [Go And PostgreSQL Foundation Evidence](GO_POSTGRES_FOUNDATION_2026-07-21.md)
+and [Canonical Authority Foundation Evidence](CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.md).
+Task 11 also adds a separately verified local upload/scan and real HTTP
+candidate; see
+[Bounded Upload And HTTP Parity Evidence](BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md).
+These adjacent candidates do not make the root demo or the overall product
+`production-ready`.
 
 **Demo date context:** the app treats `15 June 2026` as "today" so Due Soon /
 Overdue math is deterministic.
@@ -64,7 +69,8 @@ results; the completed remediation now records 86 Pass and 0 Issue with fresh
 | `tests/*.test.js` | Focused smoke coverage for the Cabin Inspection path, Department/General Manager workspaces, lifecycle and authorization boundaries, valid PDF construction, responsive contracts, and demo boundaries. |
 
 No backend, database, API, framework migration, real file storage, real AI
-service, real regulatory ingestion, or real notification service was added.
+service, real regulatory ingestion, or real notification service was added to
+the root Vanilla demo described by this file.
 
 ---
 
@@ -1156,11 +1162,35 @@ verification are `not run`. No `production-ready` claim is made.
 
 ---
 
+### Bounded upload and real HTTP parity checkpoint — 2026-07-21
+
+Status: Task 11 is `verified locally` and `candidate-only`; release remains
+`release pending`. The adjacent React/Go candidate now has private bounded
+PDF/JPEG/PNG upload sessions, server-observed hash/type/size validation,
+immutable official Evidence versions, distinct Inspection Attachments, and a
+lease/idempotency-aware deterministic scan worker. Clean, quarantine, failure,
+timeout, URL-expiry retry, and crash-recovery paths are covered.
+
+The fresh HTTP profile passed the full Go race/live integration suite with
+PostgreSQL, Keycloak, and MinIO; OpenAPI 5/5 and SQLC clean generation;
+React/Vitest 32/32; live `HttpBackend` contract 9/9; mock and HTTP Playwright
+1/1 each; HTTP artifact isolation across 7 files and 71 inputs; and task-owned
+cleanup. The root Vanilla suite remains 103/103.
+
+The complete evidence and scope boundaries are in
+[BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md](BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md).
+The local object store and deterministic scanner are not production services.
+Browser offline Tasks 6-8, sync, wider route migration, deployment, cutover,
+and production verification remain `not run` or `blocked` as applicable.
+
+---
+
 ## Mocked items and limitations
 
 - Role selection is not authentication.
 - Browser persistence is not production storage.
-- Mock evidence captures filenames only; no files are read or uploaded.
+- Root-demo mock Evidence captures filenames only; no files are read or uploaded
+  by the Vanilla demo.
 - Regulatory library content is mock/source-shaped only.
 - USOAP readiness is not an official ICAO assessment and does not claim EI improvement.
 - SSP/NASP supports monitoring only; it is not an automatic state safety determination.
@@ -1168,5 +1198,5 @@ verification are `not run`. No `production-ready` claim is made.
 - Offline outbox is simulated and is not a mobile/offline-ready implementation.
 - Audit log is demo state, not immutable audit evidence.
 - README/MANIFEST now describe the planning pack, intact frontend-only static
-  demo, and separate `candidate-only` React mock slice; production-readiness is
-  still not claimed.
+  demo, and separate `candidate-only` React/Go application;
+  production-readiness is still not claimed.

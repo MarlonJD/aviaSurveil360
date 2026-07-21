@@ -253,7 +253,9 @@ type ReviewEvidenceCommand struct {
 }
 
 type ReviewEvidenceResult struct {
+	ReviewDecisionID  string                `json:"reviewDecisionId"`
 	EvidenceVersionID string                `json:"evidenceVersionId"`
+	EvidenceRevision  int64                 `json:"evidenceVersionRevision"`
 	FindingID         string                `json:"findingId"`
 	FindingStatus     findings.Status       `json:"findingStatus"`
 	FindingRevision   int64                 `json:"findingRevision"`
@@ -299,6 +301,19 @@ func (service *Service) ReviewEvidence(ctx context.Context, actor identity.Princ
 		findingID := finding.ID
 		scanStatus := evidenceVersion.Status
 		evidenceRevision := evidenceVersion.Revision
+		var processingStateExists bool
+		var stateScan string
+		var stateRevision int64
+		err = transaction.QueryRow(ctx, `
+			SELECT scan_state, revision FROM evidence_version_states WHERE evidence_version_id = $1 FOR UPDATE
+		`, evidenceVersion.ID).Scan(&stateScan, &stateRevision)
+		if err == nil {
+			processingStateExists = true
+			scanStatus = stateScan
+			evidenceRevision = stateRevision
+		} else if !errors.Is(err, pgx.ErrNoRows) {
+			return transition[ReviewEvidenceResult]{}, err
+		}
 		findingStatus := finding.Status
 		findingRevision := finding.Revision
 		organizationID := finding.OrganizationID
@@ -314,27 +329,47 @@ func (service *Service) ReviewEvidence(ctx context.Context, actor identity.Princ
 			return transition[ReviewEvidenceResult]{}, fmt.Errorf("%w: %v", ErrConflict, err)
 		}
 		now := service.clock().UTC()
+		reviewDecisionID := service.idGenerator("review-decision")
 		if _, err := transaction.Exec(ctx, `
 			INSERT INTO review_decisions (
 				id, entity_type, entity_id, expected_revision, decision, reason,
 				comment_to_auditee, internal_caa_note, decided_by_subject_id, decided_at
 			) VALUES ($1, 'evidence_version', $2, $3, $4, NULLIF($5, ''), NULLIF($5, ''), NULLIF($6, ''), $7, $8)
-		`, service.idGenerator("review-decision"), evidenceID, command.ExpectedEvidenceVersionRevision,
+		`, reviewDecisionID, evidenceID, command.ExpectedEvidenceVersionRevision,
 			string(command.Decision), semantic.CommentToAuditee, semantic.InternalCAANote, actor.SubjectID, now); err != nil {
 			return transition[ReviewEvidenceResult]{}, fmt.Errorf("append Evidence review decision: %w", err)
+		}
+		if processingStateExists {
+			reviewState := "MORE_INFORMATION_REQUESTED"
+			switch command.Decision {
+			case evidence.DecisionClose:
+				reviewState = "ACCEPTED"
+			case evidence.DecisionPartiallyClose:
+				reviewState = "PARTIALLY_ACCEPTED"
+			case evidence.DecisionNotClose:
+				reviewState = "REJECTED"
+			}
+			if _, err := transaction.Exec(ctx, `
+				UPDATE evidence_version_states SET review_state = $2, revision = revision + 1, updated_at = $3
+				WHERE evidence_version_id = $1
+			`, evidenceID, reviewState, now); err != nil {
+				return transition[ReviewEvidenceResult]{}, fmt.Errorf("record exact Evidence review state: %w", err)
+			}
 		}
 		nextFindingRevision := findingRevision + 1
 		if _, err := transaction.Exec(ctx, `
 			UPDATE findings
 			SET status = $2, next_action = $3, closure_basis = NULLIF($4, ''),
-			    closure_reason = NULLIF($5, ''), revision = $6, updated_at = $7
+			    closure_reason = NULLIF($5, ''), revision = $6, updated_at = $7,
+			    closed_at = CASE WHEN $2 = 'CLOSED' THEN $7::timestamptz ELSE NULL END
 			WHERE id = $1
 		`, findingID, string(decision.FindingStatus), nextActionForFinding(decision.FindingStatus),
 			string(decision.ClosureBasis), semantic.CommentToAuditee, nextFindingRevision, now); err != nil {
 			return transition[ReviewEvidenceResult]{}, fmt.Errorf("advance Finding after Evidence review: %w", err)
 		}
 		response := ReviewEvidenceResult{
-			EvidenceVersionID: evidenceID, FindingID: findingID, FindingStatus: decision.FindingStatus,
+			ReviewDecisionID: reviewDecisionID, EvidenceVersionID: evidenceID, EvidenceRevision: evidenceRevision + 1,
+			FindingID: findingID, FindingStatus: decision.FindingStatus,
 			FindingRevision: nextFindingRevision, ClosureBasis: decision.ClosureBasis,
 		}
 		return transition[ReviewEvidenceResult]{
@@ -394,7 +429,7 @@ func (service *Service) AuthorizedCloseFinding(ctx context.Context, actor identi
 		if _, err := transaction.Exec(ctx, `
 			UPDATE findings
 			SET status = $2, next_action = 'Closed', closure_basis = $3, closure_reason = $4,
-			    revision = $5, updated_at = $6
+			    revision = $5, updated_at = $6, closed_at = $6
 			WHERE id = $1
 		`, command.FindingID, string(decision.Status), string(decision.ClosureBasis), decision.Reason, decision.Revision, now); err != nil {
 			return transition[AuthorizedCloseFindingResult]{}, fmt.Errorf("authorize Finding closure: %w", err)

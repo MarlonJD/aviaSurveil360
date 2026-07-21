@@ -34,8 +34,8 @@ func TestNonClosingEvidenceDecisionsKeepFindingOpen(t *testing.T) {
 	t.Parallel()
 	inspector := identity.Principal{Roles: []identity.Role{identity.RoleInspector}}
 	for decision, expected := range map[evidence.Decision]findings.Status{
-		evidence.DecisionPartiallyClose:     findings.StatusPendingClosure,
-		evidence.DecisionNotClose:           findings.StatusEvidenceRequired,
+		evidence.DecisionPartiallyClose:     findings.StatusEvidenceMoreInformationRequested,
+		evidence.DecisionNotClose:           findings.StatusEvidenceMoreInformationRequested,
 		evidence.DecisionRequestInformation: findings.StatusEvidenceMoreInformationRequested,
 	} {
 		result, err := evidence.Review(evidence.ReviewInput{

@@ -8,7 +8,7 @@
 
 **Tech Stack:** React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, Service Worker + Cache Storage, OPFS for staged Inspection Attachments, Vitest, React Testing Library, Playwright, Go modular monolith, `net/http` + `chi`, OpenAPI, PostgreSQL + `pgx`/`sqlc`, S3-compatible object storage, and containerized local integration dependencies.
 
-**Status:** `active` — Tasks 2-4 are implemented, `verified locally`, committed, and pushed as the `candidate-only` mock slice. Task 9's one-module Go/PostgreSQL foundation and Task 10's canonical domain/session/authorization/audit foundation are also implemented and `verified locally` as Task-scoped candidate slices. The binding next slice is Task 11. Production deployment, traffic cutover, legacy removal, production hosting/provider selection, production on-call, and any `production-ready` claim remain `blocked` behind the separate release/operations gate.
+**Status:** `active` — Tasks 2-4 are implemented, `verified locally`, committed, and pushed as the `candidate-only` mock slice. Tasks 9-11 now provide the `verified locally` Go/PostgreSQL foundation, canonical authority/session boundary, bounded upload/scan worker, and real HTTP parity as Task-scoped candidate slices. The binding next slice is Task 6. Production deployment, traffic cutover, legacy removal, production hosting/provider selection, production on-call, and any `production-ready` claim remain `blocked` behind the separate release/operations gate.
 
 ## Global Constraints
 
@@ -1109,6 +1109,12 @@ evidence.
   offline storage/PWA/sync, deployment, cutover, and legacy removal are not
   authorized.
 
+  Follow-up 2026-07-21: the current user / plan owner explicitly authorized
+  Tasks 5-13 for local release-candidate execution in binding slice order, with
+  a separate commit and push after each Task. This follow-up supersedes only the
+  earlier implementation-slice limit. It does not authorize production
+  deployment, traffic cutover, legacy removal, or a `production-ready` claim.
+
   Record `GO`, `CONDITIONAL GO`, or `NO-GO` for the selected slice and list every condition. Approval of Task 2-4 does not authorize Go, offline, deployment, release, or route-family expansion.
 
 - [x] **Step 5: Run docs-only verification.**
@@ -1825,8 +1831,8 @@ evidence.
 - Modify: `scripts/test-http-profile.sh`.
 - Test: `apps/api/tests/integration/evidence_upload_test.go`.
 - Test: `apps/api/tests/integration/inspection_attachment_upload_test.go`.
-- Test: `apps/api/tests/integration/evidence_worker_recovery_test.go`.
-- Test: `apps/web/tests/contract/http-backend.test.ts`.
+- Test: `apps/api/tests/integration/evidence_scan_worker_test.go`.
+- Test: `apps/web/tests/contract/http-backend-live.test.ts`.
 - Test: `apps/web/tests/e2e/canonical-scenario.spec.ts` through the HTTP Playwright project.
 
 **Interfaces:**
@@ -1834,31 +1840,33 @@ evidence.
 - Consumes: distinct Inspection Attachment and Evidence metadata/version models, approved maximum size/media/checksum/storage/scanning policy, transactional outbox, and Tasks 9-10 HTTP/domain foundation.
 - Produces: idempotent server-authorized bounded whole-object upload sessions, hash-verified field attachments, immutable official Evidence versions, separate upload/scan/review states, private download authorization, idempotent worker recovery, and the first complete real HTTP canonical transcript.
 
-- [ ] **Step 1: Write failing Evidence tests.**
+- [x] **Step 1: Write failing Evidence tests.**
 
   Verify organization/object authorization, package/grant/assignment scope for field attachments, operation-ID replay, declared-size limits, extension plus server-side MIME sniffing, media allowlist, archive limits, URL expiry/retry, hash/size mismatch rejection, incomplete upload recovery, non-overwriting object keys, malware-scan quarantine/failure/timeout, prior Evidence-version preservation, clean-only review/download/closure, lost acknowledgements, and process restart. Prove that an Inspection Attachment does not become an official EvidenceVersion automatically.
 
-- [ ] **Step 2: Implement upload session and completion endpoints.**
+- [x] **Step 2: Implement upload session and completion endpoints.**
 
   Browser receives one short-lived, write-only staging instruction after authorization. First-production upload is explicitly bounded whole-object retry; multipart/resume is out of scope. The server generates a unique non-overwriting quarantine key. Completion verifies server-observed object size and checksum, declared versus sniffed type, and operation idempotency. Official Auditee upload creates a new immutable Evidence version with `uploadState=UPLOADED`, `scanState=PENDING`, and `reviewState=NOT_READY`; field upload updates only the matching Inspection Attachment record and its scan state.
 
   No object is public. Download instructions are server-authorized and issued only for `scanState=CLEAN`. A pending, quarantined, failed, or superseded Evidence version cannot be reviewed or support closure. Promotion or linking of a clean Inspection Attachment to later official Evidence requires a separate authorized domain command and new EvidenceVersion; it never overwrites or aliases the attachment record.
 
-- [ ] **Step 3: Implement transactional worker claims.**
+- [x] **Step 3: Implement transactional worker claims.**
 
   Server outbox rows contain event ID/type/version, idempotency key, payload, `available_at`, attempt count, lease owner/expiry, and terminal state. Claim in a short transaction; handlers are idempotent across crash-after-scan-effect/before-ack. Clean scan advances the exact Evidence version to `reviewState=PENDING_CAA_REVIEW`; quarantine/failure remains non-reviewable and records operator-visible state.
 
   Do not implement notification delivery, production PDF generation, retention deletion, or legal disposition here.
 
-- [ ] **Step 4: Complete the deterministic HTTP integration profile.**
+- [x] **Step 4: Complete the deterministic HTTP integration profile.**
 
   The script starts clean PostgreSQL and object storage, initializes the private quarantine/canonical locations, applies migrations, seeds exact canonical IDs, starts API and worker, enables the fail-closed local test session/scanner adapter, waits for readiness, and supplies Playwright base URLs. It always tears down task-owned processes and containers.
 
-- [ ] **Step 5: Run Evidence, worker, Backend-contract, and shared browser verification.**
+- [x] **Step 5: Run Evidence, worker, Backend-contract, and shared browser verification.**
 
   Run both Go command builds, Go race/integration tests, the parameterized backend contract against seeded `HttpBackend`, and the same `canonical-scenario.spec.ts` under `mock` and `http`. Fail on unavailable dependencies, skipped tests, zero tests, differing invariant transcripts, or leftover task-owned processes.
 
-  Expected: upload bytes, metadata, checksum, scan state, review state, Evidence versions, Finding transitions, report/dashboard projections, and audit events remain consistent across retry/restart. Mock and HTTP agree on public invariants; real OIDC, managed-device offline, deployment, and production-readiness remain `not run`.
+  Expected: upload bytes, metadata, checksum, scan state, review state, Evidence versions, Finding transitions, report/dashboard projections, and audit events remain consistent across retry/restart. Mock and HTTP agree on public invariants; production OIDC/MFA, managed-device offline, deployment, and production-readiness remain `not run`.
+
+  Result 2026-07-21: upload, object-store, worker, HTTP-contract, and shared-browser tests were written against absent behavior before implementation. The fresh `./scripts/test-http-profile.sh` run built API and worker, passed the full Go race and live PostgreSQL/Keycloak/MinIO integration suite, passed OpenAPI generation 5/5 and all module-owned SQLC clean generation, passed React/Vitest 32/32, passed the live `HttpBackend` contract 9/9, and passed the same canonical Playwright scenario under mock 1/1 and HTTP 1/1. The normal HTTP artifact scan passed across 7 files and 71 inputs without mock/seed or test-profile code. Upload expiry/retry, non-overwriting keys, hash/type/size enforcement, immutable Evidence versions, Inspection Attachment separation, scan clean/quarantine/failure/timeout, crash recovery, clean-only review/download, organization isolation, and task-owned cleanup are covered. `go vet ./...`, the intact root Vanilla suite 103/103, and `git diff --check` also passed. Evidence is [Bounded Upload And HTTP Parity](../../demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md), `verified locally`, and `candidate-only`. The deterministic scanner and local S3-compatible profile are not production services. Browser offline Tasks 6-8, Task 12 sync, Task 5 wider route migration, Task 13 release packet, deployment, cutover, and `production-ready` evidence remain `not run` or `blocked` as applicable. The next binding slice is Task 6.
 
 ## Phase 6 — Implement Production Sync And Conflict Handling
 
@@ -2142,7 +2150,7 @@ must not start; it does not block unrelated earlier slices.
 | Tasks 5-13 local release-candidate execution | Current user / plan owner | accepted | Explicit authorization dated 2026-07-21. Execute every remaining Task in binding slice order, commit and push after each Task, and stop at a local release-candidate decision. This does not authorize production deployment, traffic cutover, legacy removal, or a `production-ready` claim. |
 | Canonical vocabulary and lifecycle mapping | Product + CAA Operations | accepted | Current user / plan owner acceptance dated 2026-07-21: the canonical English product docs, matching Turkish companions, verified legacy behavior oracle, and versioned OpenAPI remain authoritative across Tasks 5-13. Regulatory references remain configured references, not legal advice. |
 | `first-production` / `later` / `demo-only` route inventory | Product | accepted | Current user / plan owner acceptance dated 2026-07-21: the Core MVP families in `MVP_SCOPE_AND_ROADMAP.md` are `first-production` together with the eight role entries; AI, advanced risk/BI, broad regulatory editing, USOAP/SSP expansion, enforcement case management, and generic workflow surfaces remain `later` or `demo-only` in the intact legacy demo. |
-| Contract generation and demo/HTTP build-profile ownership | Current user / plan owner | accepted | Tasks 2-4 use the plan's minimal versioned OpenAPI, checked TypeScript generation, and build-time-separated React/Vite demo/HTTP entries. The HTTP adapter is fake-fetch tested only and the HTTP artifact must exclude mock/seed inputs. No real API is authorized. |
+| Contract generation and demo/HTTP build-profile ownership | Current user / plan owner | accepted | Tasks 2-4 established the minimal versioned OpenAPI, checked TypeScript generation, and build-time-separated React/Vite demo/HTTP entries. Tasks 9-11 added checked Go generation and a real local API profile; the HTTP artifact excludes mock/seed and test-profile inputs. This is `candidate-only`, not a production API authorization. |
 | React/Vite and one-module Go ownership ADR | Engineering + Platform | accepted | Current user / plan owner acceptance dated 2026-07-21 for the local candidate: React/Vite browser client plus one Go `1.26` modular-monolith module with API and worker commands. Production maintenance, on-call, and deployment ownership remain external release blockers. |
 | Same-origin OIDC session/BFF, MFA, cookie, CSRF, expiry, and revocation | Security + Identity | accepted | Candidate policy accepted 2026-07-21: provider-neutral OIDC Authorization Code BFF, local Keycloak integration, provider-enforced MFA, server-side provider tokens, Secure/HttpOnly/SameSite cookie, CSRF on mutations, 30-minute idle and 8-hour absolute session, explicit logout/revoke, and fail-closed production configuration. |
 | Managed browser/device/profile and local-data protection | Security + CAA Operations + Records | accepted | Candidate policy accepted 2026-07-21: current managed Chrome on an encrypted OS/profile, clear-on-exit disabled, subject-scoped local records, no cross-subject render, and explicit refusal of official checkout when policy attestation or storage health is absent. App-level encryption and production MDM evidence remain external release decisions. |
@@ -2157,7 +2165,7 @@ must not start; it does not block unrelated earlier slices.
 
 - Current status: `active`; Tasks 5-13 and per-Task commit/push are explicitly authorized for the local release candidate.
 - Review status: the initial 2026-07-20 adversarial review is complete; verdict was `NO-GO as written`, and its plan-level corrections are incorporated in this revision.
-- Current next todo: execute Task 11 test-first for bounded Inspection Attachment/Evidence upload, scan/worker recovery, and real HTTP parity, then commit and push that Task before Task 12.
+- Current next todo: execute Task 6 test-first for the PWA app shell, managed-browser offline-readiness gate, update safety, restart canary, and real offline startup; then commit and push that Task before Task 7.
 - Move to `ready-for-verification` only after the selected implementation objective and every required local gate pass. A required local gate cannot pass through a documented gap.
 - Do not move to `completed/` merely because a local release candidate exists. Completion requires objective completion, required local verification, explicit stakeholder/user acceptance, completed-index entry, tracker reconciliation, and an explicit disposition for the separate production release/operations dependency.
 - `production-ready`, deployment, traffic routing, cutover, and legacy removal remain blocked until the separately approved production release/operations plan passes and the user authorizes the exact action.

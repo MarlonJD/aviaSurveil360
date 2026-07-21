@@ -62,6 +62,7 @@ func TestAPIModuleHasOneGoModuleAndCheckedGenerationInputs(t *testing.T) {
 		"migrations/000001_foundation.up.sql",
 		"migrations/000002_workflow_foundation.up.sql",
 		"migrations/000003_authority_foundation.up.sql",
+		"migrations/000004_evidence_upload_foundation.up.sql",
 		"internal/httpapi/generated/api.gen.go",
 		"internal/platform/session/session.go",
 		"internal/platform/idempotency/idempotency.go",
@@ -84,7 +85,10 @@ func TestLocalPostgreSQLProfileIsPinnedAndSelfCleaning(t *testing.T) {
 		t.Fatalf("read local compose profile: %v", err)
 	}
 	compose := string(composeContents)
-	for _, required := range []string{"postgres:", "healthcheck:", "volumes:", "sha256:"} {
+	for _, required := range []string{
+		"postgres:", "object-store:", "MINIO_API_CORS_ALLOW_ORIGIN: http://127.0.0.1:4174",
+		"healthcheck:", "volumes:", "sha256:",
+	} {
 		if !strings.Contains(compose, required) {
 			t.Errorf("compose profile does not contain %q", required)
 		}
@@ -98,7 +102,11 @@ func TestLocalPostgreSQLProfileIsPinnedAndSelfCleaning(t *testing.T) {
 		t.Fatalf("read HTTP profile script: %v", err)
 	}
 	script := string(scriptContents)
-	for _, required := range []string{"down --volumes", "trap cleanup EXIT", "go -C", "check-contracts.sh", "check-sqlc.sh"} {
+	for _, required := range []string{
+		"down --volumes", "trap cleanup EXIT", "go -C", "check-contracts.sh", "check-sqlc.sh",
+		"GOTMPDIR", "SHARED_GO_CACHE", "seed_task_go_cache", "cp -al", "test -race -p 1 -count=1 ./...",
+		"go run ./cmd/api", "go run ./cmd/worker", "test:contract:http", "test:e2e:mock", "test:e2e:http",
+	} {
 		if !strings.Contains(script, required) {
 			t.Errorf("HTTP profile script does not contain %q", required)
 		}

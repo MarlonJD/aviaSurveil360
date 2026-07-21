@@ -29,14 +29,16 @@ var (
 )
 
 type Dependencies struct {
-	Clock       func() time.Time
-	IDGenerator func(string) string
+	Clock                     func() time.Time
+	IDGenerator               func(string) string
+	FindingReferenceGenerator func() string
 }
 
 type Service struct {
-	pool        *database.Pool
-	clock       func() time.Time
-	idGenerator func(string) string
+	pool                      *database.Pool
+	clock                     func() time.Time
+	idGenerator               func(string) string
+	findingReferenceGenerator func() string
 }
 
 func NewService(pool *database.Pool, dependencies Dependencies) *Service {
@@ -48,7 +50,7 @@ func NewService(pool *database.Pool, dependencies Dependencies) *Service {
 	if idGenerator == nil {
 		idGenerator = randomID
 	}
-	return &Service{pool: pool, clock: clock, idGenerator: idGenerator}
+	return &Service{pool: pool, clock: clock, idGenerator: idGenerator, findingReferenceGenerator: dependencies.FindingReferenceGenerator}
 }
 
 type commandEnvelope struct {
@@ -170,11 +172,15 @@ func executeTransition[T any](ctx context.Context, service *Service, actor ident
 }
 
 type ConvertPotentialFindingCommand struct {
-	OperationID        string
-	CorrelationID      string
-	PotentialFindingID string
-	ExpectedRevision   int64
-	Severity           potentialfindings.Severity
+	OperationID           string
+	CorrelationID         string
+	PotentialFindingID    string
+	ExpectedRevision      int64
+	Severity              potentialfindings.Severity
+	CAPRequired           bool
+	EvidenceRequired      bool
+	DueDate               *time.Time
+	RequirementsSpecified bool
 }
 
 type ConvertPotentialFindingResult struct {
@@ -187,10 +193,19 @@ type ConvertPotentialFindingResult struct {
 }
 
 func (service *Service) ConvertPotentialFinding(ctx context.Context, actor identity.Principal, command ConvertPotentialFindingCommand) (ConvertPotentialFindingResult, error) {
+	capRequired := command.CAPRequired
+	evidenceRequired := command.EvidenceRequired
+	if !command.RequirementsSpecified {
+		capRequired = true
+		evidenceRequired = true
+	}
 	semantic := struct {
 		ExpectedRevision int64                      `json:"expectedRevision"`
 		Severity         potentialfindings.Severity `json:"severity"`
-	}{ExpectedRevision: command.ExpectedRevision, Severity: command.Severity}
+		CAPRequired      bool                       `json:"capRequired"`
+		EvidenceRequired bool                       `json:"evidenceRequired"`
+		DueDate          *time.Time                 `json:"dueDate"`
+	}{ExpectedRevision: command.ExpectedRevision, Severity: command.Severity, CAPRequired: capRequired, EvidenceRequired: evidenceRequired, DueDate: command.DueDate}
 	return executeTransition(ctx, service, actor, commandEnvelope{
 		OperationID: command.OperationID, CorrelationID: command.CorrelationID, Kind: "convert_potential_finding",
 		EntityID: command.PotentialFindingID, Semantic: semantic,
@@ -205,29 +220,44 @@ func (service *Service) ConvertPotentialFinding(ctx context.Context, actor ident
 			}
 			return transition[ConvertPotentialFindingResult]{}, err
 		}
-		status := record.Status
+		potentialStatus := record.Status
 		revision := record.Revision
 		inspectionID := record.InspectionID
 		organizationID := record.OrganizationID
 		decision, err := potentialfindings.Decide(potentialfindings.DecideInput{
-			Actor: actor, Status: potentialfindings.Status(status), Revision: revision, ExpectedRevision: command.ExpectedRevision,
+			Actor: actor, Status: potentialfindings.Status(potentialStatus), Revision: revision, ExpectedRevision: command.ExpectedRevision,
 			Decision: potentialfindings.DecisionConvert, Severity: command.Severity,
 		})
 		if err != nil {
 			return transition[ConvertPotentialFindingResult]{}, fmt.Errorf("%w: %v", ErrConflict, err)
 		}
 		findingID := service.idGenerator("finding")
-		var publicSequence int64
-		if err := transaction.QueryRow(ctx, "SELECT nextval('finding_public_number_sequence')").Scan(&publicSequence); err != nil {
-			return transition[ConvertPotentialFindingResult]{}, err
+		findingReference := ""
+		if service.findingReferenceGenerator != nil {
+			findingReference = service.findingReferenceGenerator()
+		} else {
+			var publicSequence int64
+			if err := transaction.QueryRow(ctx, "SELECT nextval('finding_public_number_sequence')").Scan(&publicSequence); err != nil {
+				return transition[ConvertPotentialFindingResult]{}, err
+			}
+			findingReference = fmt.Sprintf("OPS-%d-%03d", service.clock().UTC().Year(), publicSequence)
 		}
-		findingReference := fmt.Sprintf("OPS-%d-%03d", service.clock().UTC().Year(), publicSequence)
+		findingStatus := "WAITING_FOR_CAP"
+		nextAction := "Auditee to submit CAP"
+		if !capRequired {
+			findingStatus = "PENDING_CLOSURE"
+			nextAction = "CAA verifies closure path"
+		}
+		now := service.clock().UTC()
 		if _, err := transaction.Exec(ctx, `
 			INSERT INTO findings (
 				id, reference, potential_finding_id, inspection_id, organization_id, severity, status,
-				owner_subject_id, next_action, revision, created_at, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, 'WAITING_FOR_CAP', NULL, 'Auditee submits CAP', 1, $7, $7)
-		`, findingID, findingReference, command.PotentialFindingID, inspectionID, organizationID, string(command.Severity), service.clock().UTC()); err != nil {
+				owner_subject_id, next_action, due_date, revision, cap_required, evidence_required,
+				issued_at, created_at, updated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, $8, $9, 1, $10, $11, $12, $12, $12)
+		`, findingID, findingReference, command.PotentialFindingID, inspectionID, organizationID,
+			string(command.Severity), findingStatus, nextAction, command.DueDate, capRequired,
+			evidenceRequired, now); err != nil {
 			return transition[ConvertPotentialFindingResult]{}, fmt.Errorf("create canonical Finding: %w", err)
 		}
 		if _, err := transaction.Exec(ctx, `
@@ -240,12 +270,12 @@ func (service *Service) ConvertPotentialFinding(ctx context.Context, actor ident
 		response := ConvertPotentialFindingResult{
 			PotentialFindingID: command.PotentialFindingID, PotentialFindingStatus: string(decision.Status),
 			PotentialFindingRevision: decision.Revision, FindingID: findingID, FindingReference: findingReference,
-			FindingStatus: "WAITING_FOR_CAP",
+			FindingStatus: findingStatus,
 		}
 		return transition[ConvertPotentialFindingResult]{
 			Response: response, OrganizationID: organizationID, Action: "potential_finding.converted",
 			EntityType: "potential_finding", EntityID: command.PotentialFindingID, EntityVersion: decision.Revision,
-			BeforeStatus: status, AfterStatus: string(decision.Status), SyncKind: "potential_finding", OutboxTopic: "potential_finding.converted",
+			BeforeStatus: potentialStatus, AfterStatus: string(decision.Status), SyncKind: "potential_finding", OutboxTopic: "potential_finding.converted",
 		}, nil
 	})
 }

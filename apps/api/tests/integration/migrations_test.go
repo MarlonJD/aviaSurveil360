@@ -38,6 +38,9 @@ var requiredFoundationTables = []string{
 	"authorized_sync_changes",
 	"sync_cursors",
 	"object_metadata",
+	"upload_sessions",
+	"evidence_version_states",
+	"inspection_attachments",
 	"audit_events",
 	"outbox_messages",
 }
@@ -49,7 +52,7 @@ func TestMigrationsApplyFromAnEmptyDatabase(t *testing.T) {
 		t.Fatalf("apply migrations: %v", err)
 	}
 	assertFoundationSchema(t, pool)
-	if version, err := migrations.CurrentVersion(context.Background(), pool); err != nil || version != 3 {
+	if version, err := migrations.CurrentVersion(context.Background(), pool); err != nil || version != 4 {
 		t.Fatalf("migration version = %d, err = %v", version, err)
 	}
 }
