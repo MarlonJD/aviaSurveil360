@@ -19,8 +19,9 @@ This is the canonical docs map for AviaSurveil360. Use it after the root
 | `demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md` | Task 11 private bounded upload, deterministic scan, live HTTP contract, and mock/HTTP parity evidence. |
 | `demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md` | Task 6 app-shell-only cache, explicit readiness, restart survival, multi-client update, and server-stopped startup evidence. |
 | `demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.md` | Task 7 atomic subject-scoped field storage, causal outbox, v1 migration, and pending/in-flight browser restart evidence. |
+| `demo-evidence/OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md` | Task 8 manifest-first OPFS staging, startup reconciliation, no-delete policy, and server-stopped attachment restart evidence. |
 | `../api/openapi/aviasurveil360.yaml` | Minimal versioned transport source for the authorized local candidate slices. |
-| `../apps/web/` | Build-time-separated React/Vite mock and HTTP candidate entries plus Task 6 PWA/readiness and Task 7 atomic field-storage/outbox foundations; attachment staging and network sync remain later slices. |
+| `../apps/web/` | Build-time-separated React/Vite mock and HTTP candidate entries plus verified PWA/readiness, atomic field-storage/outbox, and manifest-first OPFS attachment foundations; network sync remains the next slice. |
 | `../apps/api/` | One-module Go API/worker candidate with canonical authority, local OIDC/session, PostgreSQL stores, and bounded upload/scan services. |
 | `../deploy/local/compose.test.yaml` | Pinned isolated PostgreSQL, Keycloak, and MinIO local verification profile. |
 
@@ -30,9 +31,9 @@ AviaSurveil360 remains a planning pack with the intact frontend-only static
 clickable demo plus a separate `candidate-only` React/Go vertical. A real local
 Go/PostgreSQL HTTP path, pinned local Keycloak exchange, private MinIO upload,
 deterministic scan worker, canonical mock/HTTP browser parity, and Task 6
-app-shell/readiness/restart behavior are `verified locally`. These are not
+app-shell/readiness/restart behavior plus Task 7-8 field/attachment recovery are
+`verified locally`. These are not
 deployed production services. The docs do not claim production OIDC/MFA,
 production authorization operations, production storage/scanning or Evidence
-records management, atomic offline field/outbox or attachment persistence,
-production synchronization, notification delivery, deployment, remote CI,
+records management, production synchronization, notification delivery, deployment, remote CI,
 cutover, legacy removal, or production readiness.

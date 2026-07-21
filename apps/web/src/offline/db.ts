@@ -20,6 +20,15 @@ export type { FieldMigrationPhase } from "./schema-migrations";
 export const OFFLINE_FIELD_DATABASE_NAME = "aviasurveil360-offline-foundation";
 
 export type FieldAccessState = "AVAILABLE" | "LOCKED" | "QUARANTINED";
+export type AttachmentStagingState =
+  | "manifest_created"
+  | "writing"
+  | "ready"
+  | "uploading"
+  | "acknowledged"
+  | "purge_eligible"
+  | "recovery_required"
+  | "quarantined";
 export type LocalRecordSyncState =
   | "ACKNOWLEDGED"
   | "PENDING"
@@ -119,10 +128,26 @@ export interface AttachmentManifestRow {
   auditId: string;
   checklistResponseId: string;
   potentialFindingLocalId: string | null;
+  fileName: string;
+  declaredMediaType: "application/pdf" | "image/jpeg" | "image/png" | "application/octet-stream";
+  declaredByteSize: number;
+  observedByteSize: number | null;
+  expectedSha256: string | null;
+  sha256: string | null;
   temporaryOpfsPath: string | null;
   finalOpfsPath: string | null;
-  stagingState: "PLANNED" | "WRITING" | "STAGED" | "FAILED";
+  stagingState: AttachmentStagingState;
   syncState: LocalRecordSyncState;
+  plannedOperationId: string;
+  operationId: string | null;
+  authoritativeEntityId: string | null;
+  quarantineReason: string | null;
+  localBytesPresent: boolean;
+  createdAt: string;
+  updatedAt: string;
+  uploadStartedAt: string | null;
+  acknowledgedAt: string | null;
+  purgeEligibleAt: string | null;
 }
 
 export interface OutboxRow {

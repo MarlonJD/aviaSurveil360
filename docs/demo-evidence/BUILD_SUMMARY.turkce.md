@@ -1245,8 +1245,36 @@ transitive development-tool audit bulgusu Task 13 için `note-open` kalır.
 
 Tam kanıt ve scope sınırları
 [INDEXEDDB_FIELD_STORAGE_2026-07-21.turkce.md](INDEXEDDB_FIELD_STORAGE_2026-07-21.turkce.md)
-içindedir. OPFS Inspection Attachment byte (Task 8), network sync/conflict
+içindedir. Task 8 daha sonra `verified locally` oldu. Network sync/conflict
 delivery (Task 12), deployment, cutover ve production verification uygun
+biçimde `not run` veya `blocked` kalır. `production-ready` iddiası yoktur.
+
+---
+
+### Manifest-first OPFS Inspection Attachment recovery checkpoint — 2026-07-21
+
+Durum: Task 8 `verified locally` ve `candidate-only`; release durumu `release
+pending`. React field route artık OPFS byte'dan önce IndexedDB manifest commit
+eder, dedicated Worker içinde hash alır, final promotion öncesi size/hash
+doğrular ve typed causal registration outbox'ı atomik oluşturur. Startup
+reconciliation missing referenced byte için edit'i block eder, verified
+temporary byte'ı geri yükler, incomplete/unknown byte'ı quarantine eder ve
+local byte'ı hiçbir zaman otomatik silmez. Owner-approved purge policy olmadığı
+için purge disabled kalır. Official Auditee Evidence oluşturulmaz veya
+değiştirilmez.
+
+Taze gate'ler geçti: React/Vitest 132/132; focused attachment staging/recovery
+35/35; durmuş origin server ve exact OPFS hash/byte restart kanıtı kullanan
+persistent-Chrome offline Playwright 4/4; full Go race/live HTTP integration;
+OpenAPI 5/5 ve SQLC clean generation; live HTTP Backend contract 9/9;
+mock/HTTP Playwright 1/1 + 1/1; hash worker dahil 12 file ve 4 asset üzerinde
+demo/HTTP app-shell scan; 12 file ve 84 input HTTP isolation; root Vanilla
+103/103; ve 0 vulnerability production dependency audit.
+
+Tam kanıt ve scope sınırları
+[OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.turkce.md](OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.turkce.md)
+içindedir. Task 12 network sync/conflict delivery, geniş route migration, Task
+13 release packet, deployment, cutover ve production verification uygun
 biçimde `not run` veya `blocked` kalır. `production-ready` iddiası yoktur.
 
 ---

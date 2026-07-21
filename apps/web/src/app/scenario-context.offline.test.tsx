@@ -9,6 +9,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { OfflineFieldDatabase } from "../offline/db";
 import { IndexedDbFieldRepository } from "../offline/field-repository";
+import { sha256InspectionAttachment } from "../offline/inspection-attachment-hash-worker";
+import {
+  InspectionAttachmentStore,
+  type AttachmentFileWriter,
+  type InspectionAttachmentFileSystem,
+} from "../offline/opfs-inspection-attachment-store";
 import { createMockBackend } from "../mock/create-mock-backend";
 import { AppProviders } from "./providers";
 import { ScenarioProvider, useScenario } from "./scenario-context";
@@ -17,6 +23,48 @@ const subjectId = "USR-INSPECTOR-AMINA";
 const packageId = "PKG-CAB-2026-001";
 const now = () => new Date("2026-06-15T09:00:00.000Z");
 const databases = new Set<string>();
+
+class TestAttachmentFileSystem implements InspectionAttachmentFileSystem {
+  readonly files = new Map<string, Uint8Array>();
+
+  async createWriter(path: string): Promise<AttachmentFileWriter> {
+    this.files.set(path, new Uint8Array());
+    return {
+      write: async (chunk) => {
+        const previous = this.files.get(path) ?? new Uint8Array();
+        const next = new Uint8Array(previous.byteLength + chunk.byteLength);
+        next.set(previous);
+        next.set(chunk, previous.byteLength);
+        this.files.set(path, next);
+      },
+      flush: async () => undefined,
+    };
+  }
+
+  async read(path: string): Promise<Uint8Array> {
+    const bytes = this.files.get(path);
+    if (!bytes) throw new DOMException("missing", "NotFoundError");
+    return bytes.slice();
+  }
+
+  async exists(path: string): Promise<boolean> {
+    return this.files.has(path);
+  }
+
+  async promote(temporaryPath: string, finalPath: string): Promise<void> {
+    const bytes = await this.read(temporaryPath);
+    this.files.set(finalPath, bytes);
+    this.files.delete(temporaryPath);
+  }
+
+  async list(directoryPath: string): Promise<string[]> {
+    return [...this.files.keys()].filter((path) => path.startsWith(`${directoryPath}/`));
+  }
+
+  async remove(path: string): Promise<void> {
+    this.files.delete(path);
+  }
+}
 
 function FieldHarness() {
   const { actions, projection } = useScenario();
@@ -29,6 +77,18 @@ function FieldHarness() {
       >
         Save local response
       </button>
+      <button
+        type="button"
+        onClick={() =>
+          void actions.stageInspectionAttachment(
+            new File(["candidate inspection attachment"], "pbe-serviceability.pdf", {
+              type: "application/pdf",
+            }),
+          )
+        }
+      >
+        Stage local attachment
+      </button>
       <button type="button" onClick={() => void actions.createPotentialFinding()}>
         Create local Potential Finding
       </button>
@@ -38,6 +98,12 @@ function FieldHarness() {
       <output data-testid="field-mode">{String(projection.fieldMode)}</output>
       <output data-testid="field-pending">{projection.fieldPendingOperationCount}</output>
       <output data-testid="field-answer">{projection.response?.answer ?? "none"}</output>
+      <output data-testid="field-attachment">
+        {projection.inspectionAttachments[0]?.stagingState ?? "none"}
+      </output>
+      <output data-testid="field-attachment-blocking">
+        {projection.attachmentRecoveryBlocking.length}
+      </output>
       <output data-testid="field-potential">{projection.potentialFinding?.status ?? "none"}</output>
       <output data-testid="field-checklist">{projection.checklistSubmission?.checklistStatus ?? "none"}</output>
     </>
@@ -64,6 +130,13 @@ describe("ScenarioProvider field working set", () => {
     databases.add(databaseName);
     const database = new OfflineFieldDatabase({ name: databaseName });
     const repository = new IndexedDbFieldRepository({ database, subjectId, now });
+    const attachmentFileSystem = new TestAttachmentFileSystem();
+    const attachmentStore = new InspectionAttachmentStore({
+      repository,
+      fileSystem: attachmentFileSystem,
+      hasher: { sha256: sha256InspectionAttachment },
+      now,
+    });
     await repository.checkoutPackage({
       ...checkout,
       checkedOutAt: now().toISOString(),
@@ -79,6 +152,7 @@ describe("ScenarioProvider field working set", () => {
           buildProfile: "demo",
           environmentLabel: "field-test",
           fieldRepositoryForSubject: () => repository,
+          inspectionAttachmentStoreForSubject: () => attachmentStore,
         }}
       >
         <ScenarioProvider>
@@ -97,15 +171,33 @@ describe("ScenarioProvider field working set", () => {
     await waitFor(() =>
       expect(screen.getByTestId("field-potential")).toHaveTextContent("PENDING_LEAD_REVIEW"),
     );
+    await userEvent.click(screen.getByRole("button", { name: "Stage local attachment" }));
+    await waitFor(() => expect(screen.getByTestId("field-attachment")).toHaveTextContent("ready"));
     await userEvent.click(screen.getByRole("button", { name: "Submit local checklist" }));
 
     await waitFor(() =>
       expect(screen.getByTestId("field-checklist")).toHaveTextContent("SUBMITTED"),
     );
-    expect(screen.getByTestId("field-pending")).toHaveTextContent("3");
+    expect(screen.getByTestId("field-pending")).toHaveTextContent("4");
     expect(backendResponseWrite).not.toHaveBeenCalled();
     expect(backendPotentialWrite).not.toHaveBeenCalled();
     expect(backendChecklistWrite).not.toHaveBeenCalled();
-    expect(await repository.listOutbox(packageId)).toHaveLength(3);
+    expect(await repository.listOutbox(packageId)).toHaveLength(4);
+    expect(attachmentFileSystem.files.size).toBe(1);
+    expect((await repository.listAttachmentManifests())[0]).toMatchObject({
+      potentialFindingLocalId: expect.stringMatching(/^PF-LOCAL-/),
+    });
+
+    attachmentFileSystem.files.clear();
+    await userEvent.click(screen.getByRole("button", { name: "Load local package" }));
+    await waitFor(() =>
+      expect(screen.getByTestId("field-attachment-blocking")).toHaveTextContent("1"),
+    );
+    expect(await repository.getAttachmentManifest(
+      (await repository.listAttachmentManifests())[0]!.attachmentId,
+    )).toMatchObject({
+      stagingState: "recovery_required",
+      quarantineReason: "REFERENCED_BYTES_MISSING",
+    });
   });
 });

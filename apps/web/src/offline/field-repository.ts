@@ -11,6 +11,7 @@ import type {
 } from "../backend/backend";
 import {
   getBrowserOfflineFieldDatabase,
+  type AttachmentManifestRow,
   type ChecklistResponseRow,
   type FieldAccessState,
   type FieldDatabaseOpenResult,
@@ -39,7 +40,15 @@ export type FieldTransactionBoundary =
   | "after-checklist-response-write"
   | "after-potential-finding-write"
   | "after-checklist-submission-write"
-  | "before-pull-cursor-write";
+  | "before-pull-cursor-write"
+  | "before-attachment-metadata-ready"
+  | "after-attachment-metadata-ready"
+  | "before-attachment-outbox-create"
+  | "after-attachment-outbox-create"
+  | "before-attachment-upload-start"
+  | "after-attachment-upload-start"
+  | "before-attachment-acknowledgement"
+  | "after-attachment-acknowledgement";
 
 export type FieldTransactionFault = (
   boundary: FieldTransactionBoundary,
@@ -102,6 +111,31 @@ export interface SubmitLocalChecklistInput {
   packageId: string;
 }
 
+export interface CreateAttachmentManifestInput {
+  attachmentId: string;
+  operationId: string;
+  packageId: string;
+  checklistResponseId: string;
+  potentialFindingLocalId: string | null;
+  fileName: string;
+  mediaType: string;
+  byteSize: number;
+  temporaryOpfsPath: string;
+  finalOpfsPath: string;
+}
+
+export interface CommitReadyAttachmentInput {
+  attachmentId: string;
+  observedByteSize: number;
+  sha256: string;
+}
+
+export interface AcknowledgeAttachmentInput {
+  attachmentId: string;
+  authoritativeEntityId: string;
+  acknowledgedAt: string;
+}
+
 export interface FieldChecklistSubmission {
   auditId: string;
   checklistStatus: "SUBMITTED";
@@ -115,6 +149,7 @@ export interface FieldPackageView {
   accessState: FieldAccessState;
   responses: ChecklistResponseRow[];
   potentialFindingDrafts: PotentialFindingDraftRow[];
+  attachmentManifests: AttachmentManifestRow[];
   pendingOperationCount: number;
 }
 
@@ -129,6 +164,7 @@ export interface FieldSubjectSnapshot {
   packages: PackageRow[];
   checklistResponses: ChecklistResponseRow[];
   potentialFindingDrafts: PotentialFindingDraftRow[];
+  attachmentManifests: AttachmentManifestRow[];
   outbox: OutboxRow[];
   syncState: SyncStateRow[];
 }
@@ -141,6 +177,21 @@ interface IndexedDbFieldRepositoryOptions {
 }
 
 const CLOCK_SKEW_MS = 5 * 60_000;
+const MAX_INSPECTION_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+const INSPECTION_ATTACHMENT_MEDIA_TYPES = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+] as const);
+
+type InspectionAttachmentMediaType = Exclude<
+  AttachmentManifestRow["declaredMediaType"],
+  "application/octet-stream"
+>;
+
+function isInspectionAttachmentMediaType(value: string): value is InspectionAttachmentMediaType {
+  return INSPECTION_ATTACHMENT_MEDIA_TYPES.has(value as InspectionAttachmentMediaType);
+}
 
 function parseInstant(value: string): number | null {
   const parsed = Date.parse(value);
@@ -470,12 +521,16 @@ export class IndexedDbFieldRepository {
     const row = await this.database.packages.get([this.subjectId, packageId]);
     if (!row) return null;
     await this.validateStoredPackage(row);
-    const [responses, potentialFindingDrafts, outbox] = await Promise.all([
+    const [responses, potentialFindingDrafts, attachmentManifests, outbox] = await Promise.all([
       this.database.checklistResponses
         .where("[subjectId+packageId]")
         .equals([this.subjectId, packageId])
         .toArray(),
       this.database.potentialFindingDrafts
+        .where("[subjectId+packageId]")
+        .equals([this.subjectId, packageId])
+        .toArray(),
+      this.database.attachmentManifests
         .where("[subjectId+packageId]")
         .equals([this.subjectId, packageId])
         .toArray(),
@@ -508,6 +563,7 @@ export class IndexedDbFieldRepository {
       accessState: row.accessState,
       responses: clone(responses),
       potentialFindingDrafts: clone(potentialFindingDrafts.filter((draft) => !draft.tombstoned)),
+      attachmentManifests: clone(attachmentManifests),
       pendingOperationCount: outbox.length,
     };
   }
@@ -966,6 +1022,499 @@ export class IndexedDbFieldRepository {
     );
   }
 
+  private async requireAttachment(attachmentId: string): Promise<AttachmentManifestRow> {
+    const manifest = await this.database.attachmentManifests.get([
+      this.subjectId,
+      attachmentId,
+    ]);
+    if (!manifest) {
+      throw new FieldRepositoryError(
+        "ATTACHMENT_MANIFEST_NOT_FOUND",
+        "Inspection Attachment manifest is absent.",
+      );
+    }
+    return manifest;
+  }
+
+  async createAttachmentManifest(
+    input: CreateAttachmentManifestInput,
+  ): Promise<AttachmentManifestRow> {
+    await this.assertPackageAvailable(input.packageId);
+    const fileName = input.fileName.trim();
+    if (
+      !input.attachmentId.trim() ||
+      !input.operationId.trim() ||
+      !fileName ||
+      fileName.length > 255 ||
+      /[\\/]/.test(fileName)
+    ) {
+      throw new FieldRepositoryError(
+        "ATTACHMENT_IDENTITY_INVALID",
+        "Attachment identity and filename must be safe non-empty values.",
+      );
+    }
+    if (!isInspectionAttachmentMediaType(input.mediaType)) {
+      throw new FieldRepositoryError(
+        "ATTACHMENT_MEDIA_TYPE_NOT_ALLOWED",
+        "Only PDF, JPEG, and PNG Inspection Attachments are allowed.",
+      );
+    }
+    const mediaType: InspectionAttachmentMediaType = input.mediaType;
+    if (
+      !Number.isSafeInteger(input.byteSize) ||
+      input.byteSize <= 0 ||
+      input.byteSize > MAX_INSPECTION_ATTACHMENT_BYTES
+    ) {
+      throw new FieldRepositoryError(
+        "ATTACHMENT_SIZE_NOT_ALLOWED",
+        "Inspection Attachment size must be between 1 byte and 25 MB.",
+      );
+    }
+    if (!input.temporaryOpfsPath || !input.finalOpfsPath) {
+      throw new FieldRepositoryError(
+        "ATTACHMENT_PATH_REQUIRED",
+        "Temporary and final OPFS paths are required before staging.",
+      );
+    }
+
+    return this.atomic(
+      [
+        this.database.packages,
+        this.database.offlineGrants,
+        this.database.checklistResponses,
+        this.database.potentialFindingDrafts,
+        this.database.attachmentManifests,
+        this.database.outbox,
+      ],
+      async () => {
+        const { packageRow, grant } = await this.requirePackage(input.packageId);
+        this.requireCommand(grant, "REGISTER_INSPECTION_ATTACHMENT");
+        const existing = await this.database.attachmentManifests.get([
+          this.subjectId,
+          input.attachmentId,
+        ]);
+        if (existing) {
+          if (
+            existing.packageId === input.packageId &&
+            existing.checklistResponseId === input.checklistResponseId &&
+            existing.potentialFindingLocalId === input.potentialFindingLocalId &&
+            existing.fileName === fileName &&
+            existing.declaredMediaType === mediaType &&
+            existing.declaredByteSize === input.byteSize &&
+            existing.plannedOperationId === input.operationId &&
+            existing.temporaryOpfsPath === input.temporaryOpfsPath &&
+            existing.finalOpfsPath === input.finalOpfsPath
+          ) {
+            return clone(existing);
+          }
+          throw new FieldRepositoryError(
+            "ATTACHMENT_ID_REUSED",
+            "An attachment ID cannot be reused with different metadata.",
+          );
+        }
+        if (await this.existingOperation(input.operationId)) {
+          throw new FieldRepositoryError(
+            "OPERATION_ID_REUSED",
+            "The planned attachment operation ID already exists.",
+          );
+        }
+        const response = await this.database.checklistResponses.get([
+          this.subjectId,
+          input.checklistResponseId,
+        ]);
+        if (!response || response.packageId !== packageRow.id || response.tombstoned) {
+          throw new FieldRepositoryError(
+            "ATTACHMENT_RESPONSE_REQUIRED",
+            "The exact non-tombstoned checklist response is required.",
+          );
+        }
+        const question = packageRow.inspectionPackage.questions.find(
+          (candidate) => candidate.id === response.questionId,
+        );
+        if (
+          !question ||
+          !question.assignedInspectorUserIds.includes(this.subjectId) ||
+          !grant.assignmentScope.questionIds.includes(question.id)
+        ) {
+          throw new FieldRepositoryError(
+            "QUESTION_READ_ONLY",
+            "Inspection Attachment authority requires the assigned Inspector.",
+          );
+        }
+        if (input.potentialFindingLocalId) {
+          const potential = await this.database.potentialFindingDrafts.get([
+            this.subjectId,
+            input.potentialFindingLocalId,
+          ]);
+          if (
+            !potential ||
+            potential.packageId !== packageRow.id ||
+            potential.checklistResponseId !== response.id ||
+            potential.tombstoned
+          ) {
+            throw new FieldRepositoryError(
+              "ATTACHMENT_POTENTIAL_FINDING_SCOPE_INVALID",
+              "The Potential Finding link is outside the exact response.",
+            );
+          }
+        }
+        const duplicateFileName = await this.database.attachmentManifests
+          .where("[subjectId+packageId]")
+          .equals([this.subjectId, packageRow.id])
+          .filter((manifest) => manifest.fileName.toLocaleLowerCase() === fileName.toLocaleLowerCase())
+          .first();
+        if (duplicateFileName) {
+          throw new FieldRepositoryError(
+            "ATTACHMENT_FILENAME_DUPLICATE",
+            "An active Inspection Attachment already uses this filename in the package.",
+          );
+        }
+        const createdAt = this.now().toISOString();
+        const manifest: AttachmentManifestRow = {
+          attachmentId: input.attachmentId,
+          subjectId: this.subjectId,
+          packageId: packageRow.id,
+          auditId: packageRow.auditId,
+          checklistResponseId: response.id,
+          potentialFindingLocalId: input.potentialFindingLocalId,
+          fileName,
+          declaredMediaType: mediaType,
+          declaredByteSize: input.byteSize,
+          observedByteSize: null,
+          expectedSha256: null,
+          sha256: null,
+          temporaryOpfsPath: input.temporaryOpfsPath,
+          finalOpfsPath: input.finalOpfsPath,
+          stagingState: "manifest_created",
+          syncState: "PENDING",
+          plannedOperationId: input.operationId,
+          operationId: null,
+          authoritativeEntityId: null,
+          quarantineReason: null,
+          localBytesPresent: false,
+          createdAt,
+          updatedAt: createdAt,
+          uploadStartedAt: null,
+          acknowledgedAt: null,
+          purgeEligibleAt: null,
+        };
+        await this.database.attachmentManifests.put(manifest);
+        return clone(manifest);
+      },
+    );
+  }
+
+  async recordAttachmentExpectedDigest(
+    attachmentId: string,
+    expectedSha256: string,
+  ): Promise<AttachmentManifestRow> {
+    if (!/^sha256:[a-f0-9]{64}$/.test(expectedSha256)) {
+      throw new FieldRepositoryError("ATTACHMENT_DIGEST_INVALID", "A SHA-256 digest is required.");
+    }
+    return this.atomic([this.database.attachmentManifests], async () => {
+      const manifest = await this.requireAttachment(attachmentId);
+      if (manifest.stagingState !== "manifest_created") {
+        throw new FieldRepositoryError(
+          "ATTACHMENT_STATE_INVALID",
+          "The source digest is recorded only after manifest creation.",
+        );
+      }
+      manifest.expectedSha256 = expectedSha256;
+      manifest.updatedAt = this.now().toISOString();
+      await this.database.attachmentManifests.put(manifest);
+      return clone(manifest);
+    });
+  }
+
+  async markAttachmentWriting(attachmentId: string): Promise<AttachmentManifestRow> {
+    return this.atomic([this.database.attachmentManifests], async () => {
+      const manifest = await this.requireAttachment(attachmentId);
+      if (manifest.stagingState !== "manifest_created" || !manifest.expectedSha256) {
+        throw new FieldRepositoryError(
+          "ATTACHMENT_STATE_INVALID",
+          "Attachment writing requires a manifest and source digest.",
+        );
+      }
+      manifest.stagingState = "writing";
+      manifest.updatedAt = this.now().toISOString();
+      await this.database.attachmentManifests.put(manifest);
+      return clone(manifest);
+    });
+  }
+
+  async markAttachmentBytesPresent(
+    attachmentId: string,
+    present: boolean,
+  ): Promise<AttachmentManifestRow> {
+    return this.atomic([this.database.attachmentManifests], async () => {
+      const manifest = await this.requireAttachment(attachmentId);
+      manifest.localBytesPresent = present;
+      manifest.updatedAt = this.now().toISOString();
+      await this.database.attachmentManifests.put(manifest);
+      return clone(manifest);
+    });
+  }
+
+  async markAttachmentRecovery(
+    attachmentId: string,
+    input: { state: "recovery_required" | "quarantined"; reason: string; localBytesPresent: boolean },
+  ): Promise<AttachmentManifestRow> {
+    return this.atomic([this.database.attachmentManifests], async () => {
+      const manifest = await this.requireAttachment(attachmentId);
+      manifest.stagingState = input.state;
+      manifest.quarantineReason = input.reason;
+      manifest.localBytesPresent = input.localBytesPresent;
+      manifest.updatedAt = this.now().toISOString();
+      await this.database.attachmentManifests.put(manifest);
+      return clone(manifest);
+    });
+  }
+
+  async commitReadyAttachment(input: CommitReadyAttachmentInput): Promise<AttachmentManifestRow> {
+    const existing = await this.getAttachmentManifest(input.attachmentId);
+    if (!existing) {
+      throw new FieldRepositoryError("ATTACHMENT_MANIFEST_NOT_FOUND", "Manifest is absent.");
+    }
+    await this.assertPackageAvailable(existing.packageId);
+    if (!Number.isSafeInteger(input.observedByteSize) || input.observedByteSize <= 0) {
+      throw new FieldRepositoryError("ATTACHMENT_SIZE_MISMATCH", "Observed byte size is invalid.");
+    }
+    if (!/^sha256:[a-f0-9]{64}$/.test(input.sha256)) {
+      throw new FieldRepositoryError("ATTACHMENT_DIGEST_INVALID", "Observed SHA-256 is invalid.");
+    }
+    return this.atomic(
+      [
+        this.database.packages,
+        this.database.offlineGrants,
+        this.database.checklistResponses,
+        this.database.potentialFindingDrafts,
+        this.database.attachmentManifests,
+        this.database.outbox,
+      ],
+      async () => {
+        const manifest = await this.requireAttachment(input.attachmentId);
+        const { packageRow, grant } = await this.requirePackage(manifest.packageId);
+        this.requireCommand(grant, "REGISTER_INSPECTION_ATTACHMENT");
+        if (
+          manifest.declaredByteSize !== input.observedByteSize ||
+          manifest.expectedSha256 !== input.sha256
+        ) {
+          throw new FieldRepositoryError(
+            "ATTACHMENT_INTEGRITY_MISMATCH",
+            "Observed attachment bytes do not match the manifest source.",
+          );
+        }
+        const existingOperation = await this.existingOperation(manifest.plannedOperationId);
+        if (existingOperation) {
+          if (
+            manifest.stagingState === "ready" &&
+            manifest.operationId === manifest.plannedOperationId &&
+            manifest.sha256 === input.sha256
+          ) {
+            return clone(manifest);
+          }
+          throw new FieldRepositoryError(
+            "OPERATION_ID_REUSED",
+            "Attachment operation exists without matching ready metadata.",
+          );
+        }
+        const potential = manifest.potentialFindingLocalId
+          ? await this.database.potentialFindingDrafts.get([
+              this.subjectId,
+              manifest.potentialFindingLocalId,
+            ])
+          : undefined;
+        const payload = {
+          auditId: packageRow.auditId,
+          checklistResponseId: manifest.checklistResponseId,
+          potentialFindingOperationId: potential?.operationId ?? null,
+          fileName: manifest.fileName,
+          mediaType: manifest.declaredMediaType,
+          byteSize: input.observedByteSize,
+          sha256: input.sha256,
+        };
+        const operation: FieldSyncOperation = {
+          ...this.operationBase({
+            operationId: manifest.plannedOperationId,
+            packageRow,
+            grant,
+            entityId: manifest.attachmentId,
+            baseRevision: null,
+          }),
+          commandType: "REGISTER_INSPECTION_ATTACHMENT",
+          payload,
+        };
+        const dependencyRows = await this.activePackageOutbox(packageRow.id);
+        const dependencies = dependencyRows
+          .filter(
+            (row) =>
+              row.operationId !== operation.operationId &&
+              (row.entityId === manifest.checklistResponseId ||
+                row.operationId === potential?.operationId),
+          )
+          .map((row) => row.operationId)
+          .sort();
+        await this.fault("before-attachment-metadata-ready");
+        manifest.observedByteSize = input.observedByteSize;
+        manifest.sha256 = input.sha256;
+        manifest.stagingState = "ready";
+        manifest.syncState = "PENDING";
+        manifest.operationId = operation.operationId;
+        manifest.quarantineReason = null;
+        manifest.localBytesPresent = true;
+        manifest.updatedAt = operation.clientOccurredAt;
+        await this.database.attachmentManifests.put(manifest);
+        await this.fault("after-attachment-metadata-ready");
+        await this.fault("before-attachment-outbox-create");
+        await this.persistOutbox({
+          subjectId: this.subjectId,
+          operation,
+          state: dependencies.length > 0 ? "BLOCKED_ON_DEPENDENCY" : "PENDING",
+          createdAt: operation.clientOccurredAt,
+          dependsOnOperationIds: dependencies,
+        });
+        await this.fault("after-attachment-outbox-create");
+        return clone(manifest);
+      },
+    );
+  }
+
+  async getAttachmentManifest(attachmentId: string): Promise<AttachmentManifestRow | null> {
+    await this.requireReadWrite();
+    return clone(
+      (await this.database.attachmentManifests.get([this.subjectId, attachmentId])) ?? null,
+    );
+  }
+
+  async listAttachmentManifests(): Promise<AttachmentManifestRow[]> {
+    await this.requireReadWrite();
+    return sortByKey(
+      clone(await this.database.attachmentManifests.where("subjectId").equals(this.subjectId).toArray()),
+      (manifest) => manifest.attachmentId,
+    );
+  }
+
+  async beginAttachmentUpload(attachmentId: string): Promise<AttachmentManifestRow> {
+    const existing = await this.getAttachmentManifest(attachmentId);
+    if (!existing) {
+      throw new FieldRepositoryError("ATTACHMENT_MANIFEST_NOT_FOUND", "Manifest is absent.");
+    }
+    await this.assertPackageAvailable(existing.packageId);
+    return this.atomic([this.database.attachmentManifests, this.database.outbox], async () => {
+      const manifest = await this.requireAttachment(attachmentId);
+      const operation = manifest.operationId
+        ? await this.database.outbox.get([this.subjectId, manifest.operationId])
+        : undefined;
+      if (manifest.stagingState !== "ready" || !operation || operation.state !== "PENDING") {
+        throw new FieldRepositoryError(
+          "ATTACHMENT_UPLOAD_NOT_READY",
+          "Only a dependency-free ready attachment may start upload.",
+        );
+      }
+      await this.fault("before-attachment-upload-start");
+      manifest.stagingState = "uploading";
+      manifest.uploadStartedAt = this.now().toISOString();
+      manifest.updatedAt = manifest.uploadStartedAt;
+      operation.state = "IN_FLIGHT";
+      operation.attemptCount += 1;
+      await this.database.attachmentManifests.put(manifest);
+      await this.database.outbox.put(operation);
+      await this.fault("after-attachment-upload-start");
+      return clone(manifest);
+    });
+  }
+
+  async acknowledgeAttachment(input: AcknowledgeAttachmentInput): Promise<AttachmentManifestRow> {
+    return this.atomic([this.database.attachmentManifests, this.database.outbox], async () => {
+      const manifest = await this.requireAttachment(input.attachmentId);
+      const operation = manifest.operationId
+        ? await this.database.outbox.get([this.subjectId, manifest.operationId])
+        : undefined;
+      if (
+        manifest.stagingState !== "uploading" ||
+        !operation ||
+        operation.state !== "IN_FLIGHT" ||
+        !input.authoritativeEntityId.trim() ||
+        parseInstant(input.acknowledgedAt) === null
+      ) {
+        throw new FieldRepositoryError(
+          "ATTACHMENT_ACKNOWLEDGEMENT_INVALID",
+          "Acknowledgement must target the exact in-flight attachment operation.",
+        );
+      }
+      await this.fault("before-attachment-acknowledgement");
+      manifest.stagingState = "acknowledged";
+      manifest.syncState = "ACKNOWLEDGED";
+      manifest.authoritativeEntityId = input.authoritativeEntityId;
+      manifest.acknowledgedAt = input.acknowledgedAt;
+      manifest.updatedAt = input.acknowledgedAt;
+      operation.state = "ACKNOWLEDGED";
+      operation.lastErrorCode = null;
+      await this.database.attachmentManifests.put(manifest);
+      await this.database.outbox.put(operation);
+      await this.fault("after-attachment-acknowledgement");
+      return clone(manifest);
+    });
+  }
+
+  async markAttachmentPurgeEligible(_attachmentId: string): Promise<never> {
+    throw new FieldRepositoryError(
+      "ATTACHMENT_PURGE_POLICY_NOT_APPROVED",
+      "No owner-approved local attachment purge policy exists in this candidate.",
+    );
+  }
+
+  async quarantineUnknownAttachmentPath(input: {
+    path: string;
+    byteSize: number;
+    sha256: string;
+  }): Promise<AttachmentManifestRow> {
+    const pathDigest = await sha256Canonical({ subjectId: this.subjectId, path: input.path });
+    const attachmentId = `UNKNOWN-${pathDigest.slice("sha256:".length, "sha256:".length + 24)}`;
+    return this.atomic([this.database.attachmentManifests], async () => {
+      const existingByPath = await this.database.attachmentManifests
+        .where("subjectId")
+        .equals(this.subjectId)
+        .filter(
+          (manifest) =>
+            manifest.temporaryOpfsPath === input.path || manifest.finalOpfsPath === input.path,
+        )
+        .first();
+      if (existingByPath) return clone(existingByPath);
+      const timestamp = this.now().toISOString();
+      const manifest: AttachmentManifestRow = {
+        attachmentId,
+        subjectId: this.subjectId,
+        packageId: "__unknown__",
+        auditId: "__unknown__",
+        checklistResponseId: "__unknown__",
+        potentialFindingLocalId: null,
+        fileName: input.path.split("/").at(-1) ?? "unknown-opfs-bytes",
+        declaredMediaType: "application/octet-stream",
+        declaredByteSize: input.byteSize,
+        observedByteSize: input.byteSize,
+        expectedSha256: input.sha256,
+        sha256: input.sha256,
+        temporaryOpfsPath: null,
+        finalOpfsPath: input.path,
+        stagingState: "quarantined",
+        syncState: "CONFLICT",
+        plannedOperationId: `NO-OP-${attachmentId}`,
+        operationId: null,
+        authoritativeEntityId: null,
+        quarantineReason: "UNKNOWN_OPFS_BYTES",
+        localBytesPresent: true,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        uploadStartedAt: null,
+        acknowledgedAt: null,
+        purgeEligibleAt: null,
+      };
+      await this.database.attachmentManifests.put(manifest);
+      return clone(manifest);
+    });
+  }
+
   async markOperationInFlight(operationId: string): Promise<OutboxRow> {
     return this.atomic([this.database.outbox], async () => {
       const row = await this.database.outbox.get([this.subjectId, operationId]);
@@ -1173,11 +1722,12 @@ export class IndexedDbFieldRepository {
     options: { includeLocked?: boolean } = {},
   ): Promise<FieldSubjectSnapshot> {
     await this.requireReadWrite();
-    const [packages, checklistResponses, potentialFindingDrafts, outbox, syncState] =
+    const [packages, checklistResponses, potentialFindingDrafts, attachmentManifests, outbox, syncState] =
       await Promise.all([
         this.database.packages.where("subjectId").equals(this.subjectId).toArray(),
         this.database.checklistResponses.where("subjectId").equals(this.subjectId).toArray(),
         this.database.potentialFindingDrafts.where("subjectId").equals(this.subjectId).toArray(),
+        this.database.attachmentManifests.where("subjectId").equals(this.subjectId).toArray(),
         this.database.outbox.where("subjectId").equals(this.subjectId).toArray(),
         this.database.syncState.where("subjectId").equals(this.subjectId).toArray(),
       ]);
@@ -1188,6 +1738,7 @@ export class IndexedDbFieldRepository {
       ),
       checklistResponses: sortByKey(clone(checklistResponses), (row) => row.id),
       potentialFindingDrafts: sortByKey(clone(potentialFindingDrafts), (row) => row.id),
+      attachmentManifests: sortByKey(clone(attachmentManifests), (row) => row.attachmentId),
       outbox: sortByKey(clone(outbox), (row) => row.operationId),
       syncState: sortByKey(clone(syncState), (row) => row.packageId),
     };

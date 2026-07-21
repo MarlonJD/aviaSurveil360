@@ -136,7 +136,7 @@ Browser-process and local-container cleanup was checked after the browser and
 HTTP profiles. No task-owned Chrome, Playwright, Vite, API/worker process,
 container, network, or volume remained.
 
-This evidence supports only the local Task 6 candidate. Task 7 is subsequently
-`verified locally`; the next binding slice is Task 8 manifest-first OPFS
-Inspection Attachment recovery. Production release and cutover remain outside
-this authorization and `blocked`.
+This evidence supports only the local Task 6 candidate. Tasks 7-8 are
+subsequently `verified locally`; the next binding slice is Task 12 typed network
+sync. Production release and cutover remain outside this authorization and
+`blocked`.

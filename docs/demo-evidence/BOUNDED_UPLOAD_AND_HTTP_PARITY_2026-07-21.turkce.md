@@ -115,6 +115,6 @@ Ek taze gate'ler:
 - Root Vanilla JavaScript smoke suite: 103/103 geçti
 - `git diff --check`: geçti
 
-Bu kanıt yalnız local Task 11 candidate'ını destekler. Sonraki binding slice
-Task 6 browser offline foundation'dır. Production release ve cutover bu yetkinin
-dışında ve `blocked` kalır.
+Bu kanıt yalnız local Task 11 candidate'ını destekler. Task 6-8 daha sonra
+`verified locally` oldu; Task 12 typed network sync sıradaki binding slice'tır.
+Production release ve cutover bu yetkinin dışında ve `blocked` kalır.

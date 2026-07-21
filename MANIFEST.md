@@ -6,11 +6,11 @@ not a production system.
 
 Candidate boundary: a local Go/PostgreSQL API/worker, pinned local Keycloak,
 private MinIO upload, deterministic scan adapter, real canonical HTTP scenario,
-and Task 6 PWA app-shell/offline-readiness foundation are `verified locally`.
-They are not deployed production services. Production OIDC/MFA, production
-storage/scanning/records policy, atomic offline field/outbox persistence,
-staged offline attachments, production synchronization, deployment, cutover,
-legacy removal, and a `production-ready` claim remain excluded or `blocked`.
+PWA/readiness, atomic offline field/outbox persistence, and manifest-first OPFS
+Inspection Attachment recovery are `verified locally`. They are not deployed
+production services. Production OIDC/MFA, production storage/scanning/records
+policy, production synchronization, deployment, cutover, legacy removal, and a
+`production-ready` claim remain excluded or `blocked`.
 The root Vanilla demo remains intact.
 
 ## Root Files
@@ -72,6 +72,12 @@ The root Vanilla demo remains intact.
 - `apps/web/src/offline/update-coordinator.ts` — positive N/N-1 compatibility,
   pending-work deferral, cross-tab owner lock/broadcast, migration pause,
   read-only recovery, and shell-only rollback policy.
+- `apps/web/src/offline/opfs-inspection-attachment-store.ts` — manifest-first
+  OPFS staging, bounded writes, Worker hashing, verified promotion, and disabled
+  purge boundary for field Inspection Attachments.
+- `apps/web/src/offline/attachment-recovery.ts` — startup manifest/path
+  reconciliation, blocking missing-byte detection, quarantine metadata, and
+  no-automatic-delete recovery.
 - `apps/web/src/features/inspections/offline-readiness-panel.tsx` — explicit
   policy attestations, online fallback, advisory capacity, checkout result, and
   site-data-loss messaging.
@@ -205,6 +211,9 @@ separate `apps/web/package.json` owns the React candidate commands.
 - `docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.md` and `.turkce.md` —
   Task 7 atomic subject-scoped field storage, causal outbox, migration, and
   pending/in-flight restart-recovery evidence.
+- `docs/demo-evidence/OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md` and
+  `.turkce.md` — Task 8 manifest-first OPFS staging, startup reconciliation,
+  no-delete policy, and server-stopped attachment restart evidence.
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.md`
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.turkce.md`
 - `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`
@@ -271,8 +280,7 @@ files in the same folder.
 The files above support stakeholder feedback, local demo verification, and a
 `candidate-only` React/Go vertical. They prove the scoped local HTTP/API,
 authority, audit-event, private upload, deterministic scan, scenario contracts,
-and Task 6 app-shell/readiness/restart behavior recorded in Task evidence. They
+PWA/readiness, atomic field storage, and OPFS attachment recovery recorded in Task evidence. They
 do not prove production identity/MFA, production storage/scanning or records
-operations, regulatory or enforcement approval, notification delivery, atomic
-offline field/outbox or attachment persistence, production sync, deployment,
-cutover, release, or production readiness.
+operations, regulatory or enforcement approval, notification delivery,
+production sync, deployment, cutover, release, or production readiness.

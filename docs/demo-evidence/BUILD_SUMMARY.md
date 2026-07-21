@@ -1235,8 +1235,35 @@ transitive development-tool audit findings remain `note-open` for Task 13.
 
 The complete evidence and scope boundaries are in
 [INDEXEDDB_FIELD_STORAGE_2026-07-21.md](INDEXEDDB_FIELD_STORAGE_2026-07-21.md).
-OPFS Inspection Attachment bytes (Task 8), network sync/conflict delivery (Task
+Task 8 is subsequently `verified locally`. Network sync/conflict delivery (Task
 12), deployment, cutover, and production verification remain `not run` or
+`blocked` as applicable. No `production-ready` claim is made.
+
+---
+
+### Manifest-first OPFS Inspection Attachment recovery checkpoint — 2026-07-21
+
+Status: Task 8 is `verified locally` and `candidate-only`; release remains
+`release pending`. The React field route now commits an IndexedDB manifest
+before OPFS bytes, hashes in a dedicated Worker, verifies size/hash before final
+promotion, and atomically creates the typed causal registration outbox.
+Startup reconciliation blocks editing for missing referenced bytes, restores
+verified temporary bytes, quarantines incomplete/unknown bytes, and never
+automatically deletes local bytes. Owner-approved purge policy is absent, so
+purge remains disabled. Official Auditee Evidence is not created or modified.
+
+Fresh gates passed: React/Vitest 132/132; focused attachment staging/recovery
+35/35; persistent-Chrome offline Playwright 4/4 with a stopped origin server
+and exact OPFS hash/byte restart proof; full Go race/live HTTP integration;
+OpenAPI 5/5 and SQLC clean generation; live HTTP Backend contract 9/9;
+mock/HTTP Playwright 1/1 + 1/1; demo/HTTP app-shell scans across 12 files and 4
+assets including the hash worker; HTTP isolation across 12 files and 84 inputs;
+root Vanilla 103/103; and production dependency audit with 0 vulnerabilities.
+
+The complete evidence and scope boundaries are in
+[OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md](OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md).
+Task 12 network sync/conflict delivery, wider route migration, Task 13 release
+packet, deployment, cutover, and production verification remain `not run` or
 `blocked` as applicable. No `production-ready` claim is made.
 
 ---

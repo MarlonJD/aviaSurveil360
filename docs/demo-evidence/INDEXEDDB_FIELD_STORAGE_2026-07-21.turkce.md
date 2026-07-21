@@ -63,4 +63,4 @@ Full development-dependency audit passing gate değildir; `verified locally` bir
 
 Offline ve HTTP profile sonrasında browser-process ve local-container cleanup kontrol edildi. Task-owned Chrome, Playwright, Vite, API/worker process, container, network veya volume kalmadı.
 
-Bu kanıt yalnız local Task 7 candidate'ı destekler. Task 8 manifest-first OPFS Inspection Attachment recovery sıradaki binding slice'tır. Production release ve cutover bu yetkinin dışındadır ve `blocked` kalır.
+Bu kanıt yalnız local Task 7 candidate'ı destekler. Task 8 manifest-first OPFS Inspection Attachment recovery daha sonra `verified locally` oldu; Task 12 typed network sync sıradaki binding slice'tır. Production release ve cutover bu yetkinin dışındadır ve `blocked` kalır.

@@ -3,6 +3,7 @@ import { createContext, type PropsWithChildren, useContext, useState } from "rea
 
 import type { Backend, Role } from "../backend/backend";
 import type { IndexedDbFieldRepository } from "../offline/field-repository";
+import type { InspectionAttachmentStore } from "../offline/opfs-inspection-attachment-store";
 
 export type BuildProfile = "demo" | "http";
 
@@ -12,6 +13,7 @@ export interface ApplicationRuntime {
   buildProfile: BuildProfile;
   environmentLabel: string;
   fieldRepositoryForSubject?: (subjectId: string) => IndexedDbFieldRepository;
+  inspectionAttachmentStoreForSubject?: (subjectId: string) => InspectionAttachmentStore;
 }
 
 const ApplicationRuntimeContext = createContext<ApplicationRuntime | null>(null);

@@ -18,6 +18,7 @@ export function ChecklistRunnerPage() {
   const [selectedQuestionId, setSelectedQuestionId] = useState("CAB-EMEQ-PBE-001");
   const [answer, setAnswer] = useState<ChecklistAnswer>("NOT_CHECKED");
   const [comment, setComment] = useState("");
+  const [inspectionAttachment, setInspectionAttachment] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -38,6 +39,7 @@ export function ChecklistRunnerPage() {
   );
   const selectedQuestionAssignedHere = selectedQuestion?.assignedInspectorUserIds.includes(INSPECTOR_ID) ?? false;
   const checklistReadOnly = packageView?.checklistStatus === "SUBMITTED";
+  const attachmentRecoveryBlocked = projection.attachmentRecoveryBlocking.length > 0;
 
   async function run(command: () => Promise<void>): Promise<void> {
     setBusy(true);
@@ -60,6 +62,20 @@ export function ChecklistRunnerPage() {
         action={<StatusPill>{projection.checklistSubmission?.checklistStatus ?? packageView?.checklistStatus ?? "IN_PROGRESS"}</StatusPill>}
       />
       <CommandError message={error} />
+      {attachmentRecoveryBlocked ? (
+        <section className="decision-result" data-testid="attachment-recovery-blocking" role="alert">
+          <strong>Inspection Attachment recovery required</strong>
+          <span>
+            Referenced local bytes are missing. Editing is blocked; preserve site data and use the
+            approved recovery/reselection process.
+          </span>
+        </section>
+      ) : null}
+      {projection.attachmentRecoveryQuarantinedCount > 0 ? (
+        <p className="decision-result" data-testid="attachment-recovery-quarantine" role="status">
+          Quarantined local attachment bytes require review. They were not automatically deleted.
+        </p>
+      ) : null}
       <div className="split-layout split-layout--questions">
         <section className="question-list" aria-label="Cabin checklist questions">
           {packageView?.questions.map((question) => {
@@ -91,7 +107,7 @@ export function ChecklistRunnerPage() {
               <label>
                 Checklist answer
                 <select
-                  disabled={!selectedQuestionAssignedHere || checklistReadOnly}
+                  disabled={!selectedQuestionAssignedHere || checklistReadOnly || attachmentRecoveryBlocked}
                   value={answer}
                   onChange={(event) => setAnswer(event.target.value as ChecklistAnswer)}
                 >
@@ -103,7 +119,7 @@ export function ChecklistRunnerPage() {
               <label>
                 Inspector comment
                 <textarea
-                  disabled={!selectedQuestionAssignedHere || checklistReadOnly}
+                  disabled={!selectedQuestionAssignedHere || checklistReadOnly || attachmentRecoveryBlocked}
                   rows={5}
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
@@ -112,7 +128,7 @@ export function ChecklistRunnerPage() {
               <div className="button-row">
                 <button
                   className="primary-button"
-                  disabled={busy || !selectedQuestionAssignedHere || checklistReadOnly}
+                  disabled={busy || !selectedQuestionAssignedHere || checklistReadOnly || attachmentRecoveryBlocked}
                   onClick={() => void run(() => actions.saveChecklistResponse(answer, comment))}
                   type="button"
                 >
@@ -122,10 +138,55 @@ export function ChecklistRunnerPage() {
                   <span data-testid="response-status">{projection.response.answer}</span>
                 ) : null}
               </div>
+              {projection.fieldMode && projection.response && projection.potentialFinding && !checklistReadOnly ? (
+                <section className="attachment-staging" aria-labelledby="inspection-attachment-title">
+                  <h3 id="inspection-attachment-title">Inspection Attachment</h3>
+                  <p>
+                    Stage PDF, JPEG, or PNG bytes against this Potential Finding. Local bytes
+                    remain pending until acknowledged by the server.
+                  </p>
+                  <label>
+                    Attachment file
+                    <input
+                      accept="application/pdf,image/jpeg,image/png"
+                      disabled={busy || attachmentRecoveryBlocked}
+                      onChange={(event) => setInspectionAttachment(event.target.files?.[0] ?? null)}
+                      type="file"
+                    />
+                  </label>
+                  <button
+                    className="secondary-button"
+                    disabled={busy || !inspectionAttachment || attachmentRecoveryBlocked}
+                    onClick={() =>
+                      void run(async () => {
+                        if (!inspectionAttachment) return;
+                        await actions.stageInspectionAttachment(inspectionAttachment);
+                        setInspectionAttachment(null);
+                      })
+                    }
+                    type="button"
+                  >
+                    Stage Inspection Attachment
+                  </button>
+                  {projection.inspectionAttachments.length > 0 ? (
+                    <ul aria-label="Staged inspection attachments">
+                      {projection.inspectionAttachments.map((attachment) => (
+                        <li key={attachment.attachmentId} data-testid="inspection-attachment-state">
+                          <strong>{attachment.fileName}</strong> — {attachment.stagingState}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <p className="muted-note">
+                    Clearing this browser&apos;s site data irrecoverably removes local attachment
+                    bytes. Automatic local-byte deletion is disabled in this candidate.
+                  </p>
+                </section>
+              ) : null}
               {projection.response && !projection.potentialFinding ? (
                 <button
                   className="secondary-button"
-                  disabled={busy || !selectedQuestionAssignedHere || checklistReadOnly}
+                  disabled={busy || !selectedQuestionAssignedHere || checklistReadOnly || attachmentRecoveryBlocked}
                   onClick={() => void run(actions.createPotentialFinding)}
                   type="button"
                 >
@@ -164,7 +225,7 @@ export function ChecklistRunnerPage() {
           {!projection.checklistSubmission ? (
             <button
               className="primary-button"
-              disabled={busy}
+              disabled={busy || attachmentRecoveryBlocked}
               onClick={() => void run(actions.submitChecklist)}
               type="button"
             >

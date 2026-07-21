@@ -481,6 +481,33 @@ textarea {
   margin-top: 14px;
 }
 
+.attachment-staging {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #c2d0d6;
+  border-radius: 10px;
+  background: #f7fafb;
+}
+
+.attachment-staging h3,
+.attachment-staging p,
+.attachment-staging ul {
+  margin: 0;
+}
+
+.attachment-staging ul {
+  display: grid;
+  gap: 6px;
+  padding-left: 20px;
+}
+
+.attachment-staging .muted-note {
+  color: #526b77;
+  font-size: 0.8rem;
+}
+
 .decision-result {
   display: flex;
   flex-wrap: wrap;

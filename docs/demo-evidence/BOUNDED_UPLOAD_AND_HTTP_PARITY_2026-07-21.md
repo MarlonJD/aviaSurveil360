@@ -117,6 +117,7 @@ Additional fresh gates:
 - Root Vanilla JavaScript smoke suite: 103/103 pass
 - `git diff --check`: pass
 
-This evidence supports only the local Task 11 candidate. The next binding slice
-is Task 6, the browser offline foundation. Production release and cutover remain
-outside this authorization and `blocked`.
+This evidence supports only the local Task 11 candidate. Tasks 6-8 are
+subsequently `verified locally`; Task 12 typed network sync is the next binding
+slice. Production release and cutover remain outside this authorization and
+`blocked`.

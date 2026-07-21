@@ -45,7 +45,11 @@ export default defineConfig({
     { name: "http", testMatch: "e2e/canonical-scenario.spec.ts" },
     {
       name: "offline",
-      testMatch: ["e2e/offline-*.spec.ts", "offline/restart-recovery.spec.ts"],
+      testMatch: [
+        "e2e/offline-*.spec.ts",
+        "e2e/attachment-restart-recovery.spec.ts",
+        "offline/restart-recovery.spec.ts",
+      ],
     },
   ],
 });

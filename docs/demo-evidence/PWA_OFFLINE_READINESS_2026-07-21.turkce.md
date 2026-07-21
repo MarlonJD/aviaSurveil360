@@ -134,7 +134,6 @@ Browser-process ve local-container cleanup, browser ve HTTP profile sonrasında
 kontrol edildi. Task-owned Chrome, Playwright, Vite, API/worker process,
 container, network veya volume kalmadı.
 
-Bu kanıt yalnız local Task 6 candidate'ını destekler. Task 7 daha sonra
-`verified locally` oldu; sıradaki binding slice Task 8 manifest-first OPFS
-Inspection Attachment recovery'dir. Production release ve cutover bu yetkinin
-dışında ve `blocked` kalır.
+Bu kanıt yalnız local Task 6 candidate'ını destekler. Task 7-8 daha sonra
+`verified locally` oldu; sıradaki binding slice Task 12 typed network sync'tir.
+Production release ve cutover bu yetkinin dışında ve `blocked` kalır.

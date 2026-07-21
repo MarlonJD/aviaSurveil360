@@ -15,10 +15,10 @@ Keycloak, MinIO ve deterministik scanner adapter kullanır.
 
 **Candidate-only / production-ready değil:** Go/PostgreSQL authority layer,
 private bounded object upload, deterministik scan worker, full canonical HTTP
-scenario ve Task 6 PWA app-shell/offline-readiness foundation `verified locally`
+scenario, PWA/readiness, atomic offline field repository/outbox ve
+manifest-first OPFS Inspection Attachment recovery `verified locally`
 durumundadır; deployed production service değildir. Production OIDC/MFA,
-production object store/scanner veya Evidence records policy, atomic offline
-field repository/outbox, staged offline attachment store, production sync,
+production object store/scanner veya Evidence records policy, production sync,
 deployment, cutover veya legacy removal yoktur. Root demo, removal-blocking
 behavior oracle olarak korunur.
 
@@ -49,6 +49,7 @@ eden task-based oversight platformudur.
 7. `docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.turkce.md`
 8. `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.turkce.md`
 9. `docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.turkce.md`
+10. `docs/demo-evidence/OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.turkce.md`
 
 Clickable demo için `index.html` dosyasını doğrudan browser'da açın veya bu
 klasörü local static server ile servis edin. Güncel verification status ve demo
@@ -89,6 +90,11 @@ Task 7 atomic field-record/outbox, migration, server-stopped restart-recovery ve
 explicit sync/OPFS exclusion'ları için
 `docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.turkce.md` dosyasına
 bakın.
+
+Task 8 manifest-first OPFS lifecycle, startup reconciliation, no-delete policy
+ve server-stopped attachment restart kanıtı için
+`docs/demo-evidence/OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.turkce.md`
+dosyasına bakın.
 
 
 ## Kaynak Notları

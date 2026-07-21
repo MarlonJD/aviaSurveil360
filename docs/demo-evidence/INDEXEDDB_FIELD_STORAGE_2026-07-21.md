@@ -63,4 +63,4 @@ The full development-dependency audit is a verified local finding, not a passing
 
 Browser-process and local-container cleanup was checked after the offline and HTTP profiles. No task-owned Chrome, Playwright, Vite, API/worker process, container, network, or volume remained.
 
-This evidence supports only the local Task 7 candidate. Task 8 manifest-first OPFS Inspection Attachment recovery is the next binding slice. Production release and cutover remain outside this authorization and `blocked`.
+This evidence supports only the local Task 7 candidate. Task 8 manifest-first OPFS Inspection Attachment recovery is subsequently `verified locally`; Task 12 typed network sync is the next binding slice. Production release and cutover remain outside this authorization and `blocked`.

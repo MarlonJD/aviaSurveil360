@@ -31,7 +31,16 @@ import {
   type FieldPackageView,
   type IndexedDbFieldRepository,
 } from "../offline/field-repository";
-import type { PotentialFindingDraftRow } from "../offline/db";
+import {
+  reconcileInspectionAttachments,
+  type AttachmentRecoveryBlockingItem,
+  type AttachmentRecoveryReport,
+} from "../offline/attachment-recovery";
+import type { AttachmentManifestRow, PotentialFindingDraftRow } from "../offline/db";
+import {
+  createBrowserInspectionAttachmentStore,
+  type InspectionAttachmentStore,
+} from "../offline/opfs-inspection-attachment-store";
 import { useApplicationRuntime } from "./providers";
 
 export interface ScenarioProjection {
@@ -50,12 +59,16 @@ export interface ScenarioProjection {
   dashboard: ManagerDashboardProjection | null;
   fieldMode: boolean;
   fieldPendingOperationCount: number;
+  inspectionAttachments: AttachmentManifestRow[];
+  attachmentRecoveryBlocking: AttachmentRecoveryBlockingItem[];
+  attachmentRecoveryQuarantinedCount: number;
 }
 
 export interface ScenarioActions {
   loadAssignments(): Promise<void>;
   loadPackage(): Promise<void>;
   saveChecklistResponse(answer: ChecklistAnswer, comment: string): Promise<void>;
+  stageInspectionAttachment(file: File): Promise<void>;
   createPotentialFinding(): Promise<void>;
   submitChecklist(): Promise<void>;
   decidePotentialFinding(input: {
@@ -112,6 +125,9 @@ const initialProjection: ScenarioProjection = {
   dashboard: null,
   fieldMode: false,
   fieldPendingOperationCount: 0,
+  inspectionAttachments: [],
+  attachmentRecoveryBlocking: [],
+  attachmentRecoveryQuarantinedCount: 0,
 };
 
 const FIELD_SUBJECT_ID = "USR-INSPECTOR-AMINA";
@@ -132,19 +148,28 @@ function toPotentialFindingView(row: PotentialFindingDraftRow): PotentialFinding
   };
 }
 
-function fieldProjection(view: FieldPackageView) {
+function fieldProjection(view: FieldPackageView, recovery?: AttachmentRecoveryReport) {
   const response = view.responses.find(
     (candidate) => candidate.questionId === FIELD_QUESTION_ID && !candidate.tombstoned,
   );
   const potentialFinding = view.potentialFindingDrafts.find(
     (candidate) => candidate.questionId === FIELD_QUESTION_ID,
   );
+  const recoveryProjection = recovery
+    ? {
+        attachmentRecoveryBlocking: recovery.blocking,
+        attachmentRecoveryQuarantinedCount:
+          recovery.quarantinedAttachmentIds.length + recovery.quarantinedUnknownPaths.length,
+      }
+    : {};
   return {
     packageView: view.inspectionPackage,
     response: response ? toChecklistResponseView(response) : null,
     potentialFinding: potentialFinding ? toPotentialFindingView(potentialFinding) : null,
     fieldMode: true,
     fieldPendingOperationCount: view.pendingOperationCount,
+    inspectionAttachments: view.attachmentManifests,
+    ...recoveryProjection,
   };
 }
 
@@ -165,6 +190,11 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
         ? () => new Date("2026-06-15T09:00:00.000Z")
         : () => new Date(),
     );
+  const inspectionAttachmentStore = (
+    repository: IndexedDbFieldRepository,
+  ): InspectionAttachmentStore =>
+    runtime.inspectionAttachmentStoreForSubject?.(FIELD_SUBJECT_ID) ??
+    createBrowserInspectionAttachmentStore(repository);
 
   const actions = useMemo<ScenarioActions>(
     () => ({
@@ -174,9 +204,18 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
       },
 
       async loadPackage() {
-        const local = await fieldRepository().loadPackage(FIELD_PACKAGE_ID);
+        const repository = fieldRepository();
+        const local = await repository.loadPackage(FIELD_PACKAGE_ID);
         if (local) {
-          setProjection((current) => ({ ...current, ...fieldProjection(local) }));
+          const attachmentStore = inspectionAttachmentStore(repository);
+          const recovery = await reconcileInspectionAttachments({
+            repository,
+            fileSystem: attachmentStore.fileSystem,
+            hasher: attachmentStore.hasher,
+          });
+          const recoveredLocal = await repository.loadPackage(FIELD_PACKAGE_ID);
+          if (!recoveredLocal) throw new Error("Checked-out field package disappeared during recovery.");
+          setProjection((current) => ({ ...current, ...fieldProjection(recoveredLocal, recovery) }));
           return;
         }
         const packageView = await backendFor("inspector").inspections.getPackage({
@@ -191,11 +230,17 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
           response,
           fieldMode: false,
           fieldPendingOperationCount: 0,
+          inspectionAttachments: [],
+          attachmentRecoveryBlocking: [],
+          attachmentRecoveryQuarantinedCount: 0,
         }));
       },
 
       async saveChecklistResponse(answer, comment) {
         if (projection.fieldMode) {
+          if (projection.attachmentRecoveryBlocking.length > 0) {
+            throw new Error("Resolve blocking Inspection Attachment recovery before editing.");
+          }
           const repository = fieldRepository();
           await repository.saveChecklistResponse({
             operationId: fieldOperationId("OP-RESPONSE"),
@@ -222,9 +267,37 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
         setProjection((current) => ({ ...current, response }));
       },
 
+      async stageInspectionAttachment(file) {
+        if (!projection.fieldMode || !projection.response) {
+          throw new Error("Save the exact field checklist response before staging an attachment.");
+        }
+        if (projection.attachmentRecoveryBlocking.length > 0) {
+          throw new Error("Resolve blocking Inspection Attachment recovery before staging bytes.");
+        }
+        const packageView = projection.packageView;
+        if (!packageView) throw new Error("Checked-out field package is unavailable.");
+        const repository = fieldRepository();
+        await inspectionAttachmentStore(repository).stage({
+          attachmentId: `ATT-LOCAL-${crypto.randomUUID()}`,
+          operationId: fieldOperationId("OP-ATTACHMENT"),
+          packageId: packageView.id,
+          checklistResponseId: projection.response.id,
+          potentialFindingLocalId: projection.potentialFinding?.id ?? null,
+          fileName: file.name,
+          mediaType: file.type,
+          bytes: new Uint8Array(await file.arrayBuffer()),
+        });
+        const local = await repository.loadPackage(packageView.id);
+        if (!local) throw new Error("Checked-out field package disappeared after attachment staging.");
+        setProjection((current) => ({ ...current, ...fieldProjection(local) }));
+      },
+
       async createPotentialFinding() {
         if (!projection.response) throw new Error("Save the exact checklist response first.");
         if (projection.fieldMode) {
+          if (projection.attachmentRecoveryBlocking.length > 0) {
+            throw new Error("Resolve blocking Inspection Attachment recovery before creating a Potential Finding.");
+          }
           const repository = fieldRepository();
           await repository.createPotentialFindingDraft({
             operationId: fieldOperationId("OP-PF"),
@@ -236,7 +309,9 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
             description:
               "The configured cabin check could not confirm that the PBE was serviceable and accessible.",
             requiredComment: projection.response.comment,
-            inspectionAttachmentIds: [],
+            inspectionAttachmentIds: projection.inspectionAttachments
+              .filter((attachment) => attachment.stagingState === "ready")
+              .map((attachment) => attachment.attachmentId),
           });
           const local = await repository.loadPackage(FIELD_PACKAGE_ID);
           if (!local) throw new Error("Checked-out field package disappeared after local commit.");
@@ -262,6 +337,9 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
         const packageView = projection.packageView;
         if (!packageView) throw new Error("Inspection package is unavailable.");
         if (projection.fieldMode) {
+          if (projection.attachmentRecoveryBlocking.length > 0) {
+            throw new Error("Resolve blocking Inspection Attachment recovery before checklist submission.");
+          }
           const repository = fieldRepository();
           const submission = await repository.submitChecklist({
             operationId: fieldOperationId("OP-CHECKLIST-SUBMIT"),

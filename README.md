@@ -15,11 +15,11 @@ Keycloak, MinIO, and a deterministic scanner adapter.
 
 **Candidate-only / not production-ready:** the Go/PostgreSQL authority layer,
 private bounded object upload, deterministic scan worker, full canonical HTTP
-scenario, and Task 6 PWA app-shell/offline-readiness foundation are `verified
-locally`; they are not deployed production services. There is no production
-OIDC/MFA, production object store/scanner or Evidence records policy, atomic
-offline field repository/outbox, staged offline attachment store, production
-sync, deployment, cutover, or legacy removal. The root demo remains the
+scenario, PWA/readiness, atomic offline field repository/outbox, and
+manifest-first OPFS Inspection Attachment recovery are `verified locally`;
+they are not deployed production services. There is no production OIDC/MFA,
+production object store/scanner or Evidence records policy, production sync,
+deployment, cutover, or legacy removal. The root demo remains the
 removal-blocking behavior oracle.
 
 ## Product definition
@@ -49,6 +49,7 @@ Do not build an EMPIC-like complex enterprise screen first. Build a simple, role
 7. `docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md`
 8. `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md`
 9. `docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.md`
+10. `docs/demo-evidence/OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md`
 
 For the clickable demo, open `index.html` directly in a browser or serve this
 folder with a local static server. See `docs/demo-evidence/BUILD_SUMMARY.md` for current
@@ -87,7 +88,12 @@ site-data-loss evidence and exclusions.
 
 See `docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.md` for the Task 7
 atomic field-record/outbox, migration, server-stopped restart-recovery, and
-explicit sync/OPFS exclusions.
+explicit sync/OPFS exclusions at that checkpoint.
+
+See
+`docs/demo-evidence/OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md` for the
+Task 8 manifest-first OPFS lifecycle, startup reconciliation, no-delete policy,
+and server-stopped attachment restart evidence.
 
 
 ## Source Notes
