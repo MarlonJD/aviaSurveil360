@@ -2,6 +2,7 @@ import type {
   AssignmentSummary,
   AuditEventView,
   CapStatus,
+  ChecklistTemplateVersionDetailView,
   ChecklistTemplateVersionView,
   EvidenceReviewState,
   EvidenceScanState,
@@ -80,6 +81,7 @@ export interface MockState {
   organizations: OrganizationSummary[];
   planningItems: Record<string, PlanningItemView>;
   checklistTemplateVersions: ChecklistTemplateVersionView[];
+  checklistTemplateVersionDetails: Record<string, ChecklistTemplateVersionDetailView>;
   reminderRules: ReminderRuleView[];
   auditEvents: AuditEventView[];
   packages: Record<string, InspectionPackage>;
@@ -275,6 +277,26 @@ export function createCanonicalSeedState(now: string): MockState {
         questionCount: 6,
       },
     ],
+    checklistTemplateVersionDetails: {
+      "CTV-CABIN-1": {
+        id: "CTV-CABIN-1",
+        templateId: "CABIN",
+        title: "Cabin Inspection checklist",
+        version: 1,
+        status: "PUBLISHED",
+        publishedAt: now,
+        questionCount: canonicalPackage.questions.length,
+        questions: canonicalPackage.questions.map((question) => ({
+          id: question.id,
+          sectionId: question.sectionId,
+          prompt: question.prompt,
+          regulatoryReference: question.regulatoryReference,
+          expectedEvidence: question.expectedEvidence,
+          allowedAnswers: [...question.allowedAnswers],
+          commentRequiredFor: [...question.commentRequiredFor],
+        })),
+      },
+    },
     reminderRules: [
       { id: "REM-30", label: "30 days before Due Date", offsetDays: 30, channel: "IN_APP", status: "ACTIVE", revision: 1 },
       { id: "REM-15", label: "15 days before Due Date", offsetDays: 15, channel: "IN_APP", status: "ACTIVE", revision: 1 },

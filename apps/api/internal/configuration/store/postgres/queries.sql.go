@@ -11,6 +11,38 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getChecklistTemplateVersion = `-- name: GetChecklistTemplateVersion :one
+SELECT id, template_id, title, version, published_at, snapshot,
+       jsonb_array_length(snapshot->'questions')::bigint AS question_count
+FROM checklist_template_versions
+WHERE id = $1
+`
+
+type GetChecklistTemplateVersionRow struct {
+	ID            string             `json:"id"`
+	TemplateID    string             `json:"template_id"`
+	Title         string             `json:"title"`
+	Version       int32              `json:"version"`
+	PublishedAt   pgtype.Timestamptz `json:"published_at"`
+	Snapshot      []byte             `json:"snapshot"`
+	QuestionCount int64              `json:"question_count"`
+}
+
+func (q *Queries) GetChecklistTemplateVersion(ctx context.Context, id string) (GetChecklistTemplateVersionRow, error) {
+	row := q.db.QueryRow(ctx, getChecklistTemplateVersion, id)
+	var i GetChecklistTemplateVersionRow
+	err := row.Scan(
+		&i.ID,
+		&i.TemplateID,
+		&i.Title,
+		&i.Version,
+		&i.PublishedAt,
+		&i.Snapshot,
+		&i.QuestionCount,
+	)
+	return i, err
+}
+
 const listChecklistTemplateVersions = `-- name: ListChecklistTemplateVersions :many
 SELECT id, template_id, title, version, published_at,
        jsonb_array_length(snapshot->'questions')::bigint AS question_count

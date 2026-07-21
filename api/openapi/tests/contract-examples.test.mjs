@@ -140,6 +140,7 @@ test("first-production route families have versioned paths, closed schemas, and 
     "/v1/planning/items",
     "/v1/planning/items/{id}/decisions",
     "/v1/configuration/checklist-template-versions",
+    "/v1/configuration/checklist-template-versions/{templateVersionId}",
     "/v1/configuration/reminder-rules",
     "/v1/audit-events",
   ]) {
@@ -150,6 +151,8 @@ test("first-production route families have versioned paths, closed schemas, and 
     "PlanningItemView",
     "PlanningDecisionInput",
     "ChecklistTemplateVersionView",
+    "ChecklistTemplateQuestionView",
+    "ChecklistTemplateVersionDetailView",
     "ReminderRuleView",
     "AuditEventView",
   ]) {
@@ -164,11 +167,61 @@ test("first-production route families have versioned paths, closed schemas, and 
     "organization-list.json",
     "planning-item.json",
     "checklist-template-version.json",
+    "checklist-template-version-detail.json",
     "reminder-rules.json",
     "audit-events.json",
   ]) {
     assert.ok(files.includes(example), `Missing canonical route-family example: ${example}`);
   }
+});
+
+test("configuration template detail exposes exact immutable question contract", () => {
+  const document = readRequiredJson(openApiPath);
+  assert.ok(
+    document.paths["/v1/configuration/checklist-template-versions/{templateVersionId}"]?.get,
+    "Checklist template version detail must support direct GET",
+  );
+
+  const question = document.components.schemas.ChecklistTemplateQuestionView;
+  assert.equal(question?.additionalProperties, false, "ChecklistTemplateQuestionView must be closed");
+  assert.deepEqual(question?.required, [
+    "id",
+    "sectionId",
+    "prompt",
+    "regulatoryReference",
+    "expectedEvidence",
+    "allowedAnswers",
+    "commentRequiredFor",
+  ]);
+  assert.doesNotMatch(
+    JSON.stringify(question),
+    /assignedInspectorUserIds|currentResponse|draft|secret|userAdministration/i,
+  );
+
+  const detail = document.components.schemas.ChecklistTemplateVersionDetailView;
+  assert.equal(detail?.additionalProperties, false, "ChecklistTemplateVersionDetailView must be closed");
+  assert.ok(detail?.required?.includes("questions"), "Checklist template detail must require questions");
+  assert.equal(
+    detail?.properties?.questions?.items?.$ref,
+    "#/components/schemas/ChecklistTemplateQuestionView",
+  );
+
+  const example = readRequiredJson(path.join(examplesDirectory, "checklist-template-version-detail.json"));
+  assert.equal(example.schema, "ChecklistTemplateVersionDetailView");
+  assert.equal(example.value.id, "CTV-CABIN-1");
+  assert.equal(example.value.questions.length, 6);
+  assert.deepEqual(example.value.questions[0].allowedAnswers, [
+    "COMPLIANT",
+    "NON_COMPLIANT",
+    "OBSERVATION",
+    "NOT_APPLICABLE",
+    "NOT_CHECKED",
+  ]);
+  assert.deepEqual(example.value.questions[0].commentRequiredFor, [
+    "NON_COMPLIANT",
+    "OBSERVATION",
+  ]);
+  assert.doesNotMatch(JSON.stringify(example.value), /assignedInspectorUserIds|currentResponse/i);
 });
 
 test("lifecycle read projections expose Potential Finding and role-shaped CAP revision contracts", () => {

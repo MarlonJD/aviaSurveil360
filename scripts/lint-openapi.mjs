@@ -39,6 +39,7 @@ const expectedPaths = [
   "/v1/planning/items",
   "/v1/planning/items/{id}/decisions",
   "/v1/configuration/checklist-template-versions",
+  "/v1/configuration/checklist-template-versions/{templateVersionId}",
   "/v1/configuration/reminder-rules",
   "/v1/audit-events",
   "/v1/sync/operations",

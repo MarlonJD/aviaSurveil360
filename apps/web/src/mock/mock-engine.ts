@@ -1092,6 +1092,16 @@ export class MockBackendEngine implements Backend {
         nextCursor: null,
       }));
     },
+    getChecklistTemplateVersion: async ({ templateVersionId }) => {
+      requireRole(this.principal, ["admin"], "Admin configuration authority is required.");
+      return this.store.read((state) => {
+        const detail = state.checklistTemplateVersionDetails[templateVersionId];
+        if (!detail) {
+          throw new BackendInvariantError(`Checklist Template Version ${templateVersionId} was not found.`);
+        }
+        return detail;
+      });
+    },
     listReminderRules: async ({ limit }) => {
       requireRole(this.principal, ["admin"], "Admin configuration authority is required.");
       return this.store.read((state) => ({

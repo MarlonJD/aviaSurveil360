@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	GetChecklistTemplateVersion(ctx context.Context, id string) (GetChecklistTemplateVersionRow, error)
 	ListChecklistTemplateVersions(ctx context.Context, limit int32) ([]ListChecklistTemplateVersionsRow, error)
 	ListReminderRules(ctx context.Context, limit int32) ([]ListReminderRulesRow, error)
 }

@@ -104,6 +104,7 @@ func (api *CanonicalAPI) Handler() http.Handler {
 	router.Get("/v1/planning/items", api.listPlanningItems)
 	router.Post("/v1/planning/items/{id}/decisions", api.decidePlanningItem)
 	router.Get("/v1/configuration/checklist-template-versions", api.listChecklistTemplateVersions)
+	router.Get("/v1/configuration/checklist-template-versions/{templateVersionId}", api.getChecklistTemplateVersion)
 	router.Get("/v1/configuration/reminder-rules", api.listReminderRules)
 	router.Get("/v1/audit-events", api.listAuditEvents)
 	router.Post("/v1/sync/operations", api.pushFieldOperation)

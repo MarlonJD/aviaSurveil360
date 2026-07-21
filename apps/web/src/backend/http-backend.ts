@@ -10,6 +10,7 @@ import {
   mapAssignments,
   mapAuditEvents,
   mapChecklistTemplateVersions,
+  mapChecklistTemplateVersionDetail,
   mapChecklistResponse,
   mapCheckout,
   mapCapRevision,
@@ -476,6 +477,14 @@ export function createHttpBackend(
         mapChecklistTemplateVersions(
           await request<Schemas["ListChecklistTemplateVersionsOutput"]>(
             appendQuery("/v1/configuration/checklist-template-versions", input),
+            {},
+            options,
+          ),
+        ),
+      getChecklistTemplateVersion: async ({ templateVersionId }, options) =>
+        mapChecklistTemplateVersionDetail(
+          await request<Schemas["ChecklistTemplateVersionDetailView"]>(
+            `/v1/configuration/checklist-template-versions/${encodeURIComponent(templateVersionId)}`,
             {},
             options,
           ),

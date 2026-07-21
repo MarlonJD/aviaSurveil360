@@ -1,8 +1,11 @@
 package httpapi
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/application"
@@ -16,6 +19,7 @@ import (
 	organizationstore "github.com/MarlonJD/aviaSurveil360/apps/api/internal/organizations/store/postgres"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/planning"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 )
 
 func (api *CanonicalAPI) listOrganizations(writer http.ResponseWriter, request *http.Request) {
@@ -105,7 +109,7 @@ func (api *CanonicalAPI) listChecklistTemplateVersions(writer http.ResponseWrite
 	if !ok {
 		return
 	}
-	if !configuration.CanPreview(actor) {
+	if !configuration.CanReadChecklistTemplateVersionDetail(actor) {
 		api.respond(writer, nil, fmt.Errorf("%w: Admin configuration authority is required", application.ErrForbidden))
 		return
 	}
@@ -124,6 +128,108 @@ func (api *CanonicalAPI) listChecklistTemplateVersions(writer http.ResponseWrite
 		})
 	}
 	api.respond(writer, generated.ListChecklistTemplateVersionsOutput{Items: items}, nil)
+}
+
+func (api *CanonicalAPI) getChecklistTemplateVersion(writer http.ResponseWriter, request *http.Request) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	if !configuration.CanReadChecklistTemplateVersionDetail(actor) {
+		api.respond(writer, nil, fmt.Errorf("%w: Admin configuration authority is required", application.ErrForbidden))
+		return
+	}
+	record, err := configurationstore.New(api.pool).GetChecklistTemplateVersion(request.Context(), chi.URLParam(request, "templateVersionId"))
+	if err != nil {
+		api.respond(writer, nil, checklistTemplateVersionDetailStoreError(err))
+		return
+	}
+	view, err := checklistTemplateVersionDetailView(checklistTemplateVersionRecord{
+		ID: record.ID, TemplateID: record.TemplateID, Title: record.Title,
+		Version: record.Version, PublishedAt: record.PublishedAt.Time.UTC(),
+		QuestionCount: record.QuestionCount, Snapshot: record.Snapshot,
+	})
+	api.respond(writer, view, err)
+}
+
+type checklistTemplateVersionRecord struct {
+	ID            string
+	TemplateID    string
+	Title         string
+	Version       int32
+	PublishedAt   time.Time
+	QuestionCount int64
+	Snapshot      []byte
+}
+
+type checklistTemplateVersionSnapshot struct {
+	Questions []checklistTemplateQuestionSnapshot `json:"questions"`
+}
+
+type checklistTemplateQuestionSnapshot struct {
+	ID                  string                      `json:"id"`
+	SectionID           string                      `json:"sectionId"`
+	Prompt              string                      `json:"prompt"`
+	RegulatoryReference string                      `json:"regulatoryReference"`
+	ExpectedEvidence    string                      `json:"expectedEvidence"`
+	AllowedAnswers      []generated.ChecklistAnswer `json:"allowedAnswers"`
+	CommentRequiredFor  []generated.ChecklistAnswer `json:"commentRequiredFor"`
+}
+
+func checklistTemplateVersionDetailStoreError(err error) error {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return application.ErrNotFound
+	}
+	return err
+}
+
+func checklistTemplateVersionDetailView(record checklistTemplateVersionRecord) (generated.ChecklistTemplateVersionDetailView, error) {
+	if strings.TrimSpace(record.ID) == "" || strings.TrimSpace(record.TemplateID) == "" || strings.TrimSpace(record.Title) == "" {
+		return generated.ChecklistTemplateVersionDetailView{}, fmt.Errorf("%w: checklist template version identity is required", application.ErrInvalid)
+	}
+	var snapshot checklistTemplateVersionSnapshot
+	if err := json.Unmarshal(record.Snapshot, &snapshot); err != nil {
+		return generated.ChecklistTemplateVersionDetailView{}, fmt.Errorf("decode checklist template snapshot: %w", err)
+	}
+	if len(snapshot.Questions) == 0 {
+		return generated.ChecklistTemplateVersionDetailView{}, fmt.Errorf("%w: checklist template snapshot must include questions", application.ErrInvalid)
+	}
+	questionCount := record.QuestionCount
+	if questionCount == 0 {
+		questionCount = int64(len(snapshot.Questions))
+	}
+	if questionCount != int64(len(snapshot.Questions)) {
+		return generated.ChecklistTemplateVersionDetailView{}, fmt.Errorf("%w: checklist template snapshot question count mismatch", application.ErrInvalid)
+	}
+	view := generated.ChecklistTemplateVersionDetailView{
+		Id: record.ID, TemplateId: record.TemplateID, Title: record.Title,
+		Version: int64(record.Version), Status: "PUBLISHED",
+		PublishedAt:   record.PublishedAt.UTC().Format(time.RFC3339Nano),
+		QuestionCount: questionCount,
+		Questions:     make([]generated.ChecklistTemplateQuestionView, 0, len(snapshot.Questions)),
+	}
+	for index, question := range snapshot.Questions {
+		if strings.TrimSpace(question.ID) == "" || strings.TrimSpace(question.SectionID) == "" || strings.TrimSpace(question.Prompt) == "" ||
+			len(question.AllowedAnswers) == 0 || len(question.CommentRequiredFor) == 0 {
+			return generated.ChecklistTemplateVersionDetailView{}, fmt.Errorf("%w: checklist template snapshot question %d is incomplete", application.ErrInvalid, index+1)
+		}
+		regulatoryReference := optionalTemplateText(question.RegulatoryReference)
+		expectedEvidence := optionalTemplateText(question.ExpectedEvidence)
+		view.Questions = append(view.Questions, generated.ChecklistTemplateQuestionView{
+			Id: question.ID, SectionId: question.SectionID, Prompt: question.Prompt,
+			RegulatoryReference: regulatoryReference, ExpectedEvidence: expectedEvidence,
+			AllowedAnswers:     append([]generated.ChecklistAnswer(nil), question.AllowedAnswers...),
+			CommentRequiredFor: append([]generated.ChecklistAnswer(nil), question.CommentRequiredFor...),
+		})
+	}
+	return view, nil
+}
+
+func optionalTemplateText(value string) *string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	return &value
 }
 
 func (api *CanonicalAPI) listReminderRules(writer http.ResponseWriter, request *http.Request) {

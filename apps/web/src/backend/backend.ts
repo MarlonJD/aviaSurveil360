@@ -570,6 +570,20 @@ export interface ChecklistTemplateVersionView {
   questionCount: number;
 }
 
+export interface ChecklistTemplateQuestionView {
+  id: string;
+  sectionId: string;
+  prompt: string;
+  regulatoryReference: string | null;
+  expectedEvidence: string | null;
+  allowedAnswers: ChecklistAnswer[];
+  commentRequiredFor: ChecklistAnswer[];
+}
+
+export interface ChecklistTemplateVersionDetailView extends ChecklistTemplateVersionView {
+  questions: ChecklistTemplateQuestionView[];
+}
+
 export interface ReminderRuleView {
   id: string;
   label: string;
@@ -843,6 +857,10 @@ export interface ConfigurationBackend {
     input: { limit?: number },
     options?: BackendRequestOptions,
   ): Promise<PageOutput<ChecklistTemplateVersionView>>;
+  getChecklistTemplateVersion(
+    input: { templateVersionId: string },
+    options?: BackendRequestOptions,
+  ): Promise<ChecklistTemplateVersionDetailView>;
   listReminderRules(
     input: { limit?: number },
     options?: BackendRequestOptions,

@@ -67,6 +67,8 @@ type canonicalQuestion struct {
 	Prompt              string   `json:"prompt"`
 	RegulatoryReference string   `json:"regulatoryReference"`
 	ExpectedEvidence    string   `json:"expectedEvidence"`
+	AllowedAnswers      []string `json:"allowedAnswers"`
+	CommentRequiredFor  []string `json:"commentRequiredFor"`
 	Assigned            []string `json:"assignedInspectorUserIds"`
 }
 
@@ -75,13 +77,25 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 		return errors.New("canonical test reset requires database and server time")
 	}
 	now = now.UTC()
+	allowedAnswers := []string{"COMPLIANT", "NON_COMPLIANT", "OBSERVATION", "NOT_APPLICABLE", "NOT_CHECKED"}
+	commentRequiredFor := []string{"NON_COMPLIANT", "OBSERVATION"}
+	question := func(id, sectionID, prompt, expectedEvidence string, assigned []string) canonicalQuestion {
+		return canonicalQuestion{
+			ID: id, SectionID: sectionID, Prompt: prompt,
+			RegulatoryReference: fmt.Sprintf("Configured Cabin Inspection reference — %s", sectionID),
+			ExpectedEvidence:    expectedEvidence,
+			AllowedAnswers:      append([]string(nil), allowedAnswers...),
+			CommentRequiredFor:  append([]string(nil), commentRequiredFor...),
+			Assigned:            append([]string(nil), assigned...),
+		}
+	}
 	questions := []canonicalQuestion{
-		{ID: "CAB-GALLEY-001", SectionID: "GALLEY", Prompt: "Are galley restraints and stowage areas serviceable and secure?", RegulatoryReference: "Configured Cabin Inspection reference — GALLEY", ExpectedEvidence: "Inspector observation and required exception comment", Assigned: []string{"USR-INSPECTOR-DAVID"}},
-		{ID: "CAB-LAV-001", SectionID: "LAV", Prompt: "Are lavatory safety equipment and placards present and serviceable?", RegulatoryReference: "Configured Cabin Inspection reference — LAV", ExpectedEvidence: "Inspector observation and required exception comment", Assigned: []string{"USR-INSPECTOR-AMINA"}},
-		{ID: "CAB-PAX-SEAT-001", SectionID: "PAX SEAT", Prompt: "Are passenger seats, belts, and adjacent fittings serviceable?", RegulatoryReference: "Configured Cabin Inspection reference — PAX SEAT", ExpectedEvidence: "Inspector observation and required exception comment", Assigned: []string{"USR-INSPECTOR-AMINA"}},
-		{ID: "CAB-EMEQ-PBE-001", SectionID: "EM EQ / PBE", Prompt: "Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?", RegulatoryReference: "Configured Cabin Inspection reference — EM EQ / PBE", ExpectedEvidence: "PBE serviceability record and cabin position confirmation", Assigned: []string{"USR-INSPECTOR-AMINA"}},
-		{ID: "CAB-VID-CREW-SEAT-001", SectionID: "VID+CREW SEAT", Prompt: "Are cabin information displays and crew seats serviceable?", RegulatoryReference: "Configured Cabin Inspection reference — VID+CREW SEAT", ExpectedEvidence: "Inspector observation and required exception comment", Assigned: []string{"USR-INSPECTOR-AMINA"}},
-		{ID: "CAB-COCKPIT-GEN-001", SectionID: "COCKPIT+CAB GEN COND+EXITS", Prompt: "Are cabin general condition and emergency exits satisfactory?", RegulatoryReference: "Configured Cabin Inspection reference — COCKPIT+CAB GEN COND+EXITS", ExpectedEvidence: "Inspector observation and required exception comment", Assigned: []string{"USR-INSPECTOR-AMINA"}},
+		question("CAB-GALLEY-001", "GALLEY", "Are galley restraints and stowage areas serviceable and secure?", "Inspector observation and required exception comment", []string{"USR-INSPECTOR-DAVID"}),
+		question("CAB-LAV-001", "LAV", "Are lavatory safety equipment and placards present and serviceable?", "Inspector observation and required exception comment", []string{"USR-INSPECTOR-AMINA"}),
+		question("CAB-PAX-SEAT-001", "PAX SEAT", "Are passenger seats, belts, and adjacent fittings serviceable?", "Inspector observation and required exception comment", []string{"USR-INSPECTOR-AMINA"}),
+		question("CAB-EMEQ-PBE-001", "EM EQ / PBE", "Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?", "PBE serviceability record and cabin position confirmation", []string{"USR-INSPECTOR-AMINA"}),
+		question("CAB-VID-CREW-SEAT-001", "VID+CREW SEAT", "Are cabin information displays and crew seats serviceable?", "Inspector observation and required exception comment", []string{"USR-INSPECTOR-AMINA"}),
+		question("CAB-COCKPIT-GEN-001", "COCKPIT+CAB GEN COND+EXITS", "Are cabin general condition and emergency exits satisfactory?", "Inspector observation and required exception comment", []string{"USR-INSPECTOR-AMINA"}),
 	}
 	snapshot, err := json.Marshal(map[string]any{
 		"schemaVersion": 1, "protocolVersion": 1, "questions": questions,

@@ -204,6 +204,62 @@ describe("HttpBackend", () => {
     expect(fetchImplementation.mock.calls[1]?.[1]?.signal).toBe(controller.signal);
   });
 
+  it("loads checklist template version detail through the Admin configuration route", async () => {
+    const controller = new AbortController();
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
+      jsonResponse({
+        id: "CTV-CABIN-1",
+        templateId: "CABIN",
+        title: "Cabin Inspection checklist",
+        version: 1,
+        status: "PUBLISHED",
+        publishedAt: "2026-06-15T09:00:00.000Z",
+        questionCount: 6,
+        questions: [
+          {
+            id: "CAB-EMEQ-PBE-001",
+            sectionId: "EM EQ / PBE",
+            prompt:
+              "Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?",
+            regulatoryReference: "Configured Cabin Inspection reference - EM EQ / PBE",
+            expectedEvidence: "PBE serviceability record and cabin position confirmation",
+            allowedAnswers: [
+              "COMPLIANT",
+              "NON_COMPLIANT",
+              "OBSERVATION",
+              "NOT_APPLICABLE",
+              "NOT_CHECKED",
+            ],
+            commentRequiredFor: ["NON_COMPLIANT", "OBSERVATION"],
+          },
+        ],
+      }),
+    );
+    const backend = createHttpBackend(
+      { apiBaseUrl: "/", environmentLabel: "Test" },
+      { fetchImplementation, csrfToken: () => "csrf-test" },
+    );
+
+    const detail = await backend.configuration.getChecklistTemplateVersion(
+      { templateVersionId: "CTV-CABIN-1" },
+      { signal: controller.signal },
+    );
+
+    expect(detail.questions[0]?.allowedAnswers).toEqual([
+      "COMPLIANT",
+      "NON_COMPLIANT",
+      "OBSERVATION",
+      "NOT_APPLICABLE",
+      "NOT_CHECKED",
+    ]);
+    expect(detail.questions[0]?.commentRequiredFor).toEqual(["NON_COMPLIANT", "OBSERVATION"]);
+    expect(JSON.stringify(detail)).not.toMatch(/assignedInspectorUserIds|currentResponse/i);
+    expect(fetchImplementation.mock.calls[0]?.[0]).toBe(
+      "/v1/configuration/checklist-template-versions/CTV-CABIN-1",
+    );
+    expect(fetchImplementation.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
+  });
+
   it("maps first-production registry and planning requests to exact versioned routes", async () => {
     const fetchImplementation = vi
       .fn<typeof fetch>()

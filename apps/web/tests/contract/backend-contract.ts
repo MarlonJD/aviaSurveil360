@@ -655,5 +655,53 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
       ]);
       expect(JSON.stringify(auditEvents)).not.toMatch(/internalCaaNote/i);
     });
+
+    it("exposes immutable checklist template detail only to Admin", async () => {
+      const harness = await createHarness();
+      const admin = harness.backendFor(PRINCIPALS.admin);
+      const detail = await admin.configuration.getChecklistTemplateVersion({
+        templateVersionId: "CTV-CABIN-1",
+      });
+
+      expect(detail).toMatchObject({
+        id: "CTV-CABIN-1",
+        templateId: "CABIN",
+        version: 1,
+        status: "PUBLISHED",
+        questionCount: 6,
+      });
+      expect(detail.questions).toHaveLength(6);
+      expect(detail.questions.find((question) => question.id === "CAB-EMEQ-PBE-001")).toMatchObject({
+        sectionId: "EM EQ / PBE",
+        expectedEvidence: "PBE serviceability record and cabin position confirmation",
+        allowedAnswers: [
+          "COMPLIANT",
+          "NON_COMPLIANT",
+          "OBSERVATION",
+          "NOT_APPLICABLE",
+          "NOT_CHECKED",
+        ],
+        commentRequiredFor: ["NON_COMPLIANT", "OBSERVATION"],
+      });
+      expect(JSON.stringify(detail)).not.toMatch(
+        /assignedInspectorUserIds|currentResponse|internalCaaNote|draft|secret/i,
+      );
+
+      for (const principal of [
+        PRINCIPALS.inspector,
+        PRINCIPALS.leadInspector,
+        PRINCIPALS.manager,
+        PRINCIPALS.finance,
+        PRINCIPALS.gm,
+        PRINCIPALS.executiveDirector,
+        PRINCIPALS.auditee,
+      ]) {
+        await expect(
+          harness.backendFor(principal).configuration.getChecklistTemplateVersion({
+            templateVersionId: "CTV-CABIN-1",
+          }),
+        ).rejects.toThrow(/Admin configuration authority/i);
+      }
+    });
   });
 }

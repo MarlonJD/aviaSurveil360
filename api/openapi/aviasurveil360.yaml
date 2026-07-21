@@ -251,6 +251,13 @@
         "responses": { "200": { "description": "Published checklist template versions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListChecklistTemplateVersionsOutput" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
       }
     },
+    "/v1/configuration/checklist-template-versions/{templateVersionId}": {
+      "get": {
+        "operationId": "getChecklistTemplateVersion",
+        "parameters": [{ "name": "templateVersionId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Published checklist template version detail", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChecklistTemplateVersionDetailView" } } } }, "default": { "$ref": "#/components/responses/Problem" } }
+      }
+    },
     "/v1/configuration/reminder-rules": {
       "get": {
         "operationId": "listReminderRules",
@@ -371,6 +378,8 @@
       "ListPlanningItemsOutput": { "type": "object", "additionalProperties": false, "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/PlanningItemView" } }, "nextCursor": { "type": ["string", "null"] } } },
       "PlanningDecisionInput": { "type": "object", "additionalProperties": false, "required": ["operationId", "planningItemId", "expectedPlanningRevision", "decision", "reason"], "properties": { "operationId": { "type": "string" }, "planningItemId": { "type": "string" }, "expectedPlanningRevision": { "type": "integer" }, "decision": { "$ref": "#/components/schemas/PlanningDecision" }, "reason": { "type": "string", "minLength": 1 } } },
       "ChecklistTemplateVersionView": { "type": "object", "additionalProperties": false, "required": ["id", "templateId", "title", "version", "status", "publishedAt", "questionCount"], "properties": { "id": { "type": "string" }, "templateId": { "type": "string" }, "title": { "type": "string" }, "version": { "type": "integer" }, "status": { "type": "string", "enum": ["PUBLISHED"] }, "publishedAt": { "type": "string", "format": "date-time" }, "questionCount": { "type": "integer" } } },
+      "ChecklistTemplateQuestionView": { "type": "object", "additionalProperties": false, "required": ["id", "sectionId", "prompt", "regulatoryReference", "expectedEvidence", "allowedAnswers", "commentRequiredFor"], "properties": { "id": { "type": "string" }, "sectionId": { "type": "string" }, "prompt": { "type": "string" }, "regulatoryReference": { "type": ["string", "null"] }, "expectedEvidence": { "type": ["string", "null"] }, "allowedAnswers": { "type": "array", "items": { "$ref": "#/components/schemas/ChecklistAnswer" } }, "commentRequiredFor": { "type": "array", "items": { "$ref": "#/components/schemas/ChecklistAnswer" } } } },
+      "ChecklistTemplateVersionDetailView": { "type": "object", "additionalProperties": false, "required": ["id", "templateId", "title", "version", "status", "publishedAt", "questionCount", "questions"], "properties": { "id": { "type": "string" }, "templateId": { "type": "string" }, "title": { "type": "string" }, "version": { "type": "integer" }, "status": { "type": "string", "enum": ["PUBLISHED"] }, "publishedAt": { "type": "string", "format": "date-time" }, "questionCount": { "type": "integer" }, "questions": { "type": "array", "items": { "$ref": "#/components/schemas/ChecklistTemplateQuestionView" } } } },
       "ListChecklistTemplateVersionsOutput": { "type": "object", "additionalProperties": false, "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/ChecklistTemplateVersionView" } }, "nextCursor": { "type": ["string", "null"] } } },
       "ReminderRuleView": { "type": "object", "additionalProperties": false, "required": ["id", "label", "offsetDays", "channel", "status", "revision"], "properties": { "id": { "type": "string" }, "label": { "type": "string" }, "offsetDays": { "type": "integer" }, "channel": { "type": "string", "enum": ["IN_APP"] }, "status": { "type": "string", "enum": ["ACTIVE"] }, "revision": { "type": "integer" } } },
       "ListReminderRulesOutput": { "type": "object", "additionalProperties": false, "required": ["items", "nextCursor"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/ReminderRuleView" } }, "nextCursor": { "type": ["string", "null"] } } },

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   mapCapRevision,
   mapCapRevisions,
+  mapChecklistTemplateVersionDetail,
   mapFinding,
   mapInspectionPackage,
   mapManagerDashboard,
@@ -127,5 +128,40 @@ describe("transport mappers", () => {
     });
     expect(JSON.stringify(auditee)).not.toMatch(/internalCaaNote/i);
     expect(mapCapRevisions({ items: [caa, auditee], nextCursor: null }).items).toHaveLength(2);
+  });
+
+  it("deep-maps checklist template detail questions without inspection-only fields", () => {
+    const transport = {
+      id: "CTV-CABIN-1",
+      templateId: "CABIN",
+      title: "Cabin Inspection checklist",
+      version: 1,
+      status: "PUBLISHED" as const,
+      publishedAt: "2026-06-15T09:00:00.000Z",
+      questionCount: 1,
+      questions: [
+        {
+          id: "CAB-EMEQ-PBE-001",
+          sectionId: "EM EQ / PBE",
+          prompt: "PBE question",
+          regulatoryReference: "Configured Cabin Inspection reference - EM EQ / PBE",
+          expectedEvidence: "PBE serviceability record and cabin position confirmation",
+          allowedAnswers: [
+            "COMPLIANT" as const,
+            "NON_COMPLIANT" as const,
+            "OBSERVATION" as const,
+            "NOT_APPLICABLE" as const,
+            "NOT_CHECKED" as const,
+          ],
+          commentRequiredFor: ["NON_COMPLIANT" as const, "OBSERVATION" as const],
+        },
+      ],
+    };
+    const detail = mapChecklistTemplateVersionDetail(transport);
+    expect(detail).toEqual(transport);
+    expect(detail).not.toBe(transport);
+    expect(detail.questions).not.toBe(transport.questions);
+    expect(detail.questions[0]?.allowedAnswers).not.toBe(transport.questions[0]?.allowedAnswers);
+    expect(JSON.stringify(detail)).not.toMatch(/assignedInspectorUserIds|currentResponse/i);
   });
 });

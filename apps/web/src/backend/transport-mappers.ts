@@ -3,6 +3,8 @@ import type {
   AssignmentSummary,
   AuditEventView,
   CapRevisionView,
+  ChecklistTemplateQuestionView,
+  ChecklistTemplateVersionDetailView,
   ChecklistTemplateVersionView,
   ChecklistResponseView,
   CheckoutInspectionPackageOutput,
@@ -252,6 +254,25 @@ export function mapChecklistTemplateVersions(
   value: Schemas["ListChecklistTemplateVersionsOutput"],
 ): PageOutput<ChecklistTemplateVersionView> {
   return { items: value.items.map((item) => ({ ...item })), nextCursor: value.nextCursor };
+}
+
+export function mapChecklistTemplateQuestion(
+  value: Schemas["ChecklistTemplateQuestionView"],
+): ChecklistTemplateQuestionView {
+  return {
+    ...value,
+    allowedAnswers: [...value.allowedAnswers],
+    commentRequiredFor: [...value.commentRequiredFor],
+  };
+}
+
+export function mapChecklistTemplateVersionDetail(
+  value: Schemas["ChecklistTemplateVersionDetailView"],
+): ChecklistTemplateVersionDetailView {
+  return {
+    ...value,
+    questions: value.questions.map(mapChecklistTemplateQuestion),
+  };
 }
 
 export function mapReminderRules(

@@ -1,0 +1,122 @@
+{
+  "schema": "ChecklistTemplateVersionDetailView",
+  "value": {
+    "id": "CTV-CABIN-1",
+    "templateId": "CABIN",
+    "title": "Cabin Inspection checklist",
+    "version": 1,
+    "status": "PUBLISHED",
+    "publishedAt": "2026-06-15T09:00:00.000Z",
+    "questionCount": 6,
+    "questions": [
+      {
+        "id": "CAB-GALLEY-001",
+        "sectionId": "GALLEY",
+        "prompt": "Are galley restraints and stowage areas serviceable and secure?",
+        "regulatoryReference": "Configured Cabin Inspection reference - GALLEY",
+        "expectedEvidence": "Inspector observation and required exception comment",
+        "allowedAnswers": [
+          "COMPLIANT",
+          "NON_COMPLIANT",
+          "OBSERVATION",
+          "NOT_APPLICABLE",
+          "NOT_CHECKED"
+        ],
+        "commentRequiredFor": [
+          "NON_COMPLIANT",
+          "OBSERVATION"
+        ]
+      },
+      {
+        "id": "CAB-LAV-001",
+        "sectionId": "LAV",
+        "prompt": "Are lavatory safety equipment and placards present and serviceable?",
+        "regulatoryReference": "Configured Cabin Inspection reference - LAV",
+        "expectedEvidence": "Inspector observation and required exception comment",
+        "allowedAnswers": [
+          "COMPLIANT",
+          "NON_COMPLIANT",
+          "OBSERVATION",
+          "NOT_APPLICABLE",
+          "NOT_CHECKED"
+        ],
+        "commentRequiredFor": [
+          "NON_COMPLIANT",
+          "OBSERVATION"
+        ]
+      },
+      {
+        "id": "CAB-PAX-SEAT-001",
+        "sectionId": "PAX SEAT",
+        "prompt": "Are passenger seats, belts, and adjacent fittings serviceable?",
+        "regulatoryReference": "Configured Cabin Inspection reference - PAX SEAT",
+        "expectedEvidence": "Inspector observation and required exception comment",
+        "allowedAnswers": [
+          "COMPLIANT",
+          "NON_COMPLIANT",
+          "OBSERVATION",
+          "NOT_APPLICABLE",
+          "NOT_CHECKED"
+        ],
+        "commentRequiredFor": [
+          "NON_COMPLIANT",
+          "OBSERVATION"
+        ]
+      },
+      {
+        "id": "CAB-EMEQ-PBE-001",
+        "sectionId": "EM EQ / PBE",
+        "prompt": "Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?",
+        "regulatoryReference": "Configured Cabin Inspection reference - EM EQ / PBE",
+        "expectedEvidence": "PBE serviceability record and cabin position confirmation",
+        "allowedAnswers": [
+          "COMPLIANT",
+          "NON_COMPLIANT",
+          "OBSERVATION",
+          "NOT_APPLICABLE",
+          "NOT_CHECKED"
+        ],
+        "commentRequiredFor": [
+          "NON_COMPLIANT",
+          "OBSERVATION"
+        ]
+      },
+      {
+        "id": "CAB-VID-CREW-SEAT-001",
+        "sectionId": "VID+CREW SEAT",
+        "prompt": "Are cabin information displays and crew seats serviceable?",
+        "regulatoryReference": "Configured Cabin Inspection reference - VID+CREW SEAT",
+        "expectedEvidence": "Inspector observation and required exception comment",
+        "allowedAnswers": [
+          "COMPLIANT",
+          "NON_COMPLIANT",
+          "OBSERVATION",
+          "NOT_APPLICABLE",
+          "NOT_CHECKED"
+        ],
+        "commentRequiredFor": [
+          "NON_COMPLIANT",
+          "OBSERVATION"
+        ]
+      },
+      {
+        "id": "CAB-COCKPIT-GEN-001",
+        "sectionId": "COCKPIT+CAB GEN COND+EXITS",
+        "prompt": "Are cabin general condition and emergency exits satisfactory?",
+        "regulatoryReference": "Configured Cabin Inspection reference - COCKPIT+CAB GEN COND+EXITS",
+        "expectedEvidence": "Inspector observation and required exception comment",
+        "allowedAnswers": [
+          "COMPLIANT",
+          "NON_COMPLIANT",
+          "OBSERVATION",
+          "NOT_APPLICABLE",
+          "NOT_CHECKED"
+        ],
+        "commentRequiredFor": [
+          "NON_COMPLIANT",
+          "OBSERVATION"
+        ]
+      }
+    ]
+  }
+}

@@ -500,6 +500,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/configuration/checklist-template-versions/{templateVersionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getChecklistTemplateVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/configuration/reminder-rules": {
         parameters: {
             query?: never;
@@ -1143,6 +1159,27 @@ export interface components {
             /** Format: date-time */
             publishedAt: string;
             questionCount: number;
+        };
+        ChecklistTemplateQuestionView: {
+            id: string;
+            sectionId: string;
+            prompt: string;
+            regulatoryReference: string | null;
+            expectedEvidence: string | null;
+            allowedAnswers: components["schemas"]["ChecklistAnswer"][];
+            commentRequiredFor: components["schemas"]["ChecklistAnswer"][];
+        };
+        ChecklistTemplateVersionDetailView: {
+            id: string;
+            templateId: string;
+            title: string;
+            version: number;
+            /** @enum {string} */
+            status: "PUBLISHED";
+            /** Format: date-time */
+            publishedAt: string;
+            questionCount: number;
+            questions: components["schemas"]["ChecklistTemplateQuestionView"][];
         };
         ListChecklistTemplateVersionsOutput: {
             items: components["schemas"]["ChecklistTemplateVersionView"][];
@@ -2151,6 +2188,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListChecklistTemplateVersionsOutput"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getChecklistTemplateVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateVersionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published checklist template version detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChecklistTemplateVersionDetailView"];
                 };
             };
             default: components["responses"]["Problem"];
