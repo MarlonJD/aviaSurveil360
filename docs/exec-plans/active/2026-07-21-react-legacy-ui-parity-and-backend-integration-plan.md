@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Tasks 1-6 are `verified locally`: the independent 86-row inventory/17-route contract is frozen; Potential Finding plus immutable CAP revision read projections pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates; Admin checklist-template-version detail reads pass exact snapshot, mock/HTTP mapping, OpenAPI, sqlc, and Go race gates; the deterministic tracked visual-parity harness now has 51 hash-verified legacy baselines plus an intentionally red React comparison; the layered brand system now has a typed approved asset registry, restricted Vite asset access, image/font app-shell manifests, HTTP artifact exclusions, and stopped-origin mark/icon/font recovery; and the candidate role selection/application shell now uses presentational role/navigation/topbar/mobile components with registry-derived primary navigation, contextual active-parent state, profile/logout callbacks, notification modes, and shell-only geometry checks. Task 7 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `active` — Tasks 1-7 are `verified locally`: the independent 86-row inventory/17-route contract is frozen; Potential Finding plus immutable CAP revision read projections pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates; Admin checklist-template-version detail reads pass exact snapshot, mock/HTTP mapping, OpenAPI, sqlc, and Go race gates; the deterministic tracked visual-parity harness now has 51 hash-verified legacy baselines plus an intentionally red React comparison; the layered brand system now has a typed approved asset registry, restricted Vite asset access, image/font app-shell manifests, HTTP artifact exclusions, and stopped-origin mark/icon/font recovery; the candidate role selection/application shell now uses presentational role/navigation/topbar/mobile components with registry-derived primary navigation, contextual active-parent state, profile/logout callbacks, notification modes, and shell-only geometry checks; and the normal HTTP lane now uses same-origin OIDC session projection, safe route guards, centralized 401 clearing, CSRF logout, canonical/normal lane separation, and session-subject offline checkout. Task 8 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
 
 ## Independent Review Resolution
 
@@ -1048,6 +1048,9 @@ git push origin HEAD
 - Create `apps/web/src/auth/role-handoff.tsx`
 - Create `apps/web/src/auth/role-authorization.test.tsx`
 - Create `apps/web/src/auth/offline-subject-boundary.test.tsx`
+- Modify `apps/web/src/ui/application-shell.tsx`
+- Modify `apps/web/src/ui/role-navigation.tsx`
+- Modify `apps/web/src/features/shared/workspace-shell.tsx`
 - Modify `apps/web/src/app/providers.tsx`
 - Modify `apps/web/src/app/bootstrap.tsx`
 - Modify `apps/web/src/app/router.tsx`
@@ -1065,6 +1068,7 @@ git push origin HEAD
 - Modify `apps/web/tests/offline/field-repository.test.ts`
 - Create `apps/web/tests/e2e/oidc-session.spec.ts`
 - Modify `apps/web/tests/e2e/offline-sync.http.spec.ts`
+- Modify `apps/web/tests/contract/http-backend-live.test.ts`
 - Modify `apps/web/playwright.config.ts`
 - Modify `apps/web/package.json`
 - Create `scripts/test-http-oidc-profile.sh`
@@ -1080,7 +1084,10 @@ git push origin HEAD
 - Modify `apps/api/internal/platform/session/session_test.go`
 - Modify `apps/api/internal/httpapi/auth.go`
 - Modify `apps/api/internal/httpapi/auth_test.go`
+- Modify `apps/api/tests/integration/oidc_keycloak_test.go`
 - Modify this plan
+- Modify `docs/exec-plans/index.md`
+- Modify `docs/exec-plans/tech-debt-tracker.md`
 
 **Session and routing interfaces**
 
@@ -1163,10 +1170,10 @@ export interface HttpBackendDependencies {
 
 **Red/green cycle**
 
-- [ ] Add failing React tests for session states, safe projection, same-origin login, CSRF cookie parsing, logout, read/mutation `401` callback, stale DOM clearing, 16 route matrices, contextual handoff, and no normal role fabrication.
-- [ ] Add failing offline tests for logout/user switch lock, subject-B invisibility, pending record preservation, and subject-A recovery.
-- [ ] Add failing Go tests for `displayName`, no token/cookie/secret serialization, seed/auth flag independence, production rejection, stable OIDC subject alignment, and callback return.
-- [ ] Add the OIDC browser spec:
+- [x] Add failing React tests for session states, safe projection, same-origin login, CSRF cookie parsing, logout, read/mutation `401` callback, stale DOM clearing, 16 route matrices, contextual handoff, and no normal role fabrication.
+- [x] Add failing offline tests for logout/user switch lock, subject-B invisibility, pending record preservation, and subject-A recovery.
+- [x] Add failing Go tests for `displayName`, no token/cookie/secret serialization, seed/auth flag independence, production rejection, stable OIDC subject alignment, and callback return.
+- [x] Add the OIDC browser spec:
   1. unauthenticated normal HTTP shows branded sign-in and no protected content;
   2. click organization sign-in;
   3. authenticate `inspector.local` through the local Keycloak form;
@@ -1177,7 +1184,7 @@ export interface HttpBackendDependencies {
   8. prove real server-time expiry in Go tests; in browser/unit integration, make separate protected read and mutation calls return `401` from an expired/revoked session fixture and prove clearing before either page can retain protected DOM;
   9. log in again, log out normally, and assert `/auth/session` returns `401`;
   10. assert no registration/reset/password-management link.
-- [ ] Run red:
+- [x] Run red:
 
   ```bash
   npm --prefix apps/web test -- src/auth src/app/router.test.tsx src/app/scenario-context.offline.test.tsx src/backend/http-backend.test.ts tests/offline/field-repository.test.ts
@@ -1185,21 +1192,21 @@ export interface HttpBackendDependencies {
   ```
 
   Expected red: auth/session modules, callback, route guards, and seed flag are absent.
-- [ ] Implement the central session state, route guards/handoffs, subject lock/remount, safe Go projection, deterministic flag separation, and local fixture alignment.
+- [x] Implement the central session state, route guards/handoffs, subject lock/remount, safe Go projection, deterministic flag separation, and local fixture alignment.
 
   ```bash
   mkdir -p apps/web/src/auth
   ```
 
   Create/edit all files through `apply_patch`.
-- [ ] Set and verify the new script’s executable mode:
+- [x] Set and verify the new script’s executable mode:
 
   ```bash
   chmod 0755 scripts/test-http-oidc-profile.sh
   test -x scripts/test-http-oidc-profile.sh
   ```
 
-- [ ] Run focused green:
+- [x] Run focused green:
 
   ```bash
   npm --prefix apps/web test -- src/auth src/app/router.test.tsx src/app/scenario-context.offline.test.tsx src/backend/http-backend.test.ts tests/offline/field-repository.test.ts
@@ -1211,10 +1218,12 @@ export interface HttpBackendDependencies {
 
   Expected green: canonical and real OIDC lanes both pass independently; no normal-session role switch or stale subject data appears.
 
+  Result 2026-07-21: red tests first failed on missing auth/session modules and subject-bound offline/runtime assumptions; the Go red gate failed on absent `CanonicalSeed` and `DisplayName` support. The implemented slice adds the session client/provider, auth gate, login page, route guards, role handoff, centralized auth-loss handling, subject remount/lock boundaries, server-side display-name projection, canonical seed/header separation, pinned UUID alignment across canonical seed and Keycloak, and separate canonical-header versus real OIDC HTTP scripts. Fresh green gates passed: focused React/Vitest 69/69; TypeScript; focused Go race for `httpapi`, `session`, `identity`, `config`, and `testprofile`; canonical HTTP profile with full Go sweep, integration, OpenAPI/sqlc, full React/Vitest 224/224, builds, HTTP artifact scan, HTTP contract tests 14/14, mock Playwright 5/5, HTTP Playwright 7/7, and worker/outbox observability; normal OIDC profile with TypeScript plus Keycloak-backed Playwright 1/1 proving sign-in, `/auth/session`, role guard denial, subject-bound offline checkout, logout, and no registration/reset links. Post-browser process scan found only the scan command itself, and the pre-existing showcase containers were restarted. Task 8 is next.
+
 **Task 7 staging allowlist and commit**
 
 ```bash
-git add -- apps/web/src/auth/session-client.ts apps/web/src/auth/session-client.test.ts apps/web/src/auth/session-provider.tsx apps/web/src/auth/session-provider.test.tsx apps/web/src/auth/http-auth-gate.tsx apps/web/src/auth/login-page.tsx apps/web/src/auth/role-guard.tsx apps/web/src/auth/role-handoff.tsx apps/web/src/auth/role-authorization.test.tsx apps/web/src/auth/offline-subject-boundary.test.tsx apps/web/src/app/providers.tsx apps/web/src/app/bootstrap.tsx apps/web/src/app/router.tsx apps/web/src/app/router.test.tsx apps/web/src/app/scenario-context.tsx apps/web/src/app/scenario-context.offline.test.tsx apps/web/src/features/inspections/audit-detail-page.tsx apps/web/src/features/checklists/checklist-runner-page.tsx apps/web/src/entry/demo.tsx apps/web/src/entry/http-test.tsx apps/web/src/entry/http.tsx apps/web/src/backend/http-backend.ts apps/web/src/backend/http-backend.test.ts apps/web/src/offline/field-repository.ts apps/web/tests/offline/field-repository.test.ts apps/web/tests/e2e/oidc-session.spec.ts apps/web/tests/e2e/offline-sync.http.spec.ts apps/web/playwright.config.ts apps/web/package.json scripts/test-http-oidc-profile.sh scripts/test-http-profile.sh deploy/local/keycloak/realm.json apps/api/cmd/api/main.go apps/api/internal/platform/config/config.go apps/api/internal/platform/config/config_test.go apps/api/internal/testprofile/canonical.go apps/api/internal/identity/principal.go apps/api/internal/identity/principal_test.go apps/api/internal/platform/session/manager.go apps/api/internal/platform/session/session_test.go apps/api/internal/httpapi/auth.go apps/api/internal/httpapi/auth_test.go docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- apps/web/src/auth/session-client.ts apps/web/src/auth/session-client.test.ts apps/web/src/auth/session-provider.tsx apps/web/src/auth/session-provider.test.tsx apps/web/src/auth/http-auth-gate.tsx apps/web/src/auth/login-page.tsx apps/web/src/auth/role-guard.tsx apps/web/src/auth/role-handoff.tsx apps/web/src/auth/role-authorization.test.tsx apps/web/src/auth/offline-subject-boundary.test.tsx apps/web/src/ui/application-shell.tsx apps/web/src/ui/role-navigation.tsx apps/web/src/features/shared/workspace-shell.tsx apps/web/src/app/providers.tsx apps/web/src/app/bootstrap.tsx apps/web/src/app/router.tsx apps/web/src/app/router.test.tsx apps/web/src/app/scenario-context.tsx apps/web/src/app/scenario-context.offline.test.tsx apps/web/src/features/inspections/audit-detail-page.tsx apps/web/src/features/checklists/checklist-runner-page.tsx apps/web/src/entry/demo.tsx apps/web/src/entry/http-test.tsx apps/web/src/entry/http.tsx apps/web/src/backend/http-backend.ts apps/web/src/backend/http-backend.test.ts apps/web/src/offline/field-repository.ts apps/web/tests/offline/field-repository.test.ts apps/web/tests/e2e/oidc-session.spec.ts apps/web/tests/e2e/offline-sync.http.spec.ts apps/web/tests/contract/http-backend-live.test.ts apps/web/playwright.config.ts apps/web/package.json scripts/test-http-oidc-profile.sh scripts/test-http-profile.sh deploy/local/keycloak/realm.json apps/api/cmd/api/main.go apps/api/internal/platform/config/config.go apps/api/internal/platform/config/config_test.go apps/api/internal/testprofile/canonical.go apps/api/internal/identity/principal.go apps/api/internal/identity/principal_test.go apps/api/internal/platform/session/manager.go apps/api/internal/platform/session/session_test.go apps/api/internal/httpapi/auth.go apps/api/internal/httpapi/auth_test.go apps/api/tests/integration/oidc_keycloak_test.go docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md
 git commit -m "feat(auth): integrate normal oidc session"
 git push origin HEAD
 ```

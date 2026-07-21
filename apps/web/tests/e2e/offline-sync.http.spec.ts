@@ -112,7 +112,7 @@ test("offline field work survives a lost acknowledgement and foreground-syncs th
   const packageResponse = await request.get(`${apiURL}/v1/inspection-packages/PKG-CAB-2026-001`, {
     headers: {
       "x-avia-test-token": token,
-      "x-avia-test-subject": "USR-INSPECTOR-AMINA",
+      "x-avia-test-subject": "154ec5ac-6f97-4f55-916f-d2f142fc6211",
     },
   });
   expect(packageResponse.ok()).toBe(true);
@@ -139,7 +139,7 @@ test("offline field work survives a lost acknowledgement and foreground-syncs th
     {
       headers: {
         "x-avia-test-token": token,
-        "x-avia-test-subject": "USR-INSPECTOR-AMINA",
+        "x-avia-test-subject": "154ec5ac-6f97-4f55-916f-d2f142fc6211",
       },
     },
   );
@@ -204,7 +204,7 @@ test("a stale field response preserves the local draft until explicit re-entry r
   const authoritativeMutation = await request.post(`${apiURL}/v1/sync/operations`, {
     headers: {
       "x-avia-test-token": token,
-      "x-avia-test-subject": "USR-INSPECTOR-AMINA",
+      "x-avia-test-subject": "154ec5ac-6f97-4f55-916f-d2f142fc6211",
     },
     data: {
       operation: {
@@ -254,7 +254,7 @@ test("a stale field response preserves the local draft until explicit re-entry r
   const packageResponse = await request.get(`${apiURL}/v1/inspection-packages/PKG-CAB-2026-001`, {
     headers: {
       "x-avia-test-token": token,
-      "x-avia-test-subject": "USR-INSPECTOR-AMINA",
+      "x-avia-test-subject": "154ec5ac-6f97-4f55-916f-d2f142fc6211",
     },
   });
   expect(packageResponse.ok()).toBe(true);

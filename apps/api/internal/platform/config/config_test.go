@@ -19,6 +19,7 @@ func TestProductionRejectsTestAndDevelopmentBypasses(t *testing.T) {
 		{name: "test identity", key: "AVIA_TEST_PRINCIPAL"},
 		{name: "test session", key: "AVIA_TEST_SESSION"},
 		{name: "development session secret", key: "AVIA_DEV_SESSION_SECRET"},
+		{name: "canonical seed", key: "AVIA_ENABLE_CANONICAL_SEED"},
 		{name: "canonical test profile", key: "AVIA_ENABLE_CANONICAL_TEST_PROFILE"},
 		{name: "canonical test token", key: "AVIA_CANONICAL_TEST_TOKEN"},
 	}
@@ -48,6 +49,7 @@ func TestCanonicalHTTPProfileRequiresExplicitTestOnlyObjectStoreConfiguration(t 
 	values := map[string]string{
 		"AVIA_ENVIRONMENT":                   "test",
 		"AVIA_DATABASE_URL":                  "postgres://127.0.0.1/avia",
+		"AVIA_ENABLE_CANONICAL_SEED":         "true",
 		"AVIA_ENABLE_CANONICAL_TEST_PROFILE": "true",
 		"AVIA_CANONICAL_TEST_TOKEN":          "candidate-test-token-1234",
 		"AVIA_OBJECT_STORE_ENDPOINT":         "127.0.0.1:59001",
@@ -78,6 +80,47 @@ func TestCanonicalHTTPProfileRequiresExplicitTestOnlyObjectStoreConfiguration(t 
 				t.Fatalf("missing %s error = %v", missing, err)
 			}
 		})
+	}
+}
+
+func TestCanonicalSeedAndHeaderProfileAreSeparated(t *testing.T) {
+	t.Parallel()
+	values := map[string]string{
+		"AVIA_ENVIRONMENT":               "test",
+		"AVIA_DATABASE_URL":              "postgres://127.0.0.1/avia",
+		"AVIA_ENABLE_CANONICAL_SEED":     "true",
+		"AVIA_OBJECT_STORE_ENDPOINT":     "127.0.0.1:59001",
+		"AVIA_OBJECT_STORE_ACCESS_KEY":   "local-access",
+		"AVIA_OBJECT_STORE_SECRET_KEY":   "local-secret",
+		"AVIA_OBJECT_STORE_CORS_ORIGINS": "http://127.0.0.1:4174",
+		"AVIA_SCANNER_MODE":              "deterministic-test",
+	}
+	settings, err := config.Load(mapLookup(values))
+	if err != nil {
+		t.Fatalf("Load() seed-only OIDC profile: %v", err)
+	}
+	if !settings.CanonicalSeed || settings.CanonicalTestProfile || settings.CanonicalTestToken != "" {
+		t.Fatalf("seed/profile settings = %+v", settings)
+	}
+	if !settings.AllowServerManagedCORS {
+		t.Fatalf("seed-only local lane must allow deterministic object-store CORS: %+v", settings)
+	}
+
+	canonicalHeaders := cloneValues(values)
+	canonicalHeaders["AVIA_ENABLE_CANONICAL_TEST_PROFILE"] = "true"
+	canonicalHeaders["AVIA_CANONICAL_TEST_TOKEN"] = "candidate-test-token-1234"
+	headerSettings, err := config.Load(mapLookup(canonicalHeaders))
+	if err != nil {
+		t.Fatalf("Load() canonical-header profile: %v", err)
+	}
+	if !headerSettings.CanonicalSeed || !headerSettings.CanonicalTestProfile {
+		t.Fatalf("header profile must require the seed explicitly: %+v", headerSettings)
+	}
+
+	production := cloneValues(values)
+	production["AVIA_ENVIRONMENT"] = "production"
+	if _, err := config.Load(mapLookup(production)); err == nil || !strings.Contains(err.Error(), "AVIA_ENABLE_CANONICAL_SEED") {
+		t.Fatalf("production seed flag error = %v", err)
 	}
 }
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { useApplicationRuntime } from "../../app/providers";
 import { useScenario } from "../../app/scenario-context";
 import {
   CommandError,
@@ -12,6 +13,7 @@ import {
 import { OfflineReadinessPanel } from "./offline-readiness-panel";
 
 export function AuditDetailPage() {
+  const runtime = useApplicationRuntime();
   const { projection, actions } = useScenario();
   const [error, setError] = useState<string | null>(null);
 
@@ -51,7 +53,7 @@ export function AuditDetailPage() {
       {packageView ? (
         <OfflineReadinessPanel
           inspectionPackage={packageView}
-          subjectId="USR-INSPECTOR-AMINA"
+          subjectId={runtime.subjectId ?? "USR-INSPECTOR-AMINA"}
         />
       ) : null}
     </WorkspaceShell>

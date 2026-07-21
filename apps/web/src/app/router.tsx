@@ -1,7 +1,12 @@
+import { useEffect, type ReactElement } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
 import { useApplicationRuntime } from "./providers";
+import { REACT_ROUTE_CONTRACT_BY_ID, type ReactSurfaceId } from "./route-contracts";
 import type { Role } from "../backend/backend";
+import { LoginPage } from "../auth/login-page";
+import { RoleGuard } from "../auth/role-guard";
+import { useOptionalSession } from "../auth/session-provider";
 import { InspectorAssignmentsPage } from "../features/assignments/inspector-assignments-page";
 import { AdminConfigurationPage } from "../features/admin/admin-configuration-page";
 import { AuditeeCapPage } from "../features/caps/auditee-cap-page";
@@ -30,14 +35,31 @@ import {
 export { ROLE_ENTRIES, createRoleEntryPath } from "../ui/role-select-page";
 
 function RoleSelectRoute() {
-  const { buildProfile } = useApplicationRuntime();
+  const { buildProfile, identityMode } = useApplicationRuntime();
+  const session = useOptionalSession();
   const navigate = useNavigate();
+  if (identityMode === "oidc-session" && session?.state.status === "authenticated") {
+    return <OidcLogoutRoute />;
+  }
   return (
     <RoleSelectPage
-      mode={buildProfile === "http" ? "canonical-test-role-switch" : "demo-role-switch"}
+      mode={identityMode ?? (buildProfile === "http" ? "canonical-test-role-switch" : "demo-role-switch")}
       onRoleRequest={(role) => navigate(createRoleEntryPath(role))}
     />
   );
+}
+
+function OidcLogoutRoute() {
+  const runtime = useApplicationRuntime();
+  const session = useOptionalSession();
+  useEffect(() => {
+    if (session?.state.status !== "authenticated") return;
+    void (async () => {
+      await runtime.beforeSubjectChange?.("LOGOUT");
+      await session.logout();
+    })();
+  }, [runtime, session]);
+  return <LoginPage message="You have signed out." onLogin={() => session?.login("/inspector/inspector-assignments")} />;
 }
 
 export function RoleEntryPlaceholder({ entry }: { entry: RoleEntry }) {
@@ -65,6 +87,12 @@ function RoleEntryRoute({ entry }: { entry: RoleEntry }) {
   return <RoleEntryPlaceholder entry={entry} />;
 }
 
+function guarded(contractId: ReactSurfaceId, element: ReactElement) {
+  const contract = REACT_ROUTE_CONTRACT_BY_ID.get(contractId);
+  if (!contract) throw new Error(`Missing React route contract ${contractId}`);
+  return <RoleGuard requiredRole={contract.requiredRole}>{element}</RoleGuard>;
+}
+
 export function AppRouter() {
   return (
     <Routes>
@@ -73,19 +101,19 @@ export function AppRouter() {
         <Route
           key={entry.role}
           path={createRoleEntryPath(entry.role)}
-          element={<RoleEntryRoute entry={entry} />}
+          element={guarded(entry.routeId, <RoleEntryRoute entry={entry} />)}
         />
       ))}
-      <Route path="/inspector/audits/AUD-2026-001" element={<AuditDetailPage />} />
-      <Route path="/department-manager/organizations" element={<OrganizationRegistryPage />} />
-      <Route path="/department-manager/audit-plan" element={<AuditPlanCalendarPage />} />
-      <Route path="/inspector/audits/AUD-2026-001/checklist" element={<ChecklistRunnerPage />} />
-      <Route path="/lead-inspector/findings/FND-CAB-2026-001" element={<FindingDetailPage />} />
-      <Route path="/lead-inspector/cap-review/FND-CAB-2026-001" element={<CapReviewPage />} />
-      <Route path="/lead-inspector/evidence-review/FND-CAB-2026-001" element={<EvidenceReviewPage />} />
+      <Route path="/inspector/audits/AUD-2026-001" element={guarded("audit-detail", <AuditDetailPage />)} />
+      <Route path="/department-manager/organizations" element={guarded("organization-registry", <OrganizationRegistryPage />)} />
+      <Route path="/department-manager/audit-plan" element={guarded("audit-plan", <AuditPlanCalendarPage />)} />
+      <Route path="/inspector/audits/AUD-2026-001/checklist" element={guarded("checklist-runner", <ChecklistRunnerPage />)} />
+      <Route path="/lead-inspector/findings/FND-CAB-2026-001" element={guarded("finding-detail", <FindingDetailPage />)} />
+      <Route path="/lead-inspector/cap-review/FND-CAB-2026-001" element={guarded("cap-review", <CapReviewPage />)} />
+      <Route path="/lead-inspector/evidence-review/FND-CAB-2026-001" element={guarded("evidence-review", <EvidenceReviewPage />)} />
       <Route
         path="/department-manager/reports/RPT-CAB-2026-001-V1"
-        element={<ReportPreviewPage />}
+        element={guarded("report-preview", <ReportPreviewPage />)}
       />
       <Route path="*" element={<Navigate replace to="/" />} />
     </Routes>

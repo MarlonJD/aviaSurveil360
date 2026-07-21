@@ -153,7 +153,7 @@ func (manager *Manager) Create(ctx context.Context, input CreateInput) (BrowserS
 		return BrowserSession{}, err
 	}
 	principal := identity.Principal{
-		SubjectID: input.SubjectID, OrganizationID: input.OrganizationID, Roles: append([]identity.Role(nil), input.Roles...), SessionID: sessionID,
+		SubjectID: input.SubjectID, DisplayName: input.DisplayName, OrganizationID: input.OrganizationID, Roles: append([]identity.Role(nil), input.Roles...), SessionID: sessionID,
 	}
 	return BrowserSession{
 		ID: sessionID, Token: rawToken, CSRFToken: rawCSRF, ExpiresAt: idleExpiresAt,
@@ -182,6 +182,11 @@ func (manager *Manager) Authenticate(ctx context.Context, rawToken string) (iden
 		}
 		principal.SessionID = record.ID
 		principal.SubjectID = record.SubjectID
+		identityReference, err := identitystore.New(transaction).GetIdentityReference(ctx, record.SubjectID)
+		if err != nil {
+			return fmt.Errorf("read authenticated identity reference: %w", err)
+		}
+		principal.DisplayName = identityReference.DisplayName
 		if record.OrganizationID != nil {
 			principal.OrganizationID = *record.OrganizationID
 		}

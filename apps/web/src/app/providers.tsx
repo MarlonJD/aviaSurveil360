@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, type PropsWithChildren, useContext, useState } from "react";
 
 import type { Backend, Role } from "../backend/backend";
+import type { IdentityMode, SessionClient } from "../auth/session-client";
 import type { IndexedDbFieldRepository } from "../offline/field-repository";
 import type { InspectionAttachmentStore } from "../offline/opfs-inspection-attachment-store";
 
@@ -12,6 +13,10 @@ export interface ApplicationRuntime {
   backendForRole?: (role: Role) => Backend;
   buildProfile: BuildProfile;
   environmentLabel: string;
+  identityMode?: IdentityMode;
+  sessionClient?: SessionClient;
+  subjectId?: string;
+  beforeSubjectChange?: (reason: "LOGOUT" | "USER_SWITCH") => Promise<void>;
   fieldRepositoryForSubject?: (subjectId: string) => IndexedDbFieldRepository;
   inspectionAttachmentStoreForSubject?: (subjectId: string) => InspectionAttachmentStore;
 }
@@ -33,8 +38,19 @@ export function AppProviders({
   );
 
   return (
+    <QueryClientProvider client={queryClient}>
+      <ApplicationRuntimeProvider runtime={runtime}>{children}</ApplicationRuntimeProvider>
+    </QueryClientProvider>
+  );
+}
+
+export function ApplicationRuntimeProvider({
+  runtime,
+  children,
+}: PropsWithChildren<{ runtime: ApplicationRuntime }>) {
+  return (
     <ApplicationRuntimeContext.Provider value={runtime}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      {children}
     </ApplicationRuntimeContext.Provider>
   );
 }

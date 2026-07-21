@@ -15,6 +15,7 @@ const (
 
 type Principal struct {
 	SubjectID      string
+	DisplayName    string
 	OrganizationID string
 	Roles          []Role
 	SessionID      string

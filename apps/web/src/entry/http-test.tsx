@@ -7,7 +7,7 @@ import { createCanonicalTestFetch } from "../test-profile/http-test-boundary";
 declare const __AVIA_CANONICAL_TEST_TOKEN__: string;
 
 const testSubjects: Record<Role, string> = {
-  inspector: "USR-INSPECTOR-AMINA",
+  inspector: "154ec5ac-6f97-4f55-916f-d2f142fc6211",
   leadInspector: "USR-LEAD-CANER",
   manager: "USR-MANAGER-NORA",
   finance: "USR-FINANCE-LINA",
@@ -31,6 +31,8 @@ async function start(): Promise<void> {
     backendForRole,
     buildProfile: "http",
     environmentLabel: `${config.environmentLabel} · canonical test profile`,
+    identityMode: "canonical-test-role-switch",
+    subjectId: testSubjects.inspector,
   });
 }
 

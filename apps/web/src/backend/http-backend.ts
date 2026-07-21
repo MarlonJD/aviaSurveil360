@@ -101,6 +101,7 @@ export interface HttpBackendDependencies {
   fetchImplementation?: typeof fetch;
   csrfToken?: () => string | null;
   requestTimeoutMs?: number;
+  onAuthenticationLost?: (error: BackendAuthenticationError) => void;
 }
 
 interface RequestInput {
@@ -143,6 +144,7 @@ export function createHttpBackend(
 ): Backend {
   const fetchImplementation = dependencies.fetchImplementation ?? fetch;
   const csrfToken = dependencies.csrfToken ?? (() => null);
+  let authenticationLostNotified = false;
 
   async function request<T>(
     path: string,
@@ -207,7 +209,14 @@ export function createHttpBackend(
     if (!response.ok) {
       const problem = parseProblem(body, response.status);
       const correlatedRequestId = problem?.requestId ?? requestId;
-      if (response.status === 401) throw new BackendAuthenticationError(problem, correlatedRequestId);
+      if (response.status === 401) {
+        const error = new BackendAuthenticationError(problem, correlatedRequestId);
+        if (!authenticationLostNotified) {
+          authenticationLostNotified = true;
+          dependencies.onAuthenticationLost?.(error);
+        }
+        throw error;
+      }
       if (response.status === 403) throw new BackendAuthorizationError(problem, correlatedRequestId);
       throw new BackendHttpError(
         problem?.title ?? `Backend request failed with status ${response.status}`,

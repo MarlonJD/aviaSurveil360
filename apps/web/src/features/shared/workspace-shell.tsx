@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import type { FindingSeverity, FindingView, Role } from "../../backend/backend";
 import { useApplicationRuntime } from "../../app/providers";
 import type { ReactSurfaceId } from "../../app/route-contracts";
+import { useOptionalSession } from "../../auth/session-provider";
 import { ApplicationShell, type NotificationState, type ShellIdentityPresentation } from "../../ui/application-shell";
 import { ROLE_ENTRIES, createRoleEntryPath } from "../../ui/role-select-page";
 
@@ -34,16 +35,29 @@ export function WorkspaceShell({
   children,
 }: PropsWithChildren<{ roleLabel: string; routeLabel: string }>) {
   const { buildProfile, environmentLabel } = useApplicationRuntime();
+  const session = useOptionalSession();
   const navigate = useNavigate();
-  const activeRole = roleForLabel(roleLabel);
-  const activeRouteId = routeForLabel(routeLabel, activeRole);
-  const mode = buildProfile === "http" ? "canonical-test-role-switch" : "demo-role-switch";
+  const routeRole = roleForLabel(roleLabel);
+  const activeRouteId = routeForLabel(routeLabel, routeRole);
+  const authenticatedSession =
+    session?.state.status === "authenticated" ? session.state : null;
+  const activeRole =
+    authenticatedSession?.session.roles.includes(routeRole)
+      ? routeRole
+      : authenticatedSession?.activeRole ?? routeRole;
+  const fallbackMode = buildProfile === "http" ? "canonical-test-role-switch" : "demo-role-switch";
+  const mode =
+    authenticatedSession
+      ? session?.identityMode ?? fallbackMode
+      : fallbackMode;
   const identity: ShellIdentityPresentation = {
     mode,
-    displayName: roleLabel,
-    organizationLabel: activeRole === "auditee" ? "Fly Namibia" : "Namibia Civil Aviation Authority",
+    displayName: authenticatedSession?.session.displayName ?? roleLabel,
+    organizationLabel:
+      authenticatedSession?.session.organizationId ??
+      (activeRole === "auditee" ? "Fly Namibia" : "Namibia Civil Aviation Authority"),
     activeRole,
-    availableRoles: ROLE_ENTRIES.map((entry) => entry.role),
+    availableRoles: authenticatedSession?.session.roles ?? ROLE_ENTRIES.map((entry) => entry.role),
   };
   const notificationState: NotificationState =
     buildProfile === "http"
@@ -59,7 +73,10 @@ export function WorkspaceShell({
       identity={identity}
       notificationState={notificationState}
       onLogout={() => navigate("/")}
-      onRoleRequest={(role) => navigate(createRoleEntryPath(role))}
+      onRoleRequest={(role) => {
+        session?.setActiveRole(role);
+        navigate(createRoleEntryPath(role));
+      }}
     >
       {children}
     </ApplicationShell>

@@ -34,10 +34,10 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
-      "redirectUris": ["http://127.0.0.1:58081/auth/callback"],
+      "redirectUris": ["http://127.0.0.1:4174/auth/callback"],
       "webOrigins": [],
       "attributes": {
-        "post.logout.redirect.uris": "http://127.0.0.1:58081/*",
+        "post.logout.redirect.uris": "http://127.0.0.1:4174/*",
         "pkce.code.challenge.method": "S256"
       },
       "protocolMappers": [
@@ -88,6 +88,7 @@
   ],
   "users": [
     {
+      "id": "154ec5ac-6f97-4f55-916f-d2f142fc6211",
       "username": "inspector.local",
       "enabled": true,
       "email": "inspector.local@example.test",
@@ -95,7 +96,7 @@
       "firstName": "Local",
       "lastName": "Inspector",
       "attributes": {
-        "organization_id": ["caa"]
+        "organization_id": ["CAA"]
       },
       "realmRoles": ["inspector"],
       "requiredActions": [],

@@ -147,7 +147,7 @@ const initialProjection: ScenarioProjection = {
   fieldSyncConflict: null,
 };
 
-const FIELD_SUBJECT_ID = "USR-INSPECTOR-AMINA";
+const DEMO_FIELD_SUBJECT_ID = "USR-INSPECTOR-AMINA";
 const FIELD_PACKAGE_ID = "PKG-CAB-2026-001";
 const FIELD_QUESTION_ID = "CAB-EMEQ-PBE-001";
 
@@ -195,15 +195,16 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
   const [projection, setProjection] = useState<ScenarioProjection>(initialProjection);
   const operationSequence = useRef(1);
   const syncBroadcastRef = useRef<SyncStatusBroadcast | null>(null);
+  const fieldSubjectId = runtime.subjectId ?? DEMO_FIELD_SUBJECT_ID;
 
   const backendFor = (role: Role) => runtime.backendForRole?.(role) ?? runtime.backend;
   const operationId = (prefix: string) =>
     `${prefix}-${String(operationSequence.current++).padStart(3, "0")}`;
   const fieldOperationId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
   const fieldRepository = (): IndexedDbFieldRepository =>
-    runtime.fieldRepositoryForSubject?.(FIELD_SUBJECT_ID) ??
+    runtime.fieldRepositoryForSubject?.(fieldSubjectId) ??
     createBrowserFieldRepository(
-      FIELD_SUBJECT_ID,
+      fieldSubjectId,
       runtime.buildProfile === "demo"
         ? () => new Date("2026-06-15T09:00:00.000Z")
         : () => new Date(),
@@ -211,7 +212,7 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
   const inspectionAttachmentStore = (
     repository: IndexedDbFieldRepository,
   ): InspectionAttachmentStore =>
-    runtime.inspectionAttachmentStoreForSubject?.(FIELD_SUBJECT_ID) ??
+    runtime.inspectionAttachmentStoreForSubject?.(fieldSubjectId) ??
     createBrowserInspectionAttachmentStore(repository);
 
   const actions = useMemo<ScenarioActions>(

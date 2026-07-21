@@ -30,7 +30,7 @@ export function RoleNavigation({
   const activePrimary = activePrimaryRouteId(activeRouteId);
   const routes = primaryRoutesForRole(activeRole);
   return (
-    <nav className="role-navigation" aria-label="Primary navigation">
+    <nav className="role-navigation" aria-label="Primary role navigation">
       {routes.map((route) => (
         <Link
           className="primary-link"

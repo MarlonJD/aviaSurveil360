@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { useApplicationRuntime } from "../../app/providers";
 import type { ChecklistAnswer } from "../../backend/backend";
 import { useScenario } from "../../app/scenario-context";
 import {
@@ -11,9 +12,8 @@ import {
   WorkspaceShell,
 } from "../shared/workspace-shell";
 
-const INSPECTOR_ID = "USR-INSPECTOR-AMINA";
-
 export function ChecklistRunnerPage() {
+  const runtime = useApplicationRuntime();
   const { projection, actions } = useScenario();
   const [selectedQuestionId, setSelectedQuestionId] = useState("CAB-EMEQ-PBE-001");
   const [answer, setAnswer] = useState<ChecklistAnswer>("NOT_CHECKED");
@@ -37,7 +37,8 @@ export function ChecklistRunnerPage() {
   const selectedQuestion = packageView?.questions.find(
     (question) => question.id === selectedQuestionId,
   );
-  const selectedQuestionAssignedHere = selectedQuestion?.assignedInspectorUserIds.includes(INSPECTOR_ID) ?? false;
+  const activeSubjectId = runtime.subjectId ?? "USR-INSPECTOR-AMINA";
+  const selectedQuestionAssignedHere = selectedQuestion?.assignedInspectorUserIds.includes(activeSubjectId) ?? false;
   const checklistReadOnly = packageView?.checklistStatus === "SUBMITTED";
   const attachmentRecoveryBlocked = projection.attachmentRecoveryBlocking.length > 0;
 
@@ -79,7 +80,7 @@ export function ChecklistRunnerPage() {
       <div className="split-layout split-layout--questions">
         <section className="question-list" aria-label="Cabin checklist questions">
           {packageView?.questions.map((question) => {
-            const assignedHere = question.assignedInspectorUserIds.includes(INSPECTOR_ID);
+            const assignedHere = question.assignedInspectorUserIds.includes(activeSubjectId);
             return (
               <button
                 className={`question-row${selectedQuestionId === question.id ? " question-row--selected" : ""}`}

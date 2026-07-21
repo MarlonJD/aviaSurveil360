@@ -124,9 +124,10 @@ func (boundary *AuthBoundary) sessionProjection(writer http.ResponseWriter, requ
 	}
 	writeJSON(writer, http.StatusOK, struct {
 		SubjectID      string          `json:"subjectId"`
+		DisplayName    string          `json:"displayName"`
 		OrganizationID string          `json:"organizationId"`
 		Roles          []identity.Role `json:"roles"`
-	}{SubjectID: principal.SubjectID, OrganizationID: principal.OrganizationID, Roles: principal.Roles})
+	}{SubjectID: principal.SubjectID, DisplayName: principal.DisplayName, OrganizationID: principal.OrganizationID, Roles: principal.Roles})
 }
 
 func (boundary *AuthBoundary) logout(writer http.ResponseWriter, request *http.Request) {

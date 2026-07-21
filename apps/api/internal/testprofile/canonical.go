@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	CanonicalAuditID   = "AUD-2026-001"
-	CanonicalPackageID = "PKG-CAB-2026-001"
-	CanonicalFindingID = "FND-CAB-2026-001"
+	CanonicalAuditID            = "AUD-2026-001"
+	CanonicalPackageID          = "PKG-CAB-2026-001"
+	CanonicalFindingID          = "FND-CAB-2026-001"
+	CanonicalInspectorSubjectID = "154ec5ac-6f97-4f55-916f-d2f142fc6211"
 )
 
 type Generator struct {
@@ -91,11 +92,11 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 	}
 	questions := []canonicalQuestion{
 		question("CAB-GALLEY-001", "GALLEY", "Are galley restraints and stowage areas serviceable and secure?", "Inspector observation and required exception comment", []string{"USR-INSPECTOR-DAVID"}),
-		question("CAB-LAV-001", "LAV", "Are lavatory safety equipment and placards present and serviceable?", "Inspector observation and required exception comment", []string{"USR-INSPECTOR-AMINA"}),
-		question("CAB-PAX-SEAT-001", "PAX SEAT", "Are passenger seats, belts, and adjacent fittings serviceable?", "Inspector observation and required exception comment", []string{"USR-INSPECTOR-AMINA"}),
-		question("CAB-EMEQ-PBE-001", "EM EQ / PBE", "Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?", "PBE serviceability record and cabin position confirmation", []string{"USR-INSPECTOR-AMINA"}),
-		question("CAB-VID-CREW-SEAT-001", "VID+CREW SEAT", "Are cabin information displays and crew seats serviceable?", "Inspector observation and required exception comment", []string{"USR-INSPECTOR-AMINA"}),
-		question("CAB-COCKPIT-GEN-001", "COCKPIT+CAB GEN COND+EXITS", "Are cabin general condition and emergency exits satisfactory?", "Inspector observation and required exception comment", []string{"USR-INSPECTOR-AMINA"}),
+		question("CAB-LAV-001", "LAV", "Are lavatory safety equipment and placards present and serviceable?", "Inspector observation and required exception comment", []string{CanonicalInspectorSubjectID}),
+		question("CAB-PAX-SEAT-001", "PAX SEAT", "Are passenger seats, belts, and adjacent fittings serviceable?", "Inspector observation and required exception comment", []string{CanonicalInspectorSubjectID}),
+		question("CAB-EMEQ-PBE-001", "EM EQ / PBE", "Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?", "PBE serviceability record and cabin position confirmation", []string{CanonicalInspectorSubjectID}),
+		question("CAB-VID-CREW-SEAT-001", "VID+CREW SEAT", "Are cabin information displays and crew seats serviceable?", "Inspector observation and required exception comment", []string{CanonicalInspectorSubjectID}),
+		question("CAB-COCKPIT-GEN-001", "COCKPIT+CAB GEN COND+EXITS", "Are cabin general condition and emergency exits satisfactory?", "Inspector observation and required exception comment", []string{CanonicalInspectorSubjectID}),
 	}
 	snapshot, err := json.Marshal(map[string]any{
 		"schemaVersion": 1, "protocolVersion": 1, "questions": questions,
@@ -128,7 +129,7 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 		}
 		if _, err := transaction.Exec(ctx, `
 			INSERT INTO identity_references (subject_id, issuer, display_name, created_at) VALUES
-				('USR-INSPECTOR-AMINA', 'urn:avia:test', 'Amina Inspector', $1),
+				($2, 'urn:avia:test', 'Local Inspector', $1),
 				('USR-INSPECTOR-DAVID', 'urn:avia:test', 'David Inspector', $1),
 				('USR-LEAD-CANER', 'urn:avia:test', 'Caner Lead Inspector', $1),
 				('USR-MANAGER-NORA', 'urn:avia:test', 'Nora Department Manager', $1),
@@ -137,14 +138,14 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				('USR-ED-ZARA', 'urn:avia:test', 'Zara Executive Director', $1),
 				('USR-ADMIN-ADA', 'urn:avia:test', 'Ada Administrator', $1),
 				('USR-AUDITEE-FLY', 'urn:avia:test', 'Fly Namibia Auditee', $1)
-		`, now); err != nil {
+		`, now, CanonicalInspectorSubjectID); err != nil {
 			return fmt.Errorf("seed canonical identities: %w", err)
 		}
 		if _, err := transaction.Exec(ctx, `
 			INSERT INTO session_references (
 				id, subject_id, organization_id, expires_at, last_seen_at, absolute_expires_at, roles, created_at
 			) VALUES
-				('TEST-USR-INSPECTOR-AMINA', 'USR-INSPECTOR-AMINA', 'CAA', $2, $1, $2, ARRAY['inspector'], $1),
+				('TEST-CANONICAL-INSPECTOR', $3, 'CAA', $2, $1, $2, ARRAY['inspector'], $1),
 				('TEST-USR-INSPECTOR-DAVID', 'USR-INSPECTOR-DAVID', 'CAA', $2, $1, $2, ARRAY['inspector'], $1),
 				('TEST-USR-LEAD-CANER', 'USR-LEAD-CANER', 'CAA', $2, $1, $2, ARRAY['leadInspector'], $1),
 				('TEST-USR-MANAGER-NORA', 'USR-MANAGER-NORA', 'CAA', $2, $1, $2, ARRAY['manager'], $1),
@@ -153,7 +154,7 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				('TEST-USR-ED-ZARA', 'USR-ED-ZARA', 'CAA', $2, $1, $2, ARRAY['executiveDirector'], $1),
 				('TEST-USR-ADMIN-ADA', 'USR-ADMIN-ADA', 'CAA', $2, $1, $2, ARRAY['admin'], $1),
 				('TEST-USR-AUDITEE-FLY', 'USR-AUDITEE-FLY', 'ORG-FLY-NAMIBIA', $2, $1, $2, ARRAY['auditee'], $1)
-		`, now, now.Add(8*time.Hour)); err != nil {
+		`, now, now.Add(8*time.Hour), CanonicalInspectorSubjectID); err != nil {
 			return fmt.Errorf("seed canonical sessions: %w", err)
 		}
 		if _, err := transaction.Exec(ctx, `
@@ -161,11 +162,11 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				id, organization_id, assigned_inspector_subject_id, title, inspection_type, status,
 				due_date, revision, created_at, updated_at
 			) VALUES
-				('AUD-2026-001', 'ORG-FLY-NAMIBIA', 'USR-INSPECTOR-AMINA',
+				('AUD-2026-001', 'ORG-FLY-NAMIBIA', $2,
 				 '2026 Cabin Inspection - Fly Namibia', 'CABIN', 'IN_PROGRESS', '2026-07-15', 1, $1, $1),
 				('AUD-2026-099', 'ORG-SKYCARGO', 'USR-INSPECTOR-DAVID',
 				 '2026 Cargo Inspection - SkyCargo Air', 'CARGO', 'IN_PROGRESS', '2026-07-30', 1, $1, $1)
-		`, now); err != nil {
+		`, now, CanonicalInspectorSubjectID); err != nil {
 			return fmt.Errorf("seed canonical Audits: %w", err)
 		}
 		if _, err := transaction.Exec(ctx, `
@@ -250,12 +251,12 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				id, subject_id, device_id, package_id, inspection_id, assignment_revision, granted_at,
 				expires_at, session_id, package_version, package_digest, allowed_command_types,
 				assignment_scope, protocol_version
-			) VALUES ('GRANT-CANDIDATE-001', 'USR-INSPECTOR-AMINA', 'DEVICE-CANDIDATE-001',
-				'PKG-CAB-2026-001', 'AUD-2026-001', 1, $1, $2, 'TEST-USR-INSPECTOR-AMINA', 1,
+			) VALUES ('GRANT-CANDIDATE-001', $3, 'DEVICE-CANDIDATE-001',
+				'PKG-CAB-2026-001', 'AUD-2026-001', 1, $1, $2, 'TEST-CANONICAL-INSPECTOR', 1,
 				'sha256:candidate-cabin-package-v1', ARRAY['UPSERT_CHECKLIST_RESPONSE','CREATE_POTENTIAL_FINDING',
 				'SUBMIT_CHECKLIST','REGISTER_INSPECTION_ATTACHMENT'],
 				'{"questionIds":["CAB-LAV-001","CAB-PAX-SEAT-001","CAB-EMEQ-PBE-001","CAB-VID-CREW-SEAT-001","CAB-COCKPIT-GEN-001"]}', 1)
-		`, now, now.Add(24*time.Hour)); err != nil {
+		`, now, now.Add(24*time.Hour), CanonicalInspectorSubjectID); err != nil {
 			return fmt.Errorf("seed canonical OfflineGrant: %w", err)
 		}
 		return nil
@@ -264,15 +265,15 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 
 func Principal(subjectID string) (identity.Principal, bool) {
 	principals := map[string]identity.Principal{
-		"USR-INSPECTOR-AMINA": {SubjectID: "USR-INSPECTOR-AMINA", OrganizationID: "CAA", SessionID: "TEST-USR-INSPECTOR-AMINA", Roles: []identity.Role{identity.RoleInspector}},
-		"USR-INSPECTOR-DAVID": {SubjectID: "USR-INSPECTOR-DAVID", OrganizationID: "CAA", SessionID: "TEST-USR-INSPECTOR-DAVID", Roles: []identity.Role{identity.RoleInspector}},
-		"USR-LEAD-CANER":      {SubjectID: "USR-LEAD-CANER", OrganizationID: "CAA", SessionID: "TEST-USR-LEAD-CANER", Roles: []identity.Role{identity.RoleLeadInspector}},
-		"USR-MANAGER-NORA":    {SubjectID: "USR-MANAGER-NORA", OrganizationID: "CAA", SessionID: "TEST-USR-MANAGER-NORA", Roles: []identity.Role{identity.RoleDepartmentManager}},
-		"USR-FINANCE-LINA":    {SubjectID: "USR-FINANCE-LINA", OrganizationID: "CAA", SessionID: "TEST-USR-FINANCE-LINA", Roles: []identity.Role{identity.RoleFinance}},
-		"USR-GM-OMAR":         {SubjectID: "USR-GM-OMAR", OrganizationID: "CAA", SessionID: "TEST-USR-GM-OMAR", Roles: []identity.Role{identity.RoleGeneralManager}},
-		"USR-ED-ZARA":         {SubjectID: "USR-ED-ZARA", OrganizationID: "CAA", SessionID: "TEST-USR-ED-ZARA", Roles: []identity.Role{identity.RoleExecutiveDirector}},
-		"USR-ADMIN-ADA":       {SubjectID: "USR-ADMIN-ADA", OrganizationID: "CAA", SessionID: "TEST-USR-ADMIN-ADA", Roles: []identity.Role{identity.RoleAdmin}},
-		"USR-AUDITEE-FLY":     {SubjectID: "USR-AUDITEE-FLY", OrganizationID: "ORG-FLY-NAMIBIA", SessionID: "TEST-USR-AUDITEE-FLY", Roles: []identity.Role{identity.RoleAuditee}},
+		CanonicalInspectorSubjectID: {SubjectID: CanonicalInspectorSubjectID, DisplayName: "Local Inspector", OrganizationID: "CAA", SessionID: "TEST-CANONICAL-INSPECTOR", Roles: []identity.Role{identity.RoleInspector}},
+		"USR-INSPECTOR-DAVID":       {SubjectID: "USR-INSPECTOR-DAVID", DisplayName: "David Inspector", OrganizationID: "CAA", SessionID: "TEST-USR-INSPECTOR-DAVID", Roles: []identity.Role{identity.RoleInspector}},
+		"USR-LEAD-CANER":            {SubjectID: "USR-LEAD-CANER", DisplayName: "Caner Lead Inspector", OrganizationID: "CAA", SessionID: "TEST-USR-LEAD-CANER", Roles: []identity.Role{identity.RoleLeadInspector}},
+		"USR-MANAGER-NORA":          {SubjectID: "USR-MANAGER-NORA", DisplayName: "Nora Department Manager", OrganizationID: "CAA", SessionID: "TEST-USR-MANAGER-NORA", Roles: []identity.Role{identity.RoleDepartmentManager}},
+		"USR-FINANCE-LINA":          {SubjectID: "USR-FINANCE-LINA", DisplayName: "Lina Finance Reviewer", OrganizationID: "CAA", SessionID: "TEST-USR-FINANCE-LINA", Roles: []identity.Role{identity.RoleFinance}},
+		"USR-GM-OMAR":               {SubjectID: "USR-GM-OMAR", DisplayName: "Omar General Manager", OrganizationID: "CAA", SessionID: "TEST-USR-GM-OMAR", Roles: []identity.Role{identity.RoleGeneralManager}},
+		"USR-ED-ZARA":               {SubjectID: "USR-ED-ZARA", DisplayName: "Zara Executive Director", OrganizationID: "CAA", SessionID: "TEST-USR-ED-ZARA", Roles: []identity.Role{identity.RoleExecutiveDirector}},
+		"USR-ADMIN-ADA":             {SubjectID: "USR-ADMIN-ADA", DisplayName: "Ada Administrator", OrganizationID: "CAA", SessionID: "TEST-USR-ADMIN-ADA", Roles: []identity.Role{identity.RoleAdmin}},
+		"USR-AUDITEE-FLY":           {SubjectID: "USR-AUDITEE-FLY", DisplayName: "Fly Namibia Auditee", OrganizationID: "ORG-FLY-NAMIBIA", SessionID: "TEST-USR-AUDITEE-FLY", Roles: []identity.Role{identity.RoleAuditee}},
 	}
 	principal, ok := principals[subjectID]
 	return principal, ok

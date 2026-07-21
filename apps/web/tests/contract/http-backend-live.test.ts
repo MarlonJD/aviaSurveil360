@@ -14,10 +14,15 @@ backendContract(async (): Promise<BackendContractHarness> => {
     throw new Error(`Canonical HTTP reset failed with ${response.status}: ${await response.text()}`);
   }
   return {
-    backendFor: (principal) =>
-      createHttpBackend(
+    backendFor: (principal) => {
+      const subjectId =
+        principal.subjectId === "USR-INSPECTOR-AMINA"
+          ? "154ec5ac-6f97-4f55-916f-d2f142fc6211"
+          : principal.subjectId;
+      return createHttpBackend(
         { apiBaseUrl: apiURL, environmentLabel: "Canonical HTTP contract" },
-        { fetchImplementation: createCanonicalTestFetch(principal.subjectId, testToken) },
-      ),
+        { fetchImplementation: createCanonicalTestFetch(subjectId, testToken) },
+      );
+    },
   };
 });

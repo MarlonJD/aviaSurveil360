@@ -114,7 +114,7 @@ func run(ctx context.Context) error {
 						probe = combinedReadiness{databaseProbe, objectStoreReadiness{store: objects}}
 						generator := testprofile.NewGenerator()
 						appDependencies := application.Dependencies{}
-						if settings.CanonicalTestProfile {
+						if settings.CanonicalSeed {
 							appDependencies.IDGenerator = generator.Next
 							appDependencies.FindingReferenceGenerator = generator.FindingReference
 							if resetErr := testprofile.Reset(ctx, pool, time.Now()); resetErr != nil {

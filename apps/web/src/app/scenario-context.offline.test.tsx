@@ -200,4 +200,84 @@ describe("ScenarioProvider field working set", () => {
       quarantineReason: "REFERENCED_BYTES_MISSING",
     });
   });
+
+  it("binds field repositories and Inspection Attachment stores to the runtime subject", async () => {
+    const backend = createMockBackend();
+    const inspectionPackage = await backend.inspections.getPackage({ packageId });
+    const checkout = await backend.inspections.checkout({
+      operationId: "OP-UUID-CHECKOUT",
+      packageId,
+      expectedPackageVersion: inspectionPackage.packageVersion,
+      deviceInstanceId: "DEVICE-UUID-001",
+    });
+    const uuidSubjectId = "154ec5ac-6f97-4f55-916f-d2f142fc6211";
+    const uuidPackage = {
+      ...checkout.inspectionPackage,
+      questions: checkout.inspectionPackage.questions.map((question) => ({
+        ...question,
+        assignedInspectorUserIds: question.assignedInspectorUserIds.includes(subjectId)
+          ? [uuidSubjectId]
+          : question.assignedInspectorUserIds,
+      })),
+    };
+    const databaseName = `aviasurveil360-scenario-field-${crypto.randomUUID()}`;
+    databases.add(databaseName);
+    const database = new OfflineFieldDatabase({ name: databaseName });
+    const repository = new IndexedDbFieldRepository({
+      database,
+      subjectId: uuidSubjectId,
+      now,
+    });
+    const attachmentFileSystem = new TestAttachmentFileSystem();
+    const attachmentStore = new InspectionAttachmentStore({
+      repository,
+      fileSystem: attachmentFileSystem,
+      hasher: { sha256: sha256InspectionAttachment },
+      now,
+    });
+    await repository.checkoutPackage({
+      inspectionPackage: uuidPackage,
+      offlineGrant: {
+        ...checkout.offlineGrant,
+        grantId: "GRANT-UUID-SUBJECT",
+        subjectId: uuidSubjectId,
+        assignmentScope: {
+          questionIds: ["CAB-LAV-001", "CAB-PAX-SEAT-001", "CAB-EMEQ-PBE-001"],
+        },
+      },
+      checkedOutAt: now().toISOString(),
+    });
+    const requestedRepositorySubjects: string[] = [];
+    const requestedStoreSubjects: string[] = [];
+
+    render(
+      <AppProviders
+        runtime={{
+          backend,
+          buildProfile: "http",
+          environmentLabel: "field-test",
+          subjectId: uuidSubjectId,
+          fieldRepositoryForSubject: (requestedSubjectId) => {
+            requestedRepositorySubjects.push(requestedSubjectId);
+            return repository;
+          },
+          inspectionAttachmentStoreForSubject: (requestedSubjectId) => {
+            requestedStoreSubjects.push(requestedSubjectId);
+            return attachmentStore;
+          },
+        }}
+      >
+        <ScenarioProvider>
+          <FieldHarness />
+        </ScenarioProvider>
+      </AppProviders>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Load local package" }));
+
+    await waitFor(() => expect(screen.getByTestId("field-mode")).toHaveTextContent("true"));
+    expect(requestedRepositorySubjects).toContain(uuidSubjectId);
+    expect(requestedRepositorySubjects).not.toContain(subjectId);
+    expect(requestedStoreSubjects).toContain(uuidSubjectId);
+  });
 });

@@ -92,7 +92,7 @@ func TestPinnedLocalKeycloakCompletesRealAuthorizationCodePKCEFlow(t *testing.T)
 	if err != nil {
 		t.Fatalf("exchange local Keycloak authorization code: %v", err)
 	}
-	if authenticated.SubjectID == "" || authenticated.OrganizationID != "caa" || !containsIdentityRole(authenticated.Roles, identity.RoleInspector) {
+	if authenticated.SubjectID != "154ec5ac-6f97-4f55-916f-d2f142fc6211" || authenticated.OrganizationID != "CAA" || !containsIdentityRole(authenticated.Roles, identity.RoleInspector) {
 		t.Fatalf("local Keycloak verified identity = %+v", authenticated)
 	}
 	if authenticated.Tokens.AccessToken == "" || authenticated.Tokens.RefreshToken == "" || authenticated.Tokens.IDToken == "" {

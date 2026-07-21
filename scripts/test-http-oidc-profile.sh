@@ -4,8 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPOSITORY_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 COMPOSE_FILE="${REPOSITORY_ROOT}/deploy/local/compose.test.yaml"
-COMPOSE_PROJECT="aviasurveil360-task11"
-RUNTIME_DIRECTORY="$(mktemp -d /private/tmp/aviasurveil360-task11.XXXXXX)"
+COMPOSE_PROJECT="aviasurveil360-task7-oidc"
+RUNTIME_DIRECTORY="$(mktemp -d /private/tmp/aviasurveil360-task7-oidc.XXXXXX)"
 SHARED_GO_CACHE="$(go env GOCACHE)"
 TASK_GO_CACHE="${RUNTIME_DIRECTORY}/go-cache"
 TASK_GO_TMP="${RUNTIME_DIRECTORY}/go-tmp"
@@ -67,8 +67,7 @@ export AVIA_OIDC_CLIENT_SECRET="${AVIA_TEST_OIDC_CLIENT_SECRET}"
 export AVIA_OIDC_REDIRECT_URL="${AVIA_TEST_OIDC_REDIRECT_URL}"
 export AVIA_SESSION_ENCRYPTION_KEY="MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
 export AVIA_ENABLE_CANONICAL_SEED="true"
-export AVIA_ENABLE_CANONICAL_TEST_PROFILE="true"
-export AVIA_CANONICAL_TEST_TOKEN="candidate-canonical-test-token-2026"
+export AVIA_ENABLE_CANONICAL_TEST_PROFILE="false"
 export AVIA_OBJECT_STORE_ENDPOINT="${AVIA_TEST_OBJECT_STORE_ENDPOINT}"
 export AVIA_OBJECT_STORE_ACCESS_KEY="avia-local-access"
 export AVIA_OBJECT_STORE_SECRET_KEY="avia-local-secret-key"
@@ -80,15 +79,12 @@ export AVIA_SCANNER_MODE="deterministic-test"
 export AVIA_WORKER_INTERVAL_MS="50"
 export AVIA_HTTP_API_URL="http://127.0.0.1:58081"
 export AVIA_HTTP_API_TARGET="${AVIA_HTTP_API_URL}"
-export AVIA_HTTP_TEST_PROFILE="canonical"
+export AVIA_HTTP_TEST_PROFILE=""
 export GOCACHE="${TASK_GO_CACHE}"
 seed_task_go_cache
 
 go -C "${REPOSITORY_ROOT}/apps/api" build -o "${RUNTIME_DIRECTORY}/api" ./cmd/api
 go -C "${REPOSITORY_ROOT}/apps/api" build -o "${RUNTIME_DIRECTORY}/worker" ./cmd/worker
-go -C "${REPOSITORY_ROOT}/apps/api" test -race -p 1 -count=1 ./...
-"${SCRIPT_DIR}/check-contracts.sh"
-"${SCRIPT_DIR}/check-sqlc.sh"
 
 (
   cd "${REPOSITORY_ROOT}/apps/api"
@@ -116,28 +112,4 @@ curl --fail --silent "${AVIA_HTTP_API_URL}/health/ready" >/dev/null
 kill -0 "${WORKER_PID}"
 
 npm --prefix "${REPOSITORY_ROOT}/apps/web" run typecheck
-npm --prefix "${REPOSITORY_ROOT}/apps/web" test
-npm --prefix "${REPOSITORY_ROOT}/apps/web" run build:demo
-npm --prefix "${REPOSITORY_ROOT}/apps/web" run build:http
-node "${REPOSITORY_ROOT}/apps/web/scripts/assert-http-artifact.mjs" "${REPOSITORY_ROOT}/apps/web/dist/http"
-npm --prefix "${REPOSITORY_ROOT}/apps/web" run test:contract:http
-npm --prefix "${REPOSITORY_ROOT}/apps/web" run test:e2e:mock
-npm --prefix "${REPOSITORY_ROOT}/apps/web" run test:e2e:http
-
-for _ in {1..120}; do
-  PENDING_SCAN_COUNT="$(docker compose --project-name "${COMPOSE_PROJECT}" --file "${COMPOSE_FILE}" exec --no-TTY postgres psql --username aviasurveil --dbname aviasurveil --tuples-only --no-align --command "SELECT count(*) FROM outbox_messages WHERE topic IN ('evidence.scan_requested', 'inspection_attachment.scan_requested') AND delivered_at IS NULL AND terminal_state IS NULL")"
-  if [[ "${PENDING_SCAN_COUNT}" == "0" ]]; then
-    break
-  fi
-  sleep 0.25
-done
-TERMINAL_SCAN_COUNT="$(docker compose --project-name "${COMPOSE_PROJECT}" --file "${COMPOSE_FILE}" exec --no-TTY postgres psql --username aviasurveil --dbname aviasurveil --tuples-only --no-align --command "SELECT count(*) FROM outbox_messages WHERE topic IN ('evidence.scan_requested', 'inspection_attachment.scan_requested') AND terminal_state IS NOT NULL")"
-if [[ "${PENDING_SCAN_COUNT}" != "0" || "${TERMINAL_SCAN_COUNT}" != "0" ]]; then
-  echo "Worker outbox is not drained: pending=${PENDING_SCAN_COUNT} terminal=${TERMINAL_SCAN_COUNT}" >&2
-  exit 1
-fi
-if ! grep -q "scan work batch completed" "${RUNTIME_DIRECTORY}/worker.log"; then
-  echo "Worker log has no completed-batch observability event" >&2
-  exit 1
-fi
-echo "Worker/outbox observability: verified locally"
+npm --prefix "${REPOSITORY_ROOT}/apps/web" run test:e2e:oidc

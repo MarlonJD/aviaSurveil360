@@ -107,6 +107,50 @@ describe("HttpBackend", () => {
     expect(fetchImplementation).toHaveBeenCalledTimes(1);
   });
 
+  it("notifies authentication loss once for both protected reads and mutations before page handling", async () => {
+    const authenticationLost = vi.fn();
+    const fetchImplementation = vi.fn<typeof fetch>().mockImplementation(async () =>
+      jsonResponse(
+        {
+          type: "about:blank",
+          title: "Session expired",
+          status: 401,
+          detail: "The browser session has expired.",
+          code: "SESSION_EXPIRED",
+          requestId: "REQ-AUTH-LOST",
+        },
+        { status: 401 },
+      ),
+    );
+    const backend = createHttpBackend(
+      { apiBaseUrl: "/", environmentLabel: "Test" },
+      {
+        fetchImplementation,
+        csrfToken: () => "csrf-test",
+        onAuthenticationLost: authenticationLost,
+      },
+    );
+
+    await expect(backend.assignments.list({ limit: 20 })).rejects.toBeInstanceOf(
+      BackendAuthenticationError,
+    );
+    await expect(
+      backend.caps.submit({
+        operationId: "OP-CAP-AUTH-LOST",
+        findingId: "FND-CAB-2026-001",
+        expectedFindingRevision: 1,
+        rootCause: "Root cause",
+        correctiveAction: "Corrective action",
+        preventiveAction: "Preventive action",
+        responsiblePerson: "Responsible person",
+        targetCompletionDate: "2026-07-15",
+        commentToCaa: "CAA comment",
+      }),
+    ).rejects.toBeInstanceOf(BackendAuthenticationError);
+    expect(authenticationLost).toHaveBeenCalledTimes(1);
+    expect(authenticationLost.mock.calls[0]?.[0]).toBeInstanceOf(BackendAuthenticationError);
+  });
+
   it("rejects a successful non-JSON response", async () => {
     const fetchImplementation = vi
       .fn<typeof fetch>()

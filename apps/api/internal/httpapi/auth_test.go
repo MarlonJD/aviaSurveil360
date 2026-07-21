@@ -154,7 +154,8 @@ func TestSessionProjectionNeverReturnsCredentialsAndLogoutRequiresCSRF(t *testin
 	t.Parallel()
 	principal := identity.Principal{
 		SubjectID: "auditee-xyz", OrganizationID: "airline-xyz", SessionID: "session-auditee",
-		Roles: []identity.Role{identity.RoleAuditee},
+		DisplayName: "Fly Namibia Auditee",
+		Roles:       []identity.Role{identity.RoleAuditee},
 	}
 	provider := &fakeOIDCProvider{}
 	sessions := &fakeAuthSessions{principal: principal}
@@ -172,10 +173,11 @@ func TestSessionProjectionNeverReturnsCredentialsAndLogoutRequiresCSRF(t *testin
 	}
 	var projection struct {
 		SubjectID      string          `json:"subjectId"`
+		DisplayName    string          `json:"displayName"`
 		OrganizationID string          `json:"organizationId"`
 		Roles          []identity.Role `json:"roles"`
 	}
-	if err := json.Unmarshal(response.Body.Bytes(), &projection); err != nil || projection.SubjectID != principal.SubjectID || projection.OrganizationID != principal.OrganizationID || len(projection.Roles) != 1 {
+	if err := json.Unmarshal(response.Body.Bytes(), &projection); err != nil || projection.SubjectID != principal.SubjectID || projection.DisplayName != principal.DisplayName || projection.OrganizationID != principal.OrganizationID || len(projection.Roles) != 1 {
 		t.Fatalf("session projection = %+v, err = %v", projection, err)
 	}
 

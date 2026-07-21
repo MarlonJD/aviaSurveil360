@@ -27,6 +27,7 @@ type Settings struct {
 	SessionIdleDuration     time.Duration
 	SessionAbsoluteDuration time.Duration
 	CookieSecure            bool
+	CanonicalSeed           bool
 	CanonicalTestProfile    bool
 	CanonicalTestToken      string
 	ObjectStoreEndpoint     string
@@ -71,23 +72,34 @@ func Load(lookup LookupEnv) (Settings, error) {
 	if err != nil {
 		return Settings{}, err
 	}
+	canonicalSeed, err := parseBoolean(lookup, "AVIA_ENABLE_CANONICAL_SEED", false)
+	if err != nil {
+		return Settings{}, err
+	}
+	settings.CanonicalSeed = canonicalSeed
 	settings.CanonicalTestProfile = canonicalProfile
 	objectStoreTLS, err := parseBoolean(lookup, "AVIA_OBJECT_STORE_TLS", false)
 	if err != nil {
 		return Settings{}, err
 	}
 	settings.ObjectStoreTLS = objectStoreTLS
-	settings.AllowServerManagedCORS = settings.Environment == "test" && settings.CanonicalTestProfile
+	settings.AllowServerManagedCORS = settings.Environment == "test" && settings.CanonicalSeed
 
 	if settings.Environment == "production" {
-		for _, key := range []string{"AVIA_TEST_PRINCIPAL", "AVIA_TEST_SESSION", "AVIA_DEV_SESSION_SECRET", "AVIA_ENABLE_CANONICAL_TEST_PROFILE", "AVIA_CANONICAL_TEST_TOKEN"} {
+		for _, key := range []string{"AVIA_TEST_PRINCIPAL", "AVIA_TEST_SESSION", "AVIA_DEV_SESSION_SECRET", "AVIA_ENABLE_CANONICAL_SEED", "AVIA_ENABLE_CANONICAL_TEST_PROFILE", "AVIA_CANONICAL_TEST_TOKEN"} {
 			if value(lookup, key) != "" {
 				return Settings{}, fmt.Errorf("%s is forbidden in production", key)
 			}
 		}
 	}
+	if settings.CanonicalSeed && settings.Environment != "test" {
+		return Settings{}, fmt.Errorf("AVIA_ENABLE_CANONICAL_SEED requires AVIA_ENVIRONMENT=test")
+	}
 	if settings.CanonicalTestProfile && settings.Environment != "test" {
 		return Settings{}, fmt.Errorf("AVIA_ENABLE_CANONICAL_TEST_PROFILE requires AVIA_ENVIRONMENT=test")
+	}
+	if settings.CanonicalTestProfile && !settings.CanonicalSeed {
+		return Settings{}, fmt.Errorf("AVIA_ENABLE_CANONICAL_TEST_PROFILE requires AVIA_ENABLE_CANONICAL_SEED=true")
 	}
 	if settings.CanonicalTestToken != "" && !settings.CanonicalTestProfile {
 		return Settings{}, fmt.Errorf("AVIA_CANONICAL_TEST_TOKEN requires AVIA_ENABLE_CANONICAL_TEST_PROFILE=true")
@@ -95,8 +107,8 @@ func Load(lookup LookupEnv) (Settings, error) {
 	if settings.CanonicalTestProfile && len(settings.CanonicalTestToken) < 16 {
 		return Settings{}, fmt.Errorf("AVIA_CANONICAL_TEST_TOKEN is required and must contain at least 16 characters")
 	}
-	if settings.CanonicalTestProfile && settings.ScannerMode != "deterministic-test" {
-		return Settings{}, fmt.Errorf("AVIA_SCANNER_MODE=deterministic-test is required by the canonical test profile")
+	if settings.CanonicalSeed && settings.ScannerMode != "deterministic-test" {
+		return Settings{}, fmt.Errorf("AVIA_SCANNER_MODE=deterministic-test is required by the canonical seed")
 	}
 	if settings.Environment == "production" && settings.ScannerMode == "deterministic-test" {
 		return Settings{}, fmt.Errorf("AVIA_SCANNER_MODE=deterministic-test is forbidden in production")
@@ -118,7 +130,7 @@ func Load(lookup LookupEnv) (Settings, error) {
 	}
 
 	objectStoreConfigured := settings.ObjectStoreEndpoint != "" || settings.ObjectStoreAccessKey != "" || settings.ObjectStoreSecretKey != "" || len(settings.ObjectStoreCORSOrigins) > 0
-	if settings.Environment == "production" || settings.CanonicalTestProfile || objectStoreConfigured {
+	if settings.Environment == "production" || settings.CanonicalSeed || objectStoreConfigured {
 		for _, entry := range []struct {
 			name  string
 			value any

@@ -594,6 +594,54 @@ describe("subject scope, pull pages, restart, and quarantine", () => {
     });
   });
 
+  it("preserves packages, drafts, outbox, and sync metadata through USER_SWITCH and subject recovery", async () => {
+    const database = createDatabase();
+    const first = createRepository({ database }).repository;
+    await checkout(first);
+    await first.saveChecklistResponse({
+      operationId: "OP-SWITCH-RESPONSE",
+      packageId,
+      responseId: "RESP-CAB-EMEQ-PBE-001",
+      questionId: "CAB-EMEQ-PBE-001",
+      answer: "NON_COMPLIANT",
+      comment: "Pending response before user switch.",
+    });
+    await first.createPotentialFindingDraft({
+      operationId: "OP-SWITCH-PF",
+      packageId,
+      localId: "PF-LOCAL-SWITCH",
+      questionId: "CAB-EMEQ-PBE-001",
+      checklistResponseId: "RESP-CAB-EMEQ-PBE-001",
+      title: "PBE record gap",
+      description: "The record was unavailable before user switch.",
+      requiredComment: "Pending response before user switch.",
+      inspectionAttachmentIds: [],
+    });
+    const before = await first.exportSubjectSnapshot();
+
+    await first.lockSubject("USER_SWITCH");
+    const second = createRepository({ database, activeSubjectId: otherSubjectId }).repository;
+    expect(await second.loadPackage(packageId)).toBeNull();
+    expect(await first.exportSubjectSnapshot({ includeLocked: true })).toMatchObject({
+      packages: [expect.objectContaining({ accessState: "LOCKED" })],
+      checklistResponses: before.checklistResponses,
+      potentialFindingDrafts: before.potentialFindingDrafts,
+      outbox: before.outbox,
+      syncState: before.syncState,
+    });
+
+    await first.resumePackageWithServerCheckout({
+      inspectionPackage: packageFixture(),
+      offlineGrant: grantFixture(packageFixture(), { grantId: "GRANT-SWITCH-RECOVERY" }),
+      checkedOutAt: now.toISOString(),
+    });
+    const recovered = await first.loadPackage(packageId);
+    expect(recovered).toMatchObject({
+      pendingOperationCount: 2,
+      potentialFindingDrafts: [expect.objectContaining({ id: "PF-LOCAL-SWITCH" })],
+    });
+  });
+
   it("applies an authorized pull page and cursor atomically", async () => {
     const database = createDatabase();
     const repository = createRepository({ database }).repository;
