@@ -83,6 +83,7 @@ export default defineConfig(() => {
       environment: "node",
       exclude: [
         "tests/e2e/**",
+        "tests/offline/restart-recovery.spec.ts",
         "tests/contract/http-backend-live.test.ts",
         "node_modules/**",
         "dist/**",

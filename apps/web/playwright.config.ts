@@ -12,7 +12,7 @@ const command =
     : "npm run dev:demo -- --host 127.0.0.1 --port 4174 --strictPort";
 
 export default defineConfig({
-  testDir: "./tests/e2e",
+  testDir: "./tests",
   outputDir: "/private/tmp/aviasurveil360-react-playwright-results",
   fullyParallel: false,
   workers: 1,
@@ -41,8 +41,11 @@ export default defineConfig({
           stderr: "pipe",
         },
   projects: [
-    { name: "mock", testMatch: "canonical-scenario.spec.ts" },
-    { name: "http", testMatch: "canonical-scenario.spec.ts" },
-    { name: "offline", testMatch: "offline-*.spec.ts" },
+    { name: "mock", testMatch: "e2e/canonical-scenario.spec.ts" },
+    { name: "http", testMatch: "e2e/canonical-scenario.spec.ts" },
+    {
+      name: "offline",
+      testMatch: ["e2e/offline-*.spec.ts", "offline/restart-recovery.spec.ts"],
+    },
   ],
 });

@@ -12,14 +12,17 @@
 - Production managed-device policy, MDM kanıtı, app-level local encryption,
   deployment, traffic cutover, legacy removal ve `production-ready` iddiası:
   `blocked`
-- Atomic field persistence/outbox (Task 7), staged OPFS Inspection Attachment
-  (Task 8), production sync (Task 12), daha geniş role-entry migration (Task 5)
-  ve final release-candidate packet (Task 13): `not run`
+- Atomic field persistence/outbox (Task 7): daha sonra `verified locally`
+- Staged OPFS Inspection Attachment (Task 8), production sync (Task 12), daha
+  geniş role-entry migration (Task 5) ve final release-candidate packet
+  (Task 13): `not run`
 
 Task 6, React candidate için browser PWA app-shell ve explicit managed-profile
-offline-readiness temelini uygular. `FieldRepository`, offline checklist edit,
-outbox, staged attachment byte veya sync eklemez. Root Vanilla JavaScript demo
-davranış referansı olarak korunur.
+offline-readiness temelini uygular. Kendi checkpoint'inde `FieldRepository`,
+offline checklist edit, outbox, staged attachment byte veya sync eklememiştir.
+Task 7 daha sonra ilk üçünü ekleyip doğruladı; staged byte ve network sync hâlâ
+Task 8 ile Task 12 kapsamındadır. Root Vanilla JavaScript demo davranış
+referansı olarak korunur.
 
 ## Test-First Kanıtı
 
@@ -61,9 +64,10 @@ explicit build-version marker içerir.
 - Mevcut single-scenario screen canonical Inspector `USR-INSPECTOR-AMINA`
   scope'undadır; farklı scope'taki grant fail-closed olur. Daha geniş
   authenticated role-entry/session-subject wiring hâlâ Task 5 kapsamındadır.
-- Foundation IndexedDB yalnız device identity, restart canary ve exact-subject
-  immutable checkout snapshot saklar. Atomic field record ve causal outbox hâlâ
-  Task 7 kapsamındadır.
+- Task 6 checkpoint'inde foundation IndexedDB yalnız device identity, restart
+  canary ve exact-subject immutable checkout snapshot saklıyordu. Task 7 daha
+  sonra bunu subject-scoped v2 field schema ve causal outbox'a yükseltti; bkz.
+  [Task 7 kanıtı](INDEXEDDB_FIELD_STORAGE_2026-07-21.turkce.md).
 - OPFS etkileşimi yalnız health canary'dir. Staged Inspection Attachment byte ve
   recovery hâlâ Task 8 kapsamındadır.
 - UI explicit site-data loss sınırını söyler. Authoritative outstanding-checkout
@@ -130,6 +134,7 @@ Browser-process ve local-container cleanup, browser ve HTTP profile sonrasında
 kontrol edildi. Task-owned Chrome, Playwright, Vite, API/worker process,
 container, network veya volume kalmadı.
 
-Bu kanıt yalnız local Task 6 candidate'ını destekler. Sonraki binding slice,
-Task 7 atomic IndexedDB field storage ve outbox'tır. Production release ve
-cutover bu yetkinin dışında ve `blocked` kalır.
+Bu kanıt yalnız local Task 6 candidate'ını destekler. Task 7 daha sonra
+`verified locally` oldu; sıradaki binding slice Task 8 manifest-first OPFS
+Inspection Attachment recovery'dir. Production release ve cutover bu yetkinin
+dışında ve `blocked` kalır.

@@ -48,6 +48,7 @@ Do not build an EMPIC-like complex enterprise screen first. Build a simple, role
 6. `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.md`
 7. `docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md`
 8. `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md`
+9. `docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.md`
 
 For the clickable demo, open `index.html` directly in a browser or serve this
 folder with a local static server. See `docs/demo-evidence/BUILD_SUMMARY.md` for current
@@ -83,6 +84,10 @@ npm --prefix apps/web run test:e2e:offline
 See `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md` for the exact
 readiness, app-shell caching, browser-restart, two-client update, and explicit
 site-data-loss evidence and exclusions.
+
+See `docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.md` for the Task 7
+atomic field-record/outbox, migration, server-stopped restart-recovery, and
+explicit sync/OPFS exclusions.
 
 
 ## Source Notes

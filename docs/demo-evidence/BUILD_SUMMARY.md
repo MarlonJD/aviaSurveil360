@@ -1208,10 +1208,36 @@ artifact scans; HTTP isolation across 10 files and 75 inputs; root Vanilla
 
 The complete evidence and scope boundaries are in
 [PWA_OFFLINE_READINESS_2026-07-21.md](PWA_OFFLINE_READINESS_2026-07-21.md).
-Atomic offline field/outbox persistence (Task 7), staged Inspection Attachment
-bytes (Task 8), production sync (Task 12), wider route migration, deployment,
+Task 7 is subsequently `verified locally`. Staged Inspection Attachment bytes
+(Task 8), production sync (Task 12), wider route migration, deployment,
 cutover, and production verification remain `not run` or `blocked` as
 applicable. No `production-ready` claim is made.
+
+---
+
+### Atomic IndexedDB field storage and outbox checkpoint — 2026-07-21
+
+Status: Task 7 is `verified locally` and `candidate-only`; release remains
+`release pending`. The React field route now uses a subject-bound
+`FieldRepository` with schema-v2 compound stores, atomic entity/outbox writes,
+typed causal dependencies, immutable in-flight operations, lock/quarantine
+recovery, released v1 migration, and visible `Saved locally — sync pending`
+state. Components do not write the mock store or accept actor IDs as authority.
+
+Fresh gates passed: React/Vitest 97/97; focused FieldRepository 20/20; offline
+Playwright 3/3 with a persistent Chrome profile, stopped origin server, and
+pending/in-flight browser-restart recovery; full Go race/live HTTP integration;
+OpenAPI 5/5 and SQLC clean generation; live HTTP Backend contract 9/9; mock and
+HTTP Playwright 1/1 each; demo/HTTP app-shell scans; HTTP isolation across 10
+files and 81 inputs; root Vanilla 103/103; and complete task-owned cleanup. The
+production dependency audit reports 0 vulnerabilities. Two high-severity
+transitive development-tool audit findings remain `note-open` for Task 13.
+
+The complete evidence and scope boundaries are in
+[INDEXEDDB_FIELD_STORAGE_2026-07-21.md](INDEXEDDB_FIELD_STORAGE_2026-07-21.md).
+OPFS Inspection Attachment bytes (Task 8), network sync/conflict delivery (Task
+12), deployment, cutover, and production verification remain `not run` or
+`blocked` as applicable. No `production-ready` claim is made.
 
 ---
 
@@ -1225,7 +1251,8 @@ applicable. No `production-ready` claim is made.
 - USOAP readiness is not an official ICAO assessment and does not claim EI improvement.
 - SSP/NASP supports monitoring only; it is not an automatic state safety determination.
 - AI suggestions are drafts only and cannot publish official outputs.
-- Offline outbox is simulated and is not a mobile/offline-ready implementation.
+- The root Vanilla demo's offline outbox is simulated. The adjacent React
+  candidate has a real local Task 7 outbox but no Task 12 network sync yet.
 - Audit log is demo state, not immutable audit evidence.
 - README/MANIFEST now describe the planning pack, intact frontend-only static
   demo, and separate `candidate-only` React/Go application;

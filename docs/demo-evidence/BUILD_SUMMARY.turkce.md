@@ -1218,10 +1218,36 @@ artifact scan; 10 file ve 75 input HTTP isolation; root Vanilla 103/103;
 
 Tam kanıt ve scope sınırları
 [PWA_OFFLINE_READINESS_2026-07-21.turkce.md](PWA_OFFLINE_READINESS_2026-07-21.turkce.md)
-içindedir. Atomic offline field/outbox persistence (Task 7), staged Inspection
+içindedir. Task 7 daha sonra `verified locally` oldu. Staged Inspection
 Attachment byte (Task 8), production sync (Task 12), wider route migration,
 deployment, cutover ve production verification uygun biçimde `not run` veya
 `blocked` kalır. `production-ready` iddiası yoktur.
+
+---
+
+### Atomic IndexedDB field storage ve outbox checkpoint — 2026-07-21
+
+Durum: Task 7 `verified locally` ve `candidate-only`; release durumu `release
+pending`. React field route artık schema-v2 compound store, atomic entity/outbox
+write, typed causal dependency, immutable in-flight operation, lock/quarantine
+recovery, released v1 migration ve görünür `Saved locally — sync pending`
+durumu içeren subject-bound `FieldRepository` kullanır. Component'ler mock
+store'a yazmaz ve actor ID'yi authority olarak kabul etmez.
+
+Taze gate'ler geçti: React/Vitest 97/97; focused FieldRepository 20/20; dedicated
+persistent Chrome profile, durmuş origin server ve pending/in-flight browser
+restart recovery kullanan offline Playwright 3/3; full Go race/live HTTP
+integration; OpenAPI 5/5 ve SQLC clean generation; live HTTP Backend contract
+9/9; mock/HTTP Playwright 1/1 + 1/1; demo/HTTP app-shell scan; 10 file ve 81
+input HTTP isolation; root Vanilla 103/103; ve tam task-owned cleanup.
+Production dependency audit 0 vulnerability raporlar. İki high-severity
+transitive development-tool audit bulgusu Task 13 için `note-open` kalır.
+
+Tam kanıt ve scope sınırları
+[INDEXEDDB_FIELD_STORAGE_2026-07-21.turkce.md](INDEXEDDB_FIELD_STORAGE_2026-07-21.turkce.md)
+içindedir. OPFS Inspection Attachment byte (Task 8), network sync/conflict
+delivery (Task 12), deployment, cutover ve production verification uygun
+biçimde `not run` veya `blocked` kalır. `production-ready` iddiası yoktur.
 
 ---
 
@@ -1235,7 +1261,8 @@ deployment, cutover ve production verification uygun biçimde `not run` veya
 - USOAP readiness resmi ICAO assessment değildir ve EI iyileşmesi iddiası yoktur.
 - SSP/NASP yalnızca izlemeyi destekler; otomatik state safety determination değildir.
 - AI önerileri yalnızca taslaktır; resmi çıktı yayımlayamaz.
-- Offline outbox simüledir; mobil/offline-ready implementation değildir.
+- Root Vanilla demo'nun offline outbox'ı simüledir. Yan React candidate gerçek
+  local Task 7 outbox içerir ancak Task 12 network sync henüz yoktur.
 - Audit log demo durumudur; değiştirilemez audit evidence değildir.
 - `README.md`, `README.turkce.md` ve `MANIFEST.md` artık planlama paketi,
   korunan frontend-only static demo ve ayrı `candidate-only` React/Go

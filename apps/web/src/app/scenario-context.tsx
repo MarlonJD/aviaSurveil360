@@ -25,6 +25,13 @@ import type {
   SubmitCapOutput,
   SubmitChecklistOutput,
 } from "../backend/backend";
+import {
+  createBrowserFieldRepository,
+  toChecklistResponseView,
+  type FieldPackageView,
+  type IndexedDbFieldRepository,
+} from "../offline/field-repository";
+import type { PotentialFindingDraftRow } from "../offline/db";
 import { useApplicationRuntime } from "./providers";
 
 export interface ScenarioProjection {
@@ -41,6 +48,8 @@ export interface ScenarioProjection {
   evidenceReview: ReviewEvidenceOutput | null;
   report: ReportVersionView | null;
   dashboard: ManagerDashboardProjection | null;
+  fieldMode: boolean;
+  fieldPendingOperationCount: number;
 }
 
 export interface ScenarioActions {
@@ -101,7 +110,43 @@ const initialProjection: ScenarioProjection = {
   evidenceReview: null,
   report: null,
   dashboard: null,
+  fieldMode: false,
+  fieldPendingOperationCount: 0,
 };
+
+const FIELD_SUBJECT_ID = "USR-INSPECTOR-AMINA";
+const FIELD_PACKAGE_ID = "PKG-CAB-2026-001";
+const FIELD_QUESTION_ID = "CAB-EMEQ-PBE-001";
+
+function toPotentialFindingView(row: PotentialFindingDraftRow): PotentialFindingView {
+  return {
+    id: row.id,
+    auditId: row.auditId,
+    questionId: row.questionId,
+    organizationId: row.organizationId,
+    title: row.title,
+    description: row.description,
+    status: row.status,
+    revision: row.baseRevision ?? 0,
+    convertedFindingId: null,
+  };
+}
+
+function fieldProjection(view: FieldPackageView) {
+  const response = view.responses.find(
+    (candidate) => candidate.questionId === FIELD_QUESTION_ID && !candidate.tombstoned,
+  );
+  const potentialFinding = view.potentialFindingDrafts.find(
+    (candidate) => candidate.questionId === FIELD_QUESTION_ID,
+  );
+  return {
+    packageView: view.inspectionPackage,
+    response: response ? toChecklistResponseView(response) : null,
+    potentialFinding: potentialFinding ? toPotentialFindingView(potentialFinding) : null,
+    fieldMode: true,
+    fieldPendingOperationCount: view.pendingOperationCount,
+  };
+}
 
 export function ScenarioProvider({ children }: PropsWithChildren) {
   const runtime = useApplicationRuntime();
@@ -111,6 +156,15 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
   const backendFor = (role: Role) => runtime.backendForRole?.(role) ?? runtime.backend;
   const operationId = (prefix: string) =>
     `${prefix}-${String(operationSequence.current++).padStart(3, "0")}`;
+  const fieldOperationId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
+  const fieldRepository = (): IndexedDbFieldRepository =>
+    runtime.fieldRepositoryForSubject?.(FIELD_SUBJECT_ID) ??
+    createBrowserFieldRepository(
+      FIELD_SUBJECT_ID,
+      runtime.buildProfile === "demo"
+        ? () => new Date("2026-06-15T09:00:00.000Z")
+        : () => new Date(),
+    );
 
   const actions = useMemo<ScenarioActions>(
     () => ({
@@ -120,16 +174,42 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
       },
 
       async loadPackage() {
+        const local = await fieldRepository().loadPackage(FIELD_PACKAGE_ID);
+        if (local) {
+          setProjection((current) => ({ ...current, ...fieldProjection(local) }));
+          return;
+        }
         const packageView = await backendFor("inspector").inspections.getPackage({
-          packageId: "PKG-CAB-2026-001",
+          packageId: FIELD_PACKAGE_ID,
         });
         const response =
           packageView.questions.find((question) => question.id === "CAB-EMEQ-PBE-001")
             ?.currentResponse ?? null;
-        setProjection((current) => ({ ...current, packageView, response }));
+        setProjection((current) => ({
+          ...current,
+          packageView,
+          response,
+          fieldMode: false,
+          fieldPendingOperationCount: 0,
+        }));
       },
 
       async saveChecklistResponse(answer, comment) {
+        if (projection.fieldMode) {
+          const repository = fieldRepository();
+          await repository.saveChecklistResponse({
+            operationId: fieldOperationId("OP-RESPONSE"),
+            packageId: FIELD_PACKAGE_ID,
+            responseId: "RESP-CAB-EMEQ-PBE-001",
+            questionId: FIELD_QUESTION_ID,
+            answer,
+            comment,
+          });
+          const local = await repository.loadPackage(FIELD_PACKAGE_ID);
+          if (!local) throw new Error("Checked-out field package disappeared after local commit.");
+          setProjection((current) => ({ ...current, ...fieldProjection(local) }));
+          return;
+        }
         const response = await backendFor("inspector").inspections.upsertChecklistResponse({
           operationId: operationId("OP-RESPONSE"),
           responseId: "RESP-CAB-EMEQ-PBE-001",
@@ -144,6 +224,25 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
 
       async createPotentialFinding() {
         if (!projection.response) throw new Error("Save the exact checklist response first.");
+        if (projection.fieldMode) {
+          const repository = fieldRepository();
+          await repository.createPotentialFindingDraft({
+            operationId: fieldOperationId("OP-PF"),
+            packageId: FIELD_PACKAGE_ID,
+            localId: `PF-LOCAL-${crypto.randomUUID()}`,
+            questionId: FIELD_QUESTION_ID,
+            checklistResponseId: projection.response.id,
+            title: "PBE serviceability and accessibility not confirmed",
+            description:
+              "The configured cabin check could not confirm that the PBE was serviceable and accessible.",
+            requiredComment: projection.response.comment,
+            inspectionAttachmentIds: [],
+          });
+          const local = await repository.loadPackage(FIELD_PACKAGE_ID);
+          if (!local) throw new Error("Checked-out field package disappeared after local commit.");
+          setProjection((current) => ({ ...current, ...fieldProjection(local) }));
+          return;
+        }
         const potentialFinding = await backendFor("inspector").potentialFindings.create({
           operationId: operationId("OP-PF"),
           auditId: "AUD-2026-001",
@@ -162,6 +261,25 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
       async submitChecklist() {
         const packageView = projection.packageView;
         if (!packageView) throw new Error("Inspection package is unavailable.");
+        if (projection.fieldMode) {
+          const repository = fieldRepository();
+          const submission = await repository.submitChecklist({
+            operationId: fieldOperationId("OP-CHECKLIST-SUBMIT"),
+            packageId: packageView.id,
+          });
+          const local = await repository.loadPackage(packageView.id);
+          if (!local) throw new Error("Checked-out field package disappeared after local commit.");
+          setProjection((current) => ({
+            ...current,
+            ...fieldProjection(local),
+            checklistSubmission: {
+              auditId: submission.auditId,
+              checklistStatus: submission.checklistStatus,
+              checklistRevision: submission.checklistRevision,
+            },
+          }));
+          return;
+        }
         const checklistSubmission = await backendFor("inspector").inspections.submitChecklist({
           operationId: operationId("OP-CHECKLIST-SUBMIT"),
           auditId: packageView.auditId,

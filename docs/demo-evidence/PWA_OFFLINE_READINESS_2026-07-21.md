@@ -8,15 +8,17 @@
 - Production managed-device policy, MDM evidence, app-level local encryption,
   deployment, traffic cutover, legacy removal, and a `production-ready` claim:
   `blocked`
-- Atomic field persistence/outbox (Task 7), staged OPFS Inspection Attachments
-  (Task 8), production sync (Task 12), wider role-entry migration (Task 5), and
-  final release-candidate packet (Task 13): `not run`
+- Atomic field persistence/outbox (Task 7): subsequently `verified locally`
+- Staged OPFS Inspection Attachments (Task 8), production sync (Task 12), wider
+  role-entry migration (Task 5), and final release-candidate packet (Task 13):
+  `not run`
 
 Task 6 implements the browser PWA app-shell and explicit managed-profile
-offline-readiness foundation for the React candidate. It does not add a
-`FieldRepository`, offline checklist edits, an outbox, staged attachment bytes,
-or sync. The root Vanilla JavaScript demo remains intact as the behavioral
-reference.
+offline-readiness foundation for the React candidate. At its checkpoint it did
+not add a `FieldRepository`, offline checklist edits, an outbox, staged
+attachment bytes, or sync. Task 7 subsequently added and verified the first
+three; Task 8 and Task 12 still own staged bytes and network sync. The root
+Vanilla JavaScript demo remains intact as the behavioral reference.
 
 ## Test-First Evidence
 
@@ -60,9 +62,10 @@ marker that is checked against the emitted app-shell manifest.
 - The current single-scenario screen is scoped to canonical Inspector
   `USR-INSPECTOR-AMINA`; a differently scoped grant fails closed. Task 5 still
   owns wider authenticated role-entry/session-subject wiring.
-- The foundation IndexedDB stores only the device identity, restart canary, and
-  exact-subject immutable checkout snapshot. Task 7 still owns atomic field
-  records and the causal outbox.
+- At the Task 6 checkpoint, the foundation IndexedDB stored only the device
+  identity, restart canary, and exact-subject immutable checkout snapshot.
+  Task 7 subsequently upgraded it to the subject-scoped v2 field schema and
+  causal outbox; see [Task 7 evidence](INDEXEDDB_FIELD_STORAGE_2026-07-21.md).
 - The OPFS interaction is a health canary only. Task 8 still owns staged
   Inspection Attachment bytes and recovery.
 - The UI states the explicit site-data loss boundary. It does not claim that a
@@ -133,6 +136,7 @@ Browser-process and local-container cleanup was checked after the browser and
 HTTP profiles. No task-owned Chrome, Playwright, Vite, API/worker process,
 container, network, or volume remained.
 
-This evidence supports only the local Task 6 candidate. The next binding slice
-is Task 7 atomic IndexedDB field storage and outbox. Production release and
-cutover remain outside this authorization and `blocked`.
+This evidence supports only the local Task 6 candidate. Task 7 is subsequently
+`verified locally`; the next binding slice is Task 8 manifest-first OPFS
+Inspection Attachment recovery. Production release and cutover remain outside
+this authorization and `blocked`.

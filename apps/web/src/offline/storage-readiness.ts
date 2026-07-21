@@ -1,4 +1,11 @@
 import type { InspectionPackage, OfflineGrant } from "../backend/backend";
+import {
+  getBrowserOfflineFieldDatabase,
+  OFFLINE_FIELD_DATABASE_NAME,
+  type FoundationRow,
+} from "./db";
+import { IndexedDbFieldRepository } from "./field-repository";
+import { CURRENT_FIELD_SCHEMA_VERSION } from "./schema-migrations";
 
 export type OfflineReadinessCode =
   | "ready"
@@ -24,7 +31,7 @@ export interface OfflineVersionVector {
 
 export const CURRENT_OFFLINE_VERSIONS: Readonly<OfflineVersionVector> = {
   appShellVersion: 1,
-  indexedDbSchemaVersion: 1,
+  indexedDbSchemaVersion: CURRENT_FIELD_SCHEMA_VERSION,
   packageSchemaVersion: 1,
   syncProtocolVersion: 1,
 };
@@ -241,7 +248,7 @@ export function describeLocalPackageLoss(input: {
   return "Local package missing. Unsynced single-device work cannot be recovered after site data is cleared.";
 }
 
-const FOUNDATION_DATABASE_NAME = "aviasurveil360-offline-foundation";
+const FOUNDATION_DATABASE_NAME = OFFLINE_FIELD_DATABASE_NAME;
 const FOUNDATION_STORE_NAME = "foundation";
 const FOUNDATION_DATABASE_VERSION = CURRENT_OFFLINE_VERSIONS.indexedDbSchemaVersion;
 const BROWSER_BOOT_SESSION_KEY = "aviasurveil360-browser-boot-id";
@@ -264,68 +271,28 @@ function getBrowserBootId(): string {
 
 const CURRENT_BOOT_ID = getBrowserBootId();
 
-interface FoundationRecord<T = unknown> {
-  key: string;
-  value: T;
-}
-
-function openFoundationDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(FOUNDATION_DATABASE_NAME, FOUNDATION_DATABASE_VERSION);
-    request.onupgradeneeded = () => {
-      const database = request.result;
-      if (!database.objectStoreNames.contains(FOUNDATION_STORE_NAME)) {
-        database.createObjectStore(FOUNDATION_STORE_NAME, { keyPath: "key" });
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("IndexedDB open failed"));
-    request.onblocked = () => reject(new Error("IndexedDB foundation upgrade is blocked"));
-  });
+async function openFoundationDatabase() {
+  const database = getBrowserOfflineFieldDatabase();
+  const result = await database.openForFieldUse();
+  if (result.mode === "read-only-recovery") {
+    throw new Error(`IndexedDB field migration failed at ${result.failedPhase}`);
+  }
+  return database;
 }
 
 async function readFoundationValue<T>(key: string): Promise<T | null> {
   const database = await openFoundationDatabase();
-  try {
-    return await new Promise<T | null>((resolve, reject) => {
-      const transaction = database.transaction(FOUNDATION_STORE_NAME, "readonly");
-      const request = transaction.objectStore(FOUNDATION_STORE_NAME).get(key);
-      request.onsuccess = () => resolve((request.result as FoundationRecord<T> | undefined)?.value ?? null);
-      request.onerror = () => reject(request.error ?? new Error("IndexedDB read failed"));
-    });
-  } finally {
-    database.close();
-  }
+  return ((await database.foundation.get(key)) as FoundationRow<T> | undefined)?.value ?? null;
 }
 
 async function writeFoundationValue<T>(key: string, value: T): Promise<void> {
   const database = await openFoundationDatabase();
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const transaction = database.transaction(FOUNDATION_STORE_NAME, "readwrite");
-      transaction.objectStore(FOUNDATION_STORE_NAME).put({ key, value } satisfies FoundationRecord<T>);
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error ?? new Error("IndexedDB write failed"));
-      transaction.onabort = () => reject(transaction.error ?? new Error("IndexedDB write aborted"));
-    });
-  } finally {
-    database.close();
-  }
+  await database.foundation.put({ key, value: structuredClone(value) });
 }
 
 async function deleteFoundationValue(key: string): Promise<void> {
   const database = await openFoundationDatabase();
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const transaction = database.transaction(FOUNDATION_STORE_NAME, "readwrite");
-      transaction.objectStore(FOUNDATION_STORE_NAME).delete(key);
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error ?? new Error("IndexedDB delete failed"));
-      transaction.onabort = () => reject(transaction.error ?? new Error("IndexedDB delete aborted"));
-    });
-  } finally {
-    database.close();
-  }
+  await database.foundation.delete(key);
 }
 
 async function runIndexedDbCanary(): Promise<boolean> {
@@ -426,6 +393,15 @@ function checkoutSnapshotKey(subjectId: string, packageId: string): string {
 }
 
 export async function writeOfflineCheckoutSnapshot(snapshot: OfflineCheckoutSnapshot): Promise<void> {
+  const repository = new IndexedDbFieldRepository({
+    subjectId: snapshot.subjectId,
+    now: () => new Date(snapshot.checkedOutAt),
+  });
+  await repository.checkoutPackage({
+    inspectionPackage: snapshot.inspectionPackage,
+    offlineGrant: snapshot.offlineGrant,
+    checkedOutAt: snapshot.checkedOutAt,
+  });
   await writeFoundationValue(
     checkoutSnapshotKey(snapshot.subjectId, snapshot.inspectionPackage.id),
     structuredClone(snapshot),
@@ -436,6 +412,21 @@ export async function readOfflineCheckoutSnapshot(
   subjectId: string,
   packageId: string,
 ): Promise<OfflineCheckoutSnapshot | null> {
+  const database = await openFoundationDatabase();
+  const packageRow = await database.packages.get([subjectId, packageId]);
+  const grantRow = packageRow
+    ? await database.offlineGrants.get([subjectId, packageRow.grantId])
+    : undefined;
+  if (packageRow?.accessState === "AVAILABLE" && grantRow) {
+    return {
+      subjectId,
+      inspectionPackage: structuredClone(packageRow.inspectionPackage),
+      offlineGrant: structuredClone(grantRow.offlineGrant),
+      checkedOutAt: packageRow.checkedOutAt,
+      versions: CURRENT_OFFLINE_VERSIONS,
+    };
+  }
+  if (packageRow) return null;
   return readFoundationValue<OfflineCheckoutSnapshot>(checkoutSnapshotKey(subjectId, packageId));
 }
 

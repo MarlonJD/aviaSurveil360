@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, type PropsWithChildren, useContext, useState } from "react";
 
 import type { Backend, Role } from "../backend/backend";
+import type { IndexedDbFieldRepository } from "../offline/field-repository";
 
 export type BuildProfile = "demo" | "http";
 
@@ -10,6 +11,7 @@ export interface ApplicationRuntime {
   backendForRole?: (role: Role) => Backend;
   buildProfile: BuildProfile;
   environmentLabel: string;
+  fieldRepositoryForSubject?: (subjectId: string) => IndexedDbFieldRepository;
 }
 
 const ApplicationRuntimeContext = createContext<ApplicationRuntime | null>(null);

@@ -202,6 +202,9 @@ separate `apps/web/package.json` owns the React candidate commands.
 - `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md` and `.turkce.md` —
   Task 6 app-shell caching, explicit readiness, restart survival, multi-client
   update, and actual server-stopped startup evidence.
+- `docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.md` and `.turkce.md` —
+  Task 7 atomic subject-scoped field storage, causal outbox, migration, and
+  pending/in-flight restart-recovery evidence.
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.md`
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.turkce.md`
 - `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`

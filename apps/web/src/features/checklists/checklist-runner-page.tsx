@@ -26,10 +26,18 @@ export function ChecklistRunnerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!projection.fieldMode || !projection.response) return;
+    setAnswer(projection.response.answer);
+    setComment(projection.response.comment);
+  }, [projection.fieldMode, projection.response]);
+
   const packageView = projection.packageView;
   const selectedQuestion = packageView?.questions.find(
     (question) => question.id === selectedQuestionId,
   );
+  const selectedQuestionAssignedHere = selectedQuestion?.assignedInspectorUserIds.includes(INSPECTOR_ID) ?? false;
+  const checklistReadOnly = packageView?.checklistStatus === "SUBMITTED";
 
   async function run(command: () => Promise<void>): Promise<void> {
     setBusy(true);
@@ -60,6 +68,7 @@ export function ChecklistRunnerPage() {
               <button
                 className={`question-row${selectedQuestionId === question.id ? " question-row--selected" : ""}`}
                 data-testid="checklist-question-row"
+                disabled={!assignedHere}
                 key={question.id}
                 onClick={() => assignedHere && setSelectedQuestionId(question.id)}
                 type="button"
@@ -82,6 +91,7 @@ export function ChecklistRunnerPage() {
               <label>
                 Checklist answer
                 <select
+                  disabled={!selectedQuestionAssignedHere || checklistReadOnly}
                   value={answer}
                   onChange={(event) => setAnswer(event.target.value as ChecklistAnswer)}
                 >
@@ -93,6 +103,7 @@ export function ChecklistRunnerPage() {
               <label>
                 Inspector comment
                 <textarea
+                  disabled={!selectedQuestionAssignedHere || checklistReadOnly}
                   rows={5}
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
@@ -101,7 +112,7 @@ export function ChecklistRunnerPage() {
               <div className="button-row">
                 <button
                   className="primary-button"
-                  disabled={busy}
+                  disabled={busy || !selectedQuestionAssignedHere || checklistReadOnly}
                   onClick={() => void run(() => actions.saveChecklistResponse(answer, comment))}
                   type="button"
                 >
@@ -114,7 +125,7 @@ export function ChecklistRunnerPage() {
               {projection.response && !projection.potentialFinding ? (
                 <button
                   className="secondary-button"
-                  disabled={busy}
+                  disabled={busy || !selectedQuestionAssignedHere || checklistReadOnly}
                   onClick={() => void run(actions.createPotentialFinding)}
                   type="button"
                 >
@@ -132,6 +143,16 @@ export function ChecklistRunnerPage() {
           ) : <p>Choose an assigned question.</p>}
         </section>
       </div>
+      {projection.fieldMode && projection.fieldPendingOperationCount > 0 ? (
+        <p className="decision-result" data-testid="field-sync-state" role="status">
+          Saved locally — sync pending ({projection.fieldPendingOperationCount})
+        </p>
+      ) : null}
+      {projection.fieldMode && checklistReadOnly ? (
+        <p className="decision-result" data-testid="field-reopen-boundary">
+          Reconnect to request a reasoned checklist reopen. Reopen is not an offline command.
+        </p>
+      ) : null}
       {projection.potentialFinding ? (
         <section className="workflow-footer">
           <div>
@@ -149,6 +170,8 @@ export function ChecklistRunnerPage() {
             >
               Submit checklist to Lead Inspector
             </button>
+          ) : projection.fieldMode ? (
+            <span data-testid="field-submit-status">Saved locally — sync pending</span>
           ) : (
             <Link className="primary-link" to="/lead-inspector/lead-review">
               Switch to Lead Inspector

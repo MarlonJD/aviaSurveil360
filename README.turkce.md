@@ -48,6 +48,7 @@ eden task-based oversight platformudur.
 6. `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.turkce.md`
 7. `docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.turkce.md`
 8. `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.turkce.md`
+9. `docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.turkce.md`
 
 Clickable demo için `index.html` dosyasını doğrudan browser'da açın veya bu
 klasörü local static server ile servis edin. Güncel verification status ve demo
@@ -83,6 +84,11 @@ npm --prefix apps/web run test:e2e:offline
 Exact readiness, app-shell caching, browser-restart, two-client update ve
 explicit site-data-loss kanıtı ile exclusion'lar için
 `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.turkce.md` dosyasına bakın.
+
+Task 7 atomic field-record/outbox, migration, server-stopped restart-recovery ve
+explicit sync/OPFS exclusion'ları için
+`docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.turkce.md` dosyasına
+bakın.
 
 
 ## Kaynak Notları

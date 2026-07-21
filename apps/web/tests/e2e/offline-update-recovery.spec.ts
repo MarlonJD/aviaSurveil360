@@ -37,7 +37,7 @@ test("two clients keep N and N-1 shells plus pending local sentinels until expli
 
     await firstPage.evaluate(async () => {
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open("aviasurveil360-offline-foundation", 1);
+        const request = indexedDB.open("aviasurveil360-offline-foundation");
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });
@@ -78,7 +78,7 @@ test("two clients keep N and N-1 shells plus pending local sentinels until expli
         const file = await (await root.getFileHandle("pending-update-sentinel.bin")).getFile();
         const bytes = [...new Uint8Array(await file.arrayBuffer())];
         const database = await new Promise<IDBDatabase>((resolve, reject) => {
-          const request = indexedDB.open("aviasurveil360-offline-foundation", 1);
+          const request = indexedDB.open("aviasurveil360-offline-foundation");
           request.onsuccess = () => resolve(request.result);
           request.onerror = () => reject(request.error);
         });

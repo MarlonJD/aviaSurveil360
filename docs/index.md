@@ -18,8 +18,9 @@ This is the canonical docs map for AviaSurveil360. Use it after the root
 | `demo-evidence/CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.md` | Task 10 domain authority, isolation, session/OIDC, idempotency, audit, and migration evidence. |
 | `demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md` | Task 11 private bounded upload, deterministic scan, live HTTP contract, and mock/HTTP parity evidence. |
 | `demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md` | Task 6 app-shell-only cache, explicit readiness, restart survival, multi-client update, and server-stopped startup evidence. |
+| `demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.md` | Task 7 atomic subject-scoped field storage, causal outbox, v1 migration, and pending/in-flight browser restart evidence. |
 | `../api/openapi/aviasurveil360.yaml` | Minimal versioned transport source for the authorized local candidate slices. |
-| `../apps/web/` | Build-time-separated React/Vite mock and HTTP candidate entries plus the Task 6 PWA/readiness foundation; atomic field persistence, attachment staging, and sync remain later slices. |
+| `../apps/web/` | Build-time-separated React/Vite mock and HTTP candidate entries plus Task 6 PWA/readiness and Task 7 atomic field-storage/outbox foundations; attachment staging and network sync remain later slices. |
 | `../apps/api/` | One-module Go API/worker candidate with canonical authority, local OIDC/session, PostgreSQL stores, and bounded upload/scan services. |
 | `../deploy/local/compose.test.yaml` | Pinned isolated PostgreSQL, Keycloak, and MinIO local verification profile. |
 
