@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Tasks 1-5 are `verified locally`: the independent 86-row inventory/17-route contract is frozen; Potential Finding plus immutable CAP revision read projections pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates; Admin checklist-template-version detail reads pass exact snapshot, mock/HTTP mapping, OpenAPI, sqlc, and Go race gates; the deterministic tracked visual-parity harness now has 51 hash-verified legacy baselines plus an intentionally red React comparison; and the layered brand system now has a typed approved asset registry, restricted Vite asset access, image/font app-shell manifests, HTTP artifact exclusions, and stopped-origin mark/icon/font recovery. Task 6 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `active` — Tasks 1-6 are `verified locally`: the independent 86-row inventory/17-route contract is frozen; Potential Finding plus immutable CAP revision read projections pass mock, HTTP mapping, OpenAPI, sqlc, and Go race gates; Admin checklist-template-version detail reads pass exact snapshot, mock/HTTP mapping, OpenAPI, sqlc, and Go race gates; the deterministic tracked visual-parity harness now has 51 hash-verified legacy baselines plus an intentionally red React comparison; the layered brand system now has a typed approved asset registry, restricted Vite asset access, image/font app-shell manifests, HTTP artifact exclusions, and stopped-origin mark/icon/font recovery; and the candidate role selection/application shell now uses presentational role/navigation/topbar/mobile components with registry-derived primary navigation, contextual active-parent state, profile/logout callbacks, notification modes, and shell-only geometry checks. Task 7 is next. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
 
 ## Independent Review Resolution
 
@@ -1001,9 +1001,9 @@ export interface ApplicationShellProps {
 
 **Red/green cycle**
 
-- [ ] Add failing tests for all eight role cards, registry order, icon keys, contextual route active parent, profile menu, logout callback, notification local/unavailable modes, mobile focus/Escape, 44 px touch targets, and every visible control.
-- [ ] Add failing semantic/geometry assertions for root and one shell route at all three viewports.
-- [ ] Run:
+- [x] Add failing tests for all eight role cards, registry order, icon keys, contextual route active parent, profile menu, logout callback, notification local/unavailable modes, mobile focus/Escape, 44 px touch targets, and every visible control.
+- [x] Add failing semantic/geometry assertions for root and one shell route at all three viewports.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/ui/role-select-page.test.tsx src/ui/application-shell.test.tsx src/ui/role-navigation.test.tsx src/ui/application-topbar.test.tsx src/app/router.test.tsx
@@ -1011,8 +1011,8 @@ export interface ApplicationShellProps {
   ```
 
   Expected red: current minimal role page/shell fails composition and control contracts.
-- [ ] Implement the presentational shell and adapt `WorkspaceShell` as a compatibility wrapper that delegates to it. Do not read `/auth/session` or infer normal roles here.
-- [ ] Run:
+- [x] Implement the presentational shell and adapt `WorkspaceShell` as a compatibility wrapper that delegates to it. Do not read `/auth/session` or infer normal roles here.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/ui/role-select-page.test.tsx src/ui/application-shell.test.tsx src/ui/role-navigation.test.tsx src/ui/application-topbar.test.tsx src/app/router.test.tsx
@@ -1021,6 +1021,8 @@ export interface ApplicationShellProps {
   ```
 
   Expected green: role-select and strict shell regions pass; content regions for unmigrated feature tasks may remain recorded red.
+
+  Result 2026-07-21: red tests first failed on missing `role-select-page`, `application-shell`, `role-navigation`, and `application-topbar` modules, the current root route lacking the new `role-select-panel`, and the shell visual checkpoint lacking the role-selection panel after the local Vite server run was retried outside the macOS sandbox. The implemented slice adds presentational role selection, registry-derived role navigation, application topbar, mobile navigation, candidate boundary, and an `ApplicationShell` adapter used by the existing `WorkspaceShell` without reading `/auth/session` or claiming normal OIDC. Fresh green gates passed: focused React/Vitest 14/14; TypeScript; shell visual checkpoint 6/6 across desktop, tablet, and mobile; full React/Vitest 191/191; and a focused process query found no leftover Playwright/Chromium/Vite process. Task 7 is next.
 
 **Task 6 staging allowlist and commit**
 

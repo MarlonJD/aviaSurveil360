@@ -1,8 +1,11 @@
 import type { PropsWithChildren, ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-import type { FindingSeverity, FindingView } from "../../backend/backend";
+import type { FindingSeverity, FindingView, Role } from "../../backend/backend";
 import { useApplicationRuntime } from "../../app/providers";
+import type { ReactSurfaceId } from "../../app/route-contracts";
+import { ApplicationShell, type NotificationState, type ShellIdentityPresentation } from "../../ui/application-shell";
+import { ROLE_ENTRIES, createRoleEntryPath } from "../../ui/role-select-page";
 
 export function formatLocalDate(value: string | null): string {
   if (!value) return "Not set";
@@ -31,29 +34,76 @@ export function WorkspaceShell({
   children,
 }: PropsWithChildren<{ roleLabel: string; routeLabel: string }>) {
   const { buildProfile, environmentLabel } = useApplicationRuntime();
+  const navigate = useNavigate();
+  const activeRole = roleForLabel(roleLabel);
+  const activeRouteId = routeForLabel(routeLabel, activeRole);
+  const mode = buildProfile === "http" ? "canonical-test-role-switch" : "demo-role-switch";
+  const identity: ShellIdentityPresentation = {
+    mode,
+    displayName: roleLabel,
+    organizationLabel: activeRole === "auditee" ? "Fly Namibia" : "Namibia Civil Aviation Authority",
+    activeRole,
+    availableRoles: ROLE_ENTRIES.map((entry) => entry.role),
+  };
+  const notificationState: NotificationState =
+    buildProfile === "http"
+      ? {
+          kind: "unavailable",
+          reason: "Notification delivery is not connected in this candidate.",
+        }
+      : { kind: "local", unreadCount: 2, onOpen: () => undefined };
   return (
-    <main className="workspace-shell">
-      <aside className="workspace-sidebar">
-        <Link className="sidebar-brand" to="/">AviaSurveil360</Link>
-        <div>
-          <span className="sidebar-caption">Active role</span>
-          <strong data-testid="active-role">{roleLabel}</strong>
-        </div>
-        <nav aria-label="Candidate navigation">
-          <span aria-current="page">{routeLabel}</span>
-        </nav>
-        <Link className="switch-role" to="/">Switch role</Link>
-      </aside>
-      <section className="workspace-content">
-        <div className="candidate-boundary">
-          <span>Candidate-only</span>
-          <span>{buildProfile === "demo" ? "Deterministic mock data" : environmentLabel}</span>
-          <span>No production-readiness claim</span>
-        </div>
-        {children}
-      </section>
-    </main>
+    <ApplicationShell
+      activeRouteId={activeRouteId}
+      environmentLabel={buildProfile === "demo" ? "Deterministic mock data" : environmentLabel}
+      identity={identity}
+      notificationState={notificationState}
+      onLogout={() => navigate("/")}
+      onRoleRequest={(role) => navigate(createRoleEntryPath(role))}
+    >
+      {children}
+    </ApplicationShell>
   );
+}
+
+const roleLabels: Record<string, Role> = {
+  "CAA Inspector": "inspector",
+  "Lead Inspector": "leadInspector",
+  "Department Manager": "manager",
+  "General Manager": "gm",
+  "Finance Review": "finance",
+  "Executive Director": "executiveDirector",
+  "Auditee — Fly Namibia": "auditee",
+  "Admin Preview": "admin",
+};
+
+const routeLabels: Record<string, ReactSurfaceId> = {
+  "My Assignments": "inspector-home",
+  "Lead Review": "lead-home",
+  Dashboard: "manager-home",
+  "GM Dashboard": "gm-home",
+  "Finance Review": "finance-home",
+  "Executive Dashboard": "executive-home",
+  "Corrective Actions": "auditee-home",
+  Templates: "admin-home",
+  "Audit Detail": "audit-detail",
+  "Checklist Runner": "checklist-runner",
+  "Organization Registry": "organization-registry",
+  "Audit Plan Calendar": "audit-plan",
+  "Finding Detail": "finding-detail",
+  "CAP Review": "cap-review",
+  "Evidence Review": "evidence-review",
+  "Report Preview": "report-preview",
+};
+
+function roleForLabel(label: string): Role {
+  return roleLabels[label] ?? "inspector";
+}
+
+function routeForLabel(label: string, role: Role): ReactSurfaceId {
+  const direct = routeLabels[label];
+  if (direct) return direct;
+  return ROLE_ENTRIES.find((entry) => entry.role === role)?.routeId ?? "inspector-home";
 }
 
 export function PageHeader({

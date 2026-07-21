@@ -26,8 +26,11 @@ const appRoot = process.cwd();
 const repoRoot = resolve(appRoot, "../..");
 const baselineRoot = resolve(repoRoot, VISUAL_BASELINE_ROOT);
 const manifestPath = resolve(baselineRoot, "baseline-manifest.json");
-const surfaces = resolveFocusedSurfaces();
-resolveVisualRegions();
+const visualRegions = resolveVisualRegions(undefined, { allowShellOnly: true });
+const shellOnly = visualRegions.includes("shell");
+const surfaces = shellOnly
+  ? resolveFocusedSurfaces("role-select,inspector-home")
+  : resolveFocusedSurfaces();
 
 assertBaselineUpdateMode({
   command: "test:e2e:visual-parity",
@@ -48,7 +51,7 @@ const manifest = readManifest();
 
 for (const viewport of VISUAL_VIEWPORTS) {
   for (const surface of surfaces) {
-    test(`compares React ${surface.id} with legacy baseline at ${viewport.id}`, async ({ page }) => {
+    test(`${shellOnly ? "checks shell geometry for" : "compares React"} ${surface.id} at ${viewport.id}`, async ({ page }) => {
       const baselineItem = manifest.items.find(
         (item) => item.surfaceId === surface.id && item.viewport === viewport.id,
       );
@@ -57,6 +60,27 @@ for (const viewport of VISUAL_VIEWPORTS) {
       await page.setViewportSize(viewport);
       await installDeterministicPageState(page);
       await driveReactSurface(page, surface);
+      if (shellOnly) {
+        await expect(page.locator("body")).toContainText(surface.expectedHeading);
+        if (surface.id === "role-select") {
+          await expect(page.locator(".role-select-page")).toBeVisible();
+          await expect(page.locator("[data-testid='role-select-panel']")).toBeVisible();
+          await expect(page.locator(".role-card")).toHaveCount(8);
+        } else {
+          await expect(page.locator("[data-testid='application-shell']")).toBeVisible();
+          await expect(page.locator(".workspace-sidebar")).toBeVisible();
+          await expect(page.locator(".application-topbar")).toBeVisible();
+          await expect(page.locator(".workspace-content")).toBeVisible();
+        }
+        const touchTargets = await page.locator("a:visible, button:visible").evaluateAll((elements) =>
+          elements.map((element) => {
+            const rect = element.getBoundingClientRect();
+            return { width: rect.width, height: rect.height, text: element.textContent?.trim() ?? "" };
+          }),
+        );
+        expect(touchTargets.every((target) => target.width >= 44 && target.height >= 44)).toBe(true);
+        return;
+      }
       const screenshot = await page.screenshot({ fullPage: false });
       assertViewportScreenshotContract({
         fullPage: false,

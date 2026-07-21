@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { AppProviders } from "./providers";
 import { AppRouter, createRoleEntryPath, ROLE_ENTRIES } from "./router";
 import { createMockBackendRuntime } from "../mock/create-mock-backend";
+
+afterEach(() => cleanup());
 
 describe("authorized role-entry inventory", () => {
   it("matches the eight verified legacy entry routes in display order", () => {
@@ -48,5 +50,26 @@ describe("authorized role-entry inventory", () => {
     expect(await screen.findByText("2026 Cabin Surveillance — Fly Namibia")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Approve Budget" })).toBeInTheDocument();
     expect(screen.queryByText(/candidate React entry route/i)).not.toBeInTheDocument();
+  });
+
+  it("renders the presentational role-selection shell on the root route", () => {
+    const runtime = createMockBackendRuntime();
+    render(
+      <AppProviders
+        runtime={{
+          backend: runtime.backend,
+          backendForRole: runtime.backendForRole,
+          buildProfile: "demo",
+          environmentLabel: "Test",
+        }}
+      >
+        <MemoryRouter initialEntries={["/"]}>
+          <AppRouter />
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(screen.getByTestId("role-select-panel")).toBeInTheDocument();
+    expect(screen.getAllByTestId("role-card-icon")).toHaveLength(8);
   });
 });
