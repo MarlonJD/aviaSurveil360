@@ -65,7 +65,7 @@ export function WorkspaceShell({
           kind: "unavailable",
           reason: "Notification delivery is not connected in this candidate.",
         }
-      : { kind: "local", unreadCount: 2, onOpen: () => undefined };
+      : { kind: "local", unreadCount: activeRole === "auditee" ? 1 : 2, onOpen: () => undefined };
   return (
     <ApplicationShell
       activeRouteId={activeRouteId}
@@ -101,7 +101,7 @@ const deterministicNames: Record<Role, string> = {
   gm: "Okan Demir",
   finance: "Derya Acar",
   executiveDirector: "Ufuk Aslan",
-  auditee: "Fly Namibia",
+  auditee: "Fly Namibia Quality Manager",
   admin: "Admin Preview",
 };
 

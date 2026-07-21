@@ -1,3 +1,242 @@
+/* Role-scoped controls that must remain above global utility label/input rules. */
+.workspace-shell--auditee .topbar-experience-select {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  color: #72809a;
+  font-size: 12px;
+  font-weight: 450;
+}
+
+.workspace-shell--auditee .topbar-experience-select select {
+  width: 220px;
+  min-width: 220px;
+}
+
+.workspace-shell--auditee .application-topbar--auditee {
+  padding-right: 8px;
+}
+
+.workspace-shell--auditee .application-topbar--auditee .topbar-icon-button {
+  border: 0;
+  background: transparent;
+}
+
+.workspace-shell--auditee .application-topbar--auditee .topbar-icon-button::before {
+  position: absolute;
+  inset: 5px 4px;
+  border: 1px solid #d8e0ec;
+  border-radius: 7px;
+  content: "";
+}
+
+.workspace-shell--auditee .topbar-notification-dot {
+  top: 0;
+  right: -1px;
+  display: grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border: 0;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.workspace-shell--auditee .application-topbar--auditee > .topbar-control:last-of-type {
+  padding-left: 12px;
+  border-left: 1px solid #d8e0ec;
+}
+
+.workspace-shell--auditee .topbar-profile__identity strong {
+  font-weight: 600;
+}
+
+.workspace-shell--auditee .topbar-profile__identity small {
+  font-weight: 400;
+}
+
+.workspace-shell--auditee .topbar-avatar {
+  background: #1f9d62;
+}
+
+.workspace-shell--auditee .topbar-profile__chevron {
+  display: none;
+}
+
+.workspace-shell--auditee .auditee-filters label,
+.workspace-shell--auditee .auditee-cap-form label,
+.workspace-shell--auditee .auditee-upload-panel label {
+  gap: 5px;
+  color: #435675;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.workspace-shell--auditee .auditee-filters select,
+.workspace-shell--auditee .auditee-filters input,
+.workspace-shell--auditee .auditee-cap-form input,
+.workspace-shell--auditee .auditee-cap-form textarea,
+.workspace-shell--auditee .auditee-upload-panel input {
+  min-height: 40px;
+  padding: 8px 10px;
+  border-color: #d8e0ec;
+  border-radius: 7px;
+  color: #1d2737;
+}
+
+.workspace-shell--auditee .auditee-root-topbar {
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 24px;
+  border-bottom: 1px solid #dde3ec;
+  background: #fff;
+}
+
+.auditee-root-topbar__crumbs {
+  min-width: 0;
+  color: #6b7891;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.auditee-root-topbar__crumbs b {
+  color: #16202e;
+  font-weight: 600;
+}
+
+.auditee-root-topbar__spacer {
+  min-width: 12px;
+  flex: 1 1 auto;
+}
+
+.workspace-shell--auditee .auditee-root-topbar__experience {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 9px;
+  color: #6b7891;
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.workspace-shell--auditee .auditee-root-topbar__experience select {
+  width: auto;
+  max-width: 220px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid #dde3ec;
+  border-radius: 8px;
+  color: #16202e;
+  background: #fff;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.auditee-root-topbar__notification {
+  position: relative;
+  width: 36px;
+  height: 34px;
+  flex: 0 0 36px;
+}
+
+.auditee-root-topbar__icon {
+  position: absolute;
+  top: -5px;
+  left: -4px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  color: #16202e;
+  background: transparent;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.auditee-root-topbar__icon::before {
+  position: absolute;
+  inset: 5px 4px;
+  z-index: -1;
+  border: 1px solid #dde3ec;
+  border-radius: 8px;
+  background: #f8fafc;
+  content: "";
+}
+
+.auditee-root-topbar__badge {
+  position: absolute;
+  top: 0;
+  right: -1px;
+  display: grid;
+  min-width: 16px;
+  height: 16px;
+  place-items: center;
+  padding: 0 4px;
+  border-radius: 10px;
+  color: #fff;
+  background: #c0392b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.auditee-root-topbar__who {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 9px;
+  padding-left: 12px;
+  border-left: 1px solid #dde3ec;
+}
+
+.auditee-root-topbar__avatar {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #1f9d62;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.auditee-root-topbar__identity {
+  display: block;
+  min-width: 0;
+  transform: translateY(1px);
+}
+
+.auditee-root-topbar__identity strong,
+.auditee-root-topbar__identity small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.auditee-root-topbar__identity strong {
+  color: #16202e;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.auditee-root-topbar__identity small {
+  color: #6b7891;
+  font-size: 11px;
+  font-weight: 400;
+}
+
 @media (max-width: 900px) {
   .role-select-page {
     grid-template-columns: minmax(0, 1fr);
@@ -53,12 +292,129 @@
     padding: 70px 14px 46px;
   }
 
+  .workspace-shell--auditee .workspace-sidebar {
+    top: var(--auditee-ribbon-height);
+    width: 268px;
+    height: calc(100% - var(--auditee-ribbon-height));
+  }
+
+  .workspace-shell--auditee .workspace-content {
+    width: 100%;
+    padding: 72px 14px 46px;
+  }
+
   .application-topbar {
     top: 12px;
     right: 14px;
     left: 76px;
     justify-content: space-between;
     gap: 8px;
+  }
+
+  .workspace-shell--auditee .application-topbar--auditee {
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 55px;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 0 12px 0 129px;
+    border-bottom: 1px solid var(--avia-color-line);
+    background: #fff;
+  }
+
+  .workspace-shell--auditee .topbar-route-label,
+  .workspace-shell--auditee .topbar-experience-select > span,
+  .workspace-shell--auditee .topbar-profile__identity,
+  .workspace-shell--auditee .topbar-profile__chevron {
+    display: none;
+  }
+
+  .workspace-shell--auditee .topbar-experience-select {
+    margin-left: 0;
+  }
+
+  .workspace-shell--auditee .topbar-experience-select select {
+    width: 148px;
+    min-width: 148px;
+    min-height: 36px;
+    padding-right: 26px;
+    text-overflow: ellipsis;
+  }
+
+  .workspace-shell--auditee .application-topbar--auditee .topbar-control:last-of-type,
+  .workspace-shell--auditee .topbar-profile {
+    min-width: 44px;
+  }
+
+  .workspace-shell--auditee .topbar-profile {
+    width: 44px;
+  }
+
+  .workspace-shell--auditee .topbar-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .workspace-shell--auditee .application-topbar--auditee .topbar-control:last-of-type {
+    margin-left: 4px;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .workspace-shell--auditee .mobile-navigation__opener {
+    top: 6px;
+    left: 9px;
+  }
+
+  .workspace-shell--auditee .auditee-demo-ribbon__text {
+    display: none;
+  }
+
+  .workspace-shell--auditee .auditee-root-topbar {
+    height: 55px;
+    min-height: 55px;
+    padding: 9px 12px;
+    gap: 8px;
+  }
+
+  .auditee-root-topbar__crumbs,
+  .auditee-root-topbar__spacer,
+  .auditee-root-topbar__experience > span,
+  .auditee-root-topbar__identity {
+    display: none;
+  }
+
+  .workspace-shell--auditee .auditee-root-topbar__experience {
+    position: absolute;
+    top: 10px;
+    left: 129px;
+  }
+
+  .workspace-shell--auditee .auditee-root-topbar__experience select {
+    width: 148px;
+    max-width: 148px;
+    min-width: 148px;
+    height: 36px;
+    min-height: 36px;
+    padding: 7px 26px 7px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .auditee-root-topbar__notification {
+    position: absolute;
+    top: 10px;
+    left: 285px;
+  }
+
+  .auditee-root-topbar__who {
+    position: absolute;
+    top: 11px;
+    left: 338px;
+    padding-left: 0;
+    border-left: 0;
   }
 
   .application-topbar > .topbar-icon-button:first-child {

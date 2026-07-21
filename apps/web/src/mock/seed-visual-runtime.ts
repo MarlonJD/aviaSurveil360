@@ -197,5 +197,9 @@ export async function seedVisualRuntimeForPath(runtime: MockRuntime, pathname: s
   }
   if (pathname === "/lead-inspector/evidence-review/FND-CAB-2026-001") {
     await seedEvidenceReview(runtime);
+    return;
+  }
+  if (pathname === "/auditee/service-provider-cap") {
+    await seedFinding(runtime);
   }
 }

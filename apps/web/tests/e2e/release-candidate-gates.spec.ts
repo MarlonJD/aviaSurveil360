@@ -49,8 +49,14 @@ test("local candidate has keyboard-reachable role entries, literal boundaries, a
       headers: { "x-avia-test-token": token },
     });
     expect(reset.ok()).toBe(true);
+    await page.reload();
+  } else {
+    await page.getByRole("link", { name: "Switch role" }).click();
+    await page.getByRole("link", { name: /Auditee/i }).click();
+    await page.getByRole("button", { name: "Reset demo" }).click();
+    await expect(page.getByRole("heading", { name: "Corrective Actions (CAP)" })).toBeVisible();
+    await page.getByLabel("Experience").selectOption("finance");
   }
-  await page.reload();
   await expect(page.getByTestId("planning-status")).toHaveText("FINANCE_REVIEW");
   const body = await page.locator("body").innerText();
   expect(body).not.toMatch(/production-ready|real production|automatic enforcement/i);

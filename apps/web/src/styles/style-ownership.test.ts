@@ -15,6 +15,7 @@ const styleFiles = [
   "primitives.css",
   "features/inspector.css",
   "features/lead-review.css",
+  "features/auditee.css",
   "utilities.css",
   "responsive.css",
 ] as const;
@@ -27,6 +28,7 @@ const expectedAppCss = `@layer reset, tokens, base, shell, primitives, features,
 @import "./primitives.css" layer(primitives);
 @import "./features/inspector.css" layer(features);
 @import "./features/lead-review.css" layer(features);
+@import "./features/auditee.css" layer(features);
 @import "./utilities.css" layer(utilities);
 @import "./responsive.css" layer(responsive);
 `;
@@ -45,7 +47,7 @@ function collectSelectors(source: string): string[] {
       match[1]
         .split(",")
         .map((selector) => selector.trim().replace(/\s+/g, " "))
-        .filter(Boolean)
+        .filter((selector) => Boolean(selector) && !selector.startsWith("@"))
         .sort()
         .join(", "),
     );

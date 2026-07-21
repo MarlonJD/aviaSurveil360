@@ -8,11 +8,18 @@ export interface AuditeeFindingProjection {
   organizationName: string;
   title: string;
   description: string;
+  regulatoryReference: string | null;
+  findingBasis: string;
   status: FindingView["status"];
   severity: FindingView["severity"];
   dueDate: string | null;
+  dueState: FindingView["dueState"];
   currentOwnerType: FindingView["currentOwnerType"];
   nextAction: string;
+  capRequired: boolean;
+  evidenceRequired: boolean;
+  issuedAt: string | null;
+  closedAt: string | null;
   closureBasis: FindingView["closureBasis"];
 }
 
@@ -24,18 +31,25 @@ export function createAuditeeFindingProjection(finding: FindingView): AuditeeFin
     organizationName: finding.organizationName,
     title: finding.title,
     description: finding.description,
+    regulatoryReference: finding.regulatoryReference,
+    findingBasis: finding.findingBasis,
     status: finding.status,
     severity: finding.severity,
     dueDate: finding.dueDate,
+    dueState: finding.dueState,
     currentOwnerType: finding.currentOwnerType,
     nextAction: finding.nextAction,
+    capRequired: finding.capRequired,
+    evidenceRequired: finding.evidenceRequired,
+    issuedAt: finding.issuedAt,
+    closedAt: finding.closedAt,
     closureBasis: finding.closureBasis,
   };
 }
 
 export function AuditeeFindingSummary({ finding }: { finding: AuditeeFindingProjection }) {
   return (
-    <article className="surface-card finding-summary">
+    <article className="auditee-finding-summary">
       <div className="card-heading">
         <div>
           <p className="eyebrow">Finding dossier</p>
@@ -44,7 +58,7 @@ export function AuditeeFindingSummary({ finding }: { finding: AuditeeFindingProj
         <span className="status-pill" data-testid="finding-status">{finding.status}</span>
       </div>
       <p>{finding.title}</p>
-      <dl className="fact-grid">
+      <dl className="auditee-finding-summary__facts">
         <div><dt>Organization</dt><dd>{finding.organizationName}</dd></div>
         <div><dt>Related Audit</dt><dd>{finding.auditId}</dd></div>
         <div><dt>Severity</dt><dd>{formatSeverity(finding.severity)}</dd></div>

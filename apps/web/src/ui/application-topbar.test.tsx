@@ -72,4 +72,28 @@ describe("ApplicationTopbar", () => {
     expect(screen.getByRole("button", { name: /Notifications unavailable/i })).toBeDisabled();
     expect(screen.getByText("Notification delivery is not connected in this candidate.")).toBeVisible();
   });
+
+  it("keeps the Auditee experience selector and profile presentation interactive", async () => {
+    const user = userEvent.setup();
+    const onRoleRequest = vi.fn();
+    render(
+      <ApplicationTopbar
+        identity={{
+          ...identity,
+          activeRole: "auditee",
+          displayName: "Fly Namibia Quality Manager",
+          organizationLabel: "Fly Namibia",
+          availableRoles: ["auditee", "leadInspector"],
+        }}
+        onRoleRequest={onRoleRequest}
+        onLogout={() => undefined}
+        notificationState={{ kind: "local", unreadCount: 1, onOpen: () => undefined }}
+      />,
+    );
+
+    expect(screen.getByText("Corrective Actions (CAP)")).toBeVisible();
+    expect(screen.getByText("Service Provider Portal · Fly Namibia")).toBeVisible();
+    await user.selectOptions(screen.getByRole("combobox", { name: "Experience" }), "leadInspector");
+    expect(onRoleRequest).toHaveBeenCalledWith("leadInspector");
+  });
 });

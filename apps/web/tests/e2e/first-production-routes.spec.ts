@@ -36,7 +36,15 @@ for (const viewport of viewports) {
     page.on("pageerror", (error) => consoleIssues.push(`pageerror: ${error.message}`));
 
     await page.goto("/");
-    await page.getByRole("link", { name: /Department Manager/i }).click();
+    await page.getByRole("link", { name: /Auditee/i }).click();
+    await expect(page.getByRole("heading", { name: "Corrective Actions (CAP)" })).toBeVisible();
+    await expect(page.getByTestId("auditee-scope")).toContainText("Fly Namibia");
+    await expect(page.getByRole("table", { name: "My Findings" })).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(
+      /SkyCargo Air|Internal CAA Note|Inspector workload|internal risk|enforcement deliberation/i,
+    );
+    await expectNoCriticalOverflow(page);
+    await page.getByLabel("Experience").selectOption("manager");
     await expect(page.getByRole("heading", { name: "Department Manager Dashboard" })).toBeVisible();
     await page.getByRole("link", { name: "Open Organization Registry" }).click();
     await expect(page.getByRole("heading", { name: "Organization Registry" })).toBeVisible();

@@ -52,6 +52,16 @@ describe("Auditee projection boundary", () => {
     expect(serialized).not.toMatch(
       /internalCaaNote|inspectorWorkload|internalRisk|enforcementDeliberation|SkyCargo|unreleasedReport/,
     );
+    for (const forbidden of [
+      "internalCaaNote",
+      "inspectorWorkload",
+      "internalRisk",
+      "enforcementDeliberation",
+      "otherOrganization",
+      "unreleasedReport",
+    ]) {
+      expect(Object.hasOwn(projection, forbidden)).toBe(false);
+    }
     expect(projection.organizationName).toBe("Fly Namibia");
     expect(projection.status).toBe("EVIDENCE_REQUIRED");
   });

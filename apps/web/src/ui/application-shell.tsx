@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from "react";
 
+import { DEMO_MOCK_STORAGE_KEY } from "../app/demo-persistence";
 import type { Role } from "../backend/backend";
 import type { ReactSurfaceId } from "../app/route-contracts";
 import { ApplicationTopbar, type NotificationState, type ShellIdentityPresentation } from "./application-topbar";
@@ -27,8 +28,31 @@ export function ApplicationShell({
   environmentLabel = "Deterministic mock data",
   children,
 }: PropsWithChildren<ApplicationShellProps>) {
+  const auditeeChrome = identity.activeRole === "auditee";
+  const auditeeDemoChrome = auditeeChrome && identity.mode === "demo-role-switch";
   return (
-    <main className="workspace-shell" data-active-role={identity.activeRole} data-testid="application-shell">
+    <main
+      className={`workspace-shell${auditeeChrome ? " workspace-shell--auditee" : ""}${auditeeDemoChrome ? " workspace-shell--auditee-demo" : ""}`}
+      data-active-role={identity.activeRole}
+      data-testid="application-shell"
+    >
+      {auditeeDemoChrome ? (
+        <div className="auditee-demo-ribbon" role="status">
+          <span className="auditee-demo-ribbon__dot" aria-hidden="true" />
+          <strong>DEMO</strong>
+          <span className="auditee-demo-ribbon__text">Frontend clickable prototype — mock data only. Frontend-only demo saved in this browser; no backend, database, AI service, regulatory ingestion, or real integrations.</span>
+          <button
+            className="auditee-demo-ribbon__reset"
+            onClick={() => {
+              window.localStorage.removeItem(DEMO_MOCK_STORAGE_KEY);
+              window.location.reload();
+            }}
+            type="button"
+          >
+            <span>Reset demo</span>
+          </button>
+        </div>
+      ) : null}
       <aside className="workspace-sidebar">
         <div className="sidebar-brand">
           <span className="sidebar-brand-mark" aria-hidden="true">
@@ -36,7 +60,7 @@ export function ApplicationShell({
             <span className="sidebar-brand-mark__wing sidebar-brand-mark__wing--secondary" />
             <span className="sidebar-brand-mark__code">AS</span>
           </span>
-          <span><strong>AviaSurveil360</strong><small>Aviation Audit System</small></span>
+          <span><strong>AviaSurveil360</strong><small>{auditeeChrome ? "OVERSIGHT WORKBENCH" : "Aviation Audit System"}</small></span>
         </div>
         <RoleNavigation activeRole={identity.activeRole} activeRouteId={activeRouteId} />
         <div className="sidebar-footer">
@@ -44,8 +68,9 @@ export function ApplicationShell({
             <span className="nav-item__icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M10 17 5 12l5-5" /><path d="M5 12h12" /><path d="M14 4h5v16h-5" /></svg>
             </span>
-            <span>Logout</span>
+            <span>{auditeeChrome && identity.mode !== "oidc-session" ? "Role select" : "Logout"}</span>
           </button>
+          {auditeeDemoChrome ? <small>Demo data · frontend-only · saved in this browser</small> : null}
         </div>
       </aside>
       <section className="workspace-content">

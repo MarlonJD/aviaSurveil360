@@ -36,4 +36,15 @@ describe("RoleNavigation", () => {
     expect(screen.queryByRole("link", { name: "Audit Detail" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "My Assignments" })).toHaveAttribute("aria-current", "page");
   });
+
+  it("labels the Auditee navigation as the Service Provider Portal", () => {
+    render(
+      <MemoryRouter>
+        <RoleNavigation activeRole="auditee" activeRouteId="auditee-home" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Service Provider Portal")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Corrective Actions (CAP)" })).toHaveAttribute("aria-current", "page");
+  });
 });

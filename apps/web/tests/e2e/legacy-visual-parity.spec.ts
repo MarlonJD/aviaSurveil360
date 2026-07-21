@@ -260,6 +260,14 @@ for (const viewport of VISUAL_VIEWPORTS) {
           await expect(page.getByTestId("checklist-question-row")).toHaveCount(6);
           await expect(page.getByTestId("checklist-response-panel")).toBeVisible();
         }
+        if (surface.id === "auditee-home") {
+          await expect(page.getByTestId("auditee-scope")).toContainText("Fly Namibia");
+          await expect(page.getByRole("table", { name: "My Findings" })).toBeVisible();
+          await expect(page.getByTestId("auditee-selected-finding")).toBeVisible();
+          await expect(page.locator("body")).not.toContainText(
+            /SkyCargo Air|Internal CAA Note|Inspector workload|internal risk|enforcement deliberation/i,
+          );
+        }
       }
     });
   }

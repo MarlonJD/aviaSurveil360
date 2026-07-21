@@ -1,8 +1,8 @@
 import { bootstrap } from "../app/bootstrap";
-import { DEMO_PRINCIPALS, createMockBackendRuntime } from "../mock/create-mock-backend";
+import { DEMO_PRINCIPALS, createMockBackendPersistentRuntime } from "../mock/create-mock-backend";
 import { seedVisualRuntimeForPath } from "../mock/seed-visual-runtime";
 
-const mockRuntime = createMockBackendRuntime();
+const mockRuntime = createMockBackendPersistentRuntime(window.localStorage);
 
 async function startDemo(): Promise<void> {
   if (import.meta.env.VITE_AVIA_VISUAL_FIXTURES === "1") {

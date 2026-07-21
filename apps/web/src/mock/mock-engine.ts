@@ -565,7 +565,7 @@ export class MockBackendEngine implements Backend {
           findingId: finding.id,
           organizationId: finding.organizationId,
           version,
-          revision: 1,
+          revision: version,
           status: "SUBMITTED",
           rootCause: input.rootCause.trim(),
           correctiveAction: input.correctiveAction.trim(),
@@ -587,7 +587,7 @@ export class MockBackendEngine implements Backend {
         finding.revision += 1;
         return {
           capRevisionId,
-          capRevision: 1,
+          capRevision: version,
           capStatus: "SUBMITTED",
           findingStatus: finding.status,
           findingRevision: finding.revision,
@@ -617,8 +617,6 @@ export class MockBackendEngine implements Backend {
         cap.internalCaaNote = input.internalCaaNote.trim();
         cap.reviewDecision = input.decision;
         cap.reviewedAt = this.store.clock();
-        cap.revision += 1;
-
         if (input.decision === "ACCEPT") {
           cap.status = "ACCEPTED";
           finding.status = finding.evidenceRequired ? "EVIDENCE_REQUIRED" : "PENDING_CLOSURE";

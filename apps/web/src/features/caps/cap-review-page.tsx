@@ -112,9 +112,9 @@ export function CapReviewPage() {
     setError(null);
     try {
       const result = await leadBackend.caps.review({
-        operationId: `OP-CAP-${decision}`,
+        operationId: `OP-CAP-${decision}-${crypto.randomUUID()}`,
         capRevisionId: targetRevision.id,
-        expectedCapRevision: 1,
+        expectedCapRevision: targetRevision.revision,
         findingId: finding.id,
         expectedFindingRevision: finding.revision,
         decision,

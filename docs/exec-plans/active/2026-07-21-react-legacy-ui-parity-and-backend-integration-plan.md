@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Tasks 1-9 are committed and pushed. Task 10 repaired the fail-open visual harness, corrected and hash-verified the `lead-home` oracle, restored the accepted root-demo shell and Inspector composition, and migrated the four Lead review routes. Task 10 is `verified locally`: the focused React/CSS suite passes 10 files / 19 tests, typecheck passes, mock Playwright passes 5/5, the complete canonical HTTP profile passes including React 244/244 and HTTP Playwright 7/7, and the repaired fail-closed visual gate passes 24/24 selected surface/viewport pairs plus the shared primitive gallery. Task 10 is the current exact commit/push unit; Task 11 must not start until that commit is pushed. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `active` — Tasks 1-10 are committed and pushed. Task 11 restores the accepted root-demo Service Provider Portal composition, migrates the Auditee corrective-action workspace, persists demo CAP/Evidence state across real reloads, and exercises two immutable CAP revisions through the Backend. Task 11 is `verified locally`: its focused suite passes 11/11 tests, related contract/page coverage passes 26/26, typecheck passes, the complete canonical HTTP profile passes including React 251/251 and HTTP Playwright 7/7, mock Playwright passes 5/5, and the fail-closed Auditee decoded-pixel gate passes desktop/tablet/mobile plus the shared primitive gallery 4/4. Task 11 is the current exact commit/push unit; Task 12 must not start until that commit is pushed. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
 
 ## Reviewed Plan Amendment — Fail-Closed Demo Visual Recovery (2026-07-21)
 
@@ -1545,12 +1545,30 @@ For every remaining feature task, first open the exact baseline PNGs and the cor
 - Create `apps/web/src/features/caps/auditee-cap-page.test.tsx`
 - Modify `apps/web/src/features/caps/auditee-projection.tsx`
 - Modify `apps/web/src/features/caps/auditee-projection.test.tsx`
+- Modify `apps/web/src/features/caps/cap-review-page.tsx`
+- Modify `apps/web/src/features/shared/workspace-shell.tsx`
+- Create `apps/web/src/app/demo-persistence.ts`
+- Modify `apps/web/src/mock/seed-visual-runtime.ts`
+- Modify `apps/web/src/mock/create-mock-backend.ts`
+- Modify `apps/web/src/mock/memory-mock-store.ts`
+- Modify `apps/web/src/mock/mock-engine.ts`
+- Modify `apps/web/src/entry/demo.tsx`
+- Modify `apps/web/src/ui/application-shell.tsx`
+- Modify `apps/web/src/ui/application-shell.test.tsx`
+- Modify `apps/web/src/ui/application-topbar.tsx`
+- Modify `apps/web/src/ui/application-topbar.test.tsx`
+- Modify `apps/web/src/ui/role-navigation.tsx`
+- Modify `apps/web/src/ui/role-navigation.test.tsx`
 - Create `apps/web/src/styles/features/auditee.css`
 - Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/src/styles/responsive.css`
+- Modify `apps/web/src/styles/style-ownership.test.ts`
 - Modify `apps/web/src/app/scenario-context.tsx`
 - Modify `apps/web/tests/e2e/canonical-scenario.spec.ts`
 - Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
 - Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify `apps/web/tests/e2e/release-candidate-gates.spec.ts`
+- Modify `docs/exec-plans/index.md`
 - Modify this plan
 
 **Required behavior**
@@ -1566,9 +1584,9 @@ For every remaining feature task, first open the exact baseline PNGs and the cor
 
 **Red/green cycle**
 
-- [ ] Add failing tests for direct load, own-org list, other-org isolation, structural `internalCaaNote` absence using `Object.hasOwn`/serialized transport, full CAP fields/revisions, Evidence history, online-only control state, and exact handoff behavior.
-- [ ] Extend canonical browser scenario with refresh before CAP submission, refresh after submission, second CAP revision after more information, and privacy DOM/network assertions.
-- [ ] Run:
+- [x] Add failing tests for direct load, own-org list, other-org isolation, structural `internalCaaNote` absence using `Object.hasOwn`/serialized transport, full CAP fields/revisions, Evidence history, online-only control state, and exact handoff behavior.
+- [x] Extend canonical browser scenario with refresh before CAP submission, refresh after submission, second CAP revision after more information, and privacy DOM/network assertions.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/features/caps/auditee-cap-page.test.tsx src/features/caps/auditee-projection.test.tsx
@@ -1576,8 +1594,8 @@ For every remaining feature task, first open the exact baseline PNGs and the cor
   ```
 
   Expected red: current page has hardcoded scope/cross-role links and incomplete persisted CAP hydration.
-- [ ] Migrate with Task 2 role-shaped reads, shared primitives, and `auditee.css`.
-- [ ] Run:
+- [x] Migrate with Task 2 role-shaped reads, shared primitives, and `auditee.css`.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/features/caps/auditee-cap-page.test.tsx src/features/caps/auditee-projection.test.tsx src/styles/style-ownership.test.ts
@@ -1589,10 +1607,22 @@ For every remaining feature task, first open the exact baseline PNGs and the cor
 
   Expected green: Auditee route passes direct-load, organization/privacy, immutable revision, action, and decoded-pixel demo-composition gates at all three viewports.
 
+**Execution log — 2026-07-21, root oracle inspected**
+
+- The accepted desktop surface uses the Service Provider Portal shell followed by the `Corrective Actions (CAP)` page head, the green Fly Namibia organization-scope band, five compact lifecycle KPI cards, status-group tabs, four filters, a dense Findings register on the left, and a selected-Finding lifecycle dossier on the right. CAP and Evidence controls continue inside that selected work package; they do not replace the first viewport with generic form cards.
+- At `1024x768`, the shell remains visible, KPI cards reflow to three/two columns, filters become two columns, and the dense register begins below the fold. At `390x844`, the compact topbar is followed by page head, organization scope, single-column KPI cards, and horizontally continuing tabs; the register/dossier/form follows below. These responsive compositions are binding for Task 11.
+- Task 11 adds `apps/web/src/mock/seed-visual-runtime.ts` to its allowlist solely to seed the already-authorized Fly Namibia Finding/CAP/Evidence state before deterministic visual capture. This does not alter the frozen Task 10 shell or production/demo startup outside `VITE_AVIA_VISUAL_FIXTURES=1`.
+- The focused decoded-pixel red gate exposed a false shell assumption for this role: at desktop the pre-migration Auditee candidate differed from the accepted root by `0.17362` in the sidebar, `0.75349` in the topbar, and `0.64777` in the content-header region; tablet differed by `0.20800`, `0.84423`, and `0.84469`; mobile topbar differed by `0.76686`. The root Service Provider Portal includes a demo boundary ribbon, a role-labeled sidebar, route/experience topbar context, and role-specific profile/footer presentation that the generic candidate shell did not contain.
+- Task 11 therefore adds the shell/navigation component tests and sources plus `responsive.css` to its allowlist. Changes in those shared files must be conditional on `activeRole === "auditee"` (and the demo ribbon additionally on demo mode), leaving the Task 9-10 CAA shell paths byte-for-byte equivalent at render time. The earlier “shared shell frozen” statement means the default shell remains frozen; it does not permit an incorrect generic shell on the audited Auditee surface.
+- Red evidence: the focused unit command completed with `1 failed | 1 passed` files and `3 failed | 2 passed` tests because My Findings, hydrated immutable CAP revisions, and the deterministic Evidence label were absent. The focused visual command completed with the primitive gallery green and all three Auditee viewport contracts red; thresholds and masks were unchanged.
+- Green implementation required two Task 11 integration-boundary corrections beyond the original page allowlist. The demo Backend now persists its bounded state in browser storage so a real reload retains the canonical Finding/CAP revisions, while `Reset demo` clears that state. Online command IDs use UUIDs so a reload cannot reuse an idempotency key. The shared persistence key lives outside `src/mock`, preserving the HTTP artifact boundary.
+- The second CAP revision exposed a mock/API mismatch hidden by the prior one-revision scenario. Mock CAP revisions now use the same immutable revision ordinal as HTTP, and CAP Review sends the selected revision plus a unique operation ID. CAP and Evidence handoffs now route to the exact selected-Finding review URL instead of the Lead Inspector landing page.
+- Green evidence: the focused Task 11 command passed `3 files / 11 tests`; the expanded related contract/page command passed `5 files / 26 tests`; typecheck passed. The full web suite inside the HTTP profile passed `39 files / 251 tests`, the HTTP contract suite passed `1 file / 14 tests`, mock Playwright passed `5/5`, HTTP Playwright passed `7/7`, and worker/outbox observability was verified locally. The final focused decoded-pixel visual gate passed the primitive gallery plus Auditee desktop, tablet, and mobile (`4/4`) without threshold or mask changes.
+
 **Task 11 staging allowlist and commit**
 
 ```bash
-git add -- apps/web/src/features/caps/auditee-cap-page.tsx apps/web/src/features/caps/auditee-cap-page.test.tsx apps/web/src/features/caps/auditee-projection.tsx apps/web/src/features/caps/auditee-projection.test.tsx apps/web/src/styles/features/auditee.css apps/web/src/styles/app.css apps/web/src/app/scenario-context.tsx apps/web/tests/e2e/canonical-scenario.spec.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- apps/web/src/app/demo-persistence.ts apps/web/src/app/scenario-context.tsx apps/web/src/entry/demo.tsx apps/web/src/features/caps/auditee-cap-page.tsx apps/web/src/features/caps/auditee-cap-page.test.tsx apps/web/src/features/caps/auditee-projection.tsx apps/web/src/features/caps/auditee-projection.test.tsx apps/web/src/features/caps/cap-review-page.tsx apps/web/src/features/shared/workspace-shell.tsx apps/web/src/mock/create-mock-backend.ts apps/web/src/mock/memory-mock-store.ts apps/web/src/mock/mock-engine.ts apps/web/src/mock/seed-visual-runtime.ts apps/web/src/ui/application-shell.tsx apps/web/src/ui/application-shell.test.tsx apps/web/src/ui/application-topbar.tsx apps/web/src/ui/application-topbar.test.tsx apps/web/src/ui/role-navigation.tsx apps/web/src/ui/role-navigation.test.tsx apps/web/src/styles/features/auditee.css apps/web/src/styles/app.css apps/web/src/styles/responsive.css apps/web/src/styles/style-ownership.test.ts apps/web/tests/e2e/canonical-scenario.spec.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts apps/web/tests/e2e/release-candidate-gates.spec.ts docs/exec-plans/index.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
 git commit -m "feat(ui): migrate auditee corrective actions"
 git push origin HEAD
 ```

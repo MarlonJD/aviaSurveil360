@@ -34,6 +34,60 @@ export function ApplicationTopbar({
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const auditeeChrome = identity.activeRole === "auditee";
+  if (auditeeChrome) {
+    return (
+      <header className="application-topbar application-topbar--auditee auditee-root-topbar">
+        <div className="auditee-root-topbar__crumbs"><b>Corrective Actions (CAP)</b></div>
+        <div className="auditee-root-topbar__spacer" />
+        <label className="auditee-root-topbar__experience">
+          <span>Experience</span>
+          <select
+            aria-label="Experience"
+            onChange={(event) => onRoleRequest(event.target.value as Role)}
+            value={identity.activeRole}
+          >
+            {identity.availableRoles.map((role) => <option key={role} value={role}>{role === "auditee" ? "Service Provider Portal - Service Provider" : roleLabel(role)}</option>)}
+          </select>
+        </label>
+        <div className="auditee-root-topbar__notification">
+          {notificationState.kind === "local" ? (
+            <button
+              aria-expanded={notificationsOpen}
+              aria-label="Notifications"
+              className="auditee-root-topbar__icon"
+              onClick={() => {
+                notificationState.onOpen();
+                setNotificationsOpen((value) => !value);
+              }}
+              type="button"
+            >
+              <span aria-hidden="true">🔔</span>
+              {notificationState.unreadCount ? <span className="auditee-root-topbar__badge">{notificationState.unreadCount}</span> : null}
+            </button>
+          ) : (
+            <button
+              aria-label={`Notifications unavailable: ${notificationState.reason}`}
+              className="auditee-root-topbar__icon"
+              disabled
+              title={notificationState.reason}
+              type="button"
+            >
+              <span aria-hidden="true">🔔</span>
+            </button>
+          )}
+          {notificationsOpen ? <p className="topbar-popover" role="status">{notificationState.kind === "local" ? `${notificationState.unreadCount} local notification updates` : notificationState.reason}</p> : null}
+        </div>
+        <div className="auditee-root-topbar__who">
+          <span className="auditee-root-topbar__avatar">{initials(identity.displayName)}</span>
+          <span className="auditee-root-topbar__identity">
+            <strong>{identity.displayName}</strong>
+            <small>Service Provider Portal · {identity.organizationLabel}</small>
+          </span>
+        </div>
+      </header>
+    );
+  }
   return (
     <header className="application-topbar">
       <button
@@ -59,7 +113,7 @@ export function ApplicationTopbar({
             }}
           >
             <span aria-hidden="true">🔔</span>
-            {notificationState.unreadCount ? <span className="topbar-notification-dot" /> : null}
+            {notificationState.unreadCount ? <span className="topbar-notification-dot">{auditeeChrome ? notificationState.unreadCount : null}</span> : null}
           </button>
         ) : (
           <>
@@ -86,7 +140,12 @@ export function ApplicationTopbar({
           type="button"
         >
           <span className="topbar-avatar">{initials(identity.displayName)}</span>
-          <span>{identity.displayName}</span>
+          {auditeeChrome ? (
+            <span className="topbar-profile__identity">
+              <strong>{identity.displayName}</strong>
+              <small>Service Provider Portal · {identity.organizationLabel}</small>
+            </span>
+          ) : <span>{identity.displayName}</span>}
           <span className="topbar-profile__chevron" aria-hidden="true">⌄</span>
         </button>
         {identity.mode === "oidc-session" ? null : (

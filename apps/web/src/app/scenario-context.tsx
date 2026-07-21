@@ -10,6 +10,7 @@ import {
 
 import type {
   AssignmentSummary,
+  CapRevisionView,
   ChecklistAnswer,
   ChecklistResponseView,
   EvidenceVersionView,
@@ -60,8 +61,10 @@ export interface ScenarioProjection {
   potentialFinding: PotentialFindingView | null;
   finding: FindingView | null;
   auditeeFindings: FindingView[];
+  auditeeOrganizationName: string | null;
   checklistSubmission: SubmitChecklistOutput | null;
   capSubmission: SubmitCapOutput | null;
+  capRevisions: CapRevisionView[];
   capReview: ReviewCapOutput | null;
   evidenceVersions: EvidenceVersionView[];
   evidenceReview: ReviewEvidenceOutput | null;
@@ -96,6 +99,7 @@ export interface ScenarioActions {
   }): Promise<void>;
   refreshFinding(role: Role): Promise<void>;
   loadAuditeeFindings(): Promise<void>;
+  selectAuditeeFinding(findingId: string): Promise<void>;
   submitCap(input: Omit<SubmitCapInput, "operationId" | "findingId" | "expectedFindingRevision">): Promise<void>;
   reviewCap(input: {
     decision: "ACCEPT" | "REJECT" | "REQUEST_MORE_INFORMATION";
@@ -130,8 +134,10 @@ const initialProjection: ScenarioProjection = {
   potentialFinding: null,
   finding: null,
   auditeeFindings: [],
+  auditeeOrganizationName: null,
   checklistSubmission: null,
   capSubmission: null,
+  capRevisions: [],
   capReview: null,
   evidenceVersions: [],
   evidenceReview: null,
@@ -193,13 +199,11 @@ function fieldProjection(view: FieldPackageView, recovery?: AttachmentRecoveryRe
 export function ScenarioProvider({ children }: PropsWithChildren) {
   const runtime = useApplicationRuntime();
   const [projection, setProjection] = useState<ScenarioProjection>(initialProjection);
-  const operationSequence = useRef(1);
   const syncBroadcastRef = useRef<SyncStatusBroadcast | null>(null);
   const fieldSubjectId = runtime.subjectId ?? DEMO_FIELD_SUBJECT_ID;
 
   const backendFor = (role: Role) => runtime.backendForRole?.(role) ?? runtime.backend;
-  const operationId = (prefix: string) =>
-    `${prefix}-${String(operationSequence.current++).padStart(3, "0")}`;
+  const operationId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
   const fieldOperationId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
   const fieldRepository = (): IndexedDbFieldRepository =>
     runtime.fieldRepositoryForSubject?.(fieldSubjectId) ??
@@ -426,12 +430,54 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
       },
 
       async loadAuditeeFindings() {
-        const result = await backendFor("auditee").findings.list({});
-        const finding = result.items.find((candidate) => candidate.id === "FND-CAB-2026-001") ?? null;
+        const backend = backendFor("auditee");
+        const [result, organizations] = await Promise.all([
+          backend.findings.list({}),
+          backend.organizations.list({}),
+        ]);
+        const auditeeOrganizationName = organizations.items[0]?.legalName ?? null;
+        const selectedId =
+          projection.finding && result.items.some((candidate) => candidate.id === projection.finding?.id)
+            ? projection.finding.id
+            : (result.items.find((candidate) => candidate.id === "FND-CAB-2026-001") ?? result.items[0])?.id;
+        if (!selectedId) {
+          setProjection((current) => ({
+            ...current,
+            auditeeFindings: result.items,
+            auditeeOrganizationName,
+            finding: null,
+            capRevisions: [],
+            evidenceVersions: [],
+          }));
+          return;
+        }
+        const [finding, capResult, evidenceVersions] = await Promise.all([
+          backend.findings.get({ findingId: selectedId }),
+          backend.caps.listRevisions({ findingId: selectedId }),
+          backend.evidence.listVersions({ findingId: selectedId }),
+        ]);
         setProjection((current) => ({
           ...current,
           auditeeFindings: result.items,
-          finding: finding ?? current.finding,
+          auditeeOrganizationName,
+          finding,
+          capRevisions: capResult.items,
+          evidenceVersions,
+        }));
+      },
+
+      async selectAuditeeFinding(findingId) {
+        const backend = backendFor("auditee");
+        const [finding, capResult, evidenceVersions] = await Promise.all([
+          backend.findings.get({ findingId }),
+          backend.caps.listRevisions({ findingId }),
+          backend.evidence.listVersions({ findingId }),
+        ]);
+        setProjection((current) => ({
+          ...current,
+          finding,
+          capRevisions: capResult.items,
+          evidenceVersions,
         }));
       },
 
@@ -443,10 +489,20 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
           expectedFindingRevision: projection.finding.revision,
           ...input,
         });
-        const finding = await backendFor("auditee").findings.get({
-          findingId: projection.finding.id,
-        });
-        setProjection((current) => ({ ...current, capSubmission, finding }));
+        const backend = backendFor("auditee");
+        const [finding, capResult] = await Promise.all([
+          backend.findings.get({ findingId: projection.finding.id }),
+          backend.caps.listRevisions({ findingId: projection.finding.id }),
+        ]);
+        setProjection((current) => ({
+          ...current,
+          capSubmission,
+          finding,
+          capRevisions: capResult.items,
+          auditeeFindings: current.auditeeFindings.length
+            ? current.auditeeFindings.map((item) => item.id === finding.id ? finding : item)
+            : [finding],
+        }));
       },
 
       async reviewCap(input) {
@@ -510,7 +566,14 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
         if (evidenceVersions.at(-1)?.scanState !== "CLEAN") {
           throw new Error("Evidence scan did not reach CLEAN before the review timeout.");
         }
-        setProjection((current) => ({ ...current, evidenceVersions, finding }));
+        setProjection((current) => ({
+          ...current,
+          evidenceVersions,
+          finding,
+          auditeeFindings: current.auditeeFindings.length
+            ? current.auditeeFindings.map((item) => item.id === finding.id ? finding : item)
+            : [finding],
+        }));
       },
 
       async loadEvidenceVersions(role) {

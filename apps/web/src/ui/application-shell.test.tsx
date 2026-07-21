@@ -89,4 +89,31 @@ describe("ApplicationShell", () => {
     expect(onRoleRequest).toHaveBeenCalledWith("manager");
     expect(onLogout).toHaveBeenCalledOnce();
   });
+
+  it("renders the accepted Service Provider Portal chrome only for the Auditee demo", () => {
+    render(
+      <MemoryRouter>
+        <ApplicationShell
+          identity={{
+            ...identity,
+            activeRole: "auditee",
+            displayName: "Fly Namibia Quality Manager",
+            organizationLabel: "Fly Namibia",
+            availableRoles: ["auditee", "leadInspector"],
+          }}
+          activeRouteId="auditee-home"
+          onRoleRequest={() => undefined}
+          onLogout={() => undefined}
+          notificationState={{ kind: "local", unreadCount: 1, onOpen: () => undefined }}
+        >
+          <h1>Corrective Actions (CAP)</h1>
+        </ApplicationShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId("application-shell")).toHaveClass("workspace-shell--auditee-demo");
+    expect(screen.getByRole("status")).toHaveTextContent("Frontend clickable prototype");
+    expect(screen.getAllByText("Service Provider Portal").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Role select" })).toBeEnabled();
+  });
 });

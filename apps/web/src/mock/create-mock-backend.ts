@@ -1,4 +1,5 @@
 import type { Backend, BackendPrincipal, Role } from "../backend/backend";
+import { DEMO_MOCK_STORAGE_KEY } from "../app/demo-persistence";
 import { MemoryMockStore } from "./memory-mock-store";
 import { MockBackendEngine } from "./mock-engine";
 
@@ -47,8 +48,7 @@ export const DEMO_PRINCIPALS: Record<Role, BackendPrincipal> = {
   admin: { subjectId: "USR-ADMIN-ADA", role: "admin", organizationId: null },
 };
 
-export function createMockBackendRuntime(clock = () => "2026-06-15T09:00:00.000Z") {
-  const store = MemoryMockStore.createCanonical({ clock });
+function createRuntimeFromStore(store: MemoryMockStore) {
   const sessions = new Map<Role, Backend>();
   const backendForRole = (role: Role): Backend => {
     const existing = sessions.get(role);
@@ -58,4 +58,20 @@ export function createMockBackendRuntime(clock = () => "2026-06-15T09:00:00.000Z
     return backend;
   };
   return { backend: backendForRole("inspector"), backendForRole };
+}
+
+export function createMockBackendRuntime(clock = () => "2026-06-15T09:00:00.000Z") {
+  const store = MemoryMockStore.createCanonical({ clock });
+  return createRuntimeFromStore(store);
+}
+
+export function createMockBackendPersistentRuntime(
+  storage: Storage,
+  clock = () => "2026-06-15T09:00:00.000Z",
+) {
+  return createRuntimeFromStore(MemoryMockStore.createPersistent({
+    clock,
+    storage,
+    storageKey: DEMO_MOCK_STORAGE_KEY,
+  }));
 }

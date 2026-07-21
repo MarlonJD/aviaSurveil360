@@ -28,6 +28,7 @@ export function primaryRoutesForRole(role: Role): readonly RouteContract[] {
 type NavigationIcon =
   | "dashboard"
   | "assignment"
+  | "cap"
   | "finding"
   | "evidence"
   | "message"
@@ -35,6 +36,7 @@ type NavigationIcon =
   | "report"
   | "analytics"
   | "settings"
+  | "settingsRoot"
   | "planning"
   | "organization";
 
@@ -93,13 +95,13 @@ const ACCEPTED_NAVIGATION: Readonly<Record<Role, readonly AcceptedNavigationItem
     { label: "Settings", icon: "settings" },
   ],
   auditee: [
-    { label: "Inspection Coordination", icon: "calendar", badge: "1" },
-    { label: "Corrective Actions (CAP)", icon: "finding", routeId: "auditee-home", badge: "4" },
+    { label: "Inspection Coordination", icon: "assignment", badge: "1" },
+    { label: "Corrective Actions (CAP)", icon: "cap", routeId: "auditee-home", badge: "4" },
     { label: "Preliminary Reports", icon: "report" },
     { label: "Final Reports", icon: "report" },
     { label: "Messages", icon: "message", badge: "1" },
     { label: "Documents", icon: "evidence" },
-    { label: "Settings", icon: "settings" },
+    { label: "Settings", icon: "settingsRoot" },
   ],
   admin: [
     { label: "NAMCARS Library", icon: "report" },
@@ -116,6 +118,7 @@ function NavigationGlyph({ icon }: { icon: NavigationIcon }) {
   const paths: Readonly<Record<NavigationIcon, ReactNode>> = {
     dashboard: <><path d="M4 5h7v6H4z" /><path d="M13 5h7v4h-7z" /><path d="M13 11h7v8h-7z" /><path d="M4 13h7v6H4z" /></>,
     assignment: <><path d="M9 5h6" /><path d="M9 3h6l1 2h3v16H5V5h3l1-2z" /><path d="M9 11h6" /><path d="M9 15h4" /></>,
+    cap: <><path d="M9 5h6" /><path d="M9 3h6l1 2h3v16H5V5h3l1-2z" /><path d="m8.5 14.5 2 2 5-5" /></>,
     finding: <><path d="M6 3h8l4 4v5" /><path d="M14 3v5h5" /><path d="M6 3v18h7" /><path d="M9 11h4" /><path d="M9 15h2" /><path d="m17.5 19.5 3 3" /><path d="M16 19a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /></>,
     evidence: <path d="m21 11-9 9a6 6 0 0 1-8.5-8.5l9.5-9.5a4 4 0 0 1 5.7 5.7l-9.5 9.5a2 2 0 0 1-2.8-2.8l8.7-8.7" />,
     message: <><path d="M4 6h16v12H4z" /><path d="m4 7 8 6 8-6" /></>,
@@ -123,6 +126,7 @@ function NavigationGlyph({ icon }: { icon: NavigationIcon }) {
     report: <><path d="M14 3H7v18h10V8z" /><path d="M14 3v5h5" /><path d="M9 13h6" /><path d="M9 17h4" /></>,
     analytics: <><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 16v-5" /><path d="M12 16V8" /><path d="M16 16v-8" /></>,
     settings: <><circle cx="12" cy="12" r="3" /><path d="M19 13.5v-3l-2-.7-.8-1.9.9-1.9-2.1-2.1-1.9.9-1.9-.8-.7-2h-3l-.7 2-1.9.8-1.9-.9L3.9 6l.9 1.9L4 9.8l-2 .7v3l2 .7.8 1.9-.9 1.9L6 20.1l1.9-.9 1.9.8.7 2h3l.7-2 1.9-.8 1.9.9 2.1-2.1-.9-1.9.8-1.9z" /></>,
+    settingsRoot: <><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" /><path d="M19.4 15a8 8 0 0 0 .1-1.5l2-1.5-2-3.5-2.4 1a8 8 0 0 0-1.3-.8L15.5 6h-7l-.3 2.7a8 8 0 0 0-1.3.8l-2.4-1-2 3.5 2 1.5A8 8 0 0 0 4.6 15l-2 1.5 2 3.5 2.4-1a8 8 0 0 0 1.3.8l.3 2.7h7l.3-2.7a8 8 0 0 0 1.3-.8l2.4 1 2-3.5z" /></>,
     planning: <><path d="M5 4h14v17H5z" /><path d="M8 2v5" /><path d="M16 2v5" /><path d="M8 11h8" /><path d="M8 15h6" /></>,
     organization: <><path d="M4 21V7l8-4 8 4v14" /><path d="M8 10h2" /><path d="M14 10h2" /><path d="M8 14h2" /><path d="M14 14h2" /><path d="M10 21v-3h4v3" /></>,
   };
@@ -141,6 +145,7 @@ export function RoleNavigation({
   const activePrimary = activePrimaryRouteId(activeRouteId);
   return (
     <nav className="role-navigation" aria-label="Primary role navigation">
+      {activeRole === "auditee" ? <p className="role-navigation__experience">Service Provider Portal</p> : null}
       {ACCEPTED_NAVIGATION[activeRole].map((item) => {
         const route = item.routeId ? REACT_ROUTE_CONTRACT_BY_ID.get(item.routeId) : null;
         const active =
