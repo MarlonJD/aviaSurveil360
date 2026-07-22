@@ -46,18 +46,18 @@ for (const viewport of viewports) {
     await expectNoCriticalOverflow(page);
     await page.getByLabel("Experience").selectOption("manager");
     await expect(page.getByRole("heading", { name: "Department Manager Dashboard" })).toBeVisible();
-    await page.getByRole("link", { name: "Open Organization Registry" }).click();
-    await expect(page.getByRole("heading", { name: "Organization Registry" })).toBeVisible();
+    await page.getByRole("link", { name: "Open Organizations" }).click();
+    await expect(page.getByRole("heading", { name: "Organizations" })).toBeVisible();
     await expect(page.getByTestId("organization-row")).toHaveCount(2);
     await expect(page.getByTestId("organization-row").first()).toContainText("Fly Namibia");
     await expect(page.locator("body")).not.toContainText("Internal CAA Note");
-    await page.getByRole("link", { name: "Open Audit Plan Calendar" }).click();
-    await expect(page.getByRole("heading", { name: "Audit Plan Calendar" })).toBeVisible();
+    if (viewport.width <= 900) await page.getByRole("button", { name: "Open navigation" }).click();
+    await page.getByRole("link", { name: "Planning" }).click();
+    await expect(page.getByRole("heading", { name: "Department Planning" })).toBeVisible();
     await expect(page.getByTestId("planning-status")).toHaveText("FINANCE_REVIEW");
     await expectNoCriticalOverflow(page);
 
-    await page.getByRole("link", { name: "Switch role" }).click();
-    await page.getByRole("link", { name: /Finance Review/i }).click();
+    await page.getByLabel("Experience").selectOption("finance");
     await expect(page.getByRole("heading", { name: "Finance Review" })).toBeVisible();
     await page.getByLabel("Finance decision reason").fill(
       "Budget envelope confirmed for the configured inspection.",

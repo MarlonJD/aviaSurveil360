@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Tasks 1-10 are committed and pushed. Task 11 restores the accepted root-demo Service Provider Portal composition, migrates the Auditee corrective-action workspace, persists demo CAP/Evidence state across real reloads, and exercises two immutable CAP revisions through the Backend. Task 11 is `verified locally`: its focused suite passes 11/11 tests, related contract/page coverage passes 26/26, typecheck passes, the complete canonical HTTP profile passes including React 251/251 and HTTP Playwright 7/7, mock Playwright passes 5/5, and the fail-closed Auditee decoded-pixel gate passes desktop/tablet/mobile plus the shared primitive gallery 4/4. Task 11 is the current exact commit/push unit; Task 12 must not start until that commit is pushed. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `active` — Tasks 1-11 are committed and pushed. Task 12 restores the accepted Department Manager shell and the Manager Dashboard, Organizations, Planning, and Reports Approval compositions while retaining Backend projections and exact authority boundaries. Task 12 is `verified locally`: its focused suite passes 8 files / 26 tests, typecheck passes, the complete canonical HTTP profile passes including React 261/261, mock Playwright 5/5, HTTP Playwright 7/7, and the fail-closed Manager decoded-pixel gate passes the shared primitive gallery plus all 12 route/viewport pairs (13/13). Task 12 is the current exact commit/push unit; Task 13 must not start until that commit is pushed. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
 
 ## Reviewed Plan Amendment — Fail-Closed Demo Visual Recovery (2026-07-21)
 
@@ -44,6 +44,20 @@ Binding corrections:
 | Task red/green, staging, docs, and lifecycle boundaries were too broad. | This plan uses 16 dependency-ordered tasks, exact task allowlists, an upstream-aware commit protocol, bilingual evidence, Product index updates, and literal release labels. |
 
 These corrections close the review conditions at the planning level only. They do not constitute implementation evidence or stakeholder acceptance.
+
+## Reviewed Plan Amendment — Source-Faithful Remaining UI Migration (2026-07-22)
+
+Task 12 proved that passing semantics while approximating the accepted layout still produces an unrelated React interface. Its Planning surface crossed the unchanged decoded-pixel gate only after the React markup was changed to the root demo's actual `identity` / `state` / `facts` / `action` / `path` composition and the bounded feature CSS declarations were ported selector by selector. This amendment applies that evidence to Tasks 13-16.
+
+Binding corrections:
+
+- Before editing a Task 13 or 14 route, inspect all three tracked baseline PNGs and the exact root `js/views.js` markup plus `css/styles.css` selectors. Record a source-to-React mapping for shell, page head, first viewport, register/queue, selected dossier, decision area, and responsive stack.
+- Reuse the root feature DOM hierarchy and bounded feature declarations directly where they remain truthful. React component boundaries and Backend values may differ, but agents must not replace the hierarchy with an approximately similar grid, generic cards, or a newly invented dashboard.
+- Role-specific shell differences are part of the oracle. Task 13 and Task 14 may conditionally update `ApplicationShell`, `ApplicationTopbar`, `RoleNavigation`, `WorkspaceShell`, responsive CSS, their tests, and style ownership. Those changes must be scoped to the owned roles and must keep previously verified Inspector, Lead, Auditee, and Manager visual pairs green.
+- Every Task 13 and 14 green cycle reruns its focused routes and the previously migrated role surfaces affected by any shared-shell change. Thresholds remain shell `0.03`, content `0.08`, channel delta `40`; no new mask or baseline regeneration is authorized.
+- A decoded-pixel pass is necessary but not sufficient. Before each Task 13/14 commit, inspect the candidate desktop/tablet/mobile screenshots beside their tracked baselines and record that the first-viewport hierarchy, density, typography, and action placement are recognizably the accepted demo.
+- Task 15 must retain the full 51-pair fail-closed gate and visible-action inventory; it may not certify an implementation that passes by hiding expected hierarchy or by leaving off-screen duplicate navigation in the accessibility tree.
+- Task 16 evidence uses the actual execution date `2026-07-22`. The manual reviewer must reject any route that looks like a newly designed React replacement even if its semantic tests pass.
 
 ## Global Constraints
 
@@ -1641,11 +1655,22 @@ git push origin HEAD
 - Create `apps/web/src/features/planning/audit-plan-calendar-page.test.tsx`
 - Modify `apps/web/src/features/reports/report-preview-page.tsx`
 - Create `apps/web/src/features/reports/report-preview-page.test.tsx`
+- Modify `apps/web/src/features/shared/workspace-shell.tsx`
+- Modify `apps/web/src/ui/application-shell.tsx`
+- Modify `apps/web/src/ui/application-shell.test.tsx`
+- Modify `apps/web/src/ui/application-topbar.tsx`
+- Modify `apps/web/src/ui/application-topbar.test.tsx`
+- Modify `apps/web/src/ui/role-navigation.tsx`
+- Modify `apps/web/src/ui/role-navigation.test.tsx`
 - Create `apps/web/src/styles/features/management.css`
 - Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/src/styles/responsive.css`
+- Modify `apps/web/src/styles/style-ownership.test.ts`
+- Modify `apps/web/tests/e2e/canonical-scenario.spec.ts`
 - Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
 - Modify `apps/web/tests/e2e/release-candidate-gates.spec.ts`
 - Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify `docs/exec-plans/index.md`
 - Modify this plan
 
 **Required behavior**
@@ -1659,8 +1684,8 @@ git push origin HEAD
 
 **Red/green cycle**
 
-- [ ] Add failing tests for direct load, manager-only access, KPI/advisory wording, organization register/card equivalence, planning action authority/reasons, explicit absence of intake/create, report immutable version/authority, and all visible controls.
-- [ ] Run:
+- [x] Add failing tests for direct load, manager-only access, KPI/advisory wording, organization register/card equivalence, planning action authority/reasons, explicit absence of intake/create, report immutable version/authority, and all visible controls.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/features/findings/manager-dashboard-page.test.tsx src/features/organizations/organization-registry-page.test.tsx src/features/planning/audit-plan-calendar-page.test.tsx src/features/reports/report-preview-page.test.tsx
@@ -1668,8 +1693,8 @@ git push origin HEAD
   ```
 
   Expected red: accepted table/dossier composition and explicit scope assertions fail.
-- [ ] Migrate four routes with shared primitives and `management.css`; do not add a write vertical.
-- [ ] Run:
+- [x] Migrate four routes with shared primitives and `management.css`; do not add a write vertical.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/features/findings/manager-dashboard-page.test.tsx src/features/organizations/organization-registry-page.test.tsx src/features/planning/audit-plan-calendar-page.test.tsx src/features/reports/report-preview-page.test.tsx src/styles/style-ownership.test.ts
@@ -1681,10 +1706,19 @@ git push origin HEAD
 
   Expected green: all four Manager routes pass authority, scope, action, responsive, and decoded-pixel demo-composition gates.
 
+**Execution log — 2026-07-22, Task 12 verified locally**
+
+- The accepted root oracle was inspected for `manager-home`, `organization-registry`, `audit-plan`, and `report-preview` at desktop, tablet, and mobile together with their exact `js/views.js` and `css/styles.css` sources. The binding Manager shell is the root demo ribbon, 230-234 px oversight sidebar, route/experience topbar, Mehmet Kaya identity, compact mobile topbar, and off-canvas navigation. The four feature oracles retain the dashboard attention/KPI hierarchy, organization register, Planning command-center facts/action/decision path, and Reports Approval queue/dossier placement.
+- Red evidence: all 8 Manager route tests failed before migration. The initial focused visual run rejected all 12 route/viewport pairs. Desktop shell/content differences included Manager sidebar `0.17127`, topbar `0.72975`, and content-header `0.63853`; tablet shell/content differences reached `0.88571`; mobile topbar was `0.76548`. Thresholds, channel delta, masks, and tracked baselines were not changed.
+- The first implementation still used an approximate Planning hierarchy and remained red at tablet/mobile. Task 12 was corrected by porting the root Planning `identity` / `state` / `facts` / `action` / `path` DOM and bounded CSS composition instead of tuning a generic React card. Reports Approval likewise restored the root desktop queue filter/count geometry. Unsupported New Inspection intake and report issue/sign/close controls remain absent or explicitly disabled; Backend values and authority stay truthful.
+- The focused green suite passes 8 files / 26 tests and typecheck passes. Mock Playwright passes 5/5 after restoring the canonical closed-Finding count contract, report-preview heading, and removing the off-screen desktop navigation from the compact accessibility tree. The Auditee transport recorder now keys privacy evidence to the actual `USR-AUDITEE-FLY` HTTP subject so Manager-owned requests cannot contaminate Auditee evidence.
+- The complete HTTP profile passes Go race/unit/integration, OpenAPI lint/examples/code generation, sqlc, React 43 files / 261 tests, demo and HTTP builds, HTTP artifact scan, contract 14/14, mock Playwright 5/5, HTTP Playwright 7/7, and worker/outbox observability. Its temporary PostgreSQL, Keycloak, object-store, network, and volumes were removed by the script trap.
+- The final focused decoded-pixel run passes 13/13: the shared primitive gallery plus all four Manager surfaces at desktop/tablet/mobile. Every pair uses the unchanged channel delta `40`, shell threshold `0.03`, content threshold `0.08`, no added masks, and no baseline regeneration. Task 12 is `verified locally`; the exact commit/push boundary below is next, followed by Task 13.
+
 **Task 12 staging allowlist and commit**
 
 ```bash
-git add -- apps/web/src/features/findings/manager-dashboard-page.tsx apps/web/src/features/findings/manager-dashboard-page.test.tsx apps/web/src/features/organizations/organization-registry-page.tsx apps/web/src/features/organizations/organization-registry-page.test.tsx apps/web/src/features/planning/planning-workspaces.tsx apps/web/src/features/planning/audit-plan-calendar-page.test.tsx apps/web/src/features/reports/report-preview-page.tsx apps/web/src/features/reports/report-preview-page.test.tsx apps/web/src/styles/features/management.css apps/web/src/styles/app.css apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/release-candidate-gates.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- apps/web/src/features/findings/manager-dashboard-page.tsx apps/web/src/features/findings/manager-dashboard-page.test.tsx apps/web/src/features/organizations/organization-registry-page.tsx apps/web/src/features/organizations/organization-registry-page.test.tsx apps/web/src/features/planning/planning-workspaces.tsx apps/web/src/features/planning/audit-plan-calendar-page.test.tsx apps/web/src/features/reports/report-preview-page.tsx apps/web/src/features/reports/report-preview-page.test.tsx apps/web/src/features/shared/workspace-shell.tsx apps/web/src/ui/application-shell.tsx apps/web/src/ui/application-shell.test.tsx apps/web/src/ui/application-topbar.tsx apps/web/src/ui/application-topbar.test.tsx apps/web/src/ui/role-navigation.tsx apps/web/src/ui/role-navigation.test.tsx apps/web/src/styles/features/management.css apps/web/src/styles/app.css apps/web/src/styles/responsive.css apps/web/src/styles/style-ownership.test.ts apps/web/tests/e2e/canonical-scenario.spec.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/release-candidate-gates.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/index.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
 git commit -m "feat(ui): migrate manager oversight surfaces"
 git push origin HEAD
 ```
@@ -1700,8 +1734,17 @@ git push origin HEAD
 - Create `apps/web/src/features/planning/general-manager-dashboard-page.test.tsx`
 - Modify `apps/web/src/features/reports/executive-dashboard-page.tsx`
 - Create `apps/web/src/features/reports/executive-dashboard-page.test.tsx`
+- Modify `apps/web/src/features/shared/workspace-shell.tsx`
+- Modify `apps/web/src/ui/application-shell.tsx`
+- Modify `apps/web/src/ui/application-shell.test.tsx`
+- Modify `apps/web/src/ui/application-topbar.tsx`
+- Modify `apps/web/src/ui/application-topbar.test.tsx`
+- Modify `apps/web/src/ui/role-navigation.tsx`
+- Modify `apps/web/src/ui/role-navigation.test.tsx`
 - Create `apps/web/src/styles/features/executive-review.css`
 - Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/src/styles/responsive.css`
+- Modify `apps/web/src/styles/style-ownership.test.ts`
 - Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
 - Modify `apps/web/tests/e2e/release-candidate-gates.spec.ts`
 - Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
@@ -1715,6 +1758,7 @@ git push origin HEAD
 - Each page shows current owner, next action, status, Due Date/target where applicable, revision, decision history/context, and truthful disabled states.
 - Cross-role workflow continuation uses `RoleHandoff`; normal OIDC with a single role shows the next owner without impersonation.
 - Finance, General Manager, and Executive Director retain the corresponding root queue, decision-summary, workflow, and top-level authority-card compositions. A role-specific candidate action may differ, but the route must not share one generic dashboard composition across all three roles.
+- Before implementation, record the exact root markup/CSS selector mapping for all three role shells and feature bodies. Port those role-specific structures into React; do not derive three cosmetic variants from one generic dashboard.
 
 **Red/green cycle**
 
@@ -1727,7 +1771,7 @@ git push origin HEAD
   ```
 
   Expected red: root-compatible decision composition and handoff boundaries fail.
-- [ ] Migrate three routes with shared primitives and `executive-review.css`.
+- [ ] Migrate three routes with source-faithful root DOM/CSS compositions and `executive-review.css`; shared primitives may own behavior but may not replace the visible hierarchy.
 - [ ] Run:
 
   ```bash
@@ -1743,7 +1787,7 @@ git push origin HEAD
 **Task 13 staging allowlist and commit**
 
 ```bash
-git add -- apps/web/src/features/planning/planning-workspaces.tsx apps/web/src/features/planning/finance-review-page.test.tsx apps/web/src/features/planning/general-manager-dashboard-page.test.tsx apps/web/src/features/reports/executive-dashboard-page.tsx apps/web/src/features/reports/executive-dashboard-page.test.tsx apps/web/src/styles/features/executive-review.css apps/web/src/styles/app.css apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/release-candidate-gates.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- apps/web/src/features/planning/planning-workspaces.tsx apps/web/src/features/planning/finance-review-page.test.tsx apps/web/src/features/planning/general-manager-dashboard-page.test.tsx apps/web/src/features/reports/executive-dashboard-page.tsx apps/web/src/features/reports/executive-dashboard-page.test.tsx apps/web/src/features/shared/workspace-shell.tsx apps/web/src/ui/application-shell.tsx apps/web/src/ui/application-shell.test.tsx apps/web/src/ui/application-topbar.tsx apps/web/src/ui/application-topbar.test.tsx apps/web/src/ui/role-navigation.tsx apps/web/src/ui/role-navigation.test.tsx apps/web/src/styles/features/executive-review.css apps/web/src/styles/app.css apps/web/src/styles/responsive.css apps/web/src/styles/style-ownership.test.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/release-candidate-gates.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
 git commit -m "feat(ui): migrate executive review surfaces"
 git push origin HEAD
 ```
@@ -1756,8 +1800,17 @@ git push origin HEAD
 
 - Modify `apps/web/src/features/admin/admin-configuration-page.tsx`
 - Create `apps/web/src/features/admin/admin-configuration-page.test.tsx`
+- Modify `apps/web/src/features/shared/workspace-shell.tsx`
+- Modify `apps/web/src/ui/application-shell.tsx`
+- Modify `apps/web/src/ui/application-shell.test.tsx`
+- Modify `apps/web/src/ui/application-topbar.tsx`
+- Modify `apps/web/src/ui/application-topbar.test.tsx`
+- Modify `apps/web/src/ui/role-navigation.tsx`
+- Modify `apps/web/src/ui/role-navigation.test.tsx`
 - Create `apps/web/src/styles/features/admin.css`
 - Modify `apps/web/src/styles/app.css`
+- Modify `apps/web/src/styles/responsive.css`
+- Modify `apps/web/src/styles/style-ownership.test.ts`
 - Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
 - Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
 - Modify this plan
@@ -1770,6 +1823,7 @@ git push origin HEAD
 - It does not render edit/publish/delete/user/role/configuration controls, draft claims, or invented question content.
 - Non-Admin direct URL fails before any configuration fetch.
 - The route visibly retains the accepted Administration shell and Template Preview register/selection/detail composition, including dense question/reference/evidence rows. It must not become a generic page header followed by disconnected cards.
+- Before implementation, record the exact Administration shell and Template Preview markup/CSS selector mapping at all three viewports, then port that bounded composition into React without inventing a substitute configuration dashboard.
 
 **Red/green cycle**
 
@@ -1782,7 +1836,7 @@ git push origin HEAD
   ```
 
   Expected red: current list-only contract cannot render the required detail.
-- [ ] Migrate with Task 3’s detail read, shared primitives, and `admin.css`.
+- [ ] Migrate with Task 3’s detail read, source-faithful root DOM/CSS composition, and `admin.css`; shared primitives may own behavior but may not replace the visible hierarchy.
 - [ ] Run:
 
   ```bash
@@ -1798,7 +1852,7 @@ git push origin HEAD
 **Task 14 staging allowlist and commit**
 
 ```bash
-git add -- apps/web/src/features/admin/admin-configuration-page.tsx apps/web/src/features/admin/admin-configuration-page.test.tsx apps/web/src/styles/features/admin.css apps/web/src/styles/app.css apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- apps/web/src/features/admin/admin-configuration-page.tsx apps/web/src/features/admin/admin-configuration-page.test.tsx apps/web/src/features/shared/workspace-shell.tsx apps/web/src/ui/application-shell.tsx apps/web/src/ui/application-shell.test.tsx apps/web/src/ui/application-topbar.tsx apps/web/src/ui/application-topbar.test.tsx apps/web/src/ui/role-navigation.tsx apps/web/src/ui/role-navigation.test.tsx apps/web/src/styles/features/admin.css apps/web/src/styles/app.css apps/web/src/styles/responsive.css apps/web/src/styles/style-ownership.test.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
 git commit -m "feat(ui): migrate admin template preview"
 git push origin HEAD
 ```
@@ -1836,6 +1890,7 @@ git push origin HEAD
   - a brand file not present in the semantic registry/app-shell manifest.
 - Approved emitted image/font assets are allowed; runtime root code is not.
 - The visible-action browser contract inventories visible `button`, `a`, `input`, `select`, `textarea`, menuitem, tab, and button-role elements on every 17 surface/viewport. Each must have a stable accessible name and one of: verified navigation, visible state change, Backend/local boundary call, form behavior, or explicit disabled reason.
+- Tablet/mobile must expose exactly one active primary-navigation landmark and one accessible instance of each route action. A desktop sidebar moved off-canvas by CSS must also be `aria-hidden` or inert while compact navigation owns the interaction; duplicate off-screen controls fail.
 - Add the visible-action spec to both `mock` and canonical `http` project test matches. The normal OIDC-only controls remain covered by Task 7’s `oidc-session.spec.ts`.
 - A toast without durable state/navigation/download/form change does not satisfy the contract.
 - Normal HTTP notification delivery stays hidden/disabled with its reason. Admin editing, New Inspection Planning Intake, self-registration, user provisioning, and unsupported legacy actions remain absent.
@@ -1893,8 +1948,8 @@ git push origin HEAD
 
 **Files**
 
-- Create `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-21.md`
-- Create `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-21.turkce.md`
+- Create `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.md`
+- Create `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.turkce.md`
 - Modify `docs/demo-evidence/BUILD_SUMMARY.md`
 - Modify `docs/demo-evidence/BUILD_SUMMARY.turkce.md`
 - Modify `docs/index.md`
@@ -1904,7 +1959,7 @@ git push origin HEAD
 - Modify `docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md`
 - Modify this plan
 
-The evidence filenames use the planned verification date. If Task 16 executes after 2026-07-21, do not backdate evidence: first make a reviewed plan amendment replacing both exact filenames and all references with the actual execution date.
+The evidence filenames use the reviewed actual execution date, `2026-07-22`. If Task 16 continues after that date, amend both exact filenames and all references again; never backdate evidence.
 
 **Required matrix**
 
@@ -2006,7 +2061,7 @@ The evidence filenames use the planned verification date. If Task 16 executes af
 **Task 16 staging allowlist and commit**
 
 ```bash
-git add -- docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-21.md docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-21.turkce.md docs/demo-evidence/BUILD_SUMMARY.md docs/demo-evidence/BUILD_SUMMARY.turkce.md docs/index.md MANIFEST.md docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.md docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.turkce.md docs/demo-evidence/BUILD_SUMMARY.md docs/demo-evidence/BUILD_SUMMARY.turkce.md docs/index.md MANIFEST.md docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
 git commit -m "docs(evidence): record react legacy parity"
 git push origin HEAD
 ```
@@ -2084,6 +2139,7 @@ The shared router, OpenAPI/generated files, canonical scenario, `app.css`, and v
 | 2026-07-21 | Use one CSS layer/ownership model; authenticated workbench keeps system fonts and login alone uses DM Sans. | accepted review correction |
 | 2026-07-21 | Commit/push steps are conditional on explicit execution-time authorization and must use exact allowlists/upstream checks. | binding safety rule |
 | 2026-07-21 | Production deployment, cutover, Identity/MFA/provisioning, records, hosting, monitoring/on-call, and legacy removal remain blocked. | unchanged |
+| 2026-07-22 | Tasks 13-14 must port the bounded root feature DOM/CSS composition and role shell rather than approximate it with generic React layouts; Task 16 evidence uses the actual execution date. | accepted execution correction after Task 12 parity recovery |
 
 ## Plan Self-Review Checklist
 
@@ -2097,6 +2153,7 @@ The shared router, OpenAPI/generated files, canonical scenario, `app.css`, and v
 - [x] Defines direct-route guards, handoffs, expiry clearing, and session-subject offline behavior.
 - [x] Defines deterministic tracked visual evidence with bounded masks and integrity tests.
 - [x] Defines real CSS layer/ownership boundaries and offline brand asset behavior.
+- [x] Requires source-to-React DOM/CSS mappings and manual baseline review for the remaining feature migrations.
 - [x] Gives each task exact files, interfaces, red/green commands, staging allowlist, and commit message.
 - [x] Updates Product docs/index, bilingual evidence, active index, parent status, tracker, and literal lifecycle labels.
 - [x] Keeps all production/release/cutover/legacy actions blocked.
@@ -2114,12 +2171,14 @@ Build the tracked hash-verified 51-baseline visual harness before changing the i
 
 Reuse only approved local brand assets through the typed registry. Keep the HTTP artifact free of root runtime CSS/JS, mock/seed, and canonical-test code. Use the binding CSS layer order, root system-font workbench stack, login-only DM Sans, shared primitives, and exact feature-owned stylesheets.
 
+For Tasks 13 and 14, inspect all three tracked baselines plus the exact root `js/views.js` markup and `css/styles.css` selectors before editing. Record the source-to-React mapping, port the bounded root DOM/CSS composition and role-specific shell faithfully, and reject generic dashboard/card substitutions. Rerun affected previously migrated role surfaces after any shared-shell change and manually compare every focused candidate screenshot to its baseline before committing.
+
 Keep canonical-header HTTP and normal OIDC HTTP separate. Normal HTTP must use the same-origin session projection, authenticated roles, route guards, CSRF, central `401` clearing, logout, bounded handoff, and session subject for IndexedDB/OPFS. Await `lockSubject` on logout/user switch without deleting pending offline work. Do not weaken cookies, expose provider tokens, add self-registration, or fabricate role membership.
 
 Preserve Potential Finding Lead authority, CAP/Evidence separation, immutable versions, Auditee organization isolation, structural Internal CAA Note omission, report/closure authority, and explicit offline/local/server acknowledgement. Every visible control must work through Backend, an existing local/offline boundary, navigation, or visible local UI state, or be disabled with an exact reason. Do not create React placeholders or routes for the remaining 69 screens.
 
 Run each task’s red test before implementation and its focused green tests afterward. Do not start a dependent task on a failed gate. Use the plan’s exact per-task staging allowlist, inspect staged names and the full cached diff, and check the upstream-ahead set before any commit/push. Commit and push only if my execution request explicitly authorizes those Git actions; otherwise do not stage.
 
-At Task 16 run the complete clean-install, OpenAPI/sqlc, Go race, React, root, mock, canonical HTTP, normal OIDC, offline/recovery, visual, visible-action, artifact, dependency, reviewer, and cleanup matrix. If the execution date is later than 2026-07-21, amend the exact evidence filenames before creating evidence rather than backdating them. Produce synchronized English/Turkish evidence and reconcile this plan, the parent plan, Product/docs indexes, build summary, manifest, active index, and tracker.
+At Task 16 run the complete clean-install, OpenAPI/sqlc, Go race, React, root, mock, canonical HTTP, normal OIDC, offline/recovery, visual, visible-action, artifact, dependency, reviewer, and cleanup matrix. Use the reviewed `2026-07-22` evidence filenames; if execution continues after that date, amend them again rather than backdating evidence. Produce synchronized English/Turkish evidence and reconcile this plan, the parent plan, Product/docs indexes, build summary, manifest, active index, and tracker.
 
 The result may be labelled only `verified locally`, `candidate-only`, and `release pending` when supported. Do not claim stakeholder acceptance, deploy, route traffic, cut over, remove/archive the legacy demo, configure production Identity/MFA/provisioning, or claim `production-ready`. Production deployment, records, hosting, monitoring/on-call, disaster recovery, cutover, and legacy removal remain `blocked`.

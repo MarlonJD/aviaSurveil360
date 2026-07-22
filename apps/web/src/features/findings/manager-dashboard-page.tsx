@@ -1,31 +1,123 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { useScenario } from "../../app/scenario-context";
+import { useBackendForRole } from "../../app/providers";
+import type {
+  FindingView,
+  ManagerDashboardProjection,
+  OrganizationSummary,
+  PlanningItemView,
+  ReportVersionView,
+} from "../../backend/backend";
 import {
   CommandError,
   errorMessage,
-  FindingFacts,
-  PageHeader,
+  formatLocalDate,
+  formatSeverity,
   WorkspaceShell,
 } from "../shared/workspace-shell";
 
+interface ManagerWorkspaceState {
+  dashboard: ManagerDashboardProjection;
+  findings: FindingView[];
+  organizations: OrganizationSummary[];
+  plans: PlanningItemView[];
+  report: ReportVersionView;
+}
+
+const taskLinks = [
+  {
+    title: "Planning",
+    description: "Track governed surveillance plans and their current approval owner.",
+    href: "/department-manager/audit-plan",
+    action: "Open Planning",
+  },
+  {
+    title: "Organizations",
+    description: "Review regulated organizations and current oversight activity.",
+    href: "/department-manager/organizations",
+    action: "Open Organizations",
+  },
+  {
+    title: "Reports Approval",
+    description: "Review the immutable candidate report and exact authority state.",
+    href: "/department-manager/reports/RPT-CAB-2026-001-V1",
+    action: "Open Reports Approval",
+  },
+] as const;
+
+const unavailableTasks = [
+  ["Audits", "The broader Audit work queue remains in the accepted legacy demo."],
+  ["Risk Dashboard", "Advanced risk analytics remain in the accepted legacy demo."],
+  ["Inspection Team", "Team administration remains outside the 17-route candidate."],
+  ["Findings Review", "The broader manager Findings queue remains in the accepted legacy demo."],
+  ["CAP Monitoring", "The broader CAP monitoring route remains in the accepted legacy demo."],
+] as const;
+
+function statusLabel(status: string): string {
+  return status.replaceAll("_", " ").toLowerCase().replace(/(^|\s)\S/g, (value) => value.toUpperCase());
+}
+
 export function ManagerDashboardPage() {
-  const { projection, actions } = useScenario();
+  const backend = useBackendForRole("manager");
+  const [state, setState] = useState<ManagerWorkspaceState | null>(null);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    void actions.loadManagerDashboard().catch((cause) => setError(errorMessage(cause)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    let cancelled = false;
+    void Promise.all([
+      backend.dashboards.getManagerProjection({}),
+      backend.findings.list({ limit: 50 }),
+      backend.organizations.list({ limit: 100 }),
+      backend.planning.list({ limit: 20 }),
+      backend.reports.getVersion({ reportVersionId: "RPT-CAB-2026-001-V1" }),
+    ]).then(([dashboard, findings, organizations, plans, report]) => {
+      if (!cancelled) {
+        setState({
+          dashboard,
+          findings: findings.items,
+          organizations: organizations.items,
+          plans: plans.items,
+          report,
+        });
+      }
+    }).catch((cause) => {
+      if (!cancelled) setError(errorMessage(cause));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [backend]);
+
+  const canonicalFinding = useMemo(
+    () => state?.findings.find((finding) => finding.id === "FND-CAB-2026-001") ?? null,
+    [state?.findings],
+  );
 
   async function authorizedClose(): Promise<void> {
+    if (!canonicalFinding) return;
+    if (!reason.trim()) {
+      setError("Authorized closure reason is required.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      await actions.authorizedClose(reason);
+      const finding = await backend.findings.authorizedClose({
+        operationId: `OP-AUTHORIZED-CLOSE-${crypto.randomUUID()}`,
+        findingId: canonicalFinding.id,
+        expectedFindingRevision: canonicalFinding.revision,
+        reason,
+      });
+      const dashboard = await backend.dashboards.getManagerProjection({});
+      setState((current) => current ? {
+        ...current,
+        dashboard,
+        findings: current.findings.map((item) => item.id === finding.id ? finding : item),
+      } : current);
+      setReason("");
     } catch (cause) {
       setError(errorMessage(cause));
     } finally {
@@ -33,55 +125,110 @@ export function ManagerDashboardPage() {
     }
   }
 
+  const dashboard = state?.dashboard;
+  const openFindings = state?.findings.filter((finding) => finding.status !== "CLOSED") ?? [];
+  const indicators = [
+    ["Total Audits", state?.plans.length ?? 0, `${state?.plans.filter((item) => item.status !== "RELEASED").length ?? 0} in planning`],
+    ["Reports Awaiting Approval", state?.report.status === "DEPARTMENT_REVIEW" ? 1 : 0, "Immutable report versions"],
+    ["Open Findings", dashboard?.openFindings ?? 0, "CAA review and auditee action"],
+    ["CAPs In Progress", dashboard?.pendingCapReviews ?? 0, "CAP acceptance is not closure"],
+    ["Overdue CAPs", dashboard?.overdueFindings ?? 0, "overdue management follow-up"],
+    ["Inspection Team", state?.organizations.length ?? 0, "Authorized organization scope"],
+  ] as const;
+
   return (
     <WorkspaceShell roleLabel="Department Manager" routeLabel="Dashboard">
-      <PageHeader
-        eyebrow="Management visibility"
-        title="Department Manager Dashboard"
-        description="See the smallest useful decision set and keep authorized closure separate from Evidence verification."
-      />
-      <CommandError message={error} />
-      <div className="workspace-actions" aria-label="Department workspaces">
-        <Link className="primary-link" to="/department-manager/organizations">Open Organization Registry</Link>
-        <Link className="secondary-button" to="/department-manager/audit-plan">Open Audit Plan Calendar</Link>
-      </div>
-      <section className="metric-grid" aria-label="Finding metrics">
-        <article><span>Open Findings</span><strong>{projection.dashboard?.openFindings ?? 0}</strong></article>
-        <article><span>Closed Findings</span><strong data-testid="manager-closed-findings">{projection.dashboard?.closedFindings ?? 0}</strong></article>
-        <article><span>Pending CAP Review</span><strong>{projection.dashboard?.pendingCapReviews ?? 0}</strong></article>
-        <article><span>Pending Evidence Review</span><strong>{projection.dashboard?.pendingEvidenceReviews ?? 0}</strong></article>
-      </section>
-      {projection.finding ? (
-        <article className="surface-card detail-card">
-          <div className="card-heading">
-            <div><p className="eyebrow">Canonical Finding</p><h2>{projection.finding.findingNumber}</h2></div>
-            <span className="status-pill" data-testid="manager-canonical-status">{projection.finding.status}</span>
-          </div>
-          <FindingFacts finding={projection.finding} />
-          {projection.finding.status !== "CLOSED" ? (
-            <div className="authorized-close-panel">
-              <label>
-                Authorized closure reason
-                <textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} />
-              </label>
-              <button className="secondary-button" disabled={busy} onClick={() => void authorizedClose()} type="button">
-                Use authorized closure
+      <div className="management-workspace manager-dashboard-page">
+        <header className="management-page-head workbench-page-header">
+          <h1>Department Manager Dashboard</h1>
+          <p>Operational planning and oversight for the authorized department, report decisions, Findings, CAPs, and inspection teams.</p>
+        </header>
+        <CommandError message={error} />
+        <span aria-hidden="true" className="planning-raw-status" data-testid="manager-closed-findings">{dashboard?.closedFindings ?? 0}</span>
+
+        <section aria-label="Management indicators" className="manager-dashboard-kpis">
+          {indicators.map(([label, value, detail], index) => (
+            <article className={`is-${["info", "warn", "danger", "info", "danger", "ok"][index]}`} key={label}>
+              <span>{label}</span><strong>{value}</strong><small>{detail}</small>
+            </article>
+          ))}
+        </section>
+
+        <section className="manager-dashboard-tasks">
+          <div className="management-section-head"><div><span>Manager workspace</span><h2>What needs attention?</h2></div></div>
+          <div className="manager-dashboard-task-grid">
+            {taskLinks.map((task) => (
+              <Link aria-label={task.action} className="manager-dashboard-task" key={task.title} to={task.href}>
+                <span aria-hidden="true">□</span><div><b>{task.title}</b><small>{task.description}</small></div><em>Open →</em>
+              </Link>
+            ))}
+            {unavailableTasks.map(([title, reasonText]) => (
+              <button aria-label={`${title} unavailable: ${reasonText}`} className="manager-dashboard-task" disabled key={title} title={reasonText} type="button">
+                <span aria-hidden="true">□</span><div><b>{title}</b><small>{reasonText}</small></div><em>Unavailable</em>
               </button>
-              <p>This distinct manager path records an authorized basis; it is not CAP acceptance or report issue.</p>
+            ))}
+          </div>
+        </section>
+
+        <div className="manager-dashboard-register-grid">
+          <section className="management-panel">
+            <div className="management-section-head"><div><span>Priority review</span><h2>Recent High-Risk Findings</h2></div></div>
+            <div className="management-table-scroll">
+              <table aria-label="Priority Findings">
+                <thead><tr><th>Finding</th><th>Organization</th><th>Severity</th><th>Current Owner</th><th>Next Action</th><th>Due Date</th><th>Action</th></tr></thead>
+                <tbody>
+                  {openFindings.length ? openFindings.map((finding) => (
+                    <tr key={finding.id}>
+                      <td><b>{finding.findingNumber}</b><small>{finding.title}</small></td>
+                      <td>{finding.organizationName}</td>
+                      <td>{formatSeverity(finding.severity)}</td>
+                      <td>{finding.currentOwnerType === "CAA" ? "CAA Inspector" : finding.organizationName}</td>
+                      <td>{finding.nextAction}</td>
+                      <td>{formatLocalDate(finding.dueDate)}</td>
+                      <td><Link to={`/lead-inspector/findings/${finding.id}`}>Open</Link></td>
+                    </tr>
+                  )) : <tr><td colSpan={7}>No open high-risk Findings require attention.</td></tr>}
+                </tbody>
+              </table>
             </div>
-          ) : null}
-          {projection.finding.status === "EVIDENCE_REQUIRED" ? (
-            <Link className="primary-link" to="/auditee/service-provider-cap">
-              Return to Fly Namibia Evidence
-            </Link>
-          ) : null}
-          {projection.finding.status === "CLOSED" ? (
-            <Link className="primary-link" to="/department-manager/reports/RPT-CAB-2026-001-V1">
-              Open report preview
-            </Link>
-          ) : null}
-        </article>
-      ) : null}
+          </section>
+          <section className="management-panel">
+            <div className="management-section-head"><div><span>Surveillance schedule</span><h2>Upcoming Audits</h2></div></div>
+            <div className="management-table-scroll">
+              <table aria-label="Upcoming Surveillance">
+                <thead><tr><th>Plan</th><th>Organization</th><th>Type</th><th>Target</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody>
+                  {state?.plans.map((plan) => (
+                    <tr key={plan.id}>
+                      <td><b>{plan.id}</b><small>{plan.title}</small></td><td>{plan.organizationName}</td><td>{plan.inspectionType}</td>
+                      <td>{formatLocalDate(plan.scheduledDate)}</td><td>{statusLabel(plan.status)}</td>
+                      <td><Link to="/department-manager/audit-plan">Open</Link></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <p className="management-advisory">Oversight Health Index is advisory; it does not trigger automatic legal, enforcement, certificate, or Finding-closure decisions.</p>
+
+        {canonicalFinding ? (
+          <section className="management-panel manager-canonical-finding">
+            <div className="management-section-head"><div><span>Canonical lifecycle control</span><h2>{canonicalFinding.findingNumber}</h2></div><strong data-testid="manager-canonical-status">{canonicalFinding.status}</strong></div>
+            <dl><div><dt>Organization</dt><dd>{canonicalFinding.organizationName}</dd></div><div><dt>Current owner</dt><dd>{canonicalFinding.currentOwnerType}</dd></div><div><dt>Next action</dt><dd>{canonicalFinding.nextAction}</dd></div><div><dt>Due Date</dt><dd>{formatLocalDate(canonicalFinding.dueDate)}</dd></div></dl>
+            {canonicalFinding.status !== "CLOSED" ? (
+              <div className="authorized-close-panel">
+                <label>Authorized closure reason<textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
+                <button className="secondary-button" disabled={busy} onClick={() => void authorizedClose()} type="button">Use authorized closure</button>
+                <p>This distinct manager path records an authorized basis; it is not CAP acceptance or report issue.</p>
+              </div>
+            ) : null}
+            {canonicalFinding.status === "EVIDENCE_REQUIRED" ? <Link className="primary-link" to="/auditee/service-provider-cap">Return to Fly Namibia Evidence</Link> : null}
+            {canonicalFinding.status === "CLOSED" ? <Link className="primary-link" to="/department-manager/reports/RPT-CAB-2026-001-V1">Open report preview</Link> : null}
+          </section>
+        ) : null}
+      </div>
     </WorkspaceShell>
   );
 }

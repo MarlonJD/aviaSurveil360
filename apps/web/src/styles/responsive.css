@@ -140,6 +140,58 @@
   cursor: pointer;
 }
 
+.workspace-shell--manager .manager-root-topbar {
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  height: 56px;
+  min-height: 56px;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 24px;
+}
+
+.workspace-shell--manager .auditee-root-topbar__experience {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 9px;
+  color: #6b7891;
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.workspace-shell--manager .auditee-root-topbar__experience select {
+  width: 220px;
+  max-width: 220px;
+  min-width: 220px;
+  height: 34px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid #dde3ec;
+  border-radius: 8px;
+  color: #16202e;
+  background: #fff;
+  font-size: 13.5px;
+}
+
+.workspace-shell--manager .auditee-root-topbar__avatar {
+  background: #2f6fd6;
+}
+
+.workspace-shell--manager .report-queue__filters label {
+  gap: 4px;
+}
+
+.workspace-shell--manager .report-queue__filters input,
+.workspace-shell--manager .report-queue__filters select {
+  height: 38px;
+  min-height: 38px;
+  padding: 7px 10px;
+}
+
 .auditee-root-topbar__notification {
   position: relative;
   width: 36px;
@@ -237,6 +289,17 @@
   font-weight: 400;
 }
 
+@media (min-width: 901px) and (max-width: 1100px) {
+  .workspace-shell--manager .manager-root-topbar {
+    height: 56px;
+    min-height: 56px;
+  }
+
+  .workspace-shell--manager .workspace-content {
+    padding-top: 85px;
+  }
+}
+
 @media (max-width: 900px) {
   .role-select-page {
     grid-template-columns: minmax(0, 1fr);
@@ -301,6 +364,18 @@
   .workspace-shell--auditee .workspace-content {
     width: 100%;
     padding: 72px 14px 46px;
+  }
+
+  .workspace-shell--manager .workspace-sidebar {
+    top: var(--manager-ribbon-height);
+    width: 268px;
+    height: calc(100% - var(--manager-ribbon-height));
+  }
+
+  .workspace-shell--manager .workspace-content {
+    width: 100%;
+    padding: 72px 14px 46px;
+    background: #f4f6fa;
   }
 
   .application-topbar {
@@ -376,6 +451,70 @@
     min-height: 55px;
     padding: 9px 12px;
     gap: 8px;
+  }
+
+  .workspace-shell--manager .manager-root-topbar {
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 55px;
+    min-height: 55px;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--avia-color-line);
+    background: #fff;
+  }
+
+  .workspace-shell--manager .mobile-navigation__opener {
+    top: 6px;
+    left: 9px;
+  }
+
+  .workspace-shell--manager .auditee-demo-ribbon__text,
+  .workspace-shell--manager .auditee-root-topbar__crumbs,
+  .workspace-shell--manager .auditee-root-topbar__spacer,
+  .workspace-shell--manager .auditee-root-topbar__experience > span,
+  .workspace-shell--manager .auditee-root-topbar__identity {
+    display: none;
+  }
+
+  .workspace-shell--manager .auditee-root-topbar__experience {
+    position: absolute;
+    top: 10px;
+    left: 129px;
+  }
+
+  .workspace-shell--manager .auditee-root-topbar__experience select {
+    width: 148px;
+    max-width: 148px;
+    min-width: 148px;
+    height: 36px;
+    min-height: 36px;
+    padding: 7px 26px 7px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .workspace-shell--manager .auditee-root-topbar__notification {
+    position: absolute;
+    top: 10px;
+    left: 285px;
+  }
+
+  .workspace-shell--manager .auditee-root-topbar__who {
+    position: absolute;
+    top: 11px;
+    left: 313px;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .workspace-shell--manager .report-queue__filters > button:first-of-type {
+    border-color: transparent;
+    background: linear-gradient(transparent 7px, #2f6fd6 7px calc(100% - 7px), transparent calc(100% - 7px));
+    transform: translateY(-7px);
   }
 
   .auditee-root-topbar__crumbs,

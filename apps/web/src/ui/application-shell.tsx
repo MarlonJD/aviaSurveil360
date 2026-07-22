@@ -29,14 +29,18 @@ export function ApplicationShell({
   children,
 }: PropsWithChildren<ApplicationShellProps>) {
   const auditeeChrome = identity.activeRole === "auditee";
+  const managerChrome = identity.activeRole === "manager";
   const auditeeDemoChrome = auditeeChrome && identity.mode === "demo-role-switch";
+  const managerDemoChrome = managerChrome && identity.mode === "demo-role-switch";
+  const rootDemoChrome = auditeeDemoChrome || managerDemoChrome;
+  const compactNavigation = typeof window !== "undefined" && window.innerWidth <= 900;
   return (
     <main
-      className={`workspace-shell${auditeeChrome ? " workspace-shell--auditee" : ""}${auditeeDemoChrome ? " workspace-shell--auditee-demo" : ""}`}
+      className={`workspace-shell${auditeeChrome ? " workspace-shell--auditee" : ""}${managerChrome ? " workspace-shell--manager" : ""}${auditeeDemoChrome ? " workspace-shell--auditee-demo" : ""}${managerDemoChrome ? " workspace-shell--manager-demo" : ""}`}
       data-active-role={identity.activeRole}
       data-testid="application-shell"
     >
-      {auditeeDemoChrome ? (
+      {rootDemoChrome ? (
         <div className="auditee-demo-ribbon" role="status">
           <span className="auditee-demo-ribbon__dot" aria-hidden="true" />
           <strong>DEMO</strong>
@@ -53,14 +57,14 @@ export function ApplicationShell({
           </button>
         </div>
       ) : null}
-      <aside className="workspace-sidebar">
+      <aside aria-hidden={compactNavigation || undefined} className="workspace-sidebar">
         <div className="sidebar-brand">
           <span className="sidebar-brand-mark" aria-hidden="true">
             <span className="sidebar-brand-mark__wing sidebar-brand-mark__wing--primary" />
             <span className="sidebar-brand-mark__wing sidebar-brand-mark__wing--secondary" />
             <span className="sidebar-brand-mark__code">AS</span>
           </span>
-          <span><strong>AviaSurveil360</strong><small>{auditeeChrome ? "OVERSIGHT WORKBENCH" : "Aviation Audit System"}</small></span>
+          <span><strong>AviaSurveil360</strong><small>{auditeeChrome || managerChrome ? "OVERSIGHT WORKBENCH" : "Aviation Audit System"}</small></span>
         </div>
         <RoleNavigation activeRole={identity.activeRole} activeRouteId={activeRouteId} />
         <div className="sidebar-footer">
@@ -68,9 +72,9 @@ export function ApplicationShell({
             <span className="nav-item__icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M10 17 5 12l5-5" /><path d="M5 12h12" /><path d="M14 4h5v16h-5" /></svg>
             </span>
-            <span>{auditeeChrome && identity.mode !== "oidc-session" ? "Role select" : "Logout"}</span>
+            <span>{(auditeeChrome || managerChrome) && identity.mode !== "oidc-session" ? "Role select" : "Logout"}</span>
           </button>
-          {auditeeDemoChrome ? <small>Demo data · frontend-only · saved in this browser</small> : null}
+          {rootDemoChrome ? <small>Demo data · frontend-only · saved in this browser</small> : null}
         </div>
       </aside>
       <section className="workspace-content">
@@ -79,6 +83,7 @@ export function ApplicationShell({
         </span>
         <MobileNavigation activeRole={identity.activeRole} activeRouteId={activeRouteId} />
         <ApplicationTopbar
+          activeRouteId={activeRouteId}
           identity={identity}
           onRoleRequest={onRoleRequest}
           onLogout={onLogout}

@@ -1,0 +1,72 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
+
+import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { AppProviders } from "../../app/providers";
+import { ScenarioProvider } from "../../app/scenario-context";
+import { createMockBackendRuntime } from "../../mock/create-mock-backend";
+import { ReportPreviewPage } from "./report-preview-page";
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
+
+function renderPage() {
+  const runtime = createMockBackendRuntime();
+  const getVersion = vi.spyOn(runtime.backendForRole("manager").reports, "getVersion");
+  render(
+    <AppProviders
+      runtime={{
+        backend: runtime.backend,
+        backendForRole: runtime.backendForRole,
+        buildProfile: "demo",
+        environmentLabel: "test",
+        identityMode: "demo-role-switch",
+        subjectId: "USR-MANAGER-MEHMET",
+      }}
+    >
+      <ScenarioProvider>
+        <MemoryRouter initialEntries={["/department-manager/reports/RPT-CAB-2026-001-V1"]}>
+          <ReportPreviewPage />
+        </MemoryRouter>
+      </ScenarioProvider>
+    </AppProviders>,
+  );
+  return { runtime, getVersion };
+}
+
+describe("ReportPreviewPage", () => {
+  it("direct-loads the immutable report version and truthful manager authority state", async () => {
+    const { getVersion } = renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Reports Approval" })).toBeVisible();
+    expect(getVersion).toHaveBeenCalledWith({ reportVersionId: "RPT-CAB-2026-001-V1" });
+    const dossier = screen.getByTestId("report-version-dossier");
+    expect(within(dossier).getByText("RPT-CAB-2026-001-V1")).toBeVisible();
+    expect(within(dossier).getByText("Version 1")).toBeVisible();
+    expect(within(dossier).getByText("EXECUTIVE_DIRECTOR_REVIEW")).toBeVisible();
+    expect(within(dossier).getByText("sha256:candidate-report-v1")).toBeVisible();
+    expect(screen.getByText(/Department Manager cannot issue, sign, lock, or close/i)).toBeVisible();
+    expect(screen.queryByRole("button", { name: /issue|sign|close/i })).toBeNull();
+  });
+
+  it("keeps queue, tabs, preview, and disabled download behavior functional and explicit", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    const queue = await screen.findByRole("table", { name: "Report Queue" });
+    expect(within(queue).getByText("RPT-CAB-2026-001-V1")).toBeVisible();
+    await user.click(screen.getByRole("tab", { name: "Decision history" }));
+    expect(screen.getByRole("tabpanel")).toHaveTextContent(/current immutable state/i);
+    await user.click(screen.getByRole("button", { name: "Review Full Report" }));
+    expect(screen.getByRole("dialog", { name: "Immutable report preview" })).toBeVisible();
+    const download = screen.getByRole("button", { name: "Download PDF" });
+    expect(download).toBeDisabled();
+    expect(screen.getByText(/PDF generation is not connected in this candidate/i)).toBeVisible();
+  });
+});

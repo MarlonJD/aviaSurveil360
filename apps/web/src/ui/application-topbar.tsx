@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import type { Role } from "../backend/backend";
+import type { ReactSurfaceId } from "../app/route-contracts";
 import type { RoleSelectionMode } from "./role-select-page";
 import { roleLabel } from "./role-select-page";
 
@@ -25,20 +26,30 @@ export function ApplicationTopbar({
   onRoleRequest,
   onLogout,
   notificationState,
+  activeRouteId,
 }: {
   identity: ShellIdentityPresentation;
   onRoleRequest(role: Role): void;
   onLogout(): void;
   notificationState: NotificationState;
+  activeRouteId?: ReactSurfaceId;
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const auditeeChrome = identity.activeRole === "auditee";
-  if (auditeeChrome) {
+  const managerChrome = identity.activeRole === "manager";
+  if (auditeeChrome || managerChrome) {
+    const managerCrumbs: Partial<Record<ReactSurfaceId, string>> = {
+      "manager-home": "Dashboard",
+      "organization-registry": "Dashboard  ›  Organizations",
+      "audit-plan": "Dashboard  ›  Planning",
+      "report-preview": "Dashboard  ›  Reports Approval",
+    };
+    const routeCrumbs = auditeeChrome ? "Corrective Actions (CAP)" : managerCrumbs[activeRouteId ?? "manager-home"] ?? "Dashboard";
     return (
-      <header className="application-topbar application-topbar--auditee auditee-root-topbar">
-        <div className="auditee-root-topbar__crumbs"><b>Corrective Actions (CAP)</b></div>
+      <header className={`application-topbar application-topbar--root ${auditeeChrome ? "application-topbar--auditee auditee-root-topbar" : "application-topbar--manager manager-root-topbar"}`}>
+        <div className="auditee-root-topbar__crumbs"><b>{routeCrumbs}</b></div>
         <div className="auditee-root-topbar__spacer" />
         <label className="auditee-root-topbar__experience">
           <span>Experience</span>
@@ -82,7 +93,7 @@ export function ApplicationTopbar({
           <span className="auditee-root-topbar__avatar">{initials(identity.displayName)}</span>
           <span className="auditee-root-topbar__identity">
             <strong>{identity.displayName}</strong>
-            <small>Service Provider Portal · {identity.organizationLabel}</small>
+            <small>{auditeeChrome ? `Service Provider Portal · ${identity.organizationLabel}` : "Department Manager"}</small>
           </span>
         </div>
       </header>

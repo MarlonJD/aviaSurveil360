@@ -53,6 +53,7 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
   const auditeeTransportPayloads: string[] = [];
   page.on("response", async (response) => {
     if (!captureAuditeeTransport || testInfo.project.name !== "http") return;
+    if (response.request().headers()["x-avia-test-subject"] !== "USR-AUDITEE-FLY") return;
     if (!/\/v1\/(?:findings|organizations)|\/cap-revisions|\/evidence/.test(response.url())) return;
     if (!response.headers()["content-type"]?.includes("json")) return;
     try {

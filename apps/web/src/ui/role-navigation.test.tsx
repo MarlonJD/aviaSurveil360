@@ -20,8 +20,9 @@ describe("RoleNavigation", () => {
     expect(screen.getAllByRole("link").map((link) => link.getAttribute("aria-label"))).toEqual([
       "Dashboard",
       "Planning",
-      "Organizations",
+      "Reports Approval",
     ]);
+    expect(screen.getByText("Department Manager")).toBeVisible();
     expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
   });
 

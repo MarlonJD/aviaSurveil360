@@ -96,4 +96,20 @@ describe("ApplicationTopbar", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: "Experience" }), "leadInspector");
     expect(onRoleRequest).toHaveBeenCalledWith("leadInspector");
   });
+
+  it("shows route-aware Department Manager root-demo chrome", () => {
+    render(
+      <ApplicationTopbar
+        activeRouteId="organization-registry"
+        identity={{ ...identity, activeRole: "manager", displayName: "Mehmet Kaya", availableRoles: ["manager", "auditee"] }}
+        onRoleRequest={() => undefined}
+        onLogout={() => undefined}
+        notificationState={{ kind: "local", unreadCount: 1, onOpen: () => undefined }}
+      />,
+    );
+
+    expect(screen.getByText(/Dashboard.*Organizations/)).toBeVisible();
+    expect(screen.getAllByText("Department Manager").length).toBeGreaterThan(0);
+    expect(screen.getByRole("combobox", { name: "Experience" })).toHaveValue("manager");
+  });
 });

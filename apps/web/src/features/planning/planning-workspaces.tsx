@@ -10,6 +10,7 @@ import type {
 import {
   CommandError,
   errorMessage,
+  formatLocalDate,
   PageHeader,
   StatusPill,
   WorkspaceShell,
@@ -178,25 +179,81 @@ export function GeneralManagerDashboardPage() {
 
 export function AuditPlanCalendarPage() {
   const backend = useBackendForRole("manager");
-  const [item, setItem] = useState<PlanningItemView | null>(null);
+  const [items, setItems] = useState<PlanningItemView[]>([]);
+  const [selected, setSelected] = useState<PlanningItemView | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    void backend.planning.list({ limit: 20 }).then((output) => setItem(output.items[0] ?? null)).catch((cause) => setError(errorMessage(cause)));
+    void backend.planning.list({ limit: 20 }).then((output) => {
+      setItems(output.items);
+      setSelected(output.items[0] ?? null);
+    }).catch((cause) => setError(errorMessage(cause)));
   }, [backend]);
   return (
-    <WorkspaceShell roleLabel="Department Manager" routeLabel="Audit Plan Calendar">
-      <PageHeader
-        eyebrow="Surveillance planning"
-        title="Audit Plan Calendar"
-        description="Review scheduled oversight work and its exact approval owner; this calendar does not bypass Finance, GM, or Executive Director authority."
-      />
-      <CommandError message={error} />
-      {item ? (
-        <article className="surface-card detail-card">
-          <div className="card-heading"><h2>{item.title}</h2><StatusPill>{item.status}</StatusPill></div>
-          <PlanningFacts item={item} />
-        </article>
-      ) : null}
+    <WorkspaceShell roleLabel="Department Manager" routeLabel="Department Planning">
+      <div className="management-workspace planning-workspace">
+        <header className="management-page-head workbench-page-header">
+          <h1>Department Planning</h1>
+          <p>Track planning approvals, release acceptance and department preparation in one panel.</p>
+        </header>
+        <CommandError message={error} />
+        <div className="planning-boundaries" aria-label="Planning candidate boundaries">
+          <strong>Read-only plan</strong><span>Frontend-only demo</span><span>Mock approval history</span><span>No real authorization service</span>
+        </div>
+        {selected ? (
+          <section className="planning-command-center management-panel" data-testid="planning-command-center">
+            <header className="planning-command-center__head">
+              <div className="planning-command-center__identity">
+                <span className="planning-command-center__eyebrow">Department planning workspace · PLAN-2026-Q3-CABIN</span>
+                <h2>Planning command center</h2>
+                <h3>Q3 Cabin Inspection Surveillance Plan</h3>
+                <p>Focused Q3 cabin inspection plan for emergency equipment serviceability oversight.</p>
+              </div>
+              <div aria-label="Plan state" className="planning-command-center__state">
+                <span className="planning-demo-badge is-warn"><i />Finance Review</span><span className="planning-demo-badge is-warn"><i />Awaiting approval</span><span className="planning-demo-badge is-info"><i />Routine / Announced</span><span className="planning-demo-badge is-info"><i />Advance Notice Required</span>
+                <i className="planning-raw-status" data-testid="planning-status">{selected.status}</i>
+              </div>
+            </header>
+            <div className="planning-command-center__facts">
+              <div><span>Organization &amp; Department</span><b>{selected.organizationName}</b><small>Cabin Safety</small></div>
+              <div><span>Scope &amp; Risk Driver</span><b>Risk based / repeat finding</b><small>Emergency equipment serviceability</small></div>
+              <div><span>Budget &amp; Resources</span><b>{new Intl.NumberFormat("en", { style: "currency", currency: "NAD", maximumFractionDigits: 0 }).format(selected.estimatedBudget)}</b><small>Caner Yildiz, Aylin Sezer</small></div>
+              <div><span>Target &amp; Readiness</span><b>{formatLocalDate(selected.scheduledDate)}</b><small>Awaiting approval</small></div>
+            </div>
+            <div aria-label="Current planning action" className="planning-command-center__action" role="status">
+              <div><span>Current owner</span><b data-testid="planning-owner">{roleLabels[selected.currentOwnerRole]}</b></div>
+              <div><span>Next action</span><b>Review budget: approve or return to Department Manager<i className="planning-raw-status">{selected.nextAction}</i></b></div>
+              <div><span>Blocking reason</span><b>{selected.status === "FINANCE_REVIEW" ? "Waiting for Finance Review decision." : "No unresolved blocking reason"}</b></div>
+            </div>
+            <div className="planning-command-center__path">
+              <div className="planning-command-center__path-head"><span>Decision Path</span><small>Department submission through final approval</small></div>
+              <ol aria-label="Planning decision path" className="approval-rail">
+                {["Department Manager", "Finance Review", "GM Review", "Executive Director Approval"].map((label, index) => (
+                  <li className={`approval-step ${index === 1 ? "current" : index === 0 ? "done" : ""}`} key={label}>
+                    <span className="approval-step__dot">{index === 0 ? "✓" : index === 1 ? "•" : index + 1}</span><span className="approval-step__label">{label}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="planning-queue management-panel">
+          <div className="management-section-head"><div><span>Authorized register</span><h2>Planning Queue</h2></div><strong>{items.length} item</strong></div>
+          <div className="management-table-scroll">
+            <table aria-label="Planning Queue">
+              <thead><tr><th>Planning Item</th><th>Organization</th><th>Type</th><th>Target</th><th>Budget</th><th>Owner</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody>{items.map((item) => (
+                <tr className={selected?.id === item.id ? "is-selected" : ""} key={item.id}>
+                  <td><b>{item.id}</b><small>{item.title}</small></td><td>{item.organizationName}</td><td>{item.inspectionType}</td><td>{formatLocalDate(item.scheduledDate)}</td>
+                  <td>{new Intl.NumberFormat("en", { style: "currency", currency: "NAD", maximumFractionDigits: 0 }).format(item.estimatedBudget)}</td><td>{roleLabels[item.currentOwnerRole]}</td><td>{item.status}</td>
+                  <td><button aria-label={`Open ${item.id}`} onClick={() => setSelected(item)} type="button">Open</button></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          {selected ? <p className="planning-selected-record" data-testid="planning-selected-record">Selected record: <b>{selected.id}</b> · revision {selected.revision}</p> : null}
+        </section>
+      </div>
     </WorkspaceShell>
   );
 }

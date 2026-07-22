@@ -13,7 +13,8 @@ export function activePrimaryRouteId(activeRouteId: ReactSurfaceId): ReactSurfac
   if (
     activeRouteId === "finding-detail" ||
     activeRouteId === "cap-review" ||
-    activeRouteId === "evidence-review"
+    activeRouteId === "evidence-review" ||
+    activeRouteId === "report-preview"
   ) return activeRouteId;
   const active = REACT_ROUTE_CONTRACT_BY_ID.get(activeRouteId);
   return active?.parentId ?? activeRouteId;
@@ -70,12 +71,13 @@ const ACCEPTED_NAVIGATION: Readonly<Record<Role, readonly AcceptedNavigationItem
   manager: [
     { label: "Dashboard", icon: "dashboard", routeId: "manager-home" },
     { label: "Planning", icon: "planning", routeId: "audit-plan" },
-    { label: "Organizations", icon: "organization", routeId: "organization-registry" },
-    { label: "Reports Approval", icon: "report", badge: "2" },
+    { label: "Audits", icon: "assignment" },
+    { label: "Reports Approval", icon: "report", routeId: "report-preview", badge: "2" },
     { label: "Risk Dashboard", icon: "analytics" },
     { label: "Inspection Team", icon: "assignment" },
     { label: "Findings Review", icon: "finding" },
     { label: "CAP Monitoring", icon: "evidence" },
+    { label: "Checklist Management", icon: "settings" },
   ],
   gm: [
     { label: "Dashboard", icon: "dashboard", routeId: "gm-home" },
@@ -146,6 +148,7 @@ export function RoleNavigation({
   return (
     <nav className="role-navigation" aria-label="Primary role navigation">
       {activeRole === "auditee" ? <p className="role-navigation__experience">Service Provider Portal</p> : null}
+      {activeRole === "manager" ? <p className="role-navigation__experience">Department Manager</p> : null}
       {ACCEPTED_NAVIGATION[activeRole].map((item) => {
         const route = item.routeId ? REACT_ROUTE_CONTRACT_BY_ID.get(item.routeId) : null;
         const active =

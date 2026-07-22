@@ -65,7 +65,7 @@ export function WorkspaceShell({
           kind: "unavailable",
           reason: "Notification delivery is not connected in this candidate.",
         }
-      : { kind: "local", unreadCount: activeRole === "auditee" ? 1 : 2, onOpen: () => undefined };
+      : { kind: "local", unreadCount: activeRole === "auditee" || activeRole === "manager" ? 1 : 2, onOpen: () => undefined };
   return (
     <ApplicationShell
       activeRouteId={activeRouteId}
@@ -122,10 +122,12 @@ const routeLabels: Record<string, ReactSurfaceId> = {
   "Checklist Runner": "checklist-runner",
   "Organization Registry": "organization-registry",
   "Audit Plan Calendar": "audit-plan",
+  "Department Planning": "audit-plan",
   "Finding Detail": "finding-detail",
   "CAP Review": "cap-review",
   "Evidence Review": "evidence-review",
   "Report Preview": "report-preview",
+  "Reports Approval": "report-preview",
 };
 
 function roleForLabel(label: string): Role {

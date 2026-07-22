@@ -116,4 +116,36 @@ describe("ApplicationShell", () => {
     expect(screen.getAllByText("Service Provider Portal").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Role select" })).toBeEnabled();
   });
+
+  it("renders the accepted Department Manager demo chrome without changing inspector chrome", () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <ApplicationShell
+          identity={{ ...identity, activeRole: "manager", displayName: "Mehmet Kaya" }}
+          activeRouteId="manager-home"
+          onRoleRequest={() => undefined}
+          onLogout={() => undefined}
+          notificationState={{ kind: "local", unreadCount: 1, onOpen: () => undefined }}
+        ><h1>Department Manager Dashboard</h1></ApplicationShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId("application-shell")).toHaveClass("workspace-shell--manager-demo");
+    expect(screen.getByText("OVERSIGHT WORKBENCH")).toBeVisible();
+    expect(screen.getAllByText("Department Manager").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Role select" })).toBeEnabled();
+
+    rerender(
+      <MemoryRouter>
+        <ApplicationShell
+          identity={identity}
+          activeRouteId="inspector-home"
+          onRoleRequest={() => undefined}
+          onLogout={() => undefined}
+          notificationState={{ kind: "local", unreadCount: 1, onOpen: () => undefined }}
+        ><h1>My Assignments</h1></ApplicationShell>
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("application-shell")).not.toHaveClass("workspace-shell--manager");
+  });
 });
