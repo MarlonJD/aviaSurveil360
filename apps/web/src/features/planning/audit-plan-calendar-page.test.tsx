@@ -39,20 +39,20 @@ describe("AuditPlanCalendarPage", () => {
     expect(await screen.findByRole("heading", { name: "Department Planning" })).toBeVisible();
     const commandCenter = screen.getByTestId("planning-command-center");
     expect(within(commandCenter).getAllByText("Finance Review").length).toBeGreaterThan(0);
-    expect(within(commandCenter).getByText(/Review budget: approve or return to Department Manager/)).toBeVisible();
+    expect(within(commandCenter).getByText("Finance to review budget")).toBeVisible();
     expect(within(commandCenter).getByText("15 Jul 2026")).toBeVisible();
     expect(screen.getByRole("list", { name: "Planning decision path" })).toBeVisible();
     expect(screen.getByRole("table", { name: "Planning Queue" })).toBeVisible();
   });
 
-  it("keeps unsupported intake actions absent and makes queue selection functional", async () => {
+  it("links the supported intake workspaces and makes queue selection functional", async () => {
     renderPage();
     const user = userEvent.setup();
 
     const open = await screen.findByRole("button", { name: "Open PLAN-2026-CAB-001" });
     await user.click(open);
     expect(screen.getByTestId("planning-selected-record")).toHaveTextContent("PLAN-2026-CAB-001");
-    expect(document.body).not.toHaveTextContent(/New Inspection Planning Intake|Ad Hoc|Unannounced/i);
-    expect(screen.queryByRole("button", { name: /new inspection|create|edit/i })).toBeNull();
+    expect(screen.getByRole("link", { name: "New Inspection planning intake" })).toHaveAttribute("href", "/department-manager/new-audit/step-1");
+    expect(screen.getByRole("link", { name: "Open Inspection Package Builder" })).toHaveAttribute("href", "/department-manager/inspection-package-builder");
   });
 });

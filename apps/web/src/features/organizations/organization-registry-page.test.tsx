@@ -59,4 +59,18 @@ describe("OrganizationRegistryPage", () => {
     expect(within(dossier).getByText("ACTIVE")).toBeVisible();
     expect(screen.queryByRole("button", { name: /edit|create|delete/i })).toBeNull();
   });
+
+  it("links the supported organization to its exact child route and disables unsupported records by ID", async () => {
+    renderPage();
+
+    const register = await screen.findByRole("table", { name: "Organizations" });
+    expect(within(register).getByRole("link", { name: "Open organization ORG-FLY-NAMIBIA" })).toHaveAttribute(
+      "href",
+      "/department-manager/organizations/ORG-FLY-NAMIBIA",
+    );
+    expect(within(register).getByRole("button", { name: "Organization detail unavailable for ORG-SKYCARGO" })).toHaveAttribute(
+      "title",
+      "Organization ORG-SKYCARGO has no declared Department Manager child route.",
+    );
+  });
 });

@@ -64,13 +64,43 @@ test("the behavior ledger covers the authorized first-production route families"
   }
 });
 
-test("the parity ledger freezes the 17/69 scope and visible action ownership", () => {
+test("the parity ledger freezes the 86/0 route scope and visible action ownership", () => {
   const ledger = readLedger();
-  assert.equal(ledger.reactScope.reactParitySurfaceIds.length, 17);
-  assert.equal(new Set(ledger.reactScope.reactParitySurfaceIds).size, 17);
-  assert.equal(ledger.reactScope.legacyOnlyRows, 69);
-  assert.equal(ledger.reactScope.legacyOnlyReactPath, null);
+  const expectedInteractionVerifiedSurfaceIds = [
+    "role-select", "inspector-home", "audit-detail", "checklist-runner",
+    "lead-home", "cap-review", "manager-home", "audit-plan", "report-preview",
+    "organization-registry", "gm-home", "finance-home",
+    "executive-home", "auditee-home", "admin-home",
+  ];
+  const expectedPresentationCorrectionPendingSurfaceIds = ["finding-detail", "evidence-review"];
+  assert.equal(ledger.reactScope.reactParitySurfaceIds.length, 86);
+  assert.equal(new Set(ledger.reactScope.reactParitySurfaceIds).size, 86);
+  assert.equal(ledger.reactScope.legacyOnlyRows, 0);
+  assert.equal(ledger.reactScope.legacyOnlyReactPath, "not-applicable");
   assert.equal(ledger.reactScope.legacyRemovalAllowed, false);
+  assert.equal(ledger.reactScope.interactionVerifiedSurfaceIds.length, 15);
+  assert.equal(ledger.reactScope.presentationCorrectionPendingSurfaceIds.length, 2);
+  assert.equal(ledger.reactScope.routeContractOnlySurfaceIds.length, 69);
+  assert.deepEqual(ledger.reactScope.interactionVerifiedSurfaceIds, expectedInteractionVerifiedSurfaceIds);
+  assert.deepEqual(
+    ledger.reactScope.presentationCorrectionPendingSurfaceIds,
+    expectedPresentationCorrectionPendingSurfaceIds,
+  );
+  assert.deepEqual(
+    ledger.reactScope.routeContractOnlySurfaceIds,
+    ledger.reactScope.reactParitySurfaceIds.filter(
+      (surfaceId) =>
+        !expectedInteractionVerifiedSurfaceIds.includes(surfaceId) &&
+        !expectedPresentationCorrectionPendingSurfaceIds.includes(surfaceId),
+    ),
+  );
+  const evidenceCategories = [
+    ...ledger.reactScope.interactionVerifiedSurfaceIds,
+    ...ledger.reactScope.presentationCorrectionPendingSurfaceIds,
+    ...ledger.reactScope.routeContractOnlySurfaceIds,
+  ];
+  assert.equal(new Set(evidenceCategories).size, 86, "Evidence categories must be disjoint");
+  assert.deepEqual(new Set(evidenceCategories), new Set(ledger.reactScope.reactParitySurfaceIds));
   assert.ok(ledger.visibleActionOwnership.length >= 3);
   for (const ownership of ledger.visibleActionOwnership) {
     assert.ok(ownership.id);
@@ -79,6 +109,15 @@ test("the parity ledger freezes the 17/69 scope and visible action ownership", (
     assert.ok(["local", "session", "backend-or-local"].includes(ownership.boundary));
     assert.ok(ownership.durableEffect.length > 20);
     assert.ok(fs.existsSync(path.join(repositoryRoot, ownership.evidence)));
+    if (ownership.id === "declared-route-and-workflow-actions") {
+      assert.deepEqual(ownership.surfaceIds, ledger.reactScope.interactionVerifiedSurfaceIds);
+    }
+    if (ownership.id === "shell-reset" || ownership.id === "shell-role-exit") {
+      assert.deepEqual(
+        ownership.surfaceIds,
+        ledger.reactScope.interactionVerifiedSurfaceIds.filter((surfaceId) => surfaceId !== "role-select"),
+      );
+    }
   }
 });
 

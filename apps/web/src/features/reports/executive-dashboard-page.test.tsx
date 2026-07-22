@@ -108,9 +108,17 @@ describe("ExecutiveDashboardPage", () => {
     expect(screen.getByRole("region", { name: "Overdue actions" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Management indicator only" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Review report RPT-CAB-2026-001-V1" })).toBeEnabled();
+    expect(screen.getByRole("link", { name: "View all Planning" })).toHaveAttribute(
+      "href",
+      "/executive-director/planning",
+    );
+    expect(screen.getByRole("link", { name: "View all Final Reports" })).toHaveAttribute(
+      "href",
+      "/executive-director/final-reports",
+    );
   });
 
-  it("issues and locks one immutable report without closing its linked Finding", async () => {
+  it("issues and locks the immutable unlinked report without closing a separately created Finding", async () => {
     const runtime = createMockBackendRuntime();
     const finding = await seedCanonicalFinding(runtime);
     renderPage(runtime);
@@ -124,11 +132,11 @@ describe("ExecutiveDashboardPage", () => {
     await user.click(within(decision).getByRole("button", { name: "Issue and lock report" }));
 
     expect(await screen.findByTestId("report-status")).toHaveTextContent("LOCKED");
-    expect(screen.getByTestId("report-finding-status")).toHaveTextContent(finding.status);
-    expect(screen.getByText("Report issue did not close the Finding")).toBeVisible();
+    expect(screen.getByTestId("report-finding-status")).toHaveTextContent("No Findings linked — relationship unavailable for RPT-CAB-2026-001-V1");
+    expect(screen.getByText("Report issue did not close the separately created Finding")).toBeVisible();
     expect((await runtime.backendForRole("leadInspector").findings.get({ findingId: finding.id })).status).toBe(finding.status);
     const locked = await runtime.backendForRole("executiveDirector").reports.getVersion({ reportVersionId: "RPT-CAB-2026-001-V1" });
-    expect(locked).toMatchObject({ status: "LOCKED", revision: 2 });
+    expect(locked).toMatchObject({ status: "LOCKED", revision: 2, findingIds: [] });
     expect(within(decision).queryByRole("button", { name: "Issue and lock report" })).toBeNull();
   });
 

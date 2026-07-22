@@ -1,0 +1,185 @@
+.manager-ops-page {
+  display: grid;
+  gap: 20px;
+}
+
+.manager-ops-filters {
+  align-items: end;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #d9e0e8);
+  border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px;
+}
+
+.manager-ops-filters label,
+.manager-ops-dossier label {
+  display: grid;
+  font-weight: 700;
+  gap: 6px;
+  min-width: min(100%, 220px);
+}
+
+.manager-ops-filters input,
+.manager-ops-filters select,
+.manager-ops-dossier textarea {
+  border: 1px solid var(--color-border, #c8d1dc);
+  border-radius: 8px;
+  font: inherit;
+  min-height: 44px;
+  padding: 10px 12px;
+}
+
+.manager-ops-layout {
+  align-items: start;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1.65fr) minmax(280px, 0.85fr);
+}
+
+.manager-ops-register {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.manager-ops-card,
+.manager-ops-dossier {
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #d9e0e8);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgb(24 50 77 / 6%);
+  display: grid;
+  gap: 12px;
+  overflow-wrap: anywhere;
+  padding: 18px;
+}
+
+.manager-ops-dossier {
+  position: sticky;
+  top: 84px;
+}
+
+.manager-ops-card h2,
+.manager-ops-card h3,
+.manager-ops-dossier h2,
+.manager-ops-card p,
+.manager-ops-dossier p {
+  margin: 0;
+}
+
+.manager-ops-card dl,
+.manager-ops-facts {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.manager-ops-card dl div,
+.manager-ops-facts div {
+  border-top: 1px solid var(--color-border, #e3e8ee);
+  display: grid;
+  gap: 3px;
+  padding-top: 8px;
+}
+
+.manager-ops-card dt,
+.manager-ops-facts dt {
+  color: var(--color-text-muted, #5f6f80);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.manager-ops-card dd,
+.manager-ops-facts dd {
+  margin: 0;
+}
+
+.manager-ops-card button,
+.manager-ops-card a,
+.manager-ops-dossier button,
+.manager-ops-dossier a,
+.manager-ops-actions button,
+.manager-ops-record-select {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 44px;
+  padding: 9px 14px;
+}
+
+.manager-ops-card button,
+.manager-ops-card a,
+.manager-ops-dossier button,
+.manager-ops-dossier a {
+  scroll-margin-block: 4px;
+}
+
+.manager-ops-record-select {
+  align-items: flex-start;
+  background: transparent;
+  border: 0;
+  flex-direction: column;
+  padding-inline: 0;
+  text-align: left;
+}
+
+.manager-ops-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.manager-ops-metrics {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.manager-ops-metrics article {
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #d9e0e8);
+  border-radius: 12px;
+  display: grid;
+  gap: 5px;
+  padding: 16px;
+}
+
+@media (max-width: 900px) {
+  .manager-ops-page .manager-ops-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .manager-ops-page .manager-ops-dossier {
+    position: static;
+  }
+
+  .manager-ops-page .manager-ops-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .manager-ops-page .manager-ops-filters,
+  .manager-ops-page .manager-ops-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .manager-ops-page .manager-ops-filters label,
+  .manager-ops-page .manager-ops-filters input,
+  .manager-ops-page .manager-ops-filters select,
+  .manager-ops-page .manager-ops-actions button {
+    width: 100%;
+  }
+
+  .manager-ops-page .manager-ops-card dl,
+  .manager-ops-page .manager-ops-facts,
+  .manager-ops-page .manager-ops-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

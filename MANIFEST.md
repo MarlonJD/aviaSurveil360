@@ -293,6 +293,10 @@ files in the same folder.
 - `docs/exec-plans/index.md` — active execution-plan tracking index.
 - `docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md`
 - `docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md`
+- `docs/exec-plans/active/2026-07-22-full-react-86-screen-migration-plan.md`
+- `docs/exec-plans/active/2026-07-22-full-backend-scenario-parity-plan.md`
+- `docs/exec-plans/active/2026-07-22-local-production-like-services-plan.md`
+- `docs/exec-plans/active/2026-07-22-reliability-dr-and-aws-terraform-terragrunt-plan.md`
 - `docs/exec-plans/active/2026-06-14-aviasurveil-demo-only-prototype-plan.md`
 - `docs/exec-plans/active/2026-06-23-ncaa-platform-v2-and-mvp-plan.md`
 - `docs/exec-plans/active/2026-06-28-caa-governance-workflow-and-roles-plan.md`
@@ -329,3 +333,8 @@ root-demo visual/interaction parity recorded in Task evidence. They
 do not prove production identity/MFA, production storage/scanning or records
 operations, regulatory or enforcement approval, notification delivery,
 production sync, deployment, cutover, release, or production readiness.
+
+The four 22 July 2026 follow-up plans define, but do not yet implement, the
+approved target of 86/86 React routes, complete mock/Go/PostgreSQL scenario
+parity, production-like local Docker services, local reliability/DR, and a later
+explicitly authorized AWS trial using Terraform and Terragrunt.

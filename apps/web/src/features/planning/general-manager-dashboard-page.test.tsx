@@ -54,10 +54,14 @@ describe("GeneralManagerDashboardPage", () => {
     expect(screen.getByRole("table", { name: "Department Overview" })).toBeVisible();
     expect(screen.getByRole("region", { name: "Risk Heat Map" })).toBeVisible();
     expect(screen.getByRole("table", { name: "Report Review Queue" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Open Report" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Open Report" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "View All Departments" })).toHaveAttribute(
+      "href",
+      "/general-manager/departments",
+    );
+    expect(screen.getByRole("button", { name: "Open report RPT-CAB-2026-001-V1 unavailable" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Open report RPT-CAB-2026-001-V1 unavailable" })).toHaveAttribute(
       "title",
-      "A General Manager report-detail route is not part of this React parity slice.",
+      "Report version RPT-CAB-2026-001-V1 is EXECUTIVE_DIRECTOR_REVIEW; General Manager can open exact report decisions only at GM_REVIEW.",
     );
     expect(screen.getByText(/General Manager review may return or forward/i)).toBeVisible();
     expect(screen.getByText(/cannot issue, sign, lock, or close/i)).toBeVisible();

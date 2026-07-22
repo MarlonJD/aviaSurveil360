@@ -1,4 +1,7 @@
-import { backendContract, FIXED_NOW, type BackendContractHarness } from "./backend-contract";
+import { describe, expect, it } from "vitest";
+
+import { backendContract, FIXED_NOW, PRINCIPALS, type BackendContractHarness } from "./backend-contract";
+import type { DemoBackend } from "../../src/backend/backend";
 import { createMockBackend } from "../../src/mock/create-mock-backend";
 import { MemoryMockStore } from "../../src/mock/memory-mock-store";
 
@@ -9,4 +12,39 @@ backendContract(async (): Promise<BackendContractHarness> => {
       return createMockBackend({ store, principal });
     },
   };
+});
+
+describe("mock-only 86-screen capability boundary", () => {
+  it("exposes immutable composed demo capabilities without activating HTTP behavior", async () => {
+    const store = MemoryMockStore.createCanonical({ clock: () => FIXED_NOW });
+    const backend: DemoBackend = createMockBackend({ store, principal: PRINCIPALS.inspector });
+
+    expect(backend.mode).toBe("mock");
+    expect(backend).toHaveProperty("communications");
+    expect(backend).toHaveProperty("calendar");
+    expect(backend).toHaveProperty("profiles");
+    expect(backend).toHaveProperty("teams");
+    expect(backend).toHaveProperty("risk");
+    expect(backend).toHaveProperty("documents");
+    expect(backend).toHaveProperty("notifications");
+    expect(backend).toHaveProperty("administration");
+    expect(backend).toHaveProperty("assistantDrafts");
+    expect(backend).toHaveProperty("auditeeCoordination");
+    expect(backend).toHaveProperty("auditeeReports");
+    expect(backend).toHaveProperty("planningIntake");
+    expect(backend).toHaveProperty("packageDrafts");
+    expect(backend.planningIntake).toHaveProperty("saveDraft");
+    expect(backend.planningIntake).toHaveProperty("submit");
+    expect(backend.packageDrafts).toHaveProperty("save");
+    expect(backend.assistantDrafts).toHaveProperty("createDraft");
+    expect(backend.assistantDrafts).not.toHaveProperty("create");
+    expect(backend.auditeeCoordination).toHaveProperty("list");
+    expect(backend.auditeeCoordination).toHaveProperty("respond");
+    expect(backend.auditeeReports).toHaveProperty("listReleased");
+    expect(backend.auditeeReports).toHaveProperty("getReleased");
+
+    const profile = await backend.profiles.getMine({});
+    profile.displayName = "mutated caller copy";
+    expect((await backend.profiles.getMine({})).displayName).toBe("Amina Inspector");
+  });
 });

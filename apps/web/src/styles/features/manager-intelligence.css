@@ -1,0 +1,336 @@
+.manager-intelligence-page {
+  display: grid;
+  gap: 22px;
+  padding: 28px;
+}
+
+.manager-intelligence-boundary {
+  border: 1px solid #b9c8d8;
+  border-left: 4px solid #2f6690;
+  border-radius: 8px;
+  background: #f5f9fc;
+  color: #29445c;
+  padding: 14px 16px;
+}
+
+.manager-intelligence-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
+  gap: 16px;
+}
+
+.manager-intelligence-filters label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: #334e68;
+  font-weight: 700;
+}
+
+.manager-intelligence-filters select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #aebfce;
+  border-radius: 6px;
+  background: #fff;
+  padding: 0 12px;
+}
+
+.manager-intelligence-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.manager-intelligence-filter-actions button,
+.manager-intelligence-filter-actions a,
+.manager-intelligence-page > a,
+.manager-signal-list button,
+.manager-intelligence-panel button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid #9eb2c4;
+  border-radius: 6px;
+  background: #fff;
+  color: #15568a;
+  padding: 0 14px;
+  font-weight: 750;
+}
+
+.manager-intelligence-filter-actions a {
+  text-decoration: none;
+}
+
+.manager-intelligence-filters > span,
+.manager-intelligence-filters > p,
+.manager-intelligence-filter-actions {
+  grid-column: span 2;
+}
+
+.manager-intelligence-indicators {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.manager-intelligence-indicators article {
+  display: grid;
+  gap: 6px;
+  min-height: 122px;
+  border: 1px solid #d6e0e8;
+  border-radius: 10px;
+  background: #fff;
+  padding: 18px;
+  box-shadow: 0 4px 16px rgb(20 45 70 / 7%);
+}
+
+.manager-intelligence-indicators strong {
+  color: #15395b;
+  font-size: 2rem;
+}
+
+.manager-intelligence-indicators small {
+  color: #5e7386;
+}
+
+.manager-intelligence-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.manager-intelligence-panel {
+  min-width: 0;
+  border: 1px solid #d4dfe8;
+  border-radius: 10px;
+  background: #fff;
+  padding: 20px;
+}
+
+.manager-intelligence-panel--wide {
+  grid-column: span 2;
+}
+
+.manager-intelligence-panel h2 {
+  margin: 4px 0 10px;
+  color: #163a5c;
+}
+
+.manager-intelligence-panel ul {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.manager-intelligence-panel li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.manager-intelligence-panel a,
+.manager-intelligence-actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 10px;
+  color: #15568a;
+  font-weight: 750;
+}
+
+.manager-risk-matrix-mini {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.manager-risk-matrix-mini span {
+  display: grid;
+  min-height: 54px;
+  place-items: center;
+  border-radius: 4px;
+  background: #e8f0f5;
+}
+
+.manager-risk-matrix-mini small {
+  color: #6a7e8e;
+}
+
+.manager-risk-matrix {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.manager-risk-matrix span {
+  display: grid;
+  min-height: 58px;
+  place-items: center;
+  border-radius: 4px;
+  background: #eef3f6;
+  color: #43596c;
+}
+
+.manager-signal-list,
+.manager-dossier-list {
+  display: grid;
+  gap: 14px;
+}
+
+.manager-signal-list article,
+.manager-dossier-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid #d4dfe8;
+  border-radius: 10px;
+  background: #fff;
+  padding: 18px;
+}
+
+.manager-signal-list dl {
+  display: flex;
+  gap: 18px;
+  margin: 0;
+}
+
+.manager-signal-list dl div {
+  display: grid;
+  gap: 4px;
+}
+
+.organization-risk-summary {
+  display: grid;
+  grid-template-columns: minmax(200px, .65fr) 2fr;
+  gap: 18px;
+  border: 1px solid #d4dfe8;
+  border-radius: 10px;
+  background: #fff;
+  padding: 20px;
+}
+
+.organization-risk-summary > div {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  border-radius: 8px;
+  background: #eef5f9;
+  padding: 20px;
+}
+
+.organization-risk-summary strong {
+  color: #164b70;
+  font-size: 2.4rem;
+}
+
+.organization-risk-summary dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.organization-risk-summary dl div {
+  display: grid;
+  gap: 5px;
+  border-bottom: 1px solid #dfe7ed;
+  padding: 10px;
+}
+
+.manager-intelligence-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.manager-intelligence-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #d4dfe8;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.manager-intelligence-table-wrap table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.manager-intelligence-table-wrap th,
+.manager-intelligence-table-wrap td {
+  border-bottom: 1px solid #e1e8ee;
+  padding: 14px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.manager-intelligence-table-wrap td small {
+  display: block;
+  margin-top: 5px;
+}
+
+.manager-intelligence-table-wrap td a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 8px;
+}
+
+@media (max-width: 1050px) {
+  .workspace-shell .manager-intelligence-indicators {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .workspace-shell .manager-intelligence-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-shell .manager-intelligence-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-shell .manager-intelligence-panel--wide {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .workspace-shell .manager-intelligence-page {
+    gap: 16px;
+    padding: 18px 14px;
+  }
+
+  main.workspace-shell .manager-intelligence-indicators,
+  main.workspace-shell .manager-intelligence-grid,
+  main.workspace-shell .organization-risk-summary,
+  main.workspace-shell .organization-risk-summary dl {
+    grid-template-columns: 1fr;
+  }
+
+  main.workspace-shell .manager-intelligence-panel--wide {
+    grid-column: span 1;
+  }
+
+  .workspace-shell .manager-intelligence-filters,
+  .workspace-shell .manager-signal-list article,
+  .workspace-shell .manager-dossier-list article {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-shell .manager-intelligence-filters > span,
+  .workspace-shell .manager-intelligence-filters > p,
+  .workspace-shell .manager-intelligence-filter-actions {
+    grid-column: span 1;
+  }
+
+  :where(.workspace-shell) .manager-intelligence-indicators {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

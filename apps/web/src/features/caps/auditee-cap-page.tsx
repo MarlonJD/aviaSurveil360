@@ -243,7 +243,7 @@ export function AuditeeCapPage() {
 
   function requestEvidenceReview(role: Role): void {
     session?.setActiveRole(role);
-    navigate(projection.finding ? `/lead-inspector/evidence-review/${projection.finding.id}` : createRoleEntryPath(role));
+    navigate(projection.finding ? `/department-manager/evidence/${projection.finding.id}` : createRoleEntryPath(role));
   }
 
   function focusResponsePackage(): void {
@@ -252,7 +252,7 @@ export function AuditeeCapPage() {
 
   return (
     <WorkspaceShell roleLabel="Auditee — Fly Namibia" routeLabel="Corrective Actions">
-      <div className="auditee-workspace">
+      <div className="auditee-workspace" data-testid="auditee-page">
         <span className="visually-hidden">Service Provider Portal</span>
         <header className="workbench-page-header auditee-page-header">
           <div className="workbench-page-header__main">
@@ -549,7 +549,7 @@ export function AuditeeCapPage() {
             {projection.finding?.status === "PENDING_CAA_REVIEW" ? (
               <footer className="auditee-handoff">
                 <div><span>Current owner</span><strong>CAA Evidence Review</strong></div>
-                <RoleHandoff identityMode={identityMode} session={handoffSession} targetRole="leadInspector" onRoleRequest={requestEvidenceReview}>Switch to Evidence Review</RoleHandoff>
+                <RoleHandoff identityMode={identityMode} session={handoffSession} targetRole="manager" onRoleRequest={requestEvidenceReview}>Switch to Evidence Review</RoleHandoff>
               </footer>
             ) : null}
           </section>

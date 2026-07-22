@@ -1,4 +1,5 @@
-import type { Backend, BackendPrincipal, Role } from "../backend/backend";
+import type { Backend, BackendPrincipal, DemoBackend, Role } from "../backend/backend";
+export { DEMO_CAPABILITY_PERMISSION_MATRIX, type DemoCapabilityName } from "../backend/backend-contracts";
 import { DEMO_MOCK_STORAGE_KEY } from "../app/demo-persistence";
 import { MemoryMockStore } from "./memory-mock-store";
 import { MockBackendEngine } from "./mock-engine";
@@ -15,7 +16,7 @@ export interface CreateMockBackendOptions {
   clock?: () => string;
 }
 
-export function createMockBackend(options: CreateMockBackendOptions = {}): Backend {
+export function createMockBackend(options: CreateMockBackendOptions = {}): DemoBackend {
   const clock = options.clock ?? (() => "2026-06-15T09:00:00.000Z");
   const store = options.store ?? MemoryMockStore.createCanonical({ clock });
   return new MockBackendEngine(store, options.principal ?? defaultPrincipal);
@@ -48,9 +49,10 @@ export const DEMO_PRINCIPALS: Record<Role, BackendPrincipal> = {
   admin: { subjectId: "USR-ADMIN-ADA", role: "admin", organizationId: null },
 };
 
+
 function createRuntimeFromStore(store: MemoryMockStore) {
-  const sessions = new Map<Role, Backend>();
-  const backendForRole = (role: Role): Backend => {
+  const sessions = new Map<Role, DemoBackend>();
+  const backendForRole = (role: Role): DemoBackend => {
     const existing = sessions.get(role);
     if (existing) return existing;
     const backend = createMockBackend({ store, principal: DEMO_PRINCIPALS[role] });

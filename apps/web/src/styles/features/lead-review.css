@@ -1610,6 +1610,12 @@
   .finding-root-page > .finding-root-head {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
+
+  .finding-root-next .lead-root-button--primary:is(.lead-root-button--primary) {
+    border-color: #dde3ec;
+    color: #16202e;
+    background: #fff;
+  }
 }
 
 @media (width >= 1101px) {
@@ -1632,11 +1638,13 @@
   }
 
   .finding-root-head:is(.finding-root-head) .lead-root-button::before {
-    inset: 7px 0 0;
+    display: none;
   }
 
   .finding-root-head:is(.finding-root-head) .lead-root-button {
-    padding: 16px 15px 2px;
+    padding: 9px 15px;
+    border-color: #dde3ec;
+    background: #fff;
   }
 
   .finding-root-next:is(.finding-root-next) {
@@ -1686,9 +1694,9 @@
   }
 
   .finding-mobile-summary .lead-root-button--primary:is(.lead-root-button--primary) {
-    border-color: #dde3ec;
-    color: #16202e;
-    background: #fff;
+    border-color: #2f6fd6;
+    color: #fff;
+    background: #2f6fd6;
   }
 
   .finding-caa-actions:is(.finding-caa-actions) {

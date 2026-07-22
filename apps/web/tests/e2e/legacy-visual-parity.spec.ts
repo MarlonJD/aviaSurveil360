@@ -11,6 +11,7 @@ import {
   decodePngFrame,
   driveReactSurface,
   installDeterministicPageState,
+  resolveFocusedSurfaces,
   validateBaselineManifest,
   visualComparisonRegions,
   VISUAL_BASELINE_ROOT,
@@ -25,16 +26,18 @@ const appRoot = process.cwd();
 const repoRoot = resolve(appRoot, "../..");
 const baselineRoot = resolve(repoRoot, VISUAL_BASELINE_ROOT);
 const manifestPath = resolve(baselineRoot, "baseline-manifest.json");
-const surfaces = [...VISUAL_SURFACES];
+const surfaces = resolveFocusedSurfaces();
 
 const task9SemanticOverrides = {
   "inspector-home": {
+    expectedSemanticMarker: "AUD-2026-001",
     expectedOwnerText: "CAA Inspector",
     expectedNextActionText: "Continue Cabin Inspection checklist",
     expectedStatusText: "IN PROGRESS",
     expectedDueDateText: "18 Jun 2026",
   },
   "audit-detail": {
+    expectedSemanticMarker: "AUD-2026-001",
     expectedOwnerText: "CAA Inspector",
     expectedStatusText: "IN_PROGRESS",
     expectedDueDateText: "18 Jun 2026",
@@ -45,6 +48,11 @@ const task9SemanticOverrides = {
     expectedStatusText: "IN_PROGRESS",
     expectedDueDateText: "18 Jun 2026",
     expectedPrimaryActionText: "Save response",
+  },
+  "finding-detail": {
+    expectedDueDateText: "19 Jun 2026",
+    expectedNextActionText: "Lead Inspector to review CAP",
+    expectedPrimaryActionText: "Open CAP review handoff",
   },
 } as const;
 
@@ -64,6 +72,17 @@ function readManifest(): BaselineManifest {
 }
 
 const manifest = readManifest();
+const expectedVisualPairCount = VISUAL_SURFACES.length * VISUAL_VIEWPORTS.length;
+const expectedExecutedPairCount = surfaces.length * VISUAL_VIEWPORTS.length;
+let reactCandidateAttachmentCount = 0;
+let decodedRegionResultAttachmentCount = 0;
+
+test.afterAll(() => {
+  expect(VISUAL_SURFACES).toHaveLength(86);
+  expect(expectedVisualPairCount).toBe(258);
+  expect(reactCandidateAttachmentCount).toBe(expectedExecutedPairCount);
+  expect(decodedRegionResultAttachmentCount).toBe(expectedExecutedPairCount);
+});
 
 const workbenchPrimitiveGallery = `
   <main class="workspace-content" data-testid="workbench-primitive-gallery">
@@ -166,6 +185,7 @@ for (const viewport of VISUAL_VIEWPORTS) {
         body: screenshot,
         contentType: "image/png",
       });
+      reactCandidateAttachmentCount += 1;
       const baselineFrame = decodePngFrame(baseline);
       const candidateFrame = decodePngFrame(screenshot);
       const comparisons = visualComparisonRegions(viewport, surface.parityMode).map((contract) => {
@@ -196,6 +216,7 @@ for (const viewport of VISUAL_VIEWPORTS) {
         ),
         contentType: "application/json",
       });
+      decodedRegionResultAttachmentCount += 1;
       for (const comparison of comparisons) {
         expect.soft(
           comparison.passed,
@@ -209,6 +230,22 @@ for (const viewport of VISUAL_VIEWPORTS) {
         await expect(page.locator(".application-topbar")).toBeVisible();
         await expect(page.locator(".workspace-content")).toBeVisible();
         await expect(page.locator(".workbench-page-header")).toBeVisible();
+        if (surface.id === "inspector-findings") {
+          const dossierLink = page.getByRole("link", { name: "Open Finding dossier" });
+          await expect(dossierLink).toBeVisible();
+          await dossierLink.click();
+          await expect(page).toHaveURL(/\/inspector\/findings\/FND-CAB-2026-001$/);
+          await page.getByRole("link", { name: "Open Inspector Assistant" }).click();
+          await expect(page).toHaveURL(/\/inspector\/assistant$/);
+          if (viewport.id === "mobile") {
+            await page.getByRole("button", { name: "Open navigation" }).click();
+            const drawer = page.getByRole("dialog", { name: "Primary navigation" });
+            await expect(drawer).toBeVisible();
+            await drawer.getByRole("link", { name: "Findings" }).click();
+            await expect(drawer).toBeHidden();
+            await expect(page).toHaveURL(/\/inspector\/findings$/);
+          }
+        }
         const touchTargets = await page.locator("a:visible, button:visible").evaluateAll((elements) =>
           elements.map((element) => {
             const rect = element.getBoundingClientRect();

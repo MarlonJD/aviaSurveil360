@@ -1,8 +1,10 @@
+import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { REACT_ROUTE_CONTRACT_BY_ID } from "../../src/app/route-contracts";
 
 import {
   assertBaselineUpdateMode,
@@ -20,6 +22,8 @@ import {
   validateMaskContract,
   visualComparisonRegions,
   VISUAL_MAX_CHANNEL_DELTA,
+  VISUAL_SURFACES,
+  VISUAL_VIEWPORTS,
   type BaselineManifest,
   type RectMask,
 } from "../e2e/support/legacy-parity-fixtures";
@@ -83,6 +87,102 @@ function singleItemManifest(fileSha256: string): BaselineManifest {
 }
 
 describe("visual parity contract", () => {
+  it("freezes the full 86-surface by three-viewport matrix with role-correct root fixtures", () => {
+    expect(VISUAL_SURFACES).toHaveLength(86);
+    expect(VISUAL_VIEWPORTS).toHaveLength(3);
+    expect(VISUAL_SURFACES.length * VISUAL_VIEWPORTS.length).toBe(258);
+    expect(new Set(VISUAL_SURFACES.map((surface) => surface.id)).size).toBe(86);
+    expect(new Set(VISUAL_SURFACES.map((surface) => surface.auditId)).size).toBe(86);
+    expect(VISUAL_SURFACES.every((surface) => surface.expectedHeading.trim().length > 0)).toBe(true);
+    expect(VISUAL_SURFACES.every((surface) => surface.expectedSemanticMarker?.trim().length)).toBe(true);
+    expect(VISUAL_SURFACES.filter((surface) => surface.id !== "role-select").every((surface) => surface.legacy.role)).toBe(true);
+    for (const surface of VISUAL_SURFACES) {
+      expect(surface.legacy.role).toBe(REACT_ROUTE_CONTRACT_BY_ID.get(surface.id)?.requiredRole ?? null);
+    }
+    expect(VISUAL_SURFACES.find((surface) => surface.auditId === "ui-audit-009")).toMatchObject({
+      id: "finding-detail",
+      reactPath: "/inspector/findings/FND-CAB-2026-001",
+      legacy: { role: "inspector" },
+    });
+    expect(VISUAL_SURFACES.find((surface) => surface.auditId === "ui-audit-044")).toMatchObject({
+      id: "evidence-review",
+      reactPath: "/department-manager/evidence/FND-CAB-2026-001",
+      legacy: { role: "manager" },
+    });
+    expect(VISUAL_SURFACES.find((surface) => surface.id === "admin-inspection-package-builder")).toMatchObject({
+      legacy: { role: "admin", view: "package-builder" },
+      expectedHeading: "Dynamic Inspection Package Builder",
+    });
+    expect(VISUAL_SURFACES.find((surface) => surface.id === "admin-organization-detail")).toMatchObject({
+      legacy: { role: "admin", view: "org-detail", params: { orgId: "ORG-XYZ" } },
+    });
+    expect(VISUAL_SURFACES.find((surface) => surface.id === "inspector-calendar")).toMatchObject({
+      expectedSemanticMarker: "Fly Namibia · Cabin Inspection",
+    });
+    expect(VISUAL_SURFACES.find((surface) => surface.id === "manager-preliminary-report-review")).toMatchObject({
+      legacy: { role: "manager", view: "audit-reports", params: { filter: "preliminary" } },
+      expectedHeading: "Preliminary Report",
+      expectedSemanticMarker: "Preliminary Report",
+    });
+    for (const step of [1, 2, 3, 4, 5]) {
+      expect(VISUAL_SURFACES.find((surface) => surface.id === `new-audit-wizard-${step}`)).toMatchObject({
+        legacyState: { wizardStep: step },
+      });
+    }
+    expect(VISUAL_SURFACES.find((surface) => surface.id === "lead-preliminary-report-workflow")).toMatchObject({
+      legacyState: { preliminaryWorkflow: true },
+      expectedSemanticMarker: "Inspection Overview",
+    });
+    expect(VISUAL_SURFACES.find((surface) => surface.id === "lead-final-report-readiness")).toMatchObject({
+      legacy: { role: "leadInspector", view: "audit-reports", params: { filter: "final", finalReportId: "FR-2026-018" } },
+      expectedHeading: "Final Report Preparation",
+      expectedSemanticMarker: "FR-2026-018",
+    });
+    expect(VISUAL_SURFACES.find((surface) => surface.id === "lead-prepare-final-report")).toMatchObject({
+      legacy: { role: "leadInspector", view: "final-report-prepare", params: { reportId: "FR-2026-018" } },
+      expectedHeading: "Report Content",
+      expectedSemanticMarker: "Report Progress",
+    });
+    expect(VISUAL_SURFACES.find((surface) => surface.id === "lead-final-report-document")).toMatchObject({
+      legacy: { role: "leadInspector", view: "final-report-view", params: { reportId: "FR-2026-018" } },
+    });
+    expect(VISUAL_SURFACES.find((surface) => surface.id === "executive-report-preview")).toMatchObject({
+      legacy: { role: "executiveDirector", view: "executive-report-preview", params: { reportId: "FR-2026-022" } },
+      expectedHeading: "Final Report Preview",
+      expectedSemanticMarker: "FR-2026-022",
+    });
+    expect(VISUAL_SURFACES.find((surface) => surface.id === "auditee-report-preview")).toMatchObject({
+      legacy: { role: "auditee", view: "service-provider-report-preview", params: { reportId: "FR-2025-009" } },
+      expectedHeading: "Final Report",
+      expectedSemanticMarker: "FR-2025-009",
+    });
+  });
+
+  it("fails every named visual harness mutation before the browser comparison can run", () => {
+    const repositoryRoot = join(process.cwd(), "../..");
+    const script = join(repositoryRoot, "apps/web/scripts/assert-parity-boundary.mjs");
+    const mutations = [
+      ["missing-route", /86-surface/],
+      ["missing-dual-profile-audit", /17 dual-profile/],
+      ["changed-plan2-reason", /exact Plan 2 HTTP reason/],
+      ["skip-viewport", /VISUAL_VIEWPORTS/],
+      ["remove-shell-assertion", /workspace-sidebar/],
+      ["remove-content-assertion", /workbench-page-header/],
+      ["compressed-byte-comparator", /decoded pixels, not compressed PNG bytes/],
+      ["remove-candidate-attachment", /reactCandidateAttachmentCount/],
+      ["remove-result-attachment", /decodedRegionResultAttachmentCount/],
+    ] as const;
+
+    for (const [mutation, reason] of mutations) {
+      const result = spawnSync(process.execPath, [script], {
+        cwd: repositoryRoot,
+        encoding: "utf8",
+        env: { ...process.env, AVIA_BOUNDARY_MUTATION: mutation, AVIA_BOUNDARY_SOURCE_ONLY: "1" },
+      });
+      expect(result.status, `${mutation} unexpectedly passed`).not.toBe(0);
+      expect(`${result.stdout}\n${result.stderr}`).toMatch(reason);
+    }
+  });
   it("decodes tracked PNGs to RGBA pixels and defines fail-closed shell/content regions", () => {
     const baseline = readFileSync(
       join(process.cwd(), "tests/visual-baselines/react-legacy-parity/desktop/inspector-home.png"),
@@ -127,6 +227,16 @@ describe("visual parity contract", () => {
         if (surface.parityMode === "content-adapted") return;
       `),
     ).toThrow(/decoded-pixel|bypass/i);
+  });
+
+  it("supports scoped visual execution while preserving the full 86 by 3 invariant", () => {
+    const spec = readFileSync(join(process.cwd(), "tests/e2e/legacy-visual-parity.spec.ts"), "utf8");
+    expect(spec).toContain("const surfaces = resolveFocusedSurfaces()");
+    expect(spec).toContain("const expectedVisualPairCount = VISUAL_SURFACES.length * VISUAL_VIEWPORTS.length");
+    expect(spec).toContain("expect(expectedVisualPairCount).toBe(258)");
+    expect(spec).toContain("const expectedExecutedPairCount = surfaces.length * VISUAL_VIEWPORTS.length");
+    expect(spec).toContain("expect(reactCandidateAttachmentCount).toBe(expectedExecutedPairCount)");
+    expect(spec).toContain("expect(decodedRegionResultAttachmentCount).toBe(expectedExecutedPairCount)");
   });
 
   it("fails an unmasked deterministic patch outside the strict region ratio", () => {
@@ -258,6 +368,25 @@ describe("visual parity contract", () => {
       ).toThrow(/hash drift/i);
 
       const realHash = hashBytes(Buffer.from("png-v1"));
+      const validManifest = singleItemManifest(realHash);
+      expect(() =>
+        validateBaselineManifest(validManifest, {
+          baselineDir: dir,
+          expectedSource: manifest.source,
+          expectedEnvironment: manifest.environment,
+        }),
+      ).not.toThrow();
+
+      writeFileSync(join(dir, "desktop", "untracked.png"), Buffer.from("untracked"));
+      expect(() =>
+        validateBaselineManifest(validManifest, {
+          baselineDir: dir,
+          expectedSource: manifest.source,
+          expectedEnvironment: manifest.environment,
+        }),
+      ).toThrow(/unexpected extra baseline/i);
+      rmSync(join(dir, "desktop", "untracked.png"));
+
       expect(() =>
         validateBaselineManifest(singleItemManifest(realHash), {
           baselineDir: dir,

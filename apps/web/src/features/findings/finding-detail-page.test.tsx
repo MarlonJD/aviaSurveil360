@@ -65,11 +65,11 @@ function renderPage(runtime: MockRuntime) {
         buildProfile: "demo",
         environmentLabel: "test",
         identityMode: "demo-role-switch",
-        subjectId: "USR-LEAD-CANER",
+        subjectId: "USR-INSPECTOR-AMINA",
       }}
     >
       <ScenarioProvider>
-        <MemoryRouter initialEntries={["/lead-inspector/findings/FND-CAB-2026-001"]}>
+        <MemoryRouter initialEntries={["/inspector/findings/FND-CAB-2026-001"]}>
           <FindingDetailPage />
         </MemoryRouter>
       </ScenarioProvider>
@@ -78,14 +78,26 @@ function renderPage(runtime: MockRuntime) {
 }
 
 describe("FindingDetailPage", () => {
-  it("direct-loads the canonical finding dossier, lifecycle, basis, and bounded Auditee handoff", async () => {
+  it("does not fabricate the CAB dossier from an unrelated Finding", async () => {
+    const runtime = createMockBackendRuntime();
+
+    renderPage(runtime);
+
+    expect(await screen.findByRole("heading", { name: "Finding unavailable" })).toBeVisible();
+    expect(screen.queryByText(/Finding CAB-2026-011/)).toBeNull();
+    expect((await runtime.backendForRole("inspector").findings.get({ findingId: "FND-SKYCARGO-2026-099" })).findingNumber).toBe("CAR-2026-099");
+  });
+
+  it("direct-loads ui-audit-009 as a CAA Inspector dossier with source-role ownership", async () => {
     const runtime = createMockBackendRuntime();
     await seedFinding(runtime);
 
     renderPage(runtime);
 
     const dossier = await screen.findByTestId("finding-dossier");
-    expect(within(dossier).getAllByText("CAB-2026-001").length).toBeGreaterThanOrEqual(1);
+    expect(within(dossier).getAllByText("CAB-2026-011").length).toBeGreaterThanOrEqual(1);
+    expect(within(dossier).getByText("CAA Inspector")).toBeVisible();
+    expect(within(dossier).queryByText("Lead Inspector")).toBeNull();
     expect(within(dossier).getAllByText("WAITING_FOR_CAP").length).toBeGreaterThanOrEqual(1);
     for (const expected of [
       "Fly Namibia",
@@ -101,5 +113,28 @@ describe("FindingDetailPage", () => {
     expect(screen.getByRole("list", { name: "Finding lifecycle" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Switch to Fly Namibia Auditee" })).toBeVisible();
     expect(screen.queryByRole("link", { name: "Switch to Fly Namibia Auditee" })).toBeNull();
+  });
+
+  it("offers the Inspector Assistant context link and an explicit Lead-authority CAP handoff", async () => {
+    const runtime = createMockBackendRuntime();
+    const finding = await seedFinding(runtime);
+    await runtime.backendForRole("auditee").caps.submit({
+      operationId: "OP-TEST-CAP-SUBMIT",
+      findingId: finding.id,
+      expectedFindingRevision: finding.revision,
+      rootCause: "The equipment record and register were maintained separately.",
+      correctiveAction: "Reconcile the sampled equipment record.",
+      preventiveAction: "Use one controlled register.",
+      responsiblePerson: "Fly Namibia Cabin Safety Manager",
+      targetCompletionDate: "2026-07-15",
+      commentToCaa: "Ready for Lead review.",
+    });
+    renderPage(runtime);
+
+    const dossier = await screen.findByTestId("finding-dossier");
+    expect(within(dossier).getByRole("link", { name: "Open Inspector Assistant" })).toHaveAttribute("href", "/inspector/assistant");
+    expect(within(dossier).queryByRole("button", { name: "Review CAP" })).toBeNull();
+    expect(within(dossier).getByText("Review CAP requires Lead Inspector authority.")).toBeVisible();
+    expect(within(dossier).getByRole("button", { name: "Switch to Lead Inspector for CAP Review" })).toBeVisible();
   });
 });

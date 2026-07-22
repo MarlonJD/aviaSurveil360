@@ -5,32 +5,31 @@
   "legacyRemovalAllowed": false,
   "reactScope": {
     "reactParitySurfaceIds": [
-      "role-select",
-      "inspector-home",
-      "lead-home",
-      "manager-home",
-      "gm-home",
-      "finance-home",
-      "executive-home",
-      "auditee-home",
-      "admin-home",
-      "audit-detail",
-      "checklist-runner",
-      "organization-registry",
-      "audit-plan",
-      "finding-detail",
-      "cap-review",
-      "evidence-review",
-      "report-preview"
+      "role-select", "inspector-home", "inspector-findings", "inspector-messages", "inspector-calendar", "inspector-reports", "audit-detail", "checklist-runner", "finding-detail", "closure-report-preview", "inspector-assistant", "inspector-profile",
+      "lead-home", "lead-preliminary-reports", "lead-preliminary-report-workflow", "lead-final-reports", "lead-final-report-readiness", "lead-prepare-final-report", "lead-final-report-document", "lead-audit-assignment", "lead-checklist-question-assignment", "cap-review", "lead-calendar", "lead-messages", "lead-analytics-reports", "lead-settings",
+      "manager-home", "audit-plan", "manager-audits", "report-preview", "manager-risk-dashboard", "manager-inspection-team", "manager-findings-review", "manager-cap-monitoring", "manager-checklist-management", "manager-safety-intelligence", "organization-risk-profile", "manager-ssp-nasp", "manager-usoap-readiness", "manager-cap-effectiveness", "organization-registry", "organization-detail", "inspection-package-builder", "evidence-review", "manager-preliminary-report-review", "manager-cap-closure-review", "new-audit-wizard-1", "new-audit-wizard-2", "new-audit-wizard-3", "new-audit-wizard-4", "new-audit-wizard-5",
+      "gm-home", "gm-planning", "gm-report-approvals", "gm-departments", "gm-risk-dashboard", "gm-settings", "finance-home", "executive-home", "executive-planning", "executive-preliminary-reports", "executive-final-reports", "executive-report-preview", "executive-notifications", "executive-settings", "auditee-home", "auditee-inspection-coordination", "auditee-preliminary-reports", "auditee-final-reports", "auditee-report-preview", "auditee-messages", "auditee-documents", "auditee-settings", "admin-regulatory-library", "admin-template-list", "admin-home", "admin-question-bank", "admin-checklist-builder", "admin-version-history", "admin-inspection-package-builder", "admin-reports", "admin-users-roles", "admin-configurations", "admin-organization-master-data", "admin-organization-detail", "admin-audit-log"
     ],
-    "legacyOnlyRows": 69,
-    "legacyOnlyReactPath": null,
+    "interactionVerifiedSurfaceIds": [
+      "role-select", "inspector-home", "audit-detail", "checklist-runner", "lead-home", "cap-review", "manager-home", "audit-plan", "report-preview", "organization-registry", "gm-home", "finance-home", "executive-home", "auditee-home", "admin-home"
+    ],
+    "presentationCorrectionPendingSurfaceIds": [
+      "finding-detail", "evidence-review"
+    ],
+    "routeContractOnlySurfaceIds": [
+      "inspector-findings", "inspector-messages", "inspector-calendar", "inspector-reports", "closure-report-preview", "inspector-assistant", "inspector-profile",
+      "lead-preliminary-reports", "lead-preliminary-report-workflow", "lead-final-reports", "lead-final-report-readiness", "lead-prepare-final-report", "lead-final-report-document", "lead-audit-assignment", "lead-checklist-question-assignment", "lead-calendar", "lead-messages", "lead-analytics-reports", "lead-settings",
+      "manager-audits", "manager-risk-dashboard", "manager-inspection-team", "manager-findings-review", "manager-cap-monitoring", "manager-checklist-management", "manager-safety-intelligence", "organization-risk-profile", "manager-ssp-nasp", "manager-usoap-readiness", "manager-cap-effectiveness", "organization-detail", "inspection-package-builder", "manager-preliminary-report-review", "manager-cap-closure-review", "new-audit-wizard-1", "new-audit-wizard-2", "new-audit-wizard-3", "new-audit-wizard-4", "new-audit-wizard-5",
+      "gm-planning", "gm-report-approvals", "gm-departments", "gm-risk-dashboard", "gm-settings", "executive-planning", "executive-preliminary-reports", "executive-final-reports", "executive-report-preview", "executive-notifications", "executive-settings", "auditee-inspection-coordination", "auditee-preliminary-reports", "auditee-final-reports", "auditee-report-preview", "auditee-messages", "auditee-documents", "auditee-settings", "admin-regulatory-library", "admin-template-list", "admin-question-bank", "admin-checklist-builder", "admin-version-history", "admin-inspection-package-builder", "admin-reports", "admin-users-roles", "admin-configurations", "admin-organization-master-data", "admin-organization-detail", "admin-audit-log"
+    ],
+    "legacyOnlyRows": 0,
+    "legacyOnlyReactPath": "not-applicable",
     "legacyRemovalAllowed": false
   },
   "visibleActionOwnership": [
     {
       "id": "shell-reset",
-      "surfaceIds": ["*"],
+      "surfaceIds": ["inspector-home", "audit-detail", "checklist-runner", "lead-home", "cap-review", "manager-home", "audit-plan", "report-preview", "organization-registry", "gm-home", "finance-home", "executive-home", "auditee-home", "admin-home"],
       "namePattern": "^Reset demo$",
       "boundary": "local",
       "durableEffect": "Clears the deterministic browser demo store and reloads the active route.",
@@ -38,7 +37,7 @@
     },
     {
       "id": "shell-role-exit",
-      "surfaceIds": ["*"],
+      "surfaceIds": ["inspector-home", "audit-detail", "checklist-runner", "lead-home", "cap-review", "manager-home", "audit-plan", "report-preview", "organization-registry", "gm-home", "finance-home", "executive-home", "auditee-home", "admin-home"],
       "namePattern": "^(Role select|Logout)$",
       "boundary": "session",
       "durableEffect": "Navigates to role selection or performs the OIDC logout boundary.",
@@ -54,7 +53,7 @@
     },
     {
       "id": "declared-route-and-workflow-actions",
-      "surfaceIds": ["*"],
+      "surfaceIds": ["role-select", "inspector-home", "audit-detail", "checklist-runner", "lead-home", "cap-review", "manager-home", "audit-plan", "report-preview", "organization-registry", "gm-home", "finance-home", "executive-home", "auditee-home", "admin-home"],
       "namePattern": "^[^A-Za-z0-9]*(Open|Review|Start|Continue|Convert|Accept|Request|Reject|Return|Forward|Approve|Release|Confirm|Submit|Save|Dismiss|Preview|Back|Search|Reset|Select|Use|Close|View|Download|Check out)(\\b| ).*",
       "boundary": "backend-or-local",
       "durableEffect": "Executes a routed navigation, visible selection/dialog/tab state, form transition, or Backend command covered by the named route tests.",

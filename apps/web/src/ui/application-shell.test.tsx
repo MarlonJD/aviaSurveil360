@@ -3,12 +3,15 @@ import "@testing-library/jest-dom/vitest";
 
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ApplicationShell, type ShellIdentityPresentation } from "./application-shell";
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: 1024 });
+});
 
 const identity: ShellIdentityPresentation = {
   mode: "demo-role-switch",
@@ -19,6 +22,9 @@ const identity: ShellIdentityPresentation = {
 };
 
 describe("ApplicationShell", () => {
+  function LocationProbe() {
+    return <output data-testid="location-probe">{useLocation().pathname}</output>;
+  }
   it("composes candidate boundary, registry navigation, topbar, and supplied content", () => {
     render(
       <MemoryRouter>
@@ -63,6 +69,84 @@ describe("ApplicationShell", () => {
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog", { name: "Primary navigation" })).not.toBeInTheDocument();
     expect(opener).toHaveFocus();
+  });
+
+  it("exposes all Inspector workspace destinations from the mobile navigation drawer", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ApplicationShell
+          identity={identity}
+          activeRouteId="inspector-findings"
+          onRoleRequest={() => undefined}
+          onLogout={() => undefined}
+          notificationState={{ kind: "local", unreadCount: 0, onOpen: () => undefined }}
+        >
+          <h1>Findings</h1>
+        </ApplicationShell>
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Open navigation" }));
+    const drawer = screen.getByRole("dialog", { name: "Primary navigation" });
+    for (const [name, href] of [
+      ["My Assignments", "/inspector/inspector-assignments"],
+      ["Findings", "/inspector/findings"],
+      ["Messages", "/inspector/messages"],
+      ["Calendar", "/inspector/calendar"],
+      ["Reports", "/inspector/reports"],
+    ] as const) {
+      expect(within(drawer).getByRole("link", { name })).toHaveAttribute("href", href);
+    }
+  });
+
+  it("transitions desktop and mobile Lead navigation to exact paths with one accessible active item", async () => {
+    const user = userEvent.setup();
+    const leadIdentity: ShellIdentityPresentation = {
+      ...identity,
+      activeRole: "leadInspector",
+      displayName: "Caner Yildiz",
+      availableRoles: ["leadInspector", "inspector"],
+    };
+    render(
+      <MemoryRouter initialEntries={["/lead-inspector/preliminary-reports"]}>
+        <LocationProbe />
+        <ApplicationShell
+          identity={leadIdentity}
+          activeRouteId="lead-preliminary-reports"
+          onRoleRequest={() => undefined}
+          onLogout={() => undefined}
+          notificationState={{ kind: "local", unreadCount: 0, onOpen: () => undefined }}
+        ><h1>Preliminary Reports</h1></ApplicationShell>
+      </MemoryRouter>,
+    );
+
+    const desktopNavigation = screen.getByRole("navigation", { name: "Primary role navigation" });
+    expect(within(desktopNavigation).getAllByRole("link").filter((link) => link.hasAttribute("aria-current"))).toHaveLength(1);
+    await user.click(within(desktopNavigation).getByRole("link", { name: "Final Reports" }));
+    expect(screen.getByTestId("location-probe")).toHaveTextContent("/lead-inspector/final-reports");
+
+    cleanup();
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+    render(
+      <MemoryRouter initialEntries={["/lead-inspector/final-reports"]}>
+        <LocationProbe />
+        <ApplicationShell
+          identity={leadIdentity}
+          activeRouteId="lead-final-reports"
+          onRoleRequest={() => undefined}
+          onLogout={() => undefined}
+          notificationState={{ kind: "local", unreadCount: 0, onOpen: () => undefined }}
+        ><h1>Final Reports</h1></ApplicationShell>
+      </MemoryRouter>,
+    );
+    await user.click(screen.getByRole("button", { name: "Open navigation" }));
+    const drawer = screen.getByRole("dialog", { name: "Primary navigation" });
+    const drawerNavigation = within(drawer).getByRole("navigation", { name: "Primary role navigation" });
+    expect(within(drawerNavigation).getAllByRole("link").filter((link) => link.hasAttribute("aria-current"))).toHaveLength(1);
+    await user.click(within(drawerNavigation).getByRole("link", { name: "Calendar" }));
+    expect(screen.getByTestId("location-probe")).toHaveTextContent("/lead-inspector/calendar");
+    expect(screen.queryByRole("dialog", { name: "Primary navigation" })).not.toBeInTheDocument();
   });
 
   it("wires visible role and logout controls to callbacks", async () => {

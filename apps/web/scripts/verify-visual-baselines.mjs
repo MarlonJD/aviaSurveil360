@@ -22,7 +22,7 @@ const viewports = {
   mobile: { width: 390, height: 844 },
 };
 
-const expectedSurfaces = {
+const legacyExpectedSurfaces = {
   "role-select": {
     auditId: "ui-audit-001",
     parityMode: "strict-shell",
@@ -117,7 +117,7 @@ const expectedSurfaces = {
   "finding-detail": {
     auditId: "ui-audit-009",
     parityMode: "content-adapted",
-    reactPath: "/lead-inspector/findings/FND-CAB-2026-001",
+    reactPath: "/inspector/findings/FND-CAB-2026-001",
     legacyView: "finding",
     legacyParams: { findingId: "CAB-2026-011" },
   },
@@ -131,7 +131,7 @@ const expectedSurfaces = {
   "evidence-review": {
     auditId: "ui-audit-044",
     parityMode: "content-adapted",
-    reactPath: "/lead-inspector/evidence-review/FND-CAB-2026-001",
+    reactPath: "/department-manager/evidence/FND-CAB-2026-001",
     legacyView: "findings",
     legacyParams: { filter: "evreview" },
   },
@@ -143,6 +143,80 @@ const expectedSurfaces = {
     legacyParams: { reportId: "PR-2026-018" },
   },
 };
+
+const additionalLegacyExpectedSurfaces = {
+  "inspector-findings": { legacyView: "findings", legacyParams: {} }, "inspector-messages": { legacyView: "messages", legacyParams: {} }, "inspector-calendar": { legacyView: "calendar", legacyParams: {} }, "inspector-reports": { legacyView: "reports", legacyParams: {} }, "closure-report-preview": { legacyView: "report", legacyParams: { findingId: "CAB-2026-011" } }, "inspector-assistant": { legacyView: "ai-assistant", legacyParams: { sourceView: "finding", findingId: "CAB-2026-011" } }, "inspector-profile": { legacyView: "profile", legacyParams: {} },
+  "lead-preliminary-reports": { legacyView: "audit-reports", legacyParams: { filter: "preliminary" } }, "lead-preliminary-report-workflow": { legacyView: "audit-reports", legacyParams: { filter: "preliminary", reportId: "PR-2026-018" } }, "lead-final-reports": { legacyView: "audit-reports", legacyParams: { filter: "final" } }, "lead-final-report-readiness": { legacyView: "audit-reports", legacyParams: { filter: "final", finalReportId: "FR-2026-018" } }, "lead-prepare-final-report": { legacyView: "final-report-prepare", legacyParams: { reportId: "FR-2026-018" } }, "lead-final-report-document": { legacyView: "final-report-view", legacyParams: { reportId: "FR-2026-018" } }, "lead-audit-assignment": { legacyView: "lead-assignment", legacyParams: { auditId: "AUD-2026-001" } }, "lead-checklist-question-assignment": { legacyView: "lead-assignment-questions", legacyParams: { auditId: "AUD-2026-001" } }, "lead-calendar": { legacyView: "calendar", legacyParams: {} }, "lead-messages": { legacyView: "messages", legacyParams: {} }, "lead-analytics-reports": { legacyView: "safety-intelligence", legacyParams: {} }, "lead-settings": { legacyView: "settings", legacyParams: {} },
+  "manager-audits": { legacyView: "calendar", legacyParams: {} }, "manager-risk-dashboard": { legacyView: "manager-risk", legacyParams: {} }, "manager-inspection-team": { legacyView: "inspection-team", legacyParams: {} }, "manager-findings-review": { legacyView: "findings-review", legacyParams: {} }, "manager-cap-monitoring": { legacyView: "cap-monitoring", legacyParams: {} }, "manager-checklist-management": { legacyView: "manager-checklists", legacyParams: {} }, "manager-safety-intelligence": { legacyView: "safety-intelligence", legacyParams: {} }, "organization-risk-profile": { legacyView: "org-risk", legacyParams: { orgId: "ORG-XYZ" } }, "manager-ssp-nasp": { legacyView: "ssp-nasp", legacyParams: {} }, "manager-usoap-readiness": { legacyView: "usoap-readiness", legacyParams: {} }, "manager-cap-effectiveness": { legacyView: "cap-effectiveness", legacyParams: {} }, "organization-detail": { legacyView: "org-detail", legacyParams: { orgId: "ORG-XYZ" } }, "inspection-package-builder": { legacyView: "package-builder", legacyParams: {} }, "manager-preliminary-report-review": { legacyView: "audit-reports", legacyParams: { filter: "preliminary" } }, "manager-cap-closure-review": { legacyView: "unit-manager-review", legacyParams: { findingId: "CAB-2026-011" } },
+  "new-audit-wizard-1": { legacyView: "wizard", legacyParams: { step: "1" } }, "new-audit-wizard-2": { legacyView: "wizard", legacyParams: { step: "2" } }, "new-audit-wizard-3": { legacyView: "wizard", legacyParams: { step: "3" } }, "new-audit-wizard-4": { legacyView: "wizard", legacyParams: { step: "4" } }, "new-audit-wizard-5": { legacyView: "wizard", legacyParams: { step: "5" } },
+  "gm-planning": { legacyView: "planning", legacyParams: {} }, "gm-report-approvals": { legacyView: "gm-report-approvals", legacyParams: {} }, "gm-departments": { legacyView: "gm-departments", legacyParams: {} }, "gm-risk-dashboard": { legacyView: "gm-risk", legacyParams: {} }, "gm-settings": { legacyView: "settings", legacyParams: {} }, "executive-planning": { legacyView: "executive-planning", legacyParams: {} }, "executive-preliminary-reports": { legacyView: "executive-preliminary-reports", legacyParams: {} }, "executive-final-reports": { legacyView: "executive-final-reports", legacyParams: {} }, "executive-report-preview": { legacyView: "executive-report-preview", legacyParams: { reportId: "FR-2026-022" } }, "executive-notifications": { legacyView: "executive-notifications", legacyParams: {} }, "executive-settings": { legacyView: "settings", legacyParams: {} },
+  "auditee-inspection-coordination": { legacyView: "service-provider-inspection-coordination", legacyParams: {} }, "auditee-preliminary-reports": { legacyView: "service-provider-preliminary-reports", legacyParams: {} }, "auditee-final-reports": { legacyView: "service-provider-final-reports", legacyParams: {} }, "auditee-report-preview": { legacyView: "service-provider-report-preview", legacyParams: { reportId: "FR-2025-009" } }, "auditee-messages": { legacyView: "messages", legacyParams: {} }, "auditee-documents": { legacyView: "reports", legacyParams: { filter: "documents" } }, "auditee-settings": { legacyView: "settings", legacyParams: {} },
+  "admin-regulatory-library": { legacyView: "regulatory-library", legacyParams: {} }, "admin-template-list": { legacyView: "templates", legacyParams: {} }, "admin-question-bank": { legacyView: "question-bank", legacyParams: {} }, "admin-checklist-builder": { legacyView: "checklist-builder", legacyParams: {} }, "admin-version-history": { legacyView: "checklist-versions", legacyParams: {} }, "admin-inspection-package-builder": { legacyView: "package-builder", legacyParams: {} }, "admin-reports": { legacyView: "reports", legacyParams: {} }, "admin-users-roles": { legacyView: "users", legacyParams: {} }, "admin-configurations": { legacyView: "settings", legacyParams: {} }, "admin-organization-master-data": { legacyView: "organizations", legacyParams: {} }, "admin-organization-detail": { legacyView: "org-detail", legacyParams: { orgId: "ORG-XYZ" } }, "admin-audit-log": { legacyView: "auditlog", legacyParams: {} },
+};
+
+// This independent table is deliberately not imported from the capture fixtures.
+// It makes the source-role equality check observable in the baseline verifier,
+// even though the generated manifest records only the legacy view and params.
+const legacyRoleBySurface = {
+  "role-select": null,
+  "inspector-home": "inspector", "audit-detail": "inspector", "checklist-runner": "inspector", "finding-detail": "inspector", "inspector-findings": "inspector", "inspector-messages": "inspector", "inspector-calendar": "inspector", "inspector-reports": "inspector", "closure-report-preview": "inspector", "inspector-assistant": "inspector", "inspector-profile": "inspector",
+  "lead-home": "leadInspector", "cap-review": "leadInspector", "lead-preliminary-reports": "leadInspector", "lead-preliminary-report-workflow": "leadInspector", "lead-final-reports": "leadInspector", "lead-final-report-readiness": "leadInspector", "lead-prepare-final-report": "leadInspector", "lead-final-report-document": "leadInspector", "lead-audit-assignment": "leadInspector", "lead-checklist-question-assignment": "leadInspector", "lead-calendar": "leadInspector", "lead-messages": "leadInspector", "lead-analytics-reports": "leadInspector", "lead-settings": "leadInspector",
+  "manager-home": "manager", "organization-registry": "manager", "audit-plan": "manager", "evidence-review": "manager", "report-preview": "manager", "manager-audits": "manager", "manager-risk-dashboard": "manager", "manager-inspection-team": "manager", "manager-findings-review": "manager", "manager-cap-monitoring": "manager", "manager-checklist-management": "manager", "manager-safety-intelligence": "manager", "organization-risk-profile": "manager", "manager-ssp-nasp": "manager", "manager-usoap-readiness": "manager", "manager-cap-effectiveness": "manager", "organization-detail": "manager", "inspection-package-builder": "manager", "manager-preliminary-report-review": "manager", "manager-cap-closure-review": "manager", "new-audit-wizard-1": "manager", "new-audit-wizard-2": "manager", "new-audit-wizard-3": "manager", "new-audit-wizard-4": "manager", "new-audit-wizard-5": "manager",
+  "gm-home": "gm", "gm-planning": "gm", "gm-report-approvals": "gm", "gm-departments": "gm", "gm-risk-dashboard": "gm", "gm-settings": "gm",
+  "finance-home": "finance",
+  "executive-home": "executiveDirector", "executive-planning": "executiveDirector", "executive-preliminary-reports": "executiveDirector", "executive-final-reports": "executiveDirector", "executive-report-preview": "executiveDirector", "executive-notifications": "executiveDirector", "executive-settings": "executiveDirector",
+  "auditee-home": "auditee", "auditee-inspection-coordination": "auditee", "auditee-preliminary-reports": "auditee", "auditee-final-reports": "auditee", "auditee-report-preview": "auditee", "auditee-messages": "auditee", "auditee-documents": "auditee", "auditee-settings": "auditee",
+  "admin-home": "admin", "admin-regulatory-library": "admin", "admin-template-list": "admin", "admin-question-bank": "admin", "admin-checklist-builder": "admin", "admin-version-history": "admin", "admin-inspection-package-builder": "admin", "admin-reports": "admin", "admin-users-roles": "admin", "admin-configurations": "admin", "admin-organization-master-data": "admin", "admin-organization-detail": "admin", "admin-audit-log": "admin",
+};
+
+const routeContractSource = readFileSync(resolve(appRoot, "src/app/route-contracts.ts"), "utf8");
+const auditSource = JSON.parse(readFileSync(resolve(appRoot, "src/parity/legacy-screen-source.json"), "utf8"));
+const roleByAuditSource = {
+  Global: null,
+  "CAA Inspector": "inspector",
+  "Lead Inspector": "leadInspector",
+  "Department Manager": "manager",
+  "General Manager": "gm",
+  Finance: "finance",
+  "Executive Director": "executiveDirector",
+  Auditee: "auditee",
+  "Admin Preview": "admin",
+};
+
+const expectedLegacyFixtures = { ...legacyExpectedSurfaces, ...additionalLegacyExpectedSurfaces };
+if (Object.keys(expectedLegacyFixtures).length !== 86) {
+  fail(`Visual baseline verifier must declare the exact 86 legacy source states; got ${Object.keys(expectedLegacyFixtures).length}.`);
+}
+if (Object.keys(legacyRoleBySurface).length !== 86) {
+  fail(`Visual baseline verifier must declare the exact 86 legacy source roles; got ${Object.keys(legacyRoleBySurface).length}.`);
+}
+const expectedSurfaces = Object.fromEntries(
+  [...routeContractSource.matchAll(/\{ auditId: "([^"]+)", id: "([^"]+)", path: "([^"]+)", requiredRole: (null|"[^"]+")/g)].map((match) => [
+    match[2],
+    {
+      auditId: match[1],
+      parityMode: match[1] === "ui-audit-001" ? "strict-shell" : "content-adapted",
+      reactPath: match[3],
+      requiredRole: match[4] === "null" ? null : match[4].slice(1, -1),
+    },
+  ]),
+);
+if (Object.keys(expectedSurfaces).length !== 86) {
+  fail(`Visual baseline verifier could not derive the exact 86-route contract; got ${Object.keys(expectedSurfaces).length}.`);
+}
+for (const source of auditSource) {
+  const surface = Object.values(expectedSurfaces).find((candidate) => candidate.auditId === source.auditId);
+  if (!surface) fail(`Audit source ${source.auditId} has no React route contract.`);
+  if (surface.requiredRole !== roleByAuditSource[source.role]) {
+    fail(`Source-role/route-role mismatch for ${source.auditId}.`);
+  }
+}
+for (const [surfaceId, surface] of Object.entries(expectedSurfaces)) {
+  if (!(surfaceId in legacyRoleBySurface)) fail(`Missing expected legacy role for ${surfaceId}.`);
+  if (legacyRoleBySurface[surfaceId] !== surface.requiredRole) {
+    fail(`Expected legacy role/route-role mismatch for ${surfaceId}.`);
+  }
+}
 
 const sourceFiles = [
   "index.html",
@@ -261,10 +335,10 @@ async function verify() {
   if (manifest.schemaVersion !== 1) fail("Unsupported baseline manifest schema.");
   if (manifest.generatedAt !== fixedTimeIso) fail("Baseline manifest generatedAt is not deterministic.");
   if (manifest.baselineVersion !== baselineVersion) fail(`Unexpected baseline version: ${manifest.baselineVersion}`);
-  if (manifest.surfaceCount !== 17) fail("Baseline manifest must record exactly 17 surfaces.");
+  if (manifest.surfaceCount !== 86) fail("Baseline manifest must record exactly 86 surfaces.");
   if (manifest.viewportCount !== 3) fail("Baseline manifest must record exactly 3 viewports.");
-  if (!Array.isArray(manifest.items) || manifest.items.length !== 51) {
-    fail(`Baseline manifest must list exactly 51 PNGs; got ${manifest.items?.length ?? 0}.`);
+  if (!Array.isArray(manifest.items) || manifest.items.length !== 258) {
+    fail(`Baseline manifest must list exactly 258 PNGs; got ${manifest.items?.length ?? 0}.`);
   }
   if (!/^[0-9a-f]{40}$/.test(manifest.source?.commit ?? "")) {
     fail("Baseline manifest source commit must be a full git SHA.");
@@ -299,13 +373,15 @@ async function verify() {
     seenFiles.add(item.file);
 
     const surface = expectedSurfaces[item.surfaceId];
+    const legacy = expectedLegacyFixtures[item.surfaceId];
     if (!surface) fail(`Unexpected baseline surface: ${item.surfaceId}`);
+    if (!legacy) fail(`Missing expected legacy source state for ${item.surfaceId}`);
     if (!viewports[item.viewport]) fail(`Unexpected baseline viewport: ${item.viewport}`);
     if (item.auditId !== surface.auditId) fail(`Route mismatch for ${item.surfaceId}: audit id.`);
     if (item.parityMode !== surface.parityMode) fail(`Route mismatch for ${item.surfaceId}: parity mode.`);
     if (item.sourceRoute.reactPath !== surface.reactPath) fail(`Route mismatch for ${item.surfaceId}: React path.`);
-    if (item.sourceRoute.legacyView !== surface.legacyView) fail(`Route mismatch for ${item.surfaceId}: legacy view.`);
-    assertObjectEqual(`Route mismatch for ${item.surfaceId}: legacy params`, item.sourceRoute.legacyParams, surface.legacyParams);
+    if (item.sourceRoute.legacyView !== legacy.legacyView) fail(`Route mismatch for ${item.surfaceId}: legacy view.`);
+    assertObjectEqual(`Route mismatch for ${item.surfaceId}: legacy params`, item.sourceRoute.legacyParams, legacy.legacyParams);
     assertObjectEqual(`Viewport metadata for ${key}`, item.viewportSize, viewports[item.viewport]);
 
     const absolute = safeBaselinePath(item.file);
@@ -322,7 +398,7 @@ async function verify() {
   expectedKeys.sort();
   const actualKeys = [...seenKeys].sort();
   if (actualKeys.join("\n") !== expectedKeys.join("\n")) {
-    fail("Baseline manifest does not contain the exact 17x3 surface matrix.");
+    fail("Baseline manifest does not contain the exact 86x3 surface matrix.");
   }
 
   const extraFiles = listPngFiles(baselineDir).filter((file) => !seenFiles.has(file));

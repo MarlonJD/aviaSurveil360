@@ -48,6 +48,10 @@ export function mapAssignment(value: Schemas["AssignmentSummary"]): AssignmentSu
     dueDate: value.dueDate,
     dueState: value.dueState,
     nextAction: value.nextAction,
+    scheduledStartDate: null,
+    currentOwnerId: null,
+    currentOwnerRole: null,
+    currentOwnerDisplayName: null,
   };
 }
 
@@ -288,6 +292,8 @@ export function mapAuditEvents(
     items: value.items.map((item) => ({
       ...item,
       actorRole: item.actorRole as Role | null,
+      actorSubjectId: null,
+      entityRevision: null,
     })),
     nextCursor: value.nextCursor,
   };

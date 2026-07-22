@@ -1,5 +1,27 @@
 import type { BackendPrincipal, Role } from "./backend";
 
+export type DemoCapabilityName =
+  | "communications" | "calendar" | "profiles" | "teams" | "risk" | "documents"
+  | "notifications" | "administration" | "assistantDrafts" | "planningIntake"
+  | "packageDrafts" | "auditeeCoordination" | "auditeeReports" | "adminWorkspace";
+
+export const DEMO_CAPABILITY_PERMISSION_MATRIX: Readonly<Record<Role, readonly DemoCapabilityName[]>> = {
+  inspector: ["communications", "calendar", "profiles", "documents", "notifications", "administration", "assistantDrafts"],
+  leadInspector: ["communications", "calendar", "profiles", "documents", "notifications", "administration", "assistantDrafts"],
+  manager: ["communications", "calendar", "profiles", "teams", "risk", "documents", "notifications", "administration", "planningIntake", "packageDrafts"],
+  finance: ["profiles", "notifications", "administration"],
+  gm: ["profiles", "notifications", "administration"],
+  executiveDirector: ["profiles", "notifications", "administration"],
+  auditee: ["communications", "calendar", "profiles", "documents", "notifications", "administration", "auditeeCoordination", "auditeeReports"],
+  admin: ["profiles", "teams", "documents", "notifications", "administration", "adminWorkspace"],
+};
+
+export function requireDemoCapability(principal: BackendPrincipal, capability: DemoCapabilityName): void {
+  if (!DEMO_CAPABILITY_PERMISSION_MATRIX[principal.role].includes(capability)) {
+    throw new BackendAuthorizationInvariantError(`${capability} is unavailable to this role in the demo capability boundary.`);
+  }
+}
+
 export class BackendInvariantError extends Error {
   constructor(message: string) {
     super(message);

@@ -1,0 +1,203 @@
+.auditee-secondary-page {
+  display: grid;
+  gap: 18px;
+  padding: 28px 32px 44px;
+  color: #172238;
+}
+
+.auditee-secondary-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.auditee-secondary-head span {
+  color: #506887;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.auditee-secondary-head h1 { margin: 5px 0 6px; }
+.auditee-secondary-head p { margin: 0; color: #526681; }
+
+.auditee-safe-boundary,
+.auditee-action-result {
+  margin: 0;
+  padding: 13px 15px;
+  border: 1px solid #c8d8ee;
+  border-radius: 8px;
+  background: #f3f8ff;
+  color: #24456d;
+}
+
+.auditee-action-result { border-color: #a7d6c0; background: #f0fbf6; color: #176143; }
+
+.auditee-secondary-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 15px;
+  border: 1px solid #dbe3ee;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.auditee-secondary-filters label,
+.auditee-coordination-actions label {
+  display: grid;
+  gap: 6px;
+  color: #465b77;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.auditee-secondary-filters input,
+.auditee-secondary-filters select,
+.auditee-coordination-actions input {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 11px;
+  border: 1px solid #cbd6e5;
+  border-radius: 7px;
+  background: #fff;
+  color: #172238;
+}
+
+.auditee-secondary-page a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.auditee-secondary-page button {
+  min-height: 44px;
+  padding: 9px 14px;
+  border: 1px solid #174e92;
+  border-radius: 7px;
+  background: #1f5da8;
+  color: #fff;
+  font-weight: 700;
+}
+
+.auditee-secondary-page button:disabled { border-color: #c7d0dd; background: #e7ebf1; color: #6c7889; }
+
+.workspace-shell--auditee .auditee-workspace :is(button, input, select, textarea, a[href]) {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.auditee-card-register { display: grid; gap: 14px; }
+.auditee-card-register > article,
+.auditee-preliminary-preview,
+.auditee-report-preview-layout > article,
+.auditee-settings-scope,
+.auditee-settings-notifications {
+  padding: 18px;
+  border: 1px solid #d8e1ed;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(24 47 80 / 6%);
+}
+
+.auditee-card-register article > header,
+.auditee-preliminary-preview > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.auditee-card-register h2,
+.auditee-preliminary-preview h2 { margin: 5px 0; }
+
+.auditee-card-register dl,
+.auditee-settings-scope dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.auditee-card-register dt,
+.auditee-settings-scope dt { color: #60728a; font-size: 12px; }
+.auditee-card-register dd,
+.auditee-settings-scope dd { margin: 3px 0 0; }
+
+.auditee-coordination-actions {
+  display: grid;
+  grid-template-columns: max-content minmax(220px, 1fr) max-content;
+  align-items: end;
+  gap: 12px;
+}
+
+.auditee-report-register,
+.auditee-document-register {
+  min-width: 0;
+  padding: 0;
+  border: 1px solid #d8e1ed;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.auditee-report-register table,
+.auditee-document-register table { width: 100%; border-collapse: collapse; }
+.auditee-report-register th,
+.auditee-report-register td,
+.auditee-document-register th,
+.auditee-document-register td { padding: 12px; border-bottom: 1px solid #e5eaf1; text-align: left; vertical-align: top; }
+.auditee-report-register th,
+.auditee-document-register th { background: #f5f7fa; color: #4a607e; font-size: 12px; }
+.auditee-report-register td small,
+.auditee-document-register td small { display: block; margin-top: 4px; color: #65758b; }
+.auditee-report-register a { display: inline-flex; align-items: center; }
+.auditee-report-action-unavailable { display: grid; gap: 6px; min-width: 220px; }
+.auditee-report-action-unavailable small { overflow-wrap: anywhere; color: #65758b; }
+.auditee-report-mobile-cards { display: none; }
+
+.auditee-report-preview-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.auditee-report-preview-layout > nav {
+  display: grid;
+  gap: 7px;
+  position: sticky;
+  top: 20px;
+}
+
+.auditee-report-preview-layout > nav a { display: flex; align-items: center; padding: 8px 10px; border-radius: 7px; background: #edf4fd; }
+.auditee-report-preview-layout article section { padding: 12px 0; border-bottom: 1px solid #e5eaf1; }
+.auditee-preview-head > button { flex: 0 0 auto; }
+.auditee-settings-notifications label { display: flex; min-height: 44px; align-items: center; gap: 10px; }
+.auditee-settings-notifications input { width: 20px; height: 20px; }
+
+@media (max-width: 1100px) {
+  main.workspace-shell--auditee .auditee-secondary-page { padding: 24px 22px 40px; }
+  main.workspace-shell--auditee .auditee-coordination-actions { grid-template-columns: 1fr 1fr; }
+  main.workspace-shell--auditee .auditee-coordination-actions label { grid-column: 1 / -1; }
+  main.workspace-shell--auditee .auditee-report-preview-layout { grid-template-columns: 1fr; }
+  main.workspace-shell--auditee .auditee-report-preview-layout > nav { position: static; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .workspace-shell--auditee-demo .auditee-secondary-page { padding: 18px 14px 34px; }
+  .workspace-shell--auditee-demo .auditee-secondary-head,
+  .workspace-shell--auditee-demo .auditee-card-register article > header,
+  .workspace-shell--auditee-demo .auditee-preliminary-preview > header { flex-direction: column; }
+  .workspace-shell--auditee-demo .auditee-secondary-filters,
+  .workspace-shell--auditee-demo .auditee-card-register dl,
+  .workspace-shell--auditee-demo .auditee-settings-scope dl,
+  .workspace-shell--auditee-demo .auditee-coordination-actions,
+  .workspace-shell--auditee-demo .auditee-report-preview-layout > nav { grid-template-columns: 1fr; }
+  .workspace-shell--auditee-demo .auditee-secondary-page button,
+  .workspace-shell--auditee-demo .auditee-secondary-page a { width: 100%; }
+  .workspace-shell--auditee-demo .auditee-report-register .responsive-table-shell { display: none; }
+  .workspace-shell--auditee-demo .auditee-report-mobile-cards { display: grid; gap: 12px; padding: 12px; }
+  .workspace-shell--auditee-demo .auditee-report-mobile-cards article { padding: 14px; border: 1px solid #dbe3ee; border-radius: 8px; }
+  .workspace-shell--auditee-demo .auditee-report-mobile-cards h2 { overflow-wrap: anywhere; }
+}

@@ -74,7 +74,7 @@ export function ReportPreviewPage() {
         <div className="reports-approval-layout">
           <section className="report-queue management-panel">
             <div className="management-section-head"><div><span>Department workspace</span><h2>Report Queue</h2></div></div>
-            <p className="report-queue__scope">Demo report artifacts</p>
+            <p className="report-queue__scope">Demo report artifacts · <Link to="/department-manager/preliminary-reports/PR-2026-018">Review Preliminary Report PR-2026-018</Link></p>
             <div className="report-queue__filters">
               <label><span>Search</span><input aria-label="Search reports" onChange={(event) => setSearchDraft(event.target.value)} placeholder="Report, audit, organization" value={searchDraft} /></label>
               <button onClick={() => setSearch(searchDraft)} type="button">Search</button>
@@ -87,7 +87,7 @@ export function ReportPreviewPage() {
             </div>
             <div className="management-table-scroll">
               <table aria-label="Report Queue"><thead><tr><th>Report</th><th>Organization</th><th>Type</th><th>Status</th><th>Action</th></tr></thead><tbody>
-                {report && queueVisible ? <tr className="is-selected"><td><b>{report.reportVersionId}</b><small>{report.auditId}</small></td><td>Fly Namibia</td><td>Cabin Inspection</td><td>{report.status}</td><td><button aria-controls="report-version-dossier" onClick={() => document.getElementById("report-version-dossier")?.focus()} type="button">Open</button></td></tr> : <tr><td colSpan={5}>No matching report versions.</td></tr>}
+                {report && queueVisible ? <tr className="is-selected"><td><b>{report.reportVersionId}</b><small>{report.auditId}</small></td><td>Fly Namibia</td><td>Cabin Inspection</td><td>{report.status}</td><td><div className="manager-record-actions"><button aria-controls="report-version-dossier" onClick={() => document.getElementById("report-version-dossier")?.focus()} type="button">Open</button><button aria-label={`Department review unavailable for ${report.reportVersionId}`} disabled title={`Report version ${report.reportVersionId} is ${report.status}; Department Manager review is unavailable.`} type="button">Review unavailable</button></div></td></tr> : <tr><td colSpan={5}>No matching report versions.</td></tr>}
               </tbody></table>
             </div>
           </section>

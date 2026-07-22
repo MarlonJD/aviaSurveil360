@@ -134,7 +134,7 @@
 .workspace-shell--auditee .auditee-cap-form input,
 .workspace-shell--auditee .auditee-cap-form textarea,
 .workspace-shell--auditee .auditee-upload-panel input {
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 10px;
   border-color: #d8e0ec;
   border-radius: 7px;

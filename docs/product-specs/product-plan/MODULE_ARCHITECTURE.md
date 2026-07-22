@@ -21,7 +21,7 @@
 
 ## Shared platform services
 
-AVIASURVEIL may share these with other AVIA products:
+AviaSurveil360 may share these with other AVIA products:
 
 - Users and roles
 - Organization registry
@@ -34,3 +34,112 @@ AVIASURVEIL may share these with other AVIA products:
 ## Architecture UX rule
 
 Backend can be modular and configurable. Frontend must remain role-based and task-based. Do not expose backend modules as menu items just because they exist.
+
+## Approved target implementation architecture — 22 July 2026
+
+The target is one browser application with two explicit build profiles and one
+modular backend. The same 86 React routes must run against either a deterministic
+`MockBackend` for demonstrations or a real same-origin `HttpBackend` backed by
+Go and PostgreSQL. Demo mode is not a second UI and HTTP mode must not import
+mock data, root-demo JavaScript, or test-only authentication.
+
+The selected approach is a modular monolith with external platform services.
+Microservices, Kafka, RabbitMQ, Kubernetes, and a second frontend framework are
+not justified for the current scope. The API and background workers remain
+separate processes built from one Go module so operational scaling does not
+split domain ownership prematurely.
+
+Alternatives considered:
+
+1. **Independent microservices per product module — rejected now.** It would add
+   distributed transactions, duplicated authorization, service discovery, and
+   operational load before measured scale or team boundaries justify them.
+2. **One all-in-process monolith including identity, scanning, email, and PDF —
+   rejected.** It would couple security/platform lifecycles to domain code and
+   prevent independent failure/restart/resource boundaries.
+3. **Modular Go monolith plus external platform services — selected.** It keeps
+   domain transactions and authorization coherent while allowing Keycloak,
+   ClamAV, SMTP, Gotenberg, object storage, and telemetry to operate through
+   replaceable adapters and separate processes.
+
+### Application components
+
+| Component | Selected technology | Responsibility |
+|---|---|---|
+| Browser client | React 19, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Zod | All 86 role/task routes, demo and HTTP profiles, accessibility, responsive UI, and truthful action state |
+| Demo data boundary | `MockBackend` and deterministic `MemoryMockStore` | Complete 86-route demonstration and repeatable browser tests without a server |
+| HTTP data boundary | Generated OpenAPI transport plus `HttpBackend` | Same frontend capability contract mapped to real same-origin HTTP requests |
+| Offline field boundary | Dexie/IndexedDB, OPFS, Service Worker | Inspector package, checklist, Potential Finding, Inspection Attachment, and causal foreground synchronization only |
+| API | Go 1.26 modular monolith, `chi`, generated OpenAPI types | Authentication boundary, authorization, validation, projections, commands, idempotency, and audit events |
+| Persistence | PostgreSQL 17, `pgx`, `sqlc`, forward-only migrations | Authoritative transactional state, append-only audit records, idempotency, change feed, and outbox |
+| Workers | Go commands from the same module | Outbox delivery, Evidence scanning, notifications, documents, and scheduled reminder work |
+| Identity | Keycloak with application-managed provisioning and TOTP MFA | Local production-like OIDC, roles, user lifecycle, session revocation, and MFA |
+| Object storage | Private MinIO buckets | Immutable Evidence, Inspection Attachment delivery, generated report versions, quarantine, and backup artifacts |
+| Malware scanning | ClamAV `clamd` plus `freshclam` | Real local signature-based scan; fail closed before Evidence review or download |
+| Email | SMTP adapter with Mailpit locally | Observable local delivery of notification and reminder messages without an external provider |
+| Document rendering | Gotenberg | Versioned PDF rendering from approved report/document HTML templates |
+| Local gateway | Caddy | Local HTTPS, static HTTP artifact, same-origin `/api` and `/auth` routing, security headers, and service isolation |
+| Secrets | Docker secrets for local runtime; SOPS + age for encrypted configuration; AWS Secrets Manager/SSM later | No committed plaintext runtime credentials |
+| Telemetry | OpenTelemetry Collector, Prometheus, Grafana, Loki, Tempo, Alertmanager | Metrics, logs, traces, dashboards, alert routing, and local operational exercises |
+| PostgreSQL backup | pgBackRest | Separate application and Keycloak database full/differential/incremental backups, identity/application fingerprints, retention, restore verification, and candidate RPO/RTO evidence |
+| Object backup | MinIO versioning/object lock plus verified mirror to a logically isolated local backup store | Exact object/version recovery without treating versioning as the only backup; local same-host evidence is not host-loss recovery |
+| Local orchestration | Docker Compose profiles | `demo`, `full`, `test`, `observability`, and `recovery` execution lanes |
+| Future AWS trial | Terraform resource modules composed by Terragrunt | Repeatable VPC, load balancer, EC2 application runtime, RDS PostgreSQL, S3, ECR, KMS, Secrets Manager, telemetry, and backup resources after local acceptance; Terraform owns resources while Terragrunt owns environment composition and generated backend wiring |
+
+### Domain ownership
+
+The Go module keeps bounded packages for identity, organizations, planning,
+inspections, teams/assignments, checklists/templates/questions, Potential
+Findings, Findings, CAP, Evidence, reports, documents, communications,
+notifications/reminders, risk/analytics projections, administration,
+configuration, audit log, sync, and the bounded Inspector-assistant draft
+provider. Packages may read another module only through an application service
+or an authorized projection. They must not update another module's tables.
+
+The Inspector assistant remains advisory. Its local provider is deterministic
+and server-hosted; it cannot create a Finding, change severity, close work, or
+make an enforcement decision. A future external model provider must implement
+the same audited draft interface and requires a separate governance decision.
+
+### Request and event flow
+
+1. Caddy terminates local HTTPS and serves the HTTP React artifact.
+2. Keycloak completes OIDC; the Go BFF stores provider tokens server-side and
+   issues the Secure, HttpOnly, SameSite application session.
+3. React calls only same-origin `/api` and `/auth` routes through `HttpBackend`.
+4. The API authorizes object and field scope before loading or mutating domain
+   state.
+5. A command transaction writes the domain mutation, audit event, idempotency
+   response, authorized change record, and outbox item together.
+6. Workers claim outbox work and call ClamAV, SMTP/Mailpit, Gotenberg, or MinIO
+   through typed adapters. Retries are idempotent and observable.
+7. React invalidates typed queries or processes authorized sync changes; no UI
+   action relies on a toast as its only durable effect.
+8. Deterministic reset/seed behavior exists only in a scoped test-profile
+   one-shot lane. The normal OIDC/full API registers no `/__test/*` route.
+
+### Local acceptance boundary
+
+The local system is accepted only when all 86 screens work in both demo and
+HTTP profiles, every visible action has a real mock and HTTP outcome, all
+required multi-role scenarios replay against PostgreSQL, the complete Compose
+stack starts from a clean machine, normal OIDC with MFA works, scan/email/PDF
+workers are observable, application and Keycloak database plus object
+backup/restore and RPO/RTO drills pass, normal full mode exposes no test reset
+route, and no task-owned process or container is left behind.
+
+Local acceptance is not production deployment. AWS planning may begin only
+after Plans 1–3 are accepted and Plan 4 Tasks 1–9 plus Task 11 reach the local
+`ready-for-verification` milestone. AWS Task 10 is an optional branch outside
+that local completion gate and still requires a new explicit authorization for
+each reviewed bootstrap, foundation/ECR, artifact-publication, and data/runtime
+phase. Traffic cutover, production legal/records policy, external penetration
+testing, production identity federation, provider contracts, and on-call
+staffing remain separate approval gates.
+
+### Binding execution plans
+
+1. `docs/exec-plans/active/2026-07-22-full-react-86-screen-migration-plan.md`
+2. `docs/exec-plans/active/2026-07-22-full-backend-scenario-parity-plan.md`
+3. `docs/exec-plans/active/2026-07-22-local-production-like-services-plan.md`
+4. `docs/exec-plans/active/2026-07-22-reliability-dr-and-aws-terraform-terragrunt-plan.md`

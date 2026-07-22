@@ -50,12 +50,37 @@ export function ApplicationTopbar({
       "report-preview": "Dashboard  ›  Reports Approval",
     };
     const authorityCrumbs: Partial<Record<ReactSurfaceId, string>> = { "gm-home": "General Manager Dashboard", "finance-home": "Finance Review", "executive-home": "Executive Director Dashboard" };
+    const auditeeCrumbs: Partial<Record<ReactSurfaceId, string>> = {
+      "auditee-home": "Corrective Actions (CAP)",
+      "auditee-inspection-coordination": "Inspection Coordination",
+      "auditee-preliminary-reports": "Preliminary Reports",
+      "auditee-final-reports": "Final Reports",
+      "auditee-report-preview": "Final Reports  ›  Report Preview",
+      "auditee-messages": "Messages",
+      "auditee-documents": "Documents",
+      "auditee-settings": "Settings",
+    };
+    const adminCrumbs: Partial<Record<ReactSurfaceId, string>> = {
+      "admin-regulatory-library": "Regulatory Library",
+      "admin-template-list": "Checklist Templates",
+      "admin-home": "Templates  ›  Template Preview — Cabin Inspection",
+      "admin-question-bank": "Question Bank",
+      "admin-checklist-builder": "Checklist Builder",
+      "admin-version-history": "Version History",
+      "admin-inspection-package-builder": "Checklist Builder  ›  Inspection Package Builder",
+      "admin-reports": "Admin Reports",
+      "admin-users-roles": "Users / Roles",
+      "admin-configurations": "Configurations",
+      "admin-organization-master-data": "Organisation Master Data",
+      "admin-organization-detail": "Organisation Master Data  ›  Organization Detail",
+      "admin-audit-log": "Audit Log",
+    };
     const routeCrumbs = auditeeChrome
-      ? "Corrective Actions (CAP)"
+      ? auditeeCrumbs[activeRouteId ?? "auditee-home"] ?? "Service Provider Portal"
       : managerChrome
         ? managerCrumbs[activeRouteId ?? "manager-home"] ?? "Dashboard"
         : adminChrome
-          ? "Templates  ›  Template Preview"
+          ? adminCrumbs[activeRouteId ?? "admin-template-list"] ?? "Administration"
           : authorityCrumbs[activeRouteId ?? "gm-home"] ?? roleLabel(identity.activeRole);
     return (
       <header className={`application-topbar application-topbar--root ${auditeeChrome ? "application-topbar--auditee auditee-root-topbar" : managerChrome ? "application-topbar--manager manager-root-topbar" : adminChrome ? "application-topbar--admin admin-root-topbar" : "application-topbar--authority authority-root-topbar"}`}>

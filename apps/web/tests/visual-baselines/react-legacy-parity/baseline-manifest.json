@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "generatedAt": "2026-06-15T09:00:00.000Z",
   "baselineVersion": "react-legacy-parity-v1",
-  "surfaceCount": 17,
+  "surfaceCount": 86,
   "viewportCount": 3,
   "source": {
-    "commit": "e31117b6b48a1a4549f44de4f18ba7da2fd1d340",
+    "commit": "38cf0934de04777af0fc97e64883741d516e7001",
     "files": {
       "index.html": "sha256:1b02a3a2f5bb459f43f8da8896b401c65336dab3f43f6aff8f6cb53132358574",
       "css/styles.css": "sha256:b8fc4b99934702fa22ad844ebf70026b9b70d94d9106a7926c39377808f757f6",
@@ -29,6 +29,57 @@
   },
   "items": [
     {
+      "auditId": "ui-audit-086",
+      "surfaceId": "admin-audit-log",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/admin-audit-log.png",
+      "sha256": "sha256:9a80cd4eca5a1e48aa7f6fc6835d9ac4b510686cf876bf8ca3ebc298bc054ab3",
+      "sourceRoute": {
+        "legacyView": "auditlog",
+        "legacyParams": {},
+        "reactPath": "/admin/audit-log"
+      }
+    },
+    {
+      "auditId": "ui-audit-078",
+      "surfaceId": "admin-checklist-builder",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/admin-checklist-builder.png",
+      "sha256": "sha256:108311cbc2ea3aedc3b041aa319eaa3b2e83ce0a68f1243e4dae83892ddeebfc",
+      "sourceRoute": {
+        "legacyView": "checklist-builder",
+        "legacyParams": {},
+        "reactPath": "/admin/checklist-builder"
+      }
+    },
+    {
+      "auditId": "ui-audit-083",
+      "surfaceId": "admin-configurations",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/admin-configurations.png",
+      "sha256": "sha256:0f9477653a2c8f243dc4259a74df4a72bc95d5fba3d394bdf7fed3f773f2a64f",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/admin/configurations"
+      }
+    },
+    {
       "auditId": "ui-audit-076",
       "surfaceId": "admin-home",
       "parityMode": "content-adapted",
@@ -45,6 +96,161 @@
           "id": "TPL-CABIN-2026"
         },
         "reactPath": "/admin/templates"
+      }
+    },
+    {
+      "auditId": "ui-audit-080",
+      "surfaceId": "admin-inspection-package-builder",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/admin-inspection-package-builder.png",
+      "sha256": "sha256:0c0ac227d1a4ec754ef92163252d9ec4afab0a3c56b397ea2df66a5b6ad1e154",
+      "sourceRoute": {
+        "legacyView": "package-builder",
+        "legacyParams": {},
+        "reactPath": "/admin/inspection-package-builder"
+      }
+    },
+    {
+      "auditId": "ui-audit-085",
+      "surfaceId": "admin-organization-detail",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/admin-organization-detail.png",
+      "sha256": "sha256:d7527e66a2753ec3b5e987b8d43ac2465e5c5f1f6fb5526e85259b3e87c96c68",
+      "sourceRoute": {
+        "legacyView": "org-detail",
+        "legacyParams": {
+          "orgId": "ORG-XYZ"
+        },
+        "reactPath": "/admin/organization-master-data/ORG-FLY-NAMIBIA"
+      }
+    },
+    {
+      "auditId": "ui-audit-084",
+      "surfaceId": "admin-organization-master-data",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/admin-organization-master-data.png",
+      "sha256": "sha256:2fa1364da3f4e968306f290ad8972b3fdac601bc13411950a9e5c761185328e8",
+      "sourceRoute": {
+        "legacyView": "organizations",
+        "legacyParams": {},
+        "reactPath": "/admin/organization-master-data"
+      }
+    },
+    {
+      "auditId": "ui-audit-077",
+      "surfaceId": "admin-question-bank",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/admin-question-bank.png",
+      "sha256": "sha256:7576e25c87c5fa7c07cb1329490a0120a0392da799e7cafc6605263b5c94f2ad",
+      "sourceRoute": {
+        "legacyView": "question-bank",
+        "legacyParams": {},
+        "reactPath": "/admin/question-bank"
+      }
+    },
+    {
+      "auditId": "ui-audit-074",
+      "surfaceId": "admin-regulatory-library",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/admin-regulatory-library.png",
+      "sha256": "sha256:99b207c8fb8f3d8928b1780ae7deb97fe950ac45bbc67364b71e2a8b4540a773",
+      "sourceRoute": {
+        "legacyView": "regulatory-library",
+        "legacyParams": {},
+        "reactPath": "/admin/regulatory-library"
+      }
+    },
+    {
+      "auditId": "ui-audit-081",
+      "surfaceId": "admin-reports",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/admin-reports.png",
+      "sha256": "sha256:e8793e4a7a70ef30e4d35c21ce54df33f604ea2e204318eab648b2299b48ccbe",
+      "sourceRoute": {
+        "legacyView": "reports",
+        "legacyParams": {},
+        "reactPath": "/admin/reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-075",
+      "surfaceId": "admin-template-list",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/admin-template-list.png",
+      "sha256": "sha256:6a85fec0fa1cd4a15c58fb56d34920d80f0b91d7150ec993fc7d7a6e382e3a21",
+      "sourceRoute": {
+        "legacyView": "templates",
+        "legacyParams": {},
+        "reactPath": "/admin/template-library"
+      }
+    },
+    {
+      "auditId": "ui-audit-082",
+      "surfaceId": "admin-users-roles",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/admin-users-roles.png",
+      "sha256": "sha256:b50a0456697e880189274167179b3e3686a76ff2d97ace48af615e76ca738e72",
+      "sourceRoute": {
+        "legacyView": "users",
+        "legacyParams": {},
+        "reactPath": "/admin/users-roles"
+      }
+    },
+    {
+      "auditId": "ui-audit-079",
+      "surfaceId": "admin-version-history",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/admin-version-history.png",
+      "sha256": "sha256:0970fb146c30d815c98abfb3bf704c3aa611b2a60ed46795977a12a7864a63ba",
+      "sourceRoute": {
+        "legacyView": "checklist-versions",
+        "legacyParams": {},
+        "reactPath": "/admin/templates/TPL-CABIN-2026/history"
       }
     },
     {
@@ -84,6 +290,42 @@
       }
     },
     {
+      "auditId": "ui-audit-072",
+      "surfaceId": "auditee-documents",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/auditee-documents.png",
+      "sha256": "sha256:24f6b8a81dff807ae2237557fa422b2484b8e1c391c78cd44f67466fab876882",
+      "sourceRoute": {
+        "legacyView": "reports",
+        "legacyParams": {
+          "filter": "documents"
+        },
+        "reactPath": "/auditee/documents"
+      }
+    },
+    {
+      "auditId": "ui-audit-069",
+      "surfaceId": "auditee-final-reports",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/auditee-final-reports.png",
+      "sha256": "sha256:2431b8529762c6a68e7503e7e4549ca77661a3a77f91ccd83138207ce1aca63e",
+      "sourceRoute": {
+        "legacyView": "service-provider-final-reports",
+        "legacyParams": {},
+        "reactPath": "/auditee/final-reports"
+      }
+    },
+    {
       "auditId": "ui-audit-066",
       "surfaceId": "auditee-home",
       "parityMode": "content-adapted",
@@ -98,6 +340,93 @@
         "legacyView": "service-provider-cap",
         "legacyParams": {},
         "reactPath": "/auditee/service-provider-cap"
+      }
+    },
+    {
+      "auditId": "ui-audit-067",
+      "surfaceId": "auditee-inspection-coordination",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/auditee-inspection-coordination.png",
+      "sha256": "sha256:4daa224cce70ad27f11e99302d75ebc373c7ebab557cb7ff9471ca8e04fab02e",
+      "sourceRoute": {
+        "legacyView": "service-provider-inspection-coordination",
+        "legacyParams": {},
+        "reactPath": "/auditee/inspection-coordination"
+      }
+    },
+    {
+      "auditId": "ui-audit-071",
+      "surfaceId": "auditee-messages",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/auditee-messages.png",
+      "sha256": "sha256:9fbb325eed2f3b6589d5a8cebfc2f5e208548406f9694c5fa980584c74c533ba",
+      "sourceRoute": {
+        "legacyView": "messages",
+        "legacyParams": {},
+        "reactPath": "/auditee/messages"
+      }
+    },
+    {
+      "auditId": "ui-audit-068",
+      "surfaceId": "auditee-preliminary-reports",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/auditee-preliminary-reports.png",
+      "sha256": "sha256:ef866fd9731ad34c03aa5ea50c071368b2c31089644c13828d657ae4500b881a",
+      "sourceRoute": {
+        "legacyView": "service-provider-preliminary-reports",
+        "legacyParams": {},
+        "reactPath": "/auditee/preliminary-reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-070",
+      "surfaceId": "auditee-report-preview",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/auditee-report-preview.png",
+      "sha256": "sha256:420beb14cfec3a3cc763bf1295ead5be0021b8fad7cff23c48acf7f4e495b15e",
+      "sourceRoute": {
+        "legacyView": "service-provider-report-preview",
+        "legacyParams": {
+          "reportId": "FR-2025-009"
+        },
+        "reactPath": "/auditee/reports/RPT-CAB-2026-001"
+      }
+    },
+    {
+      "auditId": "ui-audit-073",
+      "surfaceId": "auditee-settings",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/auditee-settings.png",
+      "sha256": "sha256:b8c38b312193d8290ac05e1d55e54c82b93bee88bb8a2e8d57575df0b122bdaf",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/auditee/settings"
       }
     },
     {
@@ -140,6 +469,25 @@
       }
     },
     {
+      "auditId": "ui-audit-010",
+      "surfaceId": "closure-report-preview",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/closure-report-preview.png",
+      "sha256": "sha256:9444f908934e8ea22a0f61c70833a063fb9c72e5c2048740b6121ae5284f2401",
+      "sourceRoute": {
+        "legacyView": "report",
+        "legacyParams": {
+          "findingId": "CAB-2026-011"
+        },
+        "reactPath": "/inspector/closure-reports/CR-CAB-2026-001"
+      }
+    },
+    {
       "auditId": "ui-audit-044",
       "surfaceId": "evidence-review",
       "parityMode": "content-adapted",
@@ -149,13 +497,30 @@
         "height": 900
       },
       "file": "desktop/evidence-review.png",
-      "sha256": "sha256:19d73f4af8d792872439fb3dcc95a7ae6fbd5b9d1557c8041f66e6c6b86a118f",
+      "sha256": "sha256:c5508b4546f4104443e48a41493f29703231e22793ff2ee993dfaec6884a9cac",
       "sourceRoute": {
         "legacyView": "findings",
         "legacyParams": {
           "filter": "evreview"
         },
-        "reactPath": "/lead-inspector/evidence-review/FND-CAB-2026-001"
+        "reactPath": "/department-manager/evidence/FND-CAB-2026-001"
+      }
+    },
+    {
+      "auditId": "ui-audit-062",
+      "surfaceId": "executive-final-reports",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/executive-final-reports.png",
+      "sha256": "sha256:da4c2b5df8ff3bd4e5c69ec2afe08d377d81fce86b6a7a1cc682a1d44db851b1",
+      "sourceRoute": {
+        "legacyView": "executive-final-reports",
+        "legacyParams": {},
+        "reactPath": "/executive-director/final-reports"
       }
     },
     {
@@ -173,6 +538,93 @@
         "legacyView": "executive-dashboard",
         "legacyParams": {},
         "reactPath": "/executive-director/executive-dashboard"
+      }
+    },
+    {
+      "auditId": "ui-audit-064",
+      "surfaceId": "executive-notifications",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/executive-notifications.png",
+      "sha256": "sha256:b81942d644540477cd8bad75868d4673c5d2cb502739ad160f85fc4914c2e24d",
+      "sourceRoute": {
+        "legacyView": "executive-notifications",
+        "legacyParams": {},
+        "reactPath": "/executive-director/notifications"
+      }
+    },
+    {
+      "auditId": "ui-audit-060",
+      "surfaceId": "executive-planning",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/executive-planning.png",
+      "sha256": "sha256:8581203699c3db35766a67a21aa4ba491642e155506bc76bcec88fdbbebbf454",
+      "sourceRoute": {
+        "legacyView": "executive-planning",
+        "legacyParams": {},
+        "reactPath": "/executive-director/planning"
+      }
+    },
+    {
+      "auditId": "ui-audit-061",
+      "surfaceId": "executive-preliminary-reports",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/executive-preliminary-reports.png",
+      "sha256": "sha256:2c93e47eeaee5f84600bec09cbd30de8626de4d1ae6cbb0a67790edd97704db5",
+      "sourceRoute": {
+        "legacyView": "executive-preliminary-reports",
+        "legacyParams": {},
+        "reactPath": "/executive-director/preliminary-reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-063",
+      "surfaceId": "executive-report-preview",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/executive-report-preview.png",
+      "sha256": "sha256:fcf4984c5bb0b8c5d847dff6f50f36bef5028a28615948948568348f086fc9ce",
+      "sourceRoute": {
+        "legacyView": "executive-report-preview",
+        "legacyParams": {
+          "reportId": "FR-2026-022"
+        },
+        "reactPath": "/executive-director/reports/RPT-CAB-2026-001"
+      }
+    },
+    {
+      "auditId": "ui-audit-065",
+      "surfaceId": "executive-settings",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/executive-settings.png",
+      "sha256": "sha256:e322faf51dba4f2823c21296857a9c64407215e0a5914f430d9bc99c7792506e",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/executive-director/settings"
       }
     },
     {
@@ -202,13 +654,30 @@
         "height": 900
       },
       "file": "desktop/finding-detail.png",
-      "sha256": "sha256:ff58de522c452d931c20d42830e4528e5e716c391c6fcafccf01ea92bc4a697a",
+      "sha256": "sha256:ac8bde94b89644ba81601d4125a002305b9ae2287316b05ecf15068b5dac96bd",
       "sourceRoute": {
         "legacyView": "finding",
         "legacyParams": {
           "findingId": "CAB-2026-011"
         },
-        "reactPath": "/lead-inspector/findings/FND-CAB-2026-001"
+        "reactPath": "/inspector/findings/FND-CAB-2026-001"
+      }
+    },
+    {
+      "auditId": "ui-audit-055",
+      "surfaceId": "gm-departments",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/gm-departments.png",
+      "sha256": "sha256:eac2b05570558edda256b91af5622f53885157b8df5842742dcd6a7f8db14d0a",
+      "sourceRoute": {
+        "legacyView": "gm-departments",
+        "legacyParams": {},
+        "reactPath": "/general-manager/departments"
       }
     },
     {
@@ -229,6 +698,145 @@
       }
     },
     {
+      "auditId": "ui-audit-053",
+      "surfaceId": "gm-planning",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/gm-planning.png",
+      "sha256": "sha256:1c605403fa1b6623c86b95e8638513cebe0f4ea0132e0c6ee2c6df940649814a",
+      "sourceRoute": {
+        "legacyView": "planning",
+        "legacyParams": {},
+        "reactPath": "/general-manager/planning"
+      }
+    },
+    {
+      "auditId": "ui-audit-054",
+      "surfaceId": "gm-report-approvals",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/gm-report-approvals.png",
+      "sha256": "sha256:8d7b36ad63dc4f043047270b70ef60975f2fa84756daf7a179d85ec3ac7f82bd",
+      "sourceRoute": {
+        "legacyView": "gm-report-approvals",
+        "legacyParams": {},
+        "reactPath": "/general-manager/report-approvals"
+      }
+    },
+    {
+      "auditId": "ui-audit-056",
+      "surfaceId": "gm-risk-dashboard",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/gm-risk-dashboard.png",
+      "sha256": "sha256:6b5bab24a667ab9758f0d9cc6947ceaa1044715813a4c296928b54fc8e93b6bd",
+      "sourceRoute": {
+        "legacyView": "gm-risk",
+        "legacyParams": {},
+        "reactPath": "/general-manager/risk-dashboard"
+      }
+    },
+    {
+      "auditId": "ui-audit-057",
+      "surfaceId": "gm-settings",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/gm-settings.png",
+      "sha256": "sha256:a63e371e5c6450da486af5701c73b084b4eee9cb48a8a0b17a48164c17988fa4",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/general-manager/settings"
+      }
+    },
+    {
+      "auditId": "ui-audit-043",
+      "surfaceId": "inspection-package-builder",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/inspection-package-builder.png",
+      "sha256": "sha256:1feb9157baa00e199079bbec7b05f87d0c2964ba46b3d6dfcfc88c4e441db55e",
+      "sourceRoute": {
+        "legacyView": "package-builder",
+        "legacyParams": {},
+        "reactPath": "/department-manager/inspection-package-builder"
+      }
+    },
+    {
+      "auditId": "ui-audit-011",
+      "surfaceId": "inspector-assistant",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/inspector-assistant.png",
+      "sha256": "sha256:d4e0878db0e468b285263371bd704f350de2957384bec0737bef55aab3fb89db",
+      "sourceRoute": {
+        "legacyView": "ai-assistant",
+        "legacyParams": {
+          "sourceView": "finding",
+          "findingId": "CAB-2026-011"
+        },
+        "reactPath": "/inspector/assistant"
+      }
+    },
+    {
+      "auditId": "ui-audit-005",
+      "surfaceId": "inspector-calendar",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/inspector-calendar.png",
+      "sha256": "sha256:12e3e926e9d8bd3aa3720b7365b8ad096327a93cfaab057f8af195f01a063501",
+      "sourceRoute": {
+        "legacyView": "calendar",
+        "legacyParams": {},
+        "reactPath": "/inspector/calendar"
+      }
+    },
+    {
+      "auditId": "ui-audit-003",
+      "surfaceId": "inspector-findings",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/inspector-findings.png",
+      "sha256": "sha256:3813256bfcdfab1fbca43fe591a4be3f132f9c6e05c26bf6fcb03e454e713f1d",
+      "sourceRoute": {
+        "legacyView": "findings",
+        "legacyParams": {},
+        "reactPath": "/inspector/findings"
+      }
+    },
+    {
       "auditId": "ui-audit-002",
       "surfaceId": "inspector-home",
       "parityMode": "content-adapted",
@@ -243,6 +851,187 @@
         "legacyView": "inspector-assignments",
         "legacyParams": {},
         "reactPath": "/inspector/inspector-assignments"
+      }
+    },
+    {
+      "auditId": "ui-audit-004",
+      "surfaceId": "inspector-messages",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/inspector-messages.png",
+      "sha256": "sha256:34a525fed2eb1c4a17e4c607456113f9cbe9ae6b0adda3735b28c558e3fbdc31",
+      "sourceRoute": {
+        "legacyView": "messages",
+        "legacyParams": {},
+        "reactPath": "/inspector/messages"
+      }
+    },
+    {
+      "auditId": "ui-audit-012",
+      "surfaceId": "inspector-profile",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/inspector-profile.png",
+      "sha256": "sha256:021b2df7802e0dd5bf5050ebe352f8f5a43de2341995aaf7d60783df1a105958",
+      "sourceRoute": {
+        "legacyView": "profile",
+        "legacyParams": {},
+        "reactPath": "/inspector/profile"
+      }
+    },
+    {
+      "auditId": "ui-audit-006",
+      "surfaceId": "inspector-reports",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/inspector-reports.png",
+      "sha256": "sha256:ac62b01f8e62d3a32915ccb16a7c9f499867714a80be21d8a04294efdecf34e7",
+      "sourceRoute": {
+        "legacyView": "reports",
+        "legacyParams": {},
+        "reactPath": "/inspector/reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-025",
+      "surfaceId": "lead-analytics-reports",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/lead-analytics-reports.png",
+      "sha256": "sha256:ff7b840cec8948f9f103022dc29a2cd067c7cad10ef50af6e44c7595ea12da4d",
+      "sourceRoute": {
+        "legacyView": "safety-intelligence",
+        "legacyParams": {},
+        "reactPath": "/lead-inspector/analytics-reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-020",
+      "surfaceId": "lead-audit-assignment",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/lead-audit-assignment.png",
+      "sha256": "sha256:19f4da49a1721f59d1f17a5b99fbb935c811b437813db1eabca8b57187d1537b",
+      "sourceRoute": {
+        "legacyView": "lead-assignment",
+        "legacyParams": {
+          "auditId": "AUD-2026-001"
+        },
+        "reactPath": "/lead-inspector/audits/AUD-2026-001/assignment"
+      }
+    },
+    {
+      "auditId": "ui-audit-023",
+      "surfaceId": "lead-calendar",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/lead-calendar.png",
+      "sha256": "sha256:1aa18f65ba79b1734137828d5aaa10c64829452bd093eb54ecbc85999d3bf8d3",
+      "sourceRoute": {
+        "legacyView": "calendar",
+        "legacyParams": {},
+        "reactPath": "/lead-inspector/calendar"
+      }
+    },
+    {
+      "auditId": "ui-audit-021",
+      "surfaceId": "lead-checklist-question-assignment",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/lead-checklist-question-assignment.png",
+      "sha256": "sha256:49c74bd746d34677bd8b2163b4ad0895f1a8f9a473b3a70942bc72edade4fe4f",
+      "sourceRoute": {
+        "legacyView": "lead-assignment-questions",
+        "legacyParams": {
+          "auditId": "AUD-2026-001"
+        },
+        "reactPath": "/lead-inspector/audits/AUD-2026-001/checklist-questions"
+      }
+    },
+    {
+      "auditId": "ui-audit-019",
+      "surfaceId": "lead-final-report-document",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/lead-final-report-document.png",
+      "sha256": "sha256:d379ae0c80992d0e205708ba1c544d0ca9978edc4fa8609b1425407e89f17deb",
+      "sourceRoute": {
+        "legacyView": "final-report-view",
+        "legacyParams": {
+          "reportId": "FR-2026-018"
+        },
+        "reactPath": "/lead-inspector/final-reports/RPT-CAB-2026-001/document"
+      }
+    },
+    {
+      "auditId": "ui-audit-017",
+      "surfaceId": "lead-final-report-readiness",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/lead-final-report-readiness.png",
+      "sha256": "sha256:9678293b176c00d3953b15d6c04a4706e52282f8db4347a043bc8d4f3e03bfa5",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "final",
+          "finalReportId": "FR-2026-018"
+        },
+        "reactPath": "/lead-inspector/final-reports/RPT-CAB-2026-001/readiness"
+      }
+    },
+    {
+      "auditId": "ui-audit-016",
+      "surfaceId": "lead-final-reports",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/lead-final-reports.png",
+      "sha256": "sha256:4401f2f66296cbff9abb01f7bf5653ec54b55edb7f2d1df36c927bd0e0c24ac7",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "final"
+        },
+        "reactPath": "/lead-inspector/final-reports"
       }
     },
     {
@@ -263,6 +1052,202 @@
       }
     },
     {
+      "auditId": "ui-audit-024",
+      "surfaceId": "lead-messages",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/lead-messages.png",
+      "sha256": "sha256:fd4535827ebf38cb6a74434fd3466865a96c96bc2ea3f3ff078f12a1c03c8df2",
+      "sourceRoute": {
+        "legacyView": "messages",
+        "legacyParams": {},
+        "reactPath": "/lead-inspector/messages"
+      }
+    },
+    {
+      "auditId": "ui-audit-015",
+      "surfaceId": "lead-preliminary-report-workflow",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/lead-preliminary-report-workflow.png",
+      "sha256": "sha256:6b5c9b20a9b369f823b474fb01edbacb2c594a981aacb81dfa399ba5fadbb804",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "preliminary",
+          "reportId": "PR-2026-018"
+        },
+        "reactPath": "/lead-inspector/preliminary-reports/PR-2026-018"
+      }
+    },
+    {
+      "auditId": "ui-audit-014",
+      "surfaceId": "lead-preliminary-reports",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/lead-preliminary-reports.png",
+      "sha256": "sha256:182a38b6864906f1bd13c0cea806da159a667bdcb98889cefd380bef5c21ea16",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "preliminary"
+        },
+        "reactPath": "/lead-inspector/preliminary-reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-018",
+      "surfaceId": "lead-prepare-final-report",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/lead-prepare-final-report.png",
+      "sha256": "sha256:3c55188b326a2ba233d05fb0413de59ebcd2175e41488336306d695b45f659ca",
+      "sourceRoute": {
+        "legacyView": "final-report-prepare",
+        "legacyParams": {
+          "reportId": "FR-2026-018"
+        },
+        "reactPath": "/lead-inspector/final-reports/RPT-CAB-2026-001/prepare"
+      }
+    },
+    {
+      "auditId": "ui-audit-026",
+      "surfaceId": "lead-settings",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/lead-settings.png",
+      "sha256": "sha256:4d7c337ea7f8b80542b9f2048eb9d00abbca522083f54449f785ebfc8643c364",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/lead-inspector/settings"
+      }
+    },
+    {
+      "auditId": "ui-audit-029",
+      "surfaceId": "manager-audits",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/manager-audits.png",
+      "sha256": "sha256:2e69c76881b2347ba297d0a422f95ef45612113a5e87037fb0f2b5568a769b22",
+      "sourceRoute": {
+        "legacyView": "calendar",
+        "legacyParams": {},
+        "reactPath": "/department-manager/audits"
+      }
+    },
+    {
+      "auditId": "ui-audit-046",
+      "surfaceId": "manager-cap-closure-review",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/manager-cap-closure-review.png",
+      "sha256": "sha256:27648b67b4adb4a59d9629a09e0cc0beaa1f520b0b7bcae8bf30fd547a85d296",
+      "sourceRoute": {
+        "legacyView": "unit-manager-review",
+        "legacyParams": {
+          "findingId": "CAB-2026-011"
+        },
+        "reactPath": "/department-manager/findings/FND-CAB-2026-001/closure-review"
+      }
+    },
+    {
+      "auditId": "ui-audit-040",
+      "surfaceId": "manager-cap-effectiveness",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/manager-cap-effectiveness.png",
+      "sha256": "sha256:c644bec1e67e3ce563ab7aef7be16d210537bc8fbbf6645ca33c44a10d5903af",
+      "sourceRoute": {
+        "legacyView": "cap-effectiveness",
+        "legacyParams": {},
+        "reactPath": "/department-manager/cap-effectiveness"
+      }
+    },
+    {
+      "auditId": "ui-audit-034",
+      "surfaceId": "manager-cap-monitoring",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/manager-cap-monitoring.png",
+      "sha256": "sha256:5aa7e6f2185bb6f833ac3323aa7ad9fa5bf211c10c1e7f270f16724dccb1ac1b",
+      "sourceRoute": {
+        "legacyView": "cap-monitoring",
+        "legacyParams": {},
+        "reactPath": "/department-manager/cap-monitoring"
+      }
+    },
+    {
+      "auditId": "ui-audit-035",
+      "surfaceId": "manager-checklist-management",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/manager-checklist-management.png",
+      "sha256": "sha256:5649eac9c745af43625df827ec82c764df4d591a3013ee4593abd45c1a540cd5",
+      "sourceRoute": {
+        "legacyView": "manager-checklists",
+        "legacyParams": {},
+        "reactPath": "/department-manager/checklist-management"
+      }
+    },
+    {
+      "auditId": "ui-audit-033",
+      "surfaceId": "manager-findings-review",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/manager-findings-review.png",
+      "sha256": "sha256:234af30bdd40f562ddc46ab263b77867633df0345ac1ea937589341309e767b5",
+      "sourceRoute": {
+        "legacyView": "findings-review",
+        "legacyParams": {},
+        "reactPath": "/department-manager/findings-review"
+      }
+    },
+    {
       "auditId": "ui-audit-027",
       "surfaceId": "manager-home",
       "parityMode": "content-adapted",
@@ -280,6 +1265,224 @@
       }
     },
     {
+      "auditId": "ui-audit-032",
+      "surfaceId": "manager-inspection-team",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/manager-inspection-team.png",
+      "sha256": "sha256:0d113908b7b441a470b02e583313d4ad413594d6a1a11dda73af59de6b7bc731",
+      "sourceRoute": {
+        "legacyView": "inspection-team",
+        "legacyParams": {},
+        "reactPath": "/department-manager/inspection-team"
+      }
+    },
+    {
+      "auditId": "ui-audit-045",
+      "surfaceId": "manager-preliminary-report-review",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/manager-preliminary-report-review.png",
+      "sha256": "sha256:f18bd8f1c6a98fb6b06a3c5d82cb8cc30d53e1fbd134cb8e8a4d617884c0d7b6",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "preliminary"
+        },
+        "reactPath": "/department-manager/preliminary-reports/PR-2026-018"
+      }
+    },
+    {
+      "auditId": "ui-audit-031",
+      "surfaceId": "manager-risk-dashboard",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/manager-risk-dashboard.png",
+      "sha256": "sha256:be2a9b7bbf9a58205cc04cc78f4ddfe1d418089ad5e5151030032c28d89d5504",
+      "sourceRoute": {
+        "legacyView": "manager-risk",
+        "legacyParams": {},
+        "reactPath": "/department-manager/risk-dashboard"
+      }
+    },
+    {
+      "auditId": "ui-audit-036",
+      "surfaceId": "manager-safety-intelligence",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/manager-safety-intelligence.png",
+      "sha256": "sha256:7011a0fc11926c3070ea4e0409c522b75ae665001cdc581f42b21a26b2ff5d82",
+      "sourceRoute": {
+        "legacyView": "safety-intelligence",
+        "legacyParams": {},
+        "reactPath": "/department-manager/safety-intelligence"
+      }
+    },
+    {
+      "auditId": "ui-audit-038",
+      "surfaceId": "manager-ssp-nasp",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/manager-ssp-nasp.png",
+      "sha256": "sha256:3950ff176d400fffef0dd65d15758bd353c7f396648f77a047659323bc7ca9cd",
+      "sourceRoute": {
+        "legacyView": "ssp-nasp",
+        "legacyParams": {},
+        "reactPath": "/department-manager/ssp-nasp"
+      }
+    },
+    {
+      "auditId": "ui-audit-039",
+      "surfaceId": "manager-usoap-readiness",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/manager-usoap-readiness.png",
+      "sha256": "sha256:da7f236ad7988922e9b3830d0a8250ab75262a9b2dd3e215b6e491fb39675e83",
+      "sourceRoute": {
+        "legacyView": "usoap-readiness",
+        "legacyParams": {},
+        "reactPath": "/department-manager/usoap-readiness"
+      }
+    },
+    {
+      "auditId": "ui-audit-047",
+      "surfaceId": "new-audit-wizard-1",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/new-audit-wizard-1.png",
+      "sha256": "sha256:6dee218c65afee4b3388b5ab8b5cb59e7ebeeb28718a456ad88bd6fe67947c87",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "1"
+        },
+        "reactPath": "/department-manager/new-audit/step-1"
+      }
+    },
+    {
+      "auditId": "ui-audit-048",
+      "surfaceId": "new-audit-wizard-2",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/new-audit-wizard-2.png",
+      "sha256": "sha256:82fdfa6505995878a90611c0cbc0f320b628c5b187202c9ff297478cd99197cc",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "2"
+        },
+        "reactPath": "/department-manager/new-audit/step-2"
+      }
+    },
+    {
+      "auditId": "ui-audit-049",
+      "surfaceId": "new-audit-wizard-3",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/new-audit-wizard-3.png",
+      "sha256": "sha256:ae625e47257b49fcd4bb0d04dfdd8377539a355a7413322f244b4cf3d6265b34",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "3"
+        },
+        "reactPath": "/department-manager/new-audit/step-3"
+      }
+    },
+    {
+      "auditId": "ui-audit-050",
+      "surfaceId": "new-audit-wizard-4",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/new-audit-wizard-4.png",
+      "sha256": "sha256:90f4c44b19079ebb963660c200d9e3a5dacaf88696110c6c6f3aaa8790a1af4b",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "4"
+        },
+        "reactPath": "/department-manager/new-audit/step-4"
+      }
+    },
+    {
+      "auditId": "ui-audit-051",
+      "surfaceId": "new-audit-wizard-5",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/new-audit-wizard-5.png",
+      "sha256": "sha256:21cc79ae1db82c939aaacc0c72947a81ef2ae1b6f6a87f0616c40630a907a120",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "5"
+        },
+        "reactPath": "/department-manager/new-audit/step-5"
+      }
+    },
+    {
+      "auditId": "ui-audit-042",
+      "surfaceId": "organization-detail",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/organization-detail.png",
+      "sha256": "sha256:41823efe6f2b3087e49df63d366891ffb289ddde077290cc570ccc2fdcd2a350",
+      "sourceRoute": {
+        "legacyView": "org-detail",
+        "legacyParams": {
+          "orgId": "ORG-XYZ"
+        },
+        "reactPath": "/department-manager/organizations/ORG-FLY-NAMIBIA"
+      }
+    },
+    {
       "auditId": "ui-audit-041",
       "surfaceId": "organization-registry",
       "parityMode": "content-adapted",
@@ -294,6 +1497,25 @@
         "legacyView": "organizations",
         "legacyParams": {},
         "reactPath": "/department-manager/organizations"
+      }
+    },
+    {
+      "auditId": "ui-audit-037",
+      "surfaceId": "organization-risk-profile",
+      "parityMode": "content-adapted",
+      "viewport": "desktop",
+      "viewportSize": {
+        "width": 1440,
+        "height": 900
+      },
+      "file": "desktop/organization-risk-profile.png",
+      "sha256": "sha256:d55177b10ed80cf9b3543671a81172c314125cb3056a280f7952e58e2efec3a6",
+      "sourceRoute": {
+        "legacyView": "org-risk",
+        "legacyParams": {
+          "orgId": "ORG-XYZ"
+        },
+        "reactPath": "/department-manager/organizations/ORG-FLY-NAMIBIA/risk-profile"
       }
     },
     {
@@ -333,6 +1555,57 @@
       }
     },
     {
+      "auditId": "ui-audit-086",
+      "surfaceId": "admin-audit-log",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/admin-audit-log.png",
+      "sha256": "sha256:615582d23ab7d1072776d9ffa9e55086d0978164c4591c7ac343f65e6cd4307e",
+      "sourceRoute": {
+        "legacyView": "auditlog",
+        "legacyParams": {},
+        "reactPath": "/admin/audit-log"
+      }
+    },
+    {
+      "auditId": "ui-audit-078",
+      "surfaceId": "admin-checklist-builder",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/admin-checklist-builder.png",
+      "sha256": "sha256:59d0efd257463e80dcc9e24758f75769695dc01df83f73ec8ab6c34c871fd93a",
+      "sourceRoute": {
+        "legacyView": "checklist-builder",
+        "legacyParams": {},
+        "reactPath": "/admin/checklist-builder"
+      }
+    },
+    {
+      "auditId": "ui-audit-083",
+      "surfaceId": "admin-configurations",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/admin-configurations.png",
+      "sha256": "sha256:7855e526475e9df645a625b27fae58dcdf48cfa04b4261ea2cbc2d0da736d6be",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/admin/configurations"
+      }
+    },
+    {
       "auditId": "ui-audit-076",
       "surfaceId": "admin-home",
       "parityMode": "content-adapted",
@@ -349,6 +1622,161 @@
           "id": "TPL-CABIN-2026"
         },
         "reactPath": "/admin/templates"
+      }
+    },
+    {
+      "auditId": "ui-audit-080",
+      "surfaceId": "admin-inspection-package-builder",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/admin-inspection-package-builder.png",
+      "sha256": "sha256:34de31df2dd84a3d4bcc7be3d9648a38410ccd84882fe492016baa87166297a4",
+      "sourceRoute": {
+        "legacyView": "package-builder",
+        "legacyParams": {},
+        "reactPath": "/admin/inspection-package-builder"
+      }
+    },
+    {
+      "auditId": "ui-audit-085",
+      "surfaceId": "admin-organization-detail",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/admin-organization-detail.png",
+      "sha256": "sha256:13fba7e90b956ade277dcde82fdf94bfa6c8028413b3df13b16c8292f09b90d0",
+      "sourceRoute": {
+        "legacyView": "org-detail",
+        "legacyParams": {
+          "orgId": "ORG-XYZ"
+        },
+        "reactPath": "/admin/organization-master-data/ORG-FLY-NAMIBIA"
+      }
+    },
+    {
+      "auditId": "ui-audit-084",
+      "surfaceId": "admin-organization-master-data",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/admin-organization-master-data.png",
+      "sha256": "sha256:d59ac6297dfaeb938d77f6ebc3da6422e63e2669c6022d979d97da44e3571e4c",
+      "sourceRoute": {
+        "legacyView": "organizations",
+        "legacyParams": {},
+        "reactPath": "/admin/organization-master-data"
+      }
+    },
+    {
+      "auditId": "ui-audit-077",
+      "surfaceId": "admin-question-bank",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/admin-question-bank.png",
+      "sha256": "sha256:9827657ec392659501a6064df4af587d3538dba1ea80a509d2ed6eb1462272a7",
+      "sourceRoute": {
+        "legacyView": "question-bank",
+        "legacyParams": {},
+        "reactPath": "/admin/question-bank"
+      }
+    },
+    {
+      "auditId": "ui-audit-074",
+      "surfaceId": "admin-regulatory-library",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/admin-regulatory-library.png",
+      "sha256": "sha256:1e77f7605e3f1df75934fabf3007a7e3ae05d428729ce8d51e8e17762f671c2e",
+      "sourceRoute": {
+        "legacyView": "regulatory-library",
+        "legacyParams": {},
+        "reactPath": "/admin/regulatory-library"
+      }
+    },
+    {
+      "auditId": "ui-audit-081",
+      "surfaceId": "admin-reports",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/admin-reports.png",
+      "sha256": "sha256:695bfe018393e2a525150a23eb3098c6cc83fbffc1d2d5a5522e81d4a3d79034",
+      "sourceRoute": {
+        "legacyView": "reports",
+        "legacyParams": {},
+        "reactPath": "/admin/reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-075",
+      "surfaceId": "admin-template-list",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/admin-template-list.png",
+      "sha256": "sha256:3f0d54b496cc614211cd61540b14ccb5085a43d2305ee2153114ff671e603168",
+      "sourceRoute": {
+        "legacyView": "templates",
+        "legacyParams": {},
+        "reactPath": "/admin/template-library"
+      }
+    },
+    {
+      "auditId": "ui-audit-082",
+      "surfaceId": "admin-users-roles",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/admin-users-roles.png",
+      "sha256": "sha256:8816a51e2e612c5d31da2bb5a6d3e73ea5ef70f60949cbcdbd8916602b95abab",
+      "sourceRoute": {
+        "legacyView": "users",
+        "legacyParams": {},
+        "reactPath": "/admin/users-roles"
+      }
+    },
+    {
+      "auditId": "ui-audit-079",
+      "surfaceId": "admin-version-history",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/admin-version-history.png",
+      "sha256": "sha256:bbcc1f729adeebbbc52f0608fcdf5d9987dc8ff942675480f6ce17f8a7ecc521",
+      "sourceRoute": {
+        "legacyView": "checklist-versions",
+        "legacyParams": {},
+        "reactPath": "/admin/templates/TPL-CABIN-2026/history"
       }
     },
     {
@@ -388,6 +1816,42 @@
       }
     },
     {
+      "auditId": "ui-audit-072",
+      "surfaceId": "auditee-documents",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/auditee-documents.png",
+      "sha256": "sha256:bbef67bb04e14d559f09cc0b1a4e0999b6e39a704fef69919af51902638f52df",
+      "sourceRoute": {
+        "legacyView": "reports",
+        "legacyParams": {
+          "filter": "documents"
+        },
+        "reactPath": "/auditee/documents"
+      }
+    },
+    {
+      "auditId": "ui-audit-069",
+      "surfaceId": "auditee-final-reports",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/auditee-final-reports.png",
+      "sha256": "sha256:406c4d3776d8fb922e5bff8fc5585a789b8c30f34721cd1a5cbec499866be2cd",
+      "sourceRoute": {
+        "legacyView": "service-provider-final-reports",
+        "legacyParams": {},
+        "reactPath": "/auditee/final-reports"
+      }
+    },
+    {
       "auditId": "ui-audit-066",
       "surfaceId": "auditee-home",
       "parityMode": "content-adapted",
@@ -402,6 +1866,93 @@
         "legacyView": "service-provider-cap",
         "legacyParams": {},
         "reactPath": "/auditee/service-provider-cap"
+      }
+    },
+    {
+      "auditId": "ui-audit-067",
+      "surfaceId": "auditee-inspection-coordination",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/auditee-inspection-coordination.png",
+      "sha256": "sha256:29dbebee9a26e82806ee9c8879f9f0b14ce73a0baa71b4080021a17ed03d27aa",
+      "sourceRoute": {
+        "legacyView": "service-provider-inspection-coordination",
+        "legacyParams": {},
+        "reactPath": "/auditee/inspection-coordination"
+      }
+    },
+    {
+      "auditId": "ui-audit-071",
+      "surfaceId": "auditee-messages",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/auditee-messages.png",
+      "sha256": "sha256:3ba71f7e1286cdec89194e717e6cbe762c84c07d71292b65c7bb8f65339cbf0b",
+      "sourceRoute": {
+        "legacyView": "messages",
+        "legacyParams": {},
+        "reactPath": "/auditee/messages"
+      }
+    },
+    {
+      "auditId": "ui-audit-068",
+      "surfaceId": "auditee-preliminary-reports",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/auditee-preliminary-reports.png",
+      "sha256": "sha256:6dc2cd32b58d7f272ca2e211e5a89bee6c023ba2616dc898cf475fa4c88dcd18",
+      "sourceRoute": {
+        "legacyView": "service-provider-preliminary-reports",
+        "legacyParams": {},
+        "reactPath": "/auditee/preliminary-reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-070",
+      "surfaceId": "auditee-report-preview",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/auditee-report-preview.png",
+      "sha256": "sha256:aeb433264185c7924d65da57df85d8fa74c137cf2df080ef7eb1285ff3b0b965",
+      "sourceRoute": {
+        "legacyView": "service-provider-report-preview",
+        "legacyParams": {
+          "reportId": "FR-2025-009"
+        },
+        "reactPath": "/auditee/reports/RPT-CAB-2026-001"
+      }
+    },
+    {
+      "auditId": "ui-audit-073",
+      "surfaceId": "auditee-settings",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/auditee-settings.png",
+      "sha256": "sha256:afb301aaa5b9ebf8aafd87e19dd2a8f21a1a1332394a4a4946938ea90124876e",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/auditee/settings"
       }
     },
     {
@@ -444,6 +1995,25 @@
       }
     },
     {
+      "auditId": "ui-audit-010",
+      "surfaceId": "closure-report-preview",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/closure-report-preview.png",
+      "sha256": "sha256:9a7ac049ed4c4e440ab69c79cc8b010b00a4fdc104f06d850009f28cf31ffb2b",
+      "sourceRoute": {
+        "legacyView": "report",
+        "legacyParams": {
+          "findingId": "CAB-2026-011"
+        },
+        "reactPath": "/inspector/closure-reports/CR-CAB-2026-001"
+      }
+    },
+    {
       "auditId": "ui-audit-044",
       "surfaceId": "evidence-review",
       "parityMode": "content-adapted",
@@ -453,13 +2023,30 @@
         "height": 844
       },
       "file": "mobile/evidence-review.png",
-      "sha256": "sha256:4afb1791d78fcbe1b5c9802669eb31272ff5571a903c7eadf8ce7c7da4dc49e7",
+      "sha256": "sha256:a9ad8b9da9e6e23a1663fada0dcf04074597bf98349e1213445fefbd00bd1f58",
       "sourceRoute": {
         "legacyView": "findings",
         "legacyParams": {
           "filter": "evreview"
         },
-        "reactPath": "/lead-inspector/evidence-review/FND-CAB-2026-001"
+        "reactPath": "/department-manager/evidence/FND-CAB-2026-001"
+      }
+    },
+    {
+      "auditId": "ui-audit-062",
+      "surfaceId": "executive-final-reports",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/executive-final-reports.png",
+      "sha256": "sha256:61db7cf81a80aa819c08a9ff7b833bb58c23120ca7dd5dcbccc45f7fcdf4782e",
+      "sourceRoute": {
+        "legacyView": "executive-final-reports",
+        "legacyParams": {},
+        "reactPath": "/executive-director/final-reports"
       }
     },
     {
@@ -477,6 +2064,93 @@
         "legacyView": "executive-dashboard",
         "legacyParams": {},
         "reactPath": "/executive-director/executive-dashboard"
+      }
+    },
+    {
+      "auditId": "ui-audit-064",
+      "surfaceId": "executive-notifications",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/executive-notifications.png",
+      "sha256": "sha256:ad836e8db5300b137bc3ce9169afbdb81875d14fc62db2536dcd4247ee91ac5c",
+      "sourceRoute": {
+        "legacyView": "executive-notifications",
+        "legacyParams": {},
+        "reactPath": "/executive-director/notifications"
+      }
+    },
+    {
+      "auditId": "ui-audit-060",
+      "surfaceId": "executive-planning",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/executive-planning.png",
+      "sha256": "sha256:1b0ba713b135958cf19ff5d069a930f2eafb43c88125130223e7396bb03a6e2c",
+      "sourceRoute": {
+        "legacyView": "executive-planning",
+        "legacyParams": {},
+        "reactPath": "/executive-director/planning"
+      }
+    },
+    {
+      "auditId": "ui-audit-061",
+      "surfaceId": "executive-preliminary-reports",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/executive-preliminary-reports.png",
+      "sha256": "sha256:5a027a15e42f28d266d8fe6a250ef0983bf606dd8e4c3effe2abacca4c0e32e6",
+      "sourceRoute": {
+        "legacyView": "executive-preliminary-reports",
+        "legacyParams": {},
+        "reactPath": "/executive-director/preliminary-reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-063",
+      "surfaceId": "executive-report-preview",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/executive-report-preview.png",
+      "sha256": "sha256:89c4f3f29bb270f01dcdd907a34329e5c1048ad6e7220acc8b2c152c99eb9ada",
+      "sourceRoute": {
+        "legacyView": "executive-report-preview",
+        "legacyParams": {
+          "reportId": "FR-2026-022"
+        },
+        "reactPath": "/executive-director/reports/RPT-CAB-2026-001"
+      }
+    },
+    {
+      "auditId": "ui-audit-065",
+      "surfaceId": "executive-settings",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/executive-settings.png",
+      "sha256": "sha256:f617a0564375f95752e2bf68c7c77a1958ce3d3e5974ed04031c750e6e1758c4",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/executive-director/settings"
       }
     },
     {
@@ -506,13 +2180,30 @@
         "height": 844
       },
       "file": "mobile/finding-detail.png",
-      "sha256": "sha256:3849efd30020e20e749195f19d4aa6e7d301a2e054732054d2e08ae245d9ce26",
+      "sha256": "sha256:c67a664f3f58db60c85b9312511d6d02586a112a008306d7567c6dbddb081a58",
       "sourceRoute": {
         "legacyView": "finding",
         "legacyParams": {
           "findingId": "CAB-2026-011"
         },
-        "reactPath": "/lead-inspector/findings/FND-CAB-2026-001"
+        "reactPath": "/inspector/findings/FND-CAB-2026-001"
+      }
+    },
+    {
+      "auditId": "ui-audit-055",
+      "surfaceId": "gm-departments",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/gm-departments.png",
+      "sha256": "sha256:1ecb6558d680acc7e49e5f590cb2a649d3c852bf8f6ad4c1b7a47763b3beff4f",
+      "sourceRoute": {
+        "legacyView": "gm-departments",
+        "legacyParams": {},
+        "reactPath": "/general-manager/departments"
       }
     },
     {
@@ -533,6 +2224,145 @@
       }
     },
     {
+      "auditId": "ui-audit-053",
+      "surfaceId": "gm-planning",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/gm-planning.png",
+      "sha256": "sha256:6ddec5e761cb66c9354ee2650698a518166ea2ae66fede3b5dc02c1a9438f25b",
+      "sourceRoute": {
+        "legacyView": "planning",
+        "legacyParams": {},
+        "reactPath": "/general-manager/planning"
+      }
+    },
+    {
+      "auditId": "ui-audit-054",
+      "surfaceId": "gm-report-approvals",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/gm-report-approvals.png",
+      "sha256": "sha256:11fba7a04ae85f4aeefd6513e4c6b4afeff7aad79973c9e37539809ddd91da86",
+      "sourceRoute": {
+        "legacyView": "gm-report-approvals",
+        "legacyParams": {},
+        "reactPath": "/general-manager/report-approvals"
+      }
+    },
+    {
+      "auditId": "ui-audit-056",
+      "surfaceId": "gm-risk-dashboard",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/gm-risk-dashboard.png",
+      "sha256": "sha256:de57bb3d4f09f0698f4562639d905d44dd56546c4340694bcc2796554384d61f",
+      "sourceRoute": {
+        "legacyView": "gm-risk",
+        "legacyParams": {},
+        "reactPath": "/general-manager/risk-dashboard"
+      }
+    },
+    {
+      "auditId": "ui-audit-057",
+      "surfaceId": "gm-settings",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/gm-settings.png",
+      "sha256": "sha256:930b674f691ac24f9ea606dae23661d7e104445c1f004aa83508a83750fab9d4",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/general-manager/settings"
+      }
+    },
+    {
+      "auditId": "ui-audit-043",
+      "surfaceId": "inspection-package-builder",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/inspection-package-builder.png",
+      "sha256": "sha256:f701feced44da3b8d547e5b1108ee07c570665654e2e739b3c1680eec4980f82",
+      "sourceRoute": {
+        "legacyView": "package-builder",
+        "legacyParams": {},
+        "reactPath": "/department-manager/inspection-package-builder"
+      }
+    },
+    {
+      "auditId": "ui-audit-011",
+      "surfaceId": "inspector-assistant",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/inspector-assistant.png",
+      "sha256": "sha256:992c96c4162324ee0f39d713f9a70e471b89b17dbc3280dd6f49f4b03c3009e2",
+      "sourceRoute": {
+        "legacyView": "ai-assistant",
+        "legacyParams": {
+          "sourceView": "finding",
+          "findingId": "CAB-2026-011"
+        },
+        "reactPath": "/inspector/assistant"
+      }
+    },
+    {
+      "auditId": "ui-audit-005",
+      "surfaceId": "inspector-calendar",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/inspector-calendar.png",
+      "sha256": "sha256:310fc9756e8bf42d22fbdb79429e38838bd7ae9a902cfa114612b2a9a06f9d48",
+      "sourceRoute": {
+        "legacyView": "calendar",
+        "legacyParams": {},
+        "reactPath": "/inspector/calendar"
+      }
+    },
+    {
+      "auditId": "ui-audit-003",
+      "surfaceId": "inspector-findings",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/inspector-findings.png",
+      "sha256": "sha256:6244fef4a1fbeea3e1abe256add298d747cce95f8244811814b9629fac12eac5",
+      "sourceRoute": {
+        "legacyView": "findings",
+        "legacyParams": {},
+        "reactPath": "/inspector/findings"
+      }
+    },
+    {
       "auditId": "ui-audit-002",
       "surfaceId": "inspector-home",
       "parityMode": "content-adapted",
@@ -547,6 +2377,187 @@
         "legacyView": "inspector-assignments",
         "legacyParams": {},
         "reactPath": "/inspector/inspector-assignments"
+      }
+    },
+    {
+      "auditId": "ui-audit-004",
+      "surfaceId": "inspector-messages",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/inspector-messages.png",
+      "sha256": "sha256:571fe44395c35e4bda945d2e157a70e29e6d62f221fb3a169bdd081c4276ad2a",
+      "sourceRoute": {
+        "legacyView": "messages",
+        "legacyParams": {},
+        "reactPath": "/inspector/messages"
+      }
+    },
+    {
+      "auditId": "ui-audit-012",
+      "surfaceId": "inspector-profile",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/inspector-profile.png",
+      "sha256": "sha256:c5229438e7a1198f396f2685b7d334425a8fd4723cf0ab20a3ee024bacc6de50",
+      "sourceRoute": {
+        "legacyView": "profile",
+        "legacyParams": {},
+        "reactPath": "/inspector/profile"
+      }
+    },
+    {
+      "auditId": "ui-audit-006",
+      "surfaceId": "inspector-reports",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/inspector-reports.png",
+      "sha256": "sha256:eb19e247e40374f02861a0f049674b53626f4dd0b97f3c156d4269a2938ba160",
+      "sourceRoute": {
+        "legacyView": "reports",
+        "legacyParams": {},
+        "reactPath": "/inspector/reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-025",
+      "surfaceId": "lead-analytics-reports",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/lead-analytics-reports.png",
+      "sha256": "sha256:1f0487785753f7846a551bfc56a7583b79ae7ca96c82cea36636a733c581b8ac",
+      "sourceRoute": {
+        "legacyView": "safety-intelligence",
+        "legacyParams": {},
+        "reactPath": "/lead-inspector/analytics-reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-020",
+      "surfaceId": "lead-audit-assignment",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/lead-audit-assignment.png",
+      "sha256": "sha256:d5bb052b57989e509100bc7a25906389c18b4bd6a0a113ecb93b6169a3facb56",
+      "sourceRoute": {
+        "legacyView": "lead-assignment",
+        "legacyParams": {
+          "auditId": "AUD-2026-001"
+        },
+        "reactPath": "/lead-inspector/audits/AUD-2026-001/assignment"
+      }
+    },
+    {
+      "auditId": "ui-audit-023",
+      "surfaceId": "lead-calendar",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/lead-calendar.png",
+      "sha256": "sha256:bf37eef78e0b9453b86d5ead17be66eca613d0828d00d82794fa09e22e834f24",
+      "sourceRoute": {
+        "legacyView": "calendar",
+        "legacyParams": {},
+        "reactPath": "/lead-inspector/calendar"
+      }
+    },
+    {
+      "auditId": "ui-audit-021",
+      "surfaceId": "lead-checklist-question-assignment",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/lead-checklist-question-assignment.png",
+      "sha256": "sha256:3caf1a83fdecc4d1bc20e69706f6643e8e5e062503d19afcc2eafbbe42c1ca6e",
+      "sourceRoute": {
+        "legacyView": "lead-assignment-questions",
+        "legacyParams": {
+          "auditId": "AUD-2026-001"
+        },
+        "reactPath": "/lead-inspector/audits/AUD-2026-001/checklist-questions"
+      }
+    },
+    {
+      "auditId": "ui-audit-019",
+      "surfaceId": "lead-final-report-document",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/lead-final-report-document.png",
+      "sha256": "sha256:daa880699236c883e5a242f12d82cbeb88beed39ec4a131f7957b2cd56e6bf50",
+      "sourceRoute": {
+        "legacyView": "final-report-view",
+        "legacyParams": {
+          "reportId": "FR-2026-018"
+        },
+        "reactPath": "/lead-inspector/final-reports/RPT-CAB-2026-001/document"
+      }
+    },
+    {
+      "auditId": "ui-audit-017",
+      "surfaceId": "lead-final-report-readiness",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/lead-final-report-readiness.png",
+      "sha256": "sha256:b8e4307850c0aac58b4594dc05e33fa9dd16ff7edf4812b81e58a4b4d5fb210b",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "final",
+          "finalReportId": "FR-2026-018"
+        },
+        "reactPath": "/lead-inspector/final-reports/RPT-CAB-2026-001/readiness"
+      }
+    },
+    {
+      "auditId": "ui-audit-016",
+      "surfaceId": "lead-final-reports",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/lead-final-reports.png",
+      "sha256": "sha256:98d83617bf81849c62419973154532fc0ca6e6254a2a94585c7ac618282230c4",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "final"
+        },
+        "reactPath": "/lead-inspector/final-reports"
       }
     },
     {
@@ -567,6 +2578,202 @@
       }
     },
     {
+      "auditId": "ui-audit-024",
+      "surfaceId": "lead-messages",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/lead-messages.png",
+      "sha256": "sha256:25d190945f8a34719ab2951d7da676ab5b951bce6cde5af2a69340488ee32ec4",
+      "sourceRoute": {
+        "legacyView": "messages",
+        "legacyParams": {},
+        "reactPath": "/lead-inspector/messages"
+      }
+    },
+    {
+      "auditId": "ui-audit-015",
+      "surfaceId": "lead-preliminary-report-workflow",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/lead-preliminary-report-workflow.png",
+      "sha256": "sha256:a4d58cf285f4bf01d99f346c98b188be98f6fed23a203d6bd326a876d5bc04ac",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "preliminary",
+          "reportId": "PR-2026-018"
+        },
+        "reactPath": "/lead-inspector/preliminary-reports/PR-2026-018"
+      }
+    },
+    {
+      "auditId": "ui-audit-014",
+      "surfaceId": "lead-preliminary-reports",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/lead-preliminary-reports.png",
+      "sha256": "sha256:89753a54e30ad9e5aea5466a74d6c9684b5ca70d953949cce642072548368ae5",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "preliminary"
+        },
+        "reactPath": "/lead-inspector/preliminary-reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-018",
+      "surfaceId": "lead-prepare-final-report",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/lead-prepare-final-report.png",
+      "sha256": "sha256:fcbc8a949afa92d3d3641705c2e4c2a5e2dcef2fd9c0e6a4a70c4976c2038618",
+      "sourceRoute": {
+        "legacyView": "final-report-prepare",
+        "legacyParams": {
+          "reportId": "FR-2026-018"
+        },
+        "reactPath": "/lead-inspector/final-reports/RPT-CAB-2026-001/prepare"
+      }
+    },
+    {
+      "auditId": "ui-audit-026",
+      "surfaceId": "lead-settings",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/lead-settings.png",
+      "sha256": "sha256:580b1cac79b2a0e8b73c212cbda2734bfb0ba2718ed8fee17d90553aa2911128",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/lead-inspector/settings"
+      }
+    },
+    {
+      "auditId": "ui-audit-029",
+      "surfaceId": "manager-audits",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/manager-audits.png",
+      "sha256": "sha256:8febacad29126ececb67c9e8247cf4a1f70e89cb0ffd4f661c6c901eec477d3b",
+      "sourceRoute": {
+        "legacyView": "calendar",
+        "legacyParams": {},
+        "reactPath": "/department-manager/audits"
+      }
+    },
+    {
+      "auditId": "ui-audit-046",
+      "surfaceId": "manager-cap-closure-review",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/manager-cap-closure-review.png",
+      "sha256": "sha256:368c70826b16ef030ff5739aff00af8de0e2ea3aa3b3575d525f48a9b870134f",
+      "sourceRoute": {
+        "legacyView": "unit-manager-review",
+        "legacyParams": {
+          "findingId": "CAB-2026-011"
+        },
+        "reactPath": "/department-manager/findings/FND-CAB-2026-001/closure-review"
+      }
+    },
+    {
+      "auditId": "ui-audit-040",
+      "surfaceId": "manager-cap-effectiveness",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/manager-cap-effectiveness.png",
+      "sha256": "sha256:bf83d323c1298225a5533331bb1ee08dc594ebacc4ee0cf7418853e9be66a8aa",
+      "sourceRoute": {
+        "legacyView": "cap-effectiveness",
+        "legacyParams": {},
+        "reactPath": "/department-manager/cap-effectiveness"
+      }
+    },
+    {
+      "auditId": "ui-audit-034",
+      "surfaceId": "manager-cap-monitoring",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/manager-cap-monitoring.png",
+      "sha256": "sha256:67a9b5572a78972c6d83a1e501358b4777142704f23238be7b73ce0c0ff2b1c0",
+      "sourceRoute": {
+        "legacyView": "cap-monitoring",
+        "legacyParams": {},
+        "reactPath": "/department-manager/cap-monitoring"
+      }
+    },
+    {
+      "auditId": "ui-audit-035",
+      "surfaceId": "manager-checklist-management",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/manager-checklist-management.png",
+      "sha256": "sha256:10572d864448e109937d22c08416548e9427dfb93fd4bf9037141931ab0702d6",
+      "sourceRoute": {
+        "legacyView": "manager-checklists",
+        "legacyParams": {},
+        "reactPath": "/department-manager/checklist-management"
+      }
+    },
+    {
+      "auditId": "ui-audit-033",
+      "surfaceId": "manager-findings-review",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/manager-findings-review.png",
+      "sha256": "sha256:a491c30fabe699f64c17f9ae40070a03c26ec0ab895946f3c3266410b99239ce",
+      "sourceRoute": {
+        "legacyView": "findings-review",
+        "legacyParams": {},
+        "reactPath": "/department-manager/findings-review"
+      }
+    },
+    {
       "auditId": "ui-audit-027",
       "surfaceId": "manager-home",
       "parityMode": "content-adapted",
@@ -584,6 +2791,224 @@
       }
     },
     {
+      "auditId": "ui-audit-032",
+      "surfaceId": "manager-inspection-team",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/manager-inspection-team.png",
+      "sha256": "sha256:82df5c2e99efe94f9a3a0bb8f58d859fbce4fcffcd48177999aa392b7c8e46a6",
+      "sourceRoute": {
+        "legacyView": "inspection-team",
+        "legacyParams": {},
+        "reactPath": "/department-manager/inspection-team"
+      }
+    },
+    {
+      "auditId": "ui-audit-045",
+      "surfaceId": "manager-preliminary-report-review",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/manager-preliminary-report-review.png",
+      "sha256": "sha256:96c4d84cadb6f678e49f6ac546e0187c3c506e3bb42e7d7830b4637e29b04115",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "preliminary"
+        },
+        "reactPath": "/department-manager/preliminary-reports/PR-2026-018"
+      }
+    },
+    {
+      "auditId": "ui-audit-031",
+      "surfaceId": "manager-risk-dashboard",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/manager-risk-dashboard.png",
+      "sha256": "sha256:b3eeedbdc19b3de71de8b0483f45d7af34fd1a65bae2084762fb0309674005a6",
+      "sourceRoute": {
+        "legacyView": "manager-risk",
+        "legacyParams": {},
+        "reactPath": "/department-manager/risk-dashboard"
+      }
+    },
+    {
+      "auditId": "ui-audit-036",
+      "surfaceId": "manager-safety-intelligence",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/manager-safety-intelligence.png",
+      "sha256": "sha256:6d6e0796b74591b96e907d63cfb2260411af9783258043dbd6d30505c0556adc",
+      "sourceRoute": {
+        "legacyView": "safety-intelligence",
+        "legacyParams": {},
+        "reactPath": "/department-manager/safety-intelligence"
+      }
+    },
+    {
+      "auditId": "ui-audit-038",
+      "surfaceId": "manager-ssp-nasp",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/manager-ssp-nasp.png",
+      "sha256": "sha256:e4b159fd76f2aeffb3d485a5e105f926fc6f970f32e5798f02321293f3585217",
+      "sourceRoute": {
+        "legacyView": "ssp-nasp",
+        "legacyParams": {},
+        "reactPath": "/department-manager/ssp-nasp"
+      }
+    },
+    {
+      "auditId": "ui-audit-039",
+      "surfaceId": "manager-usoap-readiness",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/manager-usoap-readiness.png",
+      "sha256": "sha256:e3d11a7859ce7d1c23eefd0b46266d0fecde0384c38c0595541a2a749aee776e",
+      "sourceRoute": {
+        "legacyView": "usoap-readiness",
+        "legacyParams": {},
+        "reactPath": "/department-manager/usoap-readiness"
+      }
+    },
+    {
+      "auditId": "ui-audit-047",
+      "surfaceId": "new-audit-wizard-1",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/new-audit-wizard-1.png",
+      "sha256": "sha256:e010654f9a27e83d689ed187741b8346e3084b505eaeb0a07495ac1e83d50bfd",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "1"
+        },
+        "reactPath": "/department-manager/new-audit/step-1"
+      }
+    },
+    {
+      "auditId": "ui-audit-048",
+      "surfaceId": "new-audit-wizard-2",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/new-audit-wizard-2.png",
+      "sha256": "sha256:79c57a56e34f6796eaf541c24fdfd0bd4eed36c28c1186d24ffd2409b9e1e3f7",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "2"
+        },
+        "reactPath": "/department-manager/new-audit/step-2"
+      }
+    },
+    {
+      "auditId": "ui-audit-049",
+      "surfaceId": "new-audit-wizard-3",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/new-audit-wizard-3.png",
+      "sha256": "sha256:b6a5595e130b458562620e0cf04aa43f761ada53ca2b92640d3c2463bd65a5fd",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "3"
+        },
+        "reactPath": "/department-manager/new-audit/step-3"
+      }
+    },
+    {
+      "auditId": "ui-audit-050",
+      "surfaceId": "new-audit-wizard-4",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/new-audit-wizard-4.png",
+      "sha256": "sha256:7c4f9d6b66d42139437eaf16fb2077f6e04f55daa43c67a017332514104b1795",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "4"
+        },
+        "reactPath": "/department-manager/new-audit/step-4"
+      }
+    },
+    {
+      "auditId": "ui-audit-051",
+      "surfaceId": "new-audit-wizard-5",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/new-audit-wizard-5.png",
+      "sha256": "sha256:1e5f56664f41d1acb7662e8b93847a09c2b7bdcef3e937996a59c96134a1ec1f",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "5"
+        },
+        "reactPath": "/department-manager/new-audit/step-5"
+      }
+    },
+    {
+      "auditId": "ui-audit-042",
+      "surfaceId": "organization-detail",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/organization-detail.png",
+      "sha256": "sha256:7378efb80bba4abf7a60e75af7ca8fac309768fb91d2f7904bc89783bb08ee73",
+      "sourceRoute": {
+        "legacyView": "org-detail",
+        "legacyParams": {
+          "orgId": "ORG-XYZ"
+        },
+        "reactPath": "/department-manager/organizations/ORG-FLY-NAMIBIA"
+      }
+    },
+    {
       "auditId": "ui-audit-041",
       "surfaceId": "organization-registry",
       "parityMode": "content-adapted",
@@ -598,6 +3023,25 @@
         "legacyView": "organizations",
         "legacyParams": {},
         "reactPath": "/department-manager/organizations"
+      }
+    },
+    {
+      "auditId": "ui-audit-037",
+      "surfaceId": "organization-risk-profile",
+      "parityMode": "content-adapted",
+      "viewport": "mobile",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "file": "mobile/organization-risk-profile.png",
+      "sha256": "sha256:ff6c0d5af764b325eca53cea331d451c4b2650dfccd2027e1a44a986829be972",
+      "sourceRoute": {
+        "legacyView": "org-risk",
+        "legacyParams": {
+          "orgId": "ORG-XYZ"
+        },
+        "reactPath": "/department-manager/organizations/ORG-FLY-NAMIBIA/risk-profile"
       }
     },
     {
@@ -637,6 +3081,57 @@
       }
     },
     {
+      "auditId": "ui-audit-086",
+      "surfaceId": "admin-audit-log",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/admin-audit-log.png",
+      "sha256": "sha256:57ffc767fbd68a186ca48a4ab56650a35a203eb34417ae55ce947a7574708572",
+      "sourceRoute": {
+        "legacyView": "auditlog",
+        "legacyParams": {},
+        "reactPath": "/admin/audit-log"
+      }
+    },
+    {
+      "auditId": "ui-audit-078",
+      "surfaceId": "admin-checklist-builder",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/admin-checklist-builder.png",
+      "sha256": "sha256:954b557f608a740c99454cc58f97722337d08516a40b9101a8d16b9a0d82216d",
+      "sourceRoute": {
+        "legacyView": "checklist-builder",
+        "legacyParams": {},
+        "reactPath": "/admin/checklist-builder"
+      }
+    },
+    {
+      "auditId": "ui-audit-083",
+      "surfaceId": "admin-configurations",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/admin-configurations.png",
+      "sha256": "sha256:46a763ee779de01f78ca81355b2d68c57743b087a9dd40d0bb65fe9ce4b33145",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/admin/configurations"
+      }
+    },
+    {
       "auditId": "ui-audit-076",
       "surfaceId": "admin-home",
       "parityMode": "content-adapted",
@@ -653,6 +3148,161 @@
           "id": "TPL-CABIN-2026"
         },
         "reactPath": "/admin/templates"
+      }
+    },
+    {
+      "auditId": "ui-audit-080",
+      "surfaceId": "admin-inspection-package-builder",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/admin-inspection-package-builder.png",
+      "sha256": "sha256:731e0ea3c414027c967fae6cd0073585c677a3536e0b841834c3b46cd7a89fef",
+      "sourceRoute": {
+        "legacyView": "package-builder",
+        "legacyParams": {},
+        "reactPath": "/admin/inspection-package-builder"
+      }
+    },
+    {
+      "auditId": "ui-audit-085",
+      "surfaceId": "admin-organization-detail",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/admin-organization-detail.png",
+      "sha256": "sha256:d94fbc57e68ef325b397f598e554c7fce73f55d4ecf6964819dd87a9be22f287",
+      "sourceRoute": {
+        "legacyView": "org-detail",
+        "legacyParams": {
+          "orgId": "ORG-XYZ"
+        },
+        "reactPath": "/admin/organization-master-data/ORG-FLY-NAMIBIA"
+      }
+    },
+    {
+      "auditId": "ui-audit-084",
+      "surfaceId": "admin-organization-master-data",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/admin-organization-master-data.png",
+      "sha256": "sha256:9df26893d69bbf222293fce50a913b8525624904273f75dde89d099557bffae3",
+      "sourceRoute": {
+        "legacyView": "organizations",
+        "legacyParams": {},
+        "reactPath": "/admin/organization-master-data"
+      }
+    },
+    {
+      "auditId": "ui-audit-077",
+      "surfaceId": "admin-question-bank",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/admin-question-bank.png",
+      "sha256": "sha256:5004508741e421c3666073d4e5d3b54b8576ad252f8a1bba3553c8e59e03d5b2",
+      "sourceRoute": {
+        "legacyView": "question-bank",
+        "legacyParams": {},
+        "reactPath": "/admin/question-bank"
+      }
+    },
+    {
+      "auditId": "ui-audit-074",
+      "surfaceId": "admin-regulatory-library",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/admin-regulatory-library.png",
+      "sha256": "sha256:9aa63c532665db6128ce087093744bab59143380533c6ffc5b1744328f83c4ba",
+      "sourceRoute": {
+        "legacyView": "regulatory-library",
+        "legacyParams": {},
+        "reactPath": "/admin/regulatory-library"
+      }
+    },
+    {
+      "auditId": "ui-audit-081",
+      "surfaceId": "admin-reports",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/admin-reports.png",
+      "sha256": "sha256:0f186fdebb02b1e7d31fb00d9cfc7a2819677b4117f9ad7b75905edbc0a7a35d",
+      "sourceRoute": {
+        "legacyView": "reports",
+        "legacyParams": {},
+        "reactPath": "/admin/reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-075",
+      "surfaceId": "admin-template-list",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/admin-template-list.png",
+      "sha256": "sha256:0728cbd5d311725be5abd2d895f22958c95d6703ce35d5e1dd51c45982628de9",
+      "sourceRoute": {
+        "legacyView": "templates",
+        "legacyParams": {},
+        "reactPath": "/admin/template-library"
+      }
+    },
+    {
+      "auditId": "ui-audit-082",
+      "surfaceId": "admin-users-roles",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/admin-users-roles.png",
+      "sha256": "sha256:91894f4bb3e8b18a0a32e888865a703b531ecad6f4edc81d788ce9ea78682492",
+      "sourceRoute": {
+        "legacyView": "users",
+        "legacyParams": {},
+        "reactPath": "/admin/users-roles"
+      }
+    },
+    {
+      "auditId": "ui-audit-079",
+      "surfaceId": "admin-version-history",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/admin-version-history.png",
+      "sha256": "sha256:93a1ef4b7f10b108fb3879626cbd209e165af37cf48e16b6698dc2f5d563a11b",
+      "sourceRoute": {
+        "legacyView": "checklist-versions",
+        "legacyParams": {},
+        "reactPath": "/admin/templates/TPL-CABIN-2026/history"
       }
     },
     {
@@ -692,6 +3342,42 @@
       }
     },
     {
+      "auditId": "ui-audit-072",
+      "surfaceId": "auditee-documents",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/auditee-documents.png",
+      "sha256": "sha256:369a413dca82f2acd731bbcd4feae73942f700a8c15af11346fe19658031b45b",
+      "sourceRoute": {
+        "legacyView": "reports",
+        "legacyParams": {
+          "filter": "documents"
+        },
+        "reactPath": "/auditee/documents"
+      }
+    },
+    {
+      "auditId": "ui-audit-069",
+      "surfaceId": "auditee-final-reports",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/auditee-final-reports.png",
+      "sha256": "sha256:469060578cb3a953251d39c29a48e7846c15f023bc9f7d3b57dce2015944a6ce",
+      "sourceRoute": {
+        "legacyView": "service-provider-final-reports",
+        "legacyParams": {},
+        "reactPath": "/auditee/final-reports"
+      }
+    },
+    {
       "auditId": "ui-audit-066",
       "surfaceId": "auditee-home",
       "parityMode": "content-adapted",
@@ -706,6 +3392,93 @@
         "legacyView": "service-provider-cap",
         "legacyParams": {},
         "reactPath": "/auditee/service-provider-cap"
+      }
+    },
+    {
+      "auditId": "ui-audit-067",
+      "surfaceId": "auditee-inspection-coordination",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/auditee-inspection-coordination.png",
+      "sha256": "sha256:e007d887f0567f791ecb45f2d9f301feb095908736fd2314115a131e443fb00a",
+      "sourceRoute": {
+        "legacyView": "service-provider-inspection-coordination",
+        "legacyParams": {},
+        "reactPath": "/auditee/inspection-coordination"
+      }
+    },
+    {
+      "auditId": "ui-audit-071",
+      "surfaceId": "auditee-messages",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/auditee-messages.png",
+      "sha256": "sha256:7c0a73c31e3181ca454c7f74c287dfdc5700062b789e8a8c17d5b8acc26a5214",
+      "sourceRoute": {
+        "legacyView": "messages",
+        "legacyParams": {},
+        "reactPath": "/auditee/messages"
+      }
+    },
+    {
+      "auditId": "ui-audit-068",
+      "surfaceId": "auditee-preliminary-reports",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/auditee-preliminary-reports.png",
+      "sha256": "sha256:3e017ecc422c4157fb5510f1d5df399448af304042f69e798f2852979a5f7b54",
+      "sourceRoute": {
+        "legacyView": "service-provider-preliminary-reports",
+        "legacyParams": {},
+        "reactPath": "/auditee/preliminary-reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-070",
+      "surfaceId": "auditee-report-preview",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/auditee-report-preview.png",
+      "sha256": "sha256:a7d76b2929b2824bf4a36fb30ea64f11122f40c4e8d63883f95824a71c1a5f3e",
+      "sourceRoute": {
+        "legacyView": "service-provider-report-preview",
+        "legacyParams": {
+          "reportId": "FR-2025-009"
+        },
+        "reactPath": "/auditee/reports/RPT-CAB-2026-001"
+      }
+    },
+    {
+      "auditId": "ui-audit-073",
+      "surfaceId": "auditee-settings",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/auditee-settings.png",
+      "sha256": "sha256:99b6fee284bbb20170b5220df6649ae348728680b3ece776fba8357278a14ff8",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/auditee/settings"
       }
     },
     {
@@ -748,6 +3521,25 @@
       }
     },
     {
+      "auditId": "ui-audit-010",
+      "surfaceId": "closure-report-preview",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/closure-report-preview.png",
+      "sha256": "sha256:cd8181058fc6abfdc9bf00d943b0d5a05ab54014726cd944609370db051a8d4b",
+      "sourceRoute": {
+        "legacyView": "report",
+        "legacyParams": {
+          "findingId": "CAB-2026-011"
+        },
+        "reactPath": "/inspector/closure-reports/CR-CAB-2026-001"
+      }
+    },
+    {
       "auditId": "ui-audit-044",
       "surfaceId": "evidence-review",
       "parityMode": "content-adapted",
@@ -757,13 +3549,30 @@
         "height": 768
       },
       "file": "tablet/evidence-review.png",
-      "sha256": "sha256:2b166b8eae864ee5a8163880633799f1b86289f652c57043388baaab0cc2e941",
+      "sha256": "sha256:931a70305cb4562e622e9ce3cb52490b1073b016241de0d5f6a464f5b75016fc",
       "sourceRoute": {
         "legacyView": "findings",
         "legacyParams": {
           "filter": "evreview"
         },
-        "reactPath": "/lead-inspector/evidence-review/FND-CAB-2026-001"
+        "reactPath": "/department-manager/evidence/FND-CAB-2026-001"
+      }
+    },
+    {
+      "auditId": "ui-audit-062",
+      "surfaceId": "executive-final-reports",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/executive-final-reports.png",
+      "sha256": "sha256:db6ebfa16b12310ae9bb1ff286e903d10cfb4a2285df37ea03ed933ec69664d1",
+      "sourceRoute": {
+        "legacyView": "executive-final-reports",
+        "legacyParams": {},
+        "reactPath": "/executive-director/final-reports"
       }
     },
     {
@@ -781,6 +3590,93 @@
         "legacyView": "executive-dashboard",
         "legacyParams": {},
         "reactPath": "/executive-director/executive-dashboard"
+      }
+    },
+    {
+      "auditId": "ui-audit-064",
+      "surfaceId": "executive-notifications",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/executive-notifications.png",
+      "sha256": "sha256:68ab0148dcedcf6d339fb516d95b31d8fefe67e19f67a54a2709b2936df79b8e",
+      "sourceRoute": {
+        "legacyView": "executive-notifications",
+        "legacyParams": {},
+        "reactPath": "/executive-director/notifications"
+      }
+    },
+    {
+      "auditId": "ui-audit-060",
+      "surfaceId": "executive-planning",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/executive-planning.png",
+      "sha256": "sha256:d4ad60ff429ef16da24eb2bb3564a8a1dd0fbb9566bbcbd855541feb8366dd4b",
+      "sourceRoute": {
+        "legacyView": "executive-planning",
+        "legacyParams": {},
+        "reactPath": "/executive-director/planning"
+      }
+    },
+    {
+      "auditId": "ui-audit-061",
+      "surfaceId": "executive-preliminary-reports",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/executive-preliminary-reports.png",
+      "sha256": "sha256:589a8c73a8eec21ecfaf5048ee6ab68de80534c16fb0e9c1d66589eb1467b0c7",
+      "sourceRoute": {
+        "legacyView": "executive-preliminary-reports",
+        "legacyParams": {},
+        "reactPath": "/executive-director/preliminary-reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-063",
+      "surfaceId": "executive-report-preview",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/executive-report-preview.png",
+      "sha256": "sha256:c08b8ebe8a221a0c6600b89851edda3f5ac7ebc822500303c2cdf0ac9ec7f5d2",
+      "sourceRoute": {
+        "legacyView": "executive-report-preview",
+        "legacyParams": {
+          "reportId": "FR-2026-022"
+        },
+        "reactPath": "/executive-director/reports/RPT-CAB-2026-001"
+      }
+    },
+    {
+      "auditId": "ui-audit-065",
+      "surfaceId": "executive-settings",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/executive-settings.png",
+      "sha256": "sha256:3f9b3c1040b81a9a38cb18ff72e782d464d3140404aeb8baaad85637038debaf",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/executive-director/settings"
       }
     },
     {
@@ -810,13 +3706,30 @@
         "height": 768
       },
       "file": "tablet/finding-detail.png",
-      "sha256": "sha256:6b36b73eb63bd2389f9cb6822778c3bc51283952b27b7839a964454dfb08d326",
+      "sha256": "sha256:c2dffed49ee5d2e37cbd85f5e40c504bb69c9d84ffa9526d15be99e70771e2f0",
       "sourceRoute": {
         "legacyView": "finding",
         "legacyParams": {
           "findingId": "CAB-2026-011"
         },
-        "reactPath": "/lead-inspector/findings/FND-CAB-2026-001"
+        "reactPath": "/inspector/findings/FND-CAB-2026-001"
+      }
+    },
+    {
+      "auditId": "ui-audit-055",
+      "surfaceId": "gm-departments",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/gm-departments.png",
+      "sha256": "sha256:a05abfb5ac5bdfa661338a3867e68bb426a0fd1cf7dc2121a7b4a457ae585250",
+      "sourceRoute": {
+        "legacyView": "gm-departments",
+        "legacyParams": {},
+        "reactPath": "/general-manager/departments"
       }
     },
     {
@@ -837,6 +3750,145 @@
       }
     },
     {
+      "auditId": "ui-audit-053",
+      "surfaceId": "gm-planning",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/gm-planning.png",
+      "sha256": "sha256:d813999660d023cfadfdcd4ac35e564a2c561367c6011f4c72c233c3bf33b083",
+      "sourceRoute": {
+        "legacyView": "planning",
+        "legacyParams": {},
+        "reactPath": "/general-manager/planning"
+      }
+    },
+    {
+      "auditId": "ui-audit-054",
+      "surfaceId": "gm-report-approvals",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/gm-report-approvals.png",
+      "sha256": "sha256:ac0bb3fc8740d9faf3757487c3363ce6d49732b57d5afb166b4051c1bd5b5cfc",
+      "sourceRoute": {
+        "legacyView": "gm-report-approvals",
+        "legacyParams": {},
+        "reactPath": "/general-manager/report-approvals"
+      }
+    },
+    {
+      "auditId": "ui-audit-056",
+      "surfaceId": "gm-risk-dashboard",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/gm-risk-dashboard.png",
+      "sha256": "sha256:d2a34ef1958217217658fdc835255a79056462ace5ff69e848e585c5706de251",
+      "sourceRoute": {
+        "legacyView": "gm-risk",
+        "legacyParams": {},
+        "reactPath": "/general-manager/risk-dashboard"
+      }
+    },
+    {
+      "auditId": "ui-audit-057",
+      "surfaceId": "gm-settings",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/gm-settings.png",
+      "sha256": "sha256:70b50118301665311279ca40be4305af6456b13fb3e8ce22532ea937d34c0b82",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/general-manager/settings"
+      }
+    },
+    {
+      "auditId": "ui-audit-043",
+      "surfaceId": "inspection-package-builder",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/inspection-package-builder.png",
+      "sha256": "sha256:f9f5bb7d515f89ddd659e44d505ef801f0a8386469dcca92030bd0e9d7ff2d6b",
+      "sourceRoute": {
+        "legacyView": "package-builder",
+        "legacyParams": {},
+        "reactPath": "/department-manager/inspection-package-builder"
+      }
+    },
+    {
+      "auditId": "ui-audit-011",
+      "surfaceId": "inspector-assistant",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/inspector-assistant.png",
+      "sha256": "sha256:42ff948da9fbc1b0610c2e41505d0c557ce6ff3d8c378e2a7d009152afa073dd",
+      "sourceRoute": {
+        "legacyView": "ai-assistant",
+        "legacyParams": {
+          "sourceView": "finding",
+          "findingId": "CAB-2026-011"
+        },
+        "reactPath": "/inspector/assistant"
+      }
+    },
+    {
+      "auditId": "ui-audit-005",
+      "surfaceId": "inspector-calendar",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/inspector-calendar.png",
+      "sha256": "sha256:b88152cecf86ade590338342490d21df03e6c4ff8f2c7040bcc93da56ea4afed",
+      "sourceRoute": {
+        "legacyView": "calendar",
+        "legacyParams": {},
+        "reactPath": "/inspector/calendar"
+      }
+    },
+    {
+      "auditId": "ui-audit-003",
+      "surfaceId": "inspector-findings",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/inspector-findings.png",
+      "sha256": "sha256:4611a68cc323c4d283370eaf80296d55a5df1bc4af92fb9a38418540688fb47d",
+      "sourceRoute": {
+        "legacyView": "findings",
+        "legacyParams": {},
+        "reactPath": "/inspector/findings"
+      }
+    },
+    {
       "auditId": "ui-audit-002",
       "surfaceId": "inspector-home",
       "parityMode": "content-adapted",
@@ -851,6 +3903,187 @@
         "legacyView": "inspector-assignments",
         "legacyParams": {},
         "reactPath": "/inspector/inspector-assignments"
+      }
+    },
+    {
+      "auditId": "ui-audit-004",
+      "surfaceId": "inspector-messages",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/inspector-messages.png",
+      "sha256": "sha256:b3b8784a8bda6f9c558c3c9efc0c0dc5bd6434c8542502d8f74a3ec75f4427f8",
+      "sourceRoute": {
+        "legacyView": "messages",
+        "legacyParams": {},
+        "reactPath": "/inspector/messages"
+      }
+    },
+    {
+      "auditId": "ui-audit-012",
+      "surfaceId": "inspector-profile",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/inspector-profile.png",
+      "sha256": "sha256:84e9f05914bbb78afa5f66b61fdb93cb78ca141164b81140c4a4f726b735ec9b",
+      "sourceRoute": {
+        "legacyView": "profile",
+        "legacyParams": {},
+        "reactPath": "/inspector/profile"
+      }
+    },
+    {
+      "auditId": "ui-audit-006",
+      "surfaceId": "inspector-reports",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/inspector-reports.png",
+      "sha256": "sha256:3178d5d166a2efc71c88a1acbc23b914b7041ddef894f36364aad992f697b23a",
+      "sourceRoute": {
+        "legacyView": "reports",
+        "legacyParams": {},
+        "reactPath": "/inspector/reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-025",
+      "surfaceId": "lead-analytics-reports",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/lead-analytics-reports.png",
+      "sha256": "sha256:ef1ea33d1fcb912afb19bf80b1ba0311a2959257bf6a151676c98ae7255e900c",
+      "sourceRoute": {
+        "legacyView": "safety-intelligence",
+        "legacyParams": {},
+        "reactPath": "/lead-inspector/analytics-reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-020",
+      "surfaceId": "lead-audit-assignment",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/lead-audit-assignment.png",
+      "sha256": "sha256:01bcc81322d22c8de5f127c5a5e211b73e264fb00d156d21d6d49f8fe73a54ae",
+      "sourceRoute": {
+        "legacyView": "lead-assignment",
+        "legacyParams": {
+          "auditId": "AUD-2026-001"
+        },
+        "reactPath": "/lead-inspector/audits/AUD-2026-001/assignment"
+      }
+    },
+    {
+      "auditId": "ui-audit-023",
+      "surfaceId": "lead-calendar",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/lead-calendar.png",
+      "sha256": "sha256:ad6592dd4c12392e95e7e69f74969769f12cf88fd4a60e15d99a777e1dfa2ca5",
+      "sourceRoute": {
+        "legacyView": "calendar",
+        "legacyParams": {},
+        "reactPath": "/lead-inspector/calendar"
+      }
+    },
+    {
+      "auditId": "ui-audit-021",
+      "surfaceId": "lead-checklist-question-assignment",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/lead-checklist-question-assignment.png",
+      "sha256": "sha256:d4776f43980da491ce2b565b6dfe8b8eea1b75518e144fcab1a61cfedab2e725",
+      "sourceRoute": {
+        "legacyView": "lead-assignment-questions",
+        "legacyParams": {
+          "auditId": "AUD-2026-001"
+        },
+        "reactPath": "/lead-inspector/audits/AUD-2026-001/checklist-questions"
+      }
+    },
+    {
+      "auditId": "ui-audit-019",
+      "surfaceId": "lead-final-report-document",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/lead-final-report-document.png",
+      "sha256": "sha256:10e75fa8facaeeda5b8421e16ae0aec3e41017472545898d5bc89ec0657aa114",
+      "sourceRoute": {
+        "legacyView": "final-report-view",
+        "legacyParams": {
+          "reportId": "FR-2026-018"
+        },
+        "reactPath": "/lead-inspector/final-reports/RPT-CAB-2026-001/document"
+      }
+    },
+    {
+      "auditId": "ui-audit-017",
+      "surfaceId": "lead-final-report-readiness",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/lead-final-report-readiness.png",
+      "sha256": "sha256:68d92a438c2da9dc22038c89160d0773b2e16ed0d7c8c7c481cb70a46f620938",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "final",
+          "finalReportId": "FR-2026-018"
+        },
+        "reactPath": "/lead-inspector/final-reports/RPT-CAB-2026-001/readiness"
+      }
+    },
+    {
+      "auditId": "ui-audit-016",
+      "surfaceId": "lead-final-reports",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/lead-final-reports.png",
+      "sha256": "sha256:78d51642c07b364857a1d128c90e3b809e98e336fbb8564a3bdd1ec9942e8517",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "final"
+        },
+        "reactPath": "/lead-inspector/final-reports"
       }
     },
     {
@@ -871,6 +4104,202 @@
       }
     },
     {
+      "auditId": "ui-audit-024",
+      "surfaceId": "lead-messages",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/lead-messages.png",
+      "sha256": "sha256:17adb5fd00742184ba954d828ef3fe8b3e75ba4a60e0b065429dc9309cf43a86",
+      "sourceRoute": {
+        "legacyView": "messages",
+        "legacyParams": {},
+        "reactPath": "/lead-inspector/messages"
+      }
+    },
+    {
+      "auditId": "ui-audit-015",
+      "surfaceId": "lead-preliminary-report-workflow",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/lead-preliminary-report-workflow.png",
+      "sha256": "sha256:2a184edbec191a020a130c7c3d44fefd5947f45523b2bfe67232aa0b79e76bf5",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "preliminary",
+          "reportId": "PR-2026-018"
+        },
+        "reactPath": "/lead-inspector/preliminary-reports/PR-2026-018"
+      }
+    },
+    {
+      "auditId": "ui-audit-014",
+      "surfaceId": "lead-preliminary-reports",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/lead-preliminary-reports.png",
+      "sha256": "sha256:a2d819a985a08c09ea0a82833189e4f705174afe077e3c9325c800584f0cbdac",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "preliminary"
+        },
+        "reactPath": "/lead-inspector/preliminary-reports"
+      }
+    },
+    {
+      "auditId": "ui-audit-018",
+      "surfaceId": "lead-prepare-final-report",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/lead-prepare-final-report.png",
+      "sha256": "sha256:96905c065f33ca153c5776d9d30e00a22d189103b7643d5ee445076983e51f9b",
+      "sourceRoute": {
+        "legacyView": "final-report-prepare",
+        "legacyParams": {
+          "reportId": "FR-2026-018"
+        },
+        "reactPath": "/lead-inspector/final-reports/RPT-CAB-2026-001/prepare"
+      }
+    },
+    {
+      "auditId": "ui-audit-026",
+      "surfaceId": "lead-settings",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/lead-settings.png",
+      "sha256": "sha256:caba36512c4f83dd472538eabddafed0dd55a696ca706f32f3af1fd72f29bfd9",
+      "sourceRoute": {
+        "legacyView": "settings",
+        "legacyParams": {},
+        "reactPath": "/lead-inspector/settings"
+      }
+    },
+    {
+      "auditId": "ui-audit-029",
+      "surfaceId": "manager-audits",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/manager-audits.png",
+      "sha256": "sha256:21711100f13141ad9e9f17d8e110b0a1b8bc50196f20996de167b98c9a7c138d",
+      "sourceRoute": {
+        "legacyView": "calendar",
+        "legacyParams": {},
+        "reactPath": "/department-manager/audits"
+      }
+    },
+    {
+      "auditId": "ui-audit-046",
+      "surfaceId": "manager-cap-closure-review",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/manager-cap-closure-review.png",
+      "sha256": "sha256:97941ffbb8353ac2b36944dea9191a8091f68996bbb183619f1083ecb5bb7fdb",
+      "sourceRoute": {
+        "legacyView": "unit-manager-review",
+        "legacyParams": {
+          "findingId": "CAB-2026-011"
+        },
+        "reactPath": "/department-manager/findings/FND-CAB-2026-001/closure-review"
+      }
+    },
+    {
+      "auditId": "ui-audit-040",
+      "surfaceId": "manager-cap-effectiveness",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/manager-cap-effectiveness.png",
+      "sha256": "sha256:387f369659993166b4fd6e9357ebde60b37f336a3aa5740882acff460ac23a70",
+      "sourceRoute": {
+        "legacyView": "cap-effectiveness",
+        "legacyParams": {},
+        "reactPath": "/department-manager/cap-effectiveness"
+      }
+    },
+    {
+      "auditId": "ui-audit-034",
+      "surfaceId": "manager-cap-monitoring",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/manager-cap-monitoring.png",
+      "sha256": "sha256:5f6d4635cdac12462a4bc789c46638585cc45d7e45bfdc5e3c0a8b968f29bff8",
+      "sourceRoute": {
+        "legacyView": "cap-monitoring",
+        "legacyParams": {},
+        "reactPath": "/department-manager/cap-monitoring"
+      }
+    },
+    {
+      "auditId": "ui-audit-035",
+      "surfaceId": "manager-checklist-management",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/manager-checklist-management.png",
+      "sha256": "sha256:c0f782d97de5147bdf59a4b92e51ffcd9c60e415c65dd2469c035a1dd4e4ade9",
+      "sourceRoute": {
+        "legacyView": "manager-checklists",
+        "legacyParams": {},
+        "reactPath": "/department-manager/checklist-management"
+      }
+    },
+    {
+      "auditId": "ui-audit-033",
+      "surfaceId": "manager-findings-review",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/manager-findings-review.png",
+      "sha256": "sha256:dfd08a4f3eab436bf9b3b7e730a717691d9be05ef7a5a067fafc953d4c3a7eb3",
+      "sourceRoute": {
+        "legacyView": "findings-review",
+        "legacyParams": {},
+        "reactPath": "/department-manager/findings-review"
+      }
+    },
+    {
       "auditId": "ui-audit-027",
       "surfaceId": "manager-home",
       "parityMode": "content-adapted",
@@ -888,6 +4317,224 @@
       }
     },
     {
+      "auditId": "ui-audit-032",
+      "surfaceId": "manager-inspection-team",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/manager-inspection-team.png",
+      "sha256": "sha256:eacbc4f5cadbf0990d0470fb0f95cb320d76b6a992bd7b4fe40c4ded0d0de8f1",
+      "sourceRoute": {
+        "legacyView": "inspection-team",
+        "legacyParams": {},
+        "reactPath": "/department-manager/inspection-team"
+      }
+    },
+    {
+      "auditId": "ui-audit-045",
+      "surfaceId": "manager-preliminary-report-review",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/manager-preliminary-report-review.png",
+      "sha256": "sha256:c8c086a851b3769564c61e30b403833b8b063a095fab0d9d1a5001750e80b2a6",
+      "sourceRoute": {
+        "legacyView": "audit-reports",
+        "legacyParams": {
+          "filter": "preliminary"
+        },
+        "reactPath": "/department-manager/preliminary-reports/PR-2026-018"
+      }
+    },
+    {
+      "auditId": "ui-audit-031",
+      "surfaceId": "manager-risk-dashboard",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/manager-risk-dashboard.png",
+      "sha256": "sha256:9f731987e24e9e32ca95f52f1ceeb82c5d15556711fb5853f897baa0e04587ff",
+      "sourceRoute": {
+        "legacyView": "manager-risk",
+        "legacyParams": {},
+        "reactPath": "/department-manager/risk-dashboard"
+      }
+    },
+    {
+      "auditId": "ui-audit-036",
+      "surfaceId": "manager-safety-intelligence",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/manager-safety-intelligence.png",
+      "sha256": "sha256:cdb5fab4d11a446ef2dbc88a04e03d8500667fae2ff6d368a6685710be554012",
+      "sourceRoute": {
+        "legacyView": "safety-intelligence",
+        "legacyParams": {},
+        "reactPath": "/department-manager/safety-intelligence"
+      }
+    },
+    {
+      "auditId": "ui-audit-038",
+      "surfaceId": "manager-ssp-nasp",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/manager-ssp-nasp.png",
+      "sha256": "sha256:bd70979915687dc9bb108e8cc3328c9d1626ad65ab7cb58c14239f643c47dd95",
+      "sourceRoute": {
+        "legacyView": "ssp-nasp",
+        "legacyParams": {},
+        "reactPath": "/department-manager/ssp-nasp"
+      }
+    },
+    {
+      "auditId": "ui-audit-039",
+      "surfaceId": "manager-usoap-readiness",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/manager-usoap-readiness.png",
+      "sha256": "sha256:452205b970848c169a080e902f1f51ab0af2575c9bab95e18c87b89b4cac03f7",
+      "sourceRoute": {
+        "legacyView": "usoap-readiness",
+        "legacyParams": {},
+        "reactPath": "/department-manager/usoap-readiness"
+      }
+    },
+    {
+      "auditId": "ui-audit-047",
+      "surfaceId": "new-audit-wizard-1",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/new-audit-wizard-1.png",
+      "sha256": "sha256:abfba6537b36393d158ed955a698903d77b15b3e2c8a4ffb6a9842f57183a8f5",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "1"
+        },
+        "reactPath": "/department-manager/new-audit/step-1"
+      }
+    },
+    {
+      "auditId": "ui-audit-048",
+      "surfaceId": "new-audit-wizard-2",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/new-audit-wizard-2.png",
+      "sha256": "sha256:e08975c6fd03a413d268ded2a6e377cf5f1a14a995504650d1f1926015ffb8b5",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "2"
+        },
+        "reactPath": "/department-manager/new-audit/step-2"
+      }
+    },
+    {
+      "auditId": "ui-audit-049",
+      "surfaceId": "new-audit-wizard-3",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/new-audit-wizard-3.png",
+      "sha256": "sha256:1b7cec9a3edec4ba084bb9aa70bc393ee2be8e70237dcd48f39f61d442f00fa3",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "3"
+        },
+        "reactPath": "/department-manager/new-audit/step-3"
+      }
+    },
+    {
+      "auditId": "ui-audit-050",
+      "surfaceId": "new-audit-wizard-4",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/new-audit-wizard-4.png",
+      "sha256": "sha256:bd1fb068c45ce5a91a55c77a87676e344b82cec8f55ac2bca539245eb34c7e22",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "4"
+        },
+        "reactPath": "/department-manager/new-audit/step-4"
+      }
+    },
+    {
+      "auditId": "ui-audit-051",
+      "surfaceId": "new-audit-wizard-5",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/new-audit-wizard-5.png",
+      "sha256": "sha256:7e65887f8a53e930419267485395dab73305187d3a78e299d6064b9a9d23e17a",
+      "sourceRoute": {
+        "legacyView": "wizard",
+        "legacyParams": {
+          "step": "5"
+        },
+        "reactPath": "/department-manager/new-audit/step-5"
+      }
+    },
+    {
+      "auditId": "ui-audit-042",
+      "surfaceId": "organization-detail",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/organization-detail.png",
+      "sha256": "sha256:74975c31d9e39498d15b646210c8cc040e39753c8173d984d9c226ba9d90b58e",
+      "sourceRoute": {
+        "legacyView": "org-detail",
+        "legacyParams": {
+          "orgId": "ORG-XYZ"
+        },
+        "reactPath": "/department-manager/organizations/ORG-FLY-NAMIBIA"
+      }
+    },
+    {
       "auditId": "ui-audit-041",
       "surfaceId": "organization-registry",
       "parityMode": "content-adapted",
@@ -902,6 +4549,25 @@
         "legacyView": "organizations",
         "legacyParams": {},
         "reactPath": "/department-manager/organizations"
+      }
+    },
+    {
+      "auditId": "ui-audit-037",
+      "surfaceId": "organization-risk-profile",
+      "parityMode": "content-adapted",
+      "viewport": "tablet",
+      "viewportSize": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "tablet/organization-risk-profile.png",
+      "sha256": "sha256:c3f4392771bb142a2924cf8154aa7de6b35836caec7a4e0e975182aa6287c909",
+      "sourceRoute": {
+        "legacyView": "org-risk",
+        "legacyParams": {
+          "orgId": "ORG-XYZ"
+        },
+        "reactPath": "/department-manager/organizations/ORG-FLY-NAMIBIA/risk-profile"
       }
     },
     {

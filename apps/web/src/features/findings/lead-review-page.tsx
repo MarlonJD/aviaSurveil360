@@ -206,7 +206,7 @@ export function LeadReviewPage() {
                 </div>
               ) : (
                 <section className="lead-review-result" data-testid="lead-decision-result">
-                  <span>Canonical Finding</span><strong data-testid="finding-number">{finding.findingNumber}</strong><span data-testid="finding-status">{finding.status}</span><span>{formatSeverity(finding.severity)}</span><span>{finding.capRequired ? "CAP required" : "CAP not required"}</span><span>{finding.evidenceRequired ? "Evidence required" : "Evidence not required"}</span><Link className="primary-link" to="/lead-inspector/findings/FND-CAB-2026-001">Open Finding dossier</Link>
+                  <span>Canonical Finding</span><strong data-testid="finding-number">{finding.findingNumber}</strong><span data-testid="finding-status">{finding.status}</span><span>{formatSeverity(finding.severity)}</span><span>{finding.capRequired ? "CAP required" : "CAP not required"}</span><span>{finding.evidenceRequired ? "Evidence required" : "Evidence not required"}</span><Link className="primary-link" to="/lead-inspector/cap-review/FND-CAB-2026-001">Open Lead CAP review</Link>
                 </section>
               )}
             </article>

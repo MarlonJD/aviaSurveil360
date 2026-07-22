@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useApplicationRuntime } from "../../app/providers";
 import type {
@@ -40,8 +40,8 @@ function submittedDate(instant: string): string {
 
 export function EvidenceReviewPage() {
   const runtime = useApplicationRuntime();
-  const leadBackend = useMemo(
-    () => runtime.backendForRole?.("leadInspector") ?? runtime.backend,
+  const managerBackend = useMemo(
+    () => runtime.backendForRole?.("manager") ?? runtime.backend,
     [runtime],
   );
   const session = useOptionalSession();
@@ -49,6 +49,7 @@ export function EvidenceReviewPage() {
   const [finding, setFinding] = useState<FindingView | null>(null);
   const [capRevisions, setCapRevisions] = useState<CapRevisionView[]>([]);
   const [evidenceVersions, setEvidenceVersions] = useState<EvidenceVersionView[]>([]);
+  const [selectedEvidenceVersionId, setSelectedEvidenceVersionId] = useState<string | null>(null);
   const [evidenceReview, setEvidenceReview] = useState<ReviewEvidenceOutput | null>(null);
   const [decision, setDecision] = useState<EvidenceDecision>("PARTIALLY_CLOSE");
   const [commentToAuditee, setCommentToAuditee] = useState("");
@@ -56,19 +57,24 @@ export function EvidenceReviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const latest = useMemo(() => evidenceVersions.at(-1) ?? null, [evidenceVersions]);
+  const selectedEvidence = useMemo(
+    () => evidenceVersions.find((version) => version.id === selectedEvidenceVersionId) ?? null,
+    [evidenceVersions, selectedEvidenceVersionId],
+  );
   const identityMode =
     session?.identityMode ??
     (runtime.buildProfile === "http" ? "canonical-test-role-switch" : "demo-role-switch");
   const handoffSession = session?.state ?? { status: "unauthenticated" as const };
 
   async function loadReviewTarget(): Promise<void> {
-    const loadedFinding = await leadBackend.findings.get({ findingId: "FND-CAB-2026-001" });
+    const loadedFinding = await managerBackend.findings.get({ findingId: "FND-CAB-2026-001" });
     const [versions, caps] = await Promise.all([
-      leadBackend.evidence.listVersions({ findingId: loadedFinding.id }),
-      leadBackend.caps.listRevisions({ findingId: loadedFinding.id }),
+      managerBackend.evidence.listVersions({ findingId: loadedFinding.id }),
+      managerBackend.caps.listRevisions({ findingId: loadedFinding.id }),
     ]);
     setFinding(loadedFinding);
     setEvidenceVersions(versions);
+    setSelectedEvidenceVersionId(versions.at(-1)?.id ?? null);
     setCapRevisions(caps.items);
   }
 
@@ -81,7 +87,7 @@ export function EvidenceReviewPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leadBackend]);
+  }, [managerBackend]);
 
   function requestRole(role: Role): void {
     session?.setActiveRole(role);
@@ -89,7 +95,7 @@ export function EvidenceReviewPage() {
   }
 
   async function recordReview(): Promise<void> {
-    if (!finding || !latest) return;
+    if (!finding || !selectedEvidence || reviewDisabledReason) return;
     if (!commentToAuditee.trim()) {
       setError("Comment to Auditee is required");
       return;
@@ -105,10 +111,10 @@ export function EvidenceReviewPage() {
     setBusy(true);
     setError(null);
     try {
-      const review = await leadBackend.evidence.review({
-        operationId: `OP-EVIDENCE-${decision}`,
-        evidenceVersionId: latest.id,
-        expectedEvidenceVersionRevision: latest.revision,
+      const review = await managerBackend.evidence.review({
+        operationId: `OP-EVIDENCE-${selectedEvidence.id}-R${selectedEvidence.revision}-${decision}`,
+        evidenceVersionId: selectedEvidence.id,
+        expectedEvidenceVersionRevision: selectedEvidence.revision,
         findingId: finding.id,
         expectedFindingRevision: finding.revision,
         decision,
@@ -116,11 +122,12 @@ export function EvidenceReviewPage() {
         internalCaaNote,
       });
       const [loadedVersions, loadedFinding] = await Promise.all([
-        leadBackend.evidence.listVersions({ findingId: finding.id }),
-        leadBackend.findings.get({ findingId: finding.id }),
+        managerBackend.evidence.listVersions({ findingId: finding.id }),
+        managerBackend.findings.get({ findingId: finding.id }),
       ]);
       setEvidenceReview(review);
       setEvidenceVersions(loadedVersions);
+      setSelectedEvidenceVersionId(review.evidenceVersionId);
       setFinding(loadedFinding);
     } catch (cause) {
       setError(errorMessage(cause));
@@ -132,16 +139,37 @@ export function EvidenceReviewPage() {
   const closed = finding?.status === "CLOSED";
   const latestCap = capRevisions.at(-1) ?? null;
 
-  function openReviewPanel(): void {
-    document.getElementById("evidence-review-target")?.scrollIntoView({ block: "start" });
+  const reviewDisabledReason = useMemo(() => {
+    if (!selectedEvidence) return "No Evidence version is selected.";
+    if (latest && selectedEvidence.id !== latest.id) {
+      return `Evidence version ${selectedEvidence.id} is historical; only exact latest version ${latest.id} can be reviewed.`;
+    }
+    if (selectedEvidence.scanState !== "CLEAN") {
+      return `Evidence version ${selectedEvidence.id} has scan state ${selectedEvidence.scanState}; only CLEAN Evidence can be reviewed.`;
+    }
+    if (selectedEvidence.reviewState !== "PENDING_CAA_REVIEW") {
+      return `Evidence version ${selectedEvidence.id} is ${selectedEvidence.reviewState} and is no longer pending CAA review.`;
+    }
+    return null;
+  }, [latest, selectedEvidence]);
+
+  const pendingEvidenceCount = evidenceVersions.filter((version) => version.scanState === "CLEAN" && version.reviewState === "PENDING_CAA_REVIEW").length;
+  const pendingCapCount = capRevisions.filter((cap) => cap.status === "SUBMITTED" || cap.status === "PENDING_CAA_REVIEW").length;
+  const waitingFindingCount = latest && latest.scanState === "CLEAN" && latest.reviewState === "PENDING_CAA_REVIEW" ? 1 : 0;
+  const ownerLabel = finding ? `${finding.currentOwnerRole === "leadInspector" ? "Lead Inspector" : finding.currentOwnerRole === "inspector" ? "CAA Inspector" : finding.currentOwnerRole === "manager" ? "Department Manager" : finding.currentOwnerRole === "auditee" ? "Auditee" : "Owner"} · ${finding.currentOwnerId}` : "Owner unavailable";
+
+  function openReviewPanel(evidenceVersionId: string): void {
+    setSelectedEvidenceVersionId(evidenceVersionId);
+    const target = document.getElementById("evidence-review-target");
+    if (typeof target?.scrollIntoView === "function") target.scrollIntoView({ block: "start" });
   }
 
   return (
-    <WorkspaceShell roleLabel="Lead Inspector" routeLabel="Evidence Review">
-      <CommandError message={error} />
+    <WorkspaceShell roleLabel="Department Manager" routeLabel="Inspection Evidence">
       {finding ? (
-        <div className="evidence-root-page">
-          <span className="finding-semantic-context">Lead Inspector · {finding.organizationName} · Review evidence · Evidence · Due</span>
+        <div className="evidence-root-page" data-testid="manager-inspection-evidence-page">
+          <CommandError message={error} />
+          <span className="finding-semantic-context">Department Manager · {finding.id} · {finding.organizationName} · Review evidence · Evidence · Due</span>
           <header className="evidence-root-head workbench-page-header">
             <div>
               <h1>Findings</h1>
@@ -151,7 +179,7 @@ export function EvidenceReviewPage() {
               <button disabled title="The all-findings register remains in the accepted legacy demo." type="button"><span>All Findings</span></button>
               <button disabled title="The open-findings register remains in the accepted legacy demo." type="button"><span>Open Findings</span></button>
               <button disabled title="The overdue-findings register remains in the accepted legacy demo." type="button"><span>Overdue Findings</span></button>
-              <button onClick={() => navigate(`/lead-inspector/cap-review/${finding.id}`)} type="button"><span>CAP / Provider Review</span></button>
+              <button onClick={() => navigate("/department-manager/findings-review")} type="button"><span>CAP / Provider Review</span></button>
               <button aria-current="page" disabled type="button"><span>Evidence Waiting Review</span></button>
               <button disabled title="The Due Soon findings register remains in the accepted legacy demo." type="button"><span>Findings Due Soon</span></button>
               <button disabled title="The critical-findings register remains in the accepted legacy demo." type="button"><span>Critical Findings</span></button>
@@ -160,9 +188,9 @@ export function EvidenceReviewPage() {
           </header>
 
           <div className="evidence-root-attention">
-            <div className="is-info"><span>Evidence Waiting Review</span><b>1 finding</b></div>
-            <div className="is-warn"><span>CAP review rows</span><b>0</b></div>
-            <div className="is-warn"><span>Evidence review rows</span><b>{latest ? 1 : 0}</b></div>
+            <div className="is-info"><span>Evidence Waiting Review</span><b>{waitingFindingCount} {waitingFindingCount === 1 ? "finding" : "findings"}</b></div>
+            <div className="is-warn"><span>CAP review rows</span><b>{pendingCapCount}</b></div>
+            <div className="is-warn"><span>Evidence review rows</span><b>{pendingEvidenceCount}</b></div>
           </div>
 
           <div className="evidence-root-table-wrap">
@@ -173,34 +201,34 @@ export function EvidenceReviewPage() {
                   <td data-col="priority"><span className="evidence-root-priority is-warn">Waiting review</span></td>
                   <td data-col="item"><b>{finding.title}</b><small>{finding.findingNumber} · {formatSeverity(finding.severity)}</small></td>
                   <td data-col="org">{finding.organizationName}</td>
-                  <td data-col="owner" data-label="Owner:">Lead Inspector</td>
-                  <td data-col="next" data-label="Next:"><b>Review evidence</b></td>
+                  <td data-col="owner" data-label="Owner:">{ownerLabel}</td>
+                  <td data-col="next" data-label="Next:"><b>{finding.nextAction}</b></td>
                   <td data-col="due">Due Date {formatLocalDate(finding.dueDate)}</td>
-                  <td data-col="status"><span className="evidence-root-status">● Evidence Submitted — Pending Review</span></td>
-                  <td data-col="actions"><button onClick={() => navigate(`/lead-inspector/findings/${finding.id}`)} type="button">View finding</button></td>
+                  <td data-col="status"><span className="evidence-root-status">● {finding.status}</span></td>
+                  <td data-col="actions"><button onClick={() => navigate(`/department-manager/findings-review?findingId=${finding.id}`)} type="button">Open Findings Review</button></td>
                 </tr>
                 {latestCap ? (
                   <tr className="is-child">
                     <td data-col="priority"><span className="evidence-root-priority is-info">CAP state</span></td>
                     <td data-col="item"><b><span>Subitem</span> Corrective Action Plan</b><small>{latestCap.correctiveAction}</small></td>
                     <td data-col="org">{finding.organizationName}</td>
-                    <td data-col="owner" data-label="Owner:">Lead Inspector</td>
+                    <td data-col="owner" data-label="Owner:">{ownerLabel}</td>
                     <td data-col="next" data-label="Next:"><b>CAP accepted; evidence still required before closure</b></td>
                     <td data-col="due">Target {formatLocalDate(latestCap.targetCompletionDate)}</td>
                     <td data-col="status"><span className="evidence-root-status">● {latestCap.status}</span></td>
-                    <td data-col="actions"><button onClick={() => navigate(`/lead-inspector/findings/${finding.id}`)} type="button">Open finding</button></td>
+                    <td data-col="actions"><button onClick={() => navigate(`/department-manager/findings-review?findingId=${finding.id}`)} type="button">Open Findings Review</button></td>
                   </tr>
                 ) : null}
                 {evidenceVersions.map((version) => (
                   <tr className={`is-child${version.id === latest?.id ? " is-attention" : ""}`} key={version.id}>
-                    <td data-col="priority"><span className={`evidence-root-priority ${version.id === latest?.id ? "is-warn" : "is-info"}`}>{version.id === latest?.id ? "Waiting review" : "Reviewed"}</span></td>
+                    <td data-col="priority"><span className={`evidence-root-priority ${version.reviewState === "PENDING_CAA_REVIEW" ? "is-warn" : "is-info"}`}>{version.reviewState === "PENDING_CAA_REVIEW" ? "Waiting review" : "Reviewed"}</span></td>
                     <td data-col="item"><b><span>Subitem</span> Evidence v{version.version}</b><small>{version.fileName}</small></td>
                     <td data-col="org">{finding.organizationName}</td>
-                    <td data-col="owner" data-label="Owner:">Lead Inspector</td>
-                    <td data-col="next" data-label="Next:"><b>{version.id === latest?.id ? "CAA evidence review" : "Review recorded"}</b></td>
+                    <td data-col="owner" data-label="Owner:">{ownerLabel}</td>
+                    <td data-col="next" data-label="Next:"><b>{version.reviewState === "PENDING_CAA_REVIEW" ? finding.nextAction : "Review recorded for this immutable version"}</b></td>
                     <td data-col="due">Uploaded {submittedDate(version.submittedAt)}</td>
                     <td data-col="status"><span className="evidence-root-status">● {version.reviewState === "PENDING_CAA_REVIEW" ? "Uploaded" : version.reviewState}</span></td>
-                    <td data-col="actions"><button className={version.id === latest?.id ? "is-primary" : ""} onClick={openReviewPanel} type="button">{version.id === latest?.id ? "Review evidence" : "View version"}</button></td>
+                    <td data-col="actions"><button aria-label={`${version.reviewState === "PENDING_CAA_REVIEW" && version.id === latest?.id ? "Review" : "View"} Evidence version ${version.id}`} className={version.id === latest?.id ? "is-primary" : ""} onClick={() => openReviewPanel(version.id)} type="button">{version.reviewState === "PENDING_CAA_REVIEW" && version.id === latest?.id ? "Review evidence" : "View version"}</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -210,16 +238,16 @@ export function EvidenceReviewPage() {
           <article className="lead-review-dossier evidence-root-review" data-testid="evidence-review-target" id="evidence-review-target">
             <div className="lead-review-dossier__head">
               <div>
-                <p className="eyebrow">Latest submitted Evidence</p>
+                <p className="eyebrow">Selected immutable Evidence version</p>
                 <h2 data-testid="reviewing-evidence-version">
-                  {latest ? `Version ${latest.version}` : "No version"}
+                  {selectedEvidence ? `Version ${selectedEvidence.version}` : "No version"}
                 </h2>
               </div>
-              {latest ? (
-                <StatusPill label={latest.reviewState} tone={statusTone(latest.reviewState)} />
+              {selectedEvidence ? (
+                <StatusPill label={selectedEvidence.reviewState} tone={statusTone(selectedEvidence.reviewState)} />
               ) : null}
             </div>
-            {latest ? <p>{latest.fileName}</p> : <p>No Evidence version is ready for review.</p>}
+            {selectedEvidence ? <p>{selectedEvidence.id} · {selectedEvidence.fileName}</p> : <p>No Evidence version is selected.</p>}
             <ol aria-label="Evidence version history" className="lead-review-version-list">
               {evidenceVersions.map((version) => (
                 <li data-testid="evidence-history-row" key={version.id}>
@@ -261,8 +289,9 @@ export function EvidenceReviewPage() {
               </label>
               <button
                 className="primary-button lead-review-field-span"
-                disabled={busy || !latest}
+                disabled={busy || Boolean(reviewDisabledReason)}
                 onClick={() => void recordReview()}
+                title={reviewDisabledReason ?? undefined}
                 type="button"
               >
                 Record Evidence review
@@ -293,13 +322,16 @@ export function EvidenceReviewPage() {
                   Return to Auditee Evidence
                 </RoleHandoff>
               )}
+              <Link to={`/department-manager/findings/${finding.id}/closure-review`}>
+                Open Department CAP Closure Review for {finding.id}
+              </Link>
             </section>
           ) : null}
         </div>
       ) : (
         <article className="lead-review-empty">
           <h2>Finding unavailable</h2>
-          <p>The Evidence review route could not load this Finding for the Lead Inspector.</p>
+          <p>The Evidence review route could not load this Finding for the Department Manager.</p>
         </article>
       )}
     </WorkspaceShell>

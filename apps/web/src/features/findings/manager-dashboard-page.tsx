@@ -39,19 +39,45 @@ const taskLinks = [
     action: "Open Organizations",
   },
   {
+    title: "Audits",
+    description: "Open the exact Audit work queue, owner, Due Date, and next action.",
+    href: "/department-manager/audits",
+    action: "Open Audits",
+  },
+  {
+    title: "Inspection Team",
+    description: "Review Audit-scoped Lead and assigned Inspector teams.",
+    href: "/department-manager/inspection-team",
+    action: "Open Inspection Team",
+  },
+  {
+    title: "Findings Review",
+    description: "Review Finding ownership and exact CAP and Evidence state.",
+    href: "/department-manager/findings-review",
+    action: "Open Findings Review",
+  },
+  {
+    title: "CAP Monitoring",
+    description: "Monitor exact CAP revisions without borrowing Inspector review authority.",
+    href: "/department-manager/cap-monitoring",
+    action: "Open CAP Monitoring",
+  },
+  {
+    title: "Checklist Management",
+    description: "Review published checklist versions and configured questions.",
+    href: "/department-manager/checklist-management",
+    action: "Open Checklist Management",
+  },
+  {
     title: "Reports Approval",
-    description: "Review the immutable candidate report and exact authority state.",
-    href: "/department-manager/reports/RPT-CAB-2026-001-V1",
+    description: "Review exact Preliminary Report PR-2026-018 and its immutable versions.",
+    href: "/department-manager/preliminary-reports/PR-2026-018",
     action: "Open Reports Approval",
   },
 ] as const;
 
 const unavailableTasks = [
-  ["Audits", "The broader Audit work queue remains in the accepted legacy demo."],
-  ["Risk Dashboard", "Advanced risk analytics remain in the accepted legacy demo."],
-  ["Inspection Team", "Team administration remains outside the 17-route candidate."],
-  ["Findings Review", "The broader manager Findings queue remains in the accepted legacy demo."],
-  ["CAP Monitoring", "The broader CAP monitoring route remains in the accepted legacy demo."],
+  ["Risk Dashboard", "Manager Risk Dashboard has no declared Task 6 route."],
 ] as const;
 
 function statusLabel(status: string): string {
@@ -163,7 +189,7 @@ export function ManagerDashboardPage() {
               </Link>
             ))}
             {unavailableTasks.map(([title, reasonText]) => (
-              <button aria-label={`${title} unavailable: ${reasonText}`} className="manager-dashboard-task" disabled key={title} title={reasonText} type="button">
+              <button aria-label={`${title} unavailable`} className="manager-dashboard-task" disabled key={title} title={reasonText} type="button">
                 <span aria-hidden="true">□</span><div><b>{title}</b><small>{reasonText}</small></div><em>Unavailable</em>
               </button>
             ))}
@@ -185,7 +211,7 @@ export function ManagerDashboardPage() {
                       <td>{finding.currentOwnerType === "CAA" ? "CAA Inspector" : finding.organizationName}</td>
                       <td>{finding.nextAction}</td>
                       <td>{formatLocalDate(finding.dueDate)}</td>
-                      <td><Link to={`/lead-inspector/findings/${finding.id}`}>Open</Link></td>
+                      <td><Link to={`/department-manager/findings-review?findingId=${finding.id}`}>Open {finding.id} in Findings Review</Link></td>
                     </tr>
                   )) : <tr><td colSpan={7}>No open high-risk Findings require attention.</td></tr>}
                 </tbody>
@@ -202,7 +228,7 @@ export function ManagerDashboardPage() {
                     <tr key={plan.id}>
                       <td><b>{plan.id}</b><small>{plan.title}</small></td><td>{plan.organizationName}</td><td>{plan.inspectionType}</td>
                       <td>{formatLocalDate(plan.scheduledDate)}</td><td>{statusLabel(plan.status)}</td>
-                      <td><Link to="/department-manager/audit-plan">Open</Link></td>
+                      <td><Link to={`/department-manager/audits?auditId=${plan.id}`}>Open Audit {plan.id}</Link></td>
                     </tr>
                   ))}
                 </tbody>
@@ -225,7 +251,7 @@ export function ManagerDashboardPage() {
               </div>
             ) : null}
             {canonicalFinding.status === "EVIDENCE_REQUIRED" ? <Link className="primary-link" to="/auditee/service-provider-cap">Return to Fly Namibia Evidence</Link> : null}
-            {canonicalFinding.status === "CLOSED" ? <Link className="primary-link" to="/department-manager/reports/RPT-CAB-2026-001-V1">Open report preview</Link> : null}
+            {canonicalFinding.status === "CLOSED" ? <Link className="primary-link" to="/department-manager/preliminary-reports/PR-2026-018">Open PR-2026-018 review</Link> : null}
           </section>
         ) : null}
       </div>

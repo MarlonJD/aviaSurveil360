@@ -57,7 +57,20 @@ describe("FinanceReviewPage", () => {
       expect(within(queue).getByRole("columnheader", { name: column })).toBeVisible();
     }
     expect(within(queue).getByText("PLAN-2026-CAB-001")).toBeVisible();
-    expect(screen.getByRole("list", { name: "Finance approval flow" })).toBeVisible();
+    const approvalFlow = screen.getByRole("list", { name: "Finance approval flow" });
+    expect(approvalFlow).toBeVisible();
+    expect(within(approvalFlow).getAllByRole("listitem").map((stage) => [
+      stage.getAttribute("data-planning-stage"),
+      stage.querySelector("b")?.textContent,
+    ])).toEqual([
+      ["DEPARTMENT_MANAGER", "Department Manager"],
+      ["FINANCE_REVIEW", "Finance Review"],
+      ["GM_REVIEW", "GM Review"],
+      ["EXECUTIVE_DIRECTOR_REVIEW", "Executive Director"],
+      ["GM_RELEASE", "GM Release"],
+    ]);
+    expect(approvalFlow.querySelectorAll('[aria-current="step"]')).toHaveLength(1);
+    expect(approvalFlow.querySelector('[data-planning-stage="FINANCE_REVIEW"]')).toHaveAttribute("aria-current", "step");
     expect(screen.getByTestId("planning-status")).toHaveTextContent("FINANCE_REVIEW");
     expect(screen.getByTestId("planning-owner")).toHaveTextContent("Finance Review");
     expect(screen.getByText("Revision 1")).toBeVisible();
@@ -103,6 +116,10 @@ describe("FinanceReviewPage", () => {
     expect(screen.getByTestId("planning-owner")).toHaveTextContent("General Manager");
     expect(screen.getByText("GM REVIEW")).toHaveClass("authority-badge");
     expect(screen.getByRole("button", { name: "Continue as General Manager" })).toBeEnabled();
+    expect(screen.getByRole("list", { name: "Finance approval flow" }).querySelector('[data-planning-stage="GM_REVIEW"]')).toHaveAttribute(
+      "aria-current",
+      "step",
+    );
 
     cleanup();
     renderPage(runtime, "oidc-session");

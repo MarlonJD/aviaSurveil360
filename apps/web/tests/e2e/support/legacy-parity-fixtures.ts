@@ -5,7 +5,7 @@ import { inflateSync } from "node:zlib";
 
 import { expect, type Page } from "@playwright/test";
 
-import type { ReactSurfaceId } from "../../../src/app/route-contracts";
+import { REACT_ROUTE_CONTRACTS, type ReactSurfaceId } from "../../../src/app/route-contracts";
 import type { VisualParityMode } from "../../../src/parity/legacy-screen-manifest";
 
 export const VISUAL_FIXED_TIME_ISO = "2026-06-15T09:00:00.000Z";
@@ -62,6 +62,11 @@ export interface LegacyRouteFixture {
   params: Record<string, string>;
 }
 
+export interface LegacyVisualState {
+  wizardStep?: number;
+  preliminaryWorkflow?: boolean;
+}
+
 export interface VisualSurfaceFixture {
   id: ReactSurfaceId;
   auditId: string;
@@ -77,8 +82,10 @@ export interface VisualSurfaceFixture {
   expectedDueDateText: string | null;
   expectedPrimaryActionText: string | null;
   expectedPrivacyAbsence: string[];
+  expectedSemanticMarker: string;
   contentAdaptationReason?: string;
   masks: RectMask[];
+  legacyState?: LegacyVisualState;
 }
 
 export interface BaselineManifestSource {
@@ -155,7 +162,7 @@ export const LEGACY_SOURCE_HASH_FILES = [
 export const LEGACY_AUDIT_DOCUMENT = "docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.md";
 export const APP_PACKAGE_LOCK = "apps/web/package-lock.json";
 
-export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
+const CORE_VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
   {
     id: "role-select",
     auditId: "ui-audit-001",
@@ -164,6 +171,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: null, view: "login", params: {} },
     stableSelector: ".login-selector",
     expectedHeading: "AviaSurveil360",
+    expectedSemanticMarker: "Choose your workspace",
     expectedRoleText: null,
     expectedOwnerText: null,
     expectedNextActionText: null,
@@ -181,6 +189,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: "inspector", view: "inspector-assignments", params: {} },
     stableSelector: "main.content",
     expectedHeading: "My Assignments",
+    expectedSemanticMarker: "PR-2026-018",
     expectedRoleText: "Inspector",
     expectedOwnerText: "Aylin Sezer",
     expectedNextActionText: "Start",
@@ -199,6 +208,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: "leadInspector", view: "lead-review", params: {} },
     stableSelector: "main.content",
     expectedHeading: "Assigned Audits",
+    expectedSemanticMarker: "PF-2026-001",
     expectedRoleText: "Lead Inspector",
     expectedOwnerText: "Caner Yildiz",
     expectedNextActionText: "Convert to Finding",
@@ -217,6 +227,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: "manager", view: "dashboard", params: {} },
     stableSelector: "main.content",
     expectedHeading: "Dashboard",
+    expectedSemanticMarker: "Open Findings",
     expectedRoleText: "Department Manager",
     expectedOwnerText: "Mehmet Kaya",
     expectedNextActionText: "overdue",
@@ -235,6 +246,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: "gm", view: "gm-dashboard", params: {} },
     stableSelector: "main.content",
     expectedHeading: "General Manager Dashboard",
+    expectedSemanticMarker: "Department Overview",
     expectedRoleText: "General Manager",
     expectedOwnerText: "Okan Demir",
     expectedNextActionText: "review",
@@ -253,6 +265,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: "finance", view: "finance-review", params: {} },
     stableSelector: "main.content",
     expectedHeading: "Finance Review",
+    expectedSemanticMarker: "PLAN-2026-Q3-CABIN",
     expectedRoleText: "Finance Review",
     expectedOwnerText: "Derya Acar",
     expectedNextActionText: "budget",
@@ -271,6 +284,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: "executiveDirector", view: "executive-dashboard", params: {} },
     stableSelector: "main.content",
     expectedHeading: "Executive Director Dashboard",
+    expectedSemanticMarker: "FR-2026-022",
     expectedRoleText: "Executive Director",
     expectedOwnerText: "Ufuk Aslan",
     expectedNextActionText: "approval",
@@ -289,6 +303,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: "auditee", view: "service-provider-cap", params: {} },
     stableSelector: "main.content",
     expectedHeading: "Corrective Actions",
+    expectedSemanticMarker: "CAB-2026-011",
     expectedRoleText: "Service Provider Portal",
     expectedOwnerText: "Fly Namibia",
     expectedNextActionText: "Submit",
@@ -307,6 +322,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: "admin", view: "template-preview", params: { id: "TPL-CABIN-2026" } },
     stableSelector: "main.content",
     expectedHeading: "Template Preview",
+    expectedSemanticMarker: "TPL-CABIN-2026",
     expectedRoleText: "Administration",
     expectedOwnerText: "Cabin Safety",
     expectedNextActionText: "Expected evidence",
@@ -325,6 +341,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: "inspector", view: "audit-detail", params: { auditId: "AUD-2026-001" } },
     stableSelector: "main.content",
     expectedHeading: "2026 Cabin Inspection",
+    expectedSemanticMarker: "INS-2026-001",
     expectedRoleText: "Inspector",
     expectedOwnerText: "Aylin Sezer",
     expectedNextActionText: "Run",
@@ -347,6 +364,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     },
     stableSelector: "main.content",
     expectedHeading: "Cabin Inspection",
+    expectedSemanticMarker: "CAB EMEQ PBE",
     expectedRoleText: "Inspector",
     expectedOwnerText: "Aylin Sezer",
     expectedNextActionText: "Submit to Lead Inspector",
@@ -365,6 +383,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: "manager", view: "organizations", params: {} },
     stableSelector: "main.content",
     expectedHeading: "Organizations",
+    expectedSemanticMarker: "Fly Namibia",
     expectedRoleText: "Department Manager",
     expectedOwnerText: "Fly Namibia",
     expectedNextActionText: "Open",
@@ -383,6 +402,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: "manager", view: "planning", params: {} },
     stableSelector: "main.content",
     expectedHeading: "Planning",
+    expectedSemanticMarker: "PLAN-2026-Q3-CABIN",
     expectedRoleText: "Department Manager",
     expectedOwnerText: "Department Manager",
     expectedNextActionText: "Finance",
@@ -397,11 +417,12 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     id: "finding-detail",
     auditId: "ui-audit-009",
     parityMode: "content-adapted",
-    reactPath: "/lead-inspector/findings/FND-CAB-2026-001",
-    legacy: { role: "leadInspector", view: "finding", params: { findingId: "CAB-2026-011" } },
+    reactPath: "/inspector/findings/FND-CAB-2026-001",
+    legacy: { role: "inspector", view: "finding", params: { findingId: "CAB-2026-011" } },
     stableSelector: "main.content",
-    expectedHeading: "Finding CAB-2026-001",
-    expectedRoleText: "Lead Inspector",
+    expectedHeading: "Finding CAB-2026-011",
+    expectedSemanticMarker: "CAB-2026-011",
+    expectedRoleText: "Inspector",
     expectedOwnerText: "Fly Namibia",
     expectedNextActionText: "Review CAP",
     expectedStatusText: "CAP Submitted",
@@ -419,6 +440,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: "leadInspector", view: "cap-review-detail", params: { findingId: "CAB-2026-011" } },
     stableSelector: "main.content",
     expectedHeading: "CAP Review",
+    expectedSemanticMarker: "CAB-2026-011",
     expectedRoleText: "Lead Inspector",
     expectedOwnerText: "Fly Namibia",
     expectedNextActionText: "Accept",
@@ -433,11 +455,12 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     id: "evidence-review",
     auditId: "ui-audit-044",
     parityMode: "content-adapted",
-    reactPath: "/lead-inspector/evidence-review/FND-CAB-2026-001",
-    legacy: { role: "leadInspector", view: "findings", params: { filter: "evreview" } },
+    reactPath: "/department-manager/evidence/FND-CAB-2026-001",
+    legacy: { role: "manager", view: "findings", params: { filter: "evreview" } },
     stableSelector: "main.content",
     expectedHeading: "Findings",
-    expectedRoleText: "Lead Inspector",
+    expectedSemanticMarker: "RAMP-2026-005",
+    expectedRoleText: "Department Manager",
     expectedOwnerText: "Fly Namibia",
     expectedNextActionText: "Review evidence",
     expectedStatusText: "Evidence",
@@ -455,6 +478,7 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     legacy: { role: "manager", view: "reports-approval", params: { reportId: "PR-2026-018" } },
     stableSelector: "main.content",
     expectedHeading: "Reports Approval",
+    expectedSemanticMarker: "PR-2026-018",
     expectedRoleText: "Department Manager",
     expectedOwnerText: "Fly Namibia",
     expectedNextActionText: "Review",
@@ -466,6 +490,202 @@ export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
     masks: [],
   },
 ] as const;
+
+/**
+ * The root demo has no URL router. These are the reviewed in-memory states used
+ * to drive its immutable UI-audit oracle. Keep the role and view together: a
+ * route may never borrow another role's legacy capture.
+ */
+interface ReviewedLegacyAssertion {
+  expectedHeading: string;
+  expectedSemanticMarker: string;
+  legacyState?: LegacyVisualState;
+}
+
+const LEGACY_ROUTE_FIXTURES: Partial<Record<ReactSurfaceId, LegacyRouteFixture>> = {
+  "inspector-findings": { role: "inspector", view: "findings", params: {} },
+  "inspector-messages": { role: "inspector", view: "messages", params: {} },
+  "inspector-calendar": { role: "inspector", view: "calendar", params: {} },
+  "inspector-reports": { role: "inspector", view: "reports", params: {} },
+  "closure-report-preview": { role: "inspector", view: "report", params: { findingId: "CAB-2026-011" } },
+  "inspector-assistant": { role: "inspector", view: "ai-assistant", params: { sourceView: "finding", findingId: "CAB-2026-011" } },
+  "inspector-profile": { role: "inspector", view: "profile", params: {} },
+  "lead-preliminary-reports": { role: "leadInspector", view: "audit-reports", params: { filter: "preliminary" } },
+  "lead-preliminary-report-workflow": { role: "leadInspector", view: "audit-reports", params: { filter: "preliminary", reportId: "PR-2026-018" } },
+  "lead-final-reports": { role: "leadInspector", view: "audit-reports", params: { filter: "final" } },
+  "lead-final-report-readiness": { role: "leadInspector", view: "audit-reports", params: { filter: "final", finalReportId: "FR-2026-018" } },
+  "lead-prepare-final-report": { role: "leadInspector", view: "final-report-prepare", params: { reportId: "FR-2026-018" } },
+  "lead-final-report-document": { role: "leadInspector", view: "final-report-view", params: { reportId: "FR-2026-018" } },
+  "lead-audit-assignment": { role: "leadInspector", view: "lead-assignment", params: { auditId: "AUD-2026-001" } },
+  "lead-checklist-question-assignment": { role: "leadInspector", view: "lead-assignment-questions", params: { auditId: "AUD-2026-001" } },
+  "lead-calendar": { role: "leadInspector", view: "calendar", params: {} },
+  "lead-messages": { role: "leadInspector", view: "messages", params: {} },
+  "lead-analytics-reports": { role: "leadInspector", view: "safety-intelligence", params: {} },
+  "lead-settings": { role: "leadInspector", view: "settings", params: {} },
+  "manager-audits": { role: "manager", view: "calendar", params: {} },
+  "manager-risk-dashboard": { role: "manager", view: "manager-risk", params: {} },
+  "manager-inspection-team": { role: "manager", view: "inspection-team", params: {} },
+  "manager-findings-review": { role: "manager", view: "findings-review", params: {} },
+  "manager-cap-monitoring": { role: "manager", view: "cap-monitoring", params: {} },
+  "manager-checklist-management": { role: "manager", view: "manager-checklists", params: {} },
+  "manager-safety-intelligence": { role: "manager", view: "safety-intelligence", params: {} },
+  "organization-risk-profile": { role: "manager", view: "org-risk", params: { orgId: "ORG-XYZ" } },
+  "manager-ssp-nasp": { role: "manager", view: "ssp-nasp", params: {} },
+  "manager-usoap-readiness": { role: "manager", view: "usoap-readiness", params: {} },
+  "manager-cap-effectiveness": { role: "manager", view: "cap-effectiveness", params: {} },
+  "organization-detail": { role: "manager", view: "org-detail", params: { orgId: "ORG-XYZ" } },
+  "inspection-package-builder": { role: "manager", view: "package-builder", params: {} },
+  "manager-preliminary-report-review": { role: "manager", view: "audit-reports", params: { filter: "preliminary" } },
+  "manager-cap-closure-review": { role: "manager", view: "unit-manager-review", params: { findingId: "CAB-2026-011" } },
+  "new-audit-wizard-1": { role: "manager", view: "wizard", params: { step: "1" } },
+  "new-audit-wizard-2": { role: "manager", view: "wizard", params: { step: "2" } },
+  "new-audit-wizard-3": { role: "manager", view: "wizard", params: { step: "3" } },
+  "new-audit-wizard-4": { role: "manager", view: "wizard", params: { step: "4" } },
+  "new-audit-wizard-5": { role: "manager", view: "wizard", params: { step: "5" } },
+  "gm-planning": { role: "gm", view: "planning", params: {} },
+  "gm-report-approvals": { role: "gm", view: "gm-report-approvals", params: {} },
+  "gm-departments": { role: "gm", view: "gm-departments", params: {} },
+  "gm-risk-dashboard": { role: "gm", view: "gm-risk", params: {} },
+  "gm-settings": { role: "gm", view: "settings", params: {} },
+  "executive-planning": { role: "executiveDirector", view: "executive-planning", params: {} },
+  "executive-preliminary-reports": { role: "executiveDirector", view: "executive-preliminary-reports", params: {} },
+  "executive-final-reports": { role: "executiveDirector", view: "executive-final-reports", params: {} },
+  "executive-report-preview": { role: "executiveDirector", view: "executive-report-preview", params: { reportId: "FR-2026-022" } },
+  "executive-notifications": { role: "executiveDirector", view: "executive-notifications", params: {} },
+  "executive-settings": { role: "executiveDirector", view: "settings", params: {} },
+  "auditee-inspection-coordination": { role: "auditee", view: "service-provider-inspection-coordination", params: {} },
+  "auditee-preliminary-reports": { role: "auditee", view: "service-provider-preliminary-reports", params: {} },
+  "auditee-final-reports": { role: "auditee", view: "service-provider-final-reports", params: {} },
+  "auditee-report-preview": { role: "auditee", view: "service-provider-report-preview", params: { reportId: "FR-2025-009" } },
+  "auditee-messages": { role: "auditee", view: "messages", params: {} },
+  "auditee-documents": { role: "auditee", view: "reports", params: { filter: "documents" } },
+  "auditee-settings": { role: "auditee", view: "settings", params: {} },
+  "admin-regulatory-library": { role: "admin", view: "regulatory-library", params: {} },
+  "admin-template-list": { role: "admin", view: "templates", params: {} },
+  "admin-question-bank": { role: "admin", view: "question-bank", params: {} },
+  "admin-checklist-builder": { role: "admin", view: "checklist-builder", params: {} },
+  "admin-version-history": { role: "admin", view: "checklist-versions", params: {} },
+  "admin-inspection-package-builder": { role: "admin", view: "package-builder", params: {} },
+  "admin-reports": { role: "admin", view: "reports", params: {} },
+  "admin-users-roles": { role: "admin", view: "users", params: {} },
+  "admin-configurations": { role: "admin", view: "settings", params: {} },
+  "admin-organization-master-data": { role: "admin", view: "organizations", params: {} },
+  "admin-organization-detail": { role: "admin", view: "org-detail", params: { orgId: "ORG-XYZ" } },
+  "admin-audit-log": { role: "admin", view: "auditlog", params: {} },
+};
+
+const REVIEWED_SOURCE_ASSERTIONS: Partial<Record<ReactSurfaceId, ReviewedLegacyAssertion>> = {
+  "inspector-findings": { expectedHeading: "Findings", expectedSemanticMarker: "CAB-2026-011" },
+  "inspector-messages": { expectedHeading: "Messages from the CAA", expectedSemanticMarker: "In-app notifications" },
+  "inspector-calendar": { expectedHeading: "Audit Work Queue", expectedSemanticMarker: "Fly Namibia · Cabin Inspection" },
+  "inspector-reports": { expectedHeading: "Reports", expectedSemanticMarker: "Past closure reports" },
+  "closure-report-preview": { expectedHeading: "Finding Report", expectedSemanticMarker: "CAB-2026-011" },
+  "inspector-assistant": { expectedHeading: "AI Inspector Assistant Panel", expectedSemanticMarker: "CAB-2026-011 · Emergency equipment serviceability record incomplete" },
+  "inspector-profile": { expectedHeading: "Profile", expectedSemanticMarker: "Aylin Sezer" },
+  "lead-preliminary-reports": { expectedHeading: "Preliminary Reports", expectedSemanticMarker: "PR-2026-018" },
+  "lead-preliminary-report-workflow": { expectedHeading: "Preliminary Report", expectedSemanticMarker: "Inspection Overview", legacyState: { preliminaryWorkflow: true } },
+  "lead-final-reports": { expectedHeading: "Final Reports", expectedSemanticMarker: "FR-2026-018" },
+  "lead-final-report-readiness": { expectedHeading: "Final Report Preparation", expectedSemanticMarker: "FR-2026-018" },
+  "lead-prepare-final-report": { expectedHeading: "Report Content", expectedSemanticMarker: "Report Progress" },
+  "lead-final-report-document": { expectedHeading: "Final Report", expectedSemanticMarker: "Final Report" },
+  "lead-audit-assignment": { expectedHeading: "Cabin Inspection", expectedSemanticMarker: "Assigned Audits" },
+  "lead-checklist-question-assignment": { expectedHeading: "Assign Checklist Questions", expectedSemanticMarker: "cab-em-eq-pbe" },
+  "lead-calendar": { expectedHeading: "Audit Work Queue", expectedSemanticMarker: "Fly Namibia · Cabin Inspection" },
+  "lead-messages": { expectedHeading: "Messages from the CAA", expectedSemanticMarker: "In-app notifications" },
+  "lead-analytics-reports": { expectedHeading: "Safety Intelligence Dashboard", expectedSemanticMarker: "Management attention" },
+  "lead-settings": { expectedHeading: "Settings", expectedSemanticMarker: "Configured rules" },
+  "manager-audits": { expectedHeading: "Audit Work Queue", expectedSemanticMarker: "Fly Namibia · Cabin Inspection" },
+  "manager-risk-dashboard": { expectedHeading: "Risk Dashboard", expectedSemanticMarker: "Risk" },
+  "manager-inspection-team": { expectedHeading: "Inspection Team", expectedSemanticMarker: "Inspection Team" },
+  "manager-findings-review": { expectedHeading: "Findings Review", expectedSemanticMarker: "CAB-2026-011" },
+  "manager-cap-monitoring": { expectedHeading: "CAP Monitoring", expectedSemanticMarker: "CAP" },
+  "manager-checklist-management": { expectedHeading: "Checklist Management", expectedSemanticMarker: "Configured" },
+  "manager-safety-intelligence": { expectedHeading: "Safety Intelligence Dashboard", expectedSemanticMarker: "Management attention" },
+  "organization-risk-profile": { expectedHeading: "Organization Risk Profile", expectedSemanticMarker: "Fly Namibia" },
+  "manager-ssp-nasp": { expectedHeading: "SSP/NASP Management Dashboard", expectedSemanticMarker: "NASP-ACT-001" },
+  "manager-usoap-readiness": { expectedHeading: "USOAP Readiness Workspace", expectedSemanticMarker: "Missing evidence" },
+  "manager-cap-effectiveness": { expectedHeading: "CAP Effectiveness", expectedSemanticMarker: "Effectiveness" },
+  "organization-detail": { expectedHeading: "Fly Namibia", expectedSemanticMarker: "Organization" },
+  "inspection-package-builder": { expectedHeading: "Dynamic Inspection Package Builder", expectedSemanticMarker: "Package Draft" },
+  "manager-preliminary-report-review": { expectedHeading: "Preliminary Report", expectedSemanticMarker: "Preliminary Report" },
+  "manager-cap-closure-review": { expectedHeading: "Department Manager Review", expectedSemanticMarker: "CAB-2026-011" },
+  "new-audit-wizard-1": { expectedHeading: "New Inspection", expectedSemanticMarker: "Inspection basics", legacyState: { wizardStep: 1 } },
+  "new-audit-wizard-2": { expectedHeading: "New Inspection", expectedSemanticMarker: "Category and purpose", legacyState: { wizardStep: 2 } },
+  "new-audit-wizard-3": { expectedHeading: "New Inspection", expectedSemanticMarker: "When and where", legacyState: { wizardStep: 3 } },
+  "new-audit-wizard-4": { expectedHeading: "New Inspection", expectedSemanticMarker: "Checklist, scope and budget", legacyState: { wizardStep: 4 } },
+  "new-audit-wizard-5": { expectedHeading: "New Inspection", expectedSemanticMarker: "Review and submit", legacyState: { wizardStep: 5 } },
+  "gm-planning": { expectedHeading: "Planning", expectedSemanticMarker: "Planning" },
+  "gm-report-approvals": { expectedHeading: "Report Approvals", expectedSemanticMarker: "Report" },
+  "gm-departments": { expectedHeading: "Departments", expectedSemanticMarker: "Department" },
+  "gm-risk-dashboard": { expectedHeading: "Cross-Department Risk Dashboard", expectedSemanticMarker: "Risk" },
+  "gm-settings": { expectedHeading: "Settings", expectedSemanticMarker: "Configured rules" },
+  "executive-planning": { expectedHeading: "Planning", expectedSemanticMarker: "Planning" },
+  "executive-preliminary-reports": { expectedHeading: "Preliminary Reports", expectedSemanticMarker: "Preliminary" },
+  "executive-final-reports": { expectedHeading: "Final Reports", expectedSemanticMarker: "Final Report" },
+  "executive-report-preview": { expectedHeading: "Final Report Preview", expectedSemanticMarker: "FR-2026-022" },
+  "executive-notifications": { expectedHeading: "Notifications", expectedSemanticMarker: "Notifications" },
+  "executive-settings": { expectedHeading: "Settings", expectedSemanticMarker: "Configured rules" },
+  "auditee-inspection-coordination": { expectedHeading: "Inspection Coordination", expectedSemanticMarker: "Fly Namibia" },
+  "auditee-preliminary-reports": { expectedHeading: "Preliminary Reports", expectedSemanticMarker: "Fly Namibia" },
+  "auditee-final-reports": { expectedHeading: "Final Reports", expectedSemanticMarker: "Fly Namibia" },
+  "auditee-report-preview": { expectedHeading: "Final Report", expectedSemanticMarker: "FR-2025-009" },
+  "auditee-messages": { expectedHeading: "Messages from the CAA", expectedSemanticMarker: "Fly Namibia" },
+  "auditee-documents": { expectedHeading: "Documents", expectedSemanticMarker: "Filename-only" },
+  "auditee-settings": { expectedHeading: "Service Provider Settings", expectedSemanticMarker: "Privacy boundary" },
+  "admin-regulatory-library": { expectedHeading: "Regulatory Library", expectedSemanticMarker: "Mock regulatory library" },
+  "admin-template-list": { expectedHeading: "Checklist Templates", expectedSemanticMarker: "Template" },
+  "admin-question-bank": { expectedHeading: "Question Bank", expectedSemanticMarker: "Question" },
+  "admin-checklist-builder": { expectedHeading: "Checklist Builder", expectedSemanticMarker: "Checklist" },
+  "admin-version-history": { expectedHeading: "Version History — Cabin Inspection", expectedSemanticMarker: "v1.1" },
+  "admin-inspection-package-builder": { expectedHeading: "Dynamic Inspection Package Builder", expectedSemanticMarker: "Package Draft" },
+  "admin-reports": { expectedHeading: "Reports", expectedSemanticMarker: "Report" },
+  "admin-users-roles": { expectedHeading: "Users", expectedSemanticMarker: "Role" },
+  "admin-configurations": { expectedHeading: "Settings", expectedSemanticMarker: "Configured rules" },
+  "admin-organization-master-data": { expectedHeading: "Organizations", expectedSemanticMarker: "Fly Namibia" },
+  "admin-organization-detail": { expectedHeading: "Fly Namibia", expectedSemanticMarker: "Organization" },
+  "admin-audit-log": { expectedHeading: "Audit Log", expectedSemanticMarker: "Audit" },
+};
+
+const roleFromRoute = (id: ReactSurfaceId) => REACT_ROUTE_CONTRACTS.find((route) => route.id === id)?.requiredRole ?? null;
+
+const GENERATED_VISUAL_SURFACES: readonly VisualSurfaceFixture[] = REACT_ROUTE_CONTRACTS
+  .filter((route) => !CORE_VISUAL_SURFACES.some((surface) => surface.id === route.id))
+  .map((route) => {
+    const legacy = LEGACY_ROUTE_FIXTURES[route.id];
+    const assertion = REVIEWED_SOURCE_ASSERTIONS[route.id];
+    if (!legacy) throw new Error(`Missing reviewed legacy visual fixture for ${route.id}.`);
+    if (!assertion?.expectedHeading || !assertion.expectedSemanticMarker) {
+      throw new Error(`Missing reviewed legacy semantic assertion for ${route.id}.`);
+    }
+    if (legacy.role !== roleFromRoute(route.id)) {
+      throw new Error(`Legacy visual fixture role mismatch for ${route.id}.`);
+    }
+    return {
+      id: route.id,
+      auditId: route.auditId,
+      parityMode: "content-adapted",
+      reactPath: route.path,
+      legacy,
+      stableSelector: "main.content",
+      expectedHeading: assertion.expectedHeading,
+      expectedRoleText: null,
+      expectedOwnerText: null,
+      expectedNextActionText: null,
+      expectedStatusText: null,
+      expectedDueDateText: null,
+      expectedPrimaryActionText: null,
+      expectedPrivacyAbsence: [],
+      expectedSemanticMarker: assertion.expectedSemanticMarker,
+      contentAdaptationReason: "Route is present in the accepted static-demo visual oracle; React implementation follows in its owning feature task.",
+      masks: [],
+      legacyState: assertion.legacyState,
+    };
+  });
+
+export const VISUAL_SURFACES: readonly VisualSurfaceFixture[] = [
+  ...CORE_VISUAL_SURFACES,
+  ...GENERATED_VISUAL_SURFACES,
+].sort((left, right) => Number(left.auditId.slice(-3)) - Number(right.auditId.slice(-3)));
 
 export const VISUAL_SURFACE_BY_ID = new Map<ReactSurfaceId, VisualSurfaceFixture>(
   VISUAL_SURFACES.map((surface) => [surface.id, surface]),
@@ -1076,6 +1296,7 @@ export async function driveLegacySurface(page: Page, surface: VisualSurfaceFixtu
       clearDemoState?: () => void;
       initializeState?: () => void;
       normalizeViewForRole?: () => void;
+      roleCanOpenView?: () => boolean;
       render?: () => void;
       state?: {
         role: string | null;
@@ -1085,6 +1306,8 @@ export async function driveLegacySurface(page: Page, surface: VisualSurfaceFixtu
         potentialFindings?: Array<Record<string, unknown>>;
         managerReportsUi?: { selectedReportId?: string; tab?: string };
         serviceProviderUi?: { cap?: { selectedFindingId?: string } };
+        leadPreliminaryReportsUi?: { mode?: string; selectedReportId?: string };
+        wizard?: Record<string, unknown> | null;
         ui?: { notifOpen?: boolean; menuOpen?: boolean };
       };
     };
@@ -1122,15 +1345,51 @@ export async function driveLegacySurface(page: Page, surface: VisualSurfaceFixtu
     if (fixture.params.findingId && win.state.serviceProviderUi?.cap) {
       win.state.serviceProviderUi.cap.selectedFindingId = fixture.params.findingId;
     }
+    if (fixture.legacyState?.preliminaryWorkflow && win.state.leadPreliminaryReportsUi) {
+      win.state.leadPreliminaryReportsUi.mode = "workflow";
+      win.state.leadPreliminaryReportsUi.selectedReportId = fixture.params.reportId ?? "PR-2026-018";
+    }
+    if (fixture.legacyState?.wizardStep) {
+      win.state.wizard = {
+        step: fixture.legacyState.wizardStep,
+        orgId: "ORG-XYZ",
+        type: "Cabin Inspection",
+        domain: "Cabin Safety",
+        inspectionCategory: "Routine / Announced",
+        noticePolicy: "advance",
+        purpose: "",
+        triggerType: "Department Manager initiated",
+        riskCategory: "",
+        date: "2026-12-10",
+        mode: "On-site",
+        location: "",
+        templateId: "TPL-CABIN-2026",
+        scope: "",
+        currency: "USD",
+        requestedBudget: "0",
+      };
+    }
     if (win.state.ui) {
       win.state.ui.notifOpen = false;
       win.state.ui.menuOpen = false;
     }
-    win.normalizeViewForRole?.();
-    win.render?.();
-  }, surface.legacy);
+    // The UI audit contract addresses hidden legacy states directly. Both
+    // guards are deliberately bypassed only for this synchronous render so
+    // source-role captures cannot silently fall back to a role home screen.
+    const normalize = win.normalizeViewForRole;
+    const canOpen = win.roleCanOpenView;
+    win.normalizeViewForRole = () => undefined;
+    win.roleCanOpenView = () => true;
+    try {
+      win.render?.();
+    } finally {
+      win.normalizeViewForRole = normalize;
+      win.roleCanOpenView = canOpen;
+    }
+  }, { ...surface.legacy, legacyState: surface.legacyState });
   await disableVisualNoise(page);
   await waitForStableVisualState(page, surface.stableSelector);
+  await assertLegacyCaptureState(page, surface);
 }
 
 export async function driveReactSurface(page: Page, surface: VisualSurfaceFixture): Promise<void> {
@@ -1143,6 +1402,7 @@ export async function driveReactSurface(page: Page, surface: VisualSurfaceFixtur
 export async function assertSurfaceSemantics(page: Page, surface: VisualSurfaceFixture): Promise<void> {
   const body = page.locator("body");
   await expect(body).toContainText(surface.expectedHeading);
+  await expect(body).toContainText(surface.expectedSemanticMarker);
   if (surface.expectedRoleText) await expect(body).toContainText(surface.expectedRoleText);
   if (surface.expectedOwnerText) await expect(body).toContainText(surface.expectedOwnerText);
   if (surface.expectedNextActionText) await expect(body).toContainText(surface.expectedNextActionText);
@@ -1152,4 +1412,11 @@ export async function assertSurfaceSemantics(page: Page, surface: VisualSurfaceF
   for (const forbidden of surface.expectedPrivacyAbsence) {
     await expect(body).not.toContainText(forbidden);
   }
+}
+
+/** The guarded root baseline updater reaches this assertion through driveLegacySurface. */
+export async function assertLegacyCaptureState(page: Page, surface: VisualSurfaceFixture): Promise<void> {
+  const body = page.locator("body");
+  await expect(body).toContainText(surface.expectedHeading);
+  await expect(body).toContainText(surface.expectedSemanticMarker);
 }

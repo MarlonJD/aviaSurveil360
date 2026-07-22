@@ -67,7 +67,7 @@ describe("legacy screen manifest", () => {
     );
   });
 
-  it("freezes the exact 17 React-parity audit rows and 69 legacy-only rows", () => {
+  it("freezes all 86 audit rows as React-parity contracts", () => {
     const reactRows = LEGACY_SCREEN_MANIFEST.filter(
       ({ disposition }) => disposition === "react-parity",
     );
@@ -75,39 +75,11 @@ describe("legacy screen manifest", () => {
       ({ disposition }) => disposition !== "react-parity",
     );
 
-    expect(reactRows.map(({ auditId, reactSurfaceId }) => `${auditId}:${reactSurfaceId}`)).toEqual([
-      "ui-audit-001:role-select",
-      "ui-audit-002:inspector-home",
-      "ui-audit-007:audit-detail",
-      "ui-audit-008:checklist-runner",
-      "ui-audit-009:finding-detail",
-      "ui-audit-013:lead-home",
-      "ui-audit-022:cap-review",
-      "ui-audit-027:manager-home",
-      "ui-audit-028:audit-plan",
-      "ui-audit-030:report-preview",
-      "ui-audit-041:organization-registry",
-      "ui-audit-044:evidence-review",
-      "ui-audit-052:gm-home",
-      "ui-audit-058:finance-home",
-      "ui-audit-059:executive-home",
-      "ui-audit-066:auditee-home",
-      "ui-audit-076:admin-home",
-    ]);
-    expect(reactRows).toHaveLength(17);
-    expect(legacyRows).toHaveLength(69);
-    expect(legacyRows.every(({ reactPath, reactSurfaceId, dataBoundary, referenceScreenshotIds }) =>
-      reactPath === null &&
-      reactSurfaceId === null &&
-      dataBoundary === null &&
-      referenceScreenshotIds.length === 0,
-    )).toBe(true);
-    expect(legacyRows.every(({ reason, productAuthority, sourceEvidence, disposition }) =>
-      reason.trim().length > 0 &&
-      productAuthority.length > 0 &&
-      sourceEvidence.length > 0 &&
-      ["later-legacy-only", "demo-only-legacy"].includes(disposition),
-    )).toBe(true);
+    expect(reactRows).toHaveLength(86);
+    expect(legacyRows).toHaveLength(0);
+    expect(reactRows.map(({ auditId }) => auditId)).toEqual(
+      LEGACY_SCREEN_SOURCE.map(({ auditId }) => auditId),
+    );
   });
 
   it("keeps every React row aligned with the typed route registry", () => {
@@ -127,7 +99,7 @@ describe("legacy screen manifest", () => {
     }
   });
 
-  it("maps every repo-required screen outcome and keeps planning intake legacy-only", () => {
+  it("maps every repo-required screen outcome into the 86-route contract", () => {
     expect(PRODUCT_SCREEN_CROSSWALK.map(({ outcome }) => outcome)).toEqual([
       "Role switch / login",
       "Manager Dashboard",
@@ -149,8 +121,15 @@ describe("legacy screen manifest", () => {
     );
     expect(intake).toEqual({
       outcome: "New Inspection Planning Intake",
-      delivery: "legacy-only",
-      reactSurfaceIds: [],
+      delivery: "react-parity",
+      reactSurfaceIds: [
+        "audit-plan",
+        "new-audit-wizard-1",
+        "new-audit-wizard-2",
+        "new-audit-wizard-3",
+        "new-audit-wizard-4",
+        "new-audit-wizard-5",
+      ],
       sourceAuditIds: [
         "ui-audit-028",
         "ui-audit-047",
@@ -159,15 +138,13 @@ describe("legacy screen manifest", () => {
         "ui-audit-050",
         "ui-audit-051",
       ],
-      disposition: "Legacy-only in this plan; no React create/intake route or control may appear.",
+      disposition: "Frozen as Department Manager demo routes pending their owning feature slice.",
     });
 
     const wizardRows = LEGACY_SCREEN_MANIFEST.filter(
       ({ auditId }) => auditId >= "ui-audit-047" && auditId <= "ui-audit-051",
     );
     expect(wizardRows).toHaveLength(5);
-    expect(wizardRows.every(({ disposition, reactPath }) =>
-      disposition === "later-legacy-only" && reactPath === null,
-    )).toBe(true);
+    expect(wizardRows.every(({ disposition, reactPath }) => disposition === "react-parity" && reactPath.startsWith("/department-manager/new-audit/step-"))).toBe(true);
   });
 });

@@ -13,25 +13,14 @@ import { assertHttpArtifact } from "./assert-http-artifact.mjs";
 const scriptPath = fileURLToPath(import.meta.url);
 const defaultRepositoryRoot = path.resolve(path.dirname(scriptPath), "../../..");
 
-const EXACT_ROUTE_PATHS = Object.freeze([
-  "/",
-  "/inspector/inspector-assignments",
-  "/lead-inspector/lead-review",
-  "/department-manager/dashboard",
-  "/general-manager/gm-dashboard",
-  "/finance/finance-review",
-  "/executive-director/executive-dashboard",
-  "/auditee/service-provider-cap",
-  "/admin/templates",
-  "/inspector/audits/AUD-2026-001",
-  "/inspector/audits/AUD-2026-001/checklist",
-  "/department-manager/organizations",
-  "/department-manager/audit-plan",
-  "/lead-inspector/findings/FND-CAB-2026-001",
-  "/lead-inspector/cap-review/FND-CAB-2026-001",
-  "/lead-inspector/evidence-review/FND-CAB-2026-001",
-  "/department-manager/reports/RPT-CAB-2026-001-V1",
+const EXPECTED_ROUTE_COUNT = 86;
+const EXPECTED_VISUAL_PAIR_COUNT = 258;
+const EXPECTED_DUAL_PROFILE_AUDIT_IDS = Object.freeze([
+  "ui-audit-001", "ui-audit-002", "ui-audit-007", "ui-audit-008", "ui-audit-009", "ui-audit-013",
+  "ui-audit-022", "ui-audit-027", "ui-audit-028", "ui-audit-030", "ui-audit-041", "ui-audit-044",
+  "ui-audit-052", "ui-audit-058", "ui-audit-059", "ui-audit-066", "ui-audit-076",
 ]);
+const PLAN_2_HTTP_REASON = "HTTP capability is unavailable until Plan 2 activates this route.";
 
 const HTTP_FORBIDDEN_INPUTS = [
   /[/\\]src[/\\]mock[/\\]/i,
@@ -54,6 +43,15 @@ function normalized(relativePath) {
 }
 
 function mutateSource(relativePath, source, mutation) {
+  if (mutation === "missing-route" && relativePath.endsWith("src/app/route-contracts.ts")) {
+    return source.replace(/  \{ auditId: "ui-audit-086"[^\n]*\n/, "");
+  }
+  if (mutation === "missing-dual-profile-audit" && relativePath.endsWith("src/app/route-contracts.ts")) {
+    return source.replace('"ui-audit-044",', "");
+  }
+  if (mutation === "changed-plan2-reason" && relativePath.endsWith("src/app/route-contracts.ts")) {
+    return source.replace("HTTP capability is unavailable until Plan 2 activates this route.", "HTTP capability unavailable.");
+  }
   if (mutation === "undeclared-route" && relativePath.endsWith("src/app/router.tsx")) {
     return `${source}\nconst boundaryRouteMutation = <Route path=\"/scope-leak\" element={<div />} />;\n`;
   }
@@ -82,6 +80,12 @@ function mutateVisualSource(source, mutation) {
       "for (const viewport of VISUAL_VIEWPORTS.slice(0, 2))",
     );
   }
+  if (mutation === "remove-candidate-attachment") {
+    return source.replace("reactCandidateAttachmentCount += 1;", "");
+  }
+  if (mutation === "remove-result-attachment") {
+    return source.replace("decodedRegionResultAttachmentCount += 1;", "");
+  }
   return source;
 }
 
@@ -104,20 +108,28 @@ function assertSourceBoundary(repositoryRoot, mutation) {
   const router = sources.get("apps/web/src/app/router.tsx");
   assert.ok(routeContracts, "Typed React route registry is missing.");
   assert.ok(router, "React router source is missing.");
-  assert.deepEqual(
-    extractRouteContractPaths(routeContracts),
-    EXACT_ROUTE_PATHS,
-    "React route registry must remain the exact ordered 17-surface set.",
+  const declaredRoutePaths = extractRouteContractPaths(routeContracts);
+  assert.equal(
+    declaredRoutePaths.length,
+    EXPECTED_ROUTE_COUNT,
+    "React route registry must remain the exact ordered 86-surface set.",
   );
+  assert.equal(new Set(declaredRoutePaths).size, EXPECTED_ROUTE_COUNT, "React route registry contains duplicate paths.");
+  const dualProfileBlock = routeContracts.match(/const dualProfileAuditIds = new Set\(\[([\s\S]*?)\]\);/);
+  assert.ok(dualProfileBlock, "Dual-profile route contract set is missing.");
+  const actualDualProfileAuditIds = [...dualProfileBlock[1].matchAll(/"(ui-audit-\d+)"/g)].map((match) => match[1]);
+  assert.deepEqual(actualDualProfileAuditIds, EXPECTED_DUAL_PROFILE_AUDIT_IDS, "Route contract must preserve the exact 17 dual-profile surfaces.");
+  assert.match(routeContracts, new RegExp(PLAN_2_HTTP_REASON.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), "Demo-only routes must keep the exact Plan 2 HTTP reason.");
+  assert.match(routeContracts, /\? \["demo", "http"\]\s*:\s*\["demo"\]/, "Route profiles must partition into dual-profile and demo-only routes.");
 
-  const declaredPaths = new Set(EXACT_ROUTE_PATHS);
+  const declaredPaths = new Set(declaredRoutePaths);
   for (const match of router.matchAll(/<Route\b[^>]*\bpath="([^"]+)"/g)) {
     assert.ok(
       match[1] === "*" || declaredPaths.has(match[1]),
       `Router contains undeclared React path: ${match[1]}`,
     );
   }
-  assert.match(router, /ROLE_ENTRIES\.map\(/, "Role entries must be generated from the declared registry.");
+  assert.match(router, /REACT_ROUTE_CONTRACTS\.filter\(/, "Routes must be generated from the declared registry.");
   assert.doesNotMatch(
     router,
     /RoleEntryPlaceholder|candidate React entry route|coming soon/i,
@@ -188,7 +200,7 @@ export function assertVisualHarnessSource(source) {
     "decodePngFrame",
     "compareVisualFrames",
     "visualComparisonRegions",
-    'const surfaces = [...VISUAL_SURFACES]',
+    "const surfaces = resolveFocusedSurfaces()",
     "for (const viewport of VISUAL_VIEWPORTS)",
     "for (const surface of surfaces)",
     'testInfo.attach("react-candidate-viewport"',
@@ -197,11 +209,18 @@ export function assertVisualHarnessSource(source) {
     'await expect(page.locator(".application-topbar")).toBeVisible();',
     'await expect(page.locator(".workspace-content")).toBeVisible();',
     'await expect(page.locator(".workbench-page-header")).toBeVisible();',
+    "const expectedVisualPairCount = VISUAL_SURFACES.length * VISUAL_VIEWPORTS.length;",
+    "const expectedExecutedPairCount = surfaces.length * VISUAL_VIEWPORTS.length;",
+    "expect(expectedVisualPairCount).toBe(258);",
+    "reactCandidateAttachmentCount += 1;",
+    "decodedRegionResultAttachmentCount += 1;",
+    "expect(reactCandidateAttachmentCount).toBe(expectedExecutedPairCount);",
+    "expect(decodedRegionResultAttachmentCount).toBe(expectedExecutedPairCount);",
   ]) {
     assert.ok(source.includes(required), `Visual parity harness is missing fail-closed contract: ${required}`);
   }
-  for (const bypass of ["resolveFocusedSurfaces", "resolveVisualRegions", "shellOnly", "AVIA_VISUAL_SURFACES", "AVIA_VISUAL_REGIONS"]) {
-    assert.ok(!source.includes(bypass), `Visual parity harness can bypass the 51-pair matrix via ${bypass}.`);
+  for (const bypass of ["resolveVisualRegions", "shellOnly", "AVIA_VISUAL_REGIONS"]) {
+    assert.ok(!source.includes(bypass), `Visual parity harness can bypass the 258-pair matrix via ${bypass}.`);
   }
   assert.match(source, /for \(const comparison of comparisons\)[\s\S]*?comparison\.passed/, "Decoded region results are not asserted.");
 }
@@ -222,7 +241,7 @@ export function assertParityBoundary(options = {}) {
     assertBuildInputBoundary("http", [path.join(repositoryRoot, "apps/web/src/mock/seed-data.ts")]);
   }
 
-  return { routes: EXACT_ROUTE_PATHS.length, profiles: options.requireBuilds === false ? 0 : 2 };
+  return { routes: EXPECTED_ROUTE_COUNT, profiles: options.requireBuilds === false ? 0 : 2 };
 }
 
 const invokedPath = process.argv[1] ? path.resolve(process.argv[1]) : null;

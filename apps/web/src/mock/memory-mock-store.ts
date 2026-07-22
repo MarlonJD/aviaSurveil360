@@ -1,5 +1,5 @@
 import { canonicalJson, cloneValue, OperationIdReuseError } from "../backend/backend-contracts";
-import { createCanonicalSeedState, type MockState } from "./seed-data";
+import { createCanonicalSeedState, createFullScreenScenarioSeedState, type MockState } from "./seed-data";
 
 interface StoredOperation {
   payload: string;
@@ -7,9 +7,31 @@ interface StoredOperation {
 }
 
 interface PersistedMockStore {
-  schemaVersion: 1;
+  schemaVersion: 3;
   state: MockState;
   operations: [string, StoredOperation][];
+}
+
+interface PersistedMockStoreCandidate {
+  schemaVersion?: number;
+  state?: Partial<MockState>;
+  operations?: [string, StoredOperation][];
+}
+
+const CURRENT_MOCK_STORE_SCHEMA_VERSION = 3;
+
+function hydratePersistedState(state: Partial<MockState>, clock: () => string): MockState {
+  const canonical = createCanonicalSeedState(clock());
+  return {
+    ...canonical,
+    ...state,
+    adminWorkspace: state.adminWorkspace ?? canonical.adminWorkspace,
+    reportPublicMetadata: {
+      ...canonical.reportPublicMetadata,
+      ...(state.reportPublicMetadata ?? {}),
+    },
+    auditeeCoordinationResponses: state.auditeeCoordinationResponses ?? {},
+  };
 }
 
 export class MemoryMockStore {
@@ -30,6 +52,10 @@ export class MemoryMockStore {
     return new MemoryMockStore(createCanonicalSeedState(clock()), clock);
   }
 
+  static createFullScreenScenario({ clock }: { clock: () => string }): MemoryMockStore {
+    return new MemoryMockStore(createFullScreenScenarioSeedState(clock()), clock);
+  }
+
   static createPersistent({
     clock,
     storage,
@@ -40,16 +66,29 @@ export class MemoryMockStore {
     storageKey: string;
   }): MemoryMockStore {
     let persisted: PersistedMockStore | null = null;
+    let migrated = false;
     try {
       const raw = storage.getItem(storageKey);
-      const value = raw ? JSON.parse(raw) as Partial<PersistedMockStore> : null;
+      const value = raw ? JSON.parse(raw) as PersistedMockStoreCandidate : null;
       if (
-        value?.schemaVersion === 1 &&
+        ([1, 2, CURRENT_MOCK_STORE_SCHEMA_VERSION].includes(value?.schemaVersion ?? -1)) &&
         value.state &&
         typeof value.state === "object" &&
         Array.isArray(value.operations)
       ) {
-        persisted = value as PersistedMockStore;
+        migrated = value.schemaVersion !== CURRENT_MOCK_STORE_SCHEMA_VERSION
+          || !value.state.reportPublicMetadata
+          || !value.state.auditeeCoordinationResponses
+          || !value.state.adminWorkspace;
+        persisted = {
+          schemaVersion: CURRENT_MOCK_STORE_SCHEMA_VERSION,
+          state: hydratePersistedState(value.state, clock),
+          operations: value.schemaVersion !== 1
+            ? value.operations
+            : [],
+        };
+      } else if (raw) {
+        storage.removeItem(storageKey);
       }
     } catch {
       storage.removeItem(storageKey);
@@ -59,12 +98,13 @@ export class MemoryMockStore {
       : MemoryMockStore.createCanonical({ clock });
     store.persist = () => {
       const snapshot: PersistedMockStore = {
-        schemaVersion: 1,
+        schemaVersion: CURRENT_MOCK_STORE_SCHEMA_VERSION,
         state: cloneValue(store.state),
         operations: [...store.operations.entries()].map(([key, operation]) => [key, cloneValue(operation)]),
       };
       storage.setItem(storageKey, JSON.stringify(snapshot));
     };
+    if (migrated) store.persist();
     return store;
   }
 

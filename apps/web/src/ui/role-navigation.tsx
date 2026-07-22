@@ -12,8 +12,16 @@ import {
 export function activePrimaryRouteId(activeRouteId: ReactSurfaceId): ReactSurfaceId {
   if (
     activeRouteId === "finding-detail" ||
+    activeRouteId === "inspector-assistant"
+  ) return "inspector-findings";
+  if (activeRouteId === "closure-report-preview") return "inspector-reports";
+  if (activeRouteId === "organization-risk-profile") return "manager-risk-dashboard";
+  if (activeRouteId === "executive-report-preview") return "executive-final-reports";
+  if (activeRouteId === "admin-home") return "admin-template-list";
+  if (activeRouteId === "admin-inspection-package-builder") return "admin-checklist-builder";
+  if (activeRouteId === "admin-organization-detail") return "admin-organization-master-data";
+  if (
     activeRouteId === "cap-review" ||
-    activeRouteId === "evidence-review" ||
     activeRouteId === "report-preview"
   ) return activeRouteId;
   const active = REACT_ROUTE_CONTRACT_BY_ID.get(activeRouteId);
@@ -51,6 +59,7 @@ interface AcceptedNavigationItem {
   label: string;
   icon: NavigationIcon;
   routeId?: ReactSurfaceId;
+  targetRouteId?: ReactSurfaceId;
   badge?: string;
   section?: string;
 }
@@ -59,71 +68,70 @@ const ACCEPTED_NAVIGATION: Readonly<Record<Role, readonly AcceptedNavigationItem
   inspector: [
     { label: "Dashboard", icon: "dashboard" },
     { label: "My Assignments", icon: "assignment", routeId: "inspector-home", badge: "8" },
-    { label: "Findings", icon: "finding", badge: "14" },
+    { label: "Findings", icon: "finding", routeId: "inspector-findings", badge: "14" },
     { label: "Evidence Review", icon: "evidence", badge: "3" },
-    { label: "Messages", icon: "message", badge: "2" },
-    { label: "Calendar", icon: "calendar", badge: "2" },
-    { label: "Reports", icon: "report" },
+    { label: "Messages", icon: "message", routeId: "inspector-messages", badge: "2" },
+    { label: "Calendar", icon: "calendar", routeId: "inspector-calendar", badge: "2" },
+    { label: "Reports", icon: "report", routeId: "inspector-reports" },
   ],
   leadInspector: [
     { label: "Assigned Audits", icon: "assignment", routeId: "lead-home" },
-    { label: "Evidence Review", icon: "evidence", routeId: "evidence-review" },
-    { label: "Preliminary Reports", icon: "report", badge: "6" },
-    { label: "Final Reports", icon: "report", badge: "4" },
-    { label: "Calendar", icon: "calendar", badge: "5" },
-    { label: "Messages", icon: "message" },
-    { label: "Analytics & Reports", icon: "analytics" },
-    { label: "Settings", icon: "settings" },
+    { label: "Evidence Review", icon: "evidence" },
+    { label: "Preliminary Reports", icon: "report", routeId: "lead-preliminary-reports", badge: "6" },
+    { label: "Final Reports", icon: "report", routeId: "lead-final-reports", badge: "4" },
+    { label: "Calendar", icon: "calendar", routeId: "lead-calendar", badge: "5" },
+    { label: "Messages", icon: "message", routeId: "lead-messages" },
+    { label: "Analytics & Reports", icon: "analytics", routeId: "lead-analytics-reports" },
+    { label: "Settings", icon: "settings", routeId: "lead-settings" },
   ],
   manager: [
     { label: "Dashboard", icon: "dashboard", routeId: "manager-home" },
     { label: "Planning", icon: "planning", routeId: "audit-plan" },
-    { label: "Audits", icon: "assignment" },
-    { label: "Reports Approval", icon: "report", routeId: "report-preview", badge: "2" },
-    { label: "Risk Dashboard", icon: "analytics" },
-    { label: "Inspection Team", icon: "assignment" },
-    { label: "Findings Review", icon: "finding" },
-    { label: "CAP Monitoring", icon: "evidence" },
-    { label: "Checklist Management", icon: "settings" },
+    { label: "Audits", icon: "assignment", routeId: "manager-audits" },
+    { label: "Reports Approval", icon: "report", routeId: "report-preview", targetRouteId: "manager-preliminary-report-review", badge: "2" },
+    { label: "Risk Dashboard", icon: "analytics", routeId: "manager-risk-dashboard" },
+    { label: "Inspection Team", icon: "assignment", routeId: "manager-inspection-team" },
+    { label: "Findings Review", icon: "finding", routeId: "manager-findings-review" },
+    { label: "CAP Monitoring", icon: "evidence", routeId: "manager-cap-monitoring" },
+    { label: "Checklist Management", icon: "settings", routeId: "manager-checklist-management" },
   ],
   gm: [
     { label: "Dashboard", icon: "dashboard", routeId: "gm-home" },
-    { label: "Planning", icon: "planning" },
-    { label: "Report Approvals", icon: "report" },
-    { label: "Departments", icon: "dashboard" },
-    { label: "Risk Dashboard", icon: "shield" },
-    { label: "Settings", icon: "settings" },
+    { label: "Planning", icon: "planning", routeId: "gm-planning" },
+    { label: "Report Approvals", icon: "report", routeId: "gm-report-approvals" },
+    { label: "Departments", icon: "dashboard", routeId: "gm-departments" },
+    { label: "Risk Dashboard", icon: "shield", routeId: "gm-risk-dashboard" },
+    { label: "Settings", icon: "settings", routeId: "gm-settings" },
   ],
   finance: [{ label: "Finance Review", icon: "dashboard", routeId: "finance-home" }],
   executiveDirector: [
     { label: "Dashboard", icon: "dashboard", routeId: "executive-home" },
-    { label: "Planning", icon: "planning" },
-    { label: "Preliminary Reports", icon: "report" },
-    { label: "Final Reports", icon: "report" },
-    { label: "Notifications", icon: "dashboard" },
-    { label: "Settings", icon: "settings" },
+    { label: "Planning", icon: "planning", routeId: "executive-planning" },
+    { label: "Preliminary Reports", icon: "report", routeId: "executive-preliminary-reports" },
+    { label: "Final Reports", icon: "report", routeId: "executive-final-reports" },
+    { label: "Notifications", icon: "dashboard", routeId: "executive-notifications" },
+    { label: "Settings", icon: "settings", routeId: "executive-settings" },
   ],
   auditee: [
-    { label: "Inspection Coordination", icon: "assignment", badge: "1" },
+    { label: "Inspection Coordination", icon: "assignment", routeId: "auditee-inspection-coordination", badge: "1" },
     { label: "Corrective Actions (CAP)", icon: "cap", routeId: "auditee-home", badge: "4" },
-    { label: "Preliminary Reports", icon: "report" },
-    { label: "Final Reports", icon: "report" },
-    { label: "Messages", icon: "message", badge: "1" },
-    { label: "Documents", icon: "evidence" },
-    { label: "Settings", icon: "settingsRoot" },
+    { label: "Preliminary Reports", icon: "report", routeId: "auditee-preliminary-reports" },
+    { label: "Final Reports", icon: "report", routeId: "auditee-final-reports" },
+    { label: "Messages", icon: "message", routeId: "auditee-messages", badge: "1" },
+    { label: "Documents", icon: "evidence", routeId: "auditee-documents" },
+    { label: "Settings", icon: "settingsRoot", routeId: "auditee-settings" },
   ],
   admin: [
-    { label: "NAMCARS Library", icon: "dashboard", section: "Regulations" },
-    { label: "Regulatory Cross-Reference", icon: "dashboard" },
-    { label: "Checklist Builder", icon: "listCheck" },
-    { label: "Question Bank", icon: "help" },
-    { label: "Version History", icon: "history" },
-    { label: "Templates", icon: "listCheck", routeId: "admin-home", section: "Evidence & Documents" },
-    { label: "Reports", icon: "report" },
-    { label: "Users / Roles", icon: "users", section: "Administration" },
-    { label: "Configurations", icon: "settingsRoot" },
-    { label: "Notification Rules", icon: "settingsRoot" },
-    { label: "Organisation Master Data", icon: "building" },
+    { label: "Regulatory Library", icon: "dashboard", routeId: "admin-regulatory-library", section: "Regulations" },
+    { label: "Templates", icon: "listCheck", routeId: "admin-template-list", section: "Evidence & Documents" },
+    { label: "Checklist Builder", icon: "listCheck", routeId: "admin-checklist-builder" },
+    { label: "Question Bank", icon: "help", routeId: "admin-question-bank" },
+    { label: "Version History", icon: "history", routeId: "admin-version-history" },
+    { label: "Reports", icon: "report", routeId: "admin-reports" },
+    { label: "Users / Roles", icon: "users", routeId: "admin-users-roles", section: "Administration" },
+    { label: "Configurations", icon: "settingsRoot", routeId: "admin-configurations" },
+    { label: "Organisation Master Data", icon: "building", routeId: "admin-organization-master-data" },
+    { label: "Audit Log", icon: "history", routeId: "admin-audit-log" },
   ],
 };
 
@@ -172,15 +180,17 @@ export function RoleNavigation({
       {activeRole === "admin" ? <p className="role-navigation__experience">Administration</p> : null}
       {ACCEPTED_NAVIGATION[activeRole].map((item) => {
         const route = item.routeId ? REACT_ROUTE_CONTRACT_BY_ID.get(item.routeId) : null;
+        const targetRoute = item.targetRouteId ? REACT_ROUTE_CONTRACT_BY_ID.get(item.targetRouteId) : route;
         const active =
           item.routeId === activePrimary ||
           (activeRole === "inspector" && activeRouteId === "audit-plan" && item.label === "Calendar");
+        const visuallyActive = active && activeRouteId !== "inspector-profile";
         const content = <><NavigationGlyph icon={item.icon} /><span>{item.label}</span>{item.badge ? <span className="nav-item__badge">{item.badge}</span> : null}</>;
         return (
           <Fragment key={item.label}>
             {item.section ? <p className="role-navigation__section">{item.section}</p> : null}
             {route ? (
-              <Link aria-label={item.label} className={`nav-item${active ? " active" : ""}`} to={route.path} aria-current={active ? "page" : undefined} onClick={onNavigate}>
+              <Link aria-label={item.label} className={`nav-item${visuallyActive ? " active" : ""}`} to={targetRoute?.path ?? route.path} aria-current={active ? "page" : undefined} onClick={onNavigate}>
                 {content}
               </Link>
             ) : (

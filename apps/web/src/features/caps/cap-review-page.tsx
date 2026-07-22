@@ -94,6 +94,11 @@ export function CapReviewPage() {
     navigate(createRoleEntryPath(role));
   }
 
+  function requestInspectorFinding(role: Role): void {
+    session?.setActiveRole(role);
+    navigate("/inspector/findings/FND-CAB-2026-001");
+  }
+
   async function review(decision: "ACCEPT" | "REJECT" | "REQUEST_MORE_INFORMATION"): Promise<void> {
     if (!finding || !targetRevision) return;
     if (!commentToAuditee.trim()) {
@@ -205,7 +210,17 @@ export function CapReviewPage() {
 
             <main className="cap-root-main">
               <section className="cap-root-panel">
-                <header><h2>Finding Information</h2><button onClick={() => navigate(`/lead-inspector/findings/${finding.id}`)} type="button">View Finding Details ↗</button></header>
+                <header>
+                  <h2>Finding Information</h2>
+                  <RoleHandoff
+                    identityMode={identityMode}
+                    onRoleRequest={requestInspectorFinding}
+                    session={handoffSession}
+                    targetRole="inspector"
+                  >
+                    Switch to CAA Inspector Finding
+                  </RoleHandoff>
+                </header>
                 <dl className="cap-root-info-grid">
                   <div><dt>Audit / Inspection</dt><dd>{finding.auditId}</dd></div>
                   <div><dt>Department</dt><dd>Cabin Safety</dd></div>

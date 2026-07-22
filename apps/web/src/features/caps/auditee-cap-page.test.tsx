@@ -234,4 +234,15 @@ describe("AuditeeCapPage", () => {
     );
     expect(document.body).not.toHaveTextContent(/Deterministic demo|Mock Evidence file/);
   });
+
+  it("hands pending Evidence review to the declared Department Manager route authority", async () => {
+    const runtime = createMockBackendRuntime();
+    const finding = await seedAcceptedSecondCap(runtime);
+    await seedEvidence(runtime, finding);
+
+    renderPage(runtime, "oidc-session");
+
+    expect(await screen.findByRole("button", { name: "Switch to Evidence Review" })).toBeDisabled();
+    expect(screen.getByText(/session does not include Department Manager authority/i)).toBeVisible();
+  });
 });

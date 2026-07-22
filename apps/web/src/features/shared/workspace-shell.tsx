@@ -133,10 +133,85 @@ const routeLabels: Record<string, ReactSurfaceId> = {
   "Audit Plan Calendar": "audit-plan",
   "Department Planning": "audit-plan",
   "Finding Detail": "finding-detail",
+  Findings: "inspector-findings",
+  Messages: "inspector-messages",
+  "Audit Work Queue": "inspector-calendar",
+  "Inspector Reports": "inspector-reports",
+  "Closure Report Preview": "closure-report-preview",
+  "AI Inspector Assistant": "inspector-assistant",
+  Profile: "inspector-profile",
+  "Lead Preliminary Reports": "lead-preliminary-reports",
+  "Lead Final Reports": "lead-final-reports",
+  "Lead Calendar": "lead-calendar",
+  "Lead Messages": "lead-messages",
+  "Lead Analytics & Reports": "lead-analytics-reports",
+  "Lead Settings": "lead-settings",
   "CAP Review": "cap-review",
-  "Evidence Review": "evidence-review",
+  "Inspection Evidence": "evidence-review",
   "Report Preview": "report-preview",
   "Reports Approval": "report-preview",
+  "Manager Audits": "manager-audits",
+  "Inspection Team": "manager-inspection-team",
+  "Findings Review": "manager-findings-review",
+  "CAP Monitoring": "manager-cap-monitoring",
+  "Checklist Management": "manager-checklist-management",
+  "Organization Detail": "organization-detail",
+  "Preliminary Report Review": "manager-preliminary-report-review",
+  "Department Manager Review": "manager-cap-closure-review",
+  "Risk Dashboard": "manager-risk-dashboard",
+  "Safety Intelligence": "manager-safety-intelligence",
+  "Organization Risk Profile": "organization-risk-profile",
+  "SSP / NASP": "manager-ssp-nasp",
+  "USOAP Readiness": "manager-usoap-readiness",
+  "CAP Effectiveness": "manager-cap-effectiveness",
+  "Inspection Package Builder": "inspection-package-builder",
+  "New Audit Wizard 1": "new-audit-wizard-1",
+  "New Audit Wizard 2": "new-audit-wizard-2",
+  "New Audit Wizard 3": "new-audit-wizard-3",
+  "New Audit Wizard 4": "new-audit-wizard-4",
+  "New Audit Wizard 5": "new-audit-wizard-5",
+};
+
+const roleRouteLabels: Partial<Record<Role, Record<string, ReactSurfaceId>>> = {
+  auditee: {
+    "Inspection Coordination": "auditee-inspection-coordination",
+    "Preliminary Reports": "auditee-preliminary-reports",
+    "Final Reports": "auditee-final-reports",
+    "Final Report Preview": "auditee-report-preview",
+    "Auditee Messages": "auditee-messages",
+    Documents: "auditee-documents",
+    "Auditee Settings": "auditee-settings",
+  },
+  gm: {
+    Planning: "gm-planning",
+    "Report Approvals": "gm-report-approvals",
+    Departments: "gm-departments",
+    "Risk Dashboard": "gm-risk-dashboard",
+    Settings: "gm-settings",
+  },
+  executiveDirector: {
+    Planning: "executive-planning",
+    "Preliminary Reports": "executive-preliminary-reports",
+    "Final Reports": "executive-final-reports",
+    "Final Report Preview": "executive-report-preview",
+    Notifications: "executive-notifications",
+    Settings: "executive-settings",
+  },
+  admin: {
+    "Regulatory Library": "admin-regulatory-library",
+    "Template List": "admin-template-list",
+    "Template Preview": "admin-home",
+    "Question Bank": "admin-question-bank",
+    "Checklist Builder": "admin-checklist-builder",
+    "Version History": "admin-version-history",
+    "Admin Inspection Package Builder": "admin-inspection-package-builder",
+    "Admin Reports": "admin-reports",
+    "Users / Roles": "admin-users-roles",
+    Configurations: "admin-configurations",
+    "Organisation Master Data": "admin-organization-master-data",
+    "Admin Organization Detail": "admin-organization-detail",
+    "Audit Log": "admin-audit-log",
+  },
 };
 
 function roleForLabel(label: string): Role {
@@ -144,6 +219,8 @@ function roleForLabel(label: string): Role {
 }
 
 function routeForLabel(label: string, role: Role): ReactSurfaceId {
+  const roleRoute = roleRouteLabels[role]?.[label];
+  if (roleRoute) return roleRoute;
   const direct = routeLabels[label];
   if (direct) return direct;
   return ROLE_ENTRIES.find((entry) => entry.role === role)?.routeId ?? "inspector-home";
@@ -161,7 +238,7 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <header className="page-header">
+    <header className="page-header workbench-page-header">
       <div>
         <p className="eyebrow">{eyebrow}</p>
         <h1>{title}</h1>

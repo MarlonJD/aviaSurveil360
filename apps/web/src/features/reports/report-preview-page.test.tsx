@@ -61,6 +61,14 @@ describe("ReportPreviewPage", () => {
 
     const queue = await screen.findByRole("table", { name: "Report Queue" });
     expect(within(queue).getByText("RPT-CAB-2026-001-V1")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Review Preliminary Report PR-2026-018" })).toHaveAttribute(
+      "href",
+      "/department-manager/preliminary-reports/PR-2026-018",
+    );
+    expect(within(queue).getByRole("button", { name: "Department review unavailable for RPT-CAB-2026-001-V1" })).toHaveAttribute(
+      "title",
+      "Report version RPT-CAB-2026-001-V1 is EXECUTIVE_DIRECTOR_REVIEW; Department Manager review is unavailable.",
+    );
     await user.click(screen.getByRole("tab", { name: "Decision history" }));
     expect(screen.getByRole("tabpanel")).toHaveTextContent(/current immutable state/i);
     await user.click(screen.getByRole("button", { name: "Review Full Report" }));

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { useBackendForRole } from "../../app/providers";
 import type {
@@ -7,6 +8,7 @@ import type {
   ChecklistTemplateVersionView,
 } from "../../backend/backend";
 import { CommandError, errorMessage, WorkspaceShell } from "../shared/workspace-shell";
+import { AdminPage } from "./admin-workspace-shared";
 
 type AdminPreviewMode = "register" | "preview";
 
@@ -74,8 +76,8 @@ export function AdminConfigurationPage() {
   }, []);
 
   return (
-    <WorkspaceShell roleLabel="Admin Preview" routeLabel="Templates">
-      <div className="admin-template-workspace">
+    <WorkspaceShell roleLabel="Admin Preview" routeLabel="Template Preview">
+      <div className="admin-template-workspace" data-testid="admin-template-preview-page">
         {mode === "register" ? (
           <>
             <header className="admin-page-head workbench-page-header">
@@ -104,7 +106,7 @@ export function AdminConfigurationPage() {
           <>
             <header className="admin-page-head workbench-page-header">
               <div><h1>Template Preview — {detail ? previewTitle(detail.title) : "Published checklist"}</h1><p>Read-only preview of the published checklist template.</p></div>
-              <button onClick={() => setMode("register")} type="button">Back to templates</button>
+              <Link className="admin-action-link" to="/admin/template-library">Back to templates</Link>
             </header>
             <CommandError message={error} />
             {detail ? (
@@ -118,11 +120,12 @@ export function AdminConfigurationPage() {
                   <div><span>Status</span><b>Published</b><small>{detail.publishedAt.slice(0, 10)}</small></div>
                 </section>
                 <p className="admin-source-profile">Source workbook profile: 126 Cabin Inspection rows across 6 sections. This demo runs a curated {detail.questionCount}-question subset; the source workbook remains a mock/configured checklist reference, not a live import or legal source.</p>
+                <nav className="admin-section-jumps" aria-label="Template section jumps">{[...new Set(detail.questions.map((question) => question.sectionId))].map((sectionId) => <a href={`#admin-template-section-${sectionId.replace(/[^a-z0-9]+/gi, "-").toLocaleLowerCase()}`} key={sectionId}>{sectionId}</a>)}</nav>
                 <div className="admin-table-scroll admin-question-table-scroll">
                   <table aria-label="Published checklist questions" className="admin-question-table">
                     <thead><tr><th>Row</th><th>Question</th><th>Regulatory reference</th><th>Expected evidence</th><th>Trace</th></tr></thead>
                     <tbody>{detail.questions.map((question, index) => (
-                      <tr key={question.id}>
+                      <tr id={`admin-template-section-${question.sectionId.replace(/[^a-z0-9]+/gi, "-").toLocaleLowerCase()}`} key={question.id}>
                         <td><span className="admin-row-number">{index + 1}</span></td>
                         <td><b>{question.prompt}</b><small>{question.id}</small><em className="admin-allowed-answers admin-allowed-answers--question">Allowed answers: {answers(question.allowedAnswers)}</em></td>
                         <td>{question.regulatoryReference ?? "No configured regulatory reference"}</td>
@@ -138,5 +141,17 @@ export function AdminConfigurationPage() {
         )}
       </div>
     </WorkspaceShell>
+  );
+}
+
+export function AdminConfigurationsPage() {
+  return (
+    <AdminPage testId="admin-configurations-page" routeLabel="Configurations" title="Configurations" description="Demo-only configured rules are separate from production-required integrations and undeclared commands.">
+      <div className="admin-configuration-grid">
+        <section className="admin-record-card"><h2>Configured demo rules</h2><ul><li>Finding severity: Level 1 Critical, Level 2 Major, Level 3 Minor, Observation</li><li>Finding → CAP → Evidence → CAA Review → Closure lifecycle</li><li>Due Date, Target, Due Soon, and Overdue language</li><li>Oversight Health Index is advisory only and never makes a legal, enforcement, certificate, or closure decision</li></ul></section>
+        <section className="admin-record-card"><h2>Notification Rules</h2><p>This section aliases the same configuration surface without creating a second active route.</p><p>Configured 30 / 15 / 7 day and Due Date in-app reminder rules are demo records.</p><p>No real email or SMS delivery is configured.</p></section>
+        <section className="admin-record-card"><h2>Production-required integrations</h2><ul><li>Plan 3 Keycloak identity administration</li><li>Real email / SMS provider</li><li>Real regulatory ingestion and records governance</li></ul><p>No fake editable or Save control is shown because Task 10 declares no configuration mutation.</p></section>
+      </div>
+    </AdminPage>
   );
 }

@@ -91,6 +91,234 @@ export interface CommandMeta {
   operationId: string;
 }
 
+/** Command metadata for the composed demo capabilities added for the 86-screen migration. */
+export interface RevisionedCommandMeta {
+  expectedRevision: number | null;
+  idempotencyKey: string;
+}
+
+export interface CommunicationView {
+  id: string;
+  organizationId: string | null;
+  subject: string;
+  body: string;
+  audience: "CAA" | "AUDITEE";
+  direction: "CAA_TO_AUDITEE" | "AUDITEE_TO_CAA" | "CAA_INTERNAL";
+  revision: number;
+  createdAt: Instant;
+}
+
+export interface CalendarItemView {
+  id: string;
+  auditId: string;
+  organizationId: string;
+  organizationName?: string;
+  title: string;
+  nextAction?: string;
+  scheduledDate: LocalDate;
+  dueState: DueState;
+}
+
+export interface ProfileView {
+  subjectId: string;
+  role: Role;
+  organizationId: string | null;
+  displayName: string;
+  revision: number;
+}
+
+export interface TeamMemberView {
+  subjectId: string;
+  displayName: string;
+  role: Role;
+  organizationId: string | null;
+  revision: number;
+}
+
+export interface AuditTeamAssignmentView {
+  questionId: string;
+  assignedMemberSubjectIds: string[];
+}
+
+export interface AuditTeamHistoryView {
+  eventId: string;
+  occurredAt: Instant;
+  actorSubjectId: string;
+  action: string;
+  detail: string;
+}
+
+export interface InspectionTeamAuditView {
+  auditId: string;
+  organizationId: string;
+  organizationName: string;
+  title: string;
+  status: string;
+  scheduledStartDate: LocalDate | null;
+  scheduledEndDate: LocalDate | null;
+  leadInspector: TeamMemberView;
+  members: TeamMemberView[];
+  assignments: AuditTeamAssignmentView[];
+  documents: DocumentMetadataView[];
+  history: AuditTeamHistoryView[];
+  revision: number;
+}
+
+export interface RiskOverviewView {
+  organizationId: string | null;
+  overdueFindingCount: number;
+  openFindingCount: number;
+  repeatFindingCount: number;
+  revision: number;
+}
+
+export type ManagementRiskLevel = "HIGH" | "MEDIUM" | "LOW" | "VERY_LOW";
+
+export interface RiskFindingProjectionView {
+  findingId: string;
+  findingNumber: string;
+  organizationId: string;
+  organizationName: string;
+  inspectionId: string;
+  inspectionTitle: string | null;
+  department: string | null;
+  title: string;
+  severity: FindingSeverity;
+  riskLevel: ManagementRiskLevel;
+  status: FindingStatus;
+  issuedAt: Instant | null;
+  dueState: DueState;
+  capRequired: boolean;
+}
+
+export interface CapEffectivenessProjectionView {
+  findingId: string;
+  findingNumber: string;
+  organizationId: string;
+  organizationName: string;
+  findingStatus: FindingStatus;
+  closureBasis: FindingView["closureBasis"];
+  capId: string | null;
+  capRevisionId: string | null;
+  capRevision: number | null;
+  capStatus: CapStatus | null;
+  state: "NOT_ELIGIBLE" | "PENDING_POST_CLOSURE_VERIFICATION";
+  reason: string;
+}
+
+export interface RiskManagementProjectionView {
+  findings: RiskFindingProjectionView[];
+  capEffectiveness: CapEffectivenessProjectionView[];
+  generatedAt: Instant;
+  revision: number;
+}
+
+export interface DocumentMetadataView {
+  id: string;
+  organizationId: string;
+  title: string;
+  kind: "REPORT" | "EVIDENCE" | "CHECKLIST_TEMPLATE";
+  version: number;
+  revision: number;
+  createdAt: Instant;
+  publicReviewResult?: EvidenceReviewState | "RELEASED";
+  downloadFileName?: string;
+}
+
+export interface AuditeeCoordinationView {
+  auditId: string;
+  organizationId: string;
+  organizationName: string;
+  title: string;
+  inspectionCategory: "Routine / Announced";
+  scheduledStartDate: LocalDate;
+  status: "AWAITING_AUDITEE_CONFIRMATION" | "CONFIRMED" | "ALTERNATIVE_PROPOSED";
+  alternativeDate: LocalDate | null;
+  nextAction: string;
+  revision: number;
+}
+
+export interface RespondToAuditeeCoordinationInput extends RevisionedCommandMeta {
+  auditId: string;
+  organizationId: string;
+  decision: "CONFIRM" | "PROPOSE_ALTERNATIVE";
+  alternativeDate: LocalDate | null;
+}
+
+export interface AuditeeReleasedReportView {
+  reportVersionId: string;
+  reportId: string;
+  kind: "PRELIMINARY" | "FINAL";
+  organizationId: string;
+  auditId: string;
+  findingIds: string[];
+  version: number;
+  status: "LOCKED";
+  revision: number;
+  issuedAt: Instant;
+  responseDueDate: LocalDate | null;
+  caaVisibleCommentState: "NO_COMMENT_RECORDED" | "RECORDED";
+  caaVisibleComment: string | null;
+}
+
+export interface NotificationView {
+  id: string;
+  subjectId: string;
+  title: string;
+  body: string;
+  readAt: Instant | null;
+  revision: number;
+}
+
+export interface AdministrationScreenProjection {
+  screenId: string;
+  organizationId: string | null;
+  directRecordId: string | null;
+  state: "ready" | "empty" | "denied" | "returned";
+  overdue: boolean;
+  versionHistory: boolean;
+  visibleActions: readonly VisibleScreenAction[];
+}
+
+export interface VisibleScreenAction {
+  id: string;
+  label: string;
+  kind: VisibleActionEffect["type"];
+  effect: VisibleActionEffect;
+}
+
+export type VisibleActionEffect =
+  | { type: "navigation"; target: string }
+  | { type: "modal"; dialog: string; confirmCommand?: ConfirmCommandBinding }
+  | { type: "filePreview"; file: string }
+  | { type: "fileDownload"; file: string }
+  | { type: "localProjection"; projection: string }
+  | { type: "capabilityDispatch"; capability: string };
+
+export interface ConfirmCommandBinding {
+  owner: "caps.review" | "evidence.review" | "findings.authorizedClose" | "planning.decide" | "reports.decide";
+  requiresRevision: boolean;
+  requiresIdempotency: boolean;
+  requiresOperationMetadata: boolean;
+}
+
+export interface VisibleActionResult {
+  screenId: string;
+  actionId: string;
+  effect: VisibleActionEffect;
+}
+
+export interface AssistantDraftView {
+  id: string;
+  findingId: string;
+  prompt: string;
+  draft: string;
+  advisoryOnly: true;
+  canCreateFinding: false;
+  canSetSeverity: false;
+  canCloseFinding: false;
+}
+
 export interface AssignmentSummary {
   auditId: string;
   organizationId: string;
@@ -100,6 +328,13 @@ export interface AssignmentSummary {
   dueDate: LocalDate | null;
   dueState: DueState;
   nextAction: string;
+  scheduledStartDate: LocalDate | null;
+  currentOwnerId: string | null;
+  currentOwnerRole: Role | null;
+  currentOwnerDisplayName: string | null;
+  inspectionNotice?: "ROUTINE" | "ANNOUNCED" | "AD_HOC" | "UNANNOUNCED";
+  caaReleasedToAuditee?: boolean;
+  noticeWithheld?: boolean;
 }
 
 export interface ListAssignmentsInput {
@@ -548,6 +783,78 @@ export interface PlanningItemView {
   revision: number;
 }
 
+export type PlanningIntakeInspectionCategory = "Routine / Announced" | "Ad Hoc / Unannounced";
+export type PlanningIntakeNoticePolicy = "ADVANCE" | "WITHHELD";
+
+export interface PlanningIntakeDraftValues {
+  organizationId: string;
+  organizationName: string;
+  applicationType: string;
+  domain: string;
+  inspectionCategory: PlanningIntakeInspectionCategory;
+  noticePolicy: PlanningIntakeNoticePolicy;
+  purpose: string;
+  triggerType: string;
+  riskCategory: string;
+  plannedDate: LocalDate;
+  mode: "On-site" | "Remote";
+  location: string;
+  templateVersionId: string;
+  scope: string;
+  requestedBudget: number;
+  currency: "USD" | "EUR" | "NAD";
+}
+
+export interface PlanningIntakeDraftView extends PlanningIntakeDraftValues {
+  id: string;
+  revision: number;
+  submittedPlanningItemId: string | null;
+  updatedAt: Instant;
+}
+
+export interface SavePlanningIntakeDraftInput extends RevisionedCommandMeta {
+  draftId: string;
+  values: PlanningIntakeDraftValues;
+}
+
+export interface SubmitPlanningIntakeInput extends RevisionedCommandMeta {
+  draftId: string;
+  planningItemId: string;
+}
+
+export interface SubmitPlanningIntakeOutput {
+  draft: PlanningIntakeDraftView;
+  planningItem: PlanningItemView;
+}
+
+export interface InspectionPackageDraftQuestionView {
+  id: string;
+  prompt: string;
+  whyIncluded: string;
+  expectedEvidence: readonly string[];
+  configuredReference: string;
+}
+
+export interface InspectionPackageDraftView {
+  id: string;
+  sourceAuditId: string;
+  organizationId: string;
+  organizationName: string;
+  applicationType: string;
+  domain: string;
+  status: "DRAFT";
+  packageVersion: number;
+  revision: number;
+  riskFocus: readonly string[];
+  questions: readonly InspectionPackageDraftQuestionView[];
+  updatedAt: Instant;
+}
+
+export interface SaveInspectionPackageDraftInput extends RevisionedCommandMeta {
+  packageDraftId: string;
+  riskFocus: readonly string[];
+}
+
 export interface ListPlanningItemsOutput {
   items: PlanningItemView[];
   nextCursor: string | null;
@@ -597,12 +904,104 @@ export interface AuditEventView {
   eventId: string;
   occurredAt: Instant;
   actorRole: Role | null;
+  actorSubjectId: string | null;
   action: string;
   entityType: string;
   entityId: string;
   beforeStatus: string | null;
   afterStatus: string | null;
   reason: string | null;
+  entityRevision: number | null;
+}
+
+export interface AdminRegulatoryReferenceView {
+  id: string;
+  title: string;
+  version: string;
+  status: "ACTIVE" | "SUPERSEDED";
+  effectiveDate: LocalDate;
+  configuredRules: string[];
+  changeHistory: string[];
+}
+
+export interface AdminTemplateMasterView {
+  id: string;
+  title: string;
+  publishedVersionId: string;
+  status: "PUBLISHED";
+  owner: "Department Manager";
+  itemCount: number;
+  previewPath: string | null;
+  disabledReason: string | null;
+  revision: number;
+}
+
+export interface AdminQuestionView {
+  id: string;
+  prompt: string;
+  configuredReference: string;
+  expectedEvidence: string;
+  revision: number;
+}
+
+export interface AdminTemplateVersionView {
+  id: string;
+  templateId: "TPL-CABIN-2026";
+  version: number;
+  status: "PUBLISHED" | "DRAFT";
+  owner: "Department Manager" | "Admin Preview";
+  creatorSubjectId: string;
+  changeReason: string;
+  questionIds: string[];
+  revision: number;
+  createdAt: Instant;
+}
+
+export interface AdminTemplateView {
+  id: "TPL-CABIN-2026";
+  publishedVersionId: "CTV-CABIN-1";
+  versions: AdminTemplateVersionView[];
+  revision: number;
+}
+
+export interface AdminInspectionPackageView {
+  id: "PKG-CAB-2026-001";
+  auditId: "AUD-2026-001";
+  organizationId: "ORG-FLY-NAMIBIA";
+  organizationName: "Fly Namibia";
+  questionIds: string[];
+  configuredReferences: string[];
+  expectedEvidence: string[];
+  riskFocus: string[];
+}
+
+export interface AdminReportDefinitionView {
+  id: string;
+  title: string;
+  description: string;
+  packageFields: string[];
+  actionReason: string;
+}
+
+export interface AdminAccessDirectoryEntryView {
+  subjectId: string;
+  displayName: string;
+  role: Role;
+  organizationId: string | null;
+  email: "Not configured in demo";
+  mfa: "Not configured in demo";
+  invitation: "Not configured in demo";
+  accountStatus: "Not configured in demo";
+}
+
+export interface AdminOrganizationView {
+  id: string;
+  legalName: string;
+  organizationType: string;
+  status: string;
+  scope: "CAA oversight";
+  detailAvailable: boolean;
+  disabledReason: string | null;
 }
 
 export interface PageOutput<T> {
@@ -852,6 +1251,32 @@ export interface PlanningBackend {
   ): Promise<PlanningItemView>;
 }
 
+export interface PlanningIntakeBackend {
+  getDraft(
+    input: { draftId: string },
+    options?: BackendRequestOptions,
+  ): Promise<PlanningIntakeDraftView>;
+  saveDraft(
+    input: SavePlanningIntakeDraftInput,
+    options?: BackendRequestOptions,
+  ): Promise<PlanningIntakeDraftView>;
+  submit(
+    input: SubmitPlanningIntakeInput,
+    options?: BackendRequestOptions,
+  ): Promise<SubmitPlanningIntakeOutput>;
+}
+
+export interface InspectionPackageDraftsBackend {
+  get(
+    input: { packageDraftId: string },
+    options?: BackendRequestOptions,
+  ): Promise<InspectionPackageDraftView>;
+  save(
+    input: SaveInspectionPackageDraftInput,
+    options?: BackendRequestOptions,
+  ): Promise<InspectionPackageDraftView>;
+}
+
 export interface ConfigurationBackend {
   listChecklistTemplateVersions(
     input: { limit?: number },
@@ -882,6 +1307,94 @@ export interface SyncBackend {
   pull(input: SyncPullRequest, options?: BackendRequestOptions): Promise<SyncPullResponse>;
 }
 
+export interface CommunicationsBackend {
+  list(input: { organizationId?: string }, options?: BackendRequestOptions): Promise<PageOutput<CommunicationView>>;
+  send(input: RevisionedCommandMeta & { organizationId: string | null; subject: string; body: string; audience: "CAA" | "AUDITEE" }, options?: BackendRequestOptions): Promise<CommunicationView>;
+}
+
+export interface CalendarBackend {
+  list(input: { organizationId?: string }, options?: BackendRequestOptions): Promise<PageOutput<CalendarItemView>>;
+  openItem(input: { calendarItemId: string }, options?: BackendRequestOptions): Promise<CalendarItemView>;
+}
+
+export interface ProfilesBackend {
+  getMine(input: Record<string, never>, options?: BackendRequestOptions): Promise<ProfileView>;
+  updateMine(input: RevisionedCommandMeta & { displayName: string }, options?: BackendRequestOptions): Promise<ProfileView>;
+}
+
+export interface TeamsBackend {
+  list(input: { role?: Role }, options?: BackendRequestOptions): Promise<PageOutput<TeamMemberView>>;
+  openMember(input: { subjectId: string }, options?: BackendRequestOptions): Promise<TeamMemberView>;
+  listAuditTeams(input: { limit?: number }, options?: BackendRequestOptions): Promise<PageOutput<InspectionTeamAuditView>>;
+  openAuditTeam(input: { auditId: string }, options?: BackendRequestOptions): Promise<InspectionTeamAuditView>;
+}
+
+export interface RiskBackend {
+  getOverview(input: { organizationId?: string }, options?: BackendRequestOptions): Promise<RiskOverviewView>;
+  getManagementProjection(input: Record<string, never>, options?: BackendRequestOptions): Promise<RiskManagementProjectionView>;
+  openFinding(input: { findingId: string }, options?: BackendRequestOptions): Promise<FindingView>;
+}
+
+export interface DocumentsBackend {
+  list(input: { organizationId?: string }, options?: BackendRequestOptions): Promise<PageOutput<DocumentMetadataView>>;
+  open(input: { documentId: string }, options?: BackendRequestOptions): Promise<DocumentMetadataView>;
+}
+
+export interface AuditeeCoordinationBackend {
+  list(
+    input: Record<string, never>,
+    options?: BackendRequestOptions,
+  ): Promise<PageOutput<AuditeeCoordinationView>>;
+  respond(
+    input: RespondToAuditeeCoordinationInput,
+    options?: BackendRequestOptions,
+  ): Promise<AuditeeCoordinationView>;
+}
+
+export interface AuditeeReportsBackend {
+  listReleased(
+    input: { kind?: AuditeeReleasedReportView["kind"] },
+    options?: BackendRequestOptions,
+  ): Promise<PageOutput<AuditeeReleasedReportView>>;
+  getReleased(
+    input: { reportVersionId: string },
+    options?: BackendRequestOptions,
+  ): Promise<AuditeeReleasedReportView>;
+}
+
+export interface NotificationsBackend {
+  list(input: Record<string, never>, options?: BackendRequestOptions): Promise<PageOutput<NotificationView>>;
+  markRead(input: RevisionedCommandMeta & { notificationId: string }, options?: BackendRequestOptions): Promise<NotificationView>;
+}
+
+export interface AdministrationBackend {
+  getScreenProjection(input: { screenId: string }, options?: BackendRequestOptions): Promise<AdministrationScreenProjection>;
+  listScreenProjections(input: Record<string, never>, options?: BackendRequestOptions): Promise<AdministrationScreenProjection[]>;
+  invokeVisibleAction(input: { screenId: string; actionId: string }, options?: BackendRequestOptions): Promise<VisibleActionResult>;
+}
+
+export interface AdminWorkspaceBackend {
+  listRegulatoryReferences(input: { search?: string; status?: string }, options?: BackendRequestOptions): Promise<PageOutput<AdminRegulatoryReferenceView>>;
+  listTemplateMasters(input: Record<string, never>, options?: BackendRequestOptions): Promise<PageOutput<AdminTemplateMasterView>>;
+  listQuestions(input: { search?: string }, options?: BackendRequestOptions): Promise<PageOutput<AdminQuestionView>>;
+  createQuestion(input: RevisionedCommandMeta & { prompt: string; configuredReference: string; expectedEvidence: string }, options?: BackendRequestOptions): Promise<AdminQuestionView>;
+  getTemplate(input: { templateId: string }, options?: BackendRequestOptions): Promise<AdminTemplateView>;
+  createDraft(input: RevisionedCommandMeta & { templateId: string; changeReason: string }, options?: BackendRequestOptions): Promise<AdminTemplateVersionView>;
+  addDraftQuestion(input: RevisionedCommandMeta & { templateId: string; draftVersionId: string; questionId: string }, options?: BackendRequestOptions): Promise<AdminTemplateVersionView>;
+  moveDraftQuestion(input: RevisionedCommandMeta & { templateId: string; draftVersionId: string; questionId: string; direction: "UP" | "DOWN" }, options?: BackendRequestOptions): Promise<AdminTemplateVersionView>;
+  getInspectionPackage(input: { packageId: string }, options?: BackendRequestOptions): Promise<AdminInspectionPackageView>;
+  listReportDefinitions(input: { search?: string }, options?: BackendRequestOptions): Promise<PageOutput<AdminReportDefinitionView>>;
+  listAccessDirectory(input: { search?: string; role?: Role | string }, options?: BackendRequestOptions): Promise<PageOutput<AdminAccessDirectoryEntryView>>;
+  listOrganizations(input: { search?: string; organizationType?: string; status?: string; scope?: string }, options?: BackendRequestOptions): Promise<PageOutput<AdminOrganizationView>>;
+  getOrganization(input: { organizationId: string }, options?: BackendRequestOptions): Promise<AdminOrganizationView>;
+  listAuditEvents(input: { actor?: string; action?: string; entity?: string; system?: string; dateText?: string }, options?: BackendRequestOptions): Promise<PageOutput<AuditEventView>>;
+}
+
+export interface AssistantDraftsBackend {
+  getGuidance(input: Record<string, never>, options?: BackendRequestOptions): Promise<{ advisoryOnly: true; prohibitedActions: readonly string[] }>;
+  createDraft(input: { findingId: string; prompt: string }, options?: BackendRequestOptions): Promise<AssistantDraftView>;
+}
+
 export interface Backend {
   readonly mode: BackendMode;
   readonly assignments: AssignmentBackend;
@@ -898,4 +1411,40 @@ export interface Backend {
   readonly configuration: ConfigurationBackend;
   readonly auditTrail: AuditTrailBackend;
   readonly sync: SyncBackend;
+  /** Demo capability boundary. HTTP activation remains explicitly deferred to Plan 2. */
+  readonly communications?: CommunicationsBackend;
+  readonly calendar?: CalendarBackend;
+  readonly profiles?: ProfilesBackend;
+  readonly teams?: TeamsBackend;
+  readonly risk?: RiskBackend;
+  readonly documents?: DocumentsBackend;
+  readonly notifications?: NotificationsBackend;
+  readonly administration?: AdministrationBackend;
+  readonly adminWorkspace?: AdminWorkspaceBackend;
+  readonly assistantDrafts?: AssistantDraftsBackend;
+  /** Demo-only Planning intake command boundary. Plan 2 owns HTTP activation. */
+  readonly planningIntake?: PlanningIntakeBackend;
+  /** Demo-only Inspection Package draft command boundary. Plan 2 owns HTTP activation. */
+  readonly packageDrafts?: InspectionPackageDraftsBackend;
+  /** Demo-only, fail-closed Auditee coordination projection and command boundary. */
+  readonly auditeeCoordination?: AuditeeCoordinationBackend;
+  /** Demo-only, LOCKED-only Auditee report projection. */
+  readonly auditeeReports?: AuditeeReportsBackend;
 }
+
+export type DemoBackend = Backend & Required<Pick<Backend,
+  | "communications"
+  | "calendar"
+  | "profiles"
+  | "teams"
+  | "risk"
+  | "documents"
+  | "notifications"
+  | "administration"
+  | "adminWorkspace"
+  | "assistantDrafts"
+  | "planningIntake"
+  | "packageDrafts"
+  | "auditeeCoordination"
+  | "auditeeReports"
+>>;

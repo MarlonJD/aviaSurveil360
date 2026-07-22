@@ -1,35 +1,14 @@
-import { useEffect, type ReactElement } from "react";
+import { Suspense, useEffect, type ReactElement } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
 import { useApplicationRuntime } from "./providers";
-import { REACT_ROUTE_CONTRACT_BY_ID, type ReactSurfaceId } from "./route-contracts";
+import { REACT_ROUTE_CONTRACT_BY_ID, REACT_ROUTE_CONTRACTS, type ReactSurfaceId, type RouteContract } from "./route-contracts";
+import { SCREEN_COMPONENT_REGISTRY } from "./screen-component-registry";
 import type { Role } from "../backend/backend";
 import { LoginPage } from "../auth/login-page";
 import { RoleGuard } from "../auth/role-guard";
 import { useOptionalSession } from "../auth/session-provider";
-import { InspectorAssignmentsPage } from "../features/assignments/inspector-assignments-page";
-import { AdminConfigurationPage } from "../features/admin/admin-configuration-page";
-import { AuditeeCapPage } from "../features/caps/auditee-cap-page";
-import { CapReviewPage } from "../features/caps/cap-review-page";
-import { ChecklistRunnerPage } from "../features/checklists/checklist-runner-page";
-import { EvidenceReviewPage } from "../features/evidence/evidence-review-page";
-import { FindingDetailPage } from "../features/findings/finding-detail-page";
-import { LeadReviewPage } from "../features/findings/lead-review-page";
-import { ManagerDashboardPage } from "../features/findings/manager-dashboard-page";
-import { AuditDetailPage } from "../features/inspections/audit-detail-page";
-import { OrganizationRegistryPage } from "../features/organizations/organization-registry-page";
-import {
-  AuditPlanCalendarPage,
-  FinanceReviewPage,
-  GeneralManagerDashboardPage,
-} from "../features/planning/planning-workspaces";
-import { ExecutiveDashboardPage } from "../features/reports/executive-dashboard-page";
-import { ReportPreviewPage } from "../features/reports/report-preview-page";
-import {
-  RoleSelectPage,
-  ROLE_ENTRIES,
-  createRoleEntryPath,
-} from "../ui/role-select-page";
+import { RoleSelectPage, ROLE_ENTRIES, createRoleEntryPath } from "../ui/role-select-page";
 
 export { ROLE_ENTRIES, createRoleEntryPath } from "../ui/role-select-page";
 
@@ -37,15 +16,8 @@ function RoleSelectRoute() {
   const { buildProfile, identityMode } = useApplicationRuntime();
   const session = useOptionalSession();
   const navigate = useNavigate();
-  if (identityMode === "oidc-session" && session?.state.status === "authenticated") {
-    return <OidcLogoutRoute />;
-  }
-  return (
-    <RoleSelectPage
-      mode={identityMode ?? (buildProfile === "http" ? "canonical-test-role-switch" : "demo-role-switch")}
-      onRoleRequest={(role) => navigate(createRoleEntryPath(role))}
-    />
-  );
+  if (identityMode === "oidc-session" && session?.state.status === "authenticated") return <OidcLogoutRoute />;
+  return <RoleSelectPage mode={identityMode ?? (buildProfile === "http" ? "canonical-test-role-switch" : "demo-role-switch")} onRoleRequest={(role) => navigate(createRoleEntryPath(role))} />;
 }
 
 function OidcLogoutRoute() {
@@ -61,48 +33,60 @@ function OidcLogoutRoute() {
   return <LoginPage message="You have signed out." onLogin={() => session?.login("/inspector/inspector-assignments")} />;
 }
 
-function roleEntryElement(role: Role): ReactElement {
-  switch (role) {
-    case "inspector": return <InspectorAssignmentsPage />;
-    case "leadInspector": return <LeadReviewPage />;
-    case "manager": return <ManagerDashboardPage />;
-    case "gm": return <GeneralManagerDashboardPage />;
-    case "finance": return <FinanceReviewPage />;
-    case "executiveDirector": return <ExecutiveDashboardPage />;
-    case "auditee": return <AuditeeCapPage />;
-    case "admin": return <AdminConfigurationPage />;
+const roleHomeSurfaceId: Record<Role, ReactSurfaceId> = {
+  inspector: "inspector-home",
+  leadInspector: "lead-home",
+  manager: "manager-home",
+  gm: "gm-home",
+  finance: "finance-home",
+  executiveDirector: "executive-home",
+  auditee: "auditee-home",
+  admin: "admin-home",
+};
+
+function nearestImplementedParent(contract: RouteContract) {
+  const candidates = [contract.parentId, contract.requiredRole ? roleHomeSurfaceId[contract.requiredRole] : null];
+  for (const candidate of candidates) {
+    let currentId = candidate;
+    while (currentId) {
+      const current = REACT_ROUTE_CONTRACT_BY_ID.get(currentId);
+      if (!current) break;
+      const entry = SCREEN_COMPONENT_REGISTRY[current.componentKey];
+      if (entry.status === "implemented") return entry.component;
+      currentId = current.parentId;
+    }
   }
+  return null;
 }
 
-function guarded(contractId: ReactSurfaceId, element: ReactElement) {
-  const contract = REACT_ROUTE_CONTRACT_BY_ID.get(contractId);
-  if (!contract) throw new Error(`Missing React route contract ${contractId}`);
-  return <RoleGuard requiredRole={contract.requiredRole}>{element}</RoleGuard>;
+function ParentSurface({ contract }: { contract: RouteContract }) {
+  const ParentScreen = nearestImplementedParent(contract);
+  return ParentScreen ? <ParentScreen /> : null;
+}
+
+function BlockedProfileRoute({ contract }: { contract: RouteContract }) {
+  return <><ParentSurface contract={contract} /><section role="alert" aria-label="Unavailable HTTP capability">{contract.blockedProfileReason}</section></>;
+}
+
+function PendingImplementationRoute({ contract }: { contract: RouteContract }) {
+  return <><ParentSurface contract={contract} /><section role="alert" aria-label={`${contract.label} pending implementation`} data-testid="route-pending-implementation"><strong>{contract.label}</strong> is pending implementation in this demo route contract.</section></>;
+}
+
+function ContractRoute({ contract }: { contract: RouteContract }) {
+  const { buildProfile } = useApplicationRuntime();
+  const entry = SCREEN_COMPONENT_REGISTRY[contract.componentKey];
+  const isAvailable = contract.availableProfiles.includes(buildProfile);
+  return <RoleGuard requiredRole={contract.requiredRole}><Suspense fallback={<p data-testid="route-loading">Loading route...</p>}>{!isAvailable ? <BlockedProfileRoute contract={contract} /> : entry.status === "implemented" ? <entry.component /> : <PendingImplementationRoute contract={contract} />}</Suspense></RoleGuard>;
+}
+
+function routeElement(contract: RouteContract): ReactElement {
+  return <ContractRoute contract={contract} />;
 }
 
 export function AppRouter() {
-  return (
-    <Routes>
-      <Route path="/" element={<RoleSelectRoute />} />
-      {ROLE_ENTRIES.map((entry) => (
-        <Route
-          key={entry.role}
-          path={createRoleEntryPath(entry.role)}
-          element={guarded(entry.routeId, roleEntryElement(entry.role))}
-        />
-      ))}
-      <Route path="/inspector/audits/AUD-2026-001" element={guarded("audit-detail", <AuditDetailPage />)} />
-      <Route path="/department-manager/organizations" element={guarded("organization-registry", <OrganizationRegistryPage />)} />
-      <Route path="/department-manager/audit-plan" element={guarded("audit-plan", <AuditPlanCalendarPage />)} />
-      <Route path="/inspector/audits/AUD-2026-001/checklist" element={guarded("checklist-runner", <ChecklistRunnerPage />)} />
-      <Route path="/lead-inspector/findings/FND-CAB-2026-001" element={guarded("finding-detail", <FindingDetailPage />)} />
-      <Route path="/lead-inspector/cap-review/FND-CAB-2026-001" element={guarded("cap-review", <CapReviewPage />)} />
-      <Route path="/lead-inspector/evidence-review/FND-CAB-2026-001" element={guarded("evidence-review", <EvidenceReviewPage />)} />
-      <Route
-        path="/department-manager/reports/RPT-CAB-2026-001-V1"
-        element={guarded("report-preview", <ReportPreviewPage />)}
-      />
-      <Route path="*" element={<Navigate replace to="/" />} />
-    </Routes>
-  );
+  return <Routes>
+    <Route path="/" element={<RoleSelectRoute />} />
+    {REACT_ROUTE_CONTRACTS.filter((contract) => contract.id !== "role-select").map((contract) => <Route key={contract.id} path={contract.path} element={routeElement(contract)} />)}
+    <Route path="*" element={<Navigate replace to="/" />} />
+  </Routes>;
 }

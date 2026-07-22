@@ -91,7 +91,7 @@
   min-width: 0;
 }
 
-dt {
+dt:not(.closure-report-sheet *) {
   margin-bottom: 4px;
   color: #69808d;
   font-size: 0.72rem;
@@ -99,7 +99,7 @@ dt {
   text-transform: uppercase;
 }
 
-dd {
+dd:not(.closure-report-sheet *) {
   margin: 0;
   overflow-wrap: anywhere;
   font-weight: 680;

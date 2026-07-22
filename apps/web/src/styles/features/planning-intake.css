@@ -1,0 +1,325 @@
+.planning-intake-page {
+  display: grid;
+  gap: 22px;
+  padding: 28px;
+}
+
+.planning-intake-header {
+  max-width: 820px;
+}
+
+.planning-intake-header h1 {
+  margin: 4px 0 8px;
+  color: #153b5d;
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+}
+
+.planning-intake-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.planning-intake-steps li {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  border-bottom: 3px solid #cbd7e1;
+  padding: 10px 4px 13px;
+  color: #607487;
+}
+
+.planning-intake-steps li > span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e5edf3;
+}
+
+.planning-intake-steps li > b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.planning-intake-steps .is-current {
+  border-color: #17669a;
+  color: #164d72;
+}
+
+.planning-intake-steps .is-complete {
+  border-color: #3b7c68;
+  color: #2f6c58;
+}
+
+.planning-intake-form {
+  display: grid;
+  gap: 22px;
+  border: 1px solid #d3dee7;
+  border-radius: 12px;
+  background: #fff;
+  padding: 24px;
+  box-shadow: 0 5px 18px rgb(24 53 77 / 7%);
+}
+
+.planning-intake-form > header span {
+  color: #5b7184;
+  font-weight: 700;
+}
+
+.planning-intake-form > header h2 {
+  margin: 5px 0 0;
+  color: #183f61;
+}
+
+.planning-intake-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.planning-intake-fields label {
+  display: grid;
+  gap: 7px;
+  color: #334f67;
+  font-weight: 700;
+}
+
+.planning-intake-fields .is-wide,
+.planning-intake-notice {
+  grid-column: 1 / -1;
+}
+
+.planning-intake-fields input,
+.planning-intake-fields select,
+.planning-intake-fields textarea,
+.inspection-package-draft textarea {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #aebfcc;
+  border-radius: 6px;
+  background: #fff;
+  padding: 10px 12px;
+  color: #1f3d55;
+}
+
+.planning-intake-fields textarea,
+.inspection-package-draft textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.planning-intake-notice,
+.planning-intake-governance {
+  display: grid;
+  gap: 5px;
+  border: 1px solid #c4d6e5;
+  border-left: 4px solid #2d6b96;
+  border-radius: 7px;
+  background: #f5f9fc;
+  padding: 14px 16px;
+}
+
+.planning-intake-review {
+  display: grid;
+  gap: 18px;
+}
+
+.planning-intake-review dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.planning-intake-review dl div {
+  display: grid;
+  gap: 5px;
+  border-bottom: 1px solid #dfe7ed;
+  padding: 10px;
+}
+
+.planning-intake-review dt {
+  color: #62778a;
+  font-size: .82rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.planning-intake-review dd {
+  margin: 0;
+  color: #1e3c54;
+  font-weight: 700;
+}
+
+.planning-intake-preview {
+  border: 1px solid #adc2d2;
+  border-radius: 8px;
+  background: #f8fbfd;
+  padding: 18px;
+}
+
+.planning-intake-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.planning-intake-actions button,
+.inspection-package-draft button,
+.planning-parent-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid #17669a;
+  border-radius: 6px;
+  background: #17669a;
+  padding: 8px 16px;
+  color: #fff;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.planning-intake-actions button:first-child {
+  border-color: #9db0c0;
+  background: #fff;
+  color: #294a65;
+}
+
+.planning-intake-status {
+  border-radius: 6px;
+  background: #e9f5ef;
+  padding: 12px 15px;
+  color: #25634e;
+  font-weight: 700;
+}
+
+.planning-parent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.inspection-package-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 18px;
+}
+
+.inspection-package-draft,
+.inspection-package-focus {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  border: 1px solid #d3dee7;
+  border-radius: 10px;
+  background: #fff;
+  padding: 20px;
+}
+
+.inspection-package-draft > header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.inspection-package-draft dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.inspection-package-draft dl div {
+  display: grid;
+  gap: 5px;
+  border-bottom: 1px solid #dfe7ed;
+  padding: 9px;
+}
+
+.inspection-package-draft dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.inspection-package-questions {
+  display: grid;
+  gap: 12px;
+}
+
+.inspection-package-questions article {
+  border: 1px solid #d8e1e8;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.inspection-package-focus span {
+  border-radius: 99px;
+  background: #eaf2f7;
+  padding: 8px 11px;
+  color: #32546d;
+}
+
+.inspection-package-focus button {
+  min-height: 44px;
+}
+
+@media (max-width: 900px) {
+  .workspace-shell .planning-intake-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-shell .planning-intake-steps li {
+    border-bottom-width: 1px;
+    border-left: 3px solid #cbd7e1;
+    padding-left: 12px;
+  }
+
+  .workspace-shell .planning-intake-steps .is-current {
+    border-left-color: #17669a;
+  }
+
+  .workspace-shell .planning-intake-steps .is-complete {
+    border-left-color: #3b7c68;
+  }
+
+  .workspace-shell .inspection-package-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .workspace-shell .planning-intake-page {
+    gap: 16px;
+    padding: 18px 14px;
+  }
+
+  .workspace-shell .planning-intake-form {
+    padding: 18px 14px;
+  }
+
+  .workspace-shell .planning-intake-fields,
+  .workspace-shell .planning-intake-review dl,
+  .workspace-shell .inspection-package-draft dl {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-shell .planning-intake-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-shell .inspection-package-draft > header {
+    display: grid;
+  }
+}

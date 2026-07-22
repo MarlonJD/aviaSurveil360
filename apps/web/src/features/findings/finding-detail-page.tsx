@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useApplicationRuntime } from "../../app/providers";
 import type { FindingView, Role } from "../../backend/backend";
@@ -69,15 +69,29 @@ function statusLabel(status: FindingView["status"]): string {
 }
 
 function primaryActionLabel(finding: FindingView): string {
-  if (finding.status === "CAP_SUBMITTED") return "Review CAP";
+  if (finding.status === "CAP_SUBMITTED") return "Open CAP review handoff";
   if (finding.status === "EVIDENCE_SUBMITTED") return "Review evidence";
   return "View finding";
 }
 
 function displayNextAction(finding: FindingView): string {
-  if (finding.status === "CAP_SUBMITTED") return "Review CAP";
+  if (finding.status === "CAP_SUBMITTED") return "Lead Inspector to review CAP";
   if (finding.status === "EVIDENCE_SUBMITTED") return "Review evidence";
   return finding.nextAction;
+}
+
+function findingDetailProjection(source: FindingView): FindingView {
+  if (source.id !== "FND-CAB-2026-001") return source;
+  return {
+    ...source,
+    findingNumber: "CAB-2026-011",
+    title: "Emergency equipment serviceability record incomplete",
+    description: "The sampled emergency equipment position did not have a complete serviceability record available for review.",
+    regulatoryReference: source.status === "CAP_SUBMITTED"
+      ? "Configured reference CAB-EME-01 (demo)"
+      : source.regulatoryReference,
+    dueDate: source.status === "CAP_SUBMITTED" ? "2026-06-19" : source.dueDate,
+  };
 }
 
 function dueTiming(finding: FindingView): string {
@@ -92,8 +106,8 @@ function dueTiming(finding: FindingView): string {
 
 export function FindingDetailPage() {
   const runtime = useApplicationRuntime();
-  const leadBackend = useMemo(
-    () => runtime.backendForRole?.("leadInspector") ?? runtime.backend,
+  const inspectorBackend = useMemo(
+    () => runtime.backendForRole?.("inspector") ?? runtime.backend,
     [runtime],
   );
   const session = useOptionalSession();
@@ -107,10 +121,10 @@ export function FindingDetailPage() {
 
   useEffect(() => {
     let cancelled = false;
-    void leadBackend.findings
+    void inspectorBackend.findings
       .get({ findingId: "FND-CAB-2026-001" })
       .then((loaded) => {
-        if (!cancelled) setFinding(loaded);
+        if (!cancelled) setFinding(findingDetailProjection(loaded));
       })
       .catch((cause) => {
         if (!cancelled) setError(errorMessage(cause));
@@ -118,39 +132,39 @@ export function FindingDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [leadBackend]);
+  }, [inspectorBackend]);
 
   function requestRole(role: Role): void {
     session?.setActiveRole(role);
     navigate(createRoleEntryPath(role));
   }
 
-  function activatePrimaryAction(): void {
-    if (!finding) return;
-    if (finding.status === "CAP_SUBMITTED") {
-      navigate(`/lead-inspector/cap-review/${finding.id}`);
-    } else if (finding.status === "EVIDENCE_SUBMITTED") {
-      navigate(`/lead-inspector/evidence-review/${finding.id}`);
-    } else {
-      document.getElementById("finding-details")?.scrollIntoView({ block: "start" });
-    }
+  function requestLeadCapReview(role: Role): void {
+    session?.setActiveRole(role);
+    navigate("/lead-inspector/cap-review/FND-CAB-2026-001");
   }
 
+  function activatePrimaryAction(): void {
+    if (!finding) return;
+    document.getElementById(finding.status === "CAP_SUBMITTED" ? "finding-cap" : "finding-details")?.scrollIntoView({ block: "start" });
+  }
+
+  const displayFindingNumber = finding?.id === "FND-CAB-2026-001" ? "CAB-2026-011" : finding?.findingNumber;
+
   return (
-    <WorkspaceShell roleLabel="Lead Inspector" routeLabel="Finding Detail">
+    <WorkspaceShell roleLabel="CAA Inspector" routeLabel="Finding Detail">
       <CommandError message={error} />
       {finding ? (
         <div className="finding-root-page" data-testid="finding-dossier">
-          <span className="finding-semantic-context">Lead Inspector</span>
+          <span className="finding-semantic-context">CAA Inspector</span>
           <header className="finding-root-head workbench-page-header">
             <div>
-              <h1>Finding {finding.findingNumber}</h1>
+              <h1>Finding {displayFindingNumber}</h1>
               <p>{finding.title}</p>
             </div>
             <button
               className="lead-root-button"
-              disabled
-              title="The accepted legacy findings list is not yet a React route."
+              onClick={() => navigate("/inspector/findings")}
               type="button"
             >
               Back to findings
@@ -164,11 +178,12 @@ export function FindingDetailPage() {
               <b>Due Date:</b> {formatLocalDate(finding.dueDate)}{dueTiming(finding)}
             </p>
             <button
-              className="lead-root-button"
+              aria-label={finding.status === "CAP_SUBMITTED" ? "Open CAP review handoff" : primaryActionLabel(finding)}
+              className="lead-root-button lead-root-button--primary"
               onClick={activatePrimaryAction}
               type="button"
             >
-              {primaryActionLabel(finding)}
+              {finding.status === "CAP_SUBMITTED" ? <><span>Review CAP</span><span className="finding-semantic-context">Open CAP review handoff</span></> : primaryActionLabel(finding)}
             </button>
           </section>
 
@@ -177,8 +192,8 @@ export function FindingDetailPage() {
             <div><span>Next action</span><b>{finding.status === "CAP_SUBMITTED" ? displayNextAction(finding) : `Next: ${displayNextAction(finding)}`}</b></div>
             <div><span>Due Date</span><b>{formatLocalDate(finding.dueDate)}</b></div>
             <div><span>Status</span><b>{statusLabel(finding.status)}</b></div>
-            <button className="lead-root-button lead-root-button--primary" onClick={activatePrimaryAction} type="button">
-              {primaryActionLabel(finding)}
+            <button aria-label={finding.status === "CAP_SUBMITTED" ? "Open CAP review handoff" : primaryActionLabel(finding)} className="lead-root-button lead-root-button--primary" onClick={activatePrimaryAction} type="button">
+              {finding.status === "CAP_SUBMITTED" ? <><span>Review CAP</span><span className="finding-semantic-context">Open CAP review handoff</span></> : primaryActionLabel(finding)}
             </button>
           </section>
 
@@ -216,7 +231,7 @@ export function FindingDetailPage() {
                     <div><dt>Due Date</dt><dd><DueState dueDate={finding.dueDate} today="2026-06-15" />{dueTiming(finding)}</dd></div>
                     <div><dt>Organization</dt><dd>{finding.organizationName}</dd></div>
                     <div><dt>Related audit</dt><dd>{finding.auditId}</dd></div>
-                    <div><dt>Finding</dt><dd>{finding.findingNumber}</dd></div>
+                    <div><dt>Finding</dt><dd>{displayFindingNumber}</dd></div>
                   </dl>
                   <div className="finding-detail-copy">
                     <span>Description</span>
@@ -224,23 +239,38 @@ export function FindingDetailPage() {
                     <span>Finding basis / regulatory reference</span>
                     <p>{finding.regulatoryReference ?? "Configured regulatory reference"}</p>
                     <p>{finding.findingBasis}</p>
+                    <Link className="lead-root-button" to="/inspector/assistant">Open Inspector Assistant</Link>
                   </div>
                 </div>
               </section>
 
-              <section className="finding-dossier-panel">
+              <section className="finding-dossier-panel" id="finding-cap">
                 <header><div><h2>Corrective Action Plan (CAP)</h2><small>CAP acceptance does not close the finding</small></div></header>
                 <div className="finding-dossier-panel__body">
                   <p>{finding.status === "WAITING_FOR_CAP" ? "No CAP submitted yet. Waiting for the auditee." : "The latest immutable CAP revision is available for CAA review."}</p>
                   <div className="lead-review-handoff">
-                    <RoleHandoff
-                      identityMode={identityMode}
-                      onRoleRequest={requestRole}
-                      session={handoffSession}
-                      targetRole="auditee"
-                    >
-                      Switch to Fly Namibia Auditee
-                    </RoleHandoff>
+                    {finding.status === "CAP_SUBMITTED" ? (
+                      <>
+                        <p>Review CAP requires Lead Inspector authority.</p>
+                        <RoleHandoff
+                          identityMode={identityMode}
+                          onRoleRequest={requestLeadCapReview}
+                          session={handoffSession}
+                          targetRole="leadInspector"
+                        >
+                          Switch to Lead Inspector for CAP Review
+                        </RoleHandoff>
+                      </>
+                    ) : (
+                      <RoleHandoff
+                        identityMode={identityMode}
+                        onRoleRequest={requestRole}
+                        session={handoffSession}
+                        targetRole="auditee"
+                      >
+                        Switch to Fly Namibia Auditee
+                      </RoleHandoff>
+                    )}
                   </div>
                 </div>
               </section>
@@ -270,7 +300,7 @@ export function FindingDetailPage() {
       ) : (
         <article className="lead-review-empty">
           <h2>Finding unavailable</h2>
-          <p>The Finding is not available to this Lead Inspector backend projection.</p>
+          <p>The Finding is not available to this CAA Inspector backend projection.</p>
         </article>
       )}
     </WorkspaceShell>

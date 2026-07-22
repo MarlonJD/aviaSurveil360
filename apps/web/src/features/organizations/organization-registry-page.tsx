@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { useBackendForRole } from "../../app/providers";
 import type { OrganizationSummary } from "../../backend/backend";
@@ -19,6 +20,14 @@ export function OrganizationRegistryPage() {
   const [organizations, setOrganizations] = useState<OrganizationSummary[]>([]);
   const [selected, setSelected] = useState<OrganizationSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  function organizationAction(organization: OrganizationSummary) {
+    if (organization.id === "ORG-FLY-NAMIBIA") {
+      return <Link aria-label={`Open organization ${organization.id}`} to={`/department-manager/organizations/${organization.id}`}>Open record</Link>;
+    }
+    const reason = `Organization ${organization.id} has no declared Department Manager child route.`;
+    return <button aria-label={`Organization detail unavailable for ${organization.id}`} disabled title={reason} type="button">Unavailable</button>;
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -53,7 +62,7 @@ export function OrganizationRegistryPage() {
                     <td><span className={`management-status is-${organization.status.toLowerCase()}`}>{organization.status}</span></td>
                     <td>{formatLocalDate(organization.lastAuditDate)}</td>
                     <td>{formatLocalDate(organization.nextAuditDate)}</td>
-                    <td><button aria-label={`Open ${organization.legalName}`} onClick={() => setSelected(organization)} type="button">Open</button></td>
+                    <td><div className="manager-record-actions"><button aria-label={`Open ${organization.legalName}`} onClick={() => setSelected(organization)} type="button">Inspect summary</button>{organizationAction(organization)}</div></td>
                   </tr>
                 ))}
               </tbody>
@@ -66,7 +75,7 @@ export function OrganizationRegistryPage() {
             <article aria-label={organization.legalName} data-testid="organization-mobile-record" key={organization.id}>
               <header><h2>{organization.legalName}</h2><span>{organization.status}</span></header>
               <dl><div><dt>Type</dt><dd>{organizationType(organization.organizationType)}</dd></div><div><dt>Open Findings</dt><dd>{organization.openFindingCount}</dd></div><div><dt>Next Audit</dt><dd>{formatLocalDate(organization.nextAuditDate)}</dd></div></dl>
-              <button aria-label={`Open ${organization.legalName} mobile record`} onClick={() => setSelected(organization)} type="button">Open</button>
+              <div className="manager-record-actions"><button aria-label={`Open ${organization.legalName} mobile record`} onClick={() => setSelected(organization)} type="button">Inspect summary</button>{organizationAction(organization)}</div>
             </article>
           ))}
         </section>

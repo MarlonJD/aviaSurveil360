@@ -65,6 +65,34 @@ describe("ManagerDashboardPage", () => {
       "href",
       "/department-manager/organizations",
     );
+    expect(screen.getByRole("link", { name: "Open Audits" })).toHaveAttribute(
+      "href",
+      "/department-manager/audits",
+    );
+    expect(screen.getByRole("link", { name: "Open Inspection Team" })).toHaveAttribute(
+      "href",
+      "/department-manager/inspection-team",
+    );
+    expect(screen.getByRole("link", { name: "Open Findings Review" })).toHaveAttribute(
+      "href",
+      "/department-manager/findings-review",
+    );
+    expect(screen.getByRole("link", { name: "Open CAP Monitoring" })).toHaveAttribute(
+      "href",
+      "/department-manager/cap-monitoring",
+    );
+    expect(screen.getByRole("link", { name: "Open Checklist Management" })).toHaveAttribute(
+      "href",
+      "/department-manager/checklist-management",
+    );
+    expect(screen.getByRole("link", { name: "Open Reports Approval" })).toHaveAttribute(
+      "href",
+      "/department-manager/preliminary-reports/PR-2026-018",
+    );
+    expect(screen.getByRole("button", { name: "Risk Dashboard unavailable" })).toHaveAttribute(
+      "title",
+      "Manager Risk Dashboard has no declared Task 6 route.",
+    );
     expect(screen.queryByRole("button", { name: /automatic enforcement/i })).toBeNull();
   });
 });

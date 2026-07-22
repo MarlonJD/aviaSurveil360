@@ -13,10 +13,22 @@ import type {
   InspectionPackage,
   OrganizationSummary,
   PlanningItemView,
+  PlanningIntakeDraftView,
+  InspectionPackageDraftView,
   PotentialFindingView,
   ReportVersionView,
   ReminderRuleView,
+  CommunicationView,
+  NotificationView,
+  ProfileView,
+  AdminRegulatoryReferenceView,
+  AdminTemplateMasterView,
+  AdminQuestionView,
+  AdminTemplateView,
+  AdminInspectionPackageView,
+  AdminReportDefinitionView,
 } from "../backend/backend";
+import { REACT_ROUTE_CONTRACTS, type ReactSurfaceId } from "../app/route-contracts";
 
 export interface MockCapRevision {
   id: string;
@@ -53,6 +65,24 @@ export interface MockEvidenceReview {
   reviewedAt: string;
 }
 
+export interface MockCommunication extends CommunicationView {
+  senderSubjectId: string;
+}
+
+export interface MockAuditeeCoordinationResponse {
+  auditId: string;
+  organizationId: string;
+  status: "CONFIRMED" | "ALTERNATIVE_PROPOSED";
+  alternativeDate: string | null;
+  revision: number;
+}
+
+export interface MockReportPublicMetadata {
+  kind: "PRELIMINARY" | "FINAL";
+  responseDueDate: string | null;
+  caaVisibleComment: string | null;
+}
+
 export interface MockEvidenceUpload {
   kind: "evidence";
   uploadId: string;
@@ -74,12 +104,131 @@ export interface MockInspectionAttachmentUpload {
   sha256: string;
 }
 
+/** Route-owned presentation metadata only; canonical Finding/CAP/Evidence records remain in their existing stores. */
+export interface MockScreenProjectionSeed {
+  screenId: string;
+  requiredRole: import("../backend/backend").Role | null;
+  visibleActions: readonly import("../backend/backend").VisibleScreenAction[];
+}
+
+const action = (id: string, label: string, kind: import("../backend/backend").VisibleScreenAction["kind"], effect: import("../backend/backend").VisibleScreenAction["effect"]): import("../backend/backend").VisibleScreenAction => ({ id, label, kind, effect });
+
+/** Exhaustive source-faithful action contract. It is intentionally not generated from labels or paths. */
+export const SCREEN_VISIBLE_ACTIONS: Record<ReactSurfaceId, readonly import("../backend/backend").VisibleScreenAction[]> = {
+  "role-select": [
+    action("select-inspector", "Select CAA Inspector", "navigation", { type: "navigation", target: "/inspector/inspector-assignments" }),
+    action("select-lead-inspector", "Select Lead Inspector", "navigation", { type: "navigation", target: "/lead-inspector/lead-review" }),
+    action("select-manager", "Select Department Manager", "navigation", { type: "navigation", target: "/department-manager/dashboard" }),
+    action("select-finance", "Select Finance", "navigation", { type: "navigation", target: "/finance/finance-review" }),
+    action("select-gm", "Select General Manager", "navigation", { type: "navigation", target: "/general-manager/gm-dashboard" }),
+    action("select-executive", "Select Executive Director", "navigation", { type: "navigation", target: "/executive-director/executive-dashboard" }),
+    action("select-auditee", "Select Auditee", "navigation", { type: "navigation", target: "/auditee/service-provider-cap" }),
+    action("select-admin", "Select Admin Preview", "navigation", { type: "navigation", target: "/admin/templates" }),
+  ],
+  "inspector-home": [action("open-assignment", "Open assigned Audit", "navigation", { type: "navigation", target: "/inspector/audits/AUD-2026-001" })],
+  "inspector-findings": [action("open-finding", "Open Finding dossier", "navigation", { type: "navigation", target: "/inspector/findings/FND-CAB-2026-001" })],
+  "inspector-messages": [action("compose-message", "Compose message", "modal", { type: "modal", dialog: "compose-message" })],
+  "inspector-calendar": [action("open-calendar-item", "Open Audit queue item", "navigation", { type: "navigation", target: "/inspector/audits/AUD-2026-001" })],
+  "inspector-reports": [action("preview-report", "Preview report", "filePreview", { type: "filePreview", file: "RPT-CAB-2026-001-V1" })],
+  "audit-detail": [action("start-checklist", "Start checklist", "navigation", { type: "navigation", target: "/inspector/audits/AUD-2026-001/checklist" })],
+  "checklist-runner": [action("save-response", "Save checklist response", "localProjection", { type: "localProjection", projection: "checklist-response" }), action("submit-checklist", "Submit checklist", "modal", { type: "modal", dialog: "submit-checklist" })],
+  "finding-detail": [action("open-closure-report", "Open closure report", "navigation", { type: "navigation", target: "/inspector/closure-reports/CR-CAB-2026-001" })],
+  "closure-report-preview": [action("download-closure-report", "Download closure report", "fileDownload", { type: "fileDownload", file: "CR-CAB-2026-001.pdf" })],
+  "inspector-assistant": [action("draft-advisory", "Draft advisory", "capabilityDispatch", { type: "capabilityDispatch", capability: "assistantDrafts.createDraft" })],
+  "inspector-profile": [action("save-profile", "Save profile", "modal", { type: "modal", dialog: "save-profile" })],
+  "lead-home": [action("review-potential-finding", "Review Potential Finding", "navigation", { type: "navigation", target: "/lead-inspector/cap-review/FND-CAB-2026-001" })],
+  "lead-preliminary-reports": [action("open-preliminary-report", "Open preliminary report", "navigation", { type: "navigation", target: "/lead-inspector/preliminary-reports/PR-2026-018" })],
+  "lead-preliminary-report-workflow": [action("save-preliminary-draft", "Save Preliminary Report draft", "localProjection", { type: "localProjection", projection: "preliminary-report-draft" })],
+  "lead-final-reports": [action("open-final-readiness", "Open final report readiness", "navigation", { type: "navigation", target: "/lead-inspector/final-reports/RPT-CAB-2026-001/readiness" })],
+  "lead-final-report-readiness": [action("prepare-final", "Prepare final report", "navigation", { type: "navigation", target: "/lead-inspector/final-reports/RPT-CAB-2026-001/prepare" })],
+  "lead-prepare-final-report": [action("save-draft", "Save draft", "localProjection", { type: "localProjection", projection: "final-report-draft" }), action("preview-report", "Preview report", "filePreview", { type: "filePreview", file: "RPT-CAB-2026-001-V1" })],
+  "lead-final-report-document": [action("download-report", "Download report", "fileDownload", { type: "fileDownload", file: "RPT-CAB-2026-001.pdf" })],
+  "lead-audit-assignment": [action("assign-inspector", "Assign Inspector", "modal", { type: "modal", dialog: "assign-inspector" })],
+  "lead-checklist-question-assignment": [action("save-question-assignment", "Save question assignment", "localProjection", { type: "localProjection", projection: "question-assignment" })],
+  "cap-review": [action("accept-cap", "Accept CAP", "modal", { type: "modal", dialog: "accept-cap", confirmCommand: { owner: "caps.review", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } }), action("request-cap-information", "Request more information", "modal", { type: "modal", dialog: "request-cap-information", confirmCommand: { owner: "caps.review", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } })],
+  "lead-calendar": [action("open-lead-calendar-item", "Open review item", "navigation", { type: "navigation", target: "/lead-inspector/lead-review" })],
+  "lead-messages": [action("compose-lead-message", "Compose message", "modal", { type: "modal", dialog: "compose-message" })],
+  "lead-analytics-reports": [action("download-analytics", "Download analytics", "fileDownload", { type: "fileDownload", file: "lead-analytics.csv" })],
+  "lead-settings": [action("save-lead-settings", "Save settings", "modal", { type: "modal", dialog: "save-settings" })],
+  "manager-home": [action("open-overdue-finding", "Open overdue Finding", "navigation", { type: "navigation", target: "/department-manager/findings-review" })],
+  "audit-plan": [action("create-audit", "Create audit", "navigation", { type: "navigation", target: "/department-manager/new-audit/step-1" })],
+  "manager-audits": [action("open-manager-audit", "Open Audit dossier", "modal", { type: "modal", dialog: "manager-audit-dossier" })],
+  "report-preview": [action("return-report", "Return report", "modal", { type: "modal", dialog: "return-report", confirmCommand: { owner: "reports.decide", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } }), action("forward-report", "Forward report", "modal", { type: "modal", dialog: "forward-report", confirmCommand: { owner: "reports.decide", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } })],
+  "manager-risk-dashboard": [action("open-risk-profile", "Open organization risk profile", "navigation", { type: "navigation", target: "/department-manager/organizations/ORG-FLY-NAMIBIA/risk-profile" })],
+  "manager-inspection-team": [action("open-team-member", "Open team member", "modal", { type: "modal", dialog: "team-member" })],
+  "manager-findings-review": [action("open-evidence-review", "Open Evidence review", "navigation", { type: "navigation", target: "/department-manager/evidence/FND-CAB-2026-001" })],
+  "manager-cap-monitoring": [action("open-cap-closure", "Open CAP closure review", "navigation", { type: "navigation", target: "/department-manager/findings/FND-CAB-2026-001/closure-review" })],
+  "manager-checklist-management": [action("open-checklist-template", "Open checklist template", "modal", { type: "modal", dialog: "manager-checklist-template" })],
+  "manager-safety-intelligence": [action("open-safety-intelligence", "Open safety intelligence", "localProjection", { type: "localProjection", projection: "safety-intelligence" })],
+  "organization-risk-profile": [action("open-organization-finding", "Open organization Finding", "navigation", { type: "navigation", target: "/department-manager/findings-review" })],
+  "manager-ssp-nasp": [action("open-ssp-nasp", "Open SSP / NASP item", "localProjection", { type: "localProjection", projection: "ssp-nasp" })],
+  "manager-usoap-readiness": [action("open-usoap-gap", "Open USOAP gap", "localProjection", { type: "localProjection", projection: "usoap-gap" })],
+  "manager-cap-effectiveness": [action("review-effectiveness", "Review CAP effectiveness", "modal", { type: "modal", dialog: "cap-effectiveness" })],
+  "organization-registry": [action("open-organization", "Open organization", "navigation", { type: "navigation", target: "/department-manager/organizations/ORG-FLY-NAMIBIA" })],
+  "organization-detail": [action("open-organization-history", "Open organization history", "localProjection", { type: "localProjection", projection: "organization-history" })],
+  "inspection-package-builder": [action("save-package", "Save inspection package", "capabilityDispatch", { type: "capabilityDispatch", capability: "packageDrafts.save" })],
+  "evidence-review": [action("accept-evidence", "Accept Evidence", "modal", { type: "modal", dialog: "accept-evidence", confirmCommand: { owner: "evidence.review", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } }), action("request-evidence-information", "Request more information", "modal", { type: "modal", dialog: "request-evidence-information", confirmCommand: { owner: "evidence.review", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } })],
+  "manager-preliminary-report-review": [action("return-preliminary-report", "Return preliminary report", "modal", { type: "modal", dialog: "return-preliminary-report", confirmCommand: { owner: "reports.decide", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } }), action("forward-preliminary-report", "Forward preliminary report", "modal", { type: "modal", dialog: "forward-preliminary-report", confirmCommand: { owner: "reports.decide", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } })],
+  "manager-cap-closure-review": [action("authorize-closure", "Authorize closure", "modal", { type: "modal", dialog: "authorize-closure", confirmCommand: { owner: "findings.authorizedClose", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } })],
+  "new-audit-wizard-1": [action("wizard-next", "Next", "navigation", { type: "navigation", target: "/department-manager/new-audit/step-2" }), action("wizard-save-draft", "Save draft", "capabilityDispatch", { type: "capabilityDispatch", capability: "planningIntake.saveDraft" })],
+  "new-audit-wizard-2": [action("wizard-back", "Back", "navigation", { type: "navigation", target: "/department-manager/new-audit/step-1" }), action("wizard-next", "Next", "navigation", { type: "navigation", target: "/department-manager/new-audit/step-3" })],
+  "new-audit-wizard-3": [action("wizard-back", "Back", "navigation", { type: "navigation", target: "/department-manager/new-audit/step-2" }), action("wizard-next", "Next", "navigation", { type: "navigation", target: "/department-manager/new-audit/step-4" })],
+  "new-audit-wizard-4": [action("wizard-back", "Back", "navigation", { type: "navigation", target: "/department-manager/new-audit/step-3" }), action("wizard-next", "Next", "navigation", { type: "navigation", target: "/department-manager/new-audit/step-5" })],
+  "new-audit-wizard-5": [action("wizard-back", "Back", "navigation", { type: "navigation", target: "/department-manager/new-audit/step-4" }), action("wizard-preview", "Preview", "filePreview", { type: "filePreview", file: "new-audit-preview" }), action("wizard-submit", "Submit", "capabilityDispatch", { type: "capabilityDispatch", capability: "planningIntake.submit" })],
+  "gm-home": [action("open-department-summary", "Open department summary", "localProjection", { type: "localProjection", projection: "department-summary" })],
+  "gm-planning": [action("review-plan", "Review plan", "modal", { type: "modal", dialog: "review-plan" })],
+  "gm-report-approvals": [action("forward-report", "Forward report", "modal", { type: "modal", dialog: "forward-report", confirmCommand: { owner: "reports.decide", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } }), action("return-report", "Return report", "modal", { type: "modal", dialog: "return-report", confirmCommand: { owner: "reports.decide", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } })],
+  "gm-departments": [action("open-department", "Open department", "localProjection", { type: "localProjection", projection: "department" })],
+  "gm-risk-dashboard": [action("open-summary-risk", "Open summary risk", "localProjection", { type: "localProjection", projection: "summary-risk" })],
+  "gm-settings": [action("save-gm-settings", "Save settings", "modal", { type: "modal", dialog: "save-settings" })],
+  "finance-home": [action("approve-budget", "Approve budget", "modal", { type: "modal", dialog: "approve-budget", confirmCommand: { owner: "planning.decide", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } }), action("return-budget", "Return budget", "modal", { type: "modal", dialog: "return-budget", confirmCommand: { owner: "planning.decide", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } })],
+  "executive-home": [action("open-executive-report", "Open executive report", "navigation", { type: "navigation", target: "/executive-director/final-reports" })],
+  "executive-planning": [action("approve-plan", "Approve plan", "modal", { type: "modal", dialog: "approve-plan", confirmCommand: { owner: "planning.decide", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } }), action("return-plan", "Return plan", "modal", { type: "modal", dialog: "return-plan", confirmCommand: { owner: "planning.decide", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } })],
+  "executive-preliminary-reports": [action("issue-preliminary-report", "Issue preliminary report", "modal", { type: "modal", dialog: "issue-preliminary-report", confirmCommand: { owner: "reports.decide", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } })],
+  "executive-final-reports": [action("issue-final-report", "Issue final report", "modal", { type: "modal", dialog: "issue-final-report", confirmCommand: { owner: "reports.decide", requiresRevision: true, requiresIdempotency: false, requiresOperationMetadata: true } })],
+  "executive-report-preview": [action("download-executive-report", "Download report", "fileDownload", { type: "fileDownload", file: "RPT-CAB-2026-001.pdf" })],
+  "executive-notifications": [action("open-executive-notification", "Open notification", "localProjection", { type: "localProjection", projection: "executive-notification" })],
+  "executive-settings": [action("save-executive-settings", "Save settings", "modal", { type: "modal", dialog: "save-settings" })],
+  "auditee-home": [action("respond-to-cap", "Respond to CAP", "modal", { type: "modal", dialog: "submit-cap" })],
+  "auditee-inspection-coordination": [action("confirm-coordination", "Confirm coordination", "modal", { type: "modal", dialog: "confirm-coordination" })],
+  "auditee-preliminary-reports": [action("open-auditee-preliminary-report", "Open report", "filePreview", { type: "filePreview", file: "PR-2026-018" })],
+  "auditee-final-reports": [action("open-auditee-final-report", "Open report", "filePreview", { type: "filePreview", file: "RPT-CAB-2026-001" })],
+  "auditee-report-preview": [action("download-auditee-report", "Download report", "fileDownload", { type: "fileDownload", file: "RPT-CAB-2026-001.pdf" })],
+  "auditee-messages": [action("compose-auditee-message", "Compose message", "modal", { type: "modal", dialog: "compose-message" })],
+  "auditee-documents": [action("download-document", "Download document", "fileDownload", { type: "fileDownload", file: "RPT-CAB-2026-001.pdf" })],
+  "auditee-settings": [action("save-auditee-settings", "Save settings", "modal", { type: "modal", dialog: "save-settings" })],
+  "admin-regulatory-library": [action("search-regulatory-library", "Search regulatory library", "localProjection", { type: "localProjection", projection: "regulatory-search" })],
+  "admin-template-list": [action("open-template", "Open template", "navigation", { type: "navigation", target: "/admin/templates" })],
+  "admin-home": [action("preview-template", "Preview template", "filePreview", { type: "filePreview", file: "CTV-CABIN-1" })],
+  "admin-question-bank": [action("add-question", "Add question", "modal", { type: "modal", dialog: "add-question" })],
+  "admin-checklist-builder": [action("save-checklist-builder", "Save checklist", "localProjection", { type: "localProjection", projection: "checklist-builder" })],
+  "admin-version-history": [action("compare-template-version", "Compare versions", "localProjection", { type: "localProjection", projection: "template-diff" })],
+  "admin-inspection-package-builder": [action("build-inspection-package", "Build inspection package", "modal", { type: "modal", dialog: "build-inspection-package" })],
+  "admin-reports": [action("download-admin-report", "Download report", "fileDownload", { type: "fileDownload", file: "admin-report.csv" })],
+  "admin-users-roles": [action("edit-user-role", "Edit user role", "modal", { type: "modal", dialog: "edit-user-role" })],
+  "admin-configurations": [action("save-configuration", "Save configuration", "modal", { type: "modal", dialog: "save-configuration" })],
+  "admin-organization-master-data": [action("open-master-organization", "Open organization", "navigation", { type: "navigation", target: "/admin/organization-master-data/ORG-FLY-NAMIBIA" })],
+  "admin-organization-detail": [action("save-organization", "Save organization", "modal", { type: "modal", dialog: "save-organization" })],
+  "admin-audit-log": [action("download-audit-log", "Download audit log", "fileDownload", { type: "fileDownload", file: "audit-log.csv" })],
+};
+
 export type MockUpload = MockEvidenceUpload | MockInspectionAttachmentUpload;
 
 export interface MockState {
+  adminWorkspace: {
+    regulatoryReferences: AdminRegulatoryReferenceView[];
+    templateMasters: AdminTemplateMasterView[];
+    questions: Record<string, AdminQuestionView>;
+    template: AdminTemplateView;
+    inspectionPackage: AdminInspectionPackageView;
+    reportDefinitions: AdminReportDefinitionView[];
+    questionCounter: number;
+  };
   assignments: AssignmentSummary[];
   organizations: OrganizationSummary[];
   planningItems: Record<string, PlanningItemView>;
+  planningIntakeDrafts: Record<string, PlanningIntakeDraftView>;
+  inspectionPackageDrafts: Record<string, InspectionPackageDraftView>;
   checklistTemplateVersions: ChecklistTemplateVersionView[];
   checklistTemplateVersionDetails: Record<string, ChecklistTemplateVersionDetailView>;
   reminderRules: ReminderRuleView[];
@@ -93,6 +242,12 @@ export interface MockState {
   evidenceReviews: MockEvidenceReview[];
   uploads: Record<string, MockUpload>;
   reportVersions: Record<string, ReportVersionView>;
+  reportPublicMetadata: Record<string, MockReportPublicMetadata>;
+  auditeeCoordinationResponses: Record<string, MockAuditeeCoordinationResponse>;
+  profiles: Record<string, ProfileView>;
+  communications: MockCommunication[];
+  notifications: NotificationView[];
+  screenProjectionSeeds: Record<string, MockScreenProjectionSeed>;
   counters: {
     potentialFinding: number;
     finding: number;
@@ -216,6 +371,94 @@ export function createCanonicalSeedState(now: string): MockState {
   };
 
   return {
+    adminWorkspace: {
+      regulatoryReferences: [
+        {
+          id: "NAMCARS-CAB-001",
+          title: "Configured Cabin Safety reference",
+          version: "2026.1",
+          status: "ACTIVE",
+          effectiveDate: "2026-01-01",
+          configuredRules: ["Configured reference for Cabin Inspection sampling"],
+          changeHistory: ["2026-01-01 — Added to the mock regulatory library"],
+        },
+        {
+          id: "NAMCARS-FOPS-004",
+          title: "Configured Flight Operations reference",
+          version: "2025.4",
+          status: "SUPERSEDED",
+          effectiveDate: "2025-10-01",
+          configuredRules: ["Reference-only Flight Operations sampling metadata"],
+          changeHistory: ["2026-01-01 — Superseded in demo data"],
+        },
+      ],
+      templateMasters: [
+        {
+          id: "TPL-CABIN-2026",
+          title: "Cabin Inspection checklist",
+          publishedVersionId: "CTV-CABIN-1",
+          status: "PUBLISHED",
+          owner: "Department Manager",
+          itemCount: canonicalPackage.questions.length,
+          previewPath: "/admin/templates",
+          disabledReason: null,
+          revision: 1,
+        },
+        {
+          id: "TPL-FOPS-2026",
+          title: "Flight Operations checklist",
+          publishedVersionId: "CTV-FOPS-1",
+          status: "PUBLISHED",
+          owner: "Department Manager",
+          itemCount: 0,
+          previewPath: null,
+          disabledReason: "TPL-FOPS-2026 / CTV-FOPS-1 has no declared Template Preview route in Task 10.",
+          revision: 1,
+        },
+      ],
+      questions: Object.fromEntries(canonicalPackage.questions.map((question) => [question.id, {
+        id: question.id,
+        prompt: question.prompt,
+        configuredReference: question.regulatoryReference ?? "No configured reference",
+        expectedEvidence: question.expectedEvidence ?? "No expected Evidence configured",
+        revision: 1,
+      }])),
+      template: {
+        id: "TPL-CABIN-2026",
+        publishedVersionId: "CTV-CABIN-1",
+        versions: [{
+          id: "CTV-CABIN-1",
+          templateId: "TPL-CABIN-2026",
+          version: 1,
+          status: "PUBLISHED",
+          owner: "Department Manager",
+          creatorSubjectId: "USR-MANAGER-NORA",
+          changeReason: "Initial immutable published Cabin Inspection version.",
+          questionIds: canonicalPackage.questions.map((question) => question.id),
+          revision: 1,
+          createdAt: now,
+        }],
+        revision: 1,
+      },
+      inspectionPackage: {
+        id: "PKG-CAB-2026-001",
+        auditId: "AUD-2026-001",
+        organizationId: "ORG-FLY-NAMIBIA",
+        organizationName: "Fly Namibia",
+        questionIds: canonicalPackage.questions.map((question) => question.id),
+        configuredReferences: canonicalPackage.questions.map((question) => question.regulatoryReference ?? "No configured reference"),
+        expectedEvidence: canonicalPackage.questions.map((question) => question.expectedEvidence ?? "No expected Evidence configured"),
+        riskFocus: ["Emergency equipment serviceability", "PBE serviceability", "Cabin inspection CAP follow-up"],
+      },
+      reportDefinitions: [{
+        id: "ADMIN-RPT-PACKAGE-001",
+        title: "Inspection package configuration preview",
+        description: "Typed mock report definition; this is not a real report or PDF engine.",
+        packageFields: ["packageId", "auditId", "organizationId", "questionIds", "configuredReferences", "expectedEvidence", "riskFocus"],
+        actionReason: "ADMIN-RPT-PACKAGE-001 generation is unavailable because Task 10 provides a typed browser-local preview only.",
+      }],
+      questionCounter: canonicalPackage.questions.length,
+    },
     assignments: [
       {
         auditId: canonicalPackage.auditId,
@@ -226,6 +469,30 @@ export function createCanonicalSeedState(now: string): MockState {
         dueDate: "2026-06-18",
         dueState: "DUE_SOON",
         nextAction: "Continue Cabin Inspection checklist",
+        scheduledStartDate: "2026-06-15",
+        currentOwnerId: "USR-INSPECTOR-AMINA",
+        currentOwnerRole: "inspector",
+        currentOwnerDisplayName: "Amina Inspector",
+        inspectionNotice: "ROUTINE",
+        caaReleasedToAuditee: true,
+        noticeWithheld: false,
+      },
+      {
+        auditId: "AUD-2026-099",
+        organizationId: "ORG-SKYCARGO",
+        organizationName: "SkyCargo Air",
+        title: "Special Inspection",
+        status: "IN_PROGRESS",
+        dueDate: "2026-05-22",
+        dueState: "OVERDUE",
+        nextAction: "Continue checklist / prepare report",
+        scheduledStartDate: "2026-05-20",
+        currentOwnerId: "USR-INSPECTOR-DAVID",
+        currentOwnerRole: "inspector",
+        currentOwnerDisplayName: "David Inspector",
+        inspectionNotice: "UNANNOUNCED",
+        caaReleasedToAuditee: false,
+        noticeWithheld: true,
       },
     ],
     organizations: [
@@ -266,6 +533,65 @@ export function createCanonicalSeedState(now: string): MockState {
         revision: 1,
       },
     },
+    planningIntakeDrafts: {
+      "PLAN-DRAFT-2026-001": {
+        id: "PLAN-DRAFT-2026-001",
+        organizationId: "ORG-FLY-NAMIBIA",
+        organizationName: "Fly Namibia",
+        applicationType: "Continued Surveillance",
+        domain: "Cabin Safety",
+        inspectionCategory: "Routine / Announced",
+        noticePolicy: "ADVANCE",
+        purpose: "",
+        triggerType: "Department Manager initiated",
+        riskCategory: "",
+        plannedDate: "2026-12-10",
+        mode: "On-site",
+        location: "",
+        templateVersionId: "CTV-CABIN-1",
+        scope: "",
+        requestedBudget: 0,
+        currency: "USD",
+        revision: 1,
+        submittedPlanningItemId: null,
+        updatedAt: now,
+      },
+    },
+    inspectionPackageDrafts: {
+      "PKG-AUD-2026-001-CABIN": {
+        id: "PKG-AUD-2026-001-CABIN",
+        sourceAuditId: "AUD-2026-001",
+        organizationId: "ORG-FLY-NAMIBIA",
+        organizationName: "Fly Namibia",
+        applicationType: "Cabin Inspection",
+        domain: "Cabin Safety",
+        status: "DRAFT",
+        packageVersion: 1,
+        revision: 1,
+        riskFocus: [
+          "Emergency equipment serviceability",
+          "PBE serviceability",
+          "Cabin inspection CAP follow-up",
+        ],
+        questions: [
+          {
+            id: "PKG-Q-CAB-PBE",
+            prompt: "Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?",
+            whyIncluded: "The mock risk profile indicates emergency equipment serviceability needs focused sampling.",
+            expectedEvidence: ["PBE serviceability record", "Cabin position confirmation"],
+            configuredReference: "Configured Cabin Inspection reference — EM EQ / PBE",
+          },
+          {
+            id: "PKG-Q-CAB-GALLEY",
+            prompt: "Are galley restraints and stowage areas serviceable and secure?",
+            whyIncluded: "Galley equipment is a configured baseline Cabin Inspection check.",
+            expectedEvidence: ["Galley equipment serviceability record"],
+            configuredReference: "Configured Cabin Inspection reference — GALLEY",
+          },
+        ],
+        updatedAt: now,
+      },
+    },
     checklistTemplateVersions: [
       {
         id: "CTV-CABIN-1",
@@ -304,22 +630,119 @@ export function createCanonicalSeedState(now: string): MockState {
       { id: "REM-DUE", label: "On the Due Date", offsetDays: 0, channel: "IN_APP", status: "ACTIVE", revision: 1 },
       { id: "REM-OVERDUE", label: "After the Due Date", offsetDays: -1, channel: "IN_APP", status: "ACTIVE", revision: 1 },
     ],
-    auditEvents: [],
+    auditEvents: [
+      {
+        eventId: "AUDIT-REPORT-SEED-0001",
+        occurredAt: now,
+        actorRole: "manager",
+        actorSubjectId: "USR-MANAGER-NORA",
+        action: "report.decision_recorded",
+        entityType: "report_version",
+        entityId: "PR-2026-018-V0",
+        beforeStatus: "DEPARTMENT_REVIEW",
+        afterStatus: "RETURNED",
+        reason: "Clarify Finding basis and supporting Evidence.",
+        entityRevision: 1,
+      },
+      {
+        eventId: "AUDIT-SYSTEM-SEED-0001",
+        occurredAt: now,
+        actorRole: null,
+        actorSubjectId: null,
+        action: "reminder.demo_trace_recorded",
+        entityType: "reminder_rule",
+        entityId: "REM-7",
+        beforeStatus: "ACTIVE",
+        afterStatus: "ACTIVE",
+        reason: "Demo in-app reminder trace; no real delivery.",
+        entityRevision: 1,
+      },
+    ],
     packages: { [canonicalPackage.id]: canonicalPackage },
     checklistResponses: {},
     potentialFindings: {},
-    findings: { [otherOrganizationFinding.id]: otherOrganizationFinding },
-    capRevisions: [],
-    evidenceVersions: [],
+    findings: {
+      [otherOrganizationFinding.id]: { ...otherOrganizationFinding, dueDate: "2026-06-10", dueState: "OVERDUE" },
+    },
+    capRevisions: [
+      {
+        id: "CAP-CAR-2026-099-R1",
+        capId: "CAP-CAR-2026-099",
+        findingId: "FND-SKYCARGO-2026-099",
+        organizationId: "ORG-SKYCARGO",
+        version: 1,
+        revision: 1,
+        status: "SUPERSEDED",
+        rootCause: "Initial configured root cause.",
+        correctiveAction: "Initial configured corrective action.",
+        preventiveAction: "Initial configured preventive action.",
+        responsiblePerson: "SkyCargo Safety Manager",
+        targetCompletionDate: "2026-06-01",
+        commentToCaa: "Initial submission.",
+        commentToAuditee: "Please clarify the prior action.",
+        internalCaaNote: "Historical CAA review note.",
+        reviewDecision: "REQUEST_MORE_INFORMATION",
+        submittedAt: now,
+        reviewedAt: now,
+      },
+      {
+        id: "CAP-CAR-2026-099-R2",
+        capId: "CAP-CAR-2026-099",
+        findingId: "FND-SKYCARGO-2026-099",
+        organizationId: "ORG-SKYCARGO",
+        version: 2,
+        revision: 2,
+        status: "MORE_INFORMATION_REQUESTED",
+        rootCause: "Updated configured root cause.",
+        correctiveAction: "Updated configured corrective action.",
+        preventiveAction: "Updated configured preventive action.",
+        responsiblePerson: "SkyCargo Safety Manager",
+        targetCompletionDate: "2026-06-10",
+        commentToCaa: "Updated submission.",
+        commentToAuditee: "Submit the requested record.",
+        internalCaaNote: "Internal CAA note retained only for CAA.",
+        reviewDecision: "REQUEST_MORE_INFORMATION",
+        submittedAt: now,
+        reviewedAt: now,
+      },
+    ],
+    evidenceVersions: [
+      { id: "EVD-CAR-2026-099-V1", findingId: "FND-SKYCARGO-2026-099", organizationId: "ORG-SKYCARGO", version: 1, fileName: "cargo-record-v1.pdf", submittedAt: now, uploadState: "UPLOADED", scanState: "CLEAN", reviewState: "MORE_INFORMATION_REQUESTED", revision: 1, commentToAuditee: "Historical evidence response." },
+      { id: "EVD-CAR-2026-099-V2", findingId: "FND-SKYCARGO-2026-099", organizationId: "ORG-SKYCARGO", version: 2, fileName: "cargo-record-v2.pdf", submittedAt: now, uploadState: "UPLOADED", scanState: "CLEAN", reviewState: "PENDING_CAA_REVIEW", revision: 2, commentToAuditee: "Latest evidence pending review." },
+    ],
     evidenceReviews: [],
     uploads: {},
     reportVersions: {
+      "PR-2026-018-V0": {
+        reportVersionId: "PR-2026-018-V0",
+        reportId: "PR-2026-018",
+        organizationId: "ORG-FLY-NAMIBIA",
+        auditId: "AUD-2026-001",
+        findingIds: [],
+        contentHash: "sha256:preliminary-report-v0-returned",
+        version: 0,
+        status: "RETURNED",
+        revision: 1,
+        issuedAt: null,
+      },
+      "PR-2026-018-V1": {
+        reportVersionId: "PR-2026-018-V1",
+        reportId: "PR-2026-018",
+        organizationId: "ORG-FLY-NAMIBIA",
+        auditId: "AUD-2026-001",
+        findingIds: [],
+        contentHash: "sha256:preliminary-report-v1-department-review",
+        version: 1,
+        status: "DEPARTMENT_REVIEW",
+        revision: 1,
+        issuedAt: null,
+      },
       "RPT-CAB-2026-001-V1": {
         reportVersionId: "RPT-CAB-2026-001-V1",
         reportId: "RPT-CAB-2026-001",
         organizationId: "ORG-FLY-NAMIBIA",
         auditId: "AUD-2026-001",
-        findingIds: ["FND-CAB-2026-001"],
+        findingIds: [],
         contentHash: "sha256:candidate-report-v1",
         version: 1,
         status: "EXECUTIVE_DIRECTOR_REVIEW",
@@ -327,6 +750,58 @@ export function createCanonicalSeedState(now: string): MockState {
         issuedAt: null,
       },
     },
+    reportPublicMetadata: {
+      "PR-2026-018-V0": { kind: "PRELIMINARY", responseDueDate: null, caaVisibleComment: null },
+      "PR-2026-018-V1": { kind: "PRELIMINARY", responseDueDate: null, caaVisibleComment: null },
+      "RPT-CAB-2026-001-V1": { kind: "FINAL", responseDueDate: null, caaVisibleComment: null },
+    },
+    auditeeCoordinationResponses: {},
+    profiles: {
+      "USR-INSPECTOR-AMINA": {
+        subjectId: "USR-INSPECTOR-AMINA",
+        role: "inspector",
+        organizationId: null,
+        displayName: "Amina Inspector",
+        revision: 1,
+      },
+      "USR-INSPECTOR-DAVID": {
+        subjectId: "USR-INSPECTOR-DAVID",
+        role: "inspector",
+        organizationId: null,
+        displayName: "David Inspector",
+        revision: 1,
+      },
+      "USR-LEAD-CANER": { subjectId: "USR-LEAD-CANER", role: "leadInspector", organizationId: null, displayName: "Caner Lead Inspector", revision: 1 },
+      "USR-MANAGER-NORA": { subjectId: "USR-MANAGER-NORA", role: "manager", organizationId: null, displayName: "Nora Department Manager", revision: 1 },
+      "USR-GM-OMAR": { subjectId: "USR-GM-OMAR", role: "gm", organizationId: null, displayName: "Omar General Manager", revision: 1 },
+      "USR-FINANCE-LINA": { subjectId: "USR-FINANCE-LINA", role: "finance", organizationId: null, displayName: "Lina Finance Reviewer", revision: 1 },
+      "USR-ED-ZARA": { subjectId: "USR-ED-ZARA", role: "executiveDirector", organizationId: null, displayName: "Zara Executive Director", revision: 1 },
+      "USR-AUDITEE-FLY": { subjectId: "USR-AUDITEE-FLY", role: "auditee", organizationId: "ORG-FLY-NAMIBIA", displayName: "Fly Namibia Auditee", revision: 1 },
+      "USR-ADMIN-ADA": { subjectId: "USR-ADMIN-ADA", role: "admin", organizationId: null, displayName: "Ada Administrator", revision: 1 },
+    },
+    communications: [],
+    notifications: Object.values({
+      "USR-INSPECTOR-AMINA": { id: "NOT-INSPECTOR-001", subjectId: "USR-INSPECTOR-AMINA", title: "Checklist Due Soon", body: "Continue the Cabin Inspection checklist before its Due Date.", readAt: null, revision: 1 },
+      "USR-LEAD-CANER": { id: "NOT-LEAD-001", subjectId: "USR-LEAD-CANER", title: "Potential Finding Review", body: "A deterministic Potential Finding is ready for Lead review.", readAt: null, revision: 1 },
+      "USR-MANAGER-NORA": { id: "NOT-MANAGER-001", subjectId: "USR-MANAGER-NORA", title: "Overdue Finding", body: "A configured Finding requires management attention.", readAt: null, revision: 1 },
+      "USR-AUDITEE-FLY": { id: "NOT-AUDITEE-001", subjectId: "USR-AUDITEE-FLY", title: "CAP Request", body: "Submit the requested CAP and expected Evidence.", readAt: null, revision: 1 },
+    }).concat(
+      Object.values({
+        "USR-GM-OMAR": { id: "NOT-GM-001", subjectId: "USR-GM-OMAR", title: "Management View", body: "Review the surveillance overview.", readAt: null, revision: 1 },
+        "USR-FINANCE-LINA": { id: "NOT-FINANCE-001", subjectId: "USR-FINANCE-LINA", title: "Finance Review", body: "Review the configured audit budget.", readAt: null, revision: 1 },
+        "USR-ED-ZARA": { id: "NOT-EXEC-001", subjectId: "USR-ED-ZARA", title: "Report Review", body: "An executive report is ready for review.", readAt: null, revision: 1 },
+        "USR-ADMIN-ADA": { id: "NOT-ADMIN-001", subjectId: "USR-ADMIN-ADA", title: "Template Library", body: "A checklist template version is available.", readAt: null, revision: 1 },
+      }),
+    ),
+    screenProjectionSeeds: Object.fromEntries(
+      REACT_ROUTE_CONTRACTS.map((route) => {
+        return [route.id, {
+          screenId: route.id,
+          requiredRole: route.requiredRole,
+          visibleActions: SCREEN_VISIBLE_ACTIONS[route.id],
+        } satisfies MockScreenProjectionSeed];
+      }),
+    ),
     counters: {
       potentialFinding: 1,
       finding: 1,
@@ -336,6 +811,37 @@ export function createCanonicalSeedState(now: string): MockState {
       auditEvent: 1,
     },
   };
+}
+
+/** Screen-fixture store only: preserves the canonical lifecycle seed where FND-CAB is created by Lead conversion. */
+export function createFullScreenScenarioSeedState(now: string): MockState {
+  const state = createCanonicalSeedState(now);
+  state.findings["FND-CAB-2026-001"] = {
+    ...state.findings["FND-SKYCARGO-2026-099"]!,
+    id: "FND-CAB-2026-001",
+    findingNumber: "CAB-SCREEN-2026-001",
+    auditId: "AUD-2026-001",
+    organizationId: "ORG-FLY-NAMIBIA",
+    organizationName: "Fly Namibia",
+    status: "EVIDENCE_MORE_INFORMATION_REQUESTED",
+    dueDate: "2026-06-10",
+    dueState: "OVERDUE",
+    currentOwnerId: "ORG-FLY-NAMIBIA",
+    currentOwnerRole: "auditee",
+    nextAction: "Fly Namibia to provide additional Evidence",
+  };
+  state.capRevisions.push(
+    { id: "CAP-CAB-SCREEN-R1", capId: "CAP-CAB-SCREEN", findingId: "FND-CAB-2026-001", organizationId: "ORG-FLY-NAMIBIA", version: 1, revision: 1, status: "SUPERSEDED", rootCause: "Historical root cause.", correctiveAction: "Historical corrective action.", preventiveAction: "Historical preventive action.", responsiblePerson: "Fly Namibia Safety Manager", targetCompletionDate: "2026-06-01", commentToCaa: "Historical submission.", commentToAuditee: "Update requested.", internalCaaNote: "Historical internal note.", reviewDecision: "REQUEST_MORE_INFORMATION", submittedAt: now, reviewedAt: now },
+    { id: "CAP-CAB-SCREEN-R2", capId: "CAP-CAB-SCREEN", findingId: "FND-CAB-2026-001", organizationId: "ORG-FLY-NAMIBIA", version: 2, revision: 2, status: "MORE_INFORMATION_REQUESTED", rootCause: "Updated root cause.", correctiveAction: "Updated corrective action.", preventiveAction: "Updated preventive action.", responsiblePerson: "Fly Namibia Safety Manager", targetCompletionDate: "2026-06-10", commentToCaa: "Updated submission.", commentToAuditee: "Evidence required.", internalCaaNote: "Updated internal note.", reviewDecision: "REQUEST_MORE_INFORMATION", submittedAt: now, reviewedAt: now },
+  );
+  state.evidenceVersions.push(
+    { id: "EVD-CAB-SCREEN-V1", findingId: "FND-CAB-2026-001", organizationId: "ORG-FLY-NAMIBIA", version: 1, fileName: "historical-evidence-v1.pdf", submittedAt: now, uploadState: "UPLOADED", scanState: "CLEAN", reviewState: "MORE_INFORMATION_REQUESTED", revision: 1, commentToAuditee: "Historical request." },
+    { id: "EVD-CAB-SCREEN-V2", findingId: "FND-CAB-2026-001", organizationId: "ORG-FLY-NAMIBIA", version: 2, fileName: "historical-evidence-v2.pdf", submittedAt: now, uploadState: "UPLOADED", scanState: "CLEAN", reviewState: "PENDING_CAA_REVIEW", revision: 2, commentToAuditee: "Latest submission." },
+  );
+  state.reportVersions["RPT-CAB-2026-001-V0"] = { reportVersionId: "RPT-CAB-2026-001-V0", reportId: "RPT-CAB-2026-001", organizationId: "ORG-FLY-NAMIBIA", auditId: "AUD-2026-001", findingIds: ["FND-CAB-2026-001"], contentHash: "sha256:screen-report-v0", version: 0, status: "RETURNED", revision: 1, issuedAt: null };
+  state.reportPublicMetadata["RPT-CAB-2026-001-V0"] = { kind: "FINAL", responseDueDate: null, caaVisibleComment: null };
+  state.reportVersions["RPT-CAB-2026-001-V1"]!.findingIds = ["FND-CAB-2026-001"];
+  return state;
 }
 
 export function publicEvidenceVersion(version: MockEvidenceVersion): EvidenceVersionView {
