@@ -23,6 +23,7 @@ This is the canonical docs map for AviaSurveil360. Use it after the root
 | `demo-evidence/IDEMPOTENT_FOREGROUND_SYNC_2026-07-21.md` | Task 12 typed causal foreground sync, exact acknowledgement replay, authorized conflicts, attachment delivery, and restart recovery evidence. |
 | `demo-evidence/FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.md` | Task 5 organization, planning authority/calendar, versioned configuration, reminder, audit-trail, and dual-profile responsive parity evidence. |
 | `demo-evidence/LOCAL_RELEASE_CANDIDATE_2026-07-21.md` | Task 13 local `GO`, complete mock/HTTP/offline/security/restore matrix, dependency/SBOM review, and explicit production blockers. |
+| `demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.md` | Task 16 exact 17/69 scope, full candidate matrix, 51-pair decoded-pixel and manual review, OIDC/offline/recovery evidence, and stakeholder handoff. |
 | `../api/openapi/aviasurveil360.yaml` | Minimal versioned transport source for the authorized local candidate slices. |
 | `../apps/web/` | Build-time-separated React/Vite mock and HTTP candidate entries with the canonical lifecycle, approved route families, PWA/readiness, atomic field storage, OPFS attachment recovery, and typed foreground sync. |
 | `../apps/api/` | One-module Go API/worker candidate with canonical and planning authority, local OIDC/session, PostgreSQL stores, bounded upload/scan, configuration/audit projections, and typed sync services. |
@@ -36,8 +37,11 @@ Go/PostgreSQL HTTP path, pinned local Keycloak exchange, private MinIO upload,
 deterministic scan worker, canonical and approved route-family mock/HTTP browser
 parity, Task 6 app-shell/readiness/restart behavior, Task 7-8 field/attachment
 recovery, Task 12 foreground sync, and the Task 13 complete local matrix are
-`verified locally`. The result is local `GO`, `candidate-only`, and `release
-pending`. These are not deployed production services. The docs do not claim production OIDC/MFA,
+`verified locally`. Task 16 also verifies that all 17 routed React surfaces are
+recognizably the accepted root-demo interface across desktop, tablet, and mobile
+while the remaining 69 audited rows stay legacy-only. The result is local `GO`,
+`candidate-only`, and `release pending`. These are not deployed production
+services. The docs do not claim production OIDC/MFA,
 production authorization operations, production storage/scanning or Evidence
 records management, notification delivery, deployment, remote CI, cutover,
 legacy removal, or production readiness. Those production actions remain

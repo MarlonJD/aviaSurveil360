@@ -92,7 +92,9 @@ test("normal OIDC session gates protected routes and uses server session authori
   await expect(page.getByTestId("offline-package-status")).toContainText("PKG-CAB-2026-001");
 
   await page.getByRole("button", { name: "Local Inspector" }).click();
-  await page.getByRole("button", { name: "Logout" }).click();
+  await page.getByRole("menu", { name: "Profile menu" })
+    .getByRole("button", { name: "Logout" })
+    .click();
   await expect(page.getByRole("heading", { name: /Sign in to AviaSurveil360/i })).toBeVisible();
   const loggedOut = await page.evaluate(async () => {
     const response = await fetch("/auth/session", { credentials: "same-origin" });

@@ -2,12 +2,6 @@ import { expect, test } from "@playwright/test";
 
 import { OfflineStaticServer } from "./support/offline-static-server";
 
-function cssUrl(value: string): string {
-  const match = /url\(["']?(.*?)["']?\)/.exec(value);
-  if (!match) throw new Error(`CSS URL is missing from ${value}`);
-  return match[1];
-}
-
 test("brand mark, icon, and font are available from the app-shell cache after origin stop", async ({
   page,
 }) => {
@@ -24,26 +18,26 @@ test("brand mark, icon, and font are available from the app-shell cache after or
 
     const before = await page.evaluate(() => {
       const rolePage = document.querySelector(".role-select-page");
-      const mark = document.querySelector(".brand-mark");
-      const firstRole = document.querySelector(".role-card");
+      const mark = document.querySelector<HTMLImageElement>(".login-hero__logo");
+      const firstRole = document.querySelector<HTMLImageElement>("[data-testid='role-card-icon']");
       if (!rolePage || !mark || !firstRole) throw new Error("Brand shell elements are missing");
       const manifestRequest = fetch("/app-shell-assets.json").then((response) => response.json());
       return manifestRequest.then((manifest: { assets: string[] }) => ({
         fontFamily: getComputedStyle(rolePage).fontFamily,
-        markBackground: getComputedStyle(mark).backgroundImage,
-        iconBackground: getComputedStyle(firstRole, "::before").backgroundImage,
+        markAsset: mark.currentSrc,
+        iconAsset: firstRole.currentSrc,
         fontAsset: manifest.assets.find((asset) => /DMSans-Variable.*\.ttf$/.test(asset)),
       }));
     });
 
     expect(before.fontFamily).toContain("DM Sans");
-    expect(before.markBackground).toContain("aviasurveil360-mark");
-    expect(before.iconBackground).toContain("air-traffic-control");
+    expect(before.markAsset).toContain("aviasurveil360-mark");
+    expect(before.iconAsset).toContain("air-traffic-control");
     expect(before.fontAsset).toBeTruthy();
 
     const assetUrls = [
-      cssUrl(before.markBackground),
-      cssUrl(before.iconBackground),
+      before.markAsset,
+      before.iconAsset,
       new URL(before.fontAsset as string, server.origin).href,
     ];
 

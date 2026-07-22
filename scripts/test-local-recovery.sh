@@ -29,6 +29,7 @@ docker compose --project-name "${COMPOSE_PROJECT}" --file "${COMPOSE_FILE}" up -
 export AVIA_ENVIRONMENT="test"
 export AVIA_DATABASE_URL="postgres://aviasurveil:aviasurveil@127.0.0.1:55432/aviasurveil?sslmode=disable"
 export AVIA_HTTP_ADDRESS="127.0.0.1:58083"
+export AVIA_ENABLE_CANONICAL_SEED="true"
 export AVIA_ENABLE_CANONICAL_TEST_PROFILE="true"
 export AVIA_CANONICAL_TEST_TOKEN="candidate-recovery-test-token-2026"
 export AVIA_OBJECT_STORE_ENDPOINT="127.0.0.1:59001"

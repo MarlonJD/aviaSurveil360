@@ -34,6 +34,10 @@ reminder ve audit route family'lerini ekler; bkz.
 [First-Production Route Family Kanıtı](FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.turkce.md).
 Task 13 local release-candidate matrix'i tamamlar; bkz.
 [Local Release-Candidate Kanıtı](LOCAL_RELEASE_CANDIDATE_2026-07-21.turkce.md).
+Task 16, 17 React yüzeyinin kabul edilen root-demo arayüzüne geri taşınmasını ve
+tam clean-install, HTTP, OIDC, offline, recovery, visual, dependency, reviewer
+ve cleanup matrix'ini tamamlar; bkz.
+[React Legacy UI Parity Kanıtı](REACT_LEGACY_UI_PARITY_2026-07-22.turkce.md).
 Local öneri `GO`, artifact `candidate-only` ve release `release pending` olarak
 kalır. Bu yan candidate'lar root demo'yu veya genel ürünü `production-ready`
 yapmaz; production `blocked` kalır.
@@ -57,6 +61,14 @@ başlangıç verisine döndürür.
 ---
 
 ## Güncel UI kanıtı
+
+22 Temmuz 2026 React parity incelemesi route edilmiş 17 yüzeyin masaüstü,
+tablet ve mobil görünümlerini kapsar. Decoded-pixel kapısı primitive gallery ve
+51 legacy/React viewport çiftinin tamamında 52/52 geçti; 51 candidate PNG ve 51
+region kaydı üretti, mask sayısı sıfır kaldı. Manuel reviewer her React
+yüzeyinin yeni tasarlanmış bir arayüz değil, kabul edilen demo olarak
+tanınabildiğini doğruladı:
+[`REACT_LEGACY_UI_PARITY_2026-07-22.turkce.md`](REACT_LEGACY_UI_PARITY_2026-07-22.turkce.md).
 
 19 Temmuz 2026 sayfa bazlı ekran görüntüsü denetimi 86 ekranı masaüstü, tablet
 ve mobil boyutlarda kapsar. Korunan başlangıç sonucu 76 Geçti ve 10 Sorun'du;

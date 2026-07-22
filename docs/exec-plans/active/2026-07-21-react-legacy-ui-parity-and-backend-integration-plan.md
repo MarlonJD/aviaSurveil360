@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Tasks 1-14 are committed and pushed through `ece4f47`. Task 15 is `verified locally` at its commit/push boundary: the exact 17-route / 69 legacy-only scope, source/build/artifact exclusions, accessible visible-action ownership, and mandatory 51-pair decoded-pixel harness now fail closed. React passes 47 files / 282 tests; the complete canonical HTTP profile passes HTTP contract 14/14, mock Playwright 8/8, HTTP Playwright 10/10, and worker/outbox observability; the full visual gate passes the primitive gallery plus all 51 route/viewport pairs (52/52) without threshold, mask, comparator, or baseline changes. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `ready-for-verification` — Tasks 1-16 are implemented and `verified locally`; Tasks 1-15 are committed and pushed through `c026830`. Task 16 passed the complete clean-install, generated-contract, Go race/integration, React, root, mock, canonical HTTP, normal OIDC, offline/recovery, dependency, cleanup, and reviewer matrix. The exact boundary remains 17 routed React surfaces / 69 legacy-only audit rows. React passes 47 files / 282 tests; root/parity passes 107/107; mock passes 8/8; HTTP passes 10/10; normal OIDC passes 1/1; offline passes 7/7; and the visual gate passes the primitive gallery plus all 51 route/viewport pairs (52/52) with zero masks. Manual review confirms all 51 pairs are recognizably the accepted root demo. Explicit stakeholder acceptance is the next todo. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
 
 ## Reviewed Plan Amendment — Fail-Closed Demo Visual Recovery (2026-07-21)
 
@@ -2007,6 +2007,9 @@ git push origin HEAD
 
 **Files**
 
+- Modify `apps/web/tests/e2e/oidc-session.spec.ts`
+- Modify `apps/web/tests/e2e/brand-app-shell-restart.spec.ts`
+- Modify `scripts/test-local-recovery.sh`
 - Create `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.md`
 - Create `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.turkce.md`
 - Modify `docs/demo-evidence/BUILD_SUMMARY.md`
@@ -2022,7 +2025,7 @@ The evidence filenames use the reviewed actual execution date, `2026-07-22`. If 
 
 **Required matrix**
 
-- [ ] **Clean install and generated-contract gate**
+- [x] **Clean install and generated-contract gate**
 
   ```bash
   npm --prefix apps/web ci
@@ -2031,13 +2034,19 @@ The evidence filenames use the reviewed actual execution date, `2026-07-22`. If 
   node api/openapi/tests/contract-examples.test.mjs
   ```
 
-- [ ] **Go authority/security gate**
+- [x] **Go authority/security gate**
 
   ```bash
   GOCACHE=/private/tmp/aviasurveil360-parity-go-cache go -C apps/api test -race -p 1 -count=1 ./...
   ```
 
-- [ ] **React/unit/contract/build gate**
+  The authoritative green run is this exact race command inside
+  `scripts/test-http-profile.sh`, after the script starts its required pinned
+  PostgreSQL, Keycloak, and MinIO services. Direct preflight attempts without
+  that orchestration hit the sandbox port boundary and then failed closed on
+  absent services; those attempts are not green evidence.
+
+- [x] **React/unit/contract/build gate**
 
   ```bash
   npm --prefix apps/web run typecheck
@@ -2050,39 +2059,39 @@ The evidence filenames use the reviewed actual execution date, `2026-07-22`. If 
   node apps/web/scripts/verify-visual-baselines.mjs
   ```
 
-- [ ] **Root oracle and parity ledger gate**
+- [x] **Root oracle and parity ledger gate**
 
   ```bash
   node --test tests/*.test.js tests/parity/react-legacy-parity.test.mjs
   ```
 
-- [ ] **Mock browser gate**
+- [x] **Mock browser gate**
 
   ```bash
   npm --prefix apps/web run test:e2e:mock
   npm --prefix apps/web run test:e2e:visible-actions
   ```
 
-- [ ] **Canonical-header HTTP gate**
+- [x] **Canonical-header HTTP gate**
 
   ```bash
   ./scripts/test-http-profile.sh
   ```
 
-- [ ] **Normal OIDC session gate**
+- [x] **Normal OIDC session gate**
 
   ```bash
   ./scripts/test-http-oidc-profile.sh
   ```
 
-- [ ] **Real offline/recovery gate**
+- [x] **Real offline/recovery gate**
 
   ```bash
   npm --prefix apps/web run test:e2e:offline
   ./scripts/test-local-recovery.sh
   ```
 
-- [ ] **51-pair visual gate**
+- [x] **51-pair visual gate**
 
   ```bash
   npm --prefix apps/web run test:e2e:visual-parity
@@ -2091,7 +2100,7 @@ The evidence filenames use the reviewed actual execution date, `2026-07-22`. If 
   Require 17 surfaces × 3 viewports, zero missing/hash/metadata/mask/geometry failures, shell ratio at most 0.03, and only predeclared adapted regions at most 0.08.
   The command must produce 51 candidate viewport PNGs and 51 region-result records. Any use of compressed PNG byte ratios, any parity-mode bypass, or any missing shell/content region result fails the matrix.
 
-- [ ] **Dependency gate**
+- [x] **Dependency gate**
 
   ```bash
   npm --prefix apps/web audit
@@ -2100,13 +2109,45 @@ The evidence filenames use the reviewed actual execution date, `2026-07-22`. If 
 
   Record exact results. Do not use a broad forced upgrade to clear an unrelated advisory.
 
-- [ ] **Manual reviewer evidence**
+- [x] **Manual reviewer evidence**
 
   Review 51 legacy/React viewport pairs plus contact sheets. For each route record source audit ID, browser metadata, baseline/React file, shell-region ratios, content-region ratio, masks and masked ratio, geometry result, semantic result, visible-action result, reviewer, and disposition. The reviewer must explicitly answer whether the React surface is recognizably the accepted root demo rather than a newly invented interface. Review the complete canonical lifecycle and the normal OIDC login/logout path. Manual full-page images may support review but never replace automated viewport comparisons.
 
-- [ ] **Cleanup**
+- [x] **Cleanup**
 
   Confirm task-owned scripts stopped their own API, worker, Vite, static server, Keycloak/PostgreSQL/object-store containers, and Playwright/Chromium processes. Do not stop unrelated user processes. Record cleanup evidence and any externally owned residue as `blocked`.
+
+**Task 16 execution result — 2026-07-22**
+
+- Clean install passed; contracts passed 8/8, contract examples passed 7/7,
+  and SQLC passed with `sqlc-check: ok`.
+- Typecheck passed; React passed 47 files / 282 tests; root oracle and parity
+  ledger passed 107/107. Demo/HTTP builds, both 24-file / 16-asset app-shell
+  scans, the 24-file / 109-input HTTP artifact scan, the 17-route / 2-profile
+  boundary scan, and all 51 baseline hashes passed.
+- The complete canonical HTTP profile passed Go race/unit/integration,
+  contracts, SQLC, React 282/282, HTTP contract 14/14, mock 8/8, HTTP 10/10,
+  and worker/outbox observability. The Go preflight is not independently
+  self-contained; the authoritative race result is the exact command executed
+  after deterministic service bring-up inside this profile.
+- Normal OIDC passed 1/1 after the stale logout selector was scoped to the open
+  Profile menu. Real offline passed 7/7 after its legacy image assertion was
+  aligned with the accepted role-selector DOM. The recovery drill passed after
+  explicitly enabling its required canonical seed; PostgreSQL and the exact
+  47-byte private object were restored.
+- The full visual gate passed 52/52 and emitted 51 candidate PNGs plus 51
+  machine-readable region records. All 51 pairs used zero masks. Maximum shell
+  ratios were sidebar `0.02968` and topbar `0.02945`; maximum adapted ratios
+  were content-header `0.06612` and content `0.07980`. Manual review of all 18
+  contact sheets and 51 pairs found every surface recognizably the accepted
+  root demo rather than a newly invented interface.
+- Full and production-only npm audits each reported 0 vulnerabilities. Final
+  process/container/network/volume inspection found no task-owned residue.
+- Synchronized evidence is
+  [React Legacy UI Parity Evidence](../../demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.md).
+  The result is `verified locally`, `candidate-only`, and `release pending`.
+  Stakeholder acceptance is the next todo; production/cutover remains
+  `blocked`.
 
 **Evidence and lifecycle rules**
 
@@ -2120,7 +2161,7 @@ The evidence filenames use the reviewed actual execution date, `2026-07-22`. If 
 **Task 16 staging allowlist and commit**
 
 ```bash
-git add -- docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.md docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.turkce.md docs/demo-evidence/BUILD_SUMMARY.md docs/demo-evidence/BUILD_SUMMARY.turkce.md docs/index.md MANIFEST.md docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- apps/web/tests/e2e/oidc-session.spec.ts apps/web/tests/e2e/brand-app-shell-restart.spec.ts scripts/test-local-recovery.sh docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.md docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.turkce.md docs/demo-evidence/BUILD_SUMMARY.md docs/demo-evidence/BUILD_SUMMARY.turkce.md docs/index.md MANIFEST.md docs/exec-plans/index.md docs/exec-plans/tech-debt-tracker.md docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
 git commit -m "docs(evidence): record react legacy parity"
 git push origin HEAD
 ```
@@ -2199,6 +2240,7 @@ The shared router, OpenAPI/generated files, canonical scenario, `app.css`, and v
 | 2026-07-21 | Commit/push steps are conditional on explicit execution-time authorization and must use exact allowlists/upstream checks. | binding safety rule |
 | 2026-07-21 | Production deployment, cutover, Identity/MFA/provisioning, records, hosting, monitoring/on-call, and legacy removal remain blocked. | unchanged |
 | 2026-07-22 | Tasks 13-14 must port the bounded root feature DOM/CSS composition and role shell rather than approximate it with generic React layouts; Task 16 evidence uses the actual execution date. | accepted execution correction after Task 12 parity recovery |
+| 2026-07-22 | Task 16 complete matrix and 51-pair manual review accept all 17 routed surfaces as recognizably the root demo; keep the plan open for explicit stakeholder acceptance. | `ready-for-verification`; `candidate-only`; release pending |
 
 ## Plan Self-Review Checklist
 

@@ -8,10 +8,12 @@ Candidate boundary: a local Go/PostgreSQL API/worker, pinned local Keycloak,
 private MinIO upload, deterministic scan adapter, real canonical HTTP scenario,
 PWA/readiness, atomic offline field/outbox persistence, and manifest-first OPFS
 Inspection Attachment recovery, typed foreground sync, approved
-first-production routes, and the complete local release-candidate matrix are
-`verified locally`. The artifact is `candidate-only`, the local decision is
-`GO`, and release is `release pending`. They are not deployed production
-services. Production OIDC/MFA, production storage/scanning/records policy,
+first-production routes, the complete local release-candidate matrix, and the
+17-surface React migration to the accepted root-demo interface are `verified
+locally`. The exact parity boundary remains 17 routed React surfaces and 69
+legacy-only audit rows. The artifact is `candidate-only`, the local decision is
+`GO`, and release is `release pending`. It is not a deployed production
+application. Production OIDC/MFA, production storage/scanning/records policy,
 deployment, cutover, legacy removal, and a `production-ready` claim remain
 excluded or `blocked`.
 The root Vanilla demo remains intact.
@@ -55,8 +57,8 @@ The root Vanilla demo remains intact.
   projection checks.
 - `scripts/generate-contracts.sh` and `scripts/check-contracts.sh` — checked
   TypeScript generation, lint, example validation, and drift detection.
-- `tests/parity/behavior-ledger.json` — fifteen-entry canonical scenario,
-  eight-role entry, and approved first-production route parity ledger.
+- `tests/parity/behavior-ledger.json` — version 4 exact 17-route / 69
+  legacy-only behavior and visible-action ownership ledger.
 - `tests/parity/react-legacy-parity.test.mjs` — executable ledger and intact
   legacy-oracle checks.
 - `apps/web/` — React + TypeScript + Vite candidate with build-time-separated
@@ -95,12 +97,25 @@ The root Vanilla demo remains intact.
   restart/server-stop startup and two-client update/site-data recovery checks.
 - `apps/web/tests/e2e/release-candidate-gates.spec.ts` — dual-profile role,
   stable-reset, literal-boundary, keyboard, focus, and target-size gate.
+- `apps/web/tests/e2e/legacy-visual-parity.spec.ts` — decoded-pixel primitive
+  gallery plus 51 route/viewport comparisons with candidate PNG and region
+  result attachments.
+- `apps/web/tests/e2e/visible-action-contract.spec.ts` — accessible visible
+  action inventory across all 17 surfaces at desktop, tablet, and mobile.
+- `apps/web/tests/e2e/oidc-session.spec.ts` — normal same-origin Keycloak
+  login/session/CSRF/expiry/logout browser path.
+- `apps/web/tests/e2e/brand-app-shell-restart.spec.ts` — stopped-origin accepted
+  brand/app-shell asset recovery.
 - `apps/web/tests/e2e/offline-readiness-denials.spec.ts` — real-browser
   managed-policy, persistence-denied, online-fallback, and quota checks.
 - `apps/web/scripts/assert-app-shell-artifact.mjs` — generated manifest/asset,
   version marker, and forbidden Service Worker behavior gate.
 - `apps/web/scripts/assert-http-artifact.mjs` — HTTP build input/public-artifact
   exclusion gate for mock, seed, and test-profile code plus app-shell policy.
+- `apps/web/scripts/assert-parity-boundary.mjs` — exact route/source/build,
+  comparator, viewport, attachment, and inert-control fail-closed boundary.
+- `apps/web/scripts/verify-visual-baselines.mjs` — 51-image baseline manifest,
+  environment, and SHA-256 verifier.
 - `apps/api/go.mod` — the single Go module and pinned runtime dependencies.
 - `apps/api/cmd/api/` and `apps/api/cmd/worker/` — production-shaped HTTP and
   observable worker command entry points.
@@ -239,6 +254,9 @@ separate `apps/web/package.json` owns the React candidate commands.
 - `docs/demo-evidence/LOCAL_RELEASE_CANDIDATE_2026-07-21.md` and `.turkce.md` —
   Task 13 local `GO`, complete verification matrix, dependency/SBOM review,
   restore rehearsal, and explicit production blockers.
+- `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.md` and `.turkce.md` —
+  Task 16 exact 17/69 scope, complete local matrix, normal OIDC, offline/recovery,
+  51-pair decoded-pixel/manual parity review, and stakeholder handoff.
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.md`
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.turkce.md`
 - `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`
@@ -274,6 +292,7 @@ files in the same folder.
 
 - `docs/exec-plans/index.md` — active execution-plan tracking index.
 - `docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md`
+- `docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md`
 - `docs/exec-plans/active/2026-06-14-aviasurveil-demo-only-prototype-plan.md`
 - `docs/exec-plans/active/2026-06-23-ncaa-platform-v2-and-mvp-plan.md`
 - `docs/exec-plans/active/2026-06-28-caa-governance-workflow-and-roles-plan.md`
@@ -305,7 +324,8 @@ files in the same folder.
 The files above support stakeholder feedback, local demo verification, and a
 `candidate-only` React/Go vertical. They prove the scoped local HTTP/API,
 authority, audit-event, private upload, deterministic scan, scenario contracts,
-PWA/readiness, atomic field storage, and OPFS attachment recovery recorded in Task evidence. They
+PWA/readiness, atomic field storage, OPFS attachment recovery, and 17-surface
+root-demo visual/interaction parity recorded in Task evidence. They
 do not prove production identity/MFA, production storage/scanning or records
 operations, regulatory or enforcement approval, notification delivery,
 production sync, deployment, cutover, release, or production readiness.

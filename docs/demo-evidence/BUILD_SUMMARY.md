@@ -32,6 +32,10 @@ configuration, reminder, and audit route families; see
 [First-Production Route Families Evidence](FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.md).
 Task 13 completes the local release-candidate matrix; see
 [Local Release-Candidate Evidence](LOCAL_RELEASE_CANDIDATE_2026-07-21.md).
+Task 16 completes the 17-surface React migration back to the accepted root-demo
+interface and the full clean-install, HTTP, OIDC, offline, recovery, visual,
+dependency, reviewer, and cleanup matrix; see
+[React Legacy UI Parity Evidence](REACT_LEGACY_UI_PARITY_2026-07-22.md).
 The local recommendation is `GO`, the artifact remains `candidate-only`, and
 release is `release pending`. These adjacent candidates do not make the root
 demo or the overall product `production-ready`; production remains `blocked`.
@@ -56,6 +60,13 @@ and return to seed data.
 ---
 
 ## Latest UI evidence
+
+The 22 July 2026 React parity review covers all 17 routed surfaces at desktop,
+tablet, and mobile. The decoded-pixel gate passed the primitive gallery plus all
+51 legacy/React viewport pairs (52/52), emitted 51 candidate PNGs and 51 region
+records with zero masks, and the manual reviewer found every React surface
+recognizably the accepted demo rather than a newly designed interface:
+[`REACT_LEGACY_UI_PARITY_2026-07-22.md`](REACT_LEGACY_UI_PARITY_2026-07-22.md).
 
 The 19 July 2026 page-by-page screenshot audit covers 86 screens at desktop,
 tablet, and mobile sizes. The preserved baseline recorded 76 Pass and 10 Issue
