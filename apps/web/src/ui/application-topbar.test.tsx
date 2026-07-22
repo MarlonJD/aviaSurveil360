@@ -112,4 +112,21 @@ describe("ApplicationTopbar", () => {
     expect(screen.getAllByText("Department Manager").length).toBeGreaterThan(0);
     expect(screen.getByRole("combobox", { name: "Experience" })).toHaveValue("manager");
   });
+
+  it("shows the source-faithful Administration topbar", () => {
+    render(
+      <ApplicationTopbar
+        activeRouteId="admin-home"
+        identity={{ ...identity, activeRole: "admin", displayName: "System Admin", availableRoles: ["admin", "manager"] }}
+        onRoleRequest={() => undefined}
+        onLogout={() => undefined}
+        notificationState={{ kind: "local", unreadCount: 0, onOpen: () => undefined }}
+      />,
+    );
+
+    expect(screen.getByText(/Templates.*Template Preview/)).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Experience" })).toHaveDisplayValue("Administration");
+    expect(screen.getByText("System Admin")).toBeVisible();
+    expect(screen.getAllByText("Administration")).toHaveLength(2);
+  });
 });

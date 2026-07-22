@@ -70,7 +70,7 @@ export function WorkspaceShell({
           unreadCount:
             activeRole === "finance" || activeRole === "auditee" || activeRole === "manager"
               ? 1
-              : activeRole === "gm" || activeRole === "executiveDirector"
+              : activeRole === "gm" || activeRole === "executiveDirector" || activeRole === "admin"
                 ? 0
                 : 2,
           onOpen: () => undefined,
@@ -111,7 +111,7 @@ const deterministicNames: Record<Role, string> = {
   finance: "Derya Acar",
   executiveDirector: "Ufuk Aslan",
   auditee: "Fly Namibia Quality Manager",
-  admin: "Admin Preview",
+  admin: "System Admin",
 };
 
 function deterministicDisplayName(role: Role): string {

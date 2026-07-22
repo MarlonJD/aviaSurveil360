@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Tasks 1-12 are committed and pushed through `652753a`. Task 13 is `verified locally`: the accepted Finance, General Manager, and Executive Director role shells and distinct review compositions are restored from the recorded root DOM/CSS mapping while Backend authority, immutable report-version behavior, and handoff boundaries remain intact. The focused Task 13 plus router suite passes 5 files / 19 tests, typecheck passes, the complete canonical HTTP profile passes React 271/271, HTTP contract 14/14, mock Playwright 5/5, HTTP Playwright 7/7, and the fail-closed decoded-pixel gate passes the shared primitive gallery plus all 9 route/viewport pairs (10/10). Task 13 is the current exact commit/push unit; Task 14 follows after that push. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `active` — Tasks 1-13 are committed and pushed through `4b02993`. Task 14 is `verified locally` at its commit/push boundary: the React Admin route now preserves the accepted Administration shell and root `page-head` / `metaline` / `callout` / `ops-table` Template Preview composition while direct-loading the exact immutable Backend version. Focused tests pass 5 files / 26 tests, typecheck passes, the complete canonical HTTP profile passes React 279/279, HTTP contract 14/14, mock Playwright 5/5, HTTP Playwright 7/7, and the fail-closed full visual matrix passes the shared primitive gallery plus all 51 route/viewport pairs (52/52) without threshold, mask, comparator, or baseline changes. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
 
 ## Reviewed Plan Amendment — Fail-Closed Demo Visual Recovery (2026-07-21)
 
@@ -1818,6 +1818,15 @@ git push origin HEAD
 
 ### Task 14: Migrate The Admin Checklist Template Preview
 
+**Source-to-React mapping — recorded before implementation on 2026-07-22**
+
+| Surface area | Root source | Binding React composition | Responsive oracle |
+|---|---|---|---|
+| Administration shell | `js/app.js` `NAV.admin`, `VIEW_TITLES`, and `EXPERIENCE_LABEL`; root shell declarations in `css/styles.css` | Root demo ribbon; 234 px Administration sidebar with `Regulations`, `Evidence & Documents`, and `Administration` groups; Templates active; `Templates › Template Preview` topbar; Administration experience; System Admin identity; role-select footer | Desktop shows the full grouped sidebar and identity; tablet preserves the grouped sidebar but naturally clips later navigation below the fold; mobile removes the sidebar, uses the accepted menu/experience/bell/avatar row, and keeps the demo ribbon compact |
+| Template Preview body | `viewTemplatePreview()` in `js/views.js`; `.page-head`, `.card`, `.metaline`, `.callout`, `.ops-table*`, `.ops-priority`, `.ops-cell-*`, and `.badge*` declarations in `css/styles.css` | Page head and functional `Back to templates`; immutable template meta summary; source-profile callout; dense Row / Question / Regulatory Reference / Expected Evidence / Trace register; Backend-only allowed-answer and comment-rule facts stay subordinate within the corresponding row | Desktop keeps the dense five-column register; tablet wraps the meta summary and preserves a contained horizontal table viewport; mobile stacks the page head and meta facts while the table remains inside its own scroll container with no document overflow |
+
+The Backend version ID/title and question wording may differ from the root seed, but the shell, page hierarchy, density, preview register, and action placement are binding. `Back to templates` opens a read-only version register on the same routed surface; selecting a published version direct-loads its exact detail.
+
 **Files**
 
 - Modify `apps/web/src/features/admin/admin-configuration-page.tsx`
@@ -1835,6 +1844,7 @@ git push origin HEAD
 - Modify `apps/web/src/styles/style-ownership.test.ts`
 - Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
 - Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify `docs/exec-plans/index.md`
 - Modify this plan
 
 **Required behavior**
@@ -1849,8 +1859,8 @@ git push origin HEAD
 
 **Red/green cycle**
 
-- [ ] Add failing tests for list/detail calls, direct load, exact question/reference/evidence content, Admin-only guard, responsive order, immutable preview, no editing controls, and empty/malformed error states.
-- [ ] Run:
+- [x] Add failing tests for list/detail calls, direct load, exact question/reference/evidence content, Admin-only guard, responsive order, immutable preview, no editing controls, and empty/malformed error states.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/features/admin/admin-configuration-page.test.tsx
@@ -1858,8 +1868,8 @@ git push origin HEAD
   ```
 
   Expected red: current list-only contract cannot render the required detail.
-- [ ] Migrate with Task 3’s detail read, source-faithful root DOM/CSS composition, and `admin.css`; shared primitives may own behavior but may not replace the visible hierarchy.
-- [ ] Run:
+- [x] Migrate with Task 3’s detail read, source-faithful root DOM/CSS composition, and `admin.css`; shared primitives may own behavior but may not replace the visible hierarchy.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/features/admin/admin-configuration-page.test.tsx src/styles/style-ownership.test.ts
@@ -1871,10 +1881,20 @@ git push origin HEAD
 
   Expected green: Admin route passes direct-load, authority, schema, action, responsive, and decoded-pixel demo-composition gates.
 
+**Execution log — 2026-07-22, Task 14 verified locally**
+
+- The three tracked `admin-home` baselines and exact root `NAV.admin`, `viewTemplatePreview()`, `.page-head`, `.card`, `.metaline`, `.callout`, `.ops-table*`, `.ops-priority`, badge, ribbon, sidebar, and topbar sources were inspected before implementation. The binding mapping above was recorded before the React edit.
+- Red evidence: the initial Admin Vitest run failed 4/5 tests because the route exposed only the old configuration-summary substitute rather than immutable template detail. The first decoded-pixel run kept the shared primitive gallery green and rejected Admin desktop, tablet, and mobile. No threshold, mask, comparator, or tracked baseline was changed.
+- The route now lists published versions through `listChecklistTemplateVersions`, direct-loads the selected exact version through `getChecklistTemplateVersion`, shows Backend question/reference/Evidence/answer/comment facts, and provides a functional read-only `Back to templates` register. Non-Admin direct access remains guarded before configuration fetch; edit, publish, delete, user, role, draft, and configuration controls remain absent.
+- The visible composition now uses the accepted Administration demo ribbon, grouped sidebar, `Templates › Template Preview` topbar, System Admin identity, source page-head, six-item metaline, exact source-profile callout, and dense five-column ops table. Desktop, tablet, and mobile candidate screenshots were inspected beside their tracked baselines and are recognizably the same accepted demo rather than a newly designed React dashboard.
+- The first complete HTTP profile correctly failed 3/7 HTTP Playwright tests because the HTTP role-scoped Backend object is recreated across renders and the Admin load effect depended on that object, repeatedly detaching the version-register action. The mount-scoped read was corrected to run once for the routed page; the focused 5-file suite then passed 26/26 and typecheck passed.
+- Final canonical HTTP verification passes Go race/unit/integration, OpenAPI lint/examples/code generation, sqlc, React 47 files / 279 tests, demo and HTTP builds, HTTP artifact scan, HTTP contract 14/14, mock Playwright 5/5, HTTP Playwright 7/7, and worker/outbox observability. PostgreSQL, Keycloak, object-store, network, and volumes were removed by the script trap.
+- Final fail-closed decoded-pixel verification passes 52/52: the shared primitive gallery plus all 17 surfaces at desktop, tablet, and mobile. Shell threshold `0.03`, content threshold `0.08`, maximum channel delta `40`, masks, comparator logic, and baseline files remain unchanged. No Playwright, Vite, webdriver, remote-debugging Chrome, or headless browser process remained after the run.
+
 **Task 14 staging allowlist and commit**
 
 ```bash
-git add -- apps/web/src/features/admin/admin-configuration-page.tsx apps/web/src/features/admin/admin-configuration-page.test.tsx apps/web/src/features/shared/workspace-shell.tsx apps/web/src/ui/application-shell.tsx apps/web/src/ui/application-shell.test.tsx apps/web/src/ui/application-topbar.tsx apps/web/src/ui/application-topbar.test.tsx apps/web/src/ui/role-navigation.tsx apps/web/src/ui/role-navigation.test.tsx apps/web/src/styles/features/admin.css apps/web/src/styles/app.css apps/web/src/styles/responsive.css apps/web/src/styles/style-ownership.test.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- apps/web/src/features/admin/admin-configuration-page.tsx apps/web/src/features/admin/admin-configuration-page.test.tsx apps/web/src/features/shared/workspace-shell.tsx apps/web/src/ui/application-shell.tsx apps/web/src/ui/application-shell.test.tsx apps/web/src/ui/application-topbar.tsx apps/web/src/ui/application-topbar.test.tsx apps/web/src/ui/role-navigation.tsx apps/web/src/ui/role-navigation.test.tsx apps/web/src/styles/features/admin.css apps/web/src/styles/app.css apps/web/src/styles/responsive.css apps/web/src/styles/style-ownership.test.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/index.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
 git commit -m "feat(ui): migrate admin template preview"
 git push origin HEAD
 ```

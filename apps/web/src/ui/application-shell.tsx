@@ -31,14 +31,16 @@ export function ApplicationShell({
   const auditeeChrome = identity.activeRole === "auditee";
   const managerChrome = identity.activeRole === "manager";
   const authorityChrome = ["gm", "finance", "executiveDirector"].includes(identity.activeRole);
+  const adminChrome = identity.activeRole === "admin";
   const auditeeDemoChrome = auditeeChrome && identity.mode === "demo-role-switch";
   const managerDemoChrome = managerChrome && identity.mode === "demo-role-switch";
   const authorityDemoChrome = authorityChrome && identity.mode === "demo-role-switch";
-  const rootDemoChrome = auditeeDemoChrome || managerDemoChrome || authorityDemoChrome;
+  const adminDemoChrome = adminChrome && identity.mode === "demo-role-switch";
+  const rootDemoChrome = auditeeDemoChrome || managerDemoChrome || authorityDemoChrome || adminDemoChrome;
   const compactNavigation = typeof window !== "undefined" && window.innerWidth <= 900;
   return (
     <main
-      className={`workspace-shell${auditeeChrome ? " workspace-shell--auditee" : ""}${managerChrome ? " workspace-shell--manager" : ""}${authorityChrome ? ` workspace-shell--authority workspace-shell--${identity.activeRole}` : ""}${auditeeDemoChrome ? " workspace-shell--auditee-demo" : ""}${managerDemoChrome ? " workspace-shell--manager-demo" : ""}${authorityDemoChrome ? " workspace-shell--authority-demo" : ""}`}
+      className={`workspace-shell${auditeeChrome ? " workspace-shell--auditee" : ""}${managerChrome ? " workspace-shell--manager" : ""}${authorityChrome ? ` workspace-shell--authority workspace-shell--${identity.activeRole}` : ""}${adminChrome ? " workspace-shell--admin" : ""}${auditeeDemoChrome ? " workspace-shell--auditee-demo" : ""}${managerDemoChrome ? " workspace-shell--manager-demo" : ""}${authorityDemoChrome ? " workspace-shell--authority-demo" : ""}${adminDemoChrome ? " workspace-shell--admin-demo" : ""}`}
       data-active-role={identity.activeRole}
       data-testid="application-shell"
     >
@@ -66,7 +68,7 @@ export function ApplicationShell({
             <span className="sidebar-brand-mark__wing sidebar-brand-mark__wing--secondary" />
             <span className="sidebar-brand-mark__code">AS</span>
           </span>
-          <span><strong>AviaSurveil360</strong><small>{auditeeChrome || managerChrome || authorityChrome ? "OVERSIGHT WORKBENCH" : "Aviation Audit System"}</small></span>
+          <span><strong>AviaSurveil360</strong><small>{auditeeChrome || managerChrome || authorityChrome || adminChrome ? "OVERSIGHT WORKBENCH" : "Aviation Audit System"}</small></span>
         </div>
         <RoleNavigation activeRole={identity.activeRole} activeRouteId={activeRouteId} />
         <div className="sidebar-footer">
@@ -74,7 +76,7 @@ export function ApplicationShell({
             <span className="nav-item__icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M10 17 5 12l5-5" /><path d="M5 12h12" /><path d="M14 4h5v16h-5" /></svg>
             </span>
-            <span>{(auditeeChrome || managerChrome || authorityChrome) && identity.mode !== "oidc-session" ? "Role select" : "Logout"}</span>
+            <span>{(auditeeChrome || managerChrome || authorityChrome || adminChrome) && identity.mode !== "oidc-session" ? "Role select" : "Logout"}</span>
           </button>
           {rootDemoChrome ? <small>Demo data · frontend-only · saved in this browser</small> : null}
         </div>

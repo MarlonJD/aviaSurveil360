@@ -40,7 +40,9 @@ export function ApplicationTopbar({
   const auditeeChrome = identity.activeRole === "auditee";
   const managerChrome = identity.activeRole === "manager";
   const authorityChrome = ["gm", "finance", "executiveDirector"].includes(identity.activeRole);
-  if (auditeeChrome || managerChrome || authorityChrome) {
+  const adminChrome = identity.activeRole === "admin";
+  const avatarInitials = adminChrome ? "AP" : initials(identity.displayName);
+  if (auditeeChrome || managerChrome || authorityChrome || adminChrome) {
     const managerCrumbs: Partial<Record<ReactSurfaceId, string>> = {
       "manager-home": "Dashboard",
       "organization-registry": "Dashboard  ›  Organizations",
@@ -48,9 +50,15 @@ export function ApplicationTopbar({
       "report-preview": "Dashboard  ›  Reports Approval",
     };
     const authorityCrumbs: Partial<Record<ReactSurfaceId, string>> = { "gm-home": "General Manager Dashboard", "finance-home": "Finance Review", "executive-home": "Executive Director Dashboard" };
-    const routeCrumbs = auditeeChrome ? "Corrective Actions (CAP)" : managerChrome ? managerCrumbs[activeRouteId ?? "manager-home"] ?? "Dashboard" : authorityCrumbs[activeRouteId ?? "gm-home"] ?? roleLabel(identity.activeRole);
+    const routeCrumbs = auditeeChrome
+      ? "Corrective Actions (CAP)"
+      : managerChrome
+        ? managerCrumbs[activeRouteId ?? "manager-home"] ?? "Dashboard"
+        : adminChrome
+          ? "Templates  ›  Template Preview"
+          : authorityCrumbs[activeRouteId ?? "gm-home"] ?? roleLabel(identity.activeRole);
     return (
-      <header className={`application-topbar application-topbar--root ${auditeeChrome ? "application-topbar--auditee auditee-root-topbar" : managerChrome ? "application-topbar--manager manager-root-topbar" : "application-topbar--authority authority-root-topbar"}`}>
+      <header className={`application-topbar application-topbar--root ${auditeeChrome ? "application-topbar--auditee auditee-root-topbar" : managerChrome ? "application-topbar--manager manager-root-topbar" : adminChrome ? "application-topbar--admin admin-root-topbar" : "application-topbar--authority authority-root-topbar"}`}>
         <div className="auditee-root-topbar__crumbs"><b>{routeCrumbs}</b></div>
         <div className="auditee-root-topbar__spacer" />
         <label className="auditee-root-topbar__experience">
@@ -60,7 +68,7 @@ export function ApplicationTopbar({
             onChange={(event) => onRoleRequest(event.target.value as Role)}
             value={identity.activeRole}
           >
-            {identity.availableRoles.map((role) => <option key={role} value={role}>{role === "auditee" ? "Service Provider Portal - Service Provider" : roleLabel(role)}</option>)}
+            {identity.availableRoles.map((role) => <option key={role} value={role}>{role === "auditee" ? "Service Provider Portal - Service Provider" : role === "admin" ? "Administration" : roleLabel(role)}</option>)}
           </select>
         </label>
         <div className="auditee-root-topbar__notification">
@@ -92,10 +100,10 @@ export function ApplicationTopbar({
           {notificationsOpen ? <p className="topbar-popover" role="status">{notificationState.kind === "local" ? `${notificationState.unreadCount} local notification updates` : notificationState.reason}</p> : null}
         </div>
         <div className="auditee-root-topbar__who">
-          <span className={`auditee-root-topbar__avatar is-${identity.activeRole}`}>{initials(identity.displayName)}</span>
+          <span className={`auditee-root-topbar__avatar is-${identity.activeRole}`}>{avatarInitials}</span>
           <span className="auditee-root-topbar__identity">
             <strong>{identity.displayName}</strong>
-            <small>{auditeeChrome ? `Service Provider Portal · ${identity.organizationLabel}` : roleLabel(identity.activeRole)}</small>
+            <small>{auditeeChrome ? `Service Provider Portal · ${identity.organizationLabel}` : adminChrome ? "Administration" : roleLabel(identity.activeRole)}</small>
           </span>
         </div>
       </header>

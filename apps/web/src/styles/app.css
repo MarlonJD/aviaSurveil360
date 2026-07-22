@@ -9,5 +9,6 @@
 @import "./features/auditee.css" layer(features);
 @import "./features/management.css" layer(features);
 @import "./features/executive-review.css" layer(features);
+@import "./features/admin.css" layer(features);
 @import "./utilities.css" layer(utilities);
 @import "./responsive.css" layer(responsive);

@@ -95,10 +95,15 @@ for (const viewport of viewports) {
     await expect(page.getByTestId("planning-owner")).toHaveText("Department Manager");
 
     await page.getByLabel("Experience").selectOption("admin");
-    await expect(page.getByRole("heading", { name: "Admin Configuration Preview" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Template Preview — Cabin Inspection" })).toBeVisible();
     await expect(page.getByTestId("template-version")).toHaveText("Version 1");
-    await expect(page.getByTestId("reminder-rule-row")).toHaveCount(5);
-    await expect(page.getByTestId("audit-event-row")).toHaveCount(4);
+    const questions = page.getByRole("table", { name: "Published checklist questions" });
+    await expect(questions.locator("tbody tr")).toHaveCount(6);
+    await expect(questions).toContainText("Configured Cabin Inspection reference — GALLEY");
+    await page.getByRole("button", { name: "Back to templates" }).click();
+    await expect(page.getByRole("heading", { name: "Checklist Templates" })).toBeVisible();
+    await page.getByRole("button", { name: "Preview CTV-CABIN-1" }).click();
+    await expect(page.getByRole("heading", { name: "Template Preview — Cabin Inspection" })).toBeVisible();
     const body = await page.locator("body").innerText();
     expect(body).not.toMatch(/enforcement deliberation|internal risk|Inspector workload/i);
     await expectNoCriticalOverflow(page);

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import type { Role } from "../backend/backend";
@@ -40,13 +40,19 @@ type NavigationIcon =
   | "settingsRoot"
   | "shield"
   | "planning"
-  | "organization";
+  | "organization"
+  | "users"
+  | "help"
+  | "history"
+  | "listCheck"
+  | "building";
 
 interface AcceptedNavigationItem {
   label: string;
   icon: NavigationIcon;
   routeId?: ReactSurfaceId;
   badge?: string;
+  section?: string;
 }
 
 const ACCEPTED_NAVIGATION: Readonly<Record<Role, readonly AcceptedNavigationItem[]>> = {
@@ -107,13 +113,17 @@ const ACCEPTED_NAVIGATION: Readonly<Record<Role, readonly AcceptedNavigationItem
     { label: "Settings", icon: "settingsRoot" },
   ],
   admin: [
-    { label: "NAMCARS Library", icon: "report" },
-    { label: "Checklist Builder", icon: "assignment" },
-    { label: "Question Bank", icon: "finding" },
-    { label: "Version History", icon: "calendar" },
-    { label: "Templates", icon: "evidence", routeId: "admin-home" },
-    { label: "Users / Roles", icon: "organization" },
-    { label: "Configurations", icon: "settings" },
+    { label: "NAMCARS Library", icon: "dashboard", section: "Regulations" },
+    { label: "Regulatory Cross-Reference", icon: "dashboard" },
+    { label: "Checklist Builder", icon: "listCheck" },
+    { label: "Question Bank", icon: "help" },
+    { label: "Version History", icon: "history" },
+    { label: "Templates", icon: "listCheck", routeId: "admin-home", section: "Evidence & Documents" },
+    { label: "Reports", icon: "report" },
+    { label: "Users / Roles", icon: "users", section: "Administration" },
+    { label: "Configurations", icon: "settingsRoot" },
+    { label: "Notification Rules", icon: "settingsRoot" },
+    { label: "Organisation Master Data", icon: "building" },
   ],
 };
 
@@ -133,6 +143,11 @@ function NavigationGlyph({ icon }: { icon: NavigationIcon }) {
     shield: <><path d="M12 3 19 6v5c0 4.6-2.8 8-7 10-4.2-2-7-5.4-7-10V6z" /><path d="M12 7v9" /></>,
     planning: <><path d="M5 4h14v17H5z" /><path d="M8 2v5" /><path d="M16 2v5" /><path d="M8 11h8" /><path d="M8 15h6" /></>,
     organization: <><path d="M4 21V7l8-4 8 4v14" /><path d="M8 10h2" /><path d="M14 10h2" /><path d="M8 14h2" /><path d="M14 14h2" /><path d="M10 21v-3h4v3" /></>,
+    users: <><path d="M16 11a3 3 0 1 0 0-6" /><path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" /><path d="M2 19a6 6 0 0 1 12 0" /><path d="M14 15a5 5 0 0 1 8 4" /></>,
+    help: <><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" /><path d="M9.5 9a2.5 2.5 0 1 1 4.2 1.8c-.9.8-1.7 1.2-1.7 2.7" /><path d="M12 17h.01" /></>,
+    history: <><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 5v6h6" /><path d="M12 7v5l3 2" /></>,
+    listCheck: <><path d="m4 7 2 2 3-4" /><path d="M11 7h9" /><path d="m4 15 2 2 3-4" /><path d="M11 15h9" /></>,
+    building: <><path d="M5 21V3h10v18" /><path d="M15 9h4v12" /><path d="M8 7h3" /><path d="M8 11h3" /><path d="M8 15h3" /><path d="M3 21h18" /></>,
   };
   return <span className="nav-item__icon" aria-hidden="true"><svg viewBox="0 0 24 24">{paths[icon]}</svg></span>;
 }
@@ -154,27 +169,32 @@ export function RoleNavigation({
       {activeRole === "gm" ? <p className="role-navigation__experience">General Manager</p> : null}
       {activeRole === "finance" ? <p className="role-navigation__experience">Finance Review</p> : null}
       {activeRole === "executiveDirector" ? <p className="role-navigation__experience">Executive Director</p> : null}
+      {activeRole === "admin" ? <p className="role-navigation__experience">Administration</p> : null}
       {ACCEPTED_NAVIGATION[activeRole].map((item) => {
         const route = item.routeId ? REACT_ROUTE_CONTRACT_BY_ID.get(item.routeId) : null;
         const active =
           item.routeId === activePrimary ||
           (activeRole === "inspector" && activeRouteId === "audit-plan" && item.label === "Calendar");
         const content = <><NavigationGlyph icon={item.icon} /><span>{item.label}</span>{item.badge ? <span className="nav-item__badge">{item.badge}</span> : null}</>;
-        return route ? (
-          <Link aria-label={item.label} className={`nav-item${active ? " active" : ""}`} key={item.label} to={route.path} aria-current={active ? "page" : undefined} onClick={onNavigate}>
-            {content}
-          </Link>
-        ) : (
-          <button
-            aria-label={`${item.label} unavailable: this screen remains in the accepted legacy demo`}
-            className={`nav-item${active ? " active" : ""}`}
-            disabled
-            key={item.label}
-            title="This screen remains in the accepted legacy demo."
-            type="button"
-          >
-            {content}
-          </button>
+        return (
+          <Fragment key={item.label}>
+            {item.section ? <p className="role-navigation__section">{item.section}</p> : null}
+            {route ? (
+              <Link aria-label={item.label} className={`nav-item${active ? " active" : ""}`} to={route.path} aria-current={active ? "page" : undefined} onClick={onNavigate}>
+                {content}
+              </Link>
+            ) : (
+              <button
+                aria-label={`${item.label} unavailable: this screen remains in the accepted legacy demo`}
+                className={`nav-item${active ? " active" : ""}`}
+                disabled
+                title="This screen remains in the accepted legacy demo."
+                type="button"
+              >
+                {content}
+              </button>
+            )}
+          </Fragment>
         );
       })}
     </nav>

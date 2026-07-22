@@ -18,6 +18,7 @@ const styleFiles = [
   "features/auditee.css",
   "features/management.css",
   "features/executive-review.css",
+  "features/admin.css",
   "utilities.css",
   "responsive.css",
 ] as const;
@@ -33,6 +34,7 @@ const expectedAppCss = `@layer reset, tokens, base, shell, primitives, features,
 @import "./features/auditee.css" layer(features);
 @import "./features/management.css" layer(features);
 @import "./features/executive-review.css" layer(features);
+@import "./features/admin.css" layer(features);
 @import "./utilities.css" layer(utilities);
 @import "./responsive.css" layer(responsive);
 `;

@@ -148,4 +148,23 @@ describe("ApplicationShell", () => {
     );
     expect(screen.getByTestId("application-shell")).not.toHaveClass("workspace-shell--manager");
   });
+
+  it("renders the accepted Administration demo chrome and grouped sidebar", () => {
+    render(
+      <MemoryRouter>
+        <ApplicationShell
+          identity={{ ...identity, activeRole: "admin", displayName: "System Admin", availableRoles: ["admin", "manager"] }}
+          activeRouteId="admin-home"
+          onRoleRequest={() => undefined}
+          onLogout={() => undefined}
+          notificationState={{ kind: "local", unreadCount: 0, onOpen: () => undefined }}
+        ><h1>Template Preview — Cabin Inspection</h1></ApplicationShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId("application-shell")).toHaveClass("workspace-shell--admin-demo");
+    expect(screen.getByText("OVERSIGHT WORKBENCH")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Templates" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "Role select" })).toBeEnabled();
+  });
 });

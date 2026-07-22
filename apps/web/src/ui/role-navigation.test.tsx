@@ -48,4 +48,18 @@ describe("RoleNavigation", () => {
     expect(screen.getByText("Service Provider Portal")).toBeVisible();
     expect(screen.getByRole("link", { name: "Corrective Actions (CAP)" })).toHaveAttribute("aria-current", "page");
   });
+
+  it("reproduces the grouped Administration navigation with Templates active", () => {
+    render(
+      <MemoryRouter>
+        <RoleNavigation activeRole="admin" activeRouteId="admin-home" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByText("Administration")).toHaveLength(2);
+    expect(screen.getByText("Regulations")).toBeVisible();
+    expect(screen.getByText("Evidence & Documents")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Templates" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: /Organisation Master Data unavailable/i })).toBeDisabled();
+  });
 });

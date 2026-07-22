@@ -902,3 +902,73 @@
     grid-column: auto;
   }
 }
+
+/* Administration root-demo controls retain the accepted geometry after utilities. */
+.workspace-shell--admin .admin-root-topbar {
+  height: 56px;
+  min-height: 56px;
+}
+
+.workspace-shell--admin .auditee-root-topbar__experience {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 9px;
+  font-weight: 400;
+}
+
+.workspace-shell--admin .auditee-root-topbar__experience select {
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+  height: 34px;
+  min-height: 34px;
+  padding: 7px 10px;
+}
+
+.workspace-shell--admin .admin-page-head button,
+.workspace-shell--admin .admin-template-register button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.workspace-shell--admin .auditee-root-topbar__avatar {
+  background: #cc7a00;
+}
+
+@media (max-width: 900px) {
+  .workspace-shell--admin .admin-root-topbar {
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 55px;
+    min-height: 55px;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 9px 12px;
+  }
+
+  .workspace-shell--admin[data-active-role] .workspace-content {
+    padding-top: 72px;
+  }
+
+  .workspace-shell--admin .mobile-navigation__opener {
+    top: 6px;
+    left: 9px;
+  }
+}
+
+@media (max-width: 640px) {
+  .workspace-shell--admin .admin-root-topbar .auditee-root-topbar__experience select {
+    width: 148px;
+    min-width: 148px;
+    max-width: 148px;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1100px) {
+  .workspace-shell--admin .auditee-demo-ribbon { padding-left: 15px; }
+  .workspace-shell--admin .auditee-demo-ribbon__reset { width: 83.015625px; min-width: 83.015625px; flex-basis: 83.015625px; }
+  .workspace-shell--admin .auditee-demo-ribbon__reset span { height: 40px; white-space: normal; }
+}
