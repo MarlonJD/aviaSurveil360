@@ -88,8 +88,8 @@ export function AuditDetailPage() {
             </div>
           </div>
           <div className="inspection-exec__actions">
-            <button onClick={downloadChecklist} type="button">⇩&nbsp; Download Checklist</button>
-            <button onClick={() => setDraftSaved(true)} type="button">💾&nbsp; Save Draft</button>
+            <button aria-label="Download checklist" onClick={downloadChecklist} type="button">⇩&nbsp; Download Checklist</button>
+            <button aria-label="Save draft" onClick={() => setDraftSaved(true)} type="button">💾&nbsp; Save Draft</button>
             <Link
               aria-label="Run Cabin checklist"
               className="inspection-submit-action"
@@ -160,7 +160,7 @@ export function AuditDetailPage() {
               <p><span className="is-neutral">−</span> Not Applicable</p>
             </section>
           </aside>
-          <section className="inspection-card">
+          <section className="inspection-card" id="inspection-section-panel">
             <header className="inspection-card__head">
               <h2>{selectedSectionIndex + 1}. {selectedSection.label}</h2>
               <span>0 / 1 Completed&nbsp;&nbsp;⌃</span>
@@ -179,23 +179,23 @@ export function AuditDetailPage() {
                       <em>{selectedQuestion ? "Assigned to you" : "Read-only package summary"}</em>
                     </td>
                     <td>
-                      <select aria-label={`Compliance for ${selectedSectionIndex + 1}.1`} disabled defaultValue="NOT_APPLICABLE">
+                      <select aria-label={`Compliance for ${selectedSectionIndex + 1}.1`} disabled title="This package summary is read-only; run the checklist to record compliance." defaultValue="NOT_APPLICABLE">
                         <option value="NOT_APPLICABLE">Not Applicable</option>
                       </select>
                     </td>
-                    <td><textarea aria-label="Comments for 4.1" disabled placeholder="Comment required for exception results" /></td>
-                    <td><button disabled type="button">🔗 No file attached</button></td>
+                    <td><textarea aria-label="Comments for 4.1" disabled placeholder="Comment required for exception results" title="This package summary is read-only; run the checklist to add a comment." /></td>
+                    <td><button disabled title="No Inspection Attachment is attached to this read-only package summary." type="button">🔗 No file attached</button></td>
                     <td>⋮</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <footer className="inspection-bottom-nav">
-              <button disabled={!previousSection} onClick={() => previousSection && setSelectedSectionId(previousSection.id)} type="button">
+              <button aria-controls="inspection-section-panel" aria-label={previousSection ? `Previous section: ${previousSection.label}` : "Previous section unavailable"} disabled={!previousSection} onClick={() => previousSection && setSelectedSectionId(previousSection.id)} title={!previousSection ? "The first checklist section is already selected." : undefined} type="button">
                 ← {previousSection?.label ?? "Previous Section"}
               </button>
               <span>Next Section</span>
-              <button disabled={!nextSection} onClick={() => nextSection && setSelectedSectionId(nextSection.id)} type="button">
+              <button aria-controls="inspection-section-panel" aria-label={nextSection ? `Next section: ${nextSection.label}` : "Next section unavailable"} disabled={!nextSection} onClick={() => nextSection && setSelectedSectionId(nextSection.id)} title={!nextSection ? "The final checklist section is already selected." : undefined} type="button">
                 {nextSection ? `${selectedSectionIndex + 2}. ${nextSection.label} →` : "Checklist complete"}
               </button>
             </footer>

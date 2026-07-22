@@ -359,6 +359,7 @@ export function ChecklistRunnerPage() {
                             aria-pressed={active}
                             data-testid="checklist-question-row"
                             disabled={!assignedHere}
+                            title={!assignedHere ? "This question is assigned to another Inspector and is read-only." : undefined}
                             onClick={() => assignedHere && setSelectedQuestionId(question.id)}
                             type="button"
                           >Q{index + 1}</button>
@@ -381,7 +382,7 @@ export function ChecklistRunnerPage() {
                         <td><span>● {active && projection.response ? answerLabel(projection.response.answer) : "Not answered"}</span></td>
                         <td>{acceptedQuestion?.evidence ?? question.expectedEvidence}</td>
                         <td>{active && activeFlagged ? findingPath : "No finding"}</td>
-                        <td><button disabled={!assignedHere} onClick={() => setSelectedQuestionId(question.id)} type="button">Open question</button></td>
+                        <td><button disabled={!assignedHere} onClick={() => setSelectedQuestionId(question.id)} title={!assignedHere ? "This question is assigned to another Inspector and is read-only." : undefined} type="button">Open question</button></td>
                       </tr>
                     );
                   })}

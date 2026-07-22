@@ -74,4 +74,16 @@ describe("authorized role-entry inventory", () => {
     expect(screen.getByTestId("role-select-panel")).toBeInTheDocument();
     expect(screen.getAllByTestId("role-card-icon")).toHaveLength(8);
   });
+
+  it("redirects an undeclared path to role selection without rendering a placeholder", async () => {
+    const runtime = createMockBackendRuntime();
+    render(
+      <AppProviders runtime={{ backend: runtime.backend, backendForRole: runtime.backendForRole, buildProfile: "demo", environmentLabel: "Test" }}>
+        <MemoryRouter initialEntries={["/scope-leak"]}><AppRouter /></MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(await screen.findByTestId("role-select-panel")).toBeInTheDocument();
+    expect(screen.queryByText(/placeholder|coming soon|candidate React entry route/i)).not.toBeInTheDocument();
+  });
 });

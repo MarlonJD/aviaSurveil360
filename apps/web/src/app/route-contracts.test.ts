@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { REACT_ROUTE_CONTRACTS } from "./route-contracts";
@@ -130,5 +132,14 @@ describe("React route contracts", () => {
     expect(REACT_ROUTE_CONTRACTS.every(({ label, iconKey, order }) =>
       label.trim() && iconKey.trim() && Number.isInteger(order),
     )).toBe(true);
+  });
+
+  it("keeps the router free of undeclared literal paths and placeholder routes", () => {
+    const router = readFileSync(resolve(import.meta.dirname, "router.tsx"), "utf8");
+    const declared = new Set(REACT_ROUTE_CONTRACTS.map(({ path }) => path));
+    const literalRouterPaths = [...router.matchAll(/<Route\b[^>]*\bpath="([^"]+)"/g)]
+      .map((match) => match[1]);
+    expect(literalRouterPaths.every((path) => path === "*" || declared.has(path))).toBe(true);
+    expect(router).not.toMatch(/RoleEntryPlaceholder|candidate React entry route|coming soon/i);
   });
 });

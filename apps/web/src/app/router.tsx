@@ -29,7 +29,6 @@ import {
   RoleSelectPage,
   ROLE_ENTRIES,
   createRoleEntryPath,
-  type RoleEntry,
 } from "../ui/role-select-page";
 
 export { ROLE_ENTRIES, createRoleEntryPath } from "../ui/role-select-page";
@@ -62,29 +61,17 @@ function OidcLogoutRoute() {
   return <LoginPage message="You have signed out." onLogin={() => session?.login("/inspector/inspector-assignments")} />;
 }
 
-export function RoleEntryPlaceholder({ entry }: { entry: RoleEntry }) {
-  return (
-    <article className="placeholder-panel">
-      <span>React foundation</span>
-      <h2>{entry.route}</h2>
-      <p>
-        This candidate React entry route is wired without legacy globals. Secondary route families
-        stay in the legacy demo until Product approves them.
-      </p>
-    </article>
-  );
-}
-
-function RoleEntryRoute({ entry }: { entry: RoleEntry }) {
-  if (entry.role === "inspector") return <InspectorAssignmentsPage />;
-  if (entry.role === "leadInspector") return <LeadReviewPage />;
-  if (entry.role === "manager") return <ManagerDashboardPage />;
-  if (entry.role === "gm") return <GeneralManagerDashboardPage />;
-  if (entry.role === "finance") return <FinanceReviewPage />;
-  if (entry.role === "executiveDirector") return <ExecutiveDashboardPage />;
-  if (entry.role === "auditee") return <AuditeeCapPage />;
-  if (entry.role === "admin") return <AdminConfigurationPage />;
-  return <RoleEntryPlaceholder entry={entry} />;
+function roleEntryElement(role: Role): ReactElement {
+  switch (role) {
+    case "inspector": return <InspectorAssignmentsPage />;
+    case "leadInspector": return <LeadReviewPage />;
+    case "manager": return <ManagerDashboardPage />;
+    case "gm": return <GeneralManagerDashboardPage />;
+    case "finance": return <FinanceReviewPage />;
+    case "executiveDirector": return <ExecutiveDashboardPage />;
+    case "auditee": return <AuditeeCapPage />;
+    case "admin": return <AdminConfigurationPage />;
+  }
 }
 
 function guarded(contractId: ReactSurfaceId, element: ReactElement) {
@@ -101,7 +88,7 @@ export function AppRouter() {
         <Route
           key={entry.role}
           path={createRoleEntryPath(entry.role)}
-          element={guarded(entry.routeId, <RoleEntryRoute entry={entry} />)}
+          element={guarded(entry.routeId, roleEntryElement(entry.role))}
         />
       ))}
       <Route path="/inspector/audits/AUD-2026-001" element={guarded("audit-detail", <AuditDetailPage />)} />

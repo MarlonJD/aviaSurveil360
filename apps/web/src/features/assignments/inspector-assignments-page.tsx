@@ -123,19 +123,19 @@ export function InspectorAssignmentsPage() {
         </header>
       <CommandError message={error} />
       <section className="inspector-assignment-kpis" aria-label="Assignment attention">
-        <button className={statusFilter === "all" ? "is-active" : ""} onClick={() => setStatusFilter("all")} type="button">
+        <button aria-pressed={statusFilter === "all"} className={statusFilter === "all" ? "is-active" : ""} onClick={() => setStatusFilter("all")} type="button">
           <span className="inspector-assignment-kpi__icon" aria-hidden="true">📄</span><span><b>Open Assignments</b><strong>{projection.assignments.length}</strong><em>Audits</em></span>
         </button>
-        <button className={statusFilter === "IN_PROGRESS" ? "is-active is-warn" : "is-warn"} onClick={() => setStatusFilter("IN_PROGRESS")} type="button">
+        <button aria-pressed={statusFilter === "IN_PROGRESS"} className={statusFilter === "IN_PROGRESS" ? "is-active is-warn" : "is-warn"} onClick={() => setStatusFilter("IN_PROGRESS")} type="button">
           <span className="inspector-assignment-kpi__icon" aria-hidden="true">◴</span><span><b>In Progress</b><strong>{inProgressCount}</strong><em>Audits</em></span>
         </button>
-        <button className={statusFilter === "COMPLETED" ? "is-active is-ok" : "is-ok"} onClick={() => setStatusFilter("COMPLETED")} type="button">
+        <button aria-pressed={statusFilter === "COMPLETED"} className={statusFilter === "COMPLETED" ? "is-active is-ok" : "is-ok"} onClick={() => setStatusFilter("COMPLETED")} type="button">
           <span className="inspector-assignment-kpi__icon" aria-hidden="true">✓</span><span><b>Completed</b><strong>{completedCount}</strong><em>Audits</em></span>
         </button>
-        <button className={statusFilter === "OVERDUE" ? "is-active is-danger" : "is-danger"} onClick={() => setStatusFilter("OVERDUE")} type="button">
+        <button aria-pressed={statusFilter === "OVERDUE"} className={statusFilter === "OVERDUE" ? "is-active is-danger" : "is-danger"} onClick={() => setStatusFilter("OVERDUE")} type="button">
           <span className="inspector-assignment-kpi__icon" aria-hidden="true">📅</span><span><b>Overdue</b><strong>{overdueCount}</strong><em>Audits</em></span>
         </button>
-        <button className="is-neutral" onClick={resetFilters} type="button">
+        <button aria-pressed={statusFilter === "all" && query === "" && typeFilter === "all" && organizationFilter === "all" && dateFilter === "all"} className="is-neutral" onClick={resetFilters} type="button">
           <span className="inspector-assignment-kpi__icon" aria-hidden="true">🗄</span><span><b>Total Assigned</b><strong>{projection.assignments.length}</strong><em>Audits</em></span>
         </button>
       </section>

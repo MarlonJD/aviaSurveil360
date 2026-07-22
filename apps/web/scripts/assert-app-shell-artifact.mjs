@@ -4,6 +4,28 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+export const BRAND_ASSET_BASENAMES = Object.freeze([
+  "aviasurveil360-mark",
+  "airspace-texture",
+  "DMSans-Variable",
+  "air-traffic-control",
+  "buildings",
+  "arrow-right",
+  "wallet",
+  "seal-check",
+  "gear",
+  "globe-hemisphere-west",
+  "compass",
+  "bank",
+]);
+
+const escapedBrandNames = BRAND_ASSET_BASENAMES.map((name) =>
+  name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+).join("|");
+const approvedBrandAsset = new RegExp(
+  `^/assets/(?:${escapedBrandNames})-[A-Za-z0-9_-]+\\.(?:png|svg|ttf|woff|woff2)$`,
+);
+
 function inventory(directory, prefix = "") {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const relativePath = path.posix.join(prefix, entry.name);
@@ -30,7 +52,6 @@ export function assertAppShellArtifact(suppliedPath) {
   );
   assert.ok(["demo", "http"].includes(manifest.profile), "App-shell profile must be demo or http");
   assert.ok(Array.isArray(manifest.assets) && manifest.assets.length > 0, "App-shell assets are required");
-  const approvedBrandAsset = /^\/assets\/(?:aviasurveil360-mark|airspace-texture|DMSans-Variable|air-traffic-control|buildings|arrow-right|wallet|seal-check|gear|globe-hemisphere-west|compass|bank)-[A-Za-z0-9_-]+\.(?:png|svg|ttf|woff|woff2)$/;
   const requiredBrandAssets = [
     /\/assets\/aviasurveil360-mark-[A-Za-z0-9_-]+\.png$/,
     /\/assets\/air-traffic-control-[A-Za-z0-9_-]+\.svg$/,

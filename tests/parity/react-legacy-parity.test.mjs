@@ -19,7 +19,7 @@ function referencedTests(entry) {
 test("the behavior ledger covers the authorized first-production route families", () => {
   const ledger = readLedger();
   assert.equal(ledger.product, "AviaSurveil360");
-  assert.equal(ledger.version, 3);
+  assert.equal(ledger.version, 4);
   assert.equal(ledger.legacyRemovalAllowed, false);
   assert.ok(ledger.entries.length >= 15, "Route actions must extend the canonical scenario and role entries");
 
@@ -61,6 +61,24 @@ test("the behavior ledger covers the authorized first-production route families"
     "view-versioned-configuration-and-audit-trail",
   ]) {
     assert.ok(routeActions.has(action), `Missing executable route action: ${action}`);
+  }
+});
+
+test("the parity ledger freezes the 17/69 scope and visible action ownership", () => {
+  const ledger = readLedger();
+  assert.equal(ledger.reactScope.reactParitySurfaceIds.length, 17);
+  assert.equal(new Set(ledger.reactScope.reactParitySurfaceIds).size, 17);
+  assert.equal(ledger.reactScope.legacyOnlyRows, 69);
+  assert.equal(ledger.reactScope.legacyOnlyReactPath, null);
+  assert.equal(ledger.reactScope.legacyRemovalAllowed, false);
+  assert.ok(ledger.visibleActionOwnership.length >= 3);
+  for (const ownership of ledger.visibleActionOwnership) {
+    assert.ok(ownership.id);
+    assert.ok(ownership.surfaceIds.length > 0);
+    assert.doesNotThrow(() => new RegExp(ownership.namePattern));
+    assert.ok(["local", "session", "backend-or-local"].includes(ownership.boundary));
+    assert.ok(ownership.durableEffect.length > 20);
+    assert.ok(fs.existsSync(path.join(repositoryRoot, ownership.evidence)));
   }
 });
 

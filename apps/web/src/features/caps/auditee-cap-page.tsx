@@ -277,6 +277,7 @@ export function AuditeeCapPage() {
             ["closed", "Closed"],
           ] as const).map(([key, label]) => (
             <button
+              aria-pressed={group === key}
               className={`auditee-metric auditee-metric--${key}${group === key ? " is-active" : ""}`}
               key={key}
               onClick={() => setGroup(key)}
@@ -298,6 +299,7 @@ export function AuditeeCapPage() {
           ] as const).map(([key, label]) => (
             <button
               aria-current={group === key ? "page" : undefined}
+              aria-pressed={group === key}
               className={group === key ? "is-active" : ""}
               key={key}
               onClick={() => setGroup(key)}

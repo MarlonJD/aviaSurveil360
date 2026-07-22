@@ -102,6 +102,12 @@ describe("legacy screen manifest", () => {
       dataBoundary === null &&
       referenceScreenshotIds.length === 0,
     )).toBe(true);
+    expect(legacyRows.every(({ reason, productAuthority, sourceEvidence, disposition }) =>
+      reason.trim().length > 0 &&
+      productAuthority.length > 0 &&
+      sourceEvidence.length > 0 &&
+      ["later-legacy-only", "demo-only-legacy"].includes(disposition),
+    )).toBe(true);
   });
 
   it("keeps every React row aligned with the typed route registry", () => {

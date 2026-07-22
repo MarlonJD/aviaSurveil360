@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Tasks 1-13 are committed and pushed through `4b02993`. Task 14 is `verified locally` at its commit/push boundary: the React Admin route now preserves the accepted Administration shell and root `page-head` / `metaline` / `callout` / `ops-table` Template Preview composition while direct-loading the exact immutable Backend version. Focused tests pass 5 files / 26 tests, typecheck passes, the complete canonical HTTP profile passes React 279/279, HTTP contract 14/14, mock Playwright 5/5, HTTP Playwright 7/7, and the fail-closed full visual matrix passes the shared primitive gallery plus all 51 route/viewport pairs (52/52) without threshold, mask, comparator, or baseline changes. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `active` — Tasks 1-14 are committed and pushed through `ece4f47`. Task 15 is `verified locally` at its commit/push boundary: the exact 17-route / 69 legacy-only scope, source/build/artifact exclusions, accessible visible-action ownership, and mandatory 51-pair decoded-pixel harness now fail closed. React passes 47 files / 282 tests; the complete canonical HTTP profile passes HTTP contract 14/14, mock Playwright 8/8, HTTP Playwright 10/10, and worker/outbox observability; the full visual gate passes the primitive gallery plus all 51 route/viewport pairs (52/52) without threshold, mask, comparator, or baseline changes. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
 
 ## Reviewed Plan Amendment — Fail-Closed Demo Visual Recovery (2026-07-21)
 
@@ -1908,10 +1908,13 @@ git push origin HEAD
 - Modify `apps/web/src/parity/legacy-screen-manifest.test.ts`
 - Modify `apps/web/src/app/route-contracts.test.ts`
 - Modify `apps/web/src/app/router.test.tsx`
+- Modify `apps/web/src/app/router.tsx`
 - Modify `apps/web/src/app/build-profile.test.ts`
-- Modify `apps/web/src/app/canonical-scenario.contract.test.ts`
-- Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
-- Modify `apps/web/tests/e2e/release-candidate-gates.spec.ts`
+- Modify `apps/web/src/features/assignments/inspector-assignments-page.tsx`
+- Modify `apps/web/src/features/caps/auditee-cap-page.tsx`
+- Modify `apps/web/src/features/checklists/checklist-runner-page.tsx`
+- Modify `apps/web/src/features/inspections/audit-detail-page.tsx`
+- Modify `apps/web/src/features/reports/report-preview-page.tsx`
 - Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
 - Modify `apps/web/playwright.config.ts`
 - Modify `apps/web/package.json`
@@ -1919,7 +1922,10 @@ git push origin HEAD
 - Modify `apps/web/scripts/assert-http-artifact.mjs`
 - Modify `tests/parity/behavior-ledger.json`
 - Modify `tests/parity/react-legacy-parity.test.mjs`
+- Modify `docs/exec-plans/index.md`
 - Modify this plan
+
+The five feature files and `router.tsx` were added to the reviewed Task 15 allowlist after the red action/source inventory found one inert report action, missing filter state semantics, unexplained read-only controls, and the prohibited placeholder fallback. These are accessibility/behavior-boundary corrections with no accepted visual hierarchy, baseline, mask, comparator, or threshold change. The three previously anticipated higher-level test files were not modified because the dedicated visible-action spec and mutation harness own the executable proof directly.
 
 **Boundary rules**
 
@@ -1947,8 +1953,8 @@ Add exact package script:
 
 **Red/green cycle**
 
-- [ ] Add failing tests by asserting the exact registry/manifest set, source/build exclusion strings, and action inventory. Include fixture mutations that add one undeclared route, one inert button, one broad root import, and one HTTP mock import; every mutation must make the boundary test fail.
-- [ ] Run:
+- [x] Add failing tests by asserting the exact registry/manifest set, source/build exclusion strings, and action inventory. Include fixture mutations that add one undeclared route, one inert button, one broad root import, and one HTTP mock import; every mutation must make the boundary test fail.
+- [x] Run:
 
   ```bash
   node apps/web/scripts/assert-parity-boundary.mjs
@@ -1957,8 +1963,8 @@ Add exact package script:
   ```
 
   Expected red: boundary script/action spec are absent.
-- [ ] Implement the fail-closed source/build/action checks and update the behavior ledger with exact React/legacy disposition and Backend/local action ownership.
-- [ ] Build both profiles and run:
+- [x] Implement the fail-closed source/build/action checks and update the behavior ledger with exact React/legacy disposition and Backend/local action ownership.
+- [x] Build both profiles and run:
 
   ```bash
   npm --prefix apps/web run typecheck
@@ -1976,10 +1982,21 @@ Add exact package script:
 
   Expected green: exact route/action/artifact boundaries pass with approved brand assets, no hidden placeholders, and all 51 decoded-pixel visual pairs enforced fail-closed.
 
+**Execution log — 2026-07-22, Task 15 verified locally**
+
+- Red evidence: `assert-parity-boundary.mjs` and `test:e2e:visible-actions` were absent while the pre-existing focused registry suite passed 5 files / 14 tests. The first action inventory then rejected an inert report `Open` control, unnamed/unowned filter states, unexplained read-only controls, duplicate-action detection that was too broad, and mobile close interception by the accepted demo ribbon.
+- The router placeholder fallback is removed and the wildcard redirects only to role selection. The boundary scanner freezes the ordered 17 paths, checks the 69 null-path classifications, scans runtime imports plus demo/HTTP build manifests, validates the semantic brand registry/app-shell manifest, reuses the HTTP artifact boundary, rejects inert source buttons, and requires the exact full visual loops and attachments.
+- Eight mutation fixtures all make the gate red: undeclared route, inert button, protected root import, HTTP mock import, missing shell assertion, missing content assertion, compressed-byte comparator, and skipped viewport. The behavior ledger is version 4 and records the exact 17/69 scope plus session/local/Backend-or-local visible-action ownership.
+- The browser action contract inventories visible buttons, links, inputs, selects, textareas, tabs, and button roles on all 17 surfaces at desktop, tablet, and mobile. It requires stable names, verified native/form/navigation/state semantics or ledger ownership, explicit disabled reasons, one active compact navigation landmark, and no accessible off-canvas sidebar controls. Filter controls now expose pressed state; read-only controls explain why they are disabled; the report queue `Open` action focuses the immutable dossier.
+- Focused registry/mutation tests pass 5 files / 17 tests; the parity ledger passes 4/4; typecheck passes; the full React suite passes 47 files / 282 tests. Demo/HTTP builds, app-shell scans (24 files / 16 assets each), HTTP artifact scan (24 files / 109 inputs), and the parity boundary scan (17 routes / 2 profiles) pass.
+- Mock visible actions pass 3/3 viewport tests, each covering all 17 surfaces. The decoded-pixel visual gate passes 52/52 with all 51 candidate PNG and 51 machine-readable region-result attachments; thresholds, masks, comparator, and tracked baselines are unchanged.
+- The first complete HTTP attempt was interrupted at sqlc by an operating-system `signal: killed`; the immediate isolated rerun passed `sqlc-check: ok`. Subsequent complete attempts exposed and corrected only test-harness duration/reset isolation: the 17-route viewport tests now declare 120 seconds and reset canonical state once per viewport, not between read-only surfaces.
+- Final canonical HTTP verification passes Go race/unit/integration, OpenAPI lint/examples/code generation, sqlc, React 282/282, demo/HTTP builds, HTTP artifact scan, HTTP contract 14/14, mock Playwright 8/8, HTTP Playwright 10/10, and worker/outbox observability. PostgreSQL, Keycloak, object-store, network, and volumes were removed by the script trap.
+
 **Task 15 staging allowlist and commit**
 
 ```bash
-git add -- apps/web/scripts/assert-parity-boundary.mjs apps/web/tests/e2e/visible-action-contract.spec.ts apps/web/src/parity/legacy-screen-manifest.test.ts apps/web/src/app/route-contracts.test.ts apps/web/src/app/router.test.tsx apps/web/src/app/build-profile.test.ts apps/web/src/app/canonical-scenario.contract.test.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/release-candidate-gates.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts apps/web/playwright.config.ts apps/web/package.json apps/web/scripts/assert-app-shell-artifact.mjs apps/web/scripts/assert-http-artifact.mjs tests/parity/behavior-ledger.json tests/parity/react-legacy-parity.test.mjs docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- apps/web/scripts/assert-parity-boundary.mjs apps/web/tests/e2e/visible-action-contract.spec.ts apps/web/src/parity/legacy-screen-manifest.test.ts apps/web/src/app/route-contracts.test.ts apps/web/src/app/router.test.tsx apps/web/src/app/router.tsx apps/web/src/app/build-profile.test.ts apps/web/src/features/assignments/inspector-assignments-page.tsx apps/web/src/features/caps/auditee-cap-page.tsx apps/web/src/features/checklists/checklist-runner-page.tsx apps/web/src/features/inspections/audit-detail-page.tsx apps/web/src/features/reports/report-preview-page.tsx apps/web/tests/e2e/legacy-visual-parity.spec.ts apps/web/playwright.config.ts apps/web/package.json apps/web/scripts/assert-app-shell-artifact.mjs apps/web/scripts/assert-http-artifact.mjs tests/parity/behavior-ledger.json tests/parity/react-legacy-parity.test.mjs docs/exec-plans/index.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
 git commit -m "test(ui): enforce parity scope boundary"
 git push origin HEAD
 ```

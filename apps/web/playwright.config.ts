@@ -68,6 +68,7 @@ export default defineConfig({
         "e2e/canonical-scenario.spec.ts",
         "e2e/first-production-routes.spec.ts",
         "e2e/release-candidate-gates.spec.ts",
+        "e2e/visible-action-contract.spec.ts",
       ],
     },
     {
@@ -77,6 +78,7 @@ export default defineConfig({
         "e2e/first-production-routes.spec.ts",
         "e2e/offline-sync.http.spec.ts",
         "e2e/release-candidate-gates.spec.ts",
+        "e2e/visible-action-contract.spec.ts",
       ],
     },
     {

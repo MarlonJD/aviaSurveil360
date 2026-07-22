@@ -1,8 +1,66 @@
 {
   "product": "AviaSurveil360",
-  "version": 3,
+  "version": 4,
   "status": "candidate-only",
   "legacyRemovalAllowed": false,
+  "reactScope": {
+    "reactParitySurfaceIds": [
+      "role-select",
+      "inspector-home",
+      "lead-home",
+      "manager-home",
+      "gm-home",
+      "finance-home",
+      "executive-home",
+      "auditee-home",
+      "admin-home",
+      "audit-detail",
+      "checklist-runner",
+      "organization-registry",
+      "audit-plan",
+      "finding-detail",
+      "cap-review",
+      "evidence-review",
+      "report-preview"
+    ],
+    "legacyOnlyRows": 69,
+    "legacyOnlyReactPath": null,
+    "legacyRemovalAllowed": false
+  },
+  "visibleActionOwnership": [
+    {
+      "id": "shell-reset",
+      "surfaceIds": ["*"],
+      "namePattern": "^Reset demo$",
+      "boundary": "local",
+      "durableEffect": "Clears the deterministic browser demo store and reloads the active route.",
+      "evidence": "apps/web/tests/e2e/release-candidate-gates.spec.ts"
+    },
+    {
+      "id": "shell-role-exit",
+      "surfaceIds": ["*"],
+      "namePattern": "^(Role select|Logout)$",
+      "boundary": "session",
+      "durableEffect": "Navigates to role selection or performs the OIDC logout boundary.",
+      "evidence": "apps/web/tests/e2e/release-candidate-gates.spec.ts"
+    },
+    {
+      "id": "role-select-local-actions",
+      "surfaceIds": ["role-select"],
+      "namePattern": "^(Skip to workspace selection|Explore the clickable demo)$",
+      "boundary": "local",
+      "durableEffect": "Moves focus to the role grid or scrolls the accepted role-selection workspace into view.",
+      "evidence": "apps/web/tests/e2e/visible-action-contract.spec.ts"
+    },
+    {
+      "id": "declared-route-and-workflow-actions",
+      "surfaceIds": ["*"],
+      "namePattern": "^[^A-Za-z0-9]*(Open|Review|Start|Continue|Convert|Accept|Request|Reject|Return|Forward|Approve|Release|Confirm|Submit|Save|Dismiss|Preview|Back|Search|Reset|Select|Use|Close|View|Download|Check out)(\\b| ).*",
+      "boundary": "backend-or-local",
+      "durableEffect": "Executes a routed navigation, visible selection/dialog/tab state, form transition, or Backend command covered by the named route tests.",
+      "evidence": "apps/web/tests/e2e/first-production-routes.spec.ts"
+    }
+  ],
   "entries": [
     {
       "id": "canonical-cabin-scenario",

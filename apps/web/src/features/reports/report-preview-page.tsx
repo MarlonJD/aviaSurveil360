@@ -87,13 +87,13 @@ export function ReportPreviewPage() {
             </div>
             <div className="management-table-scroll">
               <table aria-label="Report Queue"><thead><tr><th>Report</th><th>Organization</th><th>Type</th><th>Status</th><th>Action</th></tr></thead><tbody>
-                {report && queueVisible ? <tr className="is-selected"><td><b>{report.reportVersionId}</b><small>{report.auditId}</small></td><td>Fly Namibia</td><td>Cabin Inspection</td><td>{report.status}</td><td><button type="button">Open</button></td></tr> : <tr><td colSpan={5}>No matching report versions.</td></tr>}
+                {report && queueVisible ? <tr className="is-selected"><td><b>{report.reportVersionId}</b><small>{report.auditId}</small></td><td>Fly Namibia</td><td>Cabin Inspection</td><td>{report.status}</td><td><button aria-controls="report-version-dossier" onClick={() => document.getElementById("report-version-dossier")?.focus()} type="button">Open</button></td></tr> : <tr><td colSpan={5}>No matching report versions.</td></tr>}
               </tbody></table>
             </div>
           </section>
 
           {report ? (
-            <section className="report-dossier management-panel" data-testid="report-version-dossier">
+            <section className="report-dossier management-panel" data-testid="report-version-dossier" id="report-version-dossier" tabIndex={-1}>
               <header><div><span>Immutable selected version</span><h2>Fly Namibia · Cabin Inspection</h2><small>{report.reportVersionId}</small></div><strong data-testid="report-status">{report.status}</strong></header>
               <dl className="report-dossier__identity"><div><dt>Report ID</dt><dd>{report.reportId}</dd></div><div><dt>Version</dt><dd>Version {report.version}</dd></div><div><dt>Audit</dt><dd>{report.auditId}</dd></div><div><dt>Content hash</dt><dd>{report.contentHash}</dd></div></dl>
               <div className="report-tabs" role="tablist" aria-label="Report dossier sections">
