@@ -59,39 +59,42 @@ for (const viewport of viewports) {
 
     await page.getByLabel("Experience").selectOption("finance");
     await expect(page.getByRole("heading", { name: "Finance Review" })).toBeVisible();
+    await page.getByRole("button", { name: "Approve Budget" }).click();
     await page.getByLabel("Finance decision reason").fill(
       "Budget envelope confirmed for the configured inspection.",
     );
-    await page.getByRole("button", { name: "Approve Budget" }).click();
+    await page.getByRole("button", { name: "Confirm Finance Decision" }).click();
     await expect(page.getByTestId("planning-status")).toHaveText("GM_REVIEW");
     await expect(page.getByTestId("planning-owner")).toHaveText("General Manager");
 
-    await page.getByRole("link", { name: "Switch to General Manager" }).click();
+    await page.getByRole("button", { name: "Continue as General Manager" }).click();
     await expect(page.getByRole("heading", { name: "General Manager Dashboard" })).toBeVisible();
+    await page.getByRole("button", { name: "Forward to Executive Director" }).click();
     await page.getByLabel("General Manager decision reason").fill(
       "Operational scope is ready for final approval.",
     );
-    await page.getByRole("button", { name: "Forward for Final Approval" }).click();
+    await page.getByRole("button", { name: "Confirm General Manager Decision" }).click();
     await expect(page.getByTestId("planning-status")).toHaveText("EXECUTIVE_DIRECTOR_REVIEW");
 
-    await page.getByRole("link", { name: "Switch to Executive Director" }).click();
+    await page.getByRole("button", { name: "Continue as Executive Director" }).click();
     await expect(page.getByRole("heading", { name: "Executive Director Dashboard" })).toBeVisible();
+    await page.getByRole("button", { name: /Review plan/i }).click();
     await page.getByLabel("Plan decision reason").fill(
       "The annual surveillance item is approved for release.",
     );
     await page.getByRole("button", { name: "Approve Plan" }).click();
     await expect(page.getByTestId("planning-status")).toHaveText("GM_RELEASE");
 
-    await page.getByRole("link", { name: "Return to General Manager" }).click();
+    await page.getByRole("button", { name: "Continue as General Manager" }).click();
+    await page.getByRole("button", { name: "Release Plan" }).click();
     await page.getByLabel("General Manager decision reason").fill(
       "Release the approved item to department preparation.",
     );
-    await page.getByRole("button", { name: "Release Plan" }).click();
+    await page.getByRole("button", { name: "Confirm General Manager Decision" }).click();
     await expect(page.getByTestId("planning-status")).toHaveText("RELEASED");
     await expect(page.getByTestId("planning-owner")).toHaveText("Department Manager");
 
-    await page.getByRole("link", { name: "Switch role" }).click();
-    await page.getByRole("link", { name: /Admin Preview/i }).click();
+    await page.getByLabel("Experience").selectOption("admin");
     await expect(page.getByRole("heading", { name: "Admin Configuration Preview" })).toBeVisible();
     await expect(page.getByTestId("template-version")).toHaveText("Version 1");
     await expect(page.getByTestId("reminder-rule-row")).toHaveCount(5);

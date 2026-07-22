@@ -47,7 +47,9 @@ describe("authorized role-entry inventory", () => {
       </AppProviders>,
     );
     expect(screen.getByRole("heading", { name: "Finance Review" })).toBeInTheDocument();
-    expect(await screen.findByText("2026 Cabin Surveillance — Fly Namibia")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "2026 Cabin Surveillance — Fly Namibia" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Approve Budget" })).toBeInTheDocument();
     expect(screen.queryByText(/candidate React entry route/i)).not.toBeInTheDocument();
   });

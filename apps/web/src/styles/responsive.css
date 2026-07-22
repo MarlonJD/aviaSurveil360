@@ -1,4 +1,59 @@
 /* Role-scoped controls that must remain above global utility label/input rules. */
+.workspace-shell--authority .authority-root-topbar {
+  height: 56px;
+  min-height: 56px;
+}
+
+.workspace-shell--authority .auditee-root-topbar__experience {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 9px;
+  font-weight: 400;
+}
+
+.workspace-shell--authority .auditee-root-topbar__experience select {
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+  height: 34px;
+  min-height: 34px;
+  padding: 7px 10px;
+}
+
+.workspace-shell--authority .auditee-demo-ribbon__reset span {
+  white-space: nowrap;
+}
+
+.workspace-shell--authority .auditee-demo-ribbon__reset {
+  width: 93.15625px;
+  min-width: 93.15625px;
+  flex: 0 0 93.15625px;
+}
+
+.workspace-shell--finance .auditee-root-topbar__avatar { background: #b45309; }
+.workspace-shell--gm .auditee-root-topbar__avatar { background: #0f766e; }
+.workspace-shell--executiveDirector .auditee-root-topbar__avatar { background: #9f1239; }
+
+.finance-review-queue button,
+.finance-decision-buttons button,
+.finance-decision-form button,
+.gm-panel button,
+.gm-planning-decision button,
+.executive-panel button,
+.executive-authority-decision button {
+  min-height: 44px;
+}
+
+.finance-filter-row label { gap: 4px; }
+
+.finance-filter-row input,
+.finance-filter-row select {
+  height: 40px;
+  min-height: 40px;
+}
+
 .workspace-shell--auditee .topbar-experience-select {
   display: flex;
   min-width: 0;
@@ -290,6 +345,26 @@
 }
 
 @media (min-width: 901px) and (max-width: 1100px) {
+  .workspace-shell--authority .auditee-demo-ribbon {
+    padding-left: 15px;
+  }
+
+  .workspace-shell--authority .auditee-demo-ribbon__reset {
+    width: 83.015625px;
+    min-width: 83.015625px;
+    flex-basis: 83.015625px;
+  }
+
+  .workspace-shell--authority .auditee-demo-ribbon__reset span {
+    height: 40px;
+    white-space: normal;
+  }
+
+  .workspace-shell--authority .sidebar-brand {
+    height: 75px;
+    min-height: 75px;
+  }
+
   .workspace-shell--manager .manager-root-topbar {
     height: 56px;
     min-height: 56px;
@@ -297,6 +372,21 @@
 
   .workspace-shell--manager .workspace-content {
     padding-top: 85px;
+  }
+}
+
+@media (min-width: 1101px) {
+  .workspace-shell--finance .auditee-demo-ribbon__reset span {
+    text-indent: -1px;
+    transform: translateY(-50%);
+  }
+
+  .workspace-shell--finance .auditee-root-topbar__notification {
+    transform: translateX(-1px);
+  }
+
+  .workspace-shell--finance .workspace-content {
+    padding-top: 81px;
   }
 }
 
@@ -376,6 +466,60 @@
     width: 100%;
     padding: 72px 14px 46px;
     background: #f4f6fa;
+  }
+
+  .workspace-shell--authority .authority-root-topbar {
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 55px;
+    min-height: 55px;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--avia-color-line);
+    background: #fff;
+  }
+
+  .workspace-shell--authority .mobile-navigation__opener {
+    top: 6px;
+    left: 9px;
+  }
+
+  .workspace-shell--authority .auditee-root-topbar__experience {
+    position: absolute;
+    top: 10px;
+    left: 129px;
+  }
+
+  .workspace-shell--authority .auditee-root-topbar__experience select {
+    width: 148px;
+    max-width: 148px;
+    min-width: 148px;
+    height: 36px;
+    min-height: 36px;
+    padding: 7px 10px;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .workspace-shell--authority .auditee-demo-ribbon__text {
+    display: none;
+  }
+
+  .workspace-shell--authority .auditee-demo-ribbon strong {
+    display: inline;
+  }
+
+  .workspace-shell--gm .auditee-demo-ribbon__reset {
+    display: block;
+  }
+
+  .workspace-shell--finance .auditee-root-topbar__notification,
+  .workspace-shell--finance .auditee-root-topbar__who {
+    transform: translateX(-1px);
   }
 
   .application-topbar {

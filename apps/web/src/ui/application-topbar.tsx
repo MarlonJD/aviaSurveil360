@@ -39,16 +39,18 @@ export function ApplicationTopbar({
   const [helpOpen, setHelpOpen] = useState(false);
   const auditeeChrome = identity.activeRole === "auditee";
   const managerChrome = identity.activeRole === "manager";
-  if (auditeeChrome || managerChrome) {
+  const authorityChrome = ["gm", "finance", "executiveDirector"].includes(identity.activeRole);
+  if (auditeeChrome || managerChrome || authorityChrome) {
     const managerCrumbs: Partial<Record<ReactSurfaceId, string>> = {
       "manager-home": "Dashboard",
       "organization-registry": "Dashboard  ›  Organizations",
       "audit-plan": "Dashboard  ›  Planning",
       "report-preview": "Dashboard  ›  Reports Approval",
     };
-    const routeCrumbs = auditeeChrome ? "Corrective Actions (CAP)" : managerCrumbs[activeRouteId ?? "manager-home"] ?? "Dashboard";
+    const authorityCrumbs: Partial<Record<ReactSurfaceId, string>> = { "gm-home": "General Manager Dashboard", "finance-home": "Finance Review", "executive-home": "Executive Director Dashboard" };
+    const routeCrumbs = auditeeChrome ? "Corrective Actions (CAP)" : managerChrome ? managerCrumbs[activeRouteId ?? "manager-home"] ?? "Dashboard" : authorityCrumbs[activeRouteId ?? "gm-home"] ?? roleLabel(identity.activeRole);
     return (
-      <header className={`application-topbar application-topbar--root ${auditeeChrome ? "application-topbar--auditee auditee-root-topbar" : "application-topbar--manager manager-root-topbar"}`}>
+      <header className={`application-topbar application-topbar--root ${auditeeChrome ? "application-topbar--auditee auditee-root-topbar" : managerChrome ? "application-topbar--manager manager-root-topbar" : "application-topbar--authority authority-root-topbar"}`}>
         <div className="auditee-root-topbar__crumbs"><b>{routeCrumbs}</b></div>
         <div className="auditee-root-topbar__spacer" />
         <label className="auditee-root-topbar__experience">
@@ -90,10 +92,10 @@ export function ApplicationTopbar({
           {notificationsOpen ? <p className="topbar-popover" role="status">{notificationState.kind === "local" ? `${notificationState.unreadCount} local notification updates` : notificationState.reason}</p> : null}
         </div>
         <div className="auditee-root-topbar__who">
-          <span className="auditee-root-topbar__avatar">{initials(identity.displayName)}</span>
+          <span className={`auditee-root-topbar__avatar is-${identity.activeRole}`}>{initials(identity.displayName)}</span>
           <span className="auditee-root-topbar__identity">
             <strong>{identity.displayName}</strong>
-            <small>{auditeeChrome ? `Service Provider Portal · ${identity.organizationLabel}` : "Department Manager"}</small>
+            <small>{auditeeChrome ? `Service Provider Portal · ${identity.organizationLabel}` : roleLabel(identity.activeRole)}</small>
           </span>
         </div>
       </header>

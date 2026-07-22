@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, React Router 7, TanStack Query, React Hook Form, Zod, Dexie/IndexedDB, OPFS, Service Worker/Cache Storage, Playwright 1.61, Vitest/React Testing Library, Go 1.26 modular monolith, `chi`, PostgreSQL, Keycloak OIDC, MinIO-compatible object storage, OpenAPI, and the existing root HTML/CSS/Vanilla JavaScript reference.
 
-**Status:** `active` — Tasks 1-11 are committed and pushed. Task 12 restores the accepted Department Manager shell and the Manager Dashboard, Organizations, Planning, and Reports Approval compositions while retaining Backend projections and exact authority boundaries. Task 12 is `verified locally`: its focused suite passes 8 files / 26 tests, typecheck passes, the complete canonical HTTP profile passes including React 261/261, mock Playwright 5/5, HTTP Playwright 7/7, and the fail-closed Manager decoded-pixel gate passes the shared primitive gallery plus all 12 route/viewport pairs (13/13). Task 12 is the current exact commit/push unit; Task 13 must not start until that commit is pushed. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
+**Status:** `active` — Tasks 1-12 are committed and pushed through `652753a`. Task 13 is `verified locally`: the accepted Finance, General Manager, and Executive Director role shells and distinct review compositions are restored from the recorded root DOM/CSS mapping while Backend authority, immutable report-version behavior, and handoff boundaries remain intact. The focused Task 13 plus router suite passes 5 files / 19 tests, typecheck passes, the complete canonical HTTP profile passes React 271/271, HTTP contract 14/14, mock Playwright 5/5, HTTP Playwright 7/7, and the fail-closed decoded-pixel gate passes the shared primitive gallery plus all 9 route/viewport pairs (10/10). Task 13 is the current exact commit/push unit; Task 14 follows after that push. No deployment, traffic cutover, legacy removal, stakeholder acceptance, or `production-ready` claim has occurred; release remains `release pending`.
 
 ## Reviewed Plan Amendment — Fail-Closed Demo Visual Recovery (2026-07-21)
 
@@ -1727,6 +1727,16 @@ git push origin HEAD
 
 ### Task 13: Migrate Finance, General Manager, And Executive Director Surfaces
 
+**Source-to-React mapping — recorded before implementation on 2026-07-22**
+
+| Surface | Root shell and page source | Binding visible hierarchy | Responsive oracle |
+|---|---|---|---|
+| Finance Review | `js/app.js` root oversight shell and `viewFinanceReviewWorkspace()` / `financeReview*()` in `js/views.js`; `.finance-*` declarations in `css/styles.css` | Finance-specific ribbon/sidebar/topbar; page head and three guardrail badges; three-cell budget/approval summary; search/status filter; Review Queue; selected-plan title and four tabs; Approval Flow rail followed by the owner/next-action decision card | Desktop keeps queue/detail plus right rail; tablet stacks the rail and hides Department/Requested; mobile stacks summary/filter, reduces the queue to Plan/Action, and keeps the selected dossier below the first viewport |
+| General Manager | `js/app.js` GM oversight shell and `viewGeneralManagerDashboard()` / `generalManager*()` in `js/views.js`; `.gm-*` declarations in `css/styles.css` | GM-specific sidebar/topbar; page head; five authority KPIs; Cross-department Department Overview table beside the Likelihood × Impact heat map; Report Review Queue; explicit intermediate-authority note | Desktop uses four KPI columns and table/heat-map split; tablet retains four KPI columns and stacks the dashboard panels; mobile uses one KPI per row and reduces the department table to Department/Audits/Exposure before later queue content |
+| Executive Director | `js/app.js` Executive oversight shell and `viewExecutiveDirectorDashboard()` / `executive*Dashboard*()` in `js/views.js`; `.executive-*` declarations in `css/styles.css` | Executive-specific ribbon/sidebar/topbar; page head and three guardrail badges; six KPI cards; separate Planning approvals and Final Report approvals queues; Department overview, Overdue actions, and management-indicator-only context | Desktop uses six KPIs, two decision queues, and a three-column lower grid; tablet uses three KPI columns and stacked decision queues; mobile uses one KPI per row before the decision queues |
+
+React component and Backend boundaries may differ, but these exact role-specific compositions, first-viewport density, and action placement are the visual contract. Shared shell changes must remain conditional to Finance, General Manager, and Executive Director and must not alter already verified role surfaces.
+
 **Files**
 
 - Modify `apps/web/src/features/planning/planning-workspaces.tsx`
@@ -1745,9 +1755,12 @@ git push origin HEAD
 - Modify `apps/web/src/styles/app.css`
 - Modify `apps/web/src/styles/responsive.css`
 - Modify `apps/web/src/styles/style-ownership.test.ts`
+- Modify `apps/web/src/app/router.test.tsx`
+- Modify `apps/web/tests/e2e/canonical-scenario.spec.ts`
 - Modify `apps/web/tests/e2e/first-production-routes.spec.ts`
 - Modify `apps/web/tests/e2e/release-candidate-gates.spec.ts`
 - Modify `apps/web/tests/e2e/legacy-visual-parity.spec.ts`
+- Modify `docs/exec-plans/index.md`
 - Modify this plan
 
 **Required behavior**
@@ -1762,8 +1775,8 @@ git push origin HEAD
 
 **Red/green cycle**
 
-- [ ] Add failing tests for exact role authority, stale revision, reason requirements, report-version immutability, no closure side effect, direct URL guard, handoff modes, and all visible actions.
-- [ ] Run:
+- [x] Add failing tests for exact role authority, stale revision, reason requirements, report-version immutability, no closure side effect, direct URL guard, handoff modes, and all visible actions.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/features/planning/finance-review-page.test.tsx src/features/planning/general-manager-dashboard-page.test.tsx src/features/reports/executive-dashboard-page.test.tsx
@@ -1771,8 +1784,8 @@ git push origin HEAD
   ```
 
   Expected red: root-compatible decision composition and handoff boundaries fail.
-- [ ] Migrate three routes with source-faithful root DOM/CSS compositions and `executive-review.css`; shared primitives may own behavior but may not replace the visible hierarchy.
-- [ ] Run:
+- [x] Migrate three routes with source-faithful root DOM/CSS compositions and `executive-review.css`; shared primitives may own behavior but may not replace the visible hierarchy.
+- [x] Run:
 
   ```bash
   npm --prefix apps/web test -- src/features/planning/finance-review-page.test.tsx src/features/planning/general-manager-dashboard-page.test.tsx src/features/reports/executive-dashboard-page.test.tsx src/styles/style-ownership.test.ts
@@ -1784,10 +1797,19 @@ git push origin HEAD
 
   Expected green: three authority workspaces pass mock/HTTP/direct-load/responsive tests plus decoded-pixel role-specific demo-composition checks.
 
+**Execution log — 2026-07-22, Task 13 verified locally**
+
+- All tracked `finance-home`, `gm-home`, and `executive-home` desktop/tablet/mobile baselines were inspected beside the exact root `js/views.js`, `js/app.js`, and `css/styles.css` sources before implementation. The binding mapping above preserves each role's distinct shell, first-viewport density, queue/register hierarchy, selected dossier or decision area, and responsive stack; the three routes are not cosmetic variants of a generic dashboard.
+- Red evidence: the initial role-focused Vitest run failed all three files with 9 failed / 1 passed tests. The scoped visual run kept the shared primitive gallery green and rejected all 9 route/viewport pairs. Thresholds remained shell `0.03`, content `0.08`, maximum channel delta `40`; no mask or tracked baseline was changed.
+- Finance now retains the root guardrail, three-cell summary, Review Queue, selected plan tabs, Approval Flow, and reason-required decision hierarchy. General Manager retains its five authority KPIs, department table, risk heat map, and Report Review Queue without issue/closure authority. Executive Director retains separate Planning and Final Report queues plus the lower management context; report issue locks the immutable version and does not close Findings. Cross-role continuation uses the existing `RoleHandoff` boundary.
+- The first complete HTTP profile correctly failed because the pre-existing router test assumed the selected plan title appeared only once; the source-faithful root composition intentionally repeats it in queue context and the dossier heading. Task 13 therefore adds `apps/web/src/app/router.test.tsx` to its reviewed allowlist and scopes that assertion to the dossier heading. The focused router suite then passed 4/4.
+- Final focused Task 13 plus router verification passes 5 files / 19 tests and typecheck passes. The complete HTTP profile passes Go race/unit/integration, OpenAPI lint/examples/code generation, sqlc, React 46 files / 271 tests, demo and HTTP builds, HTTP artifact scan, HTTP contract 14/14, mock Playwright 5/5, HTTP Playwright 7/7, and worker/outbox observability. Its PostgreSQL, Keycloak, object-store, network, and volumes were removed by the script trap.
+- The final fail-closed decoded-pixel run passes 10/10: the shared primitive gallery plus Finance, General Manager, and Executive Director at desktop, tablet, and mobile. Candidate screenshots were inspected beside all nine baselines; first-viewport hierarchy, density, typography, and action placement are recognizably the accepted demo. Thresholds, masks, comparator logic, and baseline files remain unchanged.
+
 **Task 13 staging allowlist and commit**
 
 ```bash
-git add -- apps/web/src/features/planning/planning-workspaces.tsx apps/web/src/features/planning/finance-review-page.test.tsx apps/web/src/features/planning/general-manager-dashboard-page.test.tsx apps/web/src/features/reports/executive-dashboard-page.tsx apps/web/src/features/reports/executive-dashboard-page.test.tsx apps/web/src/features/shared/workspace-shell.tsx apps/web/src/ui/application-shell.tsx apps/web/src/ui/application-shell.test.tsx apps/web/src/ui/application-topbar.tsx apps/web/src/ui/application-topbar.test.tsx apps/web/src/ui/role-navigation.tsx apps/web/src/ui/role-navigation.test.tsx apps/web/src/styles/features/executive-review.css apps/web/src/styles/app.css apps/web/src/styles/responsive.css apps/web/src/styles/style-ownership.test.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/release-candidate-gates.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
+git add -- apps/web/src/features/planning/planning-workspaces.tsx apps/web/src/features/planning/finance-review-page.test.tsx apps/web/src/features/planning/general-manager-dashboard-page.test.tsx apps/web/src/features/reports/executive-dashboard-page.tsx apps/web/src/features/reports/executive-dashboard-page.test.tsx apps/web/src/features/shared/workspace-shell.tsx apps/web/src/ui/application-shell.tsx apps/web/src/ui/application-shell.test.tsx apps/web/src/ui/application-topbar.tsx apps/web/src/ui/application-topbar.test.tsx apps/web/src/ui/role-navigation.tsx apps/web/src/ui/role-navigation.test.tsx apps/web/src/styles/features/executive-review.css apps/web/src/styles/app.css apps/web/src/styles/responsive.css apps/web/src/styles/style-ownership.test.ts apps/web/src/app/router.test.tsx apps/web/tests/e2e/canonical-scenario.spec.ts apps/web/tests/e2e/first-production-routes.spec.ts apps/web/tests/e2e/release-candidate-gates.spec.ts apps/web/tests/e2e/legacy-visual-parity.spec.ts docs/exec-plans/index.md docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md
 git commit -m "feat(ui): migrate executive review surfaces"
 git push origin HEAD
 ```

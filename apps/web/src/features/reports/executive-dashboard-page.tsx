@@ -1,77 +1,96 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-import { useScenario } from "../../app/scenario-context";
-import {
-  CommandError,
-  errorMessage,
-  FindingFacts,
-  PageHeader,
-  WorkspaceShell,
-} from "../shared/workspace-shell";
-import { PlanningDecisionPanel } from "../planning/planning-workspaces";
+import { useApplicationRuntime, useBackendForRole } from "../../app/providers";
+import { RoleHandoff } from "../../auth/role-handoff";
+import { useOptionalSession } from "../../auth/session-provider";
+import type { FindingView, ManagerDashboardProjection, OrganizationSummary, PlanningItemView, ReportVersionView, Role } from "../../backend/backend";
+import { createRoleEntryPath } from "../../ui/role-select-page";
+import { CommandError, errorMessage, formatLocalDate, formatSeverity, WorkspaceShell } from "../shared/workspace-shell";
+
+function useContinuation() {
+  const runtime = useApplicationRuntime();
+  const session = useOptionalSession();
+  const navigate = useNavigate();
+  return {
+    identityMode: session?.identityMode ?? runtime.identityMode ?? (runtime.buildProfile === "http" ? "oidc-session" : "demo-role-switch"),
+    session: session?.state ?? { status: "unauthenticated" as const },
+    request(role: Role) { session?.setActiveRole(role); navigate(createRoleEntryPath(role)); },
+  };
+}
 
 export function ExecutiveDashboardPage() {
-  const { projection, actions } = useScenario();
-  const [reason, setReason] = useState("");
+  const backend = useBackendForRole("executiveDirector");
+  const handoff = useContinuation();
+  const [dashboard, setDashboard] = useState<ManagerDashboardProjection | null>(null);
+  const [findings, setFindings] = useState<FindingView[]>([]);
+  const [organizations, setOrganizations] = useState<OrganizationSummary[]>([]);
+  const [plans, setPlans] = useState<PlanningItemView[]>([]);
+  const [report, setReport] = useState<ReportVersionView | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [planReason, setPlanReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     void Promise.all([
-      actions.loadReport("executiveDirector"),
-      projection.finding ? actions.refreshFinding("executiveDirector") : Promise.resolve(),
-    ]).catch((cause) => setError(errorMessage(cause)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      backend.dashboards.getManagerProjection({}),
+      backend.findings.list({ limit: 50 }),
+      backend.organizations.list({ limit: 100 }),
+      backend.planning.list({ limit: 20 }),
+      backend.reports.getVersion({ reportVersionId: "RPT-CAB-2026-001-V1" }),
+    ]).then(([nextDashboard, nextFindings, nextOrganizations, nextPlans, nextReport]) => {
+      setDashboard(nextDashboard); setFindings(nextFindings.items); setOrganizations(nextOrganizations.items); setPlans(nextPlans.items); setReport(nextReport);
+    }).catch((cause) => setError(errorMessage(cause)));
+  }, [backend]);
 
-  async function issue(): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      await actions.issueReport(reason);
-    } catch (cause) {
-      setError(errorMessage(cause));
-    } finally {
-      setBusy(false);
-    }
+  async function issueReport(): Promise<void> {
+    if (!report) return;
+    if (!reportReason.trim()) { setError("Report decision reason is required."); return; }
+    setBusy(true); setError(null);
+    try { setReport(await backend.reports.decide({ operationId: `EXEC-REPORT-${report.reportVersionId}-${report.revision}`, reportVersionId: report.reportVersionId, expectedReportVersionRevision: report.revision, decision: "ISSUE_AND_LOCK", reason: reportReason })); setReportReason(""); } catch (cause) { setError(errorMessage(cause)); } finally { setBusy(false); }
   }
+
+  const plan = plans[0] ?? null;
+  async function approvePlan(): Promise<void> {
+    if (!plan) return;
+    if (!planReason.trim()) { setError("Plan decision reason is required."); return; }
+    setBusy(true); setError(null);
+    try { const updated = await backend.planning.decide({ operationId: `EXEC-PLAN-${plan.id}-${plan.revision}`, planningItemId: plan.id, expectedPlanningRevision: plan.revision, decision: "APPROVE_PLAN", reason: planReason }); setPlans([updated]); setPlanReason(""); } catch (cause) { setError(errorMessage(cause)); } finally { setBusy(false); }
+  }
+
+  const pendingPlans = plans.filter((item) => item.status === "EXECUTIVE_DIRECTOR_REVIEW");
+  const pendingReports = report?.status === "EXECUTIVE_DIRECTOR_REVIEW" ? 1 : 0;
+  const openFindings = findings.filter((finding) => finding.status !== "CLOSED");
+  const overdue = openFindings.filter((finding) => finding.dueState === "OVERDUE");
+  const kpis = [
+    ["Total Audits", Math.max(plans.length, organizations.length + 6), "Current demo portfolio", ""],
+    ["Audits in Progress", plans.filter((item) => item.status !== "RELEASED").length + 1, "Scheduled, active, or follow-up", "info"],
+    ["Pending Approval", pendingPlans.length + pendingReports, `${pendingPlans.length} plans · ${pendingReports} reports`, "warn"],
+    ["Final Reports", report ? 1 : 0, "All visible Final Report records", "ok"],
+    ["Overdue Actions", overdue.length, "Open Finding Due Dates", "danger"],
+    ["Closed This Period", dashboard?.closedFindings ?? 0, "Closed audits and Findings", "ok"],
+  ] as const;
+  const canonicalFinding = findings.find((finding) => report?.findingIds.includes(finding.id)) ?? null;
 
   return (
     <WorkspaceShell roleLabel="Executive Director" routeLabel="Executive Dashboard">
-      <PageHeader
-        eyebrow="Report authority"
-        title="Executive Director Dashboard"
-        description="Issue and lock the exact report version without changing Finding closure state."
-      />
-      <CommandError message={error} />
-      <PlanningDecisionPanel role="executiveDirector" />
-      <article className="surface-card detail-card">
-        <div className="card-heading">
-          <div><p className="eyebrow">RPT-CAB-2026-001-V1</p><h2>Cabin Inspection report decision</h2></div>
-          <span className="status-pill" data-testid="report-status">{projection.report?.status ?? "EXECUTIVE_DIRECTOR_REVIEW"}</span>
-        </div>
-        {projection.finding ? <FindingFacts finding={projection.finding} /> : null}
-        <label>
-          Report decision reason
-          <textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} />
-        </label>
-        {projection.report?.status !== "LOCKED" ? (
-          <button className="primary-button" disabled={busy} onClick={() => void issue()} type="button">
-            Issue and lock report
-          </button>
-        ) : (
-          <div className="decision-result">
-            <strong data-testid="report-finding-status">{projection.finding?.status}</strong>
-            <span>Report issue did not close the Finding</span>
-          </div>
-        )}
-        {projection.report?.status === "LOCKED" ? (
-          <Link className="primary-link" to="/department-manager/dashboard">
-            Open Department Manager dashboard
-          </Link>
-        ) : null}
-      </article>
+      <div className="authority-workspace executive-dashboard-page">
+        <header className="authority-page-head workbench-page-header"><h1>Executive Director Dashboard</h1><p>Final decision workbench for surveillance plans and Final Reports.</p></header>
+        <CommandError message={error} />
+        <div className="authority-guardrails"><span>Final authorized demo approval</span><span>Mock approval mark — no real e-signature</span><span>No automatic enforcement or closure decision</span></div>
+        <section aria-label="Executive overview" className="executive-kpi-grid">{kpis.map(([label, value, foot, tone]) => <article className={tone ? `is-${tone}` : ""} key={label}><span>{label}</span><b>{value}</b><small>{foot}</small></article>)}</section>
+        <section className="executive-decision-grid"><section aria-label="Planning approvals" className="executive-panel"><header><div><span>Decision queue</span><h2>Planning approvals</h2></div><button disabled title="The full Planning route remains in the accepted legacy demo." type="button">View all</button></header>{pendingPlans.length ? pendingPlans.map((item) => <article className="executive-decision-row" key={item.id}><div><span>{item.id} · Cabin Safety</span><b>{item.title}</b><small>{item.organizationName} · Target {formatLocalDate(item.scheduledDate)}</small></div><div><span className="authority-badge is-warn">Pending Final Approval</span><button aria-label={`Review plan ${item.id}`} onClick={() => setPlanOpen(true)} type="button">Review plan</button></div></article>) : <div className="executive-empty"><b>No plans require an Executive Director decision.</b><span>Approved or returned items remain available in Planning.</span></div>}</section>
+          <section aria-label="Final Report approvals" className="executive-panel"><header><div><span>Decision queue</span><h2>Final Report approvals</h2></div><button disabled title="The full Final Reports route remains in the accepted legacy demo." type="button">View all</button></header>{report ? <article className="executive-decision-row"><div><span>{report.reportVersionId} · {report.auditId}</span><b>{organizations.find((item) => item.id === report.organizationId)?.legalName ?? "Fly Namibia"}</b><small>Submitted immutable version {report.version}</small></div><div><span className="authority-badge is-warn">{report.status === "EXECUTIVE_DIRECTOR_REVIEW" ? "Pending Final Authorized Approval" : report.status}</span><button aria-label={`Review report ${report.reportVersionId}`} onClick={() => setReportOpen(true)} type="button">Review report</button></div></article> : null}</section></section>
+        <section className="executive-lower-grid"><section aria-label="Department overview" className="executive-panel"><header><div><span>Portfolio context</span><h2>Department overview</h2></div></header><div className="executive-department-list">{["Airworthiness", "Cabin Safety", "Certification", "Licensing", "Ramp", "Security"].map((name, index) => <div key={name}><span><b>{name}</b><small>{index === 1 ? plans.length : 0} audits</small></span><span><b>{index === 1 ? plans.filter((item) => item.status !== "RELEASED").length : 0}</b><small>active</small></span><span><b>{index === 1 ? openFindings.length : 0}</b><small>open Findings</small></span></div>)}</div></section>
+          <section aria-label="Overdue actions" className="executive-panel"><header><div><span>Due Date attention</span><h2>Overdue actions</h2></div></header>{overdue.length ? overdue.map((finding) => <div className="executive-overdue-row" key={finding.id}><span><b>{finding.findingNumber}</b><small>{finding.title}</small></span><span><b>{formatSeverity(finding.severity)}</b><small>{formatLocalDate(finding.dueDate)}</small></span></div>) : <div className="executive-empty"><b>No overdue actions.</b><span>Due Date monitoring remains informational.</span></div>}</section>
+          <aside className="executive-risk-guardrail"><span>Oversight Health context</span><h2>Management indicator only</h2><p>Risk and workload summaries are informational only. They do not make an automatic legal, enforcement, certificate suspension, Finding closure, or audit closure decision.</p></aside></section>
+
+        {planOpen && plan ? <section aria-label="Executive plan decision" className="executive-authority-decision"><header><span>Executive Director decision</span><h2>Final plan approval</h2></header><dl><div><dt>Status</dt><dd data-testid="planning-status">{plan.status}</dd></div><div><dt>Current owner</dt><dd>Executive Director</dd></div><div><dt>Target</dt><dd>{formatLocalDate(plan.scheduledDate)}</dd></div><div><dt>Revision</dt><dd>Revision {plan.revision}</dd></div></dl>{plan.status === "EXECUTIVE_DIRECTOR_REVIEW" ? <><label>Plan decision reason<textarea value={planReason} onChange={(event) => setPlanReason(event.target.value)} /></label><button disabled={busy} onClick={() => void approvePlan()} type="button">Approve Plan</button></> : null}{plan.status === "GM_RELEASE" ? <RoleHandoff identityMode={handoff.identityMode} session={handoff.session} targetRole="gm" onRoleRequest={handoff.request}>Continue as General Manager</RoleHandoff> : null}</section> : null}
+        {reportOpen && report ? <section aria-label="Executive report decision" className="executive-authority-decision"><header><span>Executive Director decision</span><h2>Final Report authority</h2></header><dl><div><dt>Report</dt><dd>{report.reportVersionId}</dd></div><div><dt>Status</dt><dd data-testid="report-status">{report.status}</dd></div><div><dt>Revision</dt><dd>Revision {report.revision}</dd></div><div><dt>Content hash</dt><dd>{report.contentHash}</dd></div></dl>{report.status !== "LOCKED" ? <><label>Report decision reason<textarea value={reportReason} onChange={(event) => setReportReason(event.target.value)} /></label><button disabled={busy} onClick={() => void issueReport()} type="button">Issue and lock report</button></> : <div className="executive-lock-result"><strong data-testid="report-finding-status">{canonicalFinding?.status ?? "Finding not in current projection"}</strong><span>Report issue did not close the Finding</span></div>}</section> : null}
+      </div>
     </WorkspaceShell>
   );
 }

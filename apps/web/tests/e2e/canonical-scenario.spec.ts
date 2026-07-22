@@ -220,13 +220,14 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
 
   await page.getByRole("button", { name: "Check report authority" }).click();
   await expect(page.getByRole("heading", { name: "Executive Director Dashboard" })).toBeVisible();
+  await page.getByRole("button", { name: /Review report/i }).click();
   await page.getByLabel("Report decision reason").fill("Issue the exact candidate report version.");
   await page.getByRole("button", { name: "Issue and lock report" }).click();
   await expect(page.getByTestId("report-status")).toHaveText("LOCKED");
   await expect(page.getByTestId("report-finding-status")).toHaveText("EVIDENCE_REQUIRED");
   await expect(page.getByText("Report issue did not close the Finding")).toBeVisible();
 
-  await page.getByRole("link", { name: "Open Department Manager dashboard" }).click();
+  await page.getByLabel("Experience").selectOption("manager");
   await expect(page.getByRole("heading", { name: "Department Manager Dashboard" })).toBeVisible();
   await page.getByRole("button", { name: "Use authorized closure" }).click();
   await expect(page.getByRole("alert")).toHaveText("Authorized closure reason is required.");

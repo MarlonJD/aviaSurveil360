@@ -38,6 +38,7 @@ type NavigationIcon =
   | "analytics"
   | "settings"
   | "settingsRoot"
+  | "shield"
   | "planning"
   | "organization";
 
@@ -83,17 +84,17 @@ const ACCEPTED_NAVIGATION: Readonly<Record<Role, readonly AcceptedNavigationItem
     { label: "Dashboard", icon: "dashboard", routeId: "gm-home" },
     { label: "Planning", icon: "planning" },
     { label: "Report Approvals", icon: "report" },
-    { label: "Departments", icon: "organization" },
-    { label: "Risk Dashboard", icon: "analytics" },
+    { label: "Departments", icon: "dashboard" },
+    { label: "Risk Dashboard", icon: "shield" },
     { label: "Settings", icon: "settings" },
   ],
-  finance: [{ label: "Finance Review", icon: "planning", routeId: "finance-home" }],
+  finance: [{ label: "Finance Review", icon: "dashboard", routeId: "finance-home" }],
   executiveDirector: [
     { label: "Dashboard", icon: "dashboard", routeId: "executive-home" },
     { label: "Planning", icon: "planning" },
     { label: "Preliminary Reports", icon: "report" },
     { label: "Final Reports", icon: "report" },
-    { label: "Notifications", icon: "message" },
+    { label: "Notifications", icon: "dashboard" },
     { label: "Settings", icon: "settings" },
   ],
   auditee: [
@@ -129,6 +130,7 @@ function NavigationGlyph({ icon }: { icon: NavigationIcon }) {
     analytics: <><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 16v-5" /><path d="M12 16V8" /><path d="M16 16v-8" /></>,
     settings: <><circle cx="12" cy="12" r="3" /><path d="M19 13.5v-3l-2-.7-.8-1.9.9-1.9-2.1-2.1-1.9.9-1.9-.8-.7-2h-3l-.7 2-1.9.8-1.9-.9L3.9 6l.9 1.9L4 9.8l-2 .7v3l2 .7.8 1.9-.9 1.9L6 20.1l1.9-.9 1.9.8.7 2h3l.7-2 1.9-.8 1.9.9 2.1-2.1-.9-1.9.8-1.9z" /></>,
     settingsRoot: <><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" /><path d="M19.4 15a8 8 0 0 0 .1-1.5l2-1.5-2-3.5-2.4 1a8 8 0 0 0-1.3-.8L15.5 6h-7l-.3 2.7a8 8 0 0 0-1.3.8l-2.4-1-2 3.5 2 1.5A8 8 0 0 0 4.6 15l-2 1.5 2 3.5 2.4-1a8 8 0 0 0 1.3.8l.3 2.7h7l.3-2.7a8 8 0 0 0 1.3-.8l2.4 1 2-3.5z" /></>,
+    shield: <><path d="M12 3 19 6v5c0 4.6-2.8 8-7 10-4.2-2-7-5.4-7-10V6z" /><path d="M12 7v9" /></>,
     planning: <><path d="M5 4h14v17H5z" /><path d="M8 2v5" /><path d="M16 2v5" /><path d="M8 11h8" /><path d="M8 15h6" /></>,
     organization: <><path d="M4 21V7l8-4 8 4v14" /><path d="M8 10h2" /><path d="M14 10h2" /><path d="M8 14h2" /><path d="M14 14h2" /><path d="M10 21v-3h4v3" /></>,
   };
@@ -149,6 +151,9 @@ export function RoleNavigation({
     <nav className="role-navigation" aria-label="Primary role navigation">
       {activeRole === "auditee" ? <p className="role-navigation__experience">Service Provider Portal</p> : null}
       {activeRole === "manager" ? <p className="role-navigation__experience">Department Manager</p> : null}
+      {activeRole === "gm" ? <p className="role-navigation__experience">General Manager</p> : null}
+      {activeRole === "finance" ? <p className="role-navigation__experience">Finance Review</p> : null}
+      {activeRole === "executiveDirector" ? <p className="role-navigation__experience">Executive Director</p> : null}
       {ACCEPTED_NAVIGATION[activeRole].map((item) => {
         const route = item.routeId ? REACT_ROUTE_CONTRACT_BY_ID.get(item.routeId) : null;
         const active =

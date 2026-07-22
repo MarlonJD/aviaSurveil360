@@ -38,10 +38,12 @@ test("local candidate has keyboard-reachable role entries, literal boundaries, a
   expect(inspectorTarget.outlineStyle).not.toBe("none");
 
   await page.getByRole("link", { name: /Finance Review/i }).click();
-  await expect(page.getByText("Candidate-only", { exact: true })).toBeVisible();
-  await expect(page.getByText("No production-readiness claim", { exact: true })).toBeVisible();
-  await page.getByLabel("Finance decision reason").fill("Release-candidate reset check.");
+  await expect(page.locator("body")).toContainText("Candidate-only");
+  await expect(page.locator("body")).toContainText("No production-readiness claim");
+  await expect(page.getByText("Frontend-only demo", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Approve Budget" }).click();
+  await page.getByLabel("Finance decision reason").fill("Release-candidate reset check.");
+  await page.getByRole("button", { name: "Confirm Finance Decision" }).click();
   await expect(page.getByTestId("planning-status")).toHaveText("GM_REVIEW");
 
   if (testInfo.project.name === "http") {
@@ -51,8 +53,7 @@ test("local candidate has keyboard-reachable role entries, literal boundaries, a
     expect(reset.ok()).toBe(true);
     await page.reload();
   } else {
-    await page.getByRole("link", { name: "Switch role" }).click();
-    await page.getByRole("link", { name: /Auditee/i }).click();
+    await page.getByLabel("Experience").selectOption("auditee");
     await page.getByRole("button", { name: "Reset demo" }).click();
     await expect(page.getByRole("heading", { name: "Corrective Actions (CAP)" })).toBeVisible();
     await page.getByLabel("Experience").selectOption("finance");

@@ -65,7 +65,16 @@ export function WorkspaceShell({
           kind: "unavailable",
           reason: "Notification delivery is not connected in this candidate.",
         }
-      : { kind: "local", unreadCount: activeRole === "auditee" || activeRole === "manager" ? 1 : 2, onOpen: () => undefined };
+      : {
+          kind: "local",
+          unreadCount:
+            activeRole === "finance" || activeRole === "auditee" || activeRole === "manager"
+              ? 1
+              : activeRole === "gm" || activeRole === "executiveDirector"
+                ? 0
+                : 2,
+          onOpen: () => undefined,
+        };
   return (
     <ApplicationShell
       activeRouteId={activeRouteId}
