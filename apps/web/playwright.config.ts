@@ -73,6 +73,7 @@ export default defineConfig({
         "e2e/manager-intelligence-responsive-contract.spec.ts",
         "e2e/executive-responsive-contract.spec.ts",
         "e2e/auditee-responsive-contract.spec.ts",
+        "e2e/admin-responsive-contract.spec.ts",
       ],
     },
     {

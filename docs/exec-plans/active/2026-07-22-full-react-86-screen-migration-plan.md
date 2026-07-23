@@ -47,7 +47,17 @@ persistence/migration, responsive-browser, build, boundary, hygiene, and fresh
 independent re-review gates. Its single bounded visual run failed with the exact
 final count unavailable after reporter evidence was overwritten; the primitive
 gallery passed, and the matrix was not rerun under the user's no-pixel-loop
-direction. Task 10 is next. Plan 2 has not started.
+direction. Task 10 passed its focused 101/101, full React 515/515, root/parity
+107/107, typecheck, demo build, route/profile boundary, responsive Chromium
+3/3, root-diff, diff-check, and process-hygiene gates. The main-agent
+spec/code-quality review found no Critical or Important findings; independent
+review is `not run` because the dispatched reviewer was stopped at the user's
+direction not to use further subagents. Its single bounded visual matrix remains
+literally 1/40, with the primitive gallery green and all 39 Admin route pairs
+non-green, and was not rerun. Standalone baseline integrity is `not verified`
+because the concurrently edited UI audit source no longer matches its recorded
+hash. Task 11 is pending and execution stopped before it at the user's
+direction. Plan 2 has not started.
 
 ## Objective
 
@@ -542,16 +552,21 @@ Covers `ui-audit-074`–`075`, `077`–`086`. Demo mutations create new immutabl
 versions. Regulatory content is labelled configured reference, not legal advice.
 User provisioning is visibly demo-only until Plan 3 activates Keycloak admin.
 
-- [ ] Write 12 failing tests for list/detail/direct load, multiline questions,
+- [x] Write 12 failing tests for list/detail/direct load, multiline questions,
   builder ordering, immutable publish/version history, user scope, organization
   master data, audit log filters, disabled production-only provisioning, and
   reference language.
-- [ ] Run focused tests and 36 visual pairs; confirm expected red.
-- [ ] Port the accepted Administration shell/compositions and implement all
+- [x] Reproduce the checkpoint RED (10 TS18047 errors and 11/14 focused Admin
+  tests) and run the single bounded visual matrix once; its literal result is
+  1/40 with the primitive gallery green and all 39 Admin route pairs non-green.
+- [x] Port the accepted Administration shell/compositions and implement all
   deterministic demo actions without mutating published versions.
-- [ ] Run all 13 Admin routes, accessible forms, visible actions, and 39 visual
-  comparisons; expect all green.
-- [ ] Commit exactly `feat(ui): complete administration workspaces`.
+- [x] Run all 13 Admin routes, accessible forms, visible actions, persistence,
+  identity, authority, responsive, regression, build, boundary, root-diff, and
+  hygiene checks; functional gates are green and the accepted non-green visual
+  result is recorded without a pixel-only rerun.
+- [x] Commit disposition: the user explicitly authorized the focused Task 10
+  commit before Task 11.
 
 ### Task 11: Enforce The 86-Surface Interaction And Accessibility Boundary
 

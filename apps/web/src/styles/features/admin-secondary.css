@@ -70,7 +70,7 @@
 .admin-builder-list span { display: block; min-width: 0; overflow-wrap: anywhere; }
 .admin-builder-list p { margin: 0; }
 .admin-builder-list small { margin: 3px 0; color: #70809e; }
-.admin-order { display: grid !important; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border-radius: 50%; color: #164f9f; background: #e8f0fc; font-weight: 750; }
+.admin-builder-list > li .admin-order { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border-radius: 50%; color: #164f9f; background: #e8f0fc; font-weight: 750; }
 .admin-builder-row-actions,
 .admin-inline-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-builder-row-actions { flex: 0 0 auto; }
@@ -91,10 +91,10 @@
   .admin-question-composer form label,
   .admin-question-composer form > p,
   .admin-question-composer form > button { grid-column: 1; }
-  .admin-builder-row-actions { width: 100%; }
-  .admin-builder-row-actions button { flex: 1 1 120px; }
+  .admin-builder-draft .admin-builder-row-actions { width: 100%; }
+  .admin-builder-draft .admin-builder-row-actions button { flex: 1 1 120px; }
   .admin-inline-actions { display: grid; grid-template-columns: 1fr; }
   .admin-disabled-action button,
   .admin-action-link { width: 100%; }
-  .admin-record-card > header { align-items: flex-start; flex-direction: column; }
+  .admin-secondary-page .admin-record-card > header { align-items: flex-start; flex-direction: column; }
 }

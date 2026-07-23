@@ -2,7 +2,6 @@
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup, render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -49,7 +48,7 @@ describe("AdminConfigurationPage", () => {
     expect(list).toHaveBeenCalledWith({ limit: 100 });
     expect(get).toHaveBeenCalledWith({ templateVersionId: "CTV-CABIN-1" });
 
-    const summary = screen.getByRole("region", { name: "Published template summary" });
+    const summary = await screen.findByRole("region", { name: "Published template summary" });
     expect(within(summary).getByText("CTV-CABIN-1")).toBeVisible();
     expect(within(summary).getByTestId("template-version")).toHaveTextContent("Version 1");
     expect(within(summary).getByText(/2026-06-15/)).toBeVisible();
@@ -64,18 +63,13 @@ describe("AdminConfigurationPage", () => {
     expect(within(register).getAllByText("Comment required for Non-Compliant · Observation").length).toBeGreaterThan(0);
   });
 
-  it("returns to the read-only version register and selects the published detail without edit controls", async () => {
+  it("returns to the declared Template List route without maintaining a hidden substitute register", async () => {
     const runtime = createMockBackendRuntime();
     renderPage(runtime);
-    const user = userEvent.setup();
 
-    await user.click(await screen.findByRole("button", { name: "Back to templates" }));
-    expect(screen.getByRole("heading", { name: "Checklist Templates" })).toBeVisible();
-    const register = screen.getByRole("table", { name: "Published checklist template versions" });
-    expect(within(register).getByText("Cabin Inspection checklist")).toBeVisible();
-    await user.click(within(register).getByRole("button", { name: "Preview CTV-CABIN-1" }));
-    expect(await screen.findByRole("heading", { name: "Template Preview — Cabin Inspection" })).toBeVisible();
-
+    const back = await screen.findByRole("link", { name: "Back to templates" });
+    expect(back).toHaveAttribute("href", "/admin/template-library");
+    expect(screen.queryByRole("table", { name: "Published checklist template versions" })).toBeNull();
     expect(screen.queryByRole("button", { name: /edit|publish|delete|add user|add role|configure/i })).toBeNull();
     expect(document.body).not.toHaveTextContent(/draft version|save changes/i);
   });

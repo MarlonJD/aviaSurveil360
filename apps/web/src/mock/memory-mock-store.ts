@@ -71,7 +71,8 @@ export class MemoryMockStore {
       const raw = storage.getItem(storageKey);
       const value = raw ? JSON.parse(raw) as PersistedMockStoreCandidate : null;
       if (
-        ([1, 2, CURRENT_MOCK_STORE_SCHEMA_VERSION].includes(value?.schemaVersion ?? -1)) &&
+        value !== null &&
+        ([1, 2, CURRENT_MOCK_STORE_SCHEMA_VERSION].includes(value.schemaVersion ?? -1)) &&
         value.state &&
         typeof value.state === "object" &&
         Array.isArray(value.operations)

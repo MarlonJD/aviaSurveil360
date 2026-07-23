@@ -147,15 +147,15 @@ describe("React route contracts", () => {
     expect(Object.values(actualContextualParentById).every((parentId) => typeof parentId === "string" && routeIds.has(parentId))).toBe(true);
   });
 
-  it("records explicit pending component entries instead of hiding generic deferred screens in the registry", () => {
+  it("keeps all 85 screen components implemented without hidden generic deferred entries", () => {
     const registrySource = readFileSync(resolve(import.meta.dirname, "screen-component-registry.tsx"), "utf8");
     expect(registrySource).not.toMatch(/deferredDemoScreen|DeferredDemoScreen|deferred-demo-screen/i);
-    expect(Object.entries(SCREEN_COMPONENT_REGISTRY).filter(([, { status }]) => status === "implemented")).toHaveLength(73);
+    expect(Object.entries(SCREEN_COMPONENT_REGISTRY).filter(([, { status }]) => status === "implemented")).toHaveLength(85);
     expect(Object.entries(SCREEN_COMPONENT_REGISTRY).filter(([, { status }]) => status === "router-owned")).toEqual([
       ["role-select", { status: "router-owned" }],
     ]);
-    expect(Object.values(SCREEN_COMPONENT_REGISTRY).filter(({ status }) => status === "pending")).toHaveLength(12);
-    expect(Object.values(SCREEN_COMPONENT_REGISTRY).filter(({ status, component }) => status === "pending" && component === undefined)).toHaveLength(12);
+    expect(Object.values(SCREEN_COMPONENT_REGISTRY).filter(({ status }) => status === "pending")).toHaveLength(0);
+    expect(Object.values(SCREEN_COMPONENT_REGISTRY).filter(({ status, component }) => status === "pending" && component === undefined)).toHaveLength(0);
   });
 
   it("keeps the router free of undeclared literal paths and wildcard placeholder renders", () => {

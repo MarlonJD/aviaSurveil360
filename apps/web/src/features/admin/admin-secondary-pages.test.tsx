@@ -144,7 +144,15 @@ describe("Admin secondary workspaces", () => {
       const capability = (runtime.backendForRole(role) as AdminBackend).adminWorkspace;
       expect(capability).toBeDefined();
       await expect(capability!.listQuestions({})).rejects.toThrow(/Admin/i);
+      await expect(capability!.createQuestion({
+        prompt: "This denied command must not create a record.",
+        configuredReference: "Configured reference — DENIED",
+        expectedEvidence: "Expected Evidence — denied",
+        expectedRevision: null,
+        idempotencyKey: `TASK10-DENIED-${role}`,
+      })).rejects.toThrow(/Admin/i);
     }
+    expect((await admin.listQuestions({ search: "This denied command" })).items).toEqual([]);
   });
 
   it("provides a read-only Regulatory Library with working filters and all four persistent guardrails", async () => {
@@ -185,16 +193,25 @@ describe("Admin secondary workspaces", () => {
     await user.type(prompt, "   ");
     await user.click(within(page).getByRole("button", { name: "Create question" }));
     expect(await within(page).findByRole("alert")).toHaveTextContent(/Question text is required/);
+    await expect(requireAdminWorkspace(runtime).createQuestion({
+      prompt: "x".repeat(501),
+      configuredReference: "Configured reference — TOO-LONG",
+      expectedEvidence: "Expected Evidence — too long",
+      expectedRevision: null,
+      idempotencyKey: "TASK10-QUESTION-TOO-LONG",
+    })).rejects.toThrow(/500 characters or fewer/);
     await user.clear(prompt);
     await user.type(prompt, "Is the configured cabin record available?\nConfirm the expected Evidence version.");
     await user.type(within(page).getByRole("textbox", { name: "Configured reference" }), "Configured reference — CAB-RECORD");
     await user.type(within(page).getByRole("textbox", { name: "Expected Evidence" }), "Cabin record version");
     expect(within(page).getByText(/80 characters/)).toBeVisible();
     await user.click(within(page).getByRole("button", { name: "Create question" }));
-    expect(await within(page).findByText("Q-ADMIN-2026-007")).toBeVisible();
+    expect(await within(page).findByText("Q-ADMIN-2026-007", { selector: ".admin-success b" })).toBeVisible();
+    expect(await within(page).findByText("Q-ADMIN-2026-007", { selector: ".admin-record-card small" })).toBeVisible();
     cleanup();
     renderAdminRoute("/admin/question-bank", createMockBackendPersistentRuntime(storage));
-    expect(await screen.findByText("Q-ADMIN-2026-007", { selector: ".admin-success b" })).toBeVisible();
+    expect(await screen.findByText("Q-ADMIN-2026-007", { selector: ".admin-record-card small" })).toBeVisible();
+    expect(screen.getByText(/Is the configured cabin record available\?[\s\S]*Confirm the expected Evidence version\./)).toBeVisible();
     expect(document.body).toHaveTextContent(/configured reference/i);
     expect(document.body).toHaveTextContent(/expected Evidence/i);
     expect(document.body).toHaveTextContent(/reference only/i);
@@ -259,6 +276,63 @@ describe("Admin secondary workspaces", () => {
     expect(history.versions[0]!.questionIds).not.toContain(question.id);
   });
 
+  it("persists exact Draft mutations and idempotent operations across remount without changing CTV-CABIN-1", async () => {
+    const storage = localStorage;
+    const first = createMockBackendPersistentRuntime(storage);
+    const capability = requireAdminWorkspace(first);
+    const publishedBefore = JSON.stringify((await capability.getTemplate({ templateId: "TPL-CABIN-2026" })).versions[0]);
+    const question = await capability.createQuestion({
+      prompt: "Is the persisted exact reference visible after remount?",
+      configuredReference: "Configured reference — PERSISTED-EXACT",
+      expectedEvidence: "Expected Evidence — persisted exact record",
+      expectedRevision: null,
+      idempotencyKey: "TASK10-PERSIST-Q",
+    });
+    const master = await capability.getTemplate({ templateId: "TPL-CABIN-2026" });
+    const draft = await capability.createDraft({
+      templateId: master.id,
+      expectedRevision: master.revision,
+      idempotencyKey: "TASK10-PERSIST-DRAFT",
+      changeReason: "Prove exact Draft persistence and immutable history.",
+    });
+    const addInput = {
+      templateId: master.id,
+      draftVersionId: draft.id,
+      questionId: question.id,
+      expectedRevision: draft.revision,
+      idempotencyKey: "TASK10-PERSIST-ADD",
+    };
+    const added = await capability.addDraftQuestion(addInput);
+    expect(await capability.addDraftQuestion(addInput)).toEqual(added);
+    const moveInput = {
+      templateId: master.id,
+      draftVersionId: draft.id,
+      questionId: question.id,
+      direction: "UP" as const,
+      expectedRevision: added.revision,
+      idempotencyKey: "TASK10-PERSIST-MOVE",
+    };
+    const moved = await capability.moveDraftQuestion(moveInput);
+    expect(await capability.moveDraftQuestion(moveInput)).toEqual(moved);
+    await expect(capability.moveDraftQuestion({ ...moveInput, direction: "DOWN" })).rejects.toThrow(/operation id|idempotency/i);
+
+    const second = createMockBackendPersistentRuntime(storage);
+    const remounted = requireAdminWorkspace(second);
+    const template = await remounted.getTemplate({ templateId: "TPL-CABIN-2026" });
+    expect(JSON.stringify(template.versions[0])).toBe(publishedBefore);
+    expect(template.versions.map((version) => version.id)).toEqual(["CTV-CABIN-1", "CTV-CABIN-DRAFT-2"]);
+    expect(template.versions[1]!.questionIds.at(-2)).toBe(question.id);
+    const adminEvents = (await remounted.listAuditEvents({ actor: "USR-ADMIN-ADA" })).items
+      .filter((event) => event.action.startsWith("admin."));
+    expect(adminEvents.map((event) => event.action)).toEqual([
+      "admin.question_created",
+      "admin.template_draft_created",
+      "admin.template_question_added",
+      "admin.template_question_reordered",
+    ]);
+    expect(new Set(adminEvents.map((event) => event.eventId)).size).toBe(4);
+  });
+
   it("shows append-only version identity, ownership, exact diff, and disabled Department Manager publish authority", async () => {
     const runtime = createMockBackendRuntime();
     const capability = requireAdminWorkspace(runtime);
@@ -266,8 +340,8 @@ describe("Admin secondary workspaces", () => {
     await capability.createDraft({ templateId: master.id, expectedRevision: master.revision, idempotencyKey: "TASK10-HISTORY-DRAFT", changeReason: "Prepare Admin configuration changes." });
     renderAdminRoute("/admin/templates/TPL-CABIN-2026/history", runtime);
     const page = await screen.findByTestId("admin-version-history-page");
-    expect(page).toHaveTextContent("CTV-CABIN-1");
-    expect(page).toHaveTextContent("CTV-CABIN-DRAFT-2");
+    expect(await within(page).findByText("CTV-CABIN-1")).toBeVisible();
+    expect(await within(page).findByText("CTV-CABIN-DRAFT-2")).toBeVisible();
     expect(page).toHaveTextContent("Admin Preview");
     expect(page).toHaveTextContent("Department Manager");
     expect(page).toHaveTextContent(/0 questions added, 0 removed, order unchanged/i);
@@ -288,7 +362,7 @@ describe("Admin secondary workspaces", () => {
     expect(projection.riskFocus.length).toBeGreaterThan(0);
     renderAdminRoute("/admin/inspection-package-builder", runtime);
     const page = await screen.findByTestId("admin-inspection-package-page");
-    expect(within(page).getByRole("button", { name: /Run PKG-CAB-2026-001 unavailable/ })).toBeDisabled();
+    expect(await within(page).findByRole("button", { name: /Run PKG-CAB-2026-001 unavailable/ })).toBeDisabled();
     expect(page).toHaveTextContent(/Admin configuration preview.*not Inspector execution/i);
     expect(await runtime.backendForRole("manager").packageDrafts.get({ packageDraftId: "PKG-AUD-2026-001-CABIN" })).toEqual(managerBefore);
   });

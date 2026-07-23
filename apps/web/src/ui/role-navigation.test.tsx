@@ -166,6 +166,7 @@ describe("RoleNavigation", () => {
     expect(screen.getByText("Regulations")).toBeVisible();
     expect(screen.getByText("Evidence & Documents")).toBeVisible();
     expect(screen.getByRole("link", { name: "Templates" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("button", { name: /Organisation Master Data unavailable/i })).toBeDisabled();
+    expect(screen.getByRole("link", { name: "Organisation Master Data" })).toHaveAttribute("href", "/admin/organization-master-data");
+    expect(screen.getByRole("link", { name: "Audit Log" })).toHaveAttribute("href", "/admin/audit-log");
   });
 });

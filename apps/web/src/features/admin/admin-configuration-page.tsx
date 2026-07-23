@@ -28,10 +28,6 @@ function templateDomain(templateId: string): string {
   return templateId === "CABIN" ? "Cabin Safety" : templateId;
 }
 
-function previewTitle(title: string): string {
-  return title.replace(/\s+checklist$/i, "");
-}
-
 export function AdminConfigurationPage() {
   const backend = useBackendForRole("admin");
   const [templates, setTemplates] = useState<ChecklistTemplateVersionView[]>([]);
@@ -105,7 +101,7 @@ export function AdminConfigurationPage() {
         ) : (
           <>
             <header className="admin-page-head workbench-page-header">
-              <div><h1>Template Preview — {detail ? previewTitle(detail.title) : "Published checklist"}</h1><p>Read-only preview of the published checklist template.</p></div>
+              <div><h1>Template Preview — Cabin Inspection</h1><p>Read-only preview of the published checklist template.</p></div>
               <Link className="admin-action-link" to="/admin/template-library">Back to templates</Link>
             </header>
             <CommandError message={error} />
