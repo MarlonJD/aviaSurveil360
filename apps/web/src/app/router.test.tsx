@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppProviders } from "./providers";
 import { ScenarioProvider } from "./scenario-context";
 import { AppRouter, createRoleEntryPath, ROLE_ENTRIES } from "./router";
+import { createHttpBackend } from "../backend/http-backend";
 import { createMockBackendRuntime } from "../mock/create-mock-backend";
 import { seedVisualRuntimeForPath } from "../mock/seed-visual-runtime";
 
@@ -100,6 +101,37 @@ describe("authorized role-entry inventory", () => {
     expect(await screen.findByRole("heading", { name: "My Assignments" })).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("HTTP capability is unavailable until Plan 2 activates this route.");
     expect(screen.queryByText(/demo-only screen|generic placeholder/i)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    "/admin/inspection-package-builder",
+    "/admin/organization-master-data/ORG-FLY-NAMIBIA",
+  ])("keeps the HTTP-blocked contextual Admin route %s inside an HTTP-capable parent", async (path) => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ items: [], nextCursor: null }), {
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    const backend = createHttpBackend(
+      { apiBaseUrl: "/", environmentLabel: "Test" },
+      { fetchImplementation },
+    );
+    expect(backend.adminWorkspace).toBeUndefined();
+
+    render(
+      <AppProviders runtime={{ backend, backendForRole: () => backend, buildProfile: "http", environmentLabel: "Test" }}>
+        <MemoryRouter initialEntries={[path]}><AppRouter /></MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Checklist Templates" })).toBeInTheDocument();
+    expect(screen.getByRole("alert", { name: "Unavailable HTTP capability" })).toHaveTextContent(
+      "HTTP capability is unavailable until Plan 2 activates this route.",
+    );
+    expect(fetchImplementation).toHaveBeenCalledWith(
+      "/v1/configuration/checklist-template-versions?limit=100",
+      expect.objectContaining({ credentials: "same-origin" }),
+    );
   });
 
   it("direct-loads ui-audit-044 through the Department Manager shell and backend", async () => {

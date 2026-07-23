@@ -2,7 +2,7 @@ import { Suspense, useEffect, type ReactElement } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
 import { useApplicationRuntime } from "./providers";
-import { REACT_ROUTE_CONTRACT_BY_ID, REACT_ROUTE_CONTRACTS, type ReactSurfaceId, type RouteContract } from "./route-contracts";
+import { REACT_ROUTE_CONTRACT_BY_ID, REACT_ROUTE_CONTRACTS, type BuildProfileAvailability, type ReactSurfaceId, type RouteContract } from "./route-contracts";
 import { SCREEN_COMPONENT_REGISTRY } from "./screen-component-registry";
 import type { Role } from "../backend/backend";
 import { LoginPage } from "../auth/login-page";
@@ -44,7 +44,7 @@ const roleHomeSurfaceId: Record<Role, ReactSurfaceId> = {
   admin: "admin-home",
 };
 
-function nearestImplementedParent(contract: RouteContract) {
+function nearestImplementedParent(contract: RouteContract, buildProfile: BuildProfileAvailability) {
   const candidates = [contract.parentId, contract.requiredRole ? roleHomeSurfaceId[contract.requiredRole] : null];
   for (const candidate of candidates) {
     let currentId = candidate;
@@ -52,7 +52,9 @@ function nearestImplementedParent(contract: RouteContract) {
       const current = REACT_ROUTE_CONTRACT_BY_ID.get(currentId);
       if (!current) break;
       const entry = SCREEN_COMPONENT_REGISTRY[current.componentKey];
-      if (entry.status === "implemented") return entry.component;
+      if (entry.status === "implemented" && current.availableProfiles.includes(buildProfile)) {
+        return entry.component;
+      }
       currentId = current.parentId;
     }
   }
@@ -60,7 +62,8 @@ function nearestImplementedParent(contract: RouteContract) {
 }
 
 function ParentSurface({ contract }: { contract: RouteContract }) {
-  const ParentScreen = nearestImplementedParent(contract);
+  const { buildProfile } = useApplicationRuntime();
+  const ParentScreen = nearestImplementedParent(contract, buildProfile);
   return ParentScreen ? <ParentScreen /> : null;
 }
 

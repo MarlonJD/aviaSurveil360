@@ -50,14 +50,23 @@ gallery passed, and the matrix was not rerun under the user's no-pixel-loop
 direction. Task 10 passed its focused 101/101, full React 515/515, root/parity
 107/107, typecheck, demo build, route/profile boundary, responsive Chromium
 3/3, root-diff, diff-check, and process-hygiene gates. The main-agent
-spec/code-quality review found no Critical or Important findings; independent
-review is `not run` because the dispatched reviewer was stopped at the user's
-direction not to use further subagents. Its single bounded visual matrix remains
-literally 1/40, with the primitive gallery green and all 39 Admin route pairs
-non-green, and was not rerun. Standalone baseline integrity is `not verified`
-because the concurrently edited UI audit source no longer matches its recorded
-hash. Task 11 is pending and execution stopped before it at the user's
-direction. Plan 2 has not started.
+spec/code-quality review found no Critical or Important findings. The
+2026-07-23 independent review of `a598571..8f8a252` passed focused Vitest 53/53,
+typecheck, and range diff-check, found no Critical or Minor issues, and found
+one Important fail-closed HTTP direct-load defect: profile-insensitive parent
+resolution can mount demo-only Admin parents for two contextual routes. The
+correction was implemented through RED → GREEN TDD: two real-`HttpBackend`
+regressions reproduced the exceptions, then passed after parent resolution was
+made profile-aware. Fresh correction gates passed focused Task 10 103/103, full
+React 517/517, typecheck, demo and HTTP builds, HTTP artifact scan, exact
+86-route/two-profile boundary, root/parity 107/107, root-oracle diff, and
+diff-check. The correction is `verified locally`; its clean independent
+re-review is `not run`, so Task 10 is not independently accepted yet. Its
+single bounded visual matrix remains literally 1/40, with the primitive
+gallery green and all 39 Admin route pairs non-green, and was not rerun.
+Standalone baseline integrity is `not verified` because the concurrently
+edited UI audit source no longer matches its recorded hash. Task 11 must not
+be accepted before the Task 10 re-review. Plan 2 has not started.
 
 ## Objective
 
@@ -565,6 +574,12 @@ User provisioning is visibly demo-only until Plan 3 activates Keycloak admin.
   identity, authority, responsive, regression, build, boundary, root-diff, and
   hygiene checks; functional gates are green and the accepted non-green visual
   result is recorded without a pixel-only rerun.
+- [x] Resolve the independent review's Important HTTP fail-closed direct-load
+  finding through RED → GREEN TDD by making contextual parent resolution
+  profile-aware and adding real `HttpBackend` regressions for the Inspection
+  Package and Organization Detail routes.
+- [ ] Obtain a clean independent re-review of the Task 10 correction before
+  accepting Task 10 or proceeding through the Task 11 gate.
 - [x] Commit disposition: the user explicitly authorized the focused Task 10
   commit before Task 11.
 
