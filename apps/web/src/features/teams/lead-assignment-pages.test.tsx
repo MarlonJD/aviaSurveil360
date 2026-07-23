@@ -87,6 +87,10 @@ describe("Lead Inspector assignment and secondary routes", () => {
     renderLeadRoute("/lead-inspector/audits/AUD-2026-001/checklist-questions", runtime);
 
     const page = await screen.findByTestId("lead-question-assignment-page");
+    expect(within(page).getByRole("button", { name: "Assign Questions" })).toHaveAttribute(
+      "title",
+      "Select at least one question from AUD-2026-001 before assigning.",
+    );
     await user.click(within(page).getByLabelText("Select question CAB-GALLEY-001"));
     await user.click(within(page).getByLabelText("Select question CAB-EMEQ-PBE-001"));
     await user.selectOptions(within(page).getByLabelText("Assign To"), "USR-INSPECTOR-DAVID");
@@ -157,6 +161,9 @@ describe("Lead Inspector assignment and secondary routes", () => {
     const analytics = await screen.findByTestId("lead-analytics-page");
     expect(within(analytics).getByRole("heading", { name: "Safety Intelligence Dashboard" })).toBeVisible();
     expect(within(analytics).getByText(/not a legal decision/i)).toBeVisible();
+    await user.click(within(analytics).getByRole("button", { name: "Repeat" }));
+    expect(within(analytics).getByRole("button", { name: "Repeat" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(analytics).getByRole("button", { name: "All signals" })).toHaveAttribute("aria-pressed", "false");
     await user.click(within(analytics).getByRole("button", { name: "Prepare analytics CSV (mock)" }));
     expect(within(analytics).getByRole("status")).toHaveTextContent("lead-analytics.csv prepared");
 

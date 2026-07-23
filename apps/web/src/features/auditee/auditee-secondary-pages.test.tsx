@@ -283,6 +283,10 @@ describe("Auditee secondary workspaces", () => {
     expect(preliminaryPage).toHaveTextContent("PR-2026-018-V1");
     expect(preliminaryPage).toHaveTextContent("Response Due Date: Not configured");
     expect(preliminaryPage).toHaveTextContent("CAA-visible comment: No CAA-visible comment recorded");
+    expect(within(preliminaryPage).getByRole("combobox", { name: "Release stage" })).toHaveAttribute(
+      "aria-describedby",
+      "auditee-preliminary-release-stage-reason",
+    );
     await user.click(within(preliminaryPage).getByRole("button", { name: "Preview PR-2026-018-V1" }));
     expect(within(preliminaryPage).getByRole("region", { name: "Preliminary Report preview PR-2026-018-V1" })).toHaveTextContent("PR-2026-018-V1");
     expect(within(preliminaryPage).queryByText("RPT-CAB-2026-001-V1")).toBeNull();
@@ -354,7 +358,17 @@ describe("Auditee secondary workspaces", () => {
     const page = await screen.findByTestId("auditee-settings-page");
     expect(within(page).getByRole("region", { name: "Organization scope" })).toHaveTextContent("ORG-FLY-NAMIBIA");
     expect(within(page).getByRole("region", { name: "Notification preferences" })).toHaveTextContent(/read-only|not configurable/i);
-    expect(within(page).getByRole("checkbox", { name: "Due Date reminders" })).toBeDisabled();
+    for (const name of ["Due Date reminders", "Report release updates"]) {
+      expect(within(page).getByRole("checkbox", { name })).toBeDisabled();
+      expect(within(page).getByRole("checkbox", { name })).toHaveAttribute(
+        "aria-describedby",
+        "auditee-notification-disabled-reason",
+      );
+    }
+    expect(within(page).getByText(/Fly Namibia notification preferences are read-only/i)).toHaveAttribute(
+      "id",
+      "auditee-notification-disabled-reason",
+    );
     await user.click(within(page).getByRole("button", { name: "Edit profile" }));
     await user.clear(within(page).getByLabelText("Display name"));
     await user.type(within(page).getByLabelText("Display name"), "Fly Namibia Quality Lead");

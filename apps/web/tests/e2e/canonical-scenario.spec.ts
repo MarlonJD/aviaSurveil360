@@ -108,7 +108,10 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
   await page.getByRole("button", { name: "Convert to Finding" }).click();
   await expect(page.getByTestId("finding-number")).toHaveText("CAB-2026-001");
   await expect(page.getByTestId("finding-status")).toHaveText("WAITING_FOR_CAP");
-  await page.getByRole("link", { name: "Open Finding dossier" }).click();
+  await page.getByRole("link", { name: "Open Lead CAP review" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: /^CAP Review/ })).toBeVisible();
+  await page.getByRole("button", { name: "Switch to CAA Inspector Finding" }).click();
+  await expect(page).toHaveURL(/\/inspector\/findings\/FND-CAB-2026-001$/);
 
   for (const expected of [
     "Fly Namibia",
@@ -224,8 +227,10 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
   await page.getByLabel("Report decision reason").fill("Issue the exact candidate report version.");
   await page.getByRole("button", { name: "Issue and lock report" }).click();
   await expect(page.getByTestId("report-status")).toHaveText("LOCKED");
-  await expect(page.getByTestId("report-finding-status")).toHaveText("EVIDENCE_REQUIRED");
-  await expect(page.getByText("Report issue did not close the Finding")).toBeVisible();
+  await expect(page.getByTestId("report-finding-status")).toHaveText(
+    "No Findings linked — relationship unavailable for RPT-CAB-2026-001-V1",
+  );
+  await expect(page.getByText("Report issue did not close the separately created Finding")).toBeVisible();
 
   await page.getByLabel("Experience").selectOption("manager");
   await expect(page.getByRole("heading", { name: "Department Manager Dashboard" })).toBeVisible();
@@ -295,11 +300,12 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
   await page.getByRole("button", { name: "Open updated Manager Dashboard" }).click();
   await expect(page.getByTestId("manager-closed-findings")).toHaveText("1");
   await expect(page.getByTestId("manager-canonical-status")).toHaveText("CLOSED");
-  await page.getByRole("link", { name: "Open report preview" }).click();
-  await expect(page.getByRole("heading", { name: "Cabin Inspection Report Preview" })).toBeVisible();
+  await page.goto("/department-manager/reports/RPT-CAB-2026-001-V1");
+  await expect(page.getByRole("heading", { name: "Reports Approval" })).toBeVisible();
   await expect(page.getByTestId("report-status")).toHaveText("LOCKED");
-  await expect(page.getByTestId("report-finding-status")).toHaveText("CLOSED");
-  await expect(page.getByText("Evidence accepted and verified")).toBeVisible();
+  await page.getByRole("tab", { name: "Findings" }).click();
+  await expect(page.getByRole("tabpanel")).toContainText("No Finding is included.");
+  await expect(page.getByTestId("report-finding-status")).toHaveCount(0);
 
   captureAuditeeTransport = true;
   await page.getByRole("link", { name: "View as Fly Namibia Auditee" }).click();

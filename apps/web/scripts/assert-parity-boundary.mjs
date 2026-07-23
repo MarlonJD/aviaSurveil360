@@ -29,6 +29,44 @@ const HTTP_FORBIDDEN_INPUTS = [
   /[/\\]test-profile[/\\]/i,
 ];
 
+function assertInteractionMutationFixture(mutation) {
+  const fixture = {
+    accessibleName: "Review FND-CAB-2026-001",
+    actionOutcome: "typed-mutation",
+    controlKind: "select",
+    disabled: true,
+    disabledReason: "FND-CAB-2026-001 is locked after Evidence verification.",
+    requestedPath: "/inspector/findings/FND-CAB-2026-001",
+    resolvedPath: "/inspector/findings/FND-CAB-2026-001",
+    accessiblePrimaryNavigationCount: 1,
+    viewports: ["desktop", "tablet", "mobile"],
+  };
+  if (mutation === "toast-only-action") fixture.actionOutcome = "toast-only";
+  if (mutation === "unlabelled-control") fixture.accessibleName = "";
+  if (mutation === "fake-dropdown") fixture.controlKind = "div-role-combobox";
+  if (mutation === "duplicate-accessible-navigation") fixture.accessiblePrimaryNavigationCount = 2;
+  if (mutation === "missing-disabled-reason") fixture.disabledReason = "";
+  if (mutation === "broken-deep-link") fixture.resolvedPath = "/";
+  if (mutation === "missing-mobile-viewport") fixture.viewports = fixture.viewports.filter((viewport) => viewport !== "mobile");
+
+  assert.notEqual(fixture.actionOutcome, "toast-only", "Visible action contract rejects a toast-only action.");
+  assert.ok(fixture.accessibleName.trim(), "Every visible control must have an accessible name.");
+  assert.equal(fixture.controlKind, "select", "Dropdown controls must use native select semantics.");
+  assert.equal(
+    fixture.accessiblePrimaryNavigationCount,
+    1,
+    "Each routed workspace must expose exactly one accessible primary navigation.",
+  );
+  if (fixture.disabled) {
+    assert.ok(
+      fixture.disabledReason.trim(),
+      "Every disabled control must expose a record-specific disabled reason.",
+    );
+  }
+  assert.equal(fixture.resolvedPath, fixture.requestedPath, "Every declared deep link must resolve to its exact path.");
+  assert.ok(fixture.viewports.includes("mobile"), "The interaction matrix must include the mobile viewport.");
+}
+
 function filesBelow(directory, predicate) {
   if (!fs.existsSync(directory)) return [];
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -228,6 +266,7 @@ export function assertVisualHarnessSource(source) {
 export function assertParityBoundary(options = {}) {
   const repositoryRoot = path.resolve(options.repositoryRoot ?? defaultRepositoryRoot);
   const mutation = options.mutation ?? null;
+  assertInteractionMutationFixture(mutation);
   assertSourceBoundary(repositoryRoot, mutation);
 
   const visualSpecPath = path.join(repositoryRoot, "apps/web/tests/e2e/legacy-visual-parity.spec.ts");

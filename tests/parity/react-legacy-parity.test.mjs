@@ -66,34 +66,35 @@ test("the behavior ledger covers the authorized first-production route families"
 
 test("the parity ledger freezes the 86/0 route scope and visible action ownership", () => {
   const ledger = readLedger();
-  const expectedInteractionVerifiedSurfaceIds = [
-    "role-select", "inspector-home", "audit-detail", "checklist-runner",
-    "lead-home", "cap-review", "manager-home", "audit-plan", "report-preview",
-    "organization-registry", "gm-home", "finance-home",
-    "executive-home", "auditee-home", "admin-home",
-  ];
-  const expectedPresentationCorrectionPendingSurfaceIds = ["finding-detail", "evidence-review"];
+  const expectedInteractionVerifiedSurfaceIds = ledger.reactScope.reactParitySurfaceIds;
   assert.equal(ledger.reactScope.reactParitySurfaceIds.length, 86);
   assert.equal(new Set(ledger.reactScope.reactParitySurfaceIds).size, 86);
   assert.equal(ledger.reactScope.legacyOnlyRows, 0);
   assert.equal(ledger.reactScope.legacyOnlyReactPath, "not-applicable");
   assert.equal(ledger.reactScope.legacyRemovalAllowed, false);
-  assert.equal(ledger.reactScope.interactionVerifiedSurfaceIds.length, 15);
-  assert.equal(ledger.reactScope.presentationCorrectionPendingSurfaceIds.length, 2);
-  assert.equal(ledger.reactScope.routeContractOnlySurfaceIds.length, 69);
+  assert.equal(ledger.reactScope.interactionVerifiedSurfaceIds.length, 86);
+  assert.equal(ledger.reactScope.presentationCorrectionPendingSurfaceIds.length, 0);
+  assert.equal(ledger.reactScope.routeContractOnlySurfaceIds.length, 0);
   assert.deepEqual(ledger.reactScope.interactionVerifiedSurfaceIds, expectedInteractionVerifiedSurfaceIds);
-  assert.deepEqual(
-    ledger.reactScope.presentationCorrectionPendingSurfaceIds,
-    expectedPresentationCorrectionPendingSurfaceIds,
-  );
-  assert.deepEqual(
-    ledger.reactScope.routeContractOnlySurfaceIds,
-    ledger.reactScope.reactParitySurfaceIds.filter(
-      (surfaceId) =>
-        !expectedInteractionVerifiedSurfaceIds.includes(surfaceId) &&
-        !expectedPresentationCorrectionPendingSurfaceIds.includes(surfaceId),
-    ),
-  );
+  assert.deepEqual(ledger.reactScope.presentationCorrectionPendingSurfaceIds, []);
+  assert.deepEqual(ledger.reactScope.routeContractOnlySurfaceIds, []);
+  assert.deepEqual(ledger.interactionMatrix, {
+    viewports: ["desktop", "tablet", "mobile"],
+    responsiveRouteChecks: 258,
+    actionInventories: 258,
+    evidence: [
+      "apps/web/tests/e2e/full-route-accessibility.spec.ts",
+      "apps/web/tests/e2e/visible-action-contract.spec.ts",
+    ],
+  });
+  const actionEvidenceSurfaceIds = ledger.actionEvidenceGroups.flatMap((group) => group.surfaceIds);
+  assert.equal(actionEvidenceSurfaceIds.length, 86);
+  assert.equal(new Set(actionEvidenceSurfaceIds).size, 86);
+  assert.deepEqual(actionEvidenceSurfaceIds, ledger.reactScope.reactParitySurfaceIds);
+  for (const group of ledger.actionEvidenceGroups) {
+    assert.ok(group.surfaceIds.length > 0);
+    assert.ok(fs.existsSync(path.join(repositoryRoot, group.evidence)));
+  }
   const evidenceCategories = [
     ...ledger.reactScope.interactionVerifiedSurfaceIds,
     ...ledger.reactScope.presentationCorrectionPendingSurfaceIds,
@@ -106,7 +107,12 @@ test("the parity ledger freezes the 86/0 route scope and visible action ownershi
     assert.ok(ownership.id);
     assert.ok(ownership.surfaceIds.length > 0);
     assert.doesNotThrow(() => new RegExp(ownership.namePattern));
-    assert.ok(["local", "session", "backend-or-local"].includes(ownership.boundary));
+    assert.ok([
+      "typed-mutation",
+      "navigation",
+      "selection-or-filter",
+      "browser-local-artifact",
+    ].includes(ownership.boundary));
     assert.ok(ownership.durableEffect.length > 20);
     assert.ok(fs.existsSync(path.join(repositoryRoot, ownership.evidence)));
     if (ownership.id === "declared-route-and-workflow-actions") {

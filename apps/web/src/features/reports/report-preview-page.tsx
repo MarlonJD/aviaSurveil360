@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { useBackendForRole } from "../../app/providers";
 import type { FindingView, ReportVersionView } from "../../backend/backend";
+import { useDialogFocus } from "../../ui/dialog-focus";
 import { CommandError, errorMessage, formatLocalDate, formatSeverity, WorkspaceShell } from "../shared/workspace-shell";
 
 const tabs = ["Summary", "Findings", "Attachments", "Comments", "Decision history"] as const;
@@ -21,6 +22,19 @@ export function ReportPreviewPage() {
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const previewOpenerRef = useRef<HTMLButtonElement | null>(null);
+  const previewDialogRef = useRef<HTMLDivElement | null>(null);
+  const previewCloseRef = useRef<HTMLButtonElement | null>(null);
+  const closePreview = () => {
+    setPreviewOpen(false);
+    previewOpenerRef.current?.focus();
+  };
+  useDialogFocus({
+    containerRef: previewDialogRef,
+    initialFocusRef: previewCloseRef,
+    onClose: closePreview,
+    open: previewOpen,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -108,12 +122,12 @@ export function ReportPreviewPage() {
               </div>
               {canonicalFinding ? <div className="report-conclusion"><span data-testid="report-finding-status">{canonicalFinding.status}</span><strong>{canonicalFinding.closureBasis === "EVIDENCE_VERIFIED" ? "Evidence accepted and verified" : "Finding remains open"}</strong></div> : null}
               {report.status === "DEPARTMENT_REVIEW" ? <div className="report-decision-panel"><label>Department Manager decision reason<textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} /></label><div><button disabled={busy} onClick={() => void decide("RETURN")} type="button">Return for Revision</button><button disabled={busy} onClick={() => void decide("FORWARD")} type="button">Forward to General Manager</button></div></div> : <p className="management-authority-note">Department Manager cannot issue, sign, lock, or close this report. The current stage belongs to the authorized downstream role.</p>}
-              <div className="report-dossier__actions"><button aria-label="Review Full Report" onClick={() => setPreviewOpen(true)} type="button">Preview Full Report</button><span><button aria-describedby="pdf-disabled-reason" disabled type="button">Download PDF</button><small id="pdf-disabled-reason">PDF generation is not connected in this candidate.</small></span></div>
+              <div className="report-dossier__actions"><button aria-label="Review Full Report" onClick={() => setPreviewOpen(true)} ref={previewOpenerRef} type="button">Preview Full Report</button><span><button aria-describedby="pdf-disabled-reason" disabled type="button">Download PDF</button><small id="pdf-disabled-reason">PDF generation is not connected in this candidate.</small></span></div>
               <Link className="primary-link" to="/auditee/service-provider-cap">View as Fly Namibia Auditee</Link>
             </section>
           ) : null}
         </div>
-        {previewOpen ? <div className="report-preview-dialog" role="dialog" aria-modal="true" aria-label="Immutable report preview"><article><header><div><span>Immutable report preview</span><h2>Cabin Inspection Report</h2></div><button aria-label="Close report preview" onClick={() => setPreviewOpen(false)} type="button">×</button></header><p><b>{report?.reportVersionId}</b> · {report?.contentHash}</p><p>This preview is read-only. It does not issue, sign, lock, or close the report.</p></article></div> : null}
+        {previewOpen ? <div className="report-preview-dialog" ref={previewDialogRef} role="dialog" aria-modal="true" aria-label="Immutable report preview"><article><header><div><span>Immutable report preview</span><h2>Cabin Inspection Report</h2></div><button aria-label="Close report preview" onClick={closePreview} ref={previewCloseRef} type="button">×</button></header><p><b>{report?.reportVersionId}</b> · {report?.contentHash}</p><p>This preview is read-only. It does not issue, sign, lock, or close the report.</p></article></div> : null}
       </div>
     </WorkspaceShell>
   );

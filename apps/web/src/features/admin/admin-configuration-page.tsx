@@ -116,7 +116,7 @@ export function AdminConfigurationPage() {
                   <div><span>Status</span><b>Published</b><small>{detail.publishedAt.slice(0, 10)}</small></div>
                 </section>
                 <p className="admin-source-profile">Source workbook profile: 126 Cabin Inspection rows across 6 sections. This demo runs a curated {detail.questionCount}-question subset; the source workbook remains a mock/configured checklist reference, not a live import or legal source.</p>
-                <nav className="admin-section-jumps" aria-label="Template section jumps">{[...new Set(detail.questions.map((question) => question.sectionId))].map((sectionId) => <a href={`#admin-template-section-${sectionId.replace(/[^a-z0-9]+/gi, "-").toLocaleLowerCase()}`} key={sectionId}>{sectionId}</a>)}</nav>
+                <div className="admin-section-jumps" aria-label="Template section jumps">{[...new Set(detail.questions.map((question) => question.sectionId))].map((sectionId) => <a href={`#admin-template-section-${sectionId.replace(/[^a-z0-9]+/gi, "-").toLocaleLowerCase()}`} key={sectionId}>{sectionId}</a>)}</div>
                 <div className="admin-table-scroll admin-question-table-scroll">
                   <table aria-label="Published checklist questions" className="admin-question-table">
                     <thead><tr><th>Row</th><th>Question</th><th>Regulatory reference</th><th>Expected evidence</th><th>Trace</th></tr></thead>

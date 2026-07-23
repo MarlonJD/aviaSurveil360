@@ -208,7 +208,7 @@ export function CapReviewPage() {
               </> : null}
             </aside>
 
-            <main className="cap-root-main">
+            <div className="cap-root-main">
               <section className="cap-root-panel">
                 <header>
                   <h2>Finding Information</h2>
@@ -260,7 +260,7 @@ export function CapReviewPage() {
                   <tbody>{capRevisions.map((revision) => <tr data-testid="cap-revision-row" key={revision.id}><td>Revision {revision.revision}</td><td>{revision.status}</td><td>{revision.rootCause}</td><td>{reviewSummary(revision)}</td><td>{revision.audience === "CAA" && revision.latestReview ? revision.latestReview.internalCaaNote : "Not recorded"}</td></tr>)}</tbody>
                 </table>
               </section>
-            </main>
+            </div>
 
             <aside className="cap-root-side">
               <section className="cap-root-panel cap-root-quality">

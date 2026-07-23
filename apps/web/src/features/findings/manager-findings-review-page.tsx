@@ -56,7 +56,7 @@ export function ManagerFindingsReviewPage() {
           <section aria-label="Finding register" className="manager-ops-register">
             {visible.map((finding) => (
               <article aria-label={`Finding ${finding.id}`} className="manager-ops-card" data-finding-id={finding.id} key={finding.id}>
-                <button className="manager-ops-record-select" onClick={() => setSelectedId(finding.id)} type="button"><span>{finding.findingNumber}</span><strong>{finding.title}</strong></button>
+                <button aria-pressed={selectedId === finding.id} className="manager-ops-record-select" onClick={() => setSelectedId(finding.id)} type="button"><span>{finding.findingNumber}</span><strong>{finding.title}</strong></button>
                 <p>{finding.organizationName} · {finding.status}</p>
                 {finding.id === "FND-CAB-2026-001" ? <Link to={`/department-manager/evidence/${finding.id}`}>Open Evidence {finding.id}</Link> : <button aria-label={`Evidence unavailable for ${finding.id}`} disabled title={`Finding ${finding.id} has no declared Department Manager Evidence-review route.`} type="button">Evidence unavailable</button>}
               </article>

@@ -5,11 +5,27 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { REACT_ROUTE_CONTRACTS } from "../app/route-contracts";
 import { RoleNavigation } from "./role-navigation";
 
 afterEach(() => cleanup());
 
 describe("RoleNavigation", () => {
+  it.each(
+    REACT_ROUTE_CONTRACTS
+      .filter((route) => route.requiredRole)
+      .map((route) => [route.id, route.requiredRole] as const),
+  )("exposes exactly one accessible active primary item for %s", (routeId, requiredRole) => {
+    render(
+      <MemoryRouter>
+        <RoleNavigation activeRole={requiredRole!} activeRouteId={routeId} />
+      </MemoryRouter>,
+    );
+
+    const navigation = screen.getByRole("navigation", { name: "Primary role navigation" });
+    expect(within(navigation).getAllByRole("link").filter((link) => link.hasAttribute("aria-current"))).toHaveLength(1);
+  });
+
   it("derives primary navigation from the route registry in order", () => {
     render(
       <MemoryRouter>

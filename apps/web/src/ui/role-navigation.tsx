@@ -16,16 +16,25 @@ export function activePrimaryRouteId(activeRouteId: ReactSurfaceId): ReactSurfac
   ) return "inspector-findings";
   if (activeRouteId === "closure-report-preview") return "inspector-reports";
   if (activeRouteId === "organization-risk-profile") return "manager-risk-dashboard";
+  if (
+    activeRouteId === "organization-registry" ||
+    activeRouteId === "organization-detail"
+  ) return "manager-home";
   if (activeRouteId === "executive-report-preview") return "executive-final-reports";
   if (activeRouteId === "admin-home") return "admin-template-list";
   if (activeRouteId === "admin-inspection-package-builder") return "admin-checklist-builder";
   if (activeRouteId === "admin-organization-detail") return "admin-organization-master-data";
-  if (
-    activeRouteId === "cap-review" ||
-    activeRouteId === "report-preview"
-  ) return activeRouteId;
-  const active = REACT_ROUTE_CONTRACT_BY_ID.get(activeRouteId);
-  return active?.parentId ?? activeRouteId;
+  if (activeRouteId === "report-preview") return activeRouteId;
+  let current: ReactSurfaceId = activeRouteId;
+  const visited = new Set<ReactSurfaceId>();
+  while (!visited.has(current)) {
+    visited.add(current);
+    const parentId: ReactSurfaceId | null =
+      REACT_ROUTE_CONTRACT_BY_ID.get(current)?.parentId ?? null;
+    if (!parentId) return current;
+    current = parentId;
+  }
+  return activeRouteId;
 }
 
 export function primaryRoutesForRole(role: Role): readonly RouteContract[] {

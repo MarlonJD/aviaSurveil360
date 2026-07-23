@@ -276,6 +276,7 @@
 .authorized-close-panel button { min-height: 44px; }
 
 .organization-mobile-records { display: none; }
+.organization-mobile-records .manager-record-actions a { display: inline-flex; width: 100%; min-height: 44px; align-items: center; justify-content: center; border: 1px solid #cbd5e1; border-radius: 7px; }
 .organization-dossier { margin-top: 14px; }
 .organization-dossier > p { margin: 14px 16px; color: #6b7891; font-size: 11.5px; }
 .management-status { display: inline-flex; padding: 4px 8px; border-radius: 999px; color: #1f724b; background: #e6f6ee; font-size: 10px; font-weight: 700; }
@@ -336,12 +337,13 @@
 .report-queue > .management-section-head { padding-top: 20px; }
 .report-queue > .management-section-head h2 { margin-top: 6px; }
 .report-queue__scope { display: block; margin: 0; padding: 5px 16px 18px; border-bottom: 1px solid #dde3ec; color: #2f6fd6; font-size: 10px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+.report-queue__scope a { display: inline-flex; min-height: 44px; align-items: center; padding-inline: 8px; }
 .report-queue__filters label { display: grid; gap: 4px; color: #6b7891; font-size: 9.5px; }
 .report-queue__filters input,
 .report-queue__filters select,
 .report-queue__filters button { min-height: 44px; padding: 8px 9px; border: 1px solid #dde3ec; border-radius: 7px; background: #fff; }
 .report-queue__filters input,
-.report-queue__filters select { height: 38px; min-height: 38px; }
+.report-queue__filters select { height: 44px; min-height: 44px; }
 .report-queue__filters button { align-self: end; cursor: pointer; }
 .report-queue__filters > button:first-of-type { border-color: #2f6fd6; color: #fff; background: #2f6fd6; font-weight: 700; }
 .report-queue__counts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border-bottom: 1px solid #eef1f6; }

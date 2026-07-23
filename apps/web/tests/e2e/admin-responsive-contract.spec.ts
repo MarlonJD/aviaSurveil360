@@ -97,7 +97,7 @@ for (const viewport of viewports) {
     const preview = page.getByTestId("admin-template-preview-page");
     await expect(preview.getByRole("heading", { name: "Template Preview — Cabin Inspection" })).toBeVisible();
     await expect(preview.getByRole("link", { name: "Back to templates" })).toHaveAttribute("href", "/admin/template-library");
-    await expect(preview.getByRole("navigation", { name: "Template section jumps" }).getByRole("link")).toHaveCount(6);
+    await expect(preview.locator("[aria-label='Template section jumps']").getByRole("link")).toHaveCount(6);
     await preview.getByRole("link", { name: "Back to templates" }).click();
     await expect(page).toHaveURL(/\/admin\/template-library$/);
 

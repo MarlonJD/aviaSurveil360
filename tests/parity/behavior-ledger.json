@@ -11,35 +11,196 @@
       "gm-home", "gm-planning", "gm-report-approvals", "gm-departments", "gm-risk-dashboard", "gm-settings", "finance-home", "executive-home", "executive-planning", "executive-preliminary-reports", "executive-final-reports", "executive-report-preview", "executive-notifications", "executive-settings", "auditee-home", "auditee-inspection-coordination", "auditee-preliminary-reports", "auditee-final-reports", "auditee-report-preview", "auditee-messages", "auditee-documents", "auditee-settings", "admin-regulatory-library", "admin-template-list", "admin-home", "admin-question-bank", "admin-checklist-builder", "admin-version-history", "admin-inspection-package-builder", "admin-reports", "admin-users-roles", "admin-configurations", "admin-organization-master-data", "admin-organization-detail", "admin-audit-log"
     ],
     "interactionVerifiedSurfaceIds": [
-      "role-select", "inspector-home", "audit-detail", "checklist-runner", "lead-home", "cap-review", "manager-home", "audit-plan", "report-preview", "organization-registry", "gm-home", "finance-home", "executive-home", "auditee-home", "admin-home"
+      "role-select", "inspector-home", "inspector-findings", "inspector-messages", "inspector-calendar", "inspector-reports", "audit-detail", "checklist-runner", "finding-detail", "closure-report-preview", "inspector-assistant", "inspector-profile",
+      "lead-home", "lead-preliminary-reports", "lead-preliminary-report-workflow", "lead-final-reports", "lead-final-report-readiness", "lead-prepare-final-report", "lead-final-report-document", "lead-audit-assignment", "lead-checklist-question-assignment", "cap-review", "lead-calendar", "lead-messages", "lead-analytics-reports", "lead-settings",
+      "manager-home", "audit-plan", "manager-audits", "report-preview", "manager-risk-dashboard", "manager-inspection-team", "manager-findings-review", "manager-cap-monitoring", "manager-checklist-management", "manager-safety-intelligence", "organization-risk-profile", "manager-ssp-nasp", "manager-usoap-readiness", "manager-cap-effectiveness", "organization-registry", "organization-detail", "inspection-package-builder", "evidence-review", "manager-preliminary-report-review", "manager-cap-closure-review", "new-audit-wizard-1", "new-audit-wizard-2", "new-audit-wizard-3", "new-audit-wizard-4", "new-audit-wizard-5",
+      "gm-home", "gm-planning", "gm-report-approvals", "gm-departments", "gm-risk-dashboard", "gm-settings", "finance-home", "executive-home", "executive-planning", "executive-preliminary-reports", "executive-final-reports", "executive-report-preview", "executive-notifications", "executive-settings", "auditee-home", "auditee-inspection-coordination", "auditee-preliminary-reports", "auditee-final-reports", "auditee-report-preview", "auditee-messages", "auditee-documents", "auditee-settings", "admin-regulatory-library", "admin-template-list", "admin-home", "admin-question-bank", "admin-checklist-builder", "admin-version-history", "admin-inspection-package-builder", "admin-reports", "admin-users-roles", "admin-configurations", "admin-organization-master-data", "admin-organization-detail", "admin-audit-log"
     ],
-    "presentationCorrectionPendingSurfaceIds": [
-      "finding-detail", "evidence-review"
-    ],
-    "routeContractOnlySurfaceIds": [
-      "inspector-findings", "inspector-messages", "inspector-calendar", "inspector-reports", "closure-report-preview", "inspector-assistant", "inspector-profile",
-      "lead-preliminary-reports", "lead-preliminary-report-workflow", "lead-final-reports", "lead-final-report-readiness", "lead-prepare-final-report", "lead-final-report-document", "lead-audit-assignment", "lead-checklist-question-assignment", "lead-calendar", "lead-messages", "lead-analytics-reports", "lead-settings",
-      "manager-audits", "manager-risk-dashboard", "manager-inspection-team", "manager-findings-review", "manager-cap-monitoring", "manager-checklist-management", "manager-safety-intelligence", "organization-risk-profile", "manager-ssp-nasp", "manager-usoap-readiness", "manager-cap-effectiveness", "organization-detail", "inspection-package-builder", "manager-preliminary-report-review", "manager-cap-closure-review", "new-audit-wizard-1", "new-audit-wizard-2", "new-audit-wizard-3", "new-audit-wizard-4", "new-audit-wizard-5",
-      "gm-planning", "gm-report-approvals", "gm-departments", "gm-risk-dashboard", "gm-settings", "executive-planning", "executive-preliminary-reports", "executive-final-reports", "executive-report-preview", "executive-notifications", "executive-settings", "auditee-inspection-coordination", "auditee-preliminary-reports", "auditee-final-reports", "auditee-report-preview", "auditee-messages", "auditee-documents", "auditee-settings", "admin-regulatory-library", "admin-template-list", "admin-question-bank", "admin-checklist-builder", "admin-version-history", "admin-inspection-package-builder", "admin-reports", "admin-users-roles", "admin-configurations", "admin-organization-master-data", "admin-organization-detail", "admin-audit-log"
-    ],
+    "presentationCorrectionPendingSurfaceIds": [],
+    "routeContractOnlySurfaceIds": [],
     "legacyOnlyRows": 0,
     "legacyOnlyReactPath": "not-applicable",
     "legacyRemovalAllowed": false
   },
+  "interactionMatrix": {
+    "viewports": ["desktop", "tablet", "mobile"],
+    "responsiveRouteChecks": 258,
+    "actionInventories": 258,
+    "evidence": [
+      "apps/web/tests/e2e/full-route-accessibility.spec.ts",
+      "apps/web/tests/e2e/visible-action-contract.spec.ts"
+    ]
+  },
+  "actionEvidenceGroups": [
+    {
+      "surfaceIds": ["role-select"],
+      "evidence": "apps/web/src/ui/role-select-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["inspector-home"],
+      "evidence": "apps/web/src/features/assignments/inspector-assignments-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["inspector-findings", "inspector-messages", "inspector-calendar", "inspector-reports"],
+      "evidence": "apps/web/src/features/inspector/inspector-secondary-pages.test.tsx"
+    },
+    {
+      "surfaceIds": ["audit-detail"],
+      "evidence": "apps/web/src/features/inspections/audit-detail-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["checklist-runner"],
+      "evidence": "apps/web/src/features/checklists/checklist-runner-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["finding-detail"],
+      "evidence": "apps/web/src/features/findings/finding-detail-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["closure-report-preview", "inspector-assistant", "inspector-profile"],
+      "evidence": "apps/web/src/features/inspector/inspector-secondary-pages.test.tsx"
+    },
+    {
+      "surfaceIds": ["lead-home"],
+      "evidence": "apps/web/src/features/findings/lead-review-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["lead-preliminary-reports", "lead-preliminary-report-workflow", "lead-final-reports", "lead-final-report-readiness", "lead-prepare-final-report", "lead-final-report-document"],
+      "evidence": "apps/web/src/features/reports/lead-report-workspaces.test.tsx"
+    },
+    {
+      "surfaceIds": ["lead-audit-assignment", "lead-checklist-question-assignment"],
+      "evidence": "apps/web/src/features/teams/lead-assignment-pages.test.tsx"
+    },
+    {
+      "surfaceIds": ["cap-review"],
+      "evidence": "apps/web/src/features/caps/cap-review-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["lead-calendar", "lead-messages", "lead-analytics-reports", "lead-settings"],
+      "evidence": "apps/web/src/features/teams/lead-assignment-pages.test.tsx"
+    },
+    {
+      "surfaceIds": ["manager-home"],
+      "evidence": "apps/web/src/features/findings/manager-dashboard-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["audit-plan"],
+      "evidence": "apps/web/src/features/planning/audit-plan-calendar-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["manager-audits"],
+      "evidence": "apps/web/src/features/management/manager-operational-pages.test.tsx"
+    },
+    {
+      "surfaceIds": ["report-preview"],
+      "evidence": "apps/web/src/features/reports/report-preview-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["manager-risk-dashboard"],
+      "evidence": "apps/web/src/features/risk/manager-risk-workspaces.test.tsx"
+    },
+    {
+      "surfaceIds": ["manager-inspection-team", "manager-findings-review", "manager-cap-monitoring", "manager-checklist-management"],
+      "evidence": "apps/web/src/features/management/manager-operational-pages.test.tsx"
+    },
+    {
+      "surfaceIds": ["manager-safety-intelligence", "organization-risk-profile", "manager-ssp-nasp", "manager-usoap-readiness", "manager-cap-effectiveness"],
+      "evidence": "apps/web/src/features/risk/manager-risk-workspaces.test.tsx"
+    },
+    {
+      "surfaceIds": ["organization-registry"],
+      "evidence": "apps/web/src/features/organizations/organization-registry-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["organization-detail"],
+      "evidence": "apps/web/src/features/management/manager-operational-pages.test.tsx"
+    },
+    {
+      "surfaceIds": ["inspection-package-builder"],
+      "evidence": "apps/web/src/features/planning/audit-plan-calendar-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["evidence-review"],
+      "evidence": "apps/web/src/features/evidence/evidence-review-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["manager-preliminary-report-review", "manager-cap-closure-review"],
+      "evidence": "apps/web/src/features/management/manager-operational-pages.test.tsx"
+    },
+    {
+      "surfaceIds": ["new-audit-wizard-1", "new-audit-wizard-2", "new-audit-wizard-3", "new-audit-wizard-4", "new-audit-wizard-5"],
+      "evidence": "apps/web/src/features/planning/new-audit-wizard.test.tsx"
+    },
+    {
+      "surfaceIds": ["gm-home", "gm-planning", "gm-report-approvals", "gm-departments", "gm-risk-dashboard", "gm-settings"],
+      "evidence": "apps/web/src/features/management/executive-workspaces.test.tsx"
+    },
+    {
+      "surfaceIds": ["finance-home"],
+      "evidence": "apps/web/src/features/planning/finance-review-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["executive-home"],
+      "evidence": "apps/web/src/features/reports/executive-dashboard-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["executive-planning", "executive-preliminary-reports", "executive-final-reports", "executive-report-preview", "executive-notifications", "executive-settings"],
+      "evidence": "apps/web/src/features/management/executive-workspaces.test.tsx"
+    },
+    {
+      "surfaceIds": ["auditee-home"],
+      "evidence": "apps/web/src/features/caps/auditee-cap-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["auditee-inspection-coordination", "auditee-preliminary-reports", "auditee-final-reports", "auditee-report-preview", "auditee-messages", "auditee-documents", "auditee-settings"],
+      "evidence": "apps/web/src/features/auditee/auditee-secondary-pages.test.tsx"
+    },
+    {
+      "surfaceIds": ["admin-regulatory-library", "admin-template-list"],
+      "evidence": "apps/web/src/features/admin/admin-secondary-pages.test.tsx"
+    },
+    {
+      "surfaceIds": ["admin-home"],
+      "evidence": "apps/web/src/features/admin/admin-configuration-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["admin-question-bank", "admin-checklist-builder", "admin-version-history", "admin-inspection-package-builder", "admin-reports", "admin-users-roles"],
+      "evidence": "apps/web/src/features/admin/admin-secondary-pages.test.tsx"
+    },
+    {
+      "surfaceIds": ["admin-configurations"],
+      "evidence": "apps/web/src/features/admin/admin-configuration-page.test.tsx"
+    },
+    {
+      "surfaceIds": ["admin-organization-master-data", "admin-organization-detail", "admin-audit-log"],
+      "evidence": "apps/web/src/features/admin/admin-secondary-pages.test.tsx"
+    }
+  ],
   "visibleActionOwnership": [
     {
       "id": "shell-reset",
-      "surfaceIds": ["inspector-home", "audit-detail", "checklist-runner", "lead-home", "cap-review", "manager-home", "audit-plan", "report-preview", "organization-registry", "gm-home", "finance-home", "executive-home", "auditee-home", "admin-home"],
+      "surfaceIds": [
+        "inspector-home", "inspector-findings", "inspector-messages", "inspector-calendar", "inspector-reports", "audit-detail", "checklist-runner", "finding-detail", "closure-report-preview", "inspector-assistant", "inspector-profile",
+        "lead-home", "lead-preliminary-reports", "lead-preliminary-report-workflow", "lead-final-reports", "lead-final-report-readiness", "lead-prepare-final-report", "lead-final-report-document", "lead-audit-assignment", "lead-checklist-question-assignment", "cap-review", "lead-calendar", "lead-messages", "lead-analytics-reports", "lead-settings",
+        "manager-home", "audit-plan", "manager-audits", "report-preview", "manager-risk-dashboard", "manager-inspection-team", "manager-findings-review", "manager-cap-monitoring", "manager-checklist-management", "manager-safety-intelligence", "organization-risk-profile", "manager-ssp-nasp", "manager-usoap-readiness", "manager-cap-effectiveness", "organization-registry", "organization-detail", "inspection-package-builder", "evidence-review", "manager-preliminary-report-review", "manager-cap-closure-review", "new-audit-wizard-1", "new-audit-wizard-2", "new-audit-wizard-3", "new-audit-wizard-4", "new-audit-wizard-5",
+        "gm-home", "gm-planning", "gm-report-approvals", "gm-departments", "gm-risk-dashboard", "gm-settings", "finance-home", "executive-home", "executive-planning", "executive-preliminary-reports", "executive-final-reports", "executive-report-preview", "executive-notifications", "executive-settings", "auditee-home", "auditee-inspection-coordination", "auditee-preliminary-reports", "auditee-final-reports", "auditee-report-preview", "auditee-messages", "auditee-documents", "auditee-settings", "admin-regulatory-library", "admin-template-list", "admin-home", "admin-question-bank", "admin-checklist-builder", "admin-version-history", "admin-inspection-package-builder", "admin-reports", "admin-users-roles", "admin-configurations", "admin-organization-master-data", "admin-organization-detail", "admin-audit-log"
+      ],
       "namePattern": "^Reset demo$",
-      "boundary": "local",
+      "boundary": "typed-mutation",
       "durableEffect": "Clears the deterministic browser demo store and reloads the active route.",
       "evidence": "apps/web/tests/e2e/release-candidate-gates.spec.ts"
     },
     {
       "id": "shell-role-exit",
-      "surfaceIds": ["inspector-home", "audit-detail", "checklist-runner", "lead-home", "cap-review", "manager-home", "audit-plan", "report-preview", "organization-registry", "gm-home", "finance-home", "executive-home", "auditee-home", "admin-home"],
+      "surfaceIds": [
+        "inspector-home", "inspector-findings", "inspector-messages", "inspector-calendar", "inspector-reports", "audit-detail", "checklist-runner", "finding-detail", "closure-report-preview", "inspector-assistant", "inspector-profile",
+        "lead-home", "lead-preliminary-reports", "lead-preliminary-report-workflow", "lead-final-reports", "lead-final-report-readiness", "lead-prepare-final-report", "lead-final-report-document", "lead-audit-assignment", "lead-checklist-question-assignment", "cap-review", "lead-calendar", "lead-messages", "lead-analytics-reports", "lead-settings",
+        "manager-home", "audit-plan", "manager-audits", "report-preview", "manager-risk-dashboard", "manager-inspection-team", "manager-findings-review", "manager-cap-monitoring", "manager-checklist-management", "manager-safety-intelligence", "organization-risk-profile", "manager-ssp-nasp", "manager-usoap-readiness", "manager-cap-effectiveness", "organization-registry", "organization-detail", "inspection-package-builder", "evidence-review", "manager-preliminary-report-review", "manager-cap-closure-review", "new-audit-wizard-1", "new-audit-wizard-2", "new-audit-wizard-3", "new-audit-wizard-4", "new-audit-wizard-5",
+        "gm-home", "gm-planning", "gm-report-approvals", "gm-departments", "gm-risk-dashboard", "gm-settings", "finance-home", "executive-home", "executive-planning", "executive-preliminary-reports", "executive-final-reports", "executive-report-preview", "executive-notifications", "executive-settings", "auditee-home", "auditee-inspection-coordination", "auditee-preliminary-reports", "auditee-final-reports", "auditee-report-preview", "auditee-messages", "auditee-documents", "auditee-settings", "admin-regulatory-library", "admin-template-list", "admin-home", "admin-question-bank", "admin-checklist-builder", "admin-version-history", "admin-inspection-package-builder", "admin-reports", "admin-users-roles", "admin-configurations", "admin-organization-master-data", "admin-organization-detail", "admin-audit-log"
+      ],
       "namePattern": "^(Role select|Logout)$",
-      "boundary": "session",
+      "boundary": "navigation",
       "durableEffect": "Navigates to role selection or performs the OIDC logout boundary.",
       "evidence": "apps/web/tests/e2e/release-candidate-gates.spec.ts"
     },
@@ -47,17 +208,42 @@
       "id": "role-select-local-actions",
       "surfaceIds": ["role-select"],
       "namePattern": "^(Skip to workspace selection|Explore the clickable demo)$",
-      "boundary": "local",
+      "boundary": "selection-or-filter",
       "durableEffect": "Moves focus to the role grid or scrolls the accepted role-selection workspace into view.",
       "evidence": "apps/web/tests/e2e/visible-action-contract.spec.ts"
     },
     {
+      "id": "typed-workflow-mutations",
+      "surfaceIds": [
+        "*"
+      ],
+      "namePattern": "^[^A-Za-z0-9]*(Convert|Accept|Request|Reject|Return|Forward|Approve|Release|Confirm|Submit|Save|Dismiss|Create|Issue|Mark|Assign|Send|Add|Move|Authorize|Propose|Use authorized)(\\b| ).*",
+      "boundary": "typed-mutation",
+      "durableEffect": "Invokes a typed demo/backend command whose record, revision, authority, and visible result are covered by the owning feature tests.",
+      "evidence": "apps/web/tests/e2e/visible-action-contract.spec.ts"
+    },
+    {
+      "id": "browser-local-artifacts",
+      "surfaceIds": [
+        "*"
+      ],
+      "namePattern": "^[^A-Za-z0-9]*(Export|Download|Print|Prepare)(\\b| ).*",
+      "boundary": "browser-local-artifact",
+      "durableEffect": "Creates or prepares the explicitly labelled browser-local mock artifact and exposes a visible route-specific result.",
+      "evidence": "apps/web/tests/e2e/visible-action-contract.spec.ts"
+    },
+    {
       "id": "declared-route-and-workflow-actions",
-      "surfaceIds": ["role-select", "inspector-home", "audit-detail", "checklist-runner", "lead-home", "cap-review", "manager-home", "audit-plan", "report-preview", "organization-registry", "gm-home", "finance-home", "executive-home", "auditee-home", "admin-home"],
-      "namePattern": "^[^A-Za-z0-9]*(Open|Review|Start|Continue|Convert|Accept|Request|Reject|Return|Forward|Approve|Release|Confirm|Submit|Save|Dismiss|Preview|Back|Search|Reset|Select|Use|Close|View|Download|Check out)(\\b| ).*",
-      "boundary": "backend-or-local",
+      "surfaceIds": [
+        "role-select", "inspector-home", "inspector-findings", "inspector-messages", "inspector-calendar", "inspector-reports", "audit-detail", "checklist-runner", "finding-detail", "closure-report-preview", "inspector-assistant", "inspector-profile",
+        "lead-home", "lead-preliminary-reports", "lead-preliminary-report-workflow", "lead-final-reports", "lead-final-report-readiness", "lead-prepare-final-report", "lead-final-report-document", "lead-audit-assignment", "lead-checklist-question-assignment", "cap-review", "lead-calendar", "lead-messages", "lead-analytics-reports", "lead-settings",
+        "manager-home", "audit-plan", "manager-audits", "report-preview", "manager-risk-dashboard", "manager-inspection-team", "manager-findings-review", "manager-cap-monitoring", "manager-checklist-management", "manager-safety-intelligence", "organization-risk-profile", "manager-ssp-nasp", "manager-usoap-readiness", "manager-cap-effectiveness", "organization-registry", "organization-detail", "inspection-package-builder", "evidence-review", "manager-preliminary-report-review", "manager-cap-closure-review", "new-audit-wizard-1", "new-audit-wizard-2", "new-audit-wizard-3", "new-audit-wizard-4", "new-audit-wizard-5",
+        "gm-home", "gm-planning", "gm-report-approvals", "gm-departments", "gm-risk-dashboard", "gm-settings", "finance-home", "executive-home", "executive-planning", "executive-preliminary-reports", "executive-final-reports", "executive-report-preview", "executive-notifications", "executive-settings", "auditee-home", "auditee-inspection-coordination", "auditee-preliminary-reports", "auditee-final-reports", "auditee-report-preview", "auditee-messages", "auditee-documents", "auditee-settings", "admin-regulatory-library", "admin-template-list", "admin-home", "admin-question-bank", "admin-checklist-builder", "admin-version-history", "admin-inspection-package-builder", "admin-reports", "admin-users-roles", "admin-configurations", "admin-organization-master-data", "admin-organization-detail", "admin-audit-log"
+      ],
+      "namePattern": "^[^A-Za-z0-9]*(Open|Review|Start|Continue|Preview|Back|Search|Reset|Select|Use|Close|View|Check out|Filter|Compose|Edit|Record|Hide|Show|Next|Previous|Cancel|Refresh|Zoom|All|Active|Completed|Overdue|Draft|Pending|Inspection & Findings|Report Content|Attachments)(\\b| ).*",
+      "boundary": "selection-or-filter",
       "durableEffect": "Executes a routed navigation, visible selection/dialog/tab state, form transition, or Backend command covered by the named route tests.",
-      "evidence": "apps/web/tests/e2e/first-production-routes.spec.ts"
+      "evidence": "apps/web/tests/e2e/full-route-accessibility.spec.ts"
     }
   ],
   "entries": [

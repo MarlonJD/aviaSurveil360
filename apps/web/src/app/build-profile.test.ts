@@ -28,6 +28,13 @@ describe("build-time backend profile", () => {
     const mutations = [
       ["undeclared-route", /undeclared React path/],
       ["inert-button", /inert button/],
+      ["toast-only-action", /toast-only action/],
+      ["unlabelled-control", /accessible name/],
+      ["fake-dropdown", /native select semantics/],
+      ["duplicate-accessible-navigation", /one accessible primary navigation/],
+      ["missing-disabled-reason", /record-specific disabled reason/],
+      ["broken-deep-link", /deep link/],
+      ["missing-mobile-viewport", /mobile viewport/],
       ["broad-root-import", /protected root runtime code/],
       ["http-mock-import", /forbidden mock\/test input/],
       ["remove-shell-assertion", /missing fail-closed contract.*workspace-sidebar/],

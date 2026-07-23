@@ -64,6 +64,13 @@ for (const viewport of viewports) {
     }
 
     await page.evaluate(() => localStorage.clear());
+    await page.goto("/finance/finance-review");
+    const financePlanning = page.locator(".finance-review-page");
+    await financePlanning.getByRole("button", { name: "Approve Budget" }).click();
+    await financePlanning.getByLabel("Finance decision reason").fill("Budget and resource scope confirmed before General Manager review.");
+    await financePlanning.getByRole("button", { name: "Confirm Finance Decision" }).click();
+    await expect(financePlanning.getByTestId("planning-status")).toHaveText("GM_REVIEW");
+
     await page.goto("/general-manager/planning");
     const gmPlanning = page.getByTestId("gm-planning-page");
     await expect(gmPlanning.getByTestId("planning-status")).toHaveText("GM_REVIEW");
@@ -72,6 +79,12 @@ for (const viewport of viewports) {
     await expectInsideViewport(page, forwardPlan);
     await forwardPlan.click();
     await expect(gmPlanning.getByTestId("planning-status")).toHaveText("EXECUTIVE_DIRECTOR_REVIEW");
+
+    await page.goto("/department-manager/preliminary-reports/PR-2026-018");
+    const departmentReport = page.getByTestId("manager-preliminary-review-page");
+    await departmentReport.getByLabel("Department Manager decision reason").fill("Exact immutable Preliminary Report version reviewed.");
+    await departmentReport.getByRole("button", { name: "Forward PR-2026-018-V1 to General Manager" }).click();
+    await expect(departmentReport.getByTestId("manager-preliminary-status")).toHaveText("GM_REVIEW");
 
     await page.goto("/general-manager/report-approvals");
     const gmReport = page.getByRole("region", { name: "Selected report PR-2026-018-V1" });

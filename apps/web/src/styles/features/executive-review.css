@@ -102,6 +102,7 @@
 .gm-panel > header, .gm-planning-decision > header { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 11px; }
 .gm-panel > header span, .gm-planning-decision > header span { color: #1e5fc6; font-size: 9px; font-weight: 800; text-transform: uppercase; }
 .gm-panel > header h2, .gm-planning-decision > header h2 { font-size: 15px; }
+.gm-panel > a { display: inline-flex; min-height: 44px; align-items: center; padding-inline: 10px; }
 .gm-table { overflow-x: auto; border: 1px solid #eef1f6; }
 .gm-table table { width: 100%; min-width: 760px; border-collapse: collapse; }
 .gm-table th, .gm-table td { padding: 9px; border-bottom: 1px solid #eef1f6; font-size: 10px; text-align: left; }
@@ -131,6 +132,7 @@
 .executive-panel { min-width: 0; overflow: hidden; border: 1px solid #dde3ec; border-radius: 10px; background: #fff; box-shadow: 0 1px 3px rgb(16 32 56 / 8%); }
 .executive-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #eef1f6; }
 .executive-panel > header span, .executive-risk-guardrail > span { color: #2f6fd6; font-size: 9px; font-weight: 800; text-transform: uppercase; }.executive-panel > header h2, .executive-risk-guardrail h2 { margin-top: 2px; font-size: 14px; }
+.executive-panel > header a { display: inline-flex; min-height: 44px; align-items: center; padding-inline: 8px; }
 .executive-panel button, .executive-authority-decision button { min-height: 36px; padding: 7px 12px; border: 1px solid #dde3ec; border-radius: 7px; background: #fff; font-weight: 700; }
 .executive-decision-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 16px; }
 .executive-decision-row span, .executive-decision-row b, .executive-decision-row small { display: block; }.executive-decision-row small { color: #6b7891; font-size: 9px; }.executive-decision-row > div:last-child { display: flex; align-items: center; gap: 7px; }

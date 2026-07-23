@@ -30,6 +30,7 @@
   top: 12px;
   left: 12px;
   z-index: 80;
+  min-height: 44px;
   padding: 10px 14px;
   border: 0;
   border-radius: 8px;

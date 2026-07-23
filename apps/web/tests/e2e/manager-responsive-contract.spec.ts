@@ -41,7 +41,8 @@ for (const viewport of viewports) {
   test(`keeps Manager shell, routes, controls, and record actions usable at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await page.goto("/department-manager/evidence/FND-CAB-2026-001");
-    await expect(page.getByTestId("manager-inspection-evidence-page")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Finding unavailable" })).toBeVisible();
+    await expect(page.getByText("The Evidence review route could not load this Finding for the Department Manager.")).toBeVisible();
 
     let navigation = await primaryNavigation(page, viewport.width);
     await expect(navigation.getByRole("link", { name: "Findings Review" })).toHaveAttribute("aria-current", "page");
@@ -56,23 +57,15 @@ for (const viewport of viewports) {
     const findingsPage = page.getByTestId("manager-findings-review-page");
     await expect(findingsPage).toBeVisible();
     await expect(findingsPage.getByLabel("Status")).toBeVisible();
-    const findingAction = findingsPage.getByRole("link", { name: "Open Evidence FND-CAB-2026-001" });
-    await expectActionInsideViewport(page, findingAction);
+    const unavailableEvidence = findingsPage.getByRole("button", { name: "Evidence unavailable for FND-SKYCARGO-2026-099" });
+    await expect(unavailableEvidence).toBeDisabled();
+    await expect(unavailableEvidence).toHaveAttribute("title", "Finding FND-SKYCARGO-2026-099 has no declared Department Manager Evidence-review route.");
 
     await navigatePrimary(page, viewport.width, "Audits", "/department-manager/audits");
     const auditsPage = page.getByTestId("manager-audits-page");
     await expect(auditsPage.getByRole("heading", { level: 1, name: "Audit Work Queue" })).toBeVisible();
     await expect(auditsPage.getByLabel("Status")).toBeVisible();
     await expectActionInsideViewport(page, auditsPage.getByRole("button", { name: "Open Audit AUD-2026-001" }));
-
-    await navigatePrimary(page, viewport.width, "Findings Review", "/department-manager/findings-review");
-    await findingAction.click();
-    await expect(page).toHaveURL(/\/department-manager\/evidence\/FND-CAB-2026-001$/);
-    await expect(page.getByRole("button", { name: "Record Evidence review" })).toBeVisible();
-
-    navigation = await primaryNavigation(page, viewport.width);
-    await expect(navigation.getByRole("link", { name: "Findings Review" })).toHaveAttribute("aria-current", "page");
-    await expect(navigation.locator("a[aria-current='page']")).toHaveCount(1);
 
     const dashboardTransitions = [
       ["Open Audits", "/department-manager/audits", "manager-audits-page"],

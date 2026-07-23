@@ -100,9 +100,9 @@ for (const viewport of viewports) {
     const questions = page.getByRole("table", { name: "Published checklist questions" });
     await expect(questions.locator("tbody tr")).toHaveCount(6);
     await expect(questions).toContainText("Configured Cabin Inspection reference — GALLEY");
-    await page.getByRole("button", { name: "Back to templates" }).click();
+    await page.getByRole("link", { name: "Back to templates" }).click();
     await expect(page.getByRole("heading", { name: "Checklist Templates" })).toBeVisible();
-    await page.getByRole("button", { name: "Preview CTV-CABIN-1" }).click();
+    await page.getByRole("link", { name: "Preview CTV-CABIN-1" }).click();
     await expect(page.getByRole("heading", { name: "Template Preview — Cabin Inspection" })).toBeVisible();
     const body = await page.locator("body").innerText();
     expect(body).not.toMatch(/enforcement deliberation|internal risk|Inspector workload/i);

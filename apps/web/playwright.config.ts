@@ -68,6 +68,7 @@ export default defineConfig({
         "e2e/canonical-scenario.spec.ts",
         "e2e/first-production-routes.spec.ts",
         "e2e/release-candidate-gates.spec.ts",
+        "e2e/full-route-accessibility.spec.ts",
         "e2e/visible-action-contract.spec.ts",
         "e2e/manager-responsive-contract.spec.ts",
         "e2e/manager-intelligence-responsive-contract.spec.ts",

@@ -173,6 +173,9 @@ const routeLabels: Record<string, ReactSurfaceId> = {
 };
 
 const roleRouteLabels: Partial<Record<Role, Record<string, ReactSurfaceId>>> = {
+  inspector: {
+    "Report Preview": "closure-report-preview",
+  },
   auditee: {
     "Inspection Coordination": "auditee-inspection-coordination",
     "Preliminary Reports": "auditee-preliminary-reports",

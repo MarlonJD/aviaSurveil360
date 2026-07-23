@@ -70,6 +70,30 @@ for (const viewport of viewports) {
     await expect(page.getByTestId("auditee-inspection-coordination-page")).toContainText("ALTERNATIVE_PROPOSED");
     await expect(page.getByTestId("auditee-inspection-coordination-page")).toContainText("22 Jun 2026");
 
+    await page.goto("/department-manager/preliminary-reports/PR-2026-018");
+    const departmentReport = page.getByTestId("manager-preliminary-review-page");
+    await departmentReport.getByLabel("Department Manager decision reason").fill("Exact Preliminary Report version approved for General Manager review.");
+    await departmentReport.getByRole("button", { name: "Forward PR-2026-018-V1 to General Manager" }).click();
+    await expect(departmentReport.getByTestId("manager-preliminary-status")).toHaveText("GM_REVIEW");
+
+    await page.goto("/general-manager/report-approvals");
+    const generalManagerReport = page.getByRole("region", { name: "Selected report PR-2026-018-V1" });
+    await generalManagerReport.getByLabel("General Manager report decision reason").fill("Exact Preliminary Report version approved for Executive Director review.");
+    await generalManagerReport.getByRole("button", { name: "Forward PR-2026-018-V1 to Executive Director" }).click();
+    await expect(generalManagerReport.getByTestId("report-status")).toHaveText("EXECUTIVE_DIRECTOR_REVIEW");
+
+    await page.goto("/executive-director/preliminary-reports");
+    const executivePreliminary = page.getByRole("region", { name: "Selected Preliminary Report PR-2026-018-V1" });
+    await executivePreliminary.getByLabel("Executive Director report decision reason").fill("Issue and lock the exact Preliminary Report version for Fly Namibia.");
+    await executivePreliminary.getByRole("button", { name: "Issue and lock PR-2026-018-V1" }).click();
+    await expect(executivePreliminary.getByTestId("report-status")).toHaveText("LOCKED");
+
+    await page.goto("/executive-director/final-reports");
+    const executiveFinal = page.getByRole("region", { name: "Selected Final Report RPT-CAB-2026-001-V1" });
+    await executiveFinal.getByLabel("Executive Director report decision reason").fill("Issue and lock the exact Final Report version for Fly Namibia.");
+    await executiveFinal.getByRole("button", { name: "Issue and lock RPT-CAB-2026-001-V1" }).click();
+    await expect(executiveFinal.getByTestId("report-status")).toHaveText("LOCKED");
+
     await page.goto("/auditee/preliminary-reports");
     const preliminary = page.getByTestId("auditee-preliminary-reports-page");
     await expect(preliminary).toContainText("PR-2026-018-V1");
@@ -103,7 +127,8 @@ for (const viewport of viewports) {
     await page.goto("/auditee/documents");
     const documents = page.getByTestId("auditee-documents-page");
     await expect(documents).toContainText("RPT-CAB-2026-001-V1");
-    await expect(documents).toContainText("PARTIALLY_ACCEPTED");
+    await expect(documents.locator("tbody tr")).toHaveCount(2);
+    await expect(documents.locator("tbody")).toContainText("RELEASED");
     const documentDownload = page.waitForEvent("download");
     await documents.getByRole("button", { name: "Download RPT-CAB-2026-001-V1" }).click();
     expect((await documentDownload).suggestedFilename()).toBe("RPT-CAB-2026-001.pdf");

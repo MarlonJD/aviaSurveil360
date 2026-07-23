@@ -166,6 +166,9 @@ describe("Department Manager operational workspaces", () => {
     const findingsPage = await screen.findByTestId("manager-findings-review-page");
     const canonical = await within(findingsPage).findByRole("article", { name: "Finding FND-CAB-2026-001" });
     expect(canonical).toHaveAttribute("data-finding-id", "FND-CAB-2026-001");
+    expect(within(canonical).getByRole("button", { name: /CAB-2026-001/ })).toHaveAttribute("aria-pressed", "true");
+    const cargo = within(findingsPage).getByRole("article", { name: "Finding FND-SKYCARGO-2026-099" });
+    expect(within(cargo).getByRole("button", { name: /CAR-2026-099/ })).toHaveAttribute("aria-pressed", "false");
     expect(within(canonical).getByRole("link", { name: "Open Evidence FND-CAB-2026-001" })).toHaveAttribute(
       "href",
       "/department-manager/evidence/FND-CAB-2026-001",

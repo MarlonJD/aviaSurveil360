@@ -37,13 +37,13 @@ export function AdminPage({
 }: PropsWithChildren<{ testId: string; routeLabel: string; title: string; description: string; action?: ReactNode }>) {
   return (
     <WorkspaceShell roleLabel="Admin Preview" routeLabel={routeLabel}>
-      <main className="admin-secondary-page" data-testid={testId}>
+      <div className="admin-secondary-page" data-testid={testId}>
         <header className="admin-secondary-page__header workbench-page-header">
           <div><p className="eyebrow">Administration</p><h1>{title}</h1><p>{description}</p></div>
           {action ? <div className="admin-secondary-page__actions">{action}</div> : null}
         </header>
         {children}
-      </main>
+      </div>
     </WorkspaceShell>
   );
 }

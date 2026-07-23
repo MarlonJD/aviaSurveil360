@@ -20,6 +20,11 @@ interface OwnershipRule {
   evidence: string;
 }
 
+interface ActionEvidenceGroup {
+  surfaceIds: string[];
+  evidence: string;
+}
+
 interface VisibleControl {
   tag: string;
   role: string;
@@ -37,7 +42,10 @@ interface VisibleControl {
 const repoRoot = resolve(process.cwd(), "../..");
 const ledger = JSON.parse(
   readFileSync(resolve(repoRoot, "tests/parity/behavior-ledger.json"), "utf8"),
-) as { visibleActionOwnership: OwnershipRule[] };
+) as {
+  actionEvidenceGroups: ActionEvidenceGroup[];
+  visibleActionOwnership: OwnershipRule[];
+};
 
 const controlSelector = [
   "button:visible",
@@ -115,11 +123,14 @@ function uniqueControls(controls: VisibleControl[]): VisibleControl[] {
 
 function ownershipFor(surface: VisualSurfaceFixture, control: VisibleControl): string | null {
   if (control.tag === "A" && control.href && control.href !== "#") return "verified-navigation";
-  if (control.disabled && control.disabledReason && (
-    control.disabledReason !== control.name || /\b(?:no|none|unavailable|not connected|assigned to another)\b/i.test(control.name)
-  )) return "explicit-disabled-reason";
+  if (
+    control.disabled &&
+    normalize(control.disabledReason) &&
+    normalize(control.disabledReason) !== normalize(control.name)
+  ) return "explicit-disabled-reason";
   if (control.disabled) return null;
   if (["INPUT", "SELECT", "TEXTAREA"].includes(control.tag)) return "verified-form-behavior";
+  if (control.tag === "BUTTON" && ["submit", "reset"].includes(control.type ?? "")) return "verified-form-behavior";
   if (control.role === "tab" && control.ariaSelected !== null) return "verified-tab-state";
   if (control.ariaExpanded !== null || control.ariaPressed !== null || control.ariaSelected !== null) return "verified-visible-state";
   if (control.ariaControls) return "verified-controlled-state";
@@ -128,6 +139,15 @@ function ownershipFor(surface: VisualSurfaceFixture, control: VisibleControl): s
     new RegExp(rule.namePattern, "i").test(control.name),
   );
   return declared ? `${declared.boundary}:${declared.id}` : null;
+}
+
+function evidenceFor(surface: VisualSurfaceFixture, ownership: string | null): string | null {
+  if (!ownership) return null;
+  if (
+    ownership.startsWith("verified-") ||
+    ownership === "explicit-disabled-reason"
+  ) return "apps/web/tests/e2e/visible-action-contract.spec.ts";
+  return ledger.actionEvidenceGroups.find((group) => group.surfaceIds.includes(surface.id))?.evidence ?? null;
 }
 
 async function resetHttpProfile(page: Page): Promise<void> {
@@ -139,14 +159,26 @@ async function resetHttpProfile(page: Page): Promise<void> {
   expect(response.ok()).toBe(true);
 }
 
+expect(VISUAL_SURFACES).toHaveLength(86);
+expect(VISUAL_VIEWPORTS).toHaveLength(3);
+expect(VISUAL_SURFACES.length * VISUAL_VIEWPORTS.length).toBe(258);
+
 for (const viewport of VISUAL_VIEWPORTS) {
-  test(`inventories all 17 visible-action surfaces at ${viewport.id}`, async ({ page }, testInfo) => {
-    test.setTimeout(120_000);
+  test(`inventories all 86 visible-action surfaces at ${viewport.id}`, async ({ page }, testInfo) => {
+    test.setTimeout(300_000);
     await page.setViewportSize(viewport);
     if (testInfo.project.name === "http") await resetHttpProfile(page);
+    const consoleIssues: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") consoleIssues.push(`console: ${message.text()}`);
+    });
+    page.on("pageerror", (error) => consoleIssues.push(`pageerror: ${error.message}`));
+    let actionInventories = 0;
     for (const surface of VISUAL_SURFACES) {
+      consoleIssues.length = 0;
       await installDeterministicPageState(page);
       await driveReactSurface(page, surface);
+      actionInventories += 1;
 
       const pageControls = await collectVisibleControls(page);
       let navigationControls: VisibleControl[] = [];
@@ -173,6 +205,10 @@ for (const viewport of VISUAL_VIEWPORTS) {
         ...control,
         ownership: ownershipFor(surface, control),
       })).filter(({ ownership }) => ownership === null);
+      const missingEvidence = controls.map((control) => {
+        const ownership = ownershipFor(surface, control);
+        return { ...control, ownership, evidence: evidenceFor(surface, ownership) };
+      }).filter(({ ownership, evidence }) => ownership !== null && evidence === null);
       const duplicateActions = viewport.width <= 1024
         ? [...controls.reduce((groups, control) => {
             if (control.disabled || !["A", "BUTTON"].includes(control.tag)) return groups;
@@ -186,15 +222,22 @@ for (const viewport of VISUAL_VIEWPORTS) {
         body: JSON.stringify({
           surfaceId: surface.id,
           viewport: viewport.id,
-          controls: controls.map((control) => ({ ...control, ownership: ownershipFor(surface, control) })),
+          controls: controls.map((control) => {
+            const ownership = ownershipFor(surface, control);
+            return { ...control, ownership, evidence: evidenceFor(surface, ownership) };
+          }),
           duplicateActions,
+          consoleErrors: consoleIssues,
         }, null, 2),
         contentType: "application/json",
       });
 
       expect.soft(unnamed, `${surface.id}/${viewport.id} has unnamed controls`).toEqual([]);
       expect.soft(unowned, `${surface.id}/${viewport.id} has unowned or unexplained controls`).toEqual([]);
+      expect.soft(missingEvidence, `${surface.id}/${viewport.id} has actions without outcome-test evidence`).toEqual([]);
       expect.soft(duplicateActions, `${surface.id}/${viewport.id} exposes duplicate route actions`).toEqual([]);
+      expect.soft(consoleIssues, `${surface.id}/${viewport.id} has zero console errors`).toEqual([]);
     }
+    expect(actionInventories).toBe(86);
   });
 }

@@ -133,6 +133,7 @@
   gap: 12px;
 }
 
+.manager-signal-list a,
 .manager-intelligence-panel a,
 .manager-intelligence-actions a {
   display: inline-flex;

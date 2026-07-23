@@ -117,8 +117,8 @@
   min-width: 0;
 }
 
-.executive-planning-layout main,
-.executive-report-review-layout main {
+.executive-planning-main,
+.executive-report-review-main {
   display: grid;
   gap: 16px;
   min-width: 0;

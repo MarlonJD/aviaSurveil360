@@ -175,7 +175,7 @@ export function EvidenceReviewPage() {
               <h1>Findings</h1>
               <p>Follow findings, CAP responses, evidence, owner, due date, and next action in one workspace.</p>
             </div>
-            <nav aria-label="Finding filters" className="evidence-root-filters">
+            <div aria-label="Finding filters" className="evidence-root-filters">
               <button disabled title="The all-findings register remains in the accepted legacy demo." type="button"><span>All Findings</span></button>
               <button disabled title="The open-findings register remains in the accepted legacy demo." type="button"><span>Open Findings</span></button>
               <button disabled title="The overdue-findings register remains in the accepted legacy demo." type="button"><span>Overdue Findings</span></button>
@@ -184,7 +184,7 @@ export function EvidenceReviewPage() {
               <button disabled title="The Due Soon findings register remains in the accepted legacy demo." type="button"><span>Findings Due Soon</span></button>
               <button disabled title="The critical-findings register remains in the accepted legacy demo." type="button"><span>Critical Findings</span></button>
               <button disabled title="The closed-findings register remains in the accepted legacy demo." type="button"><span>Closed Findings</span></button>
-            </nav>
+            </div>
           </header>
 
           <div className="evidence-root-attention">

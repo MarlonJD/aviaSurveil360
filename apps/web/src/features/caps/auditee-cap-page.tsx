@@ -289,7 +289,7 @@ export function AuditeeCapPage() {
           ))}
         </section>
 
-        <nav aria-label="Finding status groups" className="auditee-status-tabs">
+        <div aria-label="Finding status groups" className="auditee-status-tabs">
           {([
             ["all", "Total"],
             ["open", "Open"],
@@ -308,7 +308,7 @@ export function AuditeeCapPage() {
               {label} <b>{counts[key]}</b>
             </button>
           ))}
-        </nav>
+        </div>
 
         <section className="auditee-filters" aria-label="Filter My Findings">
           <label>

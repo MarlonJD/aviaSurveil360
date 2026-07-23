@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import type { Role } from "../backend/backend";
 import type { ReactSurfaceId } from "../app/route-contracts";
+import { useDialogFocus } from "./dialog-focus";
 import { RoleNavigation } from "./role-navigation";
 
 export function MobileNavigation({
@@ -13,18 +14,13 @@ export function MobileNavigation({
 }) {
   const [open, setOpen] = useState(false);
   const openerRef = useRef<HTMLButtonElement | null>(null);
+  const drawerRef = useRef<HTMLElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
   const close = () => {
     setOpen(false);
     openerRef.current?.focus();
   };
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open]);
+  useDialogFocus({ containerRef: drawerRef, initialFocusRef: closeRef, onClose: close, open });
   return (
     <div className="mobile-navigation">
       <button
@@ -42,13 +38,12 @@ export function MobileNavigation({
       {open ? (
         <aside
           aria-label="Primary navigation"
+          aria-modal="true"
           className="mobile-navigation__drawer"
-          onKeyDown={(event) => {
-            if (event.key === "Escape") close();
-          }}
+          ref={drawerRef}
           role="dialog"
         >
-          <button className="mobile-navigation__close" onClick={close} type="button" aria-label="Close navigation">×</button>
+          <button className="mobile-navigation__close" onClick={close} ref={closeRef} type="button" aria-label="Close navigation">×</button>
           <RoleNavigation activeRole={activeRole} activeRouteId={activeRouteId} onNavigate={close} />
         </aside>
       ) : null}

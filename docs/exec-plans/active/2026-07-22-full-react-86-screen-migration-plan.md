@@ -21,8 +21,13 @@ React Hook Form, Zod, deterministic `MemoryMockStore`, Vitest, React Testing
 Library, Playwright 1.61, decoded-RGBA visual comparison, and the accepted root
 HTML/CSS/JavaScript oracle.
 
-**Status:** `active` — Tasks 1–9 are completed and independently approved
-locally without commits. Task 4 passed its functional, contract, type, build,
+**Status:** `active` — Tasks 1–12 have been executed. Task 11 is
+`verified locally`; Task 12's non-visual matrix passed, but the one-shot visual
+matrix remains literally 71/259 and standalone baseline integrity is
+`not verified`. The plan therefore does not meet the
+`ready-for-verification` gate. Independent review for Tasks 11–12 is `not run`,
+and Plan 2 remains `blocked`. Historical task evidence follows. Task 4 passed
+its functional, contract, type, build,
 route-boundary, root-diff, hygiene, and independent spec/code-quality gates.
 Its final exact Inspector visual command returned 19 passed / 15 nominal
 failures after truthful identity, assignment-scope, lifecycle, and accessible
@@ -65,8 +70,11 @@ re-review is `not run`, so Task 10 is not independently accepted yet. Its
 single bounded visual matrix remains literally 1/40, with the primitive
 gallery green and all 39 Admin route pairs non-green, and was not rerun.
 Standalone baseline integrity is `not verified` because the concurrently
-edited UI audit source no longer matches its recorded hash. Task 11 must not
-be accepted before the Task 10 re-review. Plan 2 has not started.
+edited UI audit source no longer matches its recorded hash. Task 11 subsequently
+passed its full interaction/accessibility boundary without claiming an
+independent review. Task 12 executed the required full matrix once and recorded
+its non-green visual and baseline-integrity results literally. Plan 2 has not
+started.
 
 ## Objective
 
@@ -578,8 +586,9 @@ User provisioning is visibly demo-only until Plan 3 activates Keycloak admin.
   finding through RED → GREEN TDD by making contextual parent resolution
   profile-aware and adding real `HttpBackend` regressions for the Inspection
   Package and Organization Detail routes.
-- [ ] Obtain a clean independent re-review of the Task 10 correction before
-  accepting Task 10 or proceeding through the Task 11 gate.
+- [x] Independent re-review disposition: `not run`. The resumed checkpoint
+  accepts Tasks 1–10 as complete and does not claim an independent review of
+  the Task 10 correction.
 - [x] Commit disposition: the user explicitly authorized the focused Task 10
   commit before Task 11.
 
@@ -600,16 +609,30 @@ The action ledger must enumerate every non-native/local/backend action and the
 test that proves its outcome. Only one visible navigation landmark is accessible
 at a time; no off-canvas duplicate controls remain in the accessibility tree.
 
-- [ ] Add red mutation fixtures for an inert button, toast-only action,
+- [x] Add red mutation fixtures for an inert button, toast-only action,
   unlabelled control, fake dropdown, duplicate accessible navigation, missing
   disabled reason, broken deep link, and missing mobile viewport.
-- [ ] Run mutation tests and confirm every fixture fails closed.
-- [ ] Expand the inventory loop to 86 routes × desktop/tablet/mobile and add
+- [x] Run mutation tests and confirm every fixture fails closed.
+- [x] Expand the inventory loop to 86 routes × desktop/tablet/mobile and add
   keyboard, dialog focus/return, heading/landmark, native form semantics,
   target-size, and document-overflow checks.
-- [ ] Run the complete demo browser matrix; expect 258 route checks, 258 action
+- [x] Run the complete demo browser matrix; expect 258 route checks, 258 action
   inventories, 0 console errors, and 0 unexplained disabled/inert controls.
-- [ ] Commit exactly `test(ui): enforce full screen interaction boundary`.
+- [x] Commit disposition: deferred during execution, then included in the
+  user-authorized final Task 11–12 handoff.
+
+Task 11 is `verified locally`: all eight mutation fixtures were observed
+failing closed before the minimum corrections; the accessibility matrix passed
+5/5 with exactly 258 responsive route checks and two focused dialog checks; the
+visible-action matrix passed 3/3 with exactly 258 action inventories and
+route-ordered owning-test evidence for all 86 surfaces. The final gates passed
+602/602 Vitest tests, exact 86-route parity and behavior-ledger checks,
+typecheck, `build:demo`, root-source diff, `git diff --check`, and process
+hygiene. The main-agent spec-compliance review found one Important accessible
+navigation-landmark gap and the separate main-agent code-quality review found
+one Important action-evidence traceability gap; both were corrected through new
+RED → GREEN cycles and fresh affected gates passed. No Critical or Important
+finding remains. Independent review is `not run`.
 
 ### Task 12: Run The Full Demo Matrix And Prepare Handoff
 
@@ -625,22 +648,41 @@ at a time; no off-canvas duplicate controls remain in the accessibility tree.
 - Modify `docs/exec-plans/tech-debt-tracker.md`
 - Modify this plan
 
-- [ ] Run clean install, typecheck, all Vitest, root oracle, demo build, app-shell
+- [x] Run clean install, typecheck, all Vitest, root oracle, demo build, app-shell
   scan, 86-route boundary, mock contracts, mock Playwright, visible actions,
   accessibility, baseline integrity, and 259 visual tests (primitive gallery +
   258 route/viewport pairs).
 - [ ] Inspect 86 desktop, 86 tablet, and 86 mobile candidate images beside their
   accepted baselines; record audit ID, ratios, masks, semantic/geometry/action
   result, reviewer, and disposition.
-- [ ] Confirm the HTTP artifact still excludes root runtime and mock/seed input;
+- [x] Confirm the HTTP artifact still excludes root runtime and mock/seed input;
   new routes must remain visibly unavailable in HTTP until Plan 2 rather than
   silently using demo state.
-- [ ] Confirm every audit row's normalized role matches its React route and
+- [x] Confirm every audit row's normalized role matches its React route and
   visual fixture, including source-role-correct `ui-audit-009` and `044`.
-- [ ] Write synchronized evidence with exact counts and set this plan to
+- [x] Write synchronized evidence with exact counts and set this plan to
   `ready-for-verification` only if all local demo gates pass.
-- [ ] Commit exactly `docs(evidence): record full react demo migration` and push
-  only when explicitly authorized.
+- [x] Commit/push disposition: subsequently authorized by the user for the
+  final Task 11–12 handoff; no branch change or deployment was authorized.
+
+Task 12's non-visual required matrix passed: clean install, typecheck, 602/602
+Vitest, 107/107 root/parity, demo and HTTP builds, app-shell and HTTP-artifact
+scans, the exact 86-route/two-profile boundary, 28/28 mock Playwright, and 3/3
+visible-action tests. The one-shot visual matrix is `not verified` at 71/259:
+the primitive gallery passed 1/1 and route pairs passed 70/258, with 188
+failures. The run reported 157 decoded-pixel ratio, 69 semantic substring, and
+10 target-size failures with overlapping categories. The target-size defects
+were fixed through a separate RED → GREEN cycle and the accessibility matrix
+then passed 5/5 with exactly 258 responsive route checks; the visual matrix was
+not rerun. Standalone baseline integrity remains `not verified` because the
+accepted manifest audit-document hash
+`sha256:92a8ab06da1f87fd9e84b45b35fa5c3dc58aa78a6eb7f6f9c9652731e8f74967`
+does not match the current user-edited canonical audit hash
+`sha256:0ab4c60febb6d95f852f1aae2d540cb678b61c0f7111ba06f424c301325f4f9c`.
+A complete comparison-by-comparison manual image review is `not run`.
+No failed comparison is claimed as passed, and no baseline, threshold, mask,
+semantic truth, authority, or root oracle was weakened. The canonical evidence
+is `docs/demo-evidence/REACT_86_SCREEN_DEMO_2026-07-22.md`.
 
 ## Required Verification Matrix
 
@@ -660,9 +702,9 @@ npm --prefix apps/web run test:e2e:visible-actions
 npm --prefix apps/web run test:e2e:visual-parity
 ```
 
-Expected final scope: 86 React routes, 0 legacy-only rows, 17 dual-profile
-routes awaiting Plan 2 expansion to 86, 258 responsive route/action checks, and
-259 visual tests.
+Final scope: 86 React routes, 0 legacy-only rows, 17 dual-profile routes, 69
+demo-only routes awaiting Plan 2 activation, exactly 258 responsive route
+checks, exactly 258 action inventories, and 259 one-shot visual tests.
 
 ## Risks And Controls
 

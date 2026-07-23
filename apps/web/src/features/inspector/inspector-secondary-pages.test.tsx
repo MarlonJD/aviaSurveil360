@@ -140,11 +140,14 @@ describe("Inspector secondary routes", () => {
     if (!recordGrid) throw new Error("Expected Finding record grid.");
 
     await user.click(within(page).getByRole("button", { name: /CAP Submitted/ }));
+    expect(within(page).getByRole("button", { name: /CAP Submitted/ })).toHaveAttribute("aria-pressed", "true");
+    expect(within(page).getByRole("button", { name: /All Findings/ })).toHaveAttribute("aria-pressed", "false");
     expect(within(queue).getByText("1 findings")).toBeVisible();
     expect(within(recordGrid).getByText("CAB-2026-001")).toBeVisible();
     expect(within(recordGrid).queryByText("CAR-2026-099")).toBeNull();
 
     await user.click(within(page).getByRole("button", { name: /Waiting for CAP/ }));
+    expect(within(page).getByRole("button", { name: /Waiting for CAP/ })).toHaveAttribute("aria-pressed", "true");
     expect(within(queue).getByText("0 findings")).toBeVisible();
 
     await user.click(within(page).getByRole("button", { name: /All Findings/ }));

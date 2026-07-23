@@ -245,14 +245,14 @@ function PlanningGovernancePage({ role }: { role: "gm" | "executiveDirector" }) 
           <label>Status<select onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}><option value="all">All statuses</option><option value="FINANCE_REVIEW">Finance Review</option><option value="GM_REVIEW">GM Review</option><option value="EXECUTIVE_DIRECTOR_REVIEW">Executive Director Review</option><option value="GM_RELEASE">GM Release</option><option value="RELEASED">Released</option><option value="RETURNED">Returned</option></select></label>
         </section>
         <div className="executive-planning-layout">
-          <main>
+          <div className="executive-planning-main">
             <section className="executive-panel executive-planning-queue" aria-label="Planning register">
               <header><div><span>Planning register</span><h2>{visible.length} visible plan{visible.length === 1 ? "" : "s"}</h2></div></header>
               <div className="responsive-table-shell"><table><thead><tr><th>Plan</th><th>Organization</th><th>Target</th><th>Budget</th><th>Owner</th><th>Status</th><th>Action</th></tr></thead><tbody>{visible.map((item) => <tr className={item.id === selected?.id ? "is-selected" : ""} key={item.id}><td><b>{item.id}</b><small>{item.title}</small></td><td>{item.organizationName}</td><td>{formatLocalDate(item.scheduledDate)}</td><td>{money(item.estimatedBudget)}</td><td>{roleLabels[item.currentOwnerRole]}</td><td>{item.status}</td><td><button onClick={() => setSelectedId(item.id)} type="button">Review {item.id}</button></td></tr>)}</tbody></table></div>
               {!visible.length ? <p>No plans match these filters.</p> : null}
             </section>
             {selected ? <section className="executive-plan-detail" aria-label={`Selected plan ${selected.id}`}><header><div><span>Selected Planning item</span><h2>{selected.title}</h2><p>{selected.id} · {selected.organizationName}</p></div></header><dl className="executive-definition-grid"><div><dt>Planning item</dt><dd>{selected.id}</dd></div><div><dt>Revision</dt><dd>{selected.revision}</dd></div><div><dt>Current owner</dt><dd>{roleLabels[selected.currentOwnerRole]}</dd></div><div><dt>Status</dt><dd data-testid="planning-status">{selected.status}</dd></div><div><dt>Next action</dt><dd>{selected.nextAction}</dd></div><div><dt>Budget</dt><dd>{money(selected.estimatedBudget)}</dd></div></dl><ol aria-label="Planning decision path" className="approval-rail">{["Department Manager", "Finance Review", "General Manager", "Executive Director", "General Manager Release"].map((label, index) => <li key={label}><span>{index + 1}</span><b>{label}</b></li>)}</ol></section> : null}
-          </main>
+          </div>
           <aside>
             {selected ? <section className="executive-decision-panel" aria-label={`${isGm ? "General Manager" : "Executive Director"} planning decision`}>
               <span>{isGm ? "General Manager" : "Executive Director"} decision</span>
