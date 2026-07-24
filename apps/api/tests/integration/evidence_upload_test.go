@@ -49,7 +49,7 @@ func TestOfficialEvidenceUploadIsBoundedIdempotentVersionedAndDownloadGated(t *t
 		t.Fatalf("changed begin operation error = %v", err)
 	}
 
-	objects.Put("avia-quarantine", begin.StagingObjectKey, "application/pdf", bodyOne, map[string]string{"sha256": digestOne})
+	objects.Seed("avia-quarantine", begin.StagingObjectKey, "application/pdf", bodyOne, map[string]string{"sha256": digestOne})
 	completeInput := evidence.CompleteUploadInput{
 		OperationID: "op-evidence-complete-001", CorrelationID: "corr-evidence-001",
 		UploadID: begin.UploadID, SHA256: digestOne, ByteSize: int64(len(bodyOne)),
@@ -80,7 +80,15 @@ func TestOfficialEvidenceUploadIsBoundedIdempotentVersionedAndDownloadGated(t *t
 	if findingStatus != "EVIDENCE_SUBMITTED" || findingRevision != 2 {
 		t.Fatalf("Finding after upload = %s revision %d", findingStatus, findingRevision)
 	}
-	for table, expected := range map[string]int{"evidence_versions": 1, "evidence_version_states": 1, "audit_events": 1, "outbox_messages": 1} {
+	for table, expected := range map[string]int{
+		"evidence_versions":         1,
+		"evidence_version_states":   1,
+		"audit_events":              2,
+		"authorized_sync_changes":   2,
+		"outbox_messages":           2,
+		"idempotency_responses":     2,
+		"command_transaction_links": 2,
+	} {
 		var count int
 		if err := pool.QueryRow(context.Background(), "SELECT count(*) FROM "+table).Scan(&count); err != nil || count != expected {
 			t.Fatalf("%s count = %d, want %d, err = %v", table, count, expected, err)
@@ -129,7 +137,7 @@ func TestEvidenceUploadRejectsAuthorityTypeSizeAndObservedObjectMismatchWithoutV
 	if err != nil {
 		t.Fatalf("begin valid upload: %v", err)
 	}
-	objects.Put("avia-quarantine", begin.StagingObjectKey, "image/png", []byte("not a PDF"), nil)
+	objects.Seed("avia-quarantine", begin.StagingObjectKey, "image/png", []byte("not a PDF"), nil)
 	if _, err := service.Complete(context.Background(), auditee, evidence.CompleteUploadInput{
 		OperationID: "op-evidence-mismatch-complete", CorrelationID: "corr-evidence-reject",
 		UploadID: begin.UploadID, SHA256: valid.SHA256, ByteSize: valid.ByteSize,

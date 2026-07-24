@@ -1,4 +1,4 @@
-import { Suspense, useEffect, type ReactElement } from "react";
+import { Suspense, useEffect, useRef, useState, type ReactElement } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
 import { useApplicationRuntime } from "./providers";
@@ -23,14 +23,22 @@ function RoleSelectRoute() {
 function OidcLogoutRoute() {
   const runtime = useApplicationRuntime();
   const session = useOptionalSession();
+  const logoutStarted = useRef(false);
+  const [message, setMessage] = useState("Signing out…");
   useEffect(() => {
-    if (session?.state.status !== "authenticated") return;
+    if (session?.state.status !== "authenticated" || logoutStarted.current) return;
+    logoutStarted.current = true;
     void (async () => {
-      await runtime.beforeSubjectChange?.("LOGOUT");
-      await session.logout();
+      try {
+        await runtime.beforeSubjectChange?.("LOGOUT");
+        await session.logout();
+        setMessage("You have signed out.");
+      } catch {
+        setMessage("Logout could not be completed. Your authenticated session remains active.");
+      }
     })();
   }, [runtime, session]);
-  return <LoginPage message="You have signed out." onLogin={() => session?.login("/inspector/inspector-assignments")} />;
+  return <LoginPage message={message} onLogin={() => session?.login("/inspector/inspector-assignments")} />;
 }
 
 const roleHomeSurfaceId: Record<Role, ReactSurfaceId> = {

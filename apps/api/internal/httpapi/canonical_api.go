@@ -10,19 +10,26 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/administration"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/application"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/assignments"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/assistant"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/caps"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/configuration"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/evidence"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/findings"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/httpapi/generated"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/inspections"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/inspections/attachments"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/organizations"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/planning"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/database"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/idempotency"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/objectstore"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/potentialfindings"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/reports"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/risk"
 	fieldsync "github.com/MarlonJD/aviaSurveil360/apps/api/internal/sync"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/testprofile"
 	"github.com/go-chi/chi/v5"
@@ -36,6 +43,14 @@ type CanonicalAPIDependencies struct {
 	EvidenceUploads   *evidence.UploadService
 	AttachmentUploads *attachments.UploadService
 	Planning          *planning.Service
+	Profiles          *identity.ProfileService
+	Assignments       *assignments.Service
+	PackageDrafts     *inspections.PackageDraftService
+	AdminWorkspace    *configuration.WorkspaceService
+	Risk              *risk.Service
+	Administration    *administration.ProjectionService
+	Assistant         *assistant.Service
+	Communications    *application.CommunicationsWorkflow
 	Clock             func() time.Time
 }
 
@@ -47,6 +62,14 @@ type CanonicalAPI struct {
 	evidenceUploads   *evidence.UploadService
 	attachmentUploads *attachments.UploadService
 	planning          *planning.Service
+	profiles          *identity.ProfileService
+	assignments       *assignments.Service
+	packageDrafts     *inspections.PackageDraftService
+	adminWorkspace    *configuration.WorkspaceService
+	risk              *risk.Service
+	administration    *administration.ProjectionService
+	assistant         *assistant.Service
+	communications    *application.CommunicationsWorkflow
 	clock             func() time.Time
 }
 
@@ -63,12 +86,69 @@ func NewCanonicalAPI(dependencies CanonicalAPIDependencies) *CanonicalAPI {
 	if planningService == nil {
 		planningService = planning.NewService(dependencies.Pool, planning.Dependencies{Clock: clock})
 	}
+	profileService := dependencies.Profiles
+	if profileService == nil && dependencies.Pool != nil {
+		profileService = identity.NewProfileService(dependencies.Pool, identity.ProfileServiceDependencies{Clock: clock})
+	}
+	assignmentService := dependencies.Assignments
+	if assignmentService == nil && dependencies.Pool != nil {
+		assignmentService = assignments.NewService(dependencies.Pool, assignments.Dependencies{Clock: clock})
+	}
+	packageDraftService := dependencies.PackageDrafts
+	if packageDraftService == nil && dependencies.Pool != nil {
+		packageDraftService = inspections.NewPackageDraftService(
+			dependencies.Pool,
+			inspections.PackageDraftDependencies{Clock: clock},
+		)
+	}
+	adminWorkspaceService := dependencies.AdminWorkspace
+	if adminWorkspaceService == nil && dependencies.Pool != nil {
+		adminWorkspaceService = configuration.NewWorkspaceService(dependencies.Pool)
+	}
+	riskService := dependencies.Risk
+	if riskService == nil && dependencies.Pool != nil {
+		riskService = risk.NewService(
+			dependencies.Pool,
+			risk.Dependencies{Clock: clock},
+		)
+	}
+	administrationService := dependencies.Administration
+	if administrationService == nil && dependencies.Pool != nil {
+		administrationService = administration.NewProjectionService(
+			dependencies.Pool,
+			administration.ProjectionDependencies{Clock: clock},
+		)
+	}
+	assistantService := dependencies.Assistant
+	if assistantService == nil && dependencies.Pool != nil {
+		assistantService = assistant.NewService(
+			dependencies.Pool,
+			assistant.Dependencies{
+				Clock: clock, Provider: assistant.NewDeterministicProvider(),
+			},
+		)
+	}
+	communicationsWorkflow := dependencies.Communications
+	if communicationsWorkflow == nil && dependencies.Pool != nil {
+		communicationsWorkflow = application.NewCommunicationsWorkflow(
+			dependencies.Pool,
+			application.CommunicationsWorkflowDependencies{Clock: clock},
+		)
+	}
 	return &CanonicalAPI{
 		pool: dependencies.Pool, application: dependencies.Application, grants: dependencies.GrantService,
 		syncOperations:  syncOperations,
 		evidenceUploads: dependencies.EvidenceUploads, attachmentUploads: dependencies.AttachmentUploads,
-		planning: planningService,
-		clock:    clock,
+		planning:       planningService,
+		profiles:       profileService,
+		assignments:    assignmentService,
+		packageDrafts:  packageDraftService,
+		adminWorkspace: adminWorkspaceService,
+		risk:           riskService,
+		administration: administrationService,
+		assistant:      assistantService,
+		communications: communicationsWorkflow,
+		clock:          clock,
 	}
 }
 
@@ -99,14 +179,67 @@ func (api *CanonicalAPI) Handler() http.Handler {
 	router.Post("/v1/evidence/{evidenceVersionId}/reviews", api.reviewEvidence)
 	router.Get("/v1/report-versions/{id}", api.getReportVersion)
 	router.Post("/v1/report-versions/{id}/decisions", api.decideReport)
+	router.Get("/v1/documents", api.listDocuments)
+	router.Get("/v1/documents/{documentId}", api.getDocument)
+	router.Get("/v1/auditee/report-versions", api.listAuditeeReleasedReports)
+	router.Get("/v1/auditee/report-versions/{reportVersionId}", api.getAuditeeReleasedReport)
 	router.Get("/v1/dashboards/manager", api.getManagerDashboard)
 	router.Get("/v1/organizations", api.listOrganizations)
+	router.Get("/v1/profile", api.getMyProfile)
+	router.Put("/v1/profile", api.updateMyProfile)
 	router.Get("/v1/planning/items", api.listPlanningItems)
 	router.Post("/v1/planning/items/{id}/decisions", api.decidePlanningItem)
+	router.Get("/v1/planning/intake-drafts/{draftId}", api.getPlanningIntakeDraft)
+	router.Put("/v1/planning/intake-drafts/{draftId}", api.savePlanningIntakeDraft)
+	router.Post("/v1/planning/intake-drafts/{draftId}/submissions", api.submitPlanningIntake)
+	router.Get("/v1/inspection-package-drafts/{packageDraftId}", api.getInspectionPackageDraft)
+	router.Put("/v1/inspection-package-drafts/{packageDraftId}", api.saveInspectionPackageDraft)
+	router.Get("/v1/team-members", api.listTeamMembers)
+	router.Get("/v1/team-members/{subjectId}", api.getTeamMember)
+	router.Get("/v1/audit-teams", api.listAuditTeams)
+	router.Get("/v1/audit-teams/{auditId}", api.getAuditTeam)
+	router.Get("/v1/auditee/coordination", api.listAuditeeCoordination)
+	router.Post("/v1/auditee/coordination/{auditId}/responses", api.respondAuditeeCoordination)
 	router.Get("/v1/configuration/checklist-template-versions", api.listChecklistTemplateVersions)
 	router.Get("/v1/configuration/checklist-template-versions/{templateVersionId}", api.getChecklistTemplateVersion)
 	router.Get("/v1/configuration/reminder-rules", api.listReminderRules)
+	router.Get("/v1/communications", api.listCommunications)
+	router.Post("/v1/communications", api.sendCommunication)
+	router.Get("/v1/calendar-items", api.listCalendarItems)
+	router.Get("/v1/calendar-items/{calendarItemId}", api.getCalendarItem)
+	router.Get("/v1/notifications", api.listNotifications)
+	router.Post("/v1/notifications/{notificationId}/read", api.markNotificationRead)
 	router.Get("/v1/audit-events", api.listAuditEvents)
+	router.Get("/v1/risk/overview", api.getRiskOverview)
+	router.Get("/v1/risk/management", api.getRiskManagementProjection)
+	router.Get("/v1/administration/screens", api.listAdministrationScreenProjections)
+	router.Get("/v1/administration/screens/{screenId}", api.getAdministrationScreenProjection)
+	router.Post(
+		"/v1/administration/screens/{screenId}/actions/{actionId}",
+		api.invokeAdministrationVisibleAction,
+	)
+	router.Get("/v1/admin/regulatory-references", api.listAdminRegulatoryReferences)
+	router.Get("/v1/admin/templates", api.listAdminTemplateMasters)
+	router.Get("/v1/admin/questions", api.listAdminQuestions)
+	router.Post("/v1/admin/questions", api.createAdminQuestion)
+	router.Get("/v1/admin/templates/{templateId}", api.getAdminTemplate)
+	router.Post("/v1/admin/templates/{templateId}/drafts", api.createAdminTemplateDraft)
+	router.Post(
+		"/v1/admin/templates/{templateId}/drafts/{draftVersionId}/questions",
+		api.addAdminTemplateDraftQuestion,
+	)
+	router.Post(
+		"/v1/admin/templates/{templateId}/drafts/{draftVersionId}/questions/{questionId}/moves",
+		api.moveAdminTemplateDraftQuestion,
+	)
+	router.Get("/v1/admin/inspection-packages/{packageId}", api.getAdminInspectionPackage)
+	router.Get("/v1/admin/report-definitions", api.listAdminReportDefinitions)
+	router.Get("/v1/admin/access-directory", api.listAdminAccessDirectory)
+	router.Get("/v1/admin/organizations", api.listAdminOrganizations)
+	router.Get("/v1/admin/organizations/{organizationId}", api.getAdminOrganization)
+	router.Get("/v1/admin/audit-events", api.listAdminAuditEvents)
+	router.Get("/v1/assistant/guidance", api.getAssistantGuidance)
+	router.Post("/v1/assistant/drafts", api.createAssistantDraft)
 	router.Post("/v1/sync/operations", api.pushFieldOperation)
 	router.Get("/v1/sync/changes", api.pullSyncChanges)
 	return router
@@ -272,7 +405,8 @@ func (api *CanonicalAPI) createPotentialFinding(writer http.ResponseWriter, requ
 		QuestionID: input.QuestionId, ChecklistResponseID: input.ChecklistResponseId,
 		ExpectedChecklistResponseRevision: input.ExpectedChecklistResponseRevision, Title: input.Title,
 		Description: input.Description, CommentToAuditee: input.RequiredComment,
-		ExpectedEvidence: "PBE serviceability record and cabin position confirmation",
+		ExpectedEvidence:        "PBE serviceability record and cabin position confirmation",
+		InspectionAttachmentIDs: input.InspectionAttachmentIds,
 	})
 	if err != nil {
 		api.respond(writer, nil, err)
@@ -382,6 +516,10 @@ func (api *CanonicalAPI) authorizedCloseFinding(writer http.ResponseWriter, requ
 	if !decodeJSON(writer, request, &input) {
 		return
 	}
+	if input.FindingId != chi.URLParam(request, "id") {
+		api.respond(writer, nil, application.ErrInvalid)
+		return
+	}
 	_, err := api.application.AuthorizedCloseFinding(request.Context(), actor, application.AuthorizedCloseFindingCommand{
 		OperationID: input.OperationId, CorrelationID: input.OperationId, FindingID: input.FindingId,
 		ExpectedFindingRevision: input.ExpectedFindingRevision, Reason: input.Reason,
@@ -445,6 +583,10 @@ func (api *CanonicalAPI) reviewCAP(writer http.ResponseWriter, request *http.Req
 	}
 	var input generated.ReviewCapInput
 	if !decodeJSON(writer, request, &input) {
+		return
+	}
+	if input.CapRevisionId != chi.URLParam(request, "capRevisionId") {
+		api.respond(writer, nil, application.ErrInvalid)
 		return
 	}
 	result, err := api.application.ReviewCAP(request.Context(), actor, application.ReviewCAPCommand{
@@ -566,6 +708,10 @@ func (api *CanonicalAPI) reviewEvidence(writer http.ResponseWriter, request *htt
 	if !decodeJSON(writer, request, &input) {
 		return
 	}
+	if input.EvidenceVersionId != chi.URLParam(request, "evidenceVersionId") {
+		api.respond(writer, nil, application.ErrInvalid)
+		return
+	}
 	result, err := api.application.ReviewEvidence(request.Context(), actor, application.ReviewEvidenceCommand{
 		OperationID: input.OperationId, CorrelationID: input.OperationId, EvidenceVersionID: input.EvidenceVersionId,
 		ExpectedEvidenceVersionRevision: input.ExpectedEvidenceVersionRevision, FindingID: input.FindingId,
@@ -597,6 +743,10 @@ func (api *CanonicalAPI) decideReport(writer http.ResponseWriter, request *http.
 	if !decodeJSON(writer, request, &input) {
 		return
 	}
+	if input.ReportVersionId != chi.URLParam(request, "id") {
+		api.respond(writer, nil, application.ErrInvalid)
+		return
+	}
 	decision := reports.Decision(input.Decision)
 	if input.Decision == "ISSUE_AND_LOCK" {
 		decision = reports.DecisionIssue
@@ -610,6 +760,50 @@ func (api *CanonicalAPI) decideReport(writer http.ResponseWriter, request *http.
 		return
 	}
 	output, err := api.reportProjection(request.Context(), actor, input.ReportVersionId)
+	api.respond(writer, output, err)
+}
+
+func (api *CanonicalAPI) listDocuments(writer http.ResponseWriter, request *http.Request) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	output, err := api.documentsProjection(
+		request.Context(), actor, strings.TrimSpace(request.URL.Query().Get("organizationId")),
+	)
+	api.respond(writer, output, err)
+}
+
+func (api *CanonicalAPI) getDocument(writer http.ResponseWriter, request *http.Request) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	output, err := api.documentProjection(
+		request.Context(), actor, chi.URLParam(request, "documentId"),
+	)
+	api.respond(writer, output, err)
+}
+
+func (api *CanonicalAPI) listAuditeeReleasedReports(writer http.ResponseWriter, request *http.Request) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	output, err := api.auditeeReleasedReportsProjection(
+		request.Context(), actor, strings.TrimSpace(request.URL.Query().Get("kind")),
+	)
+	api.respond(writer, output, err)
+}
+
+func (api *CanonicalAPI) getAuditeeReleasedReport(writer http.ResponseWriter, request *http.Request) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	output, err := api.auditeeReleasedReportProjection(
+		request.Context(), actor, chi.URLParam(request, "reportVersionId"),
+	)
 	api.respond(writer, output, err)
 }
 
@@ -699,16 +893,34 @@ func (api *CanonicalAPI) respond(writer http.ResponseWriter, output any, err err
 	code := "INTERNAL_ERROR"
 	switch {
 	case errors.Is(err, application.ErrForbidden), errors.Is(err, evidence.ErrEvidenceForbidden),
+		errors.Is(err, organizations.ErrForbidden),
+		errors.Is(err, risk.ErrForbidden), errors.Is(err, administration.ErrForbidden),
+		errors.Is(err, assistant.ErrForbidden),
+		errors.Is(err, configuration.ErrWorkspaceForbidden),
+		errors.Is(err, assignments.ErrForbidden), errors.Is(err, inspections.ErrPackageDraftForbidden),
 		errors.Is(err, attachments.ErrAttachmentForbidden), errors.Is(err, fieldsync.ErrGrantScope),
 		errors.Is(err, fieldsync.ErrGrantExpired), errors.Is(err, fieldsync.ErrGrantRevoked),
 		errors.Is(err, fieldsync.ErrAssignmentChanged), errors.Is(err, fieldsync.ErrPackageRevoked),
 		errors.Is(err, fieldsync.ErrSessionRevoked), errors.Is(err, fieldsync.ErrCursorScope):
 		status, code = http.StatusForbidden, "FORBIDDEN"
-	case errors.Is(err, application.ErrNotFound):
+	case errors.Is(err, application.ErrNotFound), errors.Is(err, identity.ErrProfileNotFound),
+		errors.Is(err, organizations.ErrNotFound), errors.Is(err, assignments.ErrNotFound),
+		errors.Is(err, risk.ErrNotFound), errors.Is(err, administration.ErrNotFound),
+		errors.Is(err, assistant.ErrNotFound),
+		errors.Is(err, configuration.ErrWorkspaceNotFound),
+		errors.Is(err, inspections.ErrPackageDraftNotFound):
 		status, code = http.StatusNotFound, "NOT_FOUND"
-	case errors.Is(err, application.ErrConflict), errors.Is(err, idempotency.ErrOperationIDReuse):
+	case errors.Is(err, application.ErrConflict), errors.Is(err, identity.ErrConflict),
+		errors.Is(err, assignments.ErrConflict), errors.Is(err, inspections.ErrPackageDraftConflict),
+		errors.Is(err, idempotency.ErrOperationIDReuse):
 		status, code = http.StatusConflict, "CONFLICT"
+	case errors.Is(err, identity.ErrPrecondition):
+		status, code = http.StatusPreconditionFailed, "PRECONDITION_FAILED"
 	case errors.Is(err, application.ErrInvalid), errors.Is(err, evidence.ErrInvalidUpload),
+		errors.Is(err, identity.ErrInvalidProfile),
+		errors.Is(err, risk.ErrInvalid), errors.Is(err, assistant.ErrInvalid),
+		errors.Is(err, configuration.ErrWorkspaceInvalid),
+		errors.Is(err, assignments.ErrInvalid), errors.Is(err, inspections.ErrPackageDraftInvalid),
 		errors.Is(err, attachments.ErrInvalidUpload), errors.Is(err, evidence.ErrObjectMismatch),
 		errors.Is(err, attachments.ErrObjectMismatch):
 		status, code = http.StatusUnprocessableEntity, "INVALID_COMMAND"
@@ -811,11 +1023,11 @@ func (admin *CanonicalTestAdmin) reset(writer http.ResponseWriter, request *http
 			return
 		}
 	}
-	admin.generator.Reset()
 	if err := testprofile.Reset(request.Context(), admin.pool, admin.clock().UTC()); err != nil {
 		writeProblem(writer, http.StatusInternalServerError, "Test reset failed", err.Error(), "TEST_RESET_FAILED")
 		return
 	}
+	admin.generator.Reset()
 	writeJSON(writer, http.StatusOK, map[string]string{"status": "reset"})
 }
 

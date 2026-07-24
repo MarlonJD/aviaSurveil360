@@ -7,17 +7,30 @@ package postgres
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getOrganization = `-- name: GetOrganization :one
 SELECT id, legal_name, organization_type, status, revision, created_at, updated_at
 FROM organizations
 WHERE id = $1
+  AND tombstoned_at IS NULL
 `
 
-func (q *Queries) GetOrganization(ctx context.Context, id string) (Organization, error) {
+type GetOrganizationRow struct {
+	ID               string             `json:"id"`
+	LegalName        string             `json:"legal_name"`
+	OrganizationType string             `json:"organization_type"`
+	Status           string             `json:"status"`
+	Revision         int64              `json:"revision"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetOrganization(ctx context.Context, id string) (GetOrganizationRow, error) {
 	row := q.db.QueryRow(ctx, getOrganization, id)
-	var i Organization
+	var i GetOrganizationRow
 	err := row.Scan(
 		&i.ID,
 		&i.LegalName,
@@ -40,6 +53,7 @@ FROM organizations organization
 LEFT JOIN findings finding ON finding.organization_id = organization.id
 LEFT JOIN inspections inspection ON inspection.organization_id = organization.id
 WHERE organization.organization_type <> 'AUTHORITY'
+  AND organization.tombstoned_at IS NULL
   AND ($1::text = '' OR organization.id = $1)
 GROUP BY organization.id
 ORDER BY organization.legal_name, organization.id
@@ -94,6 +108,7 @@ func (q *Queries) ListOrganizationRegistry(ctx context.Context, arg ListOrganiza
 const listOrganizations = `-- name: ListOrganizations :many
 SELECT id, legal_name, organization_type, status, revision, created_at, updated_at
 FROM organizations
+WHERE tombstoned_at IS NULL
 ORDER BY legal_name, id
 LIMIT $1 OFFSET $2
 `
@@ -103,15 +118,25 @@ type ListOrganizationsParams struct {
 	Offset int32 `json:"offset"`
 }
 
-func (q *Queries) ListOrganizations(ctx context.Context, arg ListOrganizationsParams) ([]Organization, error) {
+type ListOrganizationsRow struct {
+	ID               string             `json:"id"`
+	LegalName        string             `json:"legal_name"`
+	OrganizationType string             `json:"organization_type"`
+	Status           string             `json:"status"`
+	Revision         int64              `json:"revision"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListOrganizations(ctx context.Context, arg ListOrganizationsParams) ([]ListOrganizationsRow, error) {
 	rows, err := q.db.Query(ctx, listOrganizations, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Organization
+	var items []ListOrganizationsRow
 	for rows.Next() {
-		var i Organization
+		var i ListOrganizationsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.LegalName,

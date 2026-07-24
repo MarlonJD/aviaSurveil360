@@ -53,7 +53,7 @@ func TestInspectionAttachmentUploadRequiresCurrentGrantAndNeverCreatesOfficialEv
 	if err != nil {
 		t.Fatalf("begin Inspection Attachment upload: %v", err)
 	}
-	objects.Put("avia-quarantine", begin.StagingObjectKey, "image/png", png, map[string]string{"sha256": digest})
+	objects.Seed("avia-quarantine", begin.StagingObjectKey, "image/png", png, map[string]string{"sha256": digest})
 	completed, err := service.Complete(context.Background(), inspector, attachments.CompleteUploadInput{
 		OperationID: "op-attachment-complete", CorrelationID: "corr-attachment",
 		UploadID: begin.UploadID, SHA256: digest, ByteSize: int64(len(png)),

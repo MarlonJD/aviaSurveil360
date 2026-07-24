@@ -5,6 +5,9 @@ import {
   type CanonicalScenarioTranscript,
 } from "./support/scenario-transcript";
 
+const apiURL = process.env.AVIA_HTTP_API_URL ?? "http://127.0.0.1:58081";
+const testToken = process.env.AVIA_CANONICAL_TEST_TOKEN ?? "";
+
 async function submitEvidence(page: Page, version: number, fileName: string): Promise<void> {
   await page.getByTestId("evidence-file").setInputFiles({
     name: fileName,
@@ -30,16 +33,15 @@ async function recordEvidenceDecision(
 
 test.beforeEach(async ({ request }, testInfo) => {
   if (testInfo.project.name !== "http") return;
-  const apiURL = process.env.AVIA_HTTP_API_URL ?? "http://127.0.0.1:58081";
-  const token = process.env.AVIA_CANONICAL_TEST_TOKEN ?? "";
   const response = await request.post(`${apiURL}/__test/reset`, {
-    headers: { "x-avia-test-token": token },
+    headers: { "x-avia-test-token": testToken },
   });
   expect(response.ok()).toBe(true);
 });
 
 test("canonical Cabin Inspection lifecycle is backend-shaped and organization-safe", async ({
   page,
+  request,
 }, testInfo) => {
   test.setTimeout(90_000);
   const consoleIssues: string[] = [];
@@ -221,6 +223,33 @@ test("canonical Cabin Inspection lifecycle is backend-shaped and organization-sa
   await expect(page.getByTestId("finding-status")).toHaveText("EVIDENCE_REQUIRED");
   await expect(page.getByTestId("closure-state")).toHaveText("Finding remains open");
 
+  if (testInfo.project.name === "http") {
+    const decide = async (
+      subjectId: string,
+      operationId: string,
+      expectedReportVersionRevision: number,
+    ) => {
+      const response = await request.post(
+        `${apiURL}/v1/report-versions/RPT-CAB-2026-001-V1/decisions`,
+        {
+          headers: {
+            "x-avia-test-token": testToken,
+            "x-avia-test-subject": subjectId,
+          },
+          data: {
+            operationId,
+            reportVersionId: "RPT-CAB-2026-001-V1",
+            expectedReportVersionRevision,
+            decision: "FORWARD",
+            reason: "Advance the exact Final Report through its authorized review chain.",
+          },
+        },
+      );
+      expect(response.ok()).toBe(true);
+    };
+    await decide("USR-MANAGER-NORA", "OP-CANONICAL-FINAL-DM-FORWARD", 1);
+    await decide("USR-GM-OMAR", "OP-CANONICAL-FINAL-GM-FORWARD", 2);
+  }
   await page.getByRole("button", { name: "Check report authority" }).click();
   await expect(page.getByRole("heading", { name: "Executive Director Dashboard" })).toBeVisible();
   await page.getByRole("button", { name: /Review report/i }).click();

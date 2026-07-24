@@ -9,9 +9,9 @@ import (
 )
 
 type Querier interface {
-	GetOrganization(ctx context.Context, id string) (Organization, error)
+	GetOrganization(ctx context.Context, id string) (GetOrganizationRow, error)
 	ListOrganizationRegistry(ctx context.Context, arg ListOrganizationRegistryParams) ([]ListOrganizationRegistryRow, error)
-	ListOrganizations(ctx context.Context, arg ListOrganizationsParams) ([]Organization, error)
+	ListOrganizations(ctx context.Context, arg ListOrganizationsParams) ([]ListOrganizationsRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -17,8 +17,6 @@ export type IconKey =
   | "logout"
   | "menu";
 
-export const PLAN_2_HTTP_ACTIVATION_REASON = "HTTP capability is unavailable until Plan 2 activates this route.";
-
 interface RouteSeed {
   auditId: `ui-audit-${string}`;
   id: string;
@@ -31,20 +29,11 @@ interface RouteSeed {
   dataBoundary: DataBoundary;
 }
 
-const dualProfileAuditIds = new Set([
-  "ui-audit-001", "ui-audit-002", "ui-audit-007", "ui-audit-008", "ui-audit-009", "ui-audit-013",
-  "ui-audit-022", "ui-audit-027", "ui-audit-028", "ui-audit-030", "ui-audit-041", "ui-audit-044",
-  "ui-audit-052", "ui-audit-058", "ui-audit-059", "ui-audit-066", "ui-audit-076",
-]);
-
 const route = <const Seed extends RouteSeed>(seed: Seed, order: number) => ({
   ...seed,
   componentKey: seed.id,
   order,
-  availableProfiles: dualProfileAuditIds.has(seed.auditId)
-    ? ["demo", "http"]
-    : ["demo"],
-  ...(dualProfileAuditIds.has(seed.auditId) ? {} : { blockedProfileReason: PLAN_2_HTTP_ACTIVATION_REASON }),
+  availableProfiles: ["demo", "http"],
 } as const);
 
 const ROUTE_SEEDS = [

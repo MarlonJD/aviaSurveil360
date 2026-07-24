@@ -42,9 +42,16 @@ async function markBrowserRestartVerified(page: Page): Promise<void> {
 test("normal OIDC session gates protected routes and uses server session authority", async ({
   context,
   page,
+  request,
 }) => {
   test.setTimeout(120_000);
   await installManagedOfflineReadiness(context);
+  await page.clock.setFixedTime(new Date("2026-06-15T09:00:00.000Z"));
+
+  const testReset = await request.post(
+    `${process.env.AVIA_HTTP_API_URL ?? "http://127.0.0.1:58081"}/__test/reset`,
+  );
+  expect(testReset.status()).toBe(404);
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Sign in to AviaSurveil360/i })).toBeVisible();

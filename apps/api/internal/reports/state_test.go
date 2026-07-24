@@ -45,3 +45,43 @@ func TestDepartmentAndGeneralManagerCanReturnOnlyAtTheirStages(t *testing.T) {
 		}
 	}
 }
+
+func TestPrepareReportRequiresTypedImmutableFamilyAndReadiness(t *testing.T) {
+	t.Parallel()
+
+	preliminary, err := reports.Prepare(reports.PrepareInput{
+		ReportID: "PR-2026-018", Kind: reports.KindPreliminary, Version: 1,
+		ContentHash: "sha256:preliminary-v1", Ready: true,
+	})
+	if err != nil || preliminary.Status != reports.StatusDepartmentReview ||
+		preliminary.Kind != reports.KindPreliminary {
+		t.Fatalf("prepare Preliminary Report = %+v, err = %v", preliminary, err)
+	}
+
+	final, err := reports.Prepare(reports.PrepareInput{
+		ReportID: "FR-2026-018", Kind: reports.KindFinal, Version: 1,
+		FindingIDs: []string{"FND-2026-018"}, ContentHash: "sha256:final-v1",
+		Ready: true,
+	})
+	if err != nil || final.Status != reports.StatusDepartmentReview ||
+		final.Kind != reports.KindFinal {
+		t.Fatalf("prepare Final Report = %+v, err = %v", final, err)
+	}
+
+	for name, input := range map[string]reports.PrepareInput{
+		"untyped family": {
+			ReportID: "RPT-UNTYPED", Version: 1, ContentHash: "sha256:missing-kind", Ready: true,
+		},
+		"not ready": {
+			ReportID: "FR-NOT-READY", Kind: reports.KindFinal, Version: 1,
+			FindingIDs: []string{"FND-1"}, ContentHash: "sha256:not-ready",
+		},
+		"missing content hash": {
+			ReportID: "PR-NO-HASH", Kind: reports.KindPreliminary, Version: 1, Ready: true,
+		},
+	} {
+		if _, err := reports.Prepare(input); err == nil {
+			t.Errorf("%s preparation succeeded", name)
+		}
+	}
+}

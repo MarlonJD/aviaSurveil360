@@ -1411,40 +1411,57 @@ export interface Backend {
   readonly configuration: ConfigurationBackend;
   readonly auditTrail: AuditTrailBackend;
   readonly sync: SyncBackend;
-  /** Demo capability boundary. HTTP activation remains explicitly deferred to Plan 2. */
-  readonly communications?: CommunicationsBackend;
-  readonly calendar?: CalendarBackend;
-  readonly profiles?: ProfilesBackend;
-  readonly teams?: TeamsBackend;
-  readonly risk?: RiskBackend;
-  readonly documents?: DocumentsBackend;
-  readonly notifications?: NotificationsBackend;
-  readonly administration?: AdministrationBackend;
-  readonly adminWorkspace?: AdminWorkspaceBackend;
-  readonly assistantDrafts?: AssistantDraftsBackend;
-  /** Demo-only Planning intake command boundary. Plan 2 owns HTTP activation. */
-  readonly planningIntake?: PlanningIntakeBackend;
-  /** Demo-only Inspection Package draft command boundary. Plan 2 owns HTTP activation. */
-  readonly packageDrafts?: InspectionPackageDraftsBackend;
-  /** Demo-only, fail-closed Auditee coordination projection and command boundary. */
-  readonly auditeeCoordination?: AuditeeCoordinationBackend;
-  /** Demo-only, LOCKED-only Auditee report projection. */
-  readonly auditeeReports?: AuditeeReportsBackend;
+  readonly communications: CommunicationsBackend;
+  readonly calendar: CalendarBackend;
+  readonly profiles: ProfilesBackend;
+  readonly teams: TeamsBackend;
+  readonly risk: RiskBackend;
+  readonly documents: DocumentsBackend;
+  readonly notifications: NotificationsBackend;
+  readonly administration: AdministrationBackend;
+  readonly adminWorkspace: AdminWorkspaceBackend;
+  readonly assistantDrafts: AssistantDraftsBackend;
+  readonly planningIntake: PlanningIntakeBackend;
+  readonly packageDrafts: InspectionPackageDraftsBackend;
+  /** Fail-closed Auditee coordination projection and command boundary. */
+  readonly auditeeCoordination: AuditeeCoordinationBackend;
+  /** LOCKED-only Auditee report projection. */
+  readonly auditeeReports: AuditeeReportsBackend;
 }
 
-export type DemoBackend = Backend & Required<Pick<Backend,
-  | "communications"
-  | "calendar"
-  | "profiles"
-  | "teams"
-  | "risk"
-  | "documents"
-  | "notifications"
-  | "administration"
-  | "adminWorkspace"
-  | "assistantDrafts"
-  | "planningIntake"
-  | "packageDrafts"
-  | "auditeeCoordination"
-  | "auditeeReports"
->>;
+export const BACKEND_CAPABILITY_REGISTRY = {
+  assignments: true,
+  inspections: true,
+  potentialFindings: true,
+  findings: true,
+  caps: true,
+  inspectionAttachments: true,
+  evidence: true,
+  reports: true,
+  dashboards: true,
+  organizations: true,
+  planning: true,
+  configuration: true,
+  auditTrail: true,
+  sync: true,
+  communications: true,
+  calendar: true,
+  profiles: true,
+  teams: true,
+  risk: true,
+  documents: true,
+  notifications: true,
+  administration: true,
+  adminWorkspace: true,
+  assistantDrafts: true,
+  planningIntake: true,
+  packageDrafts: true,
+  auditeeCoordination: true,
+  auditeeReports: true,
+} as const satisfies Record<Exclude<keyof Backend, "mode">, true>;
+
+export const BACKEND_CAPABILITY_KEYS = Object.keys(
+  BACKEND_CAPABILITY_REGISTRY,
+) as Array<keyof typeof BACKEND_CAPABILITY_REGISTRY>;
+
+export type DemoBackend = Backend;

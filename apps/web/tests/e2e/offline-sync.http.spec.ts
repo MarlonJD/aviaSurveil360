@@ -23,6 +23,36 @@ async function markBrowserRestartVerified(page: Page): Promise<void> {
   });
 }
 
+async function readOfflineGrantScope(page: Page): Promise<{
+  grantId: string;
+  deviceInstanceId: string;
+  packageVersion: number;
+  protocolVersion: number;
+}> {
+  return page.evaluate(async () => {
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const open = indexedDB.open("aviasurveil360-offline-foundation");
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    const grants = await new Promise<Array<{
+      grantId: string;
+      deviceInstanceId: string;
+      packageVersion: number;
+      protocolVersion: number;
+    }>>((resolve, reject) => {
+      const read = database.transaction("offlineGrants").objectStore("offlineGrants").getAll();
+      read.onsuccess = () => resolve(read.result);
+      read.onerror = () => reject(read.error);
+    });
+    database.close();
+    if (grants.length !== 1 || !grants[0]) {
+      throw new Error(`Expected one checked-out OfflineGrant, found ${grants.length}.`);
+    }
+    return grants[0];
+  });
+}
+
 test.beforeEach(async ({ context, request }) => {
   const reset = await request.post(`${apiURL}/__test/reset`, {
     headers: { "x-avia-test-token": token },
@@ -194,7 +224,9 @@ test("a stale field response preserves the local draft until explicit re-entry r
   await page.getByLabel(/encrypted managed profile/i).check();
   await page.getByRole("button", { name: "Check out for offline use" }).click();
   await expect(page.locator('[data-readiness-code="ready"]')).toBeVisible();
+  const offlineGrant = await readOfflineGrantScope(page);
   await page.getByRole("link", { name: "Run Cabin checklist" }).click();
+  await expect(page.getByRole("heading", { name: "Cabin Inspection checklist" })).toBeVisible();
 
   await context.setOffline(true);
   await page.getByLabel("Checklist answer").selectOption("NON_COMPLIANT");
@@ -210,14 +242,14 @@ test("a stale field response preserves the local draft until explicit re-entry r
     data: {
       operation: {
         operationId: "OP-RC-AUTHORITATIVE-RESPONSE-001",
-        protocolVersion: 1,
-        offlineGrantId: "GRANT-CANDIDATE-001",
+        protocolVersion: offlineGrant.protocolVersion,
+        offlineGrantId: offlineGrant.grantId,
         packageId: "PKG-CAB-2026-001",
-        packageVersion: 1,
+        packageVersion: offlineGrant.packageVersion,
         entityId: "RESP-CAB-EMEQ-PBE-001",
         commandType: "UPSERT_CHECKLIST_RESPONSE",
         baseRevision: null,
-        deviceInstanceId: "DEVICE-CANDIDATE-001",
+        deviceInstanceId: offlineGrant.deviceInstanceId,
         clientOccurredAt: "2026-07-21T09:00:00Z",
         payload: {
           auditId: "AUD-2026-001",

@@ -22,11 +22,13 @@ type MinIOConfig struct {
 	UseTLS                 bool
 	Region                 string
 	AllowServerManagedCORS bool
+	Clock                  func() time.Time
 }
 
 type MinIOStore struct {
 	client                 *minio.Client
 	allowServerManagedCORS bool
+	clock                  func() time.Time
 }
 
 func NewMinIOStore(config MinIOConfig) (*MinIOStore, error) {
@@ -40,7 +42,13 @@ func NewMinIOStore(config MinIOConfig) (*MinIOStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create MinIO-compatible client: %w", err)
 	}
-	return &MinIOStore{client: client, allowServerManagedCORS: config.AllowServerManagedCORS}, nil
+	clock := config.Clock
+	if clock == nil {
+		clock = time.Now
+	}
+	return &MinIOStore{
+		client: client, allowServerManagedCORS: config.AllowServerManagedCORS, clock: clock,
+	}, nil
 }
 
 func (store *MinIOStore) EnsurePrivateBuckets(ctx context.Context, buckets []string, allowedOrigins []string) error {
@@ -74,7 +82,7 @@ func (store *MinIOStore) EnsurePrivateBuckets(ctx context.Context, buckets []str
 }
 
 func (store *MinIOStore) CreatePutInstruction(ctx context.Context, request PutRequest) (PutInstruction, error) {
-	duration := time.Until(request.ExpiresAt)
+	duration := request.ExpiresAt.Sub(store.clock().UTC())
 	if duration < time.Second {
 		return PutInstruction{}, errors.New("upload instruction expiry must be in the future")
 	}
@@ -87,6 +95,28 @@ func (store *MinIOStore) CreatePutInstruction(ctx context.Context, request PutRe
 		return PutInstruction{}, fmt.Errorf("presign private PUT: %w", err)
 	}
 	return PutInstruction{URL: presigned.String(), Headers: cloneHeaders(request.RequiredHeaders), ExpiresAt: request.ExpiresAt}, nil
+}
+
+func (store *MinIOStore) Write(ctx context.Context, request WriteRequest) (ObjectInfo, error) {
+	if request.Body == nil || request.Size < 0 {
+		return ObjectInfo{}, errors.New("private object body and non-negative size are required")
+	}
+	if _, err := store.client.StatObject(ctx, request.Bucket, request.Key, minio.StatObjectOptions{}); err == nil {
+		return ObjectInfo{}, ErrObjectAlreadyExists
+	} else if !errors.Is(mapObjectError(err), ErrObjectNotFound) {
+		return ObjectInfo{}, fmt.Errorf("check private object destination: %w", err)
+	}
+	info, err := store.client.PutObject(ctx, request.Bucket, request.Key, request.Body, request.Size, minio.PutObjectOptions{
+		ContentType:  request.ContentType,
+		UserMetadata: cloneHeaders(request.Metadata),
+	})
+	if err != nil {
+		return ObjectInfo{}, fmt.Errorf("write private object: %w", err)
+	}
+	return ObjectInfo{
+		Bucket: request.Bucket, Key: request.Key, Size: info.Size,
+		ContentType: request.ContentType, Metadata: cloneHeaders(request.Metadata),
+	}, nil
 }
 
 func (store *MinIOStore) Open(ctx context.Context, bucket, key string) (io.ReadCloser, ObjectInfo, error) {
@@ -127,7 +157,7 @@ func (store *MinIOStore) CreateGetInstruction(ctx context.Context, request GetRe
 	if _, err := store.client.StatObject(ctx, request.Bucket, request.Key, minio.StatObjectOptions{}); err != nil {
 		return GetInstruction{}, mapObjectError(err)
 	}
-	duration := time.Until(request.ExpiresAt)
+	duration := request.ExpiresAt.Sub(store.clock().UTC())
 	if duration < time.Second {
 		return GetInstruction{}, errors.New("download instruction expiry must be in the future")
 	}

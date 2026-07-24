@@ -11,6 +11,7 @@ import (
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/database"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const (
@@ -19,6 +20,10 @@ const (
 	CanonicalFindingID          = "FND-CAB-2026-001"
 	CanonicalInspectorSubjectID = "154ec5ac-6f97-4f55-916f-d2f142fc6211"
 )
+
+func CanonicalScenarioTime() time.Time {
+	return time.Date(2026, time.June, 15, 9, 0, 0, 0, time.UTC)
+}
 
 type Generator struct {
 	mu       sync.Mutex
@@ -50,16 +55,21 @@ func (generator *Generator) Next(prefix string) string {
 	case "cap-revision":
 		return fmt.Sprintf("CAP-CAB-2026-001-R%d", sequence)
 	case "evidence":
-		return "EVD-CAB-2026-001"
+		return "EV-CAB-2026-001"
 	case "evidence-version":
-		return fmt.Sprintf("EVD-CAB-2026-001-V%d", sequence)
+		return fmt.Sprintf("EV-CAB-2026-001-V%d", sequence)
+	case "grant":
+		return fmt.Sprintf("GRANT-CANDIDATE-%03d", sequence)
 	default:
 		return fmt.Sprintf("%s-candidate-%03d", prefix, sequence)
 	}
 }
 
 func (generator *Generator) FindingReference() string {
-	return "CAB-2026-001"
+	generator.mu.Lock()
+	defer generator.mu.Unlock()
+	generator.counters["finding-reference"]++
+	return fmt.Sprintf("CAB-2026-%03d", generator.counters["finding-reference"])
 }
 
 type canonicalQuestion struct {
@@ -99,14 +109,85 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 		question("CAB-COCKPIT-GEN-001", "COCKPIT+CAB GEN COND+EXITS", "Are cabin general condition and emergency exits satisfactory?", "Inspector observation and required exception comment", []string{CanonicalInspectorSubjectID}),
 	}
 	snapshot, err := json.Marshal(map[string]any{
-		"schemaVersion": 1, "protocolVersion": 1, "questions": questions,
+		"schemaVersion": 1, "protocolVersion": 1,
+		"creatorSubjectId": "USR-MANAGER-NORA",
+		"changeReason":     "Initial immutable published Cabin Inspection version.",
+		"questions":        questions,
 	})
 	if err != nil {
 		return err
 	}
-	return database.WithinTransaction(ctx, pool, func(ctx context.Context, transaction pgx.Tx) error {
-		if _, err := transaction.Exec(ctx, `
+	planningDraftValues := map[string]any{
+		"organizationId": "ORG-FLY-NAMIBIA", "organizationName": "Fly Namibia",
+		"applicationType": "Continued Surveillance", "domain": "Cabin Safety",
+		"inspectionCategory": "Routine / Announced", "noticePolicy": "ADVANCE",
+		"purpose": "", "triggerType": "Department Manager initiated",
+		"riskCategory": "", "plannedDate": "2026-12-10", "mode": "On-site",
+		"location": "", "templateVersionId": "CTV-CABIN-1", "scope": "",
+		"requestedBudget": 0, "currency": "USD",
+	}
+	planningDraftSnapshot, err := json.Marshal(planningDraftValues)
+	if err != nil {
+		return err
+	}
+	coordinationValues := map[string]any{
+		"organizationId": "ORG-FLY-NAMIBIA", "organizationName": "Fly Namibia",
+		"applicationType": "Cabin Inspection", "domain": "Cabin Safety",
+		"inspectionCategory": "Routine / Announced", "noticePolicy": "ADVANCE",
+		"purpose": "Annual routine oversight", "triggerType": "Annual Plan",
+		"riskCategory": "Cabin Safety", "plannedDate": "2026-06-15", "mode": "On-site",
+		"location": "Windhoek", "templateVersionId": "CTV-CABIN-1",
+		"scope": "Cabin safety", "requestedBudget": 48000, "currency": "USD",
+		"preparedAuditId": CanonicalAuditID,
+	}
+	coordinationSnapshot, err := json.Marshal(coordinationValues)
+	if err != nil {
+		return err
+	}
+	packageRiskFocus, err := json.Marshal([]string{
+		"Emergency equipment serviceability",
+		"PBE serviceability",
+		"Cabin inspection CAP follow-up",
+	})
+	if err != nil {
+		return err
+	}
+	packageDraftQuestions, err := json.Marshal([]map[string]any{
+		{
+			"id":                  "PKG-Q-CAB-PBE",
+			"prompt":              "Is the PBE installed, serviceable, accessible, and in compliance with configured cabin emergency equipment requirements?",
+			"whyIncluded":         "The mock risk profile indicates emergency equipment serviceability needs focused sampling.",
+			"expectedEvidence":    []string{"PBE serviceability record", "Cabin position confirmation"},
+			"configuredReference": "Configured Cabin Inspection reference — EM EQ / PBE",
+		},
+		{
+			"id":                  "PKG-Q-CAB-GALLEY",
+			"prompt":              "Are galley restraints and stowage areas serviceable and secure?",
+			"whyIncluded":         "Galley equipment is a configured baseline Cabin Inspection check.",
+			"expectedEvidence":    []string{"Galley equipment serviceability record"},
+			"configuredReference": "Configured Cabin Inspection reference — GALLEY",
+		},
+	})
+	if err != nil {
+		return err
+	}
+	emptyTemplateSnapshot, err := json.Marshal(map[string]any{
+		"schemaVersion": 1, "protocolVersion": 1,
+		"creatorSubjectId": "USR-MANAGER-NORA",
+		"changeReason":     "Initial immutable published Flight Operations version.",
+		"questions":        []canonicalQuestion{},
+	})
+	if err != nil {
+		return err
+	}
+	return retryCanonicalReset(ctx, func() error {
+		return database.WithinTransaction(ctx, pool, func(ctx context.Context, transaction pgx.Tx) error {
+			if _, err := transaction.Exec(ctx, `
 			TRUNCATE TABLE
+				command_transaction_links, audit_question_assignments, audit_team_members,
+				audit_assignments, inspection_package_drafts, planning_intake_drafts,
+				template_draft_versions, template_version_questions, template_masters,
+				question_versions, regulatory_reference_versions,
 				reminder_rules, surveillance_plan_items,
 				oidc_login_states, idempotency_responses, authorized_sync_changes, sync_cursors, sync_cursor_tokens,
 				audit_events, outbox_messages, review_decisions, report_decisions,
@@ -117,17 +198,17 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				inspections, session_references, identity_references, organizations
 			RESTART IDENTITY CASCADE
 		`); err != nil {
-			return fmt.Errorf("truncate canonical test state: %w", err)
-		}
-		if _, err := transaction.Exec(ctx, `
+				return fmt.Errorf("truncate canonical test state: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
 			INSERT INTO organizations (id, legal_name, organization_type, status, created_at, updated_at) VALUES
 				('CAA', 'Civil Aviation Authority', 'AUTHORITY', 'ACTIVE', $1, $1),
 				('ORG-FLY-NAMIBIA', 'Fly Namibia', 'OPERATOR', 'ACTIVE', $1, $1),
 				('ORG-SKYCARGO', 'SkyCargo Air', 'OPERATOR', 'ACTIVE', $1, $1)
 		`, now); err != nil {
-			return fmt.Errorf("seed canonical organizations: %w", err)
-		}
-		if _, err := transaction.Exec(ctx, `
+				return fmt.Errorf("seed canonical organizations: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
 			INSERT INTO identity_references (subject_id, issuer, display_name, created_at) VALUES
 				($2, 'urn:avia:test', 'Local Inspector', $1),
 				('USR-INSPECTOR-DAVID', 'urn:avia:test', 'David Inspector', $1),
@@ -139,9 +220,34 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				('USR-ADMIN-ADA', 'urn:avia:test', 'Ada Administrator', $1),
 				('USR-AUDITEE-FLY', 'urn:avia:test', 'Fly Namibia Auditee', $1)
 		`, now, CanonicalInspectorSubjectID); err != nil {
-			return fmt.Errorf("seed canonical identities: %w", err)
-		}
-		if _, err := transaction.Exec(ctx, `
+				return fmt.Errorf("seed canonical identities: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
+			INSERT INTO user_profiles (
+				subject_id, display_name, organization_id, revision, created_at, updated_at
+			) VALUES
+				($2, 'Local Inspector', 'CAA', 1, $1, $1),
+				('USR-INSPECTOR-DAVID', 'David Inspector', 'CAA', 1, $1, $1),
+				('USR-LEAD-CANER', 'Caner Lead Inspector', 'CAA', 1, $1, $1),
+				('USR-MANAGER-NORA', 'Nora Department Manager', 'CAA', 1, $1, $1),
+				('USR-FINANCE-LINA', 'Lina Finance Reviewer', 'CAA', 1, $1, $1),
+				('USR-GM-OMAR', 'Omar General Manager', 'CAA', 1, $1, $1),
+				('USR-ED-ZARA', 'Zara Executive Director', 'CAA', 1, $1, $1),
+				('USR-ADMIN-ADA', 'Ada Administrator', 'CAA', 1, $1, $1),
+				('USR-AUDITEE-FLY', 'Fly Namibia Auditee', 'ORG-FLY-NAMIBIA', 1, $1, $1)
+		`, now, CanonicalInspectorSubjectID); err != nil {
+				return fmt.Errorf("seed canonical profiles: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
+			INSERT INTO user_settings (
+				subject_id, notification_preferences, locale, timezone, revision, updated_at
+			)
+			SELECT subject_id, '{}'::jsonb, 'en', 'UTC', 1, $1
+			FROM identity_references
+		`, now); err != nil {
+				return fmt.Errorf("seed canonical settings: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
 			INSERT INTO session_references (
 				id, subject_id, organization_id, expires_at, last_seen_at, absolute_expires_at, roles, created_at
 			) VALUES
@@ -155,9 +261,9 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				('TEST-USR-ADMIN-ADA', 'USR-ADMIN-ADA', 'CAA', $2, $1, $2, ARRAY['admin'], $1),
 				('TEST-USR-AUDITEE-FLY', 'USR-AUDITEE-FLY', 'ORG-FLY-NAMIBIA', $2, $1, $2, ARRAY['auditee'], $1)
 		`, now, now.Add(8*time.Hour), CanonicalInspectorSubjectID); err != nil {
-			return fmt.Errorf("seed canonical sessions: %w", err)
-		}
-		if _, err := transaction.Exec(ctx, `
+				return fmt.Errorf("seed canonical sessions: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
 			INSERT INTO inspections (
 				id, organization_id, assigned_inspector_subject_id, title, inspection_type, status,
 				due_date, revision, created_at, updated_at
@@ -167,9 +273,9 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				('AUD-2026-099', 'ORG-SKYCARGO', 'USR-INSPECTOR-DAVID',
 				 '2026 Cargo Inspection - SkyCargo Air', 'CARGO', 'IN_PROGRESS', '2026-07-30', 1, $1, $1)
 		`, now, CanonicalInspectorSubjectID); err != nil {
-			return fmt.Errorf("seed canonical Audits: %w", err)
-		}
-		if _, err := transaction.Exec(ctx, `
+				return fmt.Errorf("seed canonical Audits: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
 			INSERT INTO surveillance_plan_items (
 				id, title, plan_year, organization_id, inspection_type, scheduled_date,
 				estimated_budget, status, current_owner_role, next_action, revision, created_at, updated_at
@@ -179,9 +285,9 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				'FINANCE_REVIEW', 'finance', 'Finance to review budget', 1, $1, $1
 			)
 		`, now); err != nil {
-			return fmt.Errorf("seed canonical surveillance plan: %w", err)
-		}
-		if _, err := transaction.Exec(ctx, `
+				return fmt.Errorf("seed canonical surveillance plan: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
 			INSERT INTO reminder_rules (id, label, offset_days, channel, status, revision, created_at, updated_at) VALUES
 				('REM-30', '30 days before Due Date', 30, 'IN_APP', 'ACTIVE', 1, $1, $1),
 				('REM-15', '15 days before Due Date', 15, 'IN_APP', 'ACTIVE', 1, $1, $1),
@@ -189,78 +295,271 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				('REM-DUE', 'On the Due Date', 0, 'IN_APP', 'ACTIVE', 1, $1, $1),
 				('REM-OVERDUE', 'After the Due Date', -1, 'IN_APP', 'ACTIVE', 1, $1, $1)
 		`, now); err != nil {
-			return fmt.Errorf("seed canonical reminder rules: %w", err)
-		}
-		if _, err := transaction.Exec(ctx, `
+				return fmt.Errorf("seed canonical reminder rules: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
+			INSERT INTO regulatory_reference_versions (
+				id, reference_id, version, title, status, effective_date, snapshot, created_at
+			) VALUES
+				('NAMCARS-CAB-001-V1', 'NAMCARS-CAB-001', 1,
+					'Configured Cabin Safety reference', 'ACTIVE', '2026-01-01',
+					'{"versionLabel":"2026.1","configuredRules":["Configured reference for Cabin Inspection sampling"],"changeHistory":["2026-01-01 — Added to the mock regulatory library"]}',
+					$1),
+				('NAMCARS-FOPS-004-V1', 'NAMCARS-FOPS-004', 1,
+					'Configured Flight Operations reference', 'SUPERSEDED', '2025-10-01',
+					'{"versionLabel":"2025.4","configuredRules":["Reference-only Flight Operations sampling metadata"],"changeHistory":["2026-01-01 — Superseded in demo data"]}',
+					$1)
+		`, now); err != nil {
+				return fmt.Errorf("seed canonical regulatory references: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
+			INSERT INTO report_definition_versions (
+				id, definition_id, version, title, description, definition,
+				created_by_subject_id, created_at
+			) VALUES (
+				'ADMIN-RPT-PACKAGE-001-V1', 'ADMIN-RPT-PACKAGE-001', 1,
+				'Inspection package configuration preview',
+				'Typed mock report definition; this is not a real report or PDF engine.',
+				'{
+					"packageFields":[
+						"packageId","auditId","organizationId","questionIds",
+						"configuredReferences","expectedEvidence","riskFocus"
+					],
+					"actionReason":"ADMIN-RPT-PACKAGE-001 generation is unavailable because Task 10 provides a typed browser-local preview only."
+				}',
+				'USR-ADMIN-ADA', $1
+			)
+		`, now); err != nil {
+				return fmt.Errorf("seed canonical report definition: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
 			INSERT INTO checklist_template_versions (id, template_id, version, title, snapshot, published_at)
-			VALUES ('CTV-CABIN-1', 'CABIN', 1, 'Cabin Inspection checklist', $1, $2)
-		`, snapshot, now); err != nil {
-			return fmt.Errorf("seed canonical checklist template: %w", err)
-		}
-		if _, err := transaction.Exec(ctx, `
+			VALUES
+				('CTV-CABIN-1', 'CABIN', 1, 'Cabin Inspection checklist', $1, $3),
+				('CTV-FOPS-1', 'FOPS', 1, 'Flight Operations checklist', $2, $3)
+		`, snapshot, emptyTemplateSnapshot, now); err != nil {
+				return fmt.Errorf("seed canonical checklist template: %w", err)
+			}
+			for position, question := range questions {
+				questionVersionID := "QV-" + question.ID + "-V1"
+				if _, err := transaction.Exec(ctx, `
+				INSERT INTO question_versions (
+					id, question_id, version, prompt, configured_reference,
+					expected_evidence, created_by_subject_id, created_at
+				) VALUES ($1, $2, 1, $3, $4, $5, 'USR-MANAGER-NORA', $6)
+			`, questionVersionID, question.ID, question.Prompt,
+					question.RegulatoryReference, question.ExpectedEvidence, now); err != nil {
+					return fmt.Errorf("seed Question version %s: %w", question.ID, err)
+				}
+				if _, err := transaction.Exec(ctx, `
+				INSERT INTO template_version_questions (
+					template_version_id, question_version_id, position, created_at
+				) VALUES ('CTV-CABIN-1', $1, $2, $3)
+			`, questionVersionID, position, now); err != nil {
+					return fmt.Errorf("seed Template Question %s: %w", question.ID, err)
+				}
+			}
+			if _, err := transaction.Exec(ctx, `
+			INSERT INTO template_masters (
+				id, title, owner_role, published_template_version_id,
+				revision, created_at, updated_at
+			) VALUES
+				('TPL-CABIN-2026', 'Cabin Inspection checklist', 'Department Manager',
+					'CTV-CABIN-1', 1, $1, $1),
+				('TPL-FOPS-2026', 'Flight Operations checklist', 'Department Manager',
+					'CTV-FOPS-1', 1, $1, $1)
+		`, now); err != nil {
+				return fmt.Errorf("seed Template masters: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
+			INSERT INTO planning_intake_drafts (
+				id, organization_id, values, submitted_planning_item_id, revision,
+				created_by_subject_id, created_at, updated_at
+			) VALUES
+				('PLAN-DRAFT-2026-001', 'ORG-FLY-NAMIBIA', $1, NULL, 1,
+					'USR-MANAGER-NORA', $3, $3),
+				('PLAN-DRAFT-COORDINATION', 'ORG-FLY-NAMIBIA', $2,
+					'PLAN-2026-CAB-001', 2, 'USR-MANAGER-NORA', $3, $3)
+		`, planningDraftSnapshot, coordinationSnapshot, now); err != nil {
+				return fmt.Errorf("seed canonical Planning intake drafts: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
 			INSERT INTO inspection_packages (
 				id, inspection_id, checklist_template_version_id, package_version, snapshot,
 				expires_at, created_at, package_digest
 			) VALUES ('PKG-CAB-2026-001', 'AUD-2026-001', 'CTV-CABIN-1', 1, $1, $2, $3,
 				'sha256:candidate-cabin-package-v1')
 		`, snapshot, now.Add(72*time.Hour), now); err != nil {
-			return fmt.Errorf("seed canonical inspection package: %w", err)
-		}
-		for _, question := range questions {
+				return fmt.Errorf("seed canonical inspection package: %w", err)
+			}
 			if _, err := transaction.Exec(ctx, `
+			INSERT INTO inspection_package_drafts (
+				id, source_inspection_id, organization_id, status, package_version,
+				risk_focus, question_snapshot, revision, created_by_subject_id,
+				created_at, updated_at
+			) VALUES (
+				'PKG-AUD-2026-001-CABIN', 'AUD-2026-001', 'ORG-FLY-NAMIBIA',
+				'DRAFT', 1, $1, $2, 1, 'USR-MANAGER-NORA', $3, $3
+			)
+		`, packageRiskFocus, packageDraftQuestions, now); err != nil {
+				return fmt.Errorf("seed canonical Inspection Package draft: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
+			INSERT INTO audit_assignments (
+				id, inspection_id, organization_id, lead_subject_id, status,
+				scheduled_start_date, scheduled_end_date, revision, created_at, updated_at
+			) VALUES (
+				'ASSIGN-AUD-2026-001', 'AUD-2026-001', 'ORG-FLY-NAMIBIA',
+				'USR-LEAD-CANER', 'AWAITING_AUDITEE_CONFIRMATION',
+				'2026-06-15', '2026-06-18', 1, $1, $1
+			)
+		`, now); err != nil {
+				return fmt.Errorf("seed canonical Audit assignment: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
+			INSERT INTO audit_team_members (
+				assignment_id, subject_id, member_role, revision, created_at
+			) VALUES
+				('ASSIGN-AUD-2026-001', 'USR-LEAD-CANER', 'LEAD_INSPECTOR', 1, $1),
+				('ASSIGN-AUD-2026-001', $2, 'INSPECTOR', 1, $1),
+				('ASSIGN-AUD-2026-001', 'USR-INSPECTOR-DAVID', 'INSPECTOR', 1, $1)
+		`, now, CanonicalInspectorSubjectID); err != nil {
+				return fmt.Errorf("seed canonical Audit team: %w", err)
+			}
+			for _, question := range questions {
+				if _, err := transaction.Exec(ctx, `
 				INSERT INTO inspection_question_assignments (inspection_id, question_id, subject_id, assignment_revision)
 				VALUES ('AUD-2026-001', $1, $2, 1)
 			`, question.ID, question.Assigned[0]); err != nil {
-				return fmt.Errorf("seed assignment %s: %w", question.ID, err)
+					return fmt.Errorf("seed assignment %s: %w", question.ID, err)
+				}
+				if _, err := transaction.Exec(ctx, `
+				INSERT INTO audit_question_assignments (
+					assignment_id, question_id, subject_id, revision, created_at
+				) VALUES ('ASSIGN-AUD-2026-001', $1, $2, 1, $3)
+			`, question.ID, question.Assigned[0], now); err != nil {
+					return fmt.Errorf("seed Audit question assignment %s: %w", question.ID, err)
+				}
 			}
-		}
-		if _, err := transaction.Exec(ctx, `
+			if _, err := transaction.Exec(ctx, `
 			INSERT INTO inspection_checklists (inspection_id, status, revision)
 			VALUES ('AUD-2026-001', 'IN_PROGRESS', 1)
 		`); err != nil {
-			return fmt.Errorf("seed canonical checklist: %w", err)
-		}
-		if _, err := transaction.Exec(ctx, `
+				return fmt.Errorf("seed canonical checklist: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
 			INSERT INTO findings (
 				id, reference, inspection_id, organization_id, severity, status, owner_subject_id,
 				next_action, due_date, revision, cap_required, evidence_required, issued_at, created_at, updated_at
 			) VALUES ('FND-SKYCARGO-2026-099', 'CAR-2026-099', 'AUD-2026-099', 'ORG-SKYCARGO',
-				'LEVEL_2_MAJOR', 'OPEN', NULL, 'SkyCargo Air to submit CAP', '2026-07-30', 1,
+				'LEVEL_2_MAJOR', 'OPEN', NULL, 'SkyCargo Air to submit CAP', '2026-06-10', 1,
 				true, true, $1, $1, $1)
 		`, now); err != nil {
-			return fmt.Errorf("seed isolation Finding: %w", err)
-		}
-		reportSnapshot, _ := json.Marshal(map[string]any{
-			"findingIds": []string{"FND-CAB-2026-001"}, "contentHash": "sha256:candidate-report-v1",
-		})
-		if _, err := transaction.Exec(ctx, `
+				return fmt.Errorf("seed isolation Finding: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
+			INSERT INTO cap_revisions (
+				id, cap_id, finding_id, organization_id, revision, status,
+				root_cause, corrective_action, preventive_action,
+				target_completion_date, submitted_by_subject_id, submitted_at,
+				responsible_person, comment_to_caa
+			) VALUES
+				(
+					'CAP-CAR-2026-099-R1', 'CAP-CAR-2026-099',
+					'FND-SKYCARGO-2026-099', 'ORG-SKYCARGO', 1, 'SUPERSEDED',
+					'Initial configured root cause.',
+					'Initial configured corrective action.',
+					'Initial configured preventive action.',
+					'2026-06-01', 'USR-AUDITEE-SKYCARGO', $1,
+					'SkyCargo Safety Manager', 'Initial submission.'
+				),
+				(
+					'CAP-CAR-2026-099-R2', 'CAP-CAR-2026-099',
+					'FND-SKYCARGO-2026-099', 'ORG-SKYCARGO', 2,
+					'MORE_INFORMATION_REQUESTED',
+					'Updated configured root cause.',
+					'Updated configured corrective action.',
+					'Updated configured preventive action.',
+					'2026-06-10', 'USR-AUDITEE-SKYCARGO', $1,
+					'SkyCargo Safety Manager', 'Updated submission.'
+				)
+		`, now); err != nil {
+				return fmt.Errorf("seed isolation CAP history: %w", err)
+			}
+			reportSnapshot, _ := json.Marshal(map[string]any{
+				"kind": "FINAL", "ready": true,
+				"findingIds": []string{}, "contentHash": "sha256:candidate-report-v1",
+				"responseDueDate": nil, "caaVisibleComment": nil,
+			})
+			preliminaryV0Snapshot, _ := json.Marshal(map[string]any{
+				"kind": "PRELIMINARY", "ready": false,
+				"findingIds": []string{}, "contentHash": "sha256:preliminary-report-v0-returned",
+				"responseDueDate": nil, "caaVisibleComment": nil,
+			})
+			preliminaryV1Snapshot, _ := json.Marshal(map[string]any{
+				"kind": "PRELIMINARY", "ready": true,
+				"findingIds": []string{}, "contentHash": "sha256:preliminary-report-v1-department-review",
+				"responseDueDate": nil, "caaVisibleComment": nil,
+			})
+			if _, err := transaction.Exec(ctx, `
+			INSERT INTO report_versions (
+				id, report_id, inspection_id, version, status, snapshot, created_at
+			) VALUES
+				('PR-2026-018-V0', 'PR-2026-018', 'AUD-2026-001', 0, 'RETURNED', $1, $3),
+				('PR-2026-018-V1', 'PR-2026-018', 'AUD-2026-001', 1, 'DEPARTMENT_REVIEW', $2, $3)
+		`, preliminaryV0Snapshot, preliminaryV1Snapshot, now); err != nil {
+				return fmt.Errorf("seed preliminary report versions: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
+			INSERT INTO report_approval_states (
+				report_version_id, status, revision, updated_at
+			) VALUES
+				('PR-2026-018-V0', 'RETURNED', 1, $1),
+				('PR-2026-018-V1', 'DEPARTMENT_REVIEW', 1, $1)
+		`, now); err != nil {
+				return fmt.Errorf("seed preliminary report approvals: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
 			INSERT INTO report_versions (id, report_id, inspection_id, version, status, snapshot, created_at)
 			VALUES ('RPT-CAB-2026-001-V1', 'RPT-CAB-2026-001', 'AUD-2026-001', 1,
-				'EXECUTIVE_DIRECTOR_REVIEW', $1, $2)
+				'DEPARTMENT_REVIEW', $1, $2)
 		`, reportSnapshot, now); err != nil {
-			return fmt.Errorf("seed canonical report version: %w", err)
-		}
-		if _, err := transaction.Exec(ctx, `
+				return fmt.Errorf("seed canonical report version: %w", err)
+			}
+			if _, err := transaction.Exec(ctx, `
 			INSERT INTO report_approval_states (report_version_id, status, revision, updated_at)
-			VALUES ('RPT-CAB-2026-001-V1', 'EXECUTIVE_DIRECTOR_REVIEW', 1, $1)
+			VALUES ('RPT-CAB-2026-001-V1', 'DEPARTMENT_REVIEW', 1, $1)
 		`, now); err != nil {
-			return fmt.Errorf("seed canonical report approval: %w", err)
-		}
-		if _, err := transaction.Exec(ctx, `
-			INSERT INTO offline_grants (
-				id, subject_id, device_id, package_id, inspection_id, assignment_revision, granted_at,
-				expires_at, session_id, package_version, package_digest, allowed_command_types,
-				assignment_scope, protocol_version
-			) VALUES ('GRANT-CANDIDATE-001', $3, 'DEVICE-CANDIDATE-001',
-				'PKG-CAB-2026-001', 'AUD-2026-001', 1, $1, $2, 'TEST-CANONICAL-INSPECTOR', 1,
-				'sha256:candidate-cabin-package-v1', ARRAY['UPSERT_CHECKLIST_RESPONSE','CREATE_POTENTIAL_FINDING',
-				'SUBMIT_CHECKLIST','REGISTER_INSPECTION_ATTACHMENT'],
-				'{"questionIds":["CAB-LAV-001","CAB-PAX-SEAT-001","CAB-EMEQ-PBE-001","CAB-VID-CREW-SEAT-001","CAB-COCKPIT-GEN-001"]}', 1)
-		`, now, now.Add(24*time.Hour), CanonicalInspectorSubjectID); err != nil {
-			return fmt.Errorf("seed canonical OfflineGrant: %w", err)
-		}
-		return nil
+				return fmt.Errorf("seed canonical report approval: %w", err)
+			}
+			return nil
+		})
 	})
+}
+
+func retryCanonicalReset(ctx context.Context, operation func() error) error {
+	const maximumAttempts = 3
+
+	for attempt := 1; attempt <= maximumAttempts; attempt++ {
+		err := operation()
+		if err == nil {
+			return nil
+		}
+		var postgresError *pgconn.PgError
+		if !errors.As(err, &postgresError) ||
+			postgresError.Code != "40P01" ||
+			attempt == maximumAttempts {
+			return err
+		}
+		timer := time.NewTimer(time.Duration(attempt) * 25 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+	}
+	return nil
 }
 
 func Principal(subjectID string) (identity.Principal, bool) {

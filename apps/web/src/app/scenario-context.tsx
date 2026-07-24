@@ -209,9 +209,10 @@ export function ScenarioProvider({ children }: PropsWithChildren) {
     runtime.fieldRepositoryForSubject?.(fieldSubjectId) ??
     createBrowserFieldRepository(
       fieldSubjectId,
-      runtime.buildProfile === "demo"
+      runtime.now ??
+        (runtime.buildProfile === "demo"
         ? () => new Date("2026-06-15T09:00:00.000Z")
-        : () => new Date(),
+        : () => new Date()),
     );
   const inspectionAttachmentStore = (
     repository: IndexedDbFieldRepository,

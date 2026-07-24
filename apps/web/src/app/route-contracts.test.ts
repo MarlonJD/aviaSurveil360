@@ -43,7 +43,7 @@ describe("React route contracts", () => {
     }
   });
 
-  it("keeps exactly 17 dual-profile contracts and defers the other 69 HTTP capabilities to Plan 2", () => {
+  it("activates all 86 contracts in both demo and HTTP profiles", () => {
     const dualProfile = REACT_ROUTE_CONTRACTS.filter(
       ({ availableProfiles }) => availableProfiles.join(":") === "demo:http",
     );
@@ -51,9 +51,9 @@ describe("React route contracts", () => {
       ({ availableProfiles }) => availableProfiles.join(":") === "demo",
     );
 
-    expect(dualProfile).toHaveLength(17);
-    expect(demoOnly).toHaveLength(69);
-    expect(demoOnly.every(({ blockedProfileReason }) => blockedProfileReason === "HTTP capability is unavailable until Plan 2 activates this route.")).toBe(true);
+    expect(dualProfile).toHaveLength(86);
+    expect(demoOnly).toHaveLength(0);
+    expect(REACT_ROUTE_CONTRACTS.every(({ blockedProfileReason }) => blockedProfileReason === undefined)).toBe(true);
   });
 
   it("keeps every role-owned audit row aligned with its normalized required role", () => {

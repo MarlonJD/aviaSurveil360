@@ -31,6 +31,7 @@ async function start(): Promise<void> {
     backendForRole,
     buildProfile: "http",
     environmentLabel: `${config.environmentLabel} · canonical test profile`,
+    now: () => new Date("2026-06-15T09:00:00.000Z"),
     identityMode: "canonical-test-role-switch",
     subjectId: testSubjects.inspector,
   });

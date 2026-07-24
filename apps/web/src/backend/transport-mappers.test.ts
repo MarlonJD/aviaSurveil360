@@ -7,6 +7,7 @@ import {
   mapFinding,
   mapInspectionPackage,
   mapManagerDashboard,
+  mapRiskManagementProjection,
 } from "./transport-mappers";
 
 describe("transport mappers", () => {
@@ -163,5 +164,37 @@ describe("transport mappers", () => {
     expect(detail.questions).not.toBe(transport.questions);
     expect(detail.questions[0]?.allowedAnswers).not.toBe(transport.questions[0]?.allowedAnswers);
     expect(JSON.stringify(detail)).not.toMatch(/assignedInspectorUserIds|currentResponse/i);
+  });
+
+  it("drops unexpected private fields from the governed risk projection", () => {
+    const transport = {
+      findings: [{
+        findingId: "FND-CAB-2026-001",
+        findingNumber: "CAB-2026-001",
+        organizationId: "ORG-FLY-NAMIBIA",
+        organizationName: "Fly Namibia",
+        inspectionId: "AUD-2026-001",
+        inspectionTitle: "2026 Cabin Inspection - Fly Namibia",
+        department: null,
+        title: "PBE serviceability and accessibility not confirmed",
+        severity: "LEVEL_1_CRITICAL",
+        riskLevel: "HIGH",
+        status: "OPEN",
+        issuedAt: "2026-06-15T09:00:00.000Z",
+        dueState: "OVERDUE",
+        capRequired: true,
+        internalCaaNote: "PRIVATE_RISK_NOTE",
+      }],
+      capEffectiveness: [],
+      generatedAt: "2026-06-15T09:00:00.000Z",
+      revision: 1,
+      privateEnforcementScore: 99,
+    } as unknown as Parameters<typeof mapRiskManagementProjection>[0];
+
+    const mapped = mapRiskManagementProjection(transport);
+
+    expect(JSON.stringify(mapped)).not.toMatch(
+      /internalCaaNote|PRIVATE_RISK_NOTE|privateEnforcementScore/i,
+    );
   });
 });

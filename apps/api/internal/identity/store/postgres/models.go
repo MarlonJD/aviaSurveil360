@@ -8,9 +8,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type IdentityReference struct {
-	SubjectID   string             `json:"subject_id"`
-	Issuer      string             `json:"issuer"`
-	DisplayName string             `json:"display_name"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+type UserSetting struct {
+	SubjectID               string             `json:"subject_id"`
+	NotificationPreferences []byte             `json:"notification_preferences"`
+	Locale                  string             `json:"locale"`
+	Timezone                string             `json:"timezone"`
+	Revision                int64              `json:"revision"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
 }

@@ -21,12 +21,19 @@ React Hook Form, Zod, deterministic `MemoryMockStore`, Vitest, React Testing
 Library, Playwright 1.61, decoded-RGBA visual comparison, and the accepted root
 HTML/CSS/JavaScript oracle.
 
-**Status:** `active` — Tasks 1–12 have been executed. Task 11 is
-`verified locally`; Task 12's non-visual matrix passed, but the one-shot visual
-matrix remains literally 71/259 and standalone baseline integrity is
-`not verified`. The plan therefore does not meet the
-`ready-for-verification` gate. Independent review for Tasks 11–12 is `not run`,
-and Plan 2 remains `blocked`. Historical task evidence follows. Task 4 passed
+**Status:** `ready-for-verification` — Tasks 1–12 have been executed. Task 11
+is `verified locally`; Task 12's non-visual matrix passed. Standalone baseline
+integrity remains `not verified`: the accepted manifest records
+`sha256:92a8ab06da1f87fd9e84b45b35fa5c3dc58aa78a6eb7f6f9c9652731e8f74967`,
+while the user-edited canonical audit records
+`sha256:0ab4c60febb6d95f852f1aae2d540cb678b61c0f7111ba06f424c301325f4f9c`.
+The one-shot visual matrix remains literally 71/259 and a complete
+comparison-by-comparison review remains `not run`. On 23 July 2026, the Plan 2
+prerequisite preflight verified the frozen nonvisual handoff and the user
+explicitly accepted the visual and baseline-integrity gaps as non-blocking,
+accepted the route/capability/action handoff, and authorized Plan 2. No failed
+comparison is converted into a pass and no baseline is replaced. Historical
+task evidence follows. Task 4 passed
 its functional, contract, type, build,
 route-boundary, root-diff, hygiene, and independent spec/code-quality gates.
 Its final exact Inspector visual command returned 19 passed / 15 nominal
@@ -69,12 +76,13 @@ diff-check. The correction is `verified locally`; its clean independent
 re-review is `not run`, so Task 10 is not independently accepted yet. Its
 single bounded visual matrix remains literally 1/40, with the primitive
 gallery green and all 39 Admin route pairs non-green, and was not rerun.
-Standalone baseline integrity is `not verified` because the concurrently
-edited UI audit source no longer matches its recorded hash. Task 11 subsequently
-passed its full interaction/accessibility boundary without claiming an
-independent review. Task 12 executed the required full matrix once and recorded
-its non-green visual and baseline-integrity results literally. Plan 2 has not
-started.
+Standalone baseline integrity remains `not verified` because the accepted
+manifest hash and the user-edited canonical audit hash differ; all 258 PNG
+hashes remain unchanged.
+Task 11 subsequently passed its full interaction/accessibility boundary without
+claiming an independent review. Task 12 executed the required full matrix once
+and recorded its non-green visual result literally. Plan 2 is authorized to
+start.
 
 ## Objective
 
@@ -654,14 +662,18 @@ finding remains. Independent review is `not run`.
   258 route/viewport pairs).
 - [ ] Inspect 86 desktop, 86 tablet, and 86 mobile candidate images beside their
   accepted baselines; record audit ID, ratios, masks, semantic/geometry/action
-  result, reviewer, and disposition.
+  result, reviewer, and disposition. The retained workspace has no
+  candidate/result attachments from the one-shot run, and the user explicitly
+  accepted this unavailable review evidence as non-blocking on 23 July 2026.
 - [x] Confirm the HTTP artifact still excludes root runtime and mock/seed input;
   new routes must remain visibly unavailable in HTTP until Plan 2 rather than
   silently using demo state.
 - [x] Confirm every audit row's normalized role matches its React route and
   visual fixture, including source-role-correct `ui-audit-009` and `044`.
 - [x] Write synchronized evidence with exact counts and set this plan to
-  `ready-for-verification` only if all local demo gates pass.
+  `ready-for-verification` only if all local demo gates pass or the user
+  explicitly accepts a recorded non-green disposition without changing the
+  literal result.
 - [x] Commit/push disposition: subsequently authorized by the user for the
   final Task 11–12 handoff; no branch change or deployment was authorized.
 
@@ -674,12 +686,14 @@ failures. The run reported 157 decoded-pixel ratio, 69 semantic substring, and
 10 target-size failures with overlapping categories. The target-size defects
 were fixed through a separate RED → GREEN cycle and the accessibility matrix
 then passed 5/5 with exactly 258 responsive route checks; the visual matrix was
-not rerun. Standalone baseline integrity remains `not verified` because the
-accepted manifest audit-document hash
-`sha256:92a8ab06da1f87fd9e84b45b35fa5c3dc58aa78a6eb7f6f9c9652731e8f74967`
-does not match the current user-edited canonical audit hash
+not rerun. Standalone baseline integrity is `not verified`: the accepted
+manifest remains at
+`sha256:92a8ab06da1f87fd9e84b45b35fa5c3dc58aa78a6eb7f6f9c9652731e8f74967`,
+while the user-edited canonical audit hashes to
 `sha256:0ab4c60febb6d95f852f1aae2d540cb678b61c0f7111ba06f424c301325f4f9c`.
-A complete comparison-by-comparison manual image review is `not run`.
+No PNG or PNG hash changed. A complete comparison-by-comparison manual image
+review is `not run`; the user accepted these gaps as non-blocking for Plan 2
+without authorizing baseline replacement.
 No failed comparison is claimed as passed, and no baseline, threshold, mask,
 semantic truth, authority, or root oracle was weakened. The canonical evidence
 is `docs/demo-evidence/REACT_86_SCREEN_DEMO_2026-07-22.md`.

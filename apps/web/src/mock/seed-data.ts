@@ -18,6 +18,7 @@ import type {
   PotentialFindingView,
   ReportVersionView,
   ReminderRuleView,
+  AuthorizedSyncChange,
   CommunicationView,
   NotificationView,
   ProfileView,
@@ -247,6 +248,7 @@ export interface MockState {
   profiles: Record<string, ProfileView>;
   communications: MockCommunication[];
   notifications: NotificationView[];
+  authorizedSyncChanges: AuthorizedSyncChange[];
   screenProjectionSeeds: Record<string, MockScreenProjectionSeed>;
   counters: {
     potentialFinding: number;
@@ -793,6 +795,7 @@ export function createCanonicalSeedState(now: string): MockState {
         "USR-ADMIN-ADA": { id: "NOT-ADMIN-001", subjectId: "USR-ADMIN-ADA", title: "Template Library", body: "A checklist template version is available.", readAt: null, revision: 1 },
       }),
     ),
+    authorizedSyncChanges: [],
     screenProjectionSeeds: Object.fromEntries(
       REACT_ROUTE_CONTRACTS.map((route) => {
         return [route.id, {

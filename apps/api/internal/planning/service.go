@@ -186,21 +186,41 @@ func (service *Service) Decide(ctx context.Context, actor identity.Principal, co
 		if len(actor.Roles) > 0 {
 			actorRole = string(actor.Roles[0])
 		}
+		auditID := service.idGenerator("audit-plan")
+		outboxID := service.idGenerator("outbox-plan")
 		if _, err := transaction.Exec(ctx, `
 			INSERT INTO audit_events (
 				event_id, occurred_at, actor_subject_id, actor_role, organization_id, action,
 				entity_type, entity_id, entity_version, before_status, after_status, reason,
 				operation_id, correlation_id, request_id, details
 			) VALUES ($1, $2, $3, $4, $5, $6, 'SURVEILLANCE_PLAN', $7, $8, $9, $10, $11, $12, $12, $12, '{}'::jsonb)
-		`, service.idGenerator("audit-plan"), now, actor.SubjectID, actorRole, current.OrganizationID,
+		`, auditID, now, actor.SubjectID, actorRole, current.OrganizationID,
 			auditAction, current.ID, updated.Revision, current.Status, updated.Status,
 			strings.TrimSpace(command.Reason), command.OperationID); err != nil {
 			return err
 		}
+		var changeID int64
+		if err := transaction.QueryRow(ctx, `
+			INSERT INTO authorized_sync_changes (
+				subject_id, organization_id, kind, entity_id, entity_revision,
+				payload, changed_at, operation_id, correlation_id
+			) VALUES ($1, $2, 'SURVEILLANCE_PLAN', $3, $4, $5, $6, $7, $7)
+			RETURNING sequence_id
+		`, actor.SubjectID, current.OrganizationID, current.ID, updated.Revision,
+			responseBody, now, command.OperationID).Scan(&changeID); err != nil {
+			return err
+		}
 		if _, err := transaction.Exec(ctx, `
-			INSERT INTO outbox_messages (id, topic, aggregate_type, aggregate_id, payload, available_at)
-			VALUES ($1, 'planning.decision.recorded', 'SURVEILLANCE_PLAN', $2, $3, $4)
-		`, service.idGenerator("outbox-plan"), current.ID, responseBody, now); err != nil {
+			INSERT INTO outbox_messages (
+				id, topic, aggregate_type, aggregate_id, payload, available_at,
+				idempotency_key, operation_id, correlation_id
+			) VALUES (
+				$1, 'planning.decision.recorded', 'SURVEILLANCE_PLAN', $2, $3, $4,
+				$5, $6, $6
+			)
+		`, outboxID, current.ID, responseBody, now,
+			planningCommandIdempotencyKey(scope, command.OperationID),
+			command.OperationID); err != nil {
 			return err
 		}
 		if _, err := transaction.Exec(ctx, `
@@ -208,6 +228,14 @@ func (service *Service) Decide(ctx context.Context, actor identity.Principal, co
 				scope, operation_id, semantic_hash, response_status, response_headers, response_body, created_at
 			) VALUES ($1, $2, $3, 200, '{}'::jsonb, $4, $5)
 		`, scope, command.OperationID, semanticHash, responseBody, now); err != nil {
+			return err
+		}
+		if _, err := transaction.Exec(ctx, `
+			INSERT INTO command_transaction_links (
+				operation_id, idempotency_scope, audit_event_id,
+				change_sequence_id, outbox_message_id, created_at
+			) VALUES ($1, $2, $3, $4, $5, $6)
+		`, command.OperationID, scope, auditID, changeID, outboxID, now); err != nil {
 			return err
 		}
 		return nil

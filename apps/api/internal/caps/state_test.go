@@ -28,7 +28,7 @@ func TestCAAReviewBindsExactRevisionAndAcceptanceKeepsFindingOpen(t *testing.T) 
 	inspector := identity.Principal{Roles: []identity.Role{identity.RoleInspector}}
 	accepted, err := caps.Review(caps.ReviewInput{
 		Actor: inspector, CAPStatus: caps.StatusSubmitted, CAPRevision: 1, ExpectedCAPRevision: 1,
-		FindingStatus: findings.StatusCAPSubmitted, Decision: caps.DecisionAccept,
+		FindingStatus: findings.StatusCAPSubmitted, EvidenceRequired: true, Decision: caps.DecisionAccept,
 	})
 	if err != nil {
 		t.Fatalf("accept CAP: %v", err)
@@ -41,7 +41,7 @@ func TestCAAReviewBindsExactRevisionAndAcceptanceKeepsFindingOpen(t *testing.T) 
 	}
 	if _, err := caps.Review(caps.ReviewInput{
 		Actor: inspector, CAPStatus: caps.StatusSubmitted, CAPRevision: 2, ExpectedCAPRevision: 1,
-		FindingStatus: findings.StatusCAPSubmitted, Decision: caps.DecisionReject,
+		FindingStatus: findings.StatusCAPSubmitted, EvidenceRequired: true, Decision: caps.DecisionReject,
 	}); err == nil {
 		t.Fatal("stale CAP review accepted")
 	}
@@ -56,7 +56,8 @@ func TestCAPReviewSupportsRejectAndMoreInformation(t *testing.T) {
 	} {
 		result, err := caps.Review(caps.ReviewInput{
 			Actor: inspector, CAPStatus: caps.StatusSubmitted, CAPRevision: 1, ExpectedCAPRevision: 1,
-			FindingStatus: findings.StatusCAPSubmitted, Decision: decision, Reason: "CAA review reason.",
+			FindingStatus: findings.StatusCAPSubmitted, EvidenceRequired: true,
+			Decision: decision, Reason: "CAA review reason.",
 		})
 		if err != nil || result.FindingStatus != expected {
 			t.Errorf("decision %s = %+v, err = %v", decision, result, err)

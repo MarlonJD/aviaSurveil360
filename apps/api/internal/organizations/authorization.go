@@ -1,10 +1,24 @@
 package organizations
 
-import "github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
+import (
+	"errors"
+
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
+)
+
+var (
+	ErrForbidden = errors.New("organization access forbidden")
+	ErrNotFound  = errors.New("organization not found")
+)
 
 func CanView(principal identity.Principal, organizationID string) bool {
 	if principal.HasRole(identity.RoleAuditee) {
 		return principal.BelongsTo(organizationID)
 	}
 	return principal.IsCAA()
+}
+
+func CanListRegistry(principal identity.Principal) bool {
+	return principal.IsCAA() ||
+		(principal.HasRole(identity.RoleAuditee) && principal.OrganizationID != "")
 }

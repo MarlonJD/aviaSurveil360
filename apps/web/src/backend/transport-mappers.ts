@@ -1,7 +1,24 @@
 import type { components } from "../generated/transport/api-types";
 import type {
+  AdminAccessDirectoryEntryView,
+  AdminInspectionPackageView,
+  AdminOrganizationView,
+  AdminQuestionView,
+  AdminRegulatoryReferenceView,
+  AdminReportDefinitionView,
+  AdminTemplateMasterView,
+  AdminTemplateVersionView,
+  AdminTemplateView,
+  AdministrationScreenProjection,
+  AssistantDraftView,
   AssignmentSummary,
+  AuditeeReleasedReportView,
+  AuditeeCoordinationView,
   AuditEventView,
+  CalendarItemView,
+  CommunicationView,
+  InspectionPackageDraftView,
+  InspectionTeamAuditView,
   CapRevisionView,
   ChecklistTemplateQuestionView,
   ChecklistTemplateVersionDetailView,
@@ -10,6 +27,7 @@ import type {
   CheckoutInspectionPackageOutput,
   CompleteEvidenceUploadOutput,
   CompleteInspectionAttachmentUploadOutput,
+  DocumentMetadataView,
   EvidenceVersionView,
   FindingView,
   InspectionPackage,
@@ -20,20 +38,28 @@ import type {
   ListFindingsOutput,
   ListPotentialFindingsOutput,
   ManagerDashboardProjection,
+  NotificationView,
   OrganizationSummary,
   PageOutput,
+  PlanningIntakeDraftView,
   PlanningItemView,
   PotentialFindingDecisionOutput,
   PotentialFindingView,
+  ProfileView,
   PushFieldOperationResult,
   ReportVersionView,
   ReminderRuleView,
+  RiskManagementProjectionView,
+  RiskOverviewView,
   Role,
   ReviewCapOutput,
   ReviewEvidenceOutput,
   SubmitCapOutput,
   SubmitChecklistOutput,
+  SubmitPlanningIntakeOutput,
   SyncPullResponse,
+  TeamMemberView,
+  VisibleActionResult,
 } from "./backend";
 
 type Schemas = components["schemas"];
@@ -254,6 +280,122 @@ export function mapPlanningItems(
   return { items: value.items.map(mapPlanningItem), nextCursor: value.nextCursor };
 }
 
+export function mapPlanningIntakeDraft(
+  value: Schemas["PlanningIntakeDraftView"],
+): PlanningIntakeDraftView {
+  return { ...value };
+}
+
+export function mapSubmitPlanningIntake(
+  value: Schemas["SubmitPlanningIntakeOutput"],
+): SubmitPlanningIntakeOutput {
+  return {
+    draft: mapPlanningIntakeDraft(value.draft),
+    planningItem: mapPlanningItem(value.planningItem),
+  };
+}
+
+export function mapInspectionPackageDraft(
+  value: Schemas["InspectionPackageDraftView"],
+): InspectionPackageDraftView {
+  return {
+    ...value,
+    riskFocus: [...value.riskFocus],
+    questions: value.questions.map((question) => ({
+      ...question,
+      expectedEvidence: [...question.expectedEvidence],
+    })),
+  };
+}
+
+export function mapTeamMember(value: Schemas["TeamMemberView"]): TeamMemberView {
+  return { ...value };
+}
+
+export function mapInspectionTeamAudit(
+  value: Schemas["InspectionTeamAuditView"],
+): InspectionTeamAuditView {
+  return {
+    ...value,
+    leadInspector: mapTeamMember(value.leadInspector),
+    members: value.members.map(mapTeamMember),
+    assignments: value.assignments.map((assignment) => ({
+      questionId: assignment.questionId,
+      assignedMemberSubjectIds: [...assignment.assignedMemberSubjectIds],
+    })),
+    documents: value.documents.map(mapDocumentMetadata),
+    history: value.history.map((event) => ({ ...event })),
+  };
+}
+
+export function mapDocumentMetadata(
+  value: Schemas["DocumentMetadataView"],
+): DocumentMetadataView {
+  const publicReviewResult = value.publicReviewResult;
+  if (
+    publicReviewResult !== undefined &&
+    ![
+      "NOT_READY",
+      "PENDING_CAA_REVIEW",
+      "ACCEPTED",
+      "PARTIALLY_ACCEPTED",
+      "REJECTED",
+      "MORE_INFORMATION_REQUESTED",
+      "RELEASED",
+    ].includes(publicReviewResult)
+  ) {
+    throw new Error(`Unsupported document public review result: ${publicReviewResult}`);
+  }
+  return {
+    ...value,
+    publicReviewResult: publicReviewResult as DocumentMetadataView["publicReviewResult"],
+  };
+}
+
+export function mapDocuments(
+  value: Schemas["ListDocumentsOutput"],
+): PageOutput<DocumentMetadataView> {
+  return {
+    items: value.items.map(mapDocumentMetadata),
+    nextCursor: value.nextCursor,
+  };
+}
+
+export function mapAuditeeReleasedReport(
+  value: Schemas["AuditeeReleasedReportView"],
+): AuditeeReleasedReportView {
+  if (
+    (value.kind !== "PRELIMINARY" && value.kind !== "FINAL") ||
+    value.status !== "LOCKED" ||
+    (value.caaVisibleCommentState !== "NO_COMMENT_RECORDED" &&
+      value.caaVisibleCommentState !== "RECORDED")
+  ) {
+    throw new Error("Unsupported Auditee released Report projection.");
+  }
+  return {
+    ...value,
+    kind: value.kind,
+    status: value.status,
+    findingIds: [...value.findingIds],
+    caaVisibleCommentState: value.caaVisibleCommentState,
+  };
+}
+
+export function mapAuditeeReleasedReports(
+  value: Schemas["AuditeeReleasedReportPage"],
+): PageOutput<AuditeeReleasedReportView> {
+  return {
+    items: value.items.map(mapAuditeeReleasedReport),
+    nextCursor: value.nextCursor,
+  };
+}
+
+export function mapAuditeeCoordination(
+  value: Schemas["AuditeeCoordinationView"],
+): AuditeeCoordinationView {
+  return { ...value };
+}
+
 export function mapChecklistTemplateVersions(
   value: Schemas["ListChecklistTemplateVersionsOutput"],
 ): PageOutput<ChecklistTemplateVersionView> {
@@ -285,6 +427,70 @@ export function mapReminderRules(
   return { items: value.items.map((item) => ({ ...item })), nextCursor: value.nextCursor };
 }
 
+export function mapCommunication(
+  value: Schemas["CommunicationView"],
+): CommunicationView {
+  const valid =
+    (value.direction === "CAA_TO_AUDITEE" &&
+      value.audience === "AUDITEE" &&
+      value.organizationId !== null) ||
+    (value.direction === "AUDITEE_TO_CAA" &&
+      value.audience === "CAA" &&
+      value.organizationId !== null) ||
+    (value.direction === "CAA_INTERNAL" && value.audience === "CAA");
+  if (!valid) {
+    throw new Error("Unsupported Communication audience/direction projection.");
+  }
+  return {
+    ...value,
+    audience: value.audience as CommunicationView["audience"],
+    direction: value.direction as CommunicationView["direction"],
+  };
+}
+
+export function mapCommunications(
+  value: Schemas["ListCommunicationsOutput"],
+): PageOutput<CommunicationView> {
+  return {
+    items: value.items.map(mapCommunication),
+    nextCursor: value.nextCursor,
+  };
+}
+
+export function mapCalendarItem(
+  value: Schemas["CalendarItemView"],
+): CalendarItemView {
+  return { ...value };
+}
+
+export function mapCalendarItems(
+  value: Schemas["ListCalendarItemsOutput"],
+): PageOutput<CalendarItemView> {
+  return {
+    items: value.items.map(mapCalendarItem),
+    nextCursor: value.nextCursor,
+  };
+}
+
+export function mapProfile(value: Schemas["ProfileView"]): ProfileView {
+  return { ...value };
+}
+
+export function mapNotification(
+  value: Schemas["NotificationView"],
+): NotificationView {
+  return { ...value };
+}
+
+export function mapNotifications(
+  value: Schemas["ListNotificationsOutput"],
+): PageOutput<NotificationView> {
+  return {
+    items: value.items.map(mapNotification),
+    nextCursor: value.nextCursor,
+  };
+}
+
 export function mapAuditEvents(
   value: Schemas["ListAuditEventsOutput"],
 ): PageOutput<AuditEventView> {
@@ -297,6 +503,155 @@ export function mapAuditEvents(
     })),
     nextCursor: value.nextCursor,
   };
+}
+
+export function mapAdminRegulatoryReference(
+  value: Schemas["AdminRegulatoryReferenceView"],
+): AdminRegulatoryReferenceView {
+  return {
+    ...value,
+    configuredRules: [...value.configuredRules],
+    changeHistory: [...value.changeHistory],
+  };
+}
+
+export function mapAdminTemplateMaster(
+  value: Schemas["AdminTemplateMasterView"],
+): AdminTemplateMasterView {
+  return { ...value };
+}
+
+export function mapAdminQuestion(
+  value: Schemas["AdminQuestionView"],
+): AdminQuestionView {
+  return { ...value };
+}
+
+export function mapAdminTemplateVersion(
+  value: Schemas["AdminTemplateVersionView"],
+): AdminTemplateVersionView {
+  return {
+    ...value,
+    templateId: value.templateId as AdminTemplateVersionView["templateId"],
+    questionIds: [...value.questionIds],
+  };
+}
+
+export function mapAdminTemplate(
+  value: Schemas["AdminTemplateView"],
+): AdminTemplateView {
+  return {
+    id: value.id as AdminTemplateView["id"],
+    publishedVersionId:
+      value.publishedVersionId as AdminTemplateView["publishedVersionId"],
+    versions: value.versions.map(mapAdminTemplateVersion),
+    revision: value.revision,
+  };
+}
+
+export function mapAdminInspectionPackage(
+  value: Schemas["AdminInspectionPackageView"],
+): AdminInspectionPackageView {
+  return {
+    ...value,
+    id: value.id as AdminInspectionPackageView["id"],
+    auditId: value.auditId as AdminInspectionPackageView["auditId"],
+    organizationId:
+      value.organizationId as AdminInspectionPackageView["organizationId"],
+    organizationName:
+      value.organizationName as AdminInspectionPackageView["organizationName"],
+    questionIds: [...value.questionIds],
+    configuredReferences: [...value.configuredReferences],
+    expectedEvidence: [...value.expectedEvidence],
+    riskFocus: [...value.riskFocus],
+  };
+}
+
+export function mapAdminReportDefinition(
+  value: Schemas["AdminReportDefinitionView"],
+): AdminReportDefinitionView {
+  return { ...value, packageFields: [...value.packageFields] };
+}
+
+export function mapAdminAccessDirectoryEntry(
+  value: Schemas["AdminAccessDirectoryEntryView"],
+): AdminAccessDirectoryEntryView {
+  return {
+    ...value,
+    email: value.email as AdminAccessDirectoryEntryView["email"],
+    mfa: value.mfa as AdminAccessDirectoryEntryView["mfa"],
+    invitation: value.invitation as AdminAccessDirectoryEntryView["invitation"],
+    accountStatus: value.accountStatus as AdminAccessDirectoryEntryView["accountStatus"],
+  };
+}
+
+export function mapAdminOrganization(
+  value: Schemas["AdminOrganizationView"],
+): AdminOrganizationView {
+  return { ...value };
+}
+
+export function mapRiskOverview(
+  value: Schemas["RiskOverviewView"],
+): RiskOverviewView {
+  return { ...value };
+}
+
+export function mapRiskManagementProjection(
+  value: Schemas["RiskManagementProjectionView"],
+): RiskManagementProjectionView {
+  return {
+    findings: value.findings.map((finding) => ({
+      findingId: finding.findingId,
+      findingNumber: finding.findingNumber,
+      organizationId: finding.organizationId,
+      organizationName: finding.organizationName,
+      inspectionId: finding.inspectionId,
+      inspectionTitle: finding.inspectionTitle,
+      department: finding.department,
+      title: finding.title,
+      severity: finding.severity,
+      riskLevel: finding.riskLevel,
+      status: finding.status,
+      issuedAt: finding.issuedAt,
+      dueState: finding.dueState,
+      capRequired: finding.capRequired,
+    })),
+    capEffectiveness: value.capEffectiveness.map((cap) => ({
+      findingId: cap.findingId,
+      findingNumber: cap.findingNumber,
+      organizationId: cap.organizationId,
+      organizationName: cap.organizationName,
+      findingStatus: cap.findingStatus,
+      closureBasis: cap.closureBasis,
+      capId: cap.capId,
+      capRevisionId: cap.capRevisionId,
+      capRevision: cap.capRevision,
+      capStatus: cap.capStatus,
+      state: cap.state,
+      reason: cap.reason,
+    })),
+    generatedAt: value.generatedAt,
+    revision: value.revision,
+  };
+}
+
+export function mapAdministrationScreenProjection(
+  value: Schemas["AdministrationScreenProjection"],
+): AdministrationScreenProjection {
+  return structuredClone(value) as AdministrationScreenProjection;
+}
+
+export function mapVisibleActionResult(
+  value: Schemas["VisibleActionResult"],
+): VisibleActionResult {
+  return structuredClone(value) as VisibleActionResult;
+}
+
+export function mapAssistantDraft(
+  value: Schemas["AssistantDraftView"],
+): AssistantDraftView {
+  return { ...value, advisoryOnly: true };
 }
 
 export function mapPushResult(

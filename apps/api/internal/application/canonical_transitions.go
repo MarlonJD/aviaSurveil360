@@ -171,8 +171,14 @@ func (service *Service) ReviewCAP(ctx context.Context, actor identity.Principal,
 		OperationID: command.OperationID, CorrelationID: command.CorrelationID,
 		Kind: "review_cap", EntityID: command.CAPRevisionID, Semantic: semantic,
 	}, func(ctx context.Context, transaction pgx.Tx) (transition[ReviewCAPResult], error) {
-		if !actor.HasRole(identity.RoleInspector, identity.RoleLeadInspector, identity.RoleDepartmentManager) {
+		if !actor.HasRole(identity.RoleInspector, identity.RoleLeadInspector) {
 			return transition[ReviewCAPResult]{}, fmt.Errorf("%w: CAA review role required", ErrForbidden)
+		}
+		if semantic.CommentToAuditee == "" || semantic.InternalCAANote == "" {
+			return transition[ReviewCAPResult]{}, fmt.Errorf(
+				"%w: Comment to Auditee and Internal CAA Note are required",
+				ErrInvalid,
+			)
 		}
 		capRevisionRecord, err := capstore.New(transaction).GetCAPRevision(ctx, command.CAPRevisionID)
 		if err != nil {
@@ -183,6 +189,19 @@ func (service *Service) ReviewCAP(ctx context.Context, actor identity.Principal,
 		}
 		if capRevisionRecord.FindingID != command.FindingID {
 			return transition[ReviewCAPResult]{}, ErrNotFound
+		}
+		latestCAPRevision, err := capstore.New(transaction).GetLatestCAPRevisionForFinding(
+			ctx,
+			command.FindingID,
+		)
+		if err != nil {
+			return transition[ReviewCAPResult]{}, err
+		}
+		if latestCAPRevision.ID != capRevisionRecord.ID {
+			return transition[ReviewCAPResult]{}, fmt.Errorf(
+				"%w: exact latest CAP revision is required",
+				ErrConflict,
+			)
 		}
 		finding, err := findingstore.New(transaction).GetFindingForUpdate(ctx, command.FindingID)
 		if err != nil {
@@ -206,7 +225,8 @@ func (service *Service) ReviewCAP(ctx context.Context, actor identity.Principal,
 		decision, err := caps.Review(caps.ReviewInput{
 			Actor: actor, CAPStatus: caps.Status(capStatus), CAPRevision: capRevision,
 			ExpectedCAPRevision: command.ExpectedCAPRevision, FindingStatus: findings.Status(findingStatus),
-			Decision: command.Decision, Reason: semantic.CommentToAuditee,
+			EvidenceRequired: finding.EvidenceRequired,
+			Decision:         command.Decision, Reason: semantic.CommentToAuditee,
 		})
 		if err != nil {
 			return transition[ReviewCAPResult]{}, fmt.Errorf("%w: %v", ErrConflict, err)
@@ -277,6 +297,12 @@ func (service *Service) ReviewEvidence(ctx context.Context, actor identity.Princ
 		if !actor.HasRole(identity.RoleInspector, identity.RoleLeadInspector, identity.RoleDepartmentManager) {
 			return transition[ReviewEvidenceResult]{}, fmt.Errorf("%w: CAA Evidence review role required", ErrForbidden)
 		}
+		if semantic.CommentToAuditee == "" || semantic.InternalCAANote == "" {
+			return transition[ReviewEvidenceResult]{}, fmt.Errorf(
+				"%w: Comment to Auditee and Internal CAA Note are required",
+				ErrInvalid,
+			)
+		}
 		evidenceVersion, err := evidencestore.New(transaction).GetEvidenceVersion(ctx, command.EvidenceVersionID)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
@@ -296,6 +322,22 @@ func (service *Service) ReviewEvidence(ctx context.Context, actor identity.Princ
 		}
 		if evidenceVersion.OrganizationID != finding.OrganizationID {
 			return transition[ReviewEvidenceResult]{}, errors.New("Evidence and Finding organization mismatch")
+		}
+		var latestEvidenceVersionID string
+		if err := transaction.QueryRow(ctx, `
+			SELECT id
+			FROM evidence_versions
+			WHERE finding_id = $1
+			ORDER BY version DESC
+			LIMIT 1
+		`, command.FindingID).Scan(&latestEvidenceVersionID); err != nil {
+			return transition[ReviewEvidenceResult]{}, err
+		}
+		if latestEvidenceVersionID != evidenceVersion.ID {
+			return transition[ReviewEvidenceResult]{}, fmt.Errorf(
+				"%w: exact latest Evidence version is required",
+				ErrConflict,
+			)
 		}
 		evidenceID := evidenceVersion.ID
 		findingID := finding.ID

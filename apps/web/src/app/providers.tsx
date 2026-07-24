@@ -13,6 +13,7 @@ export interface ApplicationRuntime {
   backendForRole?: (role: Role) => Backend;
   buildProfile: BuildProfile;
   environmentLabel: string;
+  now?: () => Date;
   identityMode?: IdentityMode;
   sessionClient?: SessionClient;
   subjectId?: string;

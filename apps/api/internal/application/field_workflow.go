@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -288,6 +289,7 @@ type CreatePotentialFindingCommand struct {
 	CommentToAuditee                  string
 	InternalCAANote                   string
 	ExpectedEvidence                  string
+	InspectionAttachmentIDs           []string
 }
 
 type PotentialFindingResult struct {
@@ -300,19 +302,24 @@ type PotentialFindingResult struct {
 }
 
 func (service *Service) CreatePotentialFinding(ctx context.Context, actor identity.Principal, command CreatePotentialFindingCommand) (PotentialFindingResult, error) {
+	attachmentIDs, err := normalizedUniqueIDs(command.InspectionAttachmentIDs)
+	if err != nil {
+		return PotentialFindingResult{}, fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
 	semantic := struct {
-		InspectionID     string `json:"inspectionId"`
-		QuestionID       string `json:"questionId"`
-		ResponseID       string `json:"responseId"`
-		ResponseRevision int64  `json:"responseRevision"`
-		Title            string `json:"title"`
-		Description      string `json:"description"`
-		CommentToAuditee string `json:"commentToAuditee"`
-		InternalCAANote  string `json:"internalCaaNote"`
-		ExpectedEvidence string `json:"expectedEvidence"`
+		InspectionID            string   `json:"inspectionId"`
+		QuestionID              string   `json:"questionId"`
+		ResponseID              string   `json:"responseId"`
+		ResponseRevision        int64    `json:"responseRevision"`
+		Title                   string   `json:"title"`
+		Description             string   `json:"description"`
+		CommentToAuditee        string   `json:"commentToAuditee"`
+		InternalCAANote         string   `json:"internalCaaNote"`
+		ExpectedEvidence        string   `json:"expectedEvidence"`
+		InspectionAttachmentIDs []string `json:"inspectionAttachmentIds"`
 	}{command.InspectionID, command.QuestionID, command.ChecklistResponseID, command.ExpectedChecklistResponseRevision,
 		strings.TrimSpace(command.Title), strings.TrimSpace(command.Description), strings.TrimSpace(command.CommentToAuditee),
-		strings.TrimSpace(command.InternalCAANote), strings.TrimSpace(command.ExpectedEvidence)}
+		strings.TrimSpace(command.InternalCAANote), strings.TrimSpace(command.ExpectedEvidence), attachmentIDs}
 	return executeTransition(ctx, service, actor, commandEnvelope{
 		OperationID: command.OperationID, CorrelationID: command.CorrelationID,
 		Kind: "create_potential_finding", EntityID: command.ChecklistResponseID, Semantic: semantic,
@@ -356,6 +363,46 @@ func (service *Service) CreatePotentialFinding(ctx context.Context, actor identi
 		}, actor); err != nil {
 			return transition[PotentialFindingResult]{}, fmt.Errorf("%w: %v", ErrForbidden, err)
 		}
+		if len(semantic.InspectionAttachmentIDs) > 0 {
+			rows, err := transaction.Query(ctx, `
+				SELECT id
+				FROM inspection_attachments
+				WHERE id = ANY($1)
+				  AND inspection_id = $2
+				  AND question_id = $3
+				  AND checklist_response_id = $4
+				  AND organization_id = $5
+				  AND created_by_subject_id = $6
+				  AND potential_finding_id IS NULL
+				ORDER BY id
+				FOR UPDATE
+			`,
+				semantic.InspectionAttachmentIDs,
+				command.InspectionID,
+				command.QuestionID,
+				command.ChecklistResponseID,
+				organizationID,
+				actor.SubjectID,
+			)
+			if err != nil {
+				return transition[PotentialFindingResult]{}, err
+			}
+			matched := 0
+			for rows.Next() {
+				matched++
+			}
+			if err := rows.Err(); err != nil {
+				rows.Close()
+				return transition[PotentialFindingResult]{}, err
+			}
+			rows.Close()
+			if matched != len(semantic.InspectionAttachmentIDs) {
+				return transition[PotentialFindingResult]{}, fmt.Errorf(
+					"%w: Inspection Attachment is outside the exact response context",
+					ErrForbidden,
+				)
+			}
+		}
 		potentialFindingID := service.idGenerator("potential-finding")
 		now := service.clock().UTC()
 		if _, err := transaction.Exec(ctx, `
@@ -372,6 +419,22 @@ func (service *Service) CreatePotentialFinding(ctx context.Context, actor identi
 			command.QuestionID, semantic.Title, semantic.Description, actor.SubjectID); err != nil {
 			return transition[PotentialFindingResult]{}, fmt.Errorf("create Potential Finding: %w", err)
 		}
+		if len(semantic.InspectionAttachmentIDs) > 0 {
+			linkResult, err := transaction.Exec(ctx, `
+				UPDATE inspection_attachments
+				SET potential_finding_id = $1
+				WHERE id = ANY($2) AND potential_finding_id IS NULL
+			`, potentialFindingID, semantic.InspectionAttachmentIDs)
+			if err != nil {
+				return transition[PotentialFindingResult]{}, fmt.Errorf(
+					"link Inspection Attachments: %w",
+					err,
+				)
+			}
+			if linkResult.RowsAffected() != int64(len(semantic.InspectionAttachmentIDs)) {
+				return transition[PotentialFindingResult]{}, ErrConflict
+			}
+		}
 		response := PotentialFindingResult{
 			ID: potentialFindingID, InspectionID: command.InspectionID, QuestionID: command.QuestionID,
 			Status: potentialfindings.StatusPendingLeadReview, Revision: 1,
@@ -383,6 +446,24 @@ func (service *Service) CreatePotentialFinding(ctx context.Context, actor identi
 			SyncKind: "potential_finding", OutboxTopic: "potential_finding.created",
 		}, nil
 	})
+}
+
+func normalizedUniqueIDs(values []string) ([]string, error) {
+	normalized := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			return nil, errors.New("identifier is required")
+		}
+		if _, exists := seen[value]; exists {
+			return nil, errors.New("duplicate identifier")
+		}
+		seen[value] = struct{}{}
+		normalized = append(normalized, value)
+	}
+	sort.Strings(normalized)
+	return normalized, nil
 }
 
 type DecidePotentialFindingCommand struct {

@@ -15,16 +15,54 @@ const getIdentityReference = `-- name: GetIdentityReference :one
 SELECT subject_id, issuer, display_name, created_at
 FROM identity_references
 WHERE subject_id = $1
+  AND tombstoned_at IS NULL
 `
 
-func (q *Queries) GetIdentityReference(ctx context.Context, subjectID string) (IdentityReference, error) {
+type GetIdentityReferenceRow struct {
+	SubjectID   string             `json:"subject_id"`
+	Issuer      string             `json:"issuer"`
+	DisplayName string             `json:"display_name"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetIdentityReference(ctx context.Context, subjectID string) (GetIdentityReferenceRow, error) {
 	row := q.db.QueryRow(ctx, getIdentityReference, subjectID)
-	var i IdentityReference
+	var i GetIdentityReferenceRow
 	err := row.Scan(
 		&i.SubjectID,
 		&i.Issuer,
 		&i.DisplayName,
 		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getProfile = `-- name: GetProfile :one
+SELECT subject_id, display_name, organization_id, revision, created_at, updated_at
+FROM user_profiles
+WHERE subject_id = $1
+  AND tombstoned_at IS NULL
+`
+
+type GetProfileRow struct {
+	SubjectID      string             `json:"subject_id"`
+	DisplayName    string             `json:"display_name"`
+	OrganizationID *string            `json:"organization_id"`
+	Revision       int64              `json:"revision"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetProfile(ctx context.Context, subjectID string) (GetProfileRow, error) {
+	row := q.db.QueryRow(ctx, getProfile, subjectID)
+	var i GetProfileRow
+	err := row.Scan(
+		&i.SubjectID,
+		&i.DisplayName,
+		&i.OrganizationID,
+		&i.Revision,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -62,6 +100,114 @@ func (q *Queries) GetSessionForAuthentication(ctx context.Context, sessionTokenH
 		&i.RevokedAt,
 		&i.CsrfTokenHash,
 		&i.ProviderSessionID,
+	)
+	return i, err
+}
+
+const getSettings = `-- name: GetSettings :one
+SELECT subject_id, notification_preferences, locale, timezone, revision, updated_at
+FROM user_settings
+WHERE subject_id = $1
+`
+
+func (q *Queries) GetSettings(ctx context.Context, subjectID string) (UserSetting, error) {
+	row := q.db.QueryRow(ctx, getSettings, subjectID)
+	var i UserSetting
+	err := row.Scan(
+		&i.SubjectID,
+		&i.NotificationPreferences,
+		&i.Locale,
+		&i.Timezone,
+		&i.Revision,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateProfile = `-- name: UpdateProfile :one
+UPDATE user_profiles
+SET display_name = $2,
+    revision = revision + 1,
+    updated_at = $3
+WHERE subject_id = $1
+  AND revision = $4
+  AND tombstoned_at IS NULL
+RETURNING subject_id, display_name, organization_id, revision, created_at, updated_at
+`
+
+type UpdateProfileParams struct {
+	SubjectID   string             `json:"subject_id"`
+	DisplayName string             `json:"display_name"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Revision    int64              `json:"revision"`
+}
+
+type UpdateProfileRow struct {
+	SubjectID      string             `json:"subject_id"`
+	DisplayName    string             `json:"display_name"`
+	OrganizationID *string            `json:"organization_id"`
+	Revision       int64              `json:"revision"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) UpdateProfile(ctx context.Context, arg UpdateProfileParams) (UpdateProfileRow, error) {
+	row := q.db.QueryRow(ctx, updateProfile,
+		arg.SubjectID,
+		arg.DisplayName,
+		arg.UpdatedAt,
+		arg.Revision,
+	)
+	var i UpdateProfileRow
+	err := row.Scan(
+		&i.SubjectID,
+		&i.DisplayName,
+		&i.OrganizationID,
+		&i.Revision,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateSettings = `-- name: UpdateSettings :one
+UPDATE user_settings
+SET notification_preferences = $2,
+    locale = $3,
+    timezone = $4,
+    revision = revision + 1,
+    updated_at = $5
+WHERE subject_id = $1
+  AND revision = $6
+RETURNING subject_id, notification_preferences, locale, timezone, revision, updated_at
+`
+
+type UpdateSettingsParams struct {
+	SubjectID               string             `json:"subject_id"`
+	NotificationPreferences []byte             `json:"notification_preferences"`
+	Locale                  string             `json:"locale"`
+	Timezone                string             `json:"timezone"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+	Revision                int64              `json:"revision"`
+}
+
+func (q *Queries) UpdateSettings(ctx context.Context, arg UpdateSettingsParams) (UserSetting, error) {
+	row := q.db.QueryRow(ctx, updateSettings,
+		arg.SubjectID,
+		arg.NotificationPreferences,
+		arg.Locale,
+		arg.Timezone,
+		arg.UpdatedAt,
+		arg.Revision,
+	)
+	var i UserSetting
+	err := row.Scan(
+		&i.SubjectID,
+		&i.NotificationPreferences,
+		&i.Locale,
+		&i.Timezone,
+		&i.Revision,
+		&i.UpdatedAt,
 	)
 	return i, err
 }

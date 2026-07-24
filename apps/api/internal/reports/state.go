@@ -9,8 +9,12 @@ import (
 
 type Status string
 type Decision string
+type Kind string
 
 const (
+	KindPreliminary Kind = "PRELIMINARY"
+	KindFinal       Kind = "FINAL"
+
 	StatusDraft                   Status   = "DRAFT"
 	StatusDepartmentReview        Status   = "DEPARTMENT_REVIEW"
 	StatusGeneralManagerReview    Status   = "GM_REVIEW"
@@ -22,6 +26,50 @@ const (
 	DecisionReturn                Decision = "RETURN"
 	DecisionIssue                 Decision = "ISSUE"
 )
+
+type PrepareInput struct {
+	ReportID    string
+	Kind        Kind
+	Version     int64
+	FindingIDs  []string
+	ContentHash string
+	Ready       bool
+}
+
+type PreparedVersion struct {
+	ReportID    string
+	Kind        Kind
+	Version     int64
+	FindingIDs  []string
+	ContentHash string
+	Status      Status
+}
+
+func Prepare(input PrepareInput) (PreparedVersion, error) {
+	if strings.TrimSpace(input.ReportID) == "" || input.Version <= 0 {
+		return PreparedVersion{}, fmt.Errorf("report identity and positive version are required")
+	}
+	if input.Kind != KindPreliminary && input.Kind != KindFinal {
+		return PreparedVersion{}, fmt.Errorf("typed Preliminary or Final Report family is required")
+	}
+	if !input.Ready {
+		return PreparedVersion{}, fmt.Errorf("report preparation is not ready for Department review")
+	}
+	if !strings.HasPrefix(strings.TrimSpace(input.ContentHash), "sha256:") {
+		return PreparedVersion{}, fmt.Errorf("report content hash is required")
+	}
+	findingIDs := append([]string(nil), input.FindingIDs...)
+	for _, findingID := range findingIDs {
+		if strings.TrimSpace(findingID) == "" {
+			return PreparedVersion{}, fmt.Errorf("report Finding identities cannot be empty")
+		}
+	}
+	return PreparedVersion{
+		ReportID: input.ReportID, Kind: input.Kind, Version: input.Version,
+		FindingIDs: findingIDs, ContentHash: input.ContentHash,
+		Status: StatusDepartmentReview,
+	}, nil
+}
 
 type DecideInput struct {
 	Actor           identity.Principal

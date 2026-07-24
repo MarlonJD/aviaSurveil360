@@ -10,7 +10,9 @@ const repositoryRoot = path.resolve(scriptDirectory, "..");
 const outputRoot = process.env.AVIA_CONTRACT_OUTPUT_ROOT
   ? path.resolve(process.env.AVIA_CONTRACT_OUTPUT_ROOT)
   : repositoryRoot;
-const specificationPath = path.join(repositoryRoot, "api/openapi/aviasurveil360.yaml");
+const specificationPath = process.env.AVIA_CONTRACT_SPECIFICATION
+  ? path.resolve(process.env.AVIA_CONTRACT_SPECIFICATION)
+  : path.join(repositoryRoot, "api/openapi/aviasurveil360.yaml");
 const outputPath = path.join(outputRoot, "apps/api/internal/httpapi/generated/api.gen.go");
 const specificationBytes = fs.readFileSync(specificationPath);
 const specification = JSON.parse(specificationBytes);

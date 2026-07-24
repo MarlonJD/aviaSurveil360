@@ -7,6 +7,14 @@ import { MemoryMockStore } from "../../src/mock/memory-mock-store";
 
 backendContract(async (): Promise<BackendContractHarness> => {
   const store = MemoryMockStore.createCanonical({ clock: () => FIXED_NOW });
+  store.execute("TEST-FIXTURE-FINAL-REPORT-DM-REVIEW", {}, (state) => {
+    const report = state.reportVersions["RPT-CAB-2026-001-V1"];
+    if (!report) throw new Error("Canonical Final Report fixture is unavailable.");
+    report.status = "DEPARTMENT_REVIEW";
+    report.revision = 1;
+    report.issuedAt = null;
+    return report;
+  });
   return {
     backendFor(principal) {
       return createMockBackend({ store, principal });

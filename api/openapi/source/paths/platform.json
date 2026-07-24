@@ -1,0 +1,113 @@
+{
+  "/v1/communications": {
+    "get": { "operationId": "listCommunications", "parameters": [{ "name": "organizationId", "in": "query", "schema": { "type": "string" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Authorized communication page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListCommunicationsOutput" } } } } } },
+    "post": { "operationId": "sendCommunication", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SendCommunicationInput" } } } }, "responses": { "201": { "description": "Immutable communication", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CommunicationView" } } } } } }
+  },
+  "/v1/calendar-items": {
+    "get": { "operationId": "listCalendarItems", "parameters": [{ "name": "organizationId", "in": "query", "schema": { "type": "string" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Authorized calendar page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListCalendarItemsOutput" } } } } } }
+  },
+  "/v1/calendar-items/{calendarItemId}": {
+    "get": { "operationId": "getCalendarItem", "parameters": [{ "name": "calendarItemId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Calendar item", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CalendarItemView" } } } } } }
+  },
+  "/v1/profile": {
+    "get": { "operationId": "getMyProfile", "responses": { "200": { "description": "Current principal profile", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProfileView" } } } } } },
+    "put": { "operationId": "updateMyProfile", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateMyProfileInput" } } } }, "responses": { "200": { "description": "Updated profile", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProfileView" } } } } } }
+  },
+  "/v1/team-members": {
+    "get": { "operationId": "listTeamMembers", "parameters": [{ "name": "role", "in": "query", "schema": { "$ref": "#/components/schemas/Role" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Authorized team-member page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListTeamMembersOutput" } } } } } }
+  },
+  "/v1/team-members/{subjectId}": {
+    "get": { "operationId": "getTeamMember", "parameters": [{ "name": "subjectId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Team member", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TeamMemberView" } } } } } }
+  },
+  "/v1/audit-teams": {
+    "get": { "operationId": "listAuditTeams", "parameters": [{ "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Authorized inspection-team page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListInspectionTeamAuditsOutput" } } } } } }
+  },
+  "/v1/audit-teams/{auditId}": {
+    "get": { "operationId": "getAuditTeam", "parameters": [{ "name": "auditId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Inspection team", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InspectionTeamAuditView" } } } } } }
+  },
+  "/v1/risk/overview": {
+    "get": { "operationId": "getRiskOverview", "parameters": [{ "name": "organizationId", "in": "query", "schema": { "type": "string" } }], "responses": { "200": { "description": "Advisory risk overview", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RiskOverviewView" } } } } } }
+  },
+  "/v1/risk/management": {
+    "get": { "operationId": "getRiskManagementProjection", "responses": { "200": { "description": "Advisory management risk projection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RiskManagementProjectionView" } } } } } }
+  },
+  "/v1/documents": {
+    "get": { "operationId": "listDocuments", "parameters": [{ "name": "organizationId", "in": "query", "schema": { "type": "string" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Authorized immutable document metadata page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListDocumentsOutput" } } } } } }
+  },
+  "/v1/documents/{documentId}": {
+    "get": { "operationId": "getDocument", "parameters": [{ "name": "documentId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Immutable document metadata", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DocumentMetadataView" } } } } } }
+  },
+  "/v1/auditee/coordination": {
+    "get": { "operationId": "listAuditeeCoordination", "parameters": [{ "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Organization-scoped Auditee coordination page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditeeCoordinationPage" } } } } } }
+  },
+  "/v1/auditee/coordination/{auditId}/responses": {
+    "post": { "operationId": "respondAuditeeCoordination", "parameters": [{ "name": "auditId", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RespondToAuditeeCoordinationInput" } } } }, "responses": { "200": { "description": "Auditee coordination response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditeeCoordinationView" } } } } } }
+  },
+  "/v1/auditee/report-versions": {
+    "get": { "operationId": "listAuditeeReleasedReports", "parameters": [{ "name": "kind", "in": "query", "schema": { "type": "string", "enum": ["PRELIMINARY", "FINAL"] } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Organization-scoped LOCKED report page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditeeReleasedReportPage" } } } } } }
+  },
+  "/v1/auditee/report-versions/{reportVersionId}": {
+    "get": { "operationId": "getAuditeeReleasedReport", "parameters": [{ "name": "reportVersionId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Organization-scoped LOCKED report", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditeeReleasedReportView" } } } } } }
+  },
+  "/v1/notifications": {
+    "get": { "operationId": "listNotifications", "parameters": [{ "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Current-principal notifications", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListNotificationsOutput" } } } } } }
+  },
+  "/v1/notifications/{notificationId}/read": {
+    "post": { "operationId": "markNotificationRead", "parameters": [{ "name": "notificationId", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MarkNotificationReadInput" } } } }, "responses": { "200": { "description": "Read notification", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NotificationView" } } } } } }
+  },
+  "/v1/administration/screens": {
+    "get": { "operationId": "listAdministrationScreenProjections", "responses": { "200": { "description": "Authorized administration screen projections", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdministrationScreenProjectionList" } } } } } }
+  },
+  "/v1/administration/screens/{screenId}": {
+    "get": { "operationId": "getAdministrationScreenProjection", "parameters": [{ "name": "screenId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Authorized administration screen projection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdministrationScreenProjection" } } } } } }
+  },
+  "/v1/administration/screens/{screenId}/actions/{actionId}": {
+    "post": { "operationId": "invokeAdministrationVisibleAction", "parameters": [{ "name": "screenId", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "actionId", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvokeAdministrationVisibleActionInput" } } } }, "responses": { "200": { "description": "Visible action effect", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VisibleActionResult" } } } } } }
+  },
+  "/v1/admin/regulatory-references": {
+    "get": { "operationId": "listRegulatoryReferences", "parameters": [{ "name": "search", "in": "query", "schema": { "type": "string" } }, { "name": "status", "in": "query", "schema": { "type": "string" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Configured regulatory references", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminRegulatoryReferencePage" } } } } } }
+  },
+  "/v1/admin/templates": {
+    "get": { "operationId": "listTemplateMasters", "parameters": [{ "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Template masters", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminTemplateMasterPage" } } } } } }
+  },
+  "/v1/admin/questions": {
+    "get": { "operationId": "listAdminQuestions", "parameters": [{ "name": "search", "in": "query", "schema": { "type": "string" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Question bank", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminQuestionPage" } } } } } },
+    "post": { "operationId": "createAdminQuestion", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateAdminQuestionInput" } } } }, "responses": { "201": { "description": "Created question", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminQuestionView" } } } } } }
+  },
+  "/v1/admin/templates/{templateId}": {
+    "get": { "operationId": "getAdminTemplate", "parameters": [{ "name": "templateId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Template and immutable versions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminTemplateView" } } } } } }
+  },
+  "/v1/admin/templates/{templateId}/drafts": {
+    "post": { "operationId": "createAdminTemplateDraft", "parameters": [{ "name": "templateId", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateAdminTemplateDraftInput" } } } }, "responses": { "201": { "description": "Created immutable template draft version", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminTemplateVersionView" } } } } } }
+  },
+  "/v1/admin/templates/{templateId}/drafts/{draftVersionId}/questions": {
+    "post": { "operationId": "addAdminTemplateDraftQuestion", "parameters": [{ "name": "templateId", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "draftVersionId", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AddAdminTemplateDraftQuestionInput" } } } }, "responses": { "200": { "description": "New immutable draft version", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminTemplateVersionView" } } } } } }
+  },
+  "/v1/admin/templates/{templateId}/drafts/{draftVersionId}/questions/{questionId}/moves": {
+    "post": { "operationId": "moveAdminTemplateDraftQuestion", "parameters": [{ "name": "templateId", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "draftVersionId", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "questionId", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MoveAdminTemplateDraftQuestionInput" } } } }, "responses": { "200": { "description": "New reordered immutable draft version", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminTemplateVersionView" } } } } } }
+  },
+  "/v1/admin/inspection-packages/{packageId}": {
+    "get": { "operationId": "getAdminInspectionPackage", "parameters": [{ "name": "packageId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Inspection package administration projection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminInspectionPackageView" } } } } } }
+  },
+  "/v1/admin/report-definitions": {
+    "get": { "operationId": "listReportDefinitions", "parameters": [{ "name": "search", "in": "query", "schema": { "type": "string" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Report definitions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminReportDefinitionPage" } } } } } }
+  },
+  "/v1/admin/access-directory": {
+    "get": { "operationId": "listAccessDirectory", "parameters": [{ "name": "search", "in": "query", "schema": { "type": "string" } }, { "name": "role", "in": "query", "schema": { "type": "string" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Read-only configured access directory", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminAccessDirectoryPage" } } } } } }
+  },
+  "/v1/admin/organizations": {
+    "get": { "operationId": "listAdminOrganizations", "parameters": [{ "name": "search", "in": "query", "schema": { "type": "string" } }, { "name": "organizationType", "in": "query", "schema": { "type": "string" } }, { "name": "status", "in": "query", "schema": { "type": "string" } }, { "name": "scope", "in": "query", "schema": { "type": "string" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Organization administration page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminOrganizationPage" } } } } } }
+  },
+  "/v1/admin/organizations/{organizationId}": {
+    "get": { "operationId": "getAdminOrganization", "parameters": [{ "name": "organizationId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Organization administration projection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminOrganizationView" } } } } } }
+  },
+  "/v1/admin/audit-events": {
+    "get": { "operationId": "listAdminAuditEvents", "parameters": [{ "name": "actor", "in": "query", "schema": { "type": "string" } }, { "name": "action", "in": "query", "schema": { "type": "string" } }, { "name": "entity", "in": "query", "schema": { "type": "string" } }, { "name": "system", "in": "query", "schema": { "type": "string" } }, { "name": "dateText", "in": "query", "schema": { "type": "string" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Administrative append-only audit-event page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListAuditEventsOutput" } } } } } }
+  },
+  "/v1/assistant/guidance": {
+    "get": { "operationId": "getAssistantGuidance", "responses": { "200": { "description": "Advisory-only assistant boundary", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AssistantGuidance" } } } } } }
+  },
+  "/v1/assistant/drafts": {
+    "post": { "operationId": "createAssistantDraft", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateAssistantDraftInput" } } } }, "responses": { "201": { "description": "Non-canonical advisory draft", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AssistantDraftView" } } } } } }
+  }
+}

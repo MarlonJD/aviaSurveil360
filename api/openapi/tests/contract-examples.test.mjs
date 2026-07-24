@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { assembleOpenApi } from "../../../scripts/bundle-openapi.mjs";
 
 const repositoryRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -17,6 +18,102 @@ const examplesDirectory = path.join(
   repositoryRoot,
   "api/openapi/examples/canonical",
 );
+const fullPlatformExamplesDirectory = path.join(
+  repositoryRoot,
+  "api/openapi/examples/full-platform",
+);
+const sourceDirectory = path.join(repositoryRoot, "api/openapi/source");
+const sourceFragmentPaths = [
+  "openapi.json",
+  "paths/core.json",
+  "paths/workflows.json",
+  "paths/platform.json",
+  "schemas/domain.json",
+  "schemas/platform.json",
+];
+
+const frozenCapabilityOperationIds = {
+  "assignments.list": "listAssignments",
+  "inspections.getPackage": "getInspectionPackage",
+  "inspections.checkout": "checkoutInspectionPackage",
+  "inspections.upsertChecklistResponse": "upsertChecklistResponse",
+  "inspections.submitChecklist": "submitChecklist",
+  "inspections.reopenChecklist": "reopenChecklist",
+  "potentialFindings.list": "listPotentialFindings",
+  "potentialFindings.get": "getPotentialFinding",
+  "potentialFindings.create": "createPotentialFinding",
+  "potentialFindings.decide": "decidePotentialFinding",
+  "findings.list": "listFindings",
+  "findings.get": "getFinding",
+  "findings.authorizedClose": "authorizedCloseFinding",
+  "caps.listRevisions": "listCapRevisions",
+  "caps.getRevision": "getCapRevision",
+  "caps.submit": "submitCap",
+  "caps.review": "reviewCap",
+  "inspectionAttachments.beginUpload": "beginInspectionAttachmentUpload",
+  "inspectionAttachments.completeUpload": "completeInspectionAttachmentUpload",
+  "evidence.beginUpload": "beginEvidenceUpload",
+  "evidence.completeUpload": "completeEvidenceUpload",
+  "evidence.listVersions": "listEvidenceVersions",
+  "evidence.review": "reviewEvidence",
+  "reports.getVersion": "getReportVersion",
+  "reports.decide": "decideReport",
+  "dashboards.getManagerProjection": "getManagerDashboard",
+  "organizations.list": "listOrganizations",
+  "planning.list": "listPlanningItems",
+  "planning.decide": "decidePlanningItem",
+  "planningIntake.getDraft": "getPlanningIntakeDraft",
+  "planningIntake.saveDraft": "savePlanningIntakeDraft",
+  "planningIntake.submit": "submitPlanningIntake",
+  "packageDrafts.get": "getInspectionPackageDraft",
+  "packageDrafts.save": "saveInspectionPackageDraft",
+  "configuration.listChecklistTemplateVersions": "listChecklistTemplateVersions",
+  "configuration.getChecklistTemplateVersion": "getChecklistTemplateVersion",
+  "configuration.listReminderRules": "listReminderRules",
+  "auditTrail.list": "listAuditEvents",
+  "sync.pushOperation": "pushFieldOperation",
+  "sync.pull": "pullSyncChanges",
+  "communications.list": "listCommunications",
+  "communications.send": "sendCommunication",
+  "calendar.list": "listCalendarItems",
+  "calendar.openItem": "getCalendarItem",
+  "profiles.getMine": "getMyProfile",
+  "profiles.updateMine": "updateMyProfile",
+  "teams.list": "listTeamMembers",
+  "teams.openMember": "getTeamMember",
+  "teams.listAuditTeams": "listAuditTeams",
+  "teams.openAuditTeam": "getAuditTeam",
+  "risk.getOverview": "getRiskOverview",
+  "risk.getManagementProjection": "getRiskManagementProjection",
+  "risk.openFinding": "getFinding",
+  "documents.list": "listDocuments",
+  "documents.open": "getDocument",
+  "auditeeCoordination.list": "listAuditeeCoordination",
+  "auditeeCoordination.respond": "respondAuditeeCoordination",
+  "auditeeReports.listReleased": "listAuditeeReleasedReports",
+  "auditeeReports.getReleased": "getAuditeeReleasedReport",
+  "notifications.list": "listNotifications",
+  "notifications.markRead": "markNotificationRead",
+  "administration.getScreenProjection": "getAdministrationScreenProjection",
+  "administration.listScreenProjections": "listAdministrationScreenProjections",
+  "administration.invokeVisibleAction": "invokeAdministrationVisibleAction",
+  "adminWorkspace.listRegulatoryReferences": "listRegulatoryReferences",
+  "adminWorkspace.listTemplateMasters": "listTemplateMasters",
+  "adminWorkspace.listQuestions": "listAdminQuestions",
+  "adminWorkspace.createQuestion": "createAdminQuestion",
+  "adminWorkspace.getTemplate": "getAdminTemplate",
+  "adminWorkspace.createDraft": "createAdminTemplateDraft",
+  "adminWorkspace.addDraftQuestion": "addAdminTemplateDraftQuestion",
+  "adminWorkspace.moveDraftQuestion": "moveAdminTemplateDraftQuestion",
+  "adminWorkspace.getInspectionPackage": "getAdminInspectionPackage",
+  "adminWorkspace.listReportDefinitions": "listReportDefinitions",
+  "adminWorkspace.listAccessDirectory": "listAccessDirectory",
+  "adminWorkspace.listOrganizations": "listAdminOrganizations",
+  "adminWorkspace.getOrganization": "getAdminOrganization",
+  "adminWorkspace.listAuditEvents": "listAdminAuditEvents",
+  "assistantDrafts.getGuidance": "getAssistantGuidance",
+  "assistantDrafts.createDraft": "createAssistantDraft",
+};
 
 function readRequiredJson(filePath) {
   assert.ok(fs.existsSync(filePath), `Required contract file is missing: ${filePath}`);
@@ -91,12 +188,286 @@ function validateValue(document, schemaInput, value, pointer = "$") {
   if (schema.type === "boolean") assert.equal(typeof value, "boolean", `${pointer} must be a boolean`);
 }
 
+function assertClosedResponseSchema(document, schemaInput, pointer, seen = new Set()) {
+  const schema = resolveSchema(document, schemaInput);
+  if (schemaInput?.$ref) {
+    if (seen.has(schemaInput.$ref)) return;
+    seen.add(schemaInput.$ref);
+  }
+  if (schema.oneOf) {
+    for (const [index, member] of schema.oneOf.entries()) {
+      assertClosedResponseSchema(document, member, `${pointer}.oneOf[${index}]`, seen);
+    }
+    return;
+  }
+  const declaredTypes = Array.isArray(schema.type) ? schema.type : [schema.type];
+  if (declaredTypes.includes("null") && declaredTypes.length > 1) return;
+  if (schema.type === "array") {
+    assertClosedResponseSchema(document, schema.items, `${pointer}.items`, seen);
+    return;
+  }
+  assert.equal(schema.type, "object", `${pointer} must resolve to an object, array, or closed union`);
+  assert.equal(schema.additionalProperties, false, `${pointer} must reject unknown fields`);
+}
+
 test("the minimal OpenAPI contract and canonical vocabulary exist", () => {
   assert.ok(fs.existsSync(vocabularyPath), "Canonical English vocabulary is missing");
   const document = readRequiredJson(openApiPath);
   assert.equal(document.openapi, "3.1.0");
   assert.equal(document.info.title, "AviaSurveil360 API");
   assert.match(fs.readFileSync(vocabularyPath, "utf8"), /Canonical transport values/);
+});
+
+test("every frozen Plan 1 backend capability maps to a bundled operation ID", () => {
+  const document = readRequiredJson(openApiPath);
+  const bundledOperationIds = new Set(
+    Object.values(document.paths).flatMap((pathItem) =>
+      Object.values(pathItem)
+        .map((operation) => operation.operationId)
+        .filter(Boolean),
+    ),
+  );
+  const missing = Object.entries(frozenCapabilityOperationIds)
+    .filter(([, operationId]) => !bundledOperationIds.has(operationId))
+    .map(([capability, operationId]) => `${capability} -> ${operationId}`);
+
+  assert.equal(
+    Object.keys(frozenCapabilityOperationIds).length,
+    80,
+    "The frozen Plan 1 capability inventory must remain explicit",
+  );
+  assert.deepEqual(
+    missing,
+    [],
+    `Missing full-platform operation IDs:\n${missing.join("\n")}`,
+  );
+});
+
+test("deterministic source fragments reproduce the bundled OpenAPI artifact", () => {
+  const missingFragments = sourceFragmentPaths.filter(
+    (relativePath) => !fs.existsSync(path.join(sourceDirectory, relativePath)),
+  );
+  assert.deepEqual(
+    missingFragments,
+    [],
+    `Missing deterministic OpenAPI source fragments:\n${missingFragments.join("\n")}`,
+  );
+  for (const relativePath of sourceFragmentPaths.slice(1)) {
+    assert.ok(
+      Object.keys(readRequiredJson(path.join(sourceDirectory, relativePath))).length > 0,
+      `${relativePath} must own part of the modular contract`,
+    );
+  }
+
+  assert.deepEqual(assembleOpenApi(sourceDirectory), readRequiredJson(openApiPath));
+});
+
+test("full-platform examples validate and preserve Auditee-safe closed projections", () => {
+  const document = readRequiredJson(openApiPath);
+  assert.ok(
+    fs.existsSync(fullPlatformExamplesDirectory),
+    "Full-platform example directory is missing",
+  );
+  const files = fs
+    .readdirSync(fullPlatformExamplesDirectory)
+    .filter((file) => file.endsWith(".json"));
+  assert.ok(files.length > 0, "At least one full-platform JSON example is required");
+
+  for (const file of files) {
+    const envelope = readRequiredJson(path.join(fullPlatformExamplesDirectory, file));
+    assert.equal(typeof envelope.schema, "string", `${file} must declare a schema`);
+    assert.ok(Object.hasOwn(envelope, "value"), `${file} must declare a value`);
+    const schema = document.components.schemas[envelope.schema];
+    assert.ok(schema, `${file} references missing schema ${envelope.schema}`);
+    assert.equal(
+      resolveSchema(document, schema).additionalProperties,
+      false,
+      `${envelope.schema} must be closed`,
+    );
+    validateValue(document, schema, envelope.value);
+    if (envelope.schema.startsWith("Auditee")) {
+      assert.doesNotMatch(
+        JSON.stringify(envelope.value),
+        /internalCaaNote|internalRisk|inspectorWorkload|enforcementDeliberation/i,
+      );
+    }
+  }
+});
+
+test("every full-platform operation declares role security and every mutation declares command guards", () => {
+  const document = readRequiredJson(openApiPath);
+  assert.ok(
+    document.components.securitySchemes?.oidc,
+    "The full-platform contract must declare OIDC role and organization security",
+  );
+
+  const mutationMethods = new Set(["post", "put", "patch", "delete"]);
+  for (const [route, pathItem] of Object.entries(document.paths)) {
+    for (const [method, operation] of Object.entries(pathItem)) {
+      if (route.startsWith("/health/")) continue;
+      assert.ok(operation.security?.length, `${operation.operationId} must declare role security`);
+      if (!mutationMethods.has(method)) continue;
+      const parameterRefs = new Set(
+        (operation.parameters ?? []).map((parameter) => parameter.$ref),
+      );
+      assert.ok(
+        parameterRefs.has("#/components/parameters/IdempotencyKey"),
+        `${operation.operationId} must declare Idempotency-Key`,
+      );
+      assert.ok(
+        parameterRefs.has("#/components/parameters/CsrfToken"),
+        `${operation.operationId} must declare CSRF`,
+      );
+      assert.ok(
+        parameterRefs.has("#/components/parameters/ExpectedRevision"),
+        `${operation.operationId} must declare expected revision`,
+      );
+      for (const status of ["400", "401", "403", "409", "412", "422"]) {
+        const response = operation.responses?.[status];
+        const problemReference =
+          response?.$ref ??
+          response?.content?.["application/problem+json"]?.schema?.$ref;
+        assert.ok(
+          ["#/components/responses/Problem", "#/components/schemas/Problem"].includes(
+            problemReference,
+          ),
+          `${operation.operationId} must declare typed ${status} problem response`,
+        );
+      }
+    }
+  }
+});
+
+test("every JSON response resolves to a closed schema", () => {
+  const document = readRequiredJson(openApiPath);
+  for (const [route, pathItem] of Object.entries(document.paths)) {
+    for (const [method, operation] of Object.entries(pathItem)) {
+      for (const [status, responseInput] of Object.entries(operation.responses ?? {})) {
+        const response = responseInput.$ref
+          ? document.components.responses[responseInput.$ref.split("/").at(-1)]
+          : responseInput;
+        for (const [mediaType, media] of Object.entries(response.content ?? {})) {
+          if (!mediaType.endsWith("json")) continue;
+          assertClosedResponseSchema(
+            document,
+            media.schema,
+            `${method.toUpperCase()} ${route} ${status} ${mediaType}`,
+          );
+        }
+      }
+    }
+  }
+});
+
+test("full-platform schemas preserve exact frozen backend transport shapes", () => {
+  const document = readRequiredJson(openApiPath);
+  const schemas = document.components.schemas;
+
+  assert.equal(
+    schemas.SavePlanningIntakeDraftInput.properties.values.$ref,
+    "#/components/schemas/PlanningIntakeDraftValues",
+  );
+  assert.ok(!schemas.PlanningIntakeDraftValues.required.includes("id"));
+  assert.ok(!schemas.PlanningIntakeDraftValues.required.includes("revision"));
+
+  const inspectionTeamRequired = new Set(schemas.InspectionTeamAuditView.required);
+  for (const field of ["assignments", "documents", "history"]) {
+    assert.ok(inspectionTeamRequired.has(field), `InspectionTeamAuditView must require ${field}`);
+  }
+
+  const managementProjection = schemas.RiskManagementProjectionView;
+  const riskFinding = managementProjection.properties.findings.items;
+  for (const field of ["inspectionId", "inspectionTitle", "department", "issuedAt"]) {
+    assert.ok(riskFinding.required.includes(field), `Risk finding projection must require ${field}`);
+  }
+  const capEffectiveness = managementProjection.properties.capEffectiveness.items;
+  for (const field of [
+    "closureBasis",
+    "capId",
+    "capRevisionId",
+    "capRevision",
+    "capStatus",
+  ]) {
+    assert.ok(
+      capEffectiveness.required.includes(field),
+      `CAP effectiveness projection must require ${field}`,
+    );
+  }
+
+  assert.equal(
+    schemas.AdministrationScreenProjection.properties.visibleActions.items.$ref,
+    "#/components/schemas/VisibleScreenAction",
+  );
+  assert.equal(
+    schemas.VisibleActionResult.properties.effect.$ref,
+    "#/components/schemas/VisibleActionEffect",
+  );
+  assert.equal(schemas.VisibleActionEffect.discriminator.propertyName, "type");
+});
+
+test("full-platform operation role metadata matches the frozen capability matrix", () => {
+  const document = readRequiredJson(openApiPath);
+  const byOperationId = new Map(
+    Object.values(document.paths).flatMap((pathItem) =>
+      Object.values(pathItem).map((operation) => [operation.operationId, operation]),
+    ),
+  );
+  const expectedRoles = {
+    listCommunications: ["inspector", "leadInspector", "manager", "auditee"],
+    sendCommunication: ["inspector", "leadInspector", "manager", "auditee"],
+    listCalendarItems: ["inspector", "leadInspector", "manager", "auditee"],
+    getCalendarItem: ["inspector", "leadInspector", "manager", "auditee"],
+    listDocuments: ["inspector", "leadInspector", "manager", "auditee", "admin"],
+    getDocument: ["inspector", "leadInspector", "manager", "auditee", "admin"],
+    getRiskOverview: ["manager"],
+    getRiskManagementProjection: ["manager"],
+    getAdministrationScreenProjection: [
+      "inspector",
+      "leadInspector",
+      "manager",
+      "finance",
+      "gm",
+      "executiveDirector",
+      "auditee",
+      "admin",
+    ],
+    listAdministrationScreenProjections: [
+      "inspector",
+      "leadInspector",
+      "manager",
+      "finance",
+      "gm",
+      "executiveDirector",
+      "auditee",
+      "admin",
+    ],
+    invokeAdministrationVisibleAction: [
+      "inspector",
+      "leadInspector",
+      "manager",
+      "finance",
+      "gm",
+      "executiveDirector",
+      "auditee",
+      "admin",
+    ],
+    listRegulatoryReferences: ["admin"],
+    createAdminQuestion: ["admin"],
+    getAssistantGuidance: ["inspector", "leadInspector"],
+    createAssistantDraft: ["inspector", "leadInspector"],
+    listAuditeeCoordination: ["auditee"],
+    respondAuditeeCoordination: ["auditee"],
+    listAuditeeReleasedReports: ["auditee"],
+    getAuditeeReleasedReport: ["auditee"],
+  };
+
+  for (const [operationId, roles] of Object.entries(expectedRoles)) {
+    assert.deepEqual(
+      byOperationId.get(operationId)?.["x-authorized-roles"],
+      roles,
+      `${operationId} role metadata must match the frozen capability matrix`,
+    );
+  }
 });
 test("every canonical JSON example validates against its declared schema", () => {
   const document = readRequiredJson(openApiPath);

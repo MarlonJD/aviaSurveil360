@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"net/http"
 	"strings"
 	"time"
@@ -16,7 +17,6 @@ import (
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/httpapi/generated"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/organizations"
-	organizationstore "github.com/MarlonJD/aviaSurveil360/apps/api/internal/organizations/store/postgres"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/planning"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -27,22 +27,14 @@ func (api *CanonicalAPI) listOrganizations(writer http.ResponseWriter, request *
 	if !ok {
 		return
 	}
-	if actor.HasRole(identity.RoleFinance) || (!actor.HasRole(identity.RoleAuditee) && !actor.IsCAA()) {
-		api.respond(writer, nil, fmt.Errorf("%w: Organization Registry access is not available to this role", application.ErrForbidden))
+	records, err := organizations.NewPostgresService(api.pool).ListRegistry(
+		request.Context(), actor, boundedPageLimit(optionalIntQuery(request, "limit")),
+	)
+	if err != nil {
+		api.respond(writer, nil, err)
 		return
 	}
-	scope := ""
-	if actor.HasRole(identity.RoleAuditee) {
-		if !organizations.CanView(actor, actor.OrganizationID) {
-			api.respond(writer, nil, application.ErrForbidden)
-			return
-		}
-		scope = actor.OrganizationID
-	}
-	records, err := organizationstore.New(api.pool).ListOrganizationRegistry(request.Context(), organizationstore.ListOrganizationRegistryParams{
-		OrganizationScope: scope,
-		ResultLimit:       boundedPageLimit(optionalIntQuery(request, "limit")),
-	})
+	etag, err := strongProjectionETag(records)
 	if err != nil {
 		api.respond(writer, nil, err)
 		return
@@ -63,7 +55,86 @@ func (api *CanonicalAPI) listOrganizations(writer http.ResponseWriter, request *
 		}
 		items = append(items, item)
 	}
+	writer.Header().Set("ETag", etag)
 	api.respond(writer, generated.ListOrganizationsOutput{Items: items}, nil)
+}
+
+func strongProjectionETag(value any) (string, error) {
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return "", fmt.Errorf("encode projection ETag source: %w", err)
+	}
+	hash := fnv.New64a()
+	_, _ = hash.Write(encoded)
+	return fmt.Sprintf(`"rev-%d"`, hash.Sum64()), nil
+}
+
+func (api *CanonicalAPI) getMyProfile(writer http.ResponseWriter, request *http.Request) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	if api.profiles == nil {
+		api.respond(writer, nil, fmt.Errorf("profile service is unavailable"))
+		return
+	}
+	profile, err := api.profiles.GetProfile(request.Context(), actor)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	writer.Header().Set("ETag", strongRevisionETag(profile.Revision))
+	api.respond(writer, profileView(profile), nil)
+}
+
+func (api *CanonicalAPI) updateMyProfile(writer http.ResponseWriter, request *http.Request) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	var input generated.UpdateMyProfileInput
+	if !decodeJSON(writer, request, &input) {
+		return
+	}
+	if api.profiles == nil {
+		api.respond(writer, nil, fmt.Errorf("profile service is unavailable"))
+		return
+	}
+	idempotencyKey := strings.TrimSpace(request.Header.Get("Idempotency-Key"))
+	if input.ExpectedRevision == nil || idempotencyKey == "" || idempotencyKey != input.IdempotencyKey {
+		api.respond(writer, nil, identity.ErrInvalidProfile)
+		return
+	}
+	if request.Header.Get("If-Match") != strongRevisionETag(*input.ExpectedRevision) {
+		api.respond(writer, nil, identity.ErrPrecondition)
+		return
+	}
+	profile, err := api.profiles.UpdateProfile(request.Context(), actor, identity.UpdateProfileCommand{
+		OperationID: input.OperationId, IdempotencyKey: input.IdempotencyKey,
+		ExpectedRevision: *input.ExpectedRevision, DisplayName: input.DisplayName,
+	})
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	writer.Header().Set("ETag", strongRevisionETag(profile.Revision))
+	api.respond(writer, profileView(profile), nil)
+}
+
+func strongRevisionETag(revision int64) string {
+	return fmt.Sprintf(`"rev-%d"`, revision)
+}
+
+func profileView(profile identity.Profile) generated.ProfileView {
+	var organizationID *string
+	if profile.OrganizationID != "" {
+		value := profile.OrganizationID
+		organizationID = &value
+	}
+	return generated.ProfileView{
+		SubjectId: profile.SubjectID, Role: generated.Role(profile.Role),
+		OrganizationId: organizationID, DisplayName: profile.DisplayName, Revision: profile.Revision,
+	}
 }
 
 func (api *CanonicalAPI) listPlanningItems(writer http.ResponseWriter, request *http.Request) {
@@ -284,6 +355,338 @@ func (api *CanonicalAPI) listAuditEvents(writer http.ResponseWriter, request *ht
 		})
 	}
 	api.respond(writer, generated.ListAuditEventsOutput{Items: items}, nil)
+}
+
+func (api *CanonicalAPI) listAdminRegulatoryReferences(
+	writer http.ResponseWriter,
+	request *http.Request,
+) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	records, err := api.adminWorkspace.ListRegulatoryReferences(
+		request.Context(), actor,
+		valueOr(optionalQuery(request, "search"), ""),
+		valueOr(optionalQuery(request, "status"), ""),
+		int(boundedPageLimit(optionalIntQuery(request, "limit"))),
+	)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	items := make([]generated.AdminRegulatoryReferenceView, 0, len(records))
+	for _, record := range records {
+		items = append(items, generated.AdminRegulatoryReferenceView{
+			Id: record.ID, Title: record.Title, Version: record.Version,
+			Status: record.Status, EffectiveDate: record.EffectiveDate,
+			ConfiguredRules: append([]string(nil), record.ConfiguredRules...),
+			ChangeHistory:   append([]string(nil), record.ChangeHistory...),
+		})
+	}
+	etag, err := strongProjectionETag(items)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	writer.Header().Set("ETag", etag)
+	api.respond(writer, generated.AdminRegulatoryReferencePage{Items: items}, nil)
+}
+
+func (api *CanonicalAPI) listAdminTemplateMasters(
+	writer http.ResponseWriter,
+	request *http.Request,
+) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	records, err := api.adminWorkspace.ListTemplateMasters(
+		request.Context(), actor,
+		int(boundedPageLimit(optionalIntQuery(request, "limit"))),
+	)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	items := make([]generated.AdminTemplateMasterView, 0, len(records))
+	for _, record := range records {
+		items = append(items, generated.AdminTemplateMasterView{
+			Id: record.ID, Title: record.Title, PublishedVersionId: record.PublishedVersionID,
+			Status: record.Status, Owner: record.Owner, ItemCount: record.ItemCount,
+			PreviewPath: record.PreviewPath, DisabledReason: record.DisabledReason,
+			Revision: record.Revision,
+		})
+	}
+	etag, err := strongProjectionETag(items)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	writer.Header().Set("ETag", etag)
+	api.respond(writer, generated.AdminTemplateMasterPage{Items: items}, nil)
+}
+
+func (api *CanonicalAPI) listAdminQuestions(
+	writer http.ResponseWriter,
+	request *http.Request,
+) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	records, err := api.adminWorkspace.ListQuestions(
+		request.Context(), actor, valueOr(optionalQuery(request, "search"), ""),
+		int(boundedPageLimit(optionalIntQuery(request, "limit"))),
+	)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	items := make([]generated.AdminQuestionView, 0, len(records))
+	for _, record := range records {
+		items = append(items, adminQuestionView(record))
+	}
+	etag, err := strongProjectionETag(items)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	writer.Header().Set("ETag", etag)
+	api.respond(writer, generated.AdminQuestionPage{Items: items}, nil)
+}
+
+func (api *CanonicalAPI) createAdminQuestion(
+	writer http.ResponseWriter,
+	request *http.Request,
+) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	var input generated.CreateAdminQuestionInput
+	if !decodeJSON(writer, request, &input) {
+		return
+	}
+	if !validOptionalRevisionCommandHeaders(
+		request, input.IdempotencyKey, input.ExpectedRevision,
+	) {
+		api.respond(writer, nil, application.ErrInvalid)
+		return
+	}
+	question, err := api.application.CreateAdminQuestion(
+		request.Context(), actor, application.CreateAdminQuestionCommand{
+			OperationID: input.OperationId, IdempotencyKey: input.IdempotencyKey,
+			ExpectedRevision: input.ExpectedRevision, Prompt: input.Prompt,
+			ConfiguredReference: input.ConfiguredReference,
+			ExpectedEvidence:    input.ExpectedEvidence,
+		},
+	)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	writer.Header().Set("ETag", strongRevisionETag(question.Revision))
+	writeJSON(writer, http.StatusCreated, adminQuestionView(question))
+}
+
+func (api *CanonicalAPI) getAdminTemplate(
+	writer http.ResponseWriter,
+	request *http.Request,
+) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	template, err := api.adminWorkspace.GetTemplate(
+		request.Context(), actor, chi.URLParam(request, "templateId"),
+	)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	writer.Header().Set("ETag", strongRevisionETag(template.Revision))
+	api.respond(writer, adminTemplateView(template), nil)
+}
+
+func (api *CanonicalAPI) createAdminTemplateDraft(
+	writer http.ResponseWriter,
+	request *http.Request,
+) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	var input generated.CreateAdminTemplateDraftInput
+	if !decodeJSON(writer, request, &input) {
+		return
+	}
+	templateID := chi.URLParam(request, "templateId")
+	if templateID != input.TemplateId ||
+		!validRevisionCommandHeaders(request, input.IdempotencyKey, input.ExpectedRevision) {
+		api.respond(writer, nil, application.ErrInvalid)
+		return
+	}
+	draft, err := api.application.CreateAdminTemplateDraft(
+		request.Context(), actor, application.CreateAdminTemplateDraftCommand{
+			OperationID: input.OperationId, IdempotencyKey: input.IdempotencyKey,
+			TemplateID: input.TemplateId, ExpectedRevision: *input.ExpectedRevision,
+			ChangeReason: input.ChangeReason,
+		},
+	)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	writer.Header().Set("ETag", strongRevisionETag(draft.Revision))
+	writeJSON(writer, http.StatusCreated, adminTemplateVersionView(draft))
+}
+
+func (api *CanonicalAPI) addAdminTemplateDraftQuestion(
+	writer http.ResponseWriter,
+	request *http.Request,
+) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	var input generated.AddAdminTemplateDraftQuestionInput
+	if !decodeJSON(writer, request, &input) {
+		return
+	}
+	templateID := chi.URLParam(request, "templateId")
+	draftID := chi.URLParam(request, "draftVersionId")
+	if templateID != input.TemplateId || draftID != input.DraftVersionId ||
+		!validRevisionCommandHeaders(request, input.IdempotencyKey, input.ExpectedRevision) {
+		api.respond(writer, nil, application.ErrInvalid)
+		return
+	}
+	draft, err := api.application.AddAdminTemplateDraftQuestion(
+		request.Context(), actor, application.AddAdminTemplateDraftQuestionCommand{
+			OperationID: input.OperationId, IdempotencyKey: input.IdempotencyKey,
+			TemplateID: input.TemplateId, DraftVersionID: input.DraftVersionId,
+			QuestionID: input.QuestionId, ExpectedRevision: *input.ExpectedRevision,
+		},
+	)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	writer.Header().Set("ETag", strongRevisionETag(draft.Revision))
+	api.respond(writer, adminTemplateVersionView(draft), nil)
+}
+
+func (api *CanonicalAPI) moveAdminTemplateDraftQuestion(
+	writer http.ResponseWriter,
+	request *http.Request,
+) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	var input generated.MoveAdminTemplateDraftQuestionInput
+	if !decodeJSON(writer, request, &input) {
+		return
+	}
+	templateID := chi.URLParam(request, "templateId")
+	draftID := chi.URLParam(request, "draftVersionId")
+	questionID := chi.URLParam(request, "questionId")
+	if templateID != input.TemplateId || draftID != input.DraftVersionId ||
+		questionID != input.QuestionId ||
+		!validRevisionCommandHeaders(request, input.IdempotencyKey, input.ExpectedRevision) {
+		api.respond(writer, nil, application.ErrInvalid)
+		return
+	}
+	draft, err := api.application.MoveAdminTemplateDraftQuestion(
+		request.Context(), actor, application.MoveAdminTemplateDraftQuestionCommand{
+			OperationID: input.OperationId, IdempotencyKey: input.IdempotencyKey,
+			TemplateID: input.TemplateId, DraftVersionID: input.DraftVersionId,
+			QuestionID: input.QuestionId, Direction: input.Direction,
+			ExpectedRevision: *input.ExpectedRevision,
+		},
+	)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	writer.Header().Set("ETag", strongRevisionETag(draft.Revision))
+	api.respond(writer, adminTemplateVersionView(draft), nil)
+}
+
+func (api *CanonicalAPI) getAdminInspectionPackage(
+	writer http.ResponseWriter,
+	request *http.Request,
+) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	record, err := api.adminWorkspace.GetInspectionPackage(
+		request.Context(), actor, chi.URLParam(request, "packageId"),
+	)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	etag, err := strongProjectionETag(record)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	writer.Header().Set("ETag", etag)
+	api.respond(writer, generated.AdminInspectionPackageView{
+		Id: record.ID, AuditId: record.AuditID,
+		OrganizationId: record.OrganizationID, OrganizationName: record.OrganizationName,
+		QuestionIds:          append([]string(nil), record.QuestionIDs...),
+		ConfiguredReferences: append([]string(nil), record.ConfiguredReferences...),
+		ExpectedEvidence:     append([]string(nil), record.ExpectedEvidence...),
+		RiskFocus:            append([]string(nil), record.RiskFocus...),
+	}, nil)
+}
+
+func validOptionalRevisionCommandHeaders(
+	request *http.Request,
+	idempotencyKey string,
+	expectedRevision *int64,
+) bool {
+	idempotencyKey = strings.TrimSpace(idempotencyKey)
+	if idempotencyKey == "" || request.Header.Get("Idempotency-Key") != idempotencyKey {
+		return false
+	}
+	if expectedRevision == nil {
+		return strings.TrimSpace(request.Header.Get("If-Match")) == ""
+	}
+	return request.Header.Get("If-Match") == strongRevisionETag(*expectedRevision)
+}
+
+func adminQuestionView(record configuration.AdminQuestion) generated.AdminQuestionView {
+	return generated.AdminQuestionView{
+		Id: record.ID, Prompt: record.Prompt,
+		ConfiguredReference: record.ConfiguredReference,
+		ExpectedEvidence:    record.ExpectedEvidence, Revision: record.Revision,
+	}
+}
+
+func adminTemplateVersionView(
+	record configuration.AdminTemplateVersion,
+) generated.AdminTemplateVersionView {
+	return generated.AdminTemplateVersionView{
+		Id: record.ID, TemplateId: record.TemplateID, Version: record.Version,
+		Status: record.Status, Owner: record.Owner, CreatorSubjectId: record.CreatorSubjectID,
+		ChangeReason: record.ChangeReason, QuestionIds: append([]string(nil), record.QuestionIDs...),
+		Revision: record.Revision, CreatedAt: record.CreatedAt.UTC().Format(time.RFC3339Nano),
+	}
+}
+
+func adminTemplateView(record configuration.AdminTemplate) generated.AdminTemplateView {
+	versions := make([]generated.AdminTemplateVersionView, 0, len(record.Versions))
+	for _, version := range record.Versions {
+		versions = append(versions, adminTemplateVersionView(version))
+	}
+	return generated.AdminTemplateView{
+		Id: record.ID, PublishedVersionId: record.PublishedVersionID,
+		Versions: versions, Revision: record.Revision,
+	}
 }
 
 func planningView(item planning.Item) generated.PlanningItemView {

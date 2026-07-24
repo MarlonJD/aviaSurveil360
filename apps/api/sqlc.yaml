@@ -5,6 +5,13 @@ sql:
       - "migrations/000001_foundation.up.sql"
       - "migrations/000002_workflow_foundation.up.sql"
       - "migrations/000003_authority_foundation.up.sql"
+      - "migrations/000004_evidence_upload_foundation.up.sql"
+      - "migrations/000005_sync_foundation.up.sql"
+      - "migrations/000006_first_production_routes.up.sql"
+      - "migrations/000007_full_workflow_projection.up.sql"
+      - "migrations/000008_communications_documents.up.sql"
+      - "migrations/000009_notifications_risk_admin.up.sql"
+      - "migrations/000010_identity_settings.up.sql"
     queries: "internal/organizations/store/postgres/queries.sql"
     gen:
       go:
@@ -31,11 +38,17 @@ sql:
         emit_pointers_for_null_types: true
         omit_unused_structs: true
   - engine: "postgresql"
-    schema: &all_migrations
+    schema:
       - "migrations/000001_foundation.up.sql"
       - "migrations/000002_workflow_foundation.up.sql"
       - "migrations/000003_authority_foundation.up.sql"
+      - "migrations/000004_evidence_upload_foundation.up.sql"
+      - "migrations/000005_sync_foundation.up.sql"
       - "migrations/000006_first_production_routes.up.sql"
+      - "migrations/000007_full_workflow_projection.up.sql"
+      - "migrations/000008_communications_documents.up.sql"
+      - "migrations/000009_notifications_risk_admin.up.sql"
+      - "migrations/000010_identity_settings.up.sql"
     queries: "internal/identity/store/postgres/queries.sql"
     gen:
       go:
@@ -47,7 +60,11 @@ sql:
         emit_pointers_for_null_types: true
         omit_unused_structs: true
   - engine: "postgresql"
-    schema: *all_migrations
+    schema: &all_migrations
+      - "migrations/000001_foundation.up.sql"
+      - "migrations/000002_workflow_foundation.up.sql"
+      - "migrations/000003_authority_foundation.up.sql"
+      - "migrations/000006_first_production_routes.up.sql"
     queries: "internal/planning/store/postgres/queries.sql"
     gen:
       go:
@@ -83,7 +100,13 @@ sql:
         emit_pointers_for_null_types: true
         omit_unused_structs: true
   - engine: "postgresql"
-    schema: *all_migrations
+    schema:
+      - "migrations/000001_foundation.up.sql"
+      - "migrations/000002_workflow_foundation.up.sql"
+      - "migrations/000003_authority_foundation.up.sql"
+      - "migrations/000004_evidence_upload_foundation.up.sql"
+      - "migrations/000005_sync_foundation.up.sql"
+      - "migrations/000006_first_production_routes.up.sql"
     queries: "internal/findings/store/postgres/queries.sql"
     gen:
       go:
@@ -161,6 +184,88 @@ sql:
       go:
         package: "postgres"
         out: "internal/configuration/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: &full_migrations
+      - "migrations/000001_foundation.up.sql"
+      - "migrations/000002_workflow_foundation.up.sql"
+      - "migrations/000003_authority_foundation.up.sql"
+      - "migrations/000004_evidence_upload_foundation.up.sql"
+      - "migrations/000005_sync_foundation.up.sql"
+      - "migrations/000006_first_production_routes.up.sql"
+      - "migrations/000007_full_workflow_projection.up.sql"
+      - "migrations/000008_communications_documents.up.sql"
+      - "migrations/000009_notifications_risk_admin.up.sql"
+      - "migrations/000010_identity_settings.up.sql"
+    queries: "internal/assignments/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/assignments/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *full_migrations
+    queries: "internal/communications/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/communications/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *full_migrations
+    queries: "internal/documents/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/documents/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *full_migrations
+    queries: "internal/notifications/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/notifications/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *full_migrations
+    queries: "internal/risk/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/risk/store/postgres"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: "postgresql"
+    schema: *full_migrations
+    queries: "internal/administration/store/postgres/queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "internal/administration/store/postgres"
         sql_package: "pgx/v5"
         emit_interface: true
         emit_json_tags: true

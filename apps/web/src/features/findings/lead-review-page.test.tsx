@@ -113,6 +113,59 @@ describe("LeadReviewPage", () => {
     ).rejects.toThrow("Lead Inspector authority is required.");
   });
 
+  it("applies no-CAP no-Evidence no-Due-Date defaults when Observation is selected", async () => {
+    const runtime = createMockBackendRuntime();
+    await seedPotentialFinding(runtime);
+    const leadBackend = runtime.backendForRole("leadInspector");
+    const decideSpy = vi.spyOn(leadBackend.potentialFindings, "decide");
+
+    renderPage(runtime);
+    await screen.findByTestId("potential-finding-dossier");
+    await userEvent.selectOptions(screen.getByLabelText("Finding severity"), "OBSERVATION");
+
+    expect(screen.getByLabelText("CAP required")).not.toBeChecked();
+    expect(screen.getByLabelText("Evidence required")).not.toBeChecked();
+    expect(screen.getByLabelText("Finding Due Date")).toHaveValue("");
+
+    await userEvent.click(screen.getByRole("button", { name: "Convert to Finding" }));
+
+    expect(decideSpy).toHaveBeenLastCalledWith({
+      operationId: "OP-PF-CONVERT",
+      potentialFindingId: "PF-2026-001",
+      expectedPotentialFindingRevision: 1,
+      decision: "CONVERT",
+      severity: "OBSERVATION",
+      capRequired: false,
+      evidenceRequired: false,
+      dueDate: null,
+    });
+    const decision = await screen.findByTestId("lead-decision-result");
+    expect(within(decision).getByText("CAP not required")).toBeVisible();
+    expect(within(decision).getByText("Evidence not required")).toBeVisible();
+  });
+
+  it("allows the Lead to explicitly configure an Observation Due Date", async () => {
+    const runtime = createMockBackendRuntime();
+    await seedPotentialFinding(runtime);
+    const leadBackend = runtime.backendForRole("leadInspector");
+    const decideSpy = vi.spyOn(leadBackend.potentialFindings, "decide");
+
+    renderPage(runtime);
+    await screen.findByTestId("potential-finding-dossier");
+    await userEvent.selectOptions(screen.getByLabelText("Finding severity"), "OBSERVATION");
+    const dueDate = screen.getByLabelText("Finding Due Date");
+    expect(dueDate).not.toHaveAttribute("readonly");
+    await userEvent.type(dueDate, "2026-08-01");
+    await userEvent.click(screen.getByRole("button", { name: "Convert to Finding" }));
+
+    expect(decideSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        severity: "OBSERVATION",
+        dueDate: "2026-08-01",
+      }),
+    );
+  });
+
   it("keeps a successful conversion visible when the runtime creates role adapters per call", async () => {
     const runtime = createMockBackendRuntime();
     await seedPotentialFinding(runtime);

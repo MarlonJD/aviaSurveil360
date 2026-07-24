@@ -1,0 +1,12 @@
+{
+  "schema": "AssistantGuidance",
+  "value": {
+    "advisoryOnly": true,
+    "prohibitedActions": [
+      "create finding",
+      "set severity",
+      "close finding",
+      "make enforcement decision"
+    ]
+  }
+}

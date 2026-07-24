@@ -514,6 +514,36 @@ export class MockBackendEngine implements DemoBackend {
           createdAt: this.store.clock(),
         };
         state.communications.push(message);
+        const recipientProfiles = Object.values(state.profiles).filter((profile) => {
+          if (message.audience === "AUDITEE") {
+            return profile.role === "auditee" &&
+              profile.organizationId === message.organizationId;
+          }
+          return profile.role !== "auditee" &&
+            profile.subjectId !== this.principal.subjectId;
+        });
+        const title = message.direction === "AUDITEE_TO_CAA"
+          ? "New Auditee communication"
+          : message.direction === "CAA_INTERNAL"
+            ? "New Internal CAA Note"
+            : "New CAA communication";
+        for (const profile of recipientProfiles) {
+          const notificationSequence = state.notifications.filter(
+            ({ id }) => id.startsWith("notification-candidate-"),
+          ).length + 1;
+          const notificationId = `notification-candidate-${pad(notificationSequence)}`;
+          if (state.notifications.some((notification) => notification.id === notificationId)) {
+            continue;
+          }
+          state.notifications.push({
+            id: notificationId,
+            subjectId: profile.subjectId,
+            title,
+            body: `${message.subject} — open the authorized message record for details.`,
+            readAt: null,
+            revision: 1,
+          });
+        }
         return publicCommunication(message);
       });
     },
@@ -1052,7 +1082,16 @@ export class MockBackendEngine implements DemoBackend {
         return {
           items: Object.values(state.profiles)
             .filter((profile) => (!needle || `${profile.subjectId} ${profile.displayName} ${profile.organizationId ?? "CAA"}`.toLocaleLowerCase().includes(needle)) && (!role || profile.role === role))
-            .map((profile) => ({ ...profile, email: "Not configured in demo" as const, mfa: "Not configured in demo" as const, invitation: "Not configured in demo" as const, accountStatus: "Not configured in demo" as const })),
+            .map((profile) => ({
+              subjectId: profile.subjectId,
+              displayName: profile.displayName,
+              role: profile.role,
+              organizationId: profile.organizationId,
+              email: "Not configured in demo" as const,
+              mfa: "Not configured in demo" as const,
+              invitation: "Not configured in demo" as const,
+              accountStatus: "Not configured in demo" as const,
+            })),
           nextCursor: null,
         };
       });
@@ -1525,6 +1564,12 @@ export class MockBackendEngine implements DemoBackend {
         if (state.findings[findingId]) {
           throw new BackendConflictError(`Finding identity ${findingId} already exists and cannot be overwritten.`);
         }
+        const findingStatus = conversion.capRequired
+          ? "WAITING_FOR_CAP"
+          : conversion.evidenceRequired
+            ? "EVIDENCE_REQUIRED"
+            : "PENDING_CLOSURE";
+        const auditeeOwnsNextAction = conversion.capRequired || conversion.evidenceRequired;
         const finding: FindingView = {
           id: findingId,
           findingNumber,
@@ -1536,16 +1581,18 @@ export class MockBackendEngine implements DemoBackend {
           regulatoryReference: question.regulatoryReference,
           findingBasis: `Non-Compliant response and required Inspector comment for ${question.id}`,
           severity: conversion.severity,
-          status: conversion.capRequired ? "WAITING_FOR_CAP" : "PENDING_CLOSURE",
+          status: findingStatus,
           dueDate: conversion.dueDate,
           dueState: conversion.dueDate ? "NOT_DUE" : "NONE",
-          currentOwnerType: conversion.capRequired ? "AUDITEE" : "CAA",
-          currentOwnerId: conversion.capRequired
+          currentOwnerType: auditeeOwnsNextAction ? "AUDITEE" : "CAA",
+          currentOwnerId: auditeeOwnsNextAction
             ? potential.organizationId
             : this.principal.subjectId,
-          currentOwnerRole: conversion.capRequired ? "auditee" : "leadInspector",
+          currentOwnerRole: auditeeOwnsNextAction ? "auditee" : "leadInspector",
           nextAction: conversion.capRequired
             ? "Auditee to submit CAP"
+            : conversion.evidenceRequired
+              ? "Auditee to submit required Evidence"
             : "CAA to verify closure path",
           capRequired: conversion.capRequired,
           evidenceRequired: conversion.evidenceRequired,
@@ -1877,7 +1924,7 @@ export class MockBackendEngine implements DemoBackend {
           uploadState: "UPLOADED",
           scanState: "CLEAN",
           reviewState: "PENDING_CAA_REVIEW",
-          revision: 1,
+          revision: 2,
           commentToAuditee: "",
         };
         state.evidenceVersions.push(evidenceVersion);
@@ -1886,7 +1933,7 @@ export class MockBackendEngine implements DemoBackend {
         finding.currentOwnerId = "USR-LEAD-CANER";
         finding.currentOwnerRole = "leadInspector";
         finding.nextAction = "CAA reviews Evidence";
-        finding.revision += 1;
+        finding.revision += 2;
         return {
           evidenceVersionId: evidenceVersion.id,
           version,
@@ -2282,9 +2329,76 @@ export class MockBackendEngine implements DemoBackend {
         ) {
           throw new BackendConflictError("Sync package or protocol version does not match.");
         }
+        if (
+          operation.offlineGrantId !== "GRANT-CANDIDATE-001" ||
+          operation.deviceInstanceId !== "DEVICE-CANDIDATE-001"
+        ) {
+          return {
+            operationId: operation.operationId,
+            status: "forbidden" as const,
+            authoritativeEntityId: null,
+            authoritativeRevision: null,
+            errorCode: "OFFLINE_GRANT_DEVICE_MISMATCH",
+            conflict: null,
+            acknowledgedAt: this.store.clock(),
+          };
+        }
+        if (operation.commandType === "UPSERT_CHECKLIST_RESPONSE") {
+          const current = state.checklistResponses[operation.entityId];
+          if ((current?.revision ?? null) !== operation.baseRevision) {
+            return {
+              operationId: operation.operationId,
+              status: "conflict" as const,
+              authoritativeEntityId: operation.entityId,
+              authoritativeRevision: current?.revision ?? null,
+              errorCode: "STALE_REVISION",
+              conflict: {
+                code: "STALE_REVISION" as const,
+                entityId: operation.entityId,
+                authoritativeRevision: current?.revision ?? null,
+                authoritativeStatus: current?.answer ?? null,
+                changedAt: current?.updatedAt ?? null,
+              },
+              acknowledgedAt: this.store.clock(),
+            };
+          }
+          const question = packageView.questions.find(
+            ({ id }) => id === operation.payload.questionId,
+          );
+          if (!question?.assignedInspectorUserIds.includes(this.principal.subjectId)) {
+            return {
+              operationId: operation.operationId,
+              status: "forbidden" as const,
+              authoritativeEntityId: null,
+              authoritativeRevision: null,
+              errorCode: "QUESTION_ASSIGNMENT_FORBIDDEN",
+              conflict: null,
+              acknowledgedAt: this.store.clock(),
+            };
+          }
+          const response: ChecklistResponseView = {
+            id: operation.entityId,
+            questionId: operation.payload.questionId,
+            answer: operation.payload.answer,
+            comment: operation.payload.comment,
+            revision: (current?.revision ?? 0) + 1,
+            updatedAt: this.store.clock(),
+          };
+          state.checklistResponses[response.id] = response;
+          state.authorizedSyncChanges.push({ kind: "checklist_response", value: response });
+          return {
+            operationId: operation.operationId,
+            status: "accepted" as const,
+            authoritativeEntityId: response.id,
+            authoritativeRevision: response.revision,
+            errorCode: null,
+            conflict: null,
+            acknowledgedAt: this.store.clock(),
+          };
+        }
         return {
           operationId: operation.operationId,
-          status: "accepted",
+          status: "accepted" as const,
           authoritativeEntityId: operation.entityId,
           authoritativeRevision: 1,
           errorCode: null,
@@ -2296,10 +2410,15 @@ export class MockBackendEngine implements DemoBackend {
 
     pull: async (input) => {
       requireRole(this.principal, ["inspector"], "CAA Inspector authority is required for sync.");
+      if (input.offlineGrantId !== "GRANT-CANDIDATE-001") {
+        throw new BackendAuthorizationInvariantError(
+          "Offline grant is unavailable to this device session.",
+        );
+      }
       return this.store.read((state) => {
         getPackage(state, input.packageId);
         return {
-          changes: [],
+          changes: state.authorizedSyncChanges,
           nextCursor: input.cursor,
           hasMore: false,
           resnapshotRequired: false,

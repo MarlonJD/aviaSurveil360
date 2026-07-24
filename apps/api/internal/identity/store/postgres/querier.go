@@ -9,8 +9,12 @@ import (
 )
 
 type Querier interface {
-	GetIdentityReference(ctx context.Context, subjectID string) (IdentityReference, error)
+	GetIdentityReference(ctx context.Context, subjectID string) (GetIdentityReferenceRow, error)
+	GetProfile(ctx context.Context, subjectID string) (GetProfileRow, error)
 	GetSessionForAuthentication(ctx context.Context, sessionTokenHash *string) (GetSessionForAuthenticationRow, error)
+	GetSettings(ctx context.Context, subjectID string) (UserSetting, error)
+	UpdateProfile(ctx context.Context, arg UpdateProfileParams) (UpdateProfileRow, error)
+	UpdateSettings(ctx context.Context, arg UpdateSettingsParams) (UserSetting, error)
 }
 
 var _ Querier = (*Queries)(nil)

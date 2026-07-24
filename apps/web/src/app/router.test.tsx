@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "./providers";
 import { ScenarioProvider } from "./scenario-context";
 import { AppRouter, createRoleEntryPath, ROLE_ENTRIES } from "./router";
+import { SessionProvider, type SessionClient } from "../auth/session-provider";
 import { createHttpBackend } from "../backend/http-backend";
 import { createMockBackendRuntime } from "../mock/create-mock-backend";
 import { seedVisualRuntimeForPath } from "../mock/seed-visual-runtime";
@@ -78,6 +80,45 @@ describe("authorized role-entry inventory", () => {
     expect(screen.getAllByTestId("role-card-icon")).toHaveLength(8);
   });
 
+  it("issues one OIDC logout command under React StrictMode", async () => {
+    const runtime = createMockBackendRuntime();
+    const client: SessionClient = {
+      get: vi.fn().mockResolvedValue({
+        subjectId: "154ec5ac-6f97-4f55-916f-d2f142fc6211",
+        displayName: "Local Inspector",
+        organizationId: "CAA",
+        roles: ["inspector"],
+      }),
+      login: vi.fn(),
+      logout: vi.fn().mockResolvedValue(undefined),
+      csrfToken: vi.fn(() => "csrf"),
+    };
+    render(
+      <StrictMode>
+        <AppProviders
+          runtime={{
+            backend: runtime.backend,
+            backendForRole: runtime.backendForRole,
+            buildProfile: "http",
+            environmentLabel: "Test",
+            identityMode: "oidc-session",
+            beforeSubjectChange: vi.fn().mockResolvedValue(undefined),
+          }}
+        >
+          <SessionProvider client={client} identityMode="oidc-session">
+            <MemoryRouter initialEntries={["/"]}>
+              <AppRouter />
+            </MemoryRouter>
+          </SessionProvider>
+        </AppProviders>
+      </StrictMode>,
+    );
+
+    await waitFor(() => expect(client.logout).toHaveBeenCalled());
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    expect(client.logout).toHaveBeenCalledTimes(1);
+  });
+
   it("redirects an undeclared path to role selection without rendering a placeholder", async () => {
     const runtime = createMockBackendRuntime();
     render(
@@ -90,7 +131,7 @@ describe("authorized role-entry inventory", () => {
     expect(screen.queryByText(/placeholder|coming soon|candidate React entry route/i)).not.toBeInTheDocument();
   });
 
-  it("keeps an HTTP-blocked direct load inside its real parent route with the Plan 2 capability notice", async () => {
+  it("direct-loads a formerly blocked Finding route in the HTTP profile", async () => {
     const runtime = createMockBackendRuntime();
     render(
       <AppProviders runtime={{ backend: runtime.backend, backendForRole: runtime.backendForRole, buildProfile: "http", environmentLabel: "Test" }}>
@@ -98,17 +139,22 @@ describe("authorized role-entry inventory", () => {
       </AppProviders>,
     );
 
-    expect(await screen.findByRole("heading", { name: "My Assignments" })).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("HTTP capability is unavailable until Plan 2 activates this route.");
-    expect(screen.queryByText(/demo-only screen|generic placeholder/i)).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Findings" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert", { name: "Unavailable HTTP capability" })).not.toBeInTheDocument();
   });
 
-  it.each([
-    "/admin/inspection-package-builder",
-    "/admin/organization-master-data/ORG-FLY-NAMIBIA",
-  ])("keeps the HTTP-blocked contextual Admin route %s inside an HTTP-capable parent", async (path) => {
+  it("direct-loads the Admin inspection-package route in the HTTP profile", async () => {
     const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(JSON.stringify({ items: [], nextCursor: null }), {
+      new Response(JSON.stringify({
+        id: "PKG-CAB-2026-001",
+        auditId: "AUD-2026-001",
+        organizationId: "ORG-FLY-NAMIBIA",
+        organizationName: "Fly Namibia",
+        questionIds: ["CAB-EMEQ-PBE-001"],
+        configuredReferences: ["Configured EM EQ / PBE"],
+        expectedEvidence: ["PBE record"],
+        riskFocus: ["Emergency equipment serviceability"],
+      }), {
         headers: { "content-type": "application/json" },
       }),
     );
@@ -116,20 +162,53 @@ describe("authorized role-entry inventory", () => {
       { apiBaseUrl: "/", environmentLabel: "Test" },
       { fetchImplementation },
     );
-    expect(backend.adminWorkspace).toBeUndefined();
+    expect(backend.adminWorkspace).toBeDefined();
 
     render(
       <AppProviders runtime={{ backend, backendForRole: () => backend, buildProfile: "http", environmentLabel: "Test" }}>
-        <MemoryRouter initialEntries={[path]}><AppRouter /></MemoryRouter>
+        <MemoryRouter initialEntries={["/admin/inspection-package-builder"]}><AppRouter /></MemoryRouter>
       </AppProviders>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Checklist Templates" })).toBeInTheDocument();
-    expect(screen.getByRole("alert", { name: "Unavailable HTTP capability" })).toHaveTextContent(
-      "HTTP capability is unavailable until Plan 2 activates this route.",
-    );
+    expect(await screen.findByRole("heading", { name: "Inspection Package Builder" })).toBeInTheDocument();
+    expect(await screen.findByText("PKG-CAB-2026-001")).toBeInTheDocument();
+    expect(screen.queryByRole("alert", { name: "Unavailable HTTP capability" })).not.toBeInTheDocument();
     expect(fetchImplementation).toHaveBeenCalledWith(
-      "/v1/configuration/checklist-template-versions?limit=100",
+      "/v1/admin/inspection-packages/PKG-CAB-2026-001",
+      expect.objectContaining({ credentials: "same-origin" }),
+    );
+  });
+
+  it("direct-loads the Admin organization-detail route in the HTTP profile", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({
+        id: "ORG-FLY-NAMIBIA",
+        legalName: "Fly Namibia",
+        organizationType: "OPERATOR",
+        status: "ACTIVE",
+        scope: "CAA oversight",
+        detailAvailable: true,
+        disabledReason: null,
+      }), {
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    const backend = createHttpBackend(
+      { apiBaseUrl: "/", environmentLabel: "Test" },
+      { fetchImplementation },
+    );
+
+    render(
+      <AppProviders runtime={{ backend, backendForRole: () => backend, buildProfile: "http", environmentLabel: "Test" }}>
+        <MemoryRouter initialEntries={["/admin/organization-master-data/ORG-FLY-NAMIBIA"]}><AppRouter /></MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Organization Detail" })).toBeInTheDocument();
+    expect(await screen.findAllByText("Fly Namibia")).toHaveLength(2);
+    expect(screen.queryByRole("alert", { name: "Unavailable HTTP capability" })).not.toBeInTheDocument();
+    expect(fetchImplementation).toHaveBeenCalledWith(
+      "/v1/admin/organizations/ORG-FLY-NAMIBIA",
       expect.objectContaining({ credentials: "same-origin" }),
     );
   });

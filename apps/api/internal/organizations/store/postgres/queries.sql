@@ -1,11 +1,13 @@
 -- name: GetOrganization :one
 SELECT id, legal_name, organization_type, status, revision, created_at, updated_at
 FROM organizations
-WHERE id = $1;
+WHERE id = $1
+  AND tombstoned_at IS NULL;
 
 -- name: ListOrganizations :many
 SELECT id, legal_name, organization_type, status, revision, created_at, updated_at
 FROM organizations
+WHERE tombstoned_at IS NULL
 ORDER BY legal_name, id
 LIMIT $1 OFFSET $2;
 
@@ -19,6 +21,7 @@ FROM organizations organization
 LEFT JOIN findings finding ON finding.organization_id = organization.id
 LEFT JOIN inspections inspection ON inspection.organization_id = organization.id
 WHERE organization.organization_type <> 'AUTHORITY'
+  AND organization.tombstoned_at IS NULL
   AND (sqlc.arg(organization_scope)::text = '' OR organization.id = sqlc.arg(organization_scope))
 GROUP BY organization.id
 ORDER BY organization.legal_name, organization.id

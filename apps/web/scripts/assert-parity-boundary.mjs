@@ -15,12 +15,6 @@ const defaultRepositoryRoot = path.resolve(path.dirname(scriptPath), "../../..")
 
 const EXPECTED_ROUTE_COUNT = 86;
 const EXPECTED_VISUAL_PAIR_COUNT = 258;
-const EXPECTED_DUAL_PROFILE_AUDIT_IDS = Object.freeze([
-  "ui-audit-001", "ui-audit-002", "ui-audit-007", "ui-audit-008", "ui-audit-009", "ui-audit-013",
-  "ui-audit-022", "ui-audit-027", "ui-audit-028", "ui-audit-030", "ui-audit-041", "ui-audit-044",
-  "ui-audit-052", "ui-audit-058", "ui-audit-059", "ui-audit-066", "ui-audit-076",
-]);
-const PLAN_2_HTTP_REASON = "HTTP capability is unavailable until Plan 2 activates this route.";
 
 const HTTP_FORBIDDEN_INPUTS = [
   /[/\\]src[/\\]mock[/\\]/i,
@@ -84,11 +78,14 @@ function mutateSource(relativePath, source, mutation) {
   if (mutation === "missing-route" && relativePath.endsWith("src/app/route-contracts.ts")) {
     return source.replace(/  \{ auditId: "ui-audit-086"[^\n]*\n/, "");
   }
-  if (mutation === "missing-dual-profile-audit" && relativePath.endsWith("src/app/route-contracts.ts")) {
-    return source.replace('"ui-audit-044",', "");
+  if (mutation === "remove-http-profile" && relativePath.endsWith("src/app/route-contracts.ts")) {
+    return source.replace('availableProfiles: ["demo", "http"],', 'availableProfiles: ["demo"],');
   }
-  if (mutation === "changed-plan2-reason" && relativePath.endsWith("src/app/route-contracts.ts")) {
-    return source.replace("HTTP capability is unavailable until Plan 2 activates this route.", "HTTP capability unavailable.");
+  if (mutation === "restore-blocked-profile-reason" && relativePath.endsWith("src/app/route-contracts.ts")) {
+    return source.replace(
+      'availableProfiles: ["demo", "http"],',
+      'availableProfiles: ["demo", "http"],\n  blockedProfileReason: "Stale HTTP block.",',
+    );
   }
   if (mutation === "undeclared-route" && relativePath.endsWith("src/app/router.tsx")) {
     return `${source}\nconst boundaryRouteMutation = <Route path=\"/scope-leak\" element={<div />} />;\n`;
@@ -153,12 +150,16 @@ function assertSourceBoundary(repositoryRoot, mutation) {
     "React route registry must remain the exact ordered 86-surface set.",
   );
   assert.equal(new Set(declaredRoutePaths).size, EXPECTED_ROUTE_COUNT, "React route registry contains duplicate paths.");
-  const dualProfileBlock = routeContracts.match(/const dualProfileAuditIds = new Set\(\[([\s\S]*?)\]\);/);
-  assert.ok(dualProfileBlock, "Dual-profile route contract set is missing.");
-  const actualDualProfileAuditIds = [...dualProfileBlock[1].matchAll(/"(ui-audit-\d+)"/g)].map((match) => match[1]);
-  assert.deepEqual(actualDualProfileAuditIds, EXPECTED_DUAL_PROFILE_AUDIT_IDS, "Route contract must preserve the exact 17 dual-profile surfaces.");
-  assert.match(routeContracts, new RegExp(PLAN_2_HTTP_REASON.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), "Demo-only routes must keep the exact Plan 2 HTTP reason.");
-  assert.match(routeContracts, /\? \["demo", "http"\]\s*:\s*\["demo"\]/, "Route profiles must partition into dual-profile and demo-only routes.");
+  assert.match(
+    routeContracts,
+    /availableProfiles:\s*\["demo",\s*"http"\]/,
+    "All 86 routes must be dual-profile.",
+  );
+  assert.doesNotMatch(
+    routeContracts,
+    /blockedProfileReason:\s*["']/,
+    "Activated routes must not retain a blocked profile reason.",
+  );
 
   const declaredPaths = new Set(declaredRoutePaths);
   for (const match of router.matchAll(/<Route\b[^>]*\bpath="([^"]+)"/g)) {

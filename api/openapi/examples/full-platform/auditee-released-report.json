@@ -1,0 +1,18 @@
+{
+  "schema": "AuditeeReleasedReportView",
+  "value": {
+    "reportVersionId": "REPORT-VERSION-2026-001",
+    "reportId": "REPORT-2026-001",
+    "kind": "FINAL",
+    "organizationId": "ORG-FLY-NAMIBIA",
+    "auditId": "AUD-2026-001",
+    "findingIds": ["FINDING-2026-001"],
+    "version": 2,
+    "status": "LOCKED",
+    "revision": 4,
+    "issuedAt": "2026-07-23T09:00:00Z",
+    "responseDueDate": "2026-08-22",
+    "caaVisibleCommentState": "RECORDED",
+    "caaVisibleComment": "Final report issued to the organization."
+  }
+}

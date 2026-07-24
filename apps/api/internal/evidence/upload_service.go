@@ -171,7 +171,32 @@ func (service *UploadService) Begin(ctx context.Context, actor identity.Principa
 			input.FileName, input.DeclaredMediaType, input.ByteSize, input.SHA256, revision, expiresAt, now); err != nil {
 			return fmt.Errorf("record Evidence upload session: %w", err)
 		}
-		return saveIdempotent(ctx, transaction, scope, input.OperationID, semanticHash, output, now)
+		responseBody, err := json.Marshal(output)
+		if err != nil {
+			return err
+		}
+		return persistUploadTransaction(ctx, transaction, uploadTransactionEnvelope{
+			OperationID:      input.OperationID,
+			CorrelationID:    input.CorrelationID,
+			IdempotencyScope: scope,
+			SemanticHash:     semanticHash,
+			ResponseBody:     responseBody,
+			ActorSubjectID:   actor.SubjectID,
+			ActorRole:        string(identity.RoleAuditee),
+			OrganizationID:   organizationID,
+			Action:           "evidence.upload_started",
+			EntityType:       "evidence_upload_session",
+			EntityID:         uploadID,
+			EntityVersion:    1,
+			BeforeStatus:     "",
+			AfterStatus:      UploadStatePending,
+			SyncKind:         "evidence_upload_session",
+			OutboxTopic:      "evidence.upload_started",
+			OutboxKey:        "command:" + scope + ":idempotency:" + input.OperationID,
+			AuditEventID:     service.idGenerator("audit"),
+			OutboxMessageID:  service.idGenerator("outbox"),
+			OccurredAt:       now,
+		})
 	})
 	return output, err
 }
@@ -294,32 +319,32 @@ func (service *UploadService) Complete(ctx context.Context, actor identity.Princ
 			return err
 		}
 		output = CompleteUploadOutput{EvidenceVersionID: evidenceVersionID, Version: version, UploadState: UploadStateUploaded, ScanState: ScanStatePending, ReviewState: ReviewStateNotReady}
-		responseBody, _ := json.Marshal(output)
-		role := string(identity.RoleAuditee)
-		if _, err := transaction.Exec(ctx, `
-			INSERT INTO audit_events (
-				sequence_id, event_id, occurred_at, actor_subject_id, actor_role, organization_id, action,
-				entity_type, entity_id, entity_version, before_status, after_status, operation_id,
-				correlation_id, request_id, details
-			) VALUES (nextval(pg_get_serial_sequence('audit_events', 'sequence_id')), $1, $2, $3, $4, $5,
-				'evidence.uploaded', 'evidence_version', $6, 1, 'PENDING', 'UPLOADED', $7, $8, $8, '{}'::jsonb)
-		`, service.idGenerator("audit"), now, actor.SubjectID, role, organizationID, evidenceVersionID, input.OperationID, input.CorrelationID); err != nil {
-			return fmt.Errorf("append Evidence upload audit: %w", err)
-		}
-		if _, err := transaction.Exec(ctx, `
-			INSERT INTO authorized_sync_changes (subject_id, organization_id, kind, entity_id, entity_revision, payload, changed_at)
-			VALUES ($1, $2, 'evidence_version', $3, 1, $4, $5)
-		`, actor.SubjectID, organizationID, evidenceVersionID, responseBody, now); err != nil {
+		responseBody, err := json.Marshal(output)
+		if err != nil {
 			return err
 		}
-		if _, err := transaction.Exec(ctx, `
-			INSERT INTO outbox_messages (
-				id, topic, aggregate_type, aggregate_id, payload, available_at, event_version, idempotency_key
-			) VALUES ($1, 'evidence.scan_requested', 'evidence_version', $2, $3, $4, 1, $5)
-		`, service.idGenerator("outbox"), evidenceVersionID, responseBody, now, "evidence.scan_requested:"+evidenceVersionID); err != nil {
-			return fmt.Errorf("enqueue Evidence scan: %w", err)
-		}
-		return saveIdempotent(ctx, transaction, scope, input.OperationID, semanticHash, output, now)
+		return persistUploadTransaction(ctx, transaction, uploadTransactionEnvelope{
+			OperationID:      input.OperationID,
+			CorrelationID:    input.CorrelationID,
+			IdempotencyScope: scope,
+			SemanticHash:     semanticHash,
+			ResponseBody:     responseBody,
+			ActorSubjectID:   actor.SubjectID,
+			ActorRole:        string(identity.RoleAuditee),
+			OrganizationID:   organizationID,
+			Action:           "evidence.uploaded",
+			EntityType:       "evidence_version",
+			EntityID:         evidenceVersionID,
+			EntityVersion:    1,
+			BeforeStatus:     UploadStatePending,
+			AfterStatus:      UploadStateUploaded,
+			SyncKind:         "evidence_version",
+			OutboxTopic:      "evidence.scan_requested",
+			OutboxKey:        "evidence.scan_requested:" + evidenceVersionID,
+			AuditEventID:     service.idGenerator("audit"),
+			OutboxMessageID:  service.idGenerator("outbox"),
+			OccurredAt:       now,
+		})
 	})
 	return output, err
 }
@@ -341,6 +366,23 @@ func (service *UploadService) ListVersions(ctx context.Context, actor identity.P
 	if actor.SubjectID == "" {
 		return nil, ErrEvidenceForbidden
 	}
+	var findingOrganizationID string
+	if err := service.pool.QueryRow(
+		ctx,
+		"SELECT organization_id FROM findings WHERE id = $1",
+		findingID,
+	).Scan(&findingOrganizationID); err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, err
+		}
+		if actor.HasRole(identity.RoleAuditee) {
+			return nil, ErrEvidenceForbidden
+		}
+		return []VersionView{}, nil
+	}
+	if err := authorizeEvidenceOrganization(actor, findingOrganizationID); err != nil {
+		return nil, err
+	}
 	rows, err := service.pool.Query(ctx, `
 		SELECT version.id, version.finding_id, version.organization_id, version.version, version.filename,
 		       version.submitted_at, state.upload_state, state.scan_state, state.review_state, state.revision
@@ -359,10 +401,7 @@ func (service *UploadService) ListVersions(ctx context.Context, actor identity.P
 			&view.SubmittedAt, &view.UploadState, &view.ScanState, &view.ReviewState, &view.Revision); err != nil {
 			return nil, err
 		}
-		if actor.HasRole(identity.RoleAuditee) && !actor.BelongsTo(view.OrganizationID) {
-			return nil, ErrEvidenceForbidden
-		}
-		if !actor.HasRole(identity.RoleAuditee) && !actor.IsCAA() {
+		if view.OrganizationID != findingOrganizationID {
 			return nil, ErrEvidenceForbidden
 		}
 		views = append(views, view)
@@ -371,27 +410,53 @@ func (service *UploadService) ListVersions(ctx context.Context, actor identity.P
 }
 
 func (service *UploadService) Download(ctx context.Context, actor identity.Principal, evidenceVersionID string) (objectstore.GetInstruction, error) {
-	var organizationID, scanState, bucket, key string
+	if actor.SubjectID == "" {
+		return objectstore.GetInstruction{}, ErrEvidenceForbidden
+	}
+	var organizationID string
+	if err := service.pool.QueryRow(
+		ctx,
+		"SELECT organization_id FROM evidence_versions WHERE id = $1",
+		evidenceVersionID,
+	).Scan(&organizationID); err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return objectstore.GetInstruction{}, err
+		}
+		if actor.HasRole(identity.RoleAuditee) {
+			return objectstore.GetInstruction{}, ErrEvidenceForbidden
+		}
+		return objectstore.GetInstruction{}, ErrEvidenceNotReady
+	}
+	if err := authorizeEvidenceOrganization(actor, organizationID); err != nil {
+		return objectstore.GetInstruction{}, err
+	}
+	var scanState, bucket, key string
 	if err := service.pool.QueryRow(ctx, `
-		SELECT version.organization_id, state.scan_state, metadata.bucket_name, metadata.object_key
+		SELECT state.scan_state, metadata.bucket_name, metadata.object_key
 		FROM evidence_versions version
 		JOIN evidence_version_states state ON state.evidence_version_id = version.id
 		JOIN object_metadata metadata ON metadata.id = state.canonical_object_metadata_id
 		WHERE version.id = $1
-	`, evidenceVersionID).Scan(&organizationID, &scanState, &bucket, &key); err != nil {
+	`, evidenceVersionID).Scan(&scanState, &bucket, &key); err != nil {
 		return objectstore.GetInstruction{}, ErrEvidenceNotReady
 	}
 	if scanState != ScanStateClean {
 		return objectstore.GetInstruction{}, ErrEvidenceNotReady
 	}
+	return service.objects.CreateGetInstruction(ctx, objectstore.GetRequest{Bucket: bucket, Key: key, ExpiresAt: service.clock().UTC().Add(5 * time.Minute)})
+}
+
+func authorizeEvidenceOrganization(actor identity.Principal, organizationID string) error {
 	if actor.HasRole(identity.RoleAuditee) {
 		if !actor.BelongsTo(organizationID) {
-			return objectstore.GetInstruction{}, ErrEvidenceForbidden
+			return ErrEvidenceForbidden
 		}
-	} else if !actor.IsCAA() {
-		return objectstore.GetInstruction{}, ErrEvidenceForbidden
+		return nil
 	}
-	return service.objects.CreateGetInstruction(ctx, objectstore.GetRequest{Bucket: bucket, Key: key, ExpiresAt: service.clock().UTC().Add(5 * time.Minute)})
+	if !actor.IsCAA() {
+		return ErrEvidenceForbidden
+	}
+	return nil
 }
 
 func (service *UploadService) ReconcileExpired(ctx context.Context) (int64, error) {
@@ -424,16 +489,93 @@ func loadIdempotent(ctx context.Context, transaction pgx.Tx, scope, operationID,
 	return false, nil
 }
 
-func saveIdempotent(ctx context.Context, transaction pgx.Tx, scope, operationID, semanticHash string, output any, now time.Time) error {
-	body, err := json.Marshal(output)
-	if err != nil {
-		return err
+type uploadTransactionEnvelope struct {
+	OperationID      string
+	CorrelationID    string
+	IdempotencyScope string
+	SemanticHash     string
+	ResponseBody     []byte
+	ActorSubjectID   string
+	ActorRole        string
+	OrganizationID   string
+	Action           string
+	EntityType       string
+	EntityID         string
+	EntityVersion    int64
+	BeforeStatus     string
+	AfterStatus      string
+	SyncKind         string
+	OutboxTopic      string
+	OutboxKey        string
+	AuditEventID     string
+	OutboxMessageID  string
+	OccurredAt       time.Time
+}
+
+func persistUploadTransaction(
+	ctx context.Context,
+	transaction pgx.Tx,
+	record uploadTransactionEnvelope,
+) error {
+	if _, err := transaction.Exec(ctx, `
+		INSERT INTO audit_events (
+			event_id, occurred_at, actor_subject_id, actor_role, organization_id,
+			action, entity_type, entity_id, entity_version, before_status, after_status,
+			operation_id, correlation_id, request_id, details
+		) VALUES (
+			$1, $2, $3, $4, $5,
+			$6, $7, $8, $9, NULLIF($10, ''), $11,
+			$12, $13, $13, '{}'::jsonb
+		)
+	`, record.AuditEventID, record.OccurredAt, record.ActorSubjectID, record.ActorRole,
+		record.OrganizationID, record.Action, record.EntityType, record.EntityID,
+		record.EntityVersion, record.BeforeStatus, record.AfterStatus,
+		record.OperationID, record.CorrelationID); err != nil {
+		return fmt.Errorf("append Evidence upload audit: %w", err)
 	}
-	_, err = transaction.Exec(ctx, `
+
+	var changeSequenceID int64
+	if err := transaction.QueryRow(ctx, `
+		INSERT INTO authorized_sync_changes (
+			subject_id, organization_id, kind, entity_id, entity_revision,
+			payload, changed_at, operation_id, correlation_id
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING sequence_id
+	`, record.ActorSubjectID, record.OrganizationID, record.SyncKind, record.EntityID,
+		record.EntityVersion, record.ResponseBody, record.OccurredAt, record.OperationID,
+		record.CorrelationID).Scan(&changeSequenceID); err != nil {
+		return fmt.Errorf("append Evidence upload authorized change: %w", err)
+	}
+
+	if _, err := transaction.Exec(ctx, `
+		INSERT INTO outbox_messages (
+			id, topic, aggregate_type, aggregate_id, payload, available_at,
+			event_version, idempotency_key, operation_id, correlation_id
+		) VALUES ($1, $2, $3, $4, $5, $6, 1, $7, $8, $9)
+	`, record.OutboxMessageID, record.OutboxTopic, record.EntityType, record.EntityID,
+		record.ResponseBody, record.OccurredAt, record.OutboxKey, record.OperationID,
+		record.CorrelationID); err != nil {
+		return fmt.Errorf("enqueue Evidence upload outbox: %w", err)
+	}
+
+	if _, err := transaction.Exec(ctx, `
 		INSERT INTO idempotency_responses (scope, operation_id, semantic_hash, response_status, response_headers, response_body, created_at)
 		VALUES ($1, $2, $3, 200, '{}'::jsonb, $4, $5)
-	`, scope, operationID, semanticHash, body, now)
-	return err
+	`, record.IdempotencyScope, record.OperationID, record.SemanticHash,
+		record.ResponseBody, record.OccurredAt); err != nil {
+		return fmt.Errorf("store Evidence upload idempotent response: %w", err)
+	}
+
+	if _, err := transaction.Exec(ctx, `
+		INSERT INTO command_transaction_links (
+			operation_id, idempotency_scope, audit_event_id,
+			change_sequence_id, outbox_message_id, created_at
+		) VALUES ($1, $2, $3, $4, $5, $6)
+	`, record.OperationID, record.IdempotencyScope, record.AuditEventID,
+		changeSequenceID, record.OutboxMessageID, record.OccurredAt); err != nil {
+		return fmt.Errorf("link Evidence upload transaction records: %w", err)
+	}
+	return nil
 }
 
 func uploadRandomID(prefix string) string {

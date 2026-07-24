@@ -6,7 +6,7 @@
 
 **Artifact boundary:** local `candidate-only` React/Vite demo and HTTP build
 
-**Plan status:** `active`
+**Plan status:** `ready-for-verification`
 
 **Release status:** `blocked`
 
@@ -129,33 +129,46 @@ No baseline was regenerated, no mask was broadened, no threshold was relaxed,
 and no semantic identity, authority, record, role, or action was altered to
 manufacture a visual pass.
 
-## Baseline Integrity Diagnosis
+## Baseline Integrity Status
 
 Standalone baseline integrity is `not verified`.
 
-The manifest records:
+The verifier's intended RED was:
+
+`source metadata mismatch for audit document hash.`
+
+The accepted manifest records:
 
 `sha256:92a8ab06da1f87fd9e84b45b35fa5c3dc58aa78a6eb7f6f9c9652731e8f74967`
 
-The current canonical English UI audit hashes to:
+The current user-edited canonical English UI audit records:
 
 `sha256:0ab4c60febb6d95f852f1aae2d540cb678b61c0f7111ba06f424c301325f4f9c`
 
-The exact source difference is the user-owned removal of the two-line link to
-the deleted Turkish companion document at the top of
+The exact source difference remains the user-owned removal of the two-line link
+to the deleted Turkish companion document at the top of
 `UI_SCREEN_AUDIT_2026-07-19.md`. The audit content and 86-row inventory were not
-rewritten by this task. The accepted baseline manifest was not changed merely
-to make verification pass.
+rewritten. The user accepted this integrity gap as non-blocking for Plan 2 but
+did not authorize replacing the accepted manifest hash. No PNG, PNG hash, route
+mapping, mask, comparator, or threshold was changed.
 
 ## Handoff
 
-Task 12 execution and evidence preparation are complete, but the plan cannot be
-set to `ready-for-verification` because two required gates remain non-green:
+Task 12 execution and evidence preparation are complete. On 23 July 2026, a
+separate Plan 2 prerequisite preflight verified the frozen nonvisual handoff
+with 46/46 focused Vitest tests, the exact 86-route/two-profile boundary, 4/4
+parity-ledger tests, and all 258 baseline PNG hashes. The retained workspace
+contained no candidate/result PNG attachments from the one-shot run, so the
+complete comparison-by-comparison manual review remains `not run`.
 
-1. baseline integrity is `not verified` because the audit-document source hash
-   differs from the accepted manifest;
-2. the one-shot visual matrix is `not verified` at 71/259.
+The user explicitly accepted the literal 71/259 visual result and unavailable
+candidate/result attachments as non-blocking, accepted the frozen
+route/capability/action handoff, and authorized the audit-hash metadata
+synchronization plus Plan 2. This acceptance does not convert any failed visual
+comparison into a pass. The one-shot matrix remains `not verified` at 71/259,
+with no baseline, mask, threshold, semantic truth, authority, or root-oracle
+weakening.
 
-The plan therefore remains `active`. Plan 2 is `blocked` until this plan becomes
-`ready-for-verification` and the frozen route/capability/action handoff is
-independently accepted. Independent review for Tasks 11–12 is `not run`.
+The plan is `ready-for-verification`. Plan 2 is unblocked and authorized to
+begin Backend Task 1. Independent comparison-by-comparison visual review for
+Tasks 11–12 remains `not run`.

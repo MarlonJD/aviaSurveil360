@@ -40,8 +40,31 @@ The Full React migration now implements all 86 accepted routes in demo mode and
 records the Task 11 interaction/accessibility boundary plus the literal Task 12
 matrix in
 [Full React 86-Screen Demo Migration Evidence](REACT_86_SCREEN_DEMO_2026-07-22.md).
-The 86-route artifact remains `candidate-only`; the full visual and standalone
-baseline-integrity gates are `not verified`, so Plan 2 remains `blocked`.
+The 86-route artifact remains `candidate-only`. The one-shot visual matrix
+remains `not verified` at 71/259 and complete comparison review is `not run`;
+the user explicitly accepted those gaps as non-blocking. Standalone baseline
+integrity is `not verified`: the accepted manifest records
+`sha256:92a8ab06da1f87fd9e84b45b35fa5c3dc58aa78a6eb7f6f9c9652731e8f74967`,
+while the user-edited canonical audit hashes to
+`sha256:0ab4c60febb6d95f852f1aae2d540cb678b61c0f7111ba06f424c301325f4f9c`.
+The accepted baseline was not replaced. Plan 1 is `ready-for-verification`.
+
+Plan 2 Backend Tasks 1–12 are `verified locally`; see
+[Full Backend Scenario Parity Evidence](FULL_BACKEND_SCENARIO_PARITY_2026-07-22.md).
+The final candidate contains 75 OpenAPI paths, 81 operations, 79 non-health
+operations covering all 80 frozen Backend methods, 160 schemas, 30 guarded
+mutations, schema version 11, 25 full-platform relations, 19 SQLC stores,
+28 required Backend slices, all 86 routes in demo and HTTP, eight roles, and
+108 unique screen/action pairs. The same implementation passes exact normalized
+Mock/HTTP parity for 10 scenario families and 45 required proofs.
+
+The exact final matrix passed contract `15/15`, examples `14/14`, SQLC drift,
+complete Go race, web `621/621`, root/oracle `108/108`, live Backend `19/19`,
+Mock browser `35/35`, HTTP browser `17/17`, exactly `258/258` visible-action
+inventories, OIDC `1/1`, offline `7/7`, build/artifact/app-shell gates, and
+worker/outbox observability. Independent Plan 2 review is `not run`.
+The backend remains `candidate-only`, release
+remains `release pending`, and this local evidence is not production evidence.
 The local recommendation is `GO`, the artifact remains `candidate-only`, and
 release is `release pending`. These adjacent candidates do not make the root
 demo or the overall product `production-ready`; production remains `blocked`.
@@ -70,8 +93,10 @@ and return to seed data.
 The 23 July 2026 Full React handoff records exactly 86 React routes, 258/258
 responsive route checks, 258/258 visible-action inventories, and a one-shot
 visual result of 71/259 passed and 188/259 failed. Standalone baseline integrity
-is `not verified` because the current canonical UI-audit document hash differs
-from the accepted manifest after removal of its deleted Turkish-companion link:
+is `not verified` because the accepted manifest hash and current user-edited
+canonical audit hash differ; this gap and the visual failures remain literal
+and were user-accepted as non-blocking for Plan 2 without replacing the
+baseline:
 [`REACT_86_SCREEN_DEMO_2026-07-22.md`](REACT_86_SCREEN_DEMO_2026-07-22.md).
 
 The 22 July 2026 React parity review covers all 17 routed surfaces at desktop,

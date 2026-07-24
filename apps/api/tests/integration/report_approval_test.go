@@ -14,11 +14,16 @@ func TestReportApprovalUsesExactVersionAndIssueNeverClosesFinding(t *testing.T) 
 	seedFinding(t, pool, "finding-report", "OPS-2026-010", "airline-xyz")
 	if _, err := pool.Exec(context.Background(), `
 		INSERT INTO report_versions (id, report_id, inspection_id, version, status, snapshot)
-		VALUES ('report-version-001', 'report-001', 'audit-cabin-001', 1, 'DRAFT', '{"findingIds":["finding-report"],"contentHash":"hash-001"}');
+		VALUES ('report-version-001', 'report-001', 'audit-cabin-001', 1, 'DRAFT',
+			'{"kind":"FINAL","ready":true,"findingIds":["finding-report"],"contentHash":"sha256:hash-001"}')
+	`); err != nil {
+		t.Fatalf("seed report version: %v", err)
+	}
+	if _, err := pool.Exec(context.Background(), `
 		INSERT INTO report_approval_states (report_version_id, status, revision)
 		VALUES ('report-version-001', 'DEPARTMENT_REVIEW', 1)
 	`); err != nil {
-		t.Fatalf("seed report: %v", err)
+		t.Fatalf("seed report approval: %v", err)
 	}
 	service := testService(pool)
 

@@ -238,7 +238,7 @@ func completeAttachmentForScan(t *testing.T, pool *database.Pool, objects *memor
 	if err != nil {
 		t.Fatalf("begin scan Inspection Attachment: %v", err)
 	}
-	objects.Put("avia-quarantine", begin.StagingObjectKey, "image/png", png, map[string]string{"sha256": digest})
+	objects.Seed("avia-quarantine", begin.StagingObjectKey, "image/png", png, map[string]string{"sha256": digest})
 	if _, err := service.Complete(context.Background(), inspector, attachments.CompleteUploadInput{
 		OperationID: "op-attachment-complete-" + suffix, CorrelationID: "corr-attachment-" + suffix,
 		UploadID: begin.UploadID, SHA256: digest, ByteSize: int64(len(png)),
@@ -268,7 +268,7 @@ func completeEvidenceForScan(t *testing.T, pool *database.Pool, objects *memoryO
 	if err != nil {
 		t.Fatalf("begin Evidence for scan: %v", err)
 	}
-	objects.Put("avia-quarantine", begin.StagingObjectKey, "application/pdf", body, map[string]string{"sha256": digest})
+	objects.Seed("avia-quarantine", begin.StagingObjectKey, "application/pdf", body, map[string]string{"sha256": digest})
 	completed, err := service.Complete(context.Background(), auditee, evidence.CompleteUploadInput{
 		OperationID: "op-complete-" + findingID, CorrelationID: "corr-" + findingID,
 		UploadID: begin.UploadID, ByteSize: int64(len(body)), SHA256: digest,

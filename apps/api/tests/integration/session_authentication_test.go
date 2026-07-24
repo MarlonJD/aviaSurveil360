@@ -58,6 +58,18 @@ func TestBrowserSessionHashesOpaqueCredentialsEncryptsProviderTokensAndEnforcesP
 	if tokenHash == created.Token || csrfHash == created.CSRFToken || bytes.Contains(providerCiphertext, []byte("plain-access-secret")) || bytes.Contains(providerCiphertext, []byte("plain-refresh-secret")) {
 		t.Fatal("raw browser/provider secret was persisted")
 	}
+	var profileRevision, settingsRevision int64
+	if err := pool.QueryRow(context.Background(), `
+		SELECT profile.revision, settings.revision
+		FROM user_profiles profile
+		JOIN user_settings settings ON settings.subject_id = profile.subject_id
+		WHERE profile.subject_id = $1
+	`, created.Principal.SubjectID).Scan(&profileRevision, &settingsRevision); err != nil {
+		t.Fatalf("read bootstrapped profile/settings: %v", err)
+	}
+	if profileRevision != 1 || settingsRevision != 1 {
+		t.Fatalf("bootstrapped revisions = profile %d settings %d", profileRevision, settingsRevision)
+	}
 
 	principal, err := manager.Authenticate(context.Background(), created.Token)
 	if err != nil {
@@ -99,6 +111,34 @@ func TestBrowserSessionHashesOpaqueCredentialsEncryptsProviderTokensAndEnforcesP
 	}
 	if _, err := manager.Authenticate(context.Background(), second.Token); !errors.Is(err, session.ErrUnauthenticated) {
 		t.Fatalf("revoked session error = %v", err)
+	}
+	var revokeAuditCount int
+	if err := pool.QueryRow(context.Background(), `
+		SELECT COUNT(*)
+		FROM audit_events
+		WHERE action = 'SESSION_REVOKED'
+		  AND entity_type = 'SESSION'
+		  AND entity_id = $1
+		  AND actor_subject_id = $2
+	`, second.ID, second.Principal.SubjectID).Scan(&revokeAuditCount); err != nil {
+		t.Fatalf("count session revoke audit: %v", err)
+	}
+	if revokeAuditCount != 1 {
+		t.Fatalf("session revoke audit count = %d", revokeAuditCount)
+	}
+
+	if _, err := pool.Exec(context.Background(), `
+		UPDATE user_profiles
+		SET tombstoned_at = $2
+		WHERE subject_id = $1
+	`, second.Principal.SubjectID, now); err != nil {
+		t.Fatalf("tombstone user profile: %v", err)
+	}
+	if _, err := manager.Create(context.Background(), session.CreateInput{
+		SubjectID: "oidc-inspector", Issuer: "https://identity.example/realms/avia", DisplayName: "OIDC Inspector",
+		OrganizationID: "caa", Roles: []identity.Role{identity.RoleInspector},
+	}); !errors.Is(err, session.ErrUnauthenticated) {
+		t.Fatalf("tombstoned profile session-create error = %v", err)
 	}
 }
 

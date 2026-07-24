@@ -129,13 +129,40 @@ func (manager *Manager) Create(ctx context.Context, input CreateInput) (BrowserS
 	}
 
 	err = database.WithinTransaction(ctx, manager.pool, func(ctx context.Context, transaction pgx.Tx) error {
-		if _, err := transaction.Exec(ctx, `
+		var persistedSubjectID string
+		if err := transaction.QueryRow(ctx, `
 			INSERT INTO identity_references (subject_id, issuer, display_name, created_at)
 			VALUES ($1, $2, $3, $4)
 			ON CONFLICT (subject_id) DO UPDATE
 			SET issuer = EXCLUDED.issuer, display_name = EXCLUDED.display_name
-		`, input.SubjectID, input.Issuer, input.DisplayName, now); err != nil {
+			WHERE identity_references.tombstoned_at IS NULL
+			RETURNING subject_id
+		`, input.SubjectID, input.Issuer, input.DisplayName, now).Scan(&persistedSubjectID); errors.Is(err, pgx.ErrNoRows) {
+			return ErrUnauthenticated
+		} else if err != nil {
 			return fmt.Errorf("persist authenticated identity reference: %w", err)
+		}
+		if err := transaction.QueryRow(ctx, `
+			INSERT INTO user_profiles (
+				subject_id, display_name, organization_id, revision, created_at, updated_at
+			) VALUES ($1, $2, $3, 1, $4, $4)
+			ON CONFLICT (subject_id) DO UPDATE
+			SET organization_id = EXCLUDED.organization_id,
+			    updated_at = EXCLUDED.updated_at
+			WHERE user_profiles.tombstoned_at IS NULL
+			RETURNING subject_id
+		`, input.SubjectID, input.DisplayName, input.OrganizationID, now).Scan(&persistedSubjectID); errors.Is(err, pgx.ErrNoRows) {
+			return ErrUnauthenticated
+		} else if err != nil {
+			return fmt.Errorf("persist authenticated user profile: %w", err)
+		}
+		if _, err := transaction.Exec(ctx, `
+			INSERT INTO user_settings (
+				subject_id, notification_preferences, locale, timezone, revision, updated_at
+			) VALUES ($1, '{}'::jsonb, 'en', 'UTC', 1, $2)
+			ON CONFLICT (subject_id) DO NOTHING
+		`, input.SubjectID, now); err != nil {
+			return fmt.Errorf("persist authenticated user settings: %w", err)
 		}
 		if _, err := transaction.Exec(ctx, `
 			INSERT INTO session_references (
@@ -187,6 +214,12 @@ func (manager *Manager) Authenticate(ctx context.Context, rawToken string) (iden
 			return fmt.Errorf("read authenticated identity reference: %w", err)
 		}
 		principal.DisplayName = identityReference.DisplayName
+		profile, err := identitystore.New(transaction).GetProfile(ctx, record.SubjectID)
+		if err == nil {
+			principal.DisplayName = profile.DisplayName
+		} else if !errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("read authenticated user profile: %w", err)
+		}
 		if record.OrganizationID != nil {
 			principal.OrganizationID = *record.OrganizationID
 		}
@@ -242,14 +275,39 @@ func (manager *Manager) Revoke(ctx context.Context, sessionID string) error {
 	if strings.TrimSpace(sessionID) == "" {
 		return ErrUnauthenticated
 	}
-	if _, err := manager.pool.Exec(ctx, `
-		UPDATE session_references
-		SET revoked_at = COALESCE(revoked_at, $2), provider_tokens_ciphertext = NULL
-		WHERE id = $1
-	`, sessionID, manager.clock().UTC()); err != nil {
-		return fmt.Errorf("revoke browser session: %w", err)
-	}
-	return nil
+	now := manager.clock().UTC()
+	return database.WithinTransaction(ctx, manager.pool, func(ctx context.Context, transaction pgx.Tx) error {
+		var subjectID string
+		var organizationID *string
+		var roles []string
+		if err := transaction.QueryRow(ctx, `
+			UPDATE session_references
+			SET revoked_at = COALESCE(revoked_at, $2), provider_tokens_ciphertext = NULL
+			WHERE id = $1
+			  AND revoked_at IS NULL
+			RETURNING subject_id, organization_id, roles
+		`, sessionID, now).Scan(&subjectID, &organizationID, &roles); errors.Is(err, pgx.ErrNoRows) {
+			return ErrUnauthenticated
+		} else if err != nil {
+			return fmt.Errorf("revoke browser session: %w", err)
+		}
+		actorRole := ""
+		if len(roles) > 0 {
+			actorRole = roles[0]
+		}
+		if _, err := transaction.Exec(ctx, `
+			INSERT INTO audit_events (
+				event_id, occurred_at, actor_subject_id, actor_role, organization_id,
+				action, entity_type, entity_id, entity_version, after_status, details
+			) VALUES (
+				$1, $2, $3, NULLIF($4, ''), $5,
+				'SESSION_REVOKED', 'SESSION', $6, 1, 'REVOKED', '{}'::jsonb
+			)
+		`, manager.idGenerator("audit-session"), now, subjectID, actorRole, organizationID, sessionID); err != nil {
+			return fmt.Errorf("append session revocation audit event: %w", err)
+		}
+		return nil
+	})
 }
 
 type LoginRequest struct {

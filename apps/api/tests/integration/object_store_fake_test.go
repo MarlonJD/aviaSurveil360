@@ -39,6 +39,30 @@ func (store *memoryObjectStore) CreatePutInstruction(_ context.Context, request 
 	}, nil
 }
 
+func (store *memoryObjectStore) Write(_ context.Context, request objectstore.WriteRequest) (objectstore.ObjectInfo, error) {
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		return objectstore.ObjectInfo{}, err
+	}
+	if int64(len(body)) != request.Size {
+		return objectstore.ObjectInfo{}, fmt.Errorf("object size %d does not match %d", len(body), request.Size)
+	}
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	location := objectLocation(request.Bucket, request.Key)
+	if _, exists := store.objects[location]; exists {
+		return objectstore.ObjectInfo{}, objectstore.ErrObjectAlreadyExists
+	}
+	store.objects[location] = memoryObject{
+		body: append([]byte(nil), body...), contentType: request.ContentType,
+		metadata: cloneStrings(request.Metadata),
+	}
+	return objectstore.ObjectInfo{
+		Bucket: request.Bucket, Key: request.Key, Size: request.Size,
+		ContentType: request.ContentType, Metadata: cloneStrings(request.Metadata),
+	}, nil
+}
+
 func (store *memoryObjectStore) Open(_ context.Context, bucket, key string) (io.ReadCloser, objectstore.ObjectInfo, error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
@@ -85,7 +109,7 @@ func (store *memoryObjectStore) CreateGetInstruction(_ context.Context, request 
 
 func (store *memoryObjectStore) Check(context.Context) error { return nil }
 
-func (store *memoryObjectStore) Put(bucket, key, contentType string, body []byte, metadata map[string]string) {
+func (store *memoryObjectStore) Seed(bucket, key, contentType string, body []byte, metadata map[string]string) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 	store.objects[objectLocation(bucket, key)] = memoryObject{

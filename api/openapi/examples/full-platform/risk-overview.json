@@ -1,0 +1,10 @@
+{
+  "schema": "RiskOverviewView",
+  "value": {
+    "organizationId": null,
+    "overdueFindingCount": 3,
+    "openFindingCount": 11,
+    "repeatFindingCount": 2,
+    "revision": 7
+  }
+}

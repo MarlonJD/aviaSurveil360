@@ -222,18 +222,39 @@
       "durableEffect": "Invokes a typed demo/backend command whose record, revision, authority, and visible result are covered by the owning feature tests.",
       "evidence": "apps/web/tests/e2e/visible-action-contract.spec.ts"
     },
-    {
-      "id": "browser-local-artifacts",
-      "surfaceIds": [
-        "*"
+  {
+    "id": "browser-local-artifacts",
+    "surfaceIds": [
+      "*"
       ],
       "namePattern": "^[^A-Za-z0-9]*(Export|Download|Print|Prepare)(\\b| ).*",
       "boundary": "browser-local-artifact",
-      "durableEffect": "Creates or prepares the explicitly labelled browser-local mock artifact and exposes a visible route-specific result.",
-      "evidence": "apps/web/tests/e2e/visible-action-contract.spec.ts"
-    },
-    {
-      "id": "declared-route-and-workflow-actions",
+    "durableEffect": "Creates or prepares the explicitly labelled browser-local mock artifact and exposes a visible route-specific result.",
+    "evidence": "apps/web/tests/e2e/visible-action-contract.spec.ts"
+  },
+  {
+    "id": "role-handoff-navigation",
+    "surfaceIds": [
+      "finding-detail",
+      "cap-review"
+    ],
+    "namePattern": "^Switch to .+$",
+    "boundary": "navigation",
+    "durableEffect": "Requests the exact target role and navigates to the corresponding Finding or CAP workspace through the active identity boundary.",
+    "evidence": "apps/web/tests/e2e/canonical-scenario.spec.ts"
+  },
+  {
+    "id": "evidence-workspace-navigation",
+    "surfaceIds": [
+      "evidence-review"
+    ],
+    "namePattern": "^CAP / Provider Review$",
+    "boundary": "navigation",
+    "durableEffect": "Navigates from the Evidence waiting-review workspace to the CAP and provider-review register.",
+    "evidence": "apps/web/src/features/evidence/evidence-review-page.test.tsx"
+  },
+  {
+    "id": "declared-route-and-workflow-actions",
       "surfaceIds": [
         "role-select", "inspector-home", "inspector-findings", "inspector-messages", "inspector-calendar", "inspector-reports", "audit-detail", "checklist-runner", "finding-detail", "closure-report-preview", "inspector-assistant", "inspector-profile",
         "lead-home", "lead-preliminary-reports", "lead-preliminary-report-workflow", "lead-final-reports", "lead-final-report-readiness", "lead-prepare-final-report", "lead-final-report-document", "lead-audit-assignment", "lead-checklist-question-assignment", "cap-review", "lead-calendar", "lead-messages", "lead-analytics-reports", "lead-settings",
@@ -477,6 +498,25 @@
         "apps/web/tests/e2e/first-production-routes.spec.ts"
       ],
       "acceptedDifference": "React exposes read-only versioned configuration and a server-shaped audit projection; broad editing remains only a later or demo-only concept."
+    },
+    {
+      "id": "full-platform-mock-http-transcript-parity",
+      "classification": "first-production",
+      "role": "multi-role",
+      "route": "full-platform-scenario-contract",
+      "action": "run-ten-scenario-families",
+      "entityIdRule": "Exact normalized Audit, Planning, Potential Finding, Finding, CAP, Evidence, Report, notification, and Document identities",
+      "expectedStatus": "EXACT_MOCK_HTTP_TRANSCRIPT_PARITY",
+      "expectedOwner": "Server-authorized multi-role workflow",
+      "visibilityInvariant": "organization isolation, Internal CAA Note separation, explicit denials, advisory-only projections, and no UI-only canonical state",
+      "legacyTest": "tests/scenario-integrity-regression.test.js",
+      "reactTest": [
+        "apps/web/tests/contract/full-platform-backend.contract.ts",
+        "apps/web/tests/e2e/full-platform-scenarios.spec.ts",
+        "apps/api/tests/integration/full_platform_denials_test.go",
+        "apps/api/internal/httpapi/test_profile_boundary_test.go"
+      ],
+      "acceptedDifference": "The candidate executes one normalized multi-role transcript against MockBackend and HttpBackend; the intact legacy oracle remains the browser-local behavior reference."
     }
   ]
 }

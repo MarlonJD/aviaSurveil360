@@ -3,6 +3,13 @@ import { resolve } from "node:path";
 
 import { expect, test, type Page } from "@playwright/test";
 
+import type { Backend, BackendPrincipal } from "../../src/backend/backend";
+import { createHttpBackend } from "../../src/backend/http-backend";
+import { createCanonicalTestFetch } from "../../src/test-profile/http-test-boundary";
+import {
+  createCanonicalFinding,
+  PRINCIPALS,
+} from "../contract/backend-contract";
 import {
   driveReactSurface,
   installDeterministicPageState,
@@ -159,6 +166,93 @@ async function resetHttpProfile(page: Page): Promise<void> {
   expect(response.ok()).toBe(true);
 }
 
+function liveHttpBackendFor(principal: BackendPrincipal): Backend {
+  const apiURL = process.env.AVIA_HTTP_API_URL ?? "http://127.0.0.1:58081";
+  const token = process.env.AVIA_CANONICAL_TEST_TOKEN ?? "";
+  const subjectId =
+    principal.subjectId === "USR-INSPECTOR-AMINA"
+      ? "154ec5ac-6f97-4f55-916f-d2f142fc6211"
+      : principal.subjectId;
+  return createHttpBackend(
+    { apiBaseUrl: apiURL, environmentLabel: "HTTP direct-load fixture" },
+    { fetchImplementation: createCanonicalTestFetch(subjectId, token) },
+  );
+}
+
+async function prepareHttpFindingFixture(): Promise<void> {
+  await createCanonicalFinding({ backendFor: liveHttpBackendFor });
+}
+
+async function lockHttpAuditeeReportFixtures(): Promise<void> {
+  const manager = liveHttpBackendFor(PRINCIPALS.manager);
+  const gm = liveHttpBackendFor(PRINCIPALS.gm);
+  const executive = liveHttpBackendFor(PRINCIPALS.executiveDirector);
+  const preliminary = await manager.reports.getVersion({
+    reportVersionId: "PR-2026-018-V1",
+  });
+  const atGeneralManager =
+    preliminary.status === "DEPARTMENT_REVIEW"
+      ? await manager.reports.decide({
+          operationId: `OP-HTTP-DIRECT-MANAGER-${preliminary.revision}`,
+          reportVersionId: preliminary.reportVersionId,
+          expectedReportVersionRevision: preliminary.revision,
+          decision: "FORWARD",
+          reason: "Prepare the exact Preliminary Report for HTTP direct-load verification.",
+        })
+      : preliminary;
+  const atExecutive =
+    atGeneralManager.status === "GM_REVIEW"
+      ? await gm.reports.decide({
+          operationId: `OP-HTTP-DIRECT-GM-${atGeneralManager.revision}`,
+          reportVersionId: atGeneralManager.reportVersionId,
+          expectedReportVersionRevision: atGeneralManager.revision,
+          decision: "FORWARD",
+          reason: "Forward the exact Preliminary Report for HTTP direct-load verification.",
+        })
+      : atGeneralManager;
+  if (atExecutive.status === "EXECUTIVE_DIRECTOR_REVIEW") {
+    await executive.reports.decide({
+      operationId: `OP-HTTP-DIRECT-EXEC-PRELIMINARY-${atExecutive.revision}`,
+      reportVersionId: atExecutive.reportVersionId,
+      expectedReportVersionRevision: atExecutive.revision,
+      decision: "ISSUE_AND_LOCK",
+      reason: "Issue the exact Preliminary Report for Auditee direct-load verification.",
+    });
+  }
+  const finalReport = await manager.reports.getVersion({
+    reportVersionId: "RPT-CAB-2026-001-V1",
+  });
+  const finalAtGeneralManager =
+    finalReport.status === "DEPARTMENT_REVIEW"
+      ? await manager.reports.decide({
+          operationId: `OP-HTTP-DIRECT-MANAGER-FINAL-${finalReport.revision}`,
+          reportVersionId: finalReport.reportVersionId,
+          expectedReportVersionRevision: finalReport.revision,
+          decision: "FORWARD",
+          reason: "Prepare the exact Final Report for HTTP direct-load verification.",
+        })
+      : finalReport;
+  const finalAtExecutive =
+    finalAtGeneralManager.status === "GM_REVIEW"
+      ? await gm.reports.decide({
+          operationId: `OP-HTTP-DIRECT-GM-FINAL-${finalAtGeneralManager.revision}`,
+          reportVersionId: finalAtGeneralManager.reportVersionId,
+          expectedReportVersionRevision: finalAtGeneralManager.revision,
+          decision: "FORWARD",
+          reason: "Forward the exact Final Report for HTTP direct-load verification.",
+        })
+      : finalAtGeneralManager;
+  if (finalAtExecutive.status === "EXECUTIVE_DIRECTOR_REVIEW") {
+    await executive.reports.decide({
+      operationId: `OP-HTTP-DIRECT-EXEC-FINAL-${finalAtExecutive.revision}`,
+      reportVersionId: finalAtExecutive.reportVersionId,
+      expectedReportVersionRevision: finalAtExecutive.revision,
+      decision: "ISSUE_AND_LOCK",
+      reason: "Issue the exact Final Report for Auditee direct-load verification.",
+    });
+  }
+}
+
 expect(VISUAL_SURFACES).toHaveLength(86);
 expect(VISUAL_VIEWPORTS).toHaveLength(3);
 expect(VISUAL_SURFACES.length * VISUAL_VIEWPORTS.length).toBe(258);
@@ -174,7 +268,21 @@ for (const viewport of VISUAL_VIEWPORTS) {
     });
     page.on("pageerror", (error) => consoleIssues.push(`pageerror: ${error.message}`));
     let actionInventories = 0;
+    let findingPrepared = false;
+    let auditeeReportsPrepared = false;
     for (const surface of VISUAL_SURFACES) {
+      if (testInfo.project.name === "http" && !findingPrepared && surface.id === "finding-detail") {
+        await prepareHttpFindingFixture();
+        findingPrepared = true;
+      }
+      if (
+        testInfo.project.name === "http" &&
+        !auditeeReportsPrepared &&
+        surface.id === "auditee-preliminary-reports"
+      ) {
+        await lockHttpAuditeeReportFixtures();
+        auditeeReportsPrepared = true;
+      }
       consoleIssues.length = 0;
       await installDeterministicPageState(page);
       await driveReactSurface(page, surface);

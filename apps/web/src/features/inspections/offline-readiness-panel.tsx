@@ -60,9 +60,10 @@ function ConnectedOfflineReadinessPanel({
       readSnapshot: readOfflineCheckoutSnapshot,
       writeSnapshot: writeOfflineCheckoutSnapshot,
       now: () =>
-        applicationRuntime.buildProfile === "demo"
+        applicationRuntime.now?.() ??
+        (applicationRuntime.buildProfile === "demo"
           ? new Date("2026-06-15T09:00:00.000Z")
-          : new Date(),
+          : new Date()),
     }),
     [applicationRuntime.buildProfile, backend],
   );

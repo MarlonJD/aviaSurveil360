@@ -1,0 +1,14 @@
+{
+  "/health/live": {
+    "get": {
+      "operationId": "getLiveness",
+      "responses": { "200": { "description": "Live", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" } } } } }
+    }
+  },
+  "/health/ready": {
+    "get": {
+      "operationId": "getReadiness",
+      "responses": { "200": { "description": "Ready", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" } } } }, "503": { "$ref": "#/components/responses/Problem" } }
+    }
+  }
+}

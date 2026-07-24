@@ -55,6 +55,7 @@ type ReviewInput struct {
 	CAPRevision         int64
 	ExpectedCAPRevision int64
 	FindingStatus       findings.Status
+	EvidenceRequired    bool
 	Decision            ReviewDecision
 	Reason              string
 }
@@ -65,7 +66,7 @@ type ReviewResult struct {
 }
 
 func Review(input ReviewInput) (ReviewResult, error) {
-	if !input.Actor.HasRole(identity.RoleInspector, identity.RoleLeadInspector, identity.RoleDepartmentManager) {
+	if !input.Actor.HasRole(identity.RoleInspector, identity.RoleLeadInspector) {
 		return ReviewResult{}, fmt.Errorf("role cannot review a CAP")
 	}
 	if input.CAPStatus != StatusSubmitted || input.FindingStatus != findings.StatusCAPSubmitted {
@@ -76,6 +77,9 @@ func Review(input ReviewInput) (ReviewResult, error) {
 	}
 	switch input.Decision {
 	case DecisionAccept:
+		if !input.EvidenceRequired {
+			return ReviewResult{CAPStatus: StatusAccepted, FindingStatus: findings.StatusPendingClosure}, nil
+		}
 		return ReviewResult{CAPStatus: StatusAccepted, FindingStatus: findings.StatusEvidenceRequired}, nil
 	case DecisionReject:
 		if strings.TrimSpace(input.Reason) == "" {

@@ -46,6 +46,7 @@ var requiredFoundationTables = []string{
 	"outbox_messages",
 	"surveillance_plan_items",
 	"reminder_rules",
+	"template_draft_versions",
 }
 
 func TestMigrationsApplyFromAnEmptyDatabase(t *testing.T) {
@@ -55,7 +56,7 @@ func TestMigrationsApplyFromAnEmptyDatabase(t *testing.T) {
 		t.Fatalf("apply migrations: %v", err)
 	}
 	assertFoundationSchema(t, pool)
-	if version, err := migrations.CurrentVersion(context.Background(), pool); err != nil || version != 6 {
+	if version, err := migrations.CurrentVersion(context.Background(), pool); err != nil || version != migrations.LatestVersion {
 		t.Fatalf("migration version = %d, err = %v", version, err)
 	}
 }

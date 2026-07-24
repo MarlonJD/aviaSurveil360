@@ -58,6 +58,7 @@ export function LeadReviewPage() {
   const [severity, setSeverity] = useState<FindingSeverity>("LEVEL_1_CRITICAL");
   const [capRequired, setCapRequired] = useState(true);
   const [evidenceRequired, setEvidenceRequired] = useState(true);
+  const [dueDate, setDueDate] = useState<string | null>("2026-07-15");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -138,7 +139,7 @@ export function LeadReviewPage() {
         severity,
         capRequired,
         evidenceRequired,
-        dueDate: "2026-07-15",
+        dueDate,
       });
       setSelected(result.potentialFinding);
       setFinding(result.finding);
@@ -148,6 +149,19 @@ export function LeadReviewPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function selectSeverity(nextSeverity: FindingSeverity): void {
+    if (nextSeverity === "OBSERVATION") {
+      setCapRequired(false);
+      setEvidenceRequired(false);
+      setDueDate(null);
+    } else if (severity === "OBSERVATION") {
+      setCapRequired(true);
+      setEvidenceRequired(true);
+      setDueDate("2026-07-15");
+    }
+    setSeverity(nextSeverity);
   }
 
   return (
@@ -191,12 +205,12 @@ export function LeadReviewPage() {
               {!finding ? (
                 <div className="lead-potential-form">
                   <label>Finding title<input readOnly title="Finding title is sourced from the persisted Potential Finding." value={selected.title} /></label>
-                  <label>Lead severity <span aria-hidden="true">*</span><select aria-label="Finding severity" value={severity} onChange={(event) => setSeverity(event.target.value as FindingSeverity)}><option value="LEVEL_1_CRITICAL">Level 1 Critical</option><option value="LEVEL_2_MAJOR">Level 2 Major</option><option value="LEVEL_3_MINOR">Level 3 Minor</option><option value="OBSERVATION">Observation</option></select></label>
+                  <label>Lead severity <span aria-hidden="true">*</span><select aria-label="Finding severity" value={severity} onChange={(event) => selectSeverity(event.target.value as FindingSeverity)}><option value="LEVEL_1_CRITICAL">Level 1 Critical</option><option value="LEVEL_2_MAJOR">Level 2 Major</option><option value="LEVEL_3_MINOR">Level 3 Minor</option><option value="OBSERVATION">Observation</option></select></label>
                   <div className="lead-potential-checks">
                     <label><input checked={capRequired} onChange={(event) => setCapRequired(event.target.checked)} type="checkbox" /> CAP required</label>
                     <label><input checked={evidenceRequired} onChange={(event) => setEvidenceRequired(event.target.checked)} type="checkbox" /> Evidence required</label>
                   </div>
-                  <label>Due Date<input readOnly type="date" value="2026-07-15" /><small>Observation defaults clear CAP, Evidence, and Due Date; the Lead Inspector may explicitly enable them.</small></label>
+                  <label>Due Date<input aria-label="Finding Due Date" onChange={(event) => setDueDate(event.target.value || null)} type="date" value={dueDate ?? ""} /><small>Observation defaults clear CAP, Evidence, and Due Date; the Lead Inspector may explicitly enable them.</small></label>
                   <label>Reason for return/dismissal<textarea aria-label="Lead decision reason" onChange={(event) => setReason(event.target.value)} placeholder="Required only for Return or Dismiss." rows={3} value={reason} /></label>
                   <div className="lead-potential-actions">
                     <button className="lead-root-button lead-root-button--primary" disabled={busy} onClick={() => void convert()} type="button">Convert to Finding</button>

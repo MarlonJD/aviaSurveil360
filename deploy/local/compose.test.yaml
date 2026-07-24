@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: aviasurveil
       POSTGRES_PASSWORD: aviasurveil
     ports:
-      - "127.0.0.1:55432:5432"
+      - "127.0.0.1:${AVIA_TEST_POSTGRES_PORT:-55432}:5432"
     volumes:
       - postgres-test-data:/var/lib/postgresql/data
     healthcheck:
@@ -24,8 +24,8 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: local-admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: local-admin-password
     ports:
-      - "127.0.0.1:58080:8080"
-      - "127.0.0.1:59000:9000"
+      - "127.0.0.1:${AVIA_TEST_KEYCLOAK_PORT:-58080}:8080"
+      - "127.0.0.1:${AVIA_TEST_KEYCLOAK_MANAGEMENT_PORT:-59000}:9000"
     volumes:
       - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
     healthcheck:
@@ -51,8 +51,8 @@ services:
       MINIO_ROOT_PASSWORD: avia-local-secret-key
       MINIO_API_CORS_ALLOW_ORIGIN: http://127.0.0.1:4174
     ports:
-      - "127.0.0.1:59001:9000"
-      - "127.0.0.1:59002:9001"
+      - "127.0.0.1:${AVIA_TEST_OBJECT_STORE_PORT:-59001}:9000"
+      - "127.0.0.1:${AVIA_TEST_OBJECT_STORE_CONSOLE_PORT:-59002}:9001"
     volumes:
       - object-store-test-data:/data
     healthcheck:

@@ -163,8 +163,8 @@ describe("visual parity contract", () => {
     const script = join(repositoryRoot, "apps/web/scripts/assert-parity-boundary.mjs");
     const mutations = [
       ["missing-route", /86-surface/],
-      ["missing-dual-profile-audit", /17 dual-profile/],
-      ["changed-plan2-reason", /exact Plan 2 HTTP reason/],
+      ["remove-http-profile", /All 86 routes must be dual-profile/],
+      ["restore-blocked-profile-reason", /must not retain a blocked profile reason/],
       ["skip-viewport", /VISUAL_VIEWPORTS/],
       ["remove-shell-assertion", /workspace-sidebar/],
       ["remove-content-assertion", /workbench-page-header/],

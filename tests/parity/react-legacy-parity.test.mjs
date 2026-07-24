@@ -165,3 +165,85 @@ test("the legacy Vanilla demo remains the removal-blocking behavior oracle", () 
     assert.ok(fs.existsSync(path.join(repositoryRoot, requiredPath)), `${requiredPath} must remain intact`);
   }
 });
+
+test("the full-platform parity gate freezes ten unskipped mock and HTTP scenario families", () => {
+  const contractPath = path.join(
+    repositoryRoot,
+    "apps/web/tests/contract/full-platform-backend.contract.ts",
+  );
+  const scenarioPath = path.join(
+    repositoryRoot,
+    "apps/web/tests/e2e/full-platform-scenarios.spec.ts",
+  );
+  const resetCommandPath = path.join(
+    repositoryRoot,
+    "apps/api/cmd/test-profile-reset/main.go",
+  );
+  const resetScriptPath = path.join(repositoryRoot, "scripts/reset-test-profile.sh");
+  const denialsPath = path.join(
+    repositoryRoot,
+    "apps/api/tests/integration/full_platform_denials_test.go",
+  );
+  const boundaryPath = path.join(
+    repositoryRoot,
+    "apps/api/internal/httpapi/test_profile_boundary_test.go",
+  );
+  for (const requiredPath of [
+    contractPath,
+    scenarioPath,
+    resetCommandPath,
+    resetScriptPath,
+    denialsPath,
+    boundaryPath,
+  ]) {
+    assert.ok(fs.existsSync(requiredPath), `Missing Task 11 parity surface: ${requiredPath}`);
+  }
+
+  const contract = fs.readFileSync(contractPath, "utf8");
+  for (const family of [
+    "routine-inspection-to-closure",
+    "ad-hoc-planning-to-assignment",
+    "checklist-and-potential-finding-authority",
+    "cap-evidence-and-closure-authority",
+    "preliminary-and-final-report-authority",
+    "configuration-and-immutable-package-snapshot",
+    "organization-and-platform-projections",
+    "advisory-management-projections",
+    "offline-causal-sync-and-session-boundaries",
+    "advisory-draft-without-canonical-mutation",
+  ]) {
+    assert.match(contract, new RegExp(`["']${family}["']`), `Missing scenario family ${family}`);
+  }
+  for (const transcriptField of [
+    "entityIds",
+    "revisions",
+    "statuses",
+    "owners",
+    "roles",
+    "organizationIds",
+    "versions",
+    "auditEventTypes",
+    "notificationJobs",
+    "documentJobs",
+    "denials",
+    "dashboardProjections",
+  ]) {
+    assert.match(contract, new RegExp(`\\b${transcriptField}\\b`), `Missing transcript field ${transcriptField}`);
+  }
+  assert.doesNotMatch(contract, /\.skip\b|test\.fixme\b|describe\.skip\b/);
+
+  const scenario = fs.readFileSync(scenarioPath, "utf8");
+  assert.match(scenario, /runFullPlatformScenarios/);
+  assert.match(scenario, /FULL_PLATFORM_EXPECTED_TRANSCRIPT/);
+  assert.doesNotMatch(scenario, /\.skip\b|test\.fixme\b/);
+
+  const playwright = fs.readFileSync(path.join(repositoryRoot, "apps/web/playwright.config.ts"), "utf8");
+  const scenarioMatches = playwright.match(/e2e\/full-platform-scenarios\.spec\.ts/g) ?? [];
+  assert.equal(scenarioMatches.length, 2, "Full-platform scenarios must run in mock and HTTP projects");
+
+  const resetScript = fs.readFileSync(resetScriptPath, "utf8");
+  assert.match(resetScript, /cmd\/test-profile-reset/);
+  const boundary = fs.readFileSync(boundaryPath, "utf8");
+  assert.match(boundary, /StatusNotFound/);
+  assert.match(boundary, /\/__test\/reset/);
+});

@@ -202,9 +202,9 @@ describe("EvidenceReviewPage", () => {
     expect(within(page).getByText("Evidence Waiting Review", { selector: ".evidence-root-attention span" }).parentElement).toHaveTextContent("0 findings");
     expect(reviewSpy).toHaveBeenCalledWith(expect.objectContaining({
       evidenceVersionId: "EV-CAB-2026-001-V2",
-      expectedEvidenceVersionRevision: 1,
+      expectedEvidenceVersionRevision: 2,
       decision: "PARTIALLY_CLOSE",
-      operationId: "OP-EVIDENCE-EV-CAB-2026-001-V2-R1-PARTIALLY_CLOSE",
+      operationId: "OP-EVIDENCE-EV-CAB-2026-001-V2-R2-PARTIALLY_CLOSE",
     }));
     expect(within(page).getByRole("button", { name: "Record Evidence review" })).toBeDisabled();
     expect(within(page).getByRole("button", { name: "Record Evidence review" })).toHaveAttribute(
@@ -221,7 +221,7 @@ describe("EvidenceReviewPage", () => {
       beforeStatus: "PENDING_CAA_REVIEW",
       afterStatus: "EVIDENCE_MORE_INFORMATION_REQUESTED",
       reason: "Serviceability is accepted; position confirmation remains incomplete.",
-      entityRevision: 7,
+      entityRevision: 9,
     });
     expect(within(page).getByRole("link", { name: "Open Department CAP Closure Review for FND-CAB-2026-001" })).toHaveAttribute(
       "href",
@@ -261,7 +261,7 @@ describe("EvidenceReviewPage", () => {
       internalCaaNote: "Record the later exact version 3 decision independently.",
     });
 
-    expect(thirdReview).toMatchObject({ evidenceVersionId: "EV-CAB-2026-001-V3", evidenceVersionRevision: 2 });
+    expect(thirdReview).toMatchObject({ evidenceVersionId: "EV-CAB-2026-001-V3", evidenceVersionRevision: 3 });
     const events = await manager.auditTrail.list({ entityType: "finding", entityId: finding.id });
     expect(events.items.filter((event) => event.action === "evidence.reviewed")).toHaveLength(3);
   });

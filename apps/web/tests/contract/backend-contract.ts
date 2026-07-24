@@ -5,7 +5,10 @@ import type {
   BackendPrincipal,
   EvidenceVersionView,
   FindingView,
+  VisibleActionEffect,
 } from "../../src/backend/backend";
+import { REACT_ROUTE_CONTRACTS } from "../../src/app/route-contracts";
+import { SCREEN_VISIBLE_ACTIONS } from "../../src/mock/seed-data";
 
 export const FIXED_NOW = "2026-06-15T09:00:00.000Z";
 
@@ -103,7 +106,7 @@ export async function createCanonicalFinding(
   return converted.finding!;
 }
 
-async function submitAndAcceptCanonicalCap(
+export async function submitAndAcceptCanonicalCap(
   harness: BackendContractHarness,
   finding: FindingView,
 ) {
@@ -137,7 +140,7 @@ async function submitAndAcceptCanonicalCap(
   return { submitted, accepted };
 }
 
-async function submitEvidence(
+export async function submitEvidence(
   harness: BackendContractHarness,
   operationSuffix: string,
   fileName: string,
@@ -287,6 +290,49 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
       })).rejects.toThrow(/Forbidden|Lead Inspector|authority/i);
     });
 
+    it("starts an explicitly Evidence-only Observation at Evidence submission", async () => {
+      const harness = await createHarness();
+      const inspector = harness.backendFor(PRINCIPALS.inspector);
+      const response = await inspector.inspections.upsertChecklistResponse({
+        operationId: "OP-RESPONSE-EVIDENCE-ONLY-OBSERVATION",
+        responseId: "RESP-CAB-EMEQ-PBE-001",
+        auditId: "AUD-2026-001",
+        questionId: "CAB-EMEQ-PBE-001",
+        expectedResponseRevision: null,
+        answer: "OBSERVATION",
+        comment: "Observation requires Evidence but no CAP.",
+      });
+      const potential = await inspector.potentialFindings.create({
+        operationId: "OP-PF-EVIDENCE-ONLY-OBSERVATION",
+        auditId: "AUD-2026-001",
+        questionId: "CAB-EMEQ-PBE-001",
+        checklistResponseId: response.id,
+        expectedChecklistResponseRevision: response.revision,
+        title: "Evidence-only PBE Observation",
+        description: "The Lead may configure Evidence without requiring a CAP.",
+        requiredComment: response.comment,
+        inspectionAttachmentIds: [],
+      });
+      const converted = await harness.backendFor(PRINCIPALS.leadInspector).potentialFindings.decide({
+        operationId: "OP-PF-CONVERT-EVIDENCE-ONLY-OBSERVATION",
+        potentialFindingId: potential.id,
+        expectedPotentialFindingRevision: potential.revision,
+        decision: "CONVERT",
+        severity: "OBSERVATION",
+        capRequired: false,
+        evidenceRequired: true,
+        dueDate: null,
+      });
+      expect(converted.finding).toMatchObject({
+        severity: "OBSERVATION",
+        status: "EVIDENCE_REQUIRED",
+        capRequired: false,
+        evidenceRequired: true,
+        dueDate: null,
+        currentOwnerType: "AUDITEE",
+      });
+    });
+
     it("separates Auditee CAP submission from CAA acceptance and keeps the Finding open", async () => {
       const harness = await createHarness();
       const finding = await createCanonicalFinding(harness);
@@ -346,6 +392,7 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
         decision: "REQUEST_MORE_INFORMATION",
         internalCaaNote: "Revision 1 needs stronger preventive-action sequencing.",
       });
+      expect(caaList.items[0]?.status).toBe("SUPERSEDED");
       expect(await lead.caps.getRevision({ capRevisionId: first.capRevisionId })).toEqual(caaList.items[0]);
 
       const auditeeList = await auditee.caps.listRevisions({ findingId: finding.id });
@@ -353,6 +400,7 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
       expect(JSON.stringify(auditeeList)).not.toMatch(/internalCaaNote|Internal CAA Note/i);
       const auditeeDetail = await auditee.caps.getRevision({ capRevisionId: first.capRevisionId });
       expect(auditeeDetail.audience).toBe("AUDITEE");
+      expect(auditeeDetail.status).toBe("SUPERSEDED");
       expect(JSON.stringify(auditeeDetail)).not.toMatch(/internalCaaNote|Internal CAA Note/i);
       await expect(harness.backendFor(PRINCIPALS.gm).caps.getRevision({
         capRevisionId: first.capRevisionId,
@@ -463,17 +511,420 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
     it("binds report decisions to versions and never closes an open Finding", async () => {
       const harness = await createHarness();
       const finding = await createCanonicalFinding(harness);
+      const manager = harness.backendFor(PRINCIPALS.manager);
+      const gm = harness.backendFor(PRINCIPALS.gm);
       const executive = harness.backendFor(PRINCIPALS.executiveDirector);
-      const before = await executive.reports.getVersion({ reportVersionId: "RPT-CAB-2026-001-V1" });
-      const issued = await executive.reports.decide({
-        operationId: "OP-REPORT-ISSUE",
+      const before = await manager.reports.getVersion({ reportVersionId: "RPT-CAB-2026-001-V1" });
+      const gmReview = await manager.reports.decide({
+        operationId: "OP-REPORT-MANAGER-FORWARD",
         reportVersionId: before.reportVersionId,
         expectedReportVersionRevision: before.revision,
+        decision: "FORWARD",
+        reason: "Forward the exact candidate Final Report version to the General Manager.",
+      });
+      const executiveReview = await gm.reports.decide({
+        operationId: "OP-REPORT-GM-FORWARD",
+        reportVersionId: gmReview.reportVersionId,
+        expectedReportVersionRevision: gmReview.revision,
+        decision: "FORWARD",
+        reason: "Forward the exact candidate Final Report version to the Executive Director.",
+      });
+      const issued = await executive.reports.decide({
+        operationId: "OP-REPORT-ISSUE",
+        reportVersionId: executiveReview.reportVersionId,
+        expectedReportVersionRevision: executiveReview.revision,
         decision: "ISSUE_AND_LOCK",
         reason: "Issue the exact candidate report version.",
       });
       expect(issued.status).toBe("LOCKED");
+      expect(issued.issuedAt).not.toBeNull();
       expect((await executive.findings.get({ findingId: finding.id })).status).not.toBe("CLOSED");
+
+      const auditee = harness.backendFor(PRINCIPALS.auditee);
+      expect(auditee.auditeeReports).toBeDefined();
+      expect(auditee.documents).toBeDefined();
+      const releasedReports = await auditee.auditeeReports!.listReleased({ kind: "FINAL" });
+      expect(releasedReports).toEqual({
+        items: [{
+          reportVersionId: "RPT-CAB-2026-001-V1",
+          reportId: "RPT-CAB-2026-001",
+          kind: "FINAL",
+          organizationId: "ORG-FLY-NAMIBIA",
+          auditId: "AUD-2026-001",
+          findingIds: [],
+          version: 1,
+          status: "LOCKED",
+          revision: 4,
+          issuedAt: issued.issuedAt,
+          responseDueDate: null,
+          caaVisibleCommentState: "NO_COMMENT_RECORDED",
+          caaVisibleComment: null,
+        }],
+        nextCursor: null,
+      });
+      expect(await auditee.auditeeReports!.getReleased({
+        reportVersionId: issued.reportVersionId,
+      })).toEqual(releasedReports.items[0]);
+
+      const releasedDocuments = await auditee.documents!.list({});
+      expect(releasedDocuments).toEqual({
+        items: [{
+          id: "RPT-CAB-2026-001-V1",
+          organizationId: "ORG-FLY-NAMIBIA",
+          title: "Report RPT-CAB-2026-001",
+          kind: "REPORT",
+          version: 1,
+          revision: 4,
+          createdAt: issued.issuedAt,
+          publicReviewResult: "RELEASED",
+          downloadFileName: "RPT-CAB-2026-001.pdf",
+        }],
+        nextCursor: null,
+      });
+      expect(await auditee.documents!.open({ documentId: issued.reportVersionId }))
+        .toEqual(releasedDocuments.items[0]);
+    });
+
+    it("produces the same normalized communication, notification, and calendar transcript", async () => {
+      const harness = await createHarness();
+      const inspector = harness.backendFor(PRINCIPALS.inspector);
+      const manager = harness.backendFor(PRINCIPALS.manager);
+      const auditee = harness.backendFor(PRINCIPALS.auditee);
+      if (!inspector.communications || !inspector.calendar || !auditee.communications ||
+          !manager.calendar || !auditee.notifications || !auditee.calendar) {
+        throw new Error("Task 8 communication, notification, or calendar capability is unavailable.");
+      }
+
+      const input = {
+        idempotencyKey: "IDEM-TASK8-CONTRACT-MESSAGE",
+        expectedRevision: null,
+        organizationId: "ORG-FLY-NAMIBIA",
+        subject: "Cabin Inspection follow-up",
+        body: "Please provide the requested public training record.",
+        audience: "AUDITEE" as const,
+      };
+      const sent = await inspector.communications.send(input);
+      const replayed = await inspector.communications.send(input);
+      const internal = await inspector.communications.send({
+        idempotencyKey: "IDEM-TASK8-CONTRACT-INTERNAL",
+        expectedRevision: null,
+        organizationId: "ORG-FLY-NAMIBIA",
+        subject: "Internal CAA Note",
+        body: "Private enforcement deliberation.",
+        audience: "CAA",
+      });
+      const auditeeMessages = await auditee.communications.list({
+        organizationId: "ORG-FLY-NAMIBIA",
+      });
+      const visibleMessage = auditeeMessages.items.find(
+        (message) => message.subject === input.subject,
+      );
+      const notifications = await auditee.notifications.list({});
+      const notification = notifications.items.find(
+        (item) => item.title === "New CAA communication" &&
+          item.body.includes(input.subject),
+      );
+      expect(notification).toBeDefined();
+      const read = await auditee.notifications.markRead({
+        idempotencyKey: "IDEM-TASK8-CONTRACT-READ",
+        expectedRevision: notification!.revision,
+        notificationId: notification!.id,
+      });
+      const replayedRead = await auditee.notifications.markRead({
+        idempotencyKey: "IDEM-TASK8-CONTRACT-READ",
+        expectedRevision: notification!.revision,
+        notificationId: notification!.id,
+      });
+      const inspectorCalendar = await inspector.calendar.list({});
+      const inspectorItem = inspectorCalendar.items.find(
+        (item) => item.auditId === "AUD-2026-001",
+      );
+      expect(inspectorItem).toBeDefined();
+      const opened = await inspector.calendar.openItem({
+        calendarItemId: inspectorItem!.id,
+      });
+      const managerCalendar = await manager.calendar.list({});
+      const auditeeCalendar = await auditee.calendar.list({});
+
+      expect([
+        {
+          event: "communication.sent",
+          organizationId: sent.organizationId,
+          subject: sent.subject,
+          audience: sent.audience,
+          direction: sent.direction,
+          revision: sent.revision,
+          replayExact: JSON.stringify(replayed) === JSON.stringify(sent),
+        },
+        {
+          event: "communication.internal-separated",
+          direction: internal.direction,
+          visibleMessageCount: auditeeMessages.items.filter(
+            (message) => message.subject === input.subject,
+          ).length,
+          visibleMessageDirection: visibleMessage?.direction,
+          leakedInternal: JSON.stringify(auditeeMessages).includes(
+            "Private enforcement deliberation.",
+          ),
+        },
+        {
+          event: "notification.read",
+          subjectId: read.subjectId,
+          title: read.title,
+          unreadBefore: notification!.readAt === null,
+          revisionBefore: notification!.revision,
+          revisionAfter: read.revision,
+          readRecorded: read.readAt !== null,
+          replayExact: JSON.stringify(replayedRead) === JSON.stringify(read),
+        },
+        {
+          event: "calendar.authorized-work",
+          inspectorItemCount: inspectorCalendar.items.length,
+          auditId: opened.auditId,
+          organizationId: opened.organizationId,
+          scheduledDate: opened.scheduledDate,
+          dueState: opened.dueState,
+          nextAction: opened.nextAction,
+          managerAuditIds: managerCalendar.items.map(({ auditId }) => auditId),
+          auditeeAuditIds: auditeeCalendar.items.map(({ auditId }) => auditId),
+        },
+      ]).toEqual([
+        {
+          event: "communication.sent",
+          organizationId: "ORG-FLY-NAMIBIA",
+          subject: "Cabin Inspection follow-up",
+          audience: "AUDITEE",
+          direction: "CAA_TO_AUDITEE",
+          revision: 1,
+          replayExact: true,
+        },
+        {
+          event: "communication.internal-separated",
+          direction: "CAA_INTERNAL",
+          visibleMessageCount: 1,
+          visibleMessageDirection: "CAA_TO_AUDITEE",
+          leakedInternal: false,
+        },
+        {
+          event: "notification.read",
+          subjectId: "USR-AUDITEE-FLY",
+          title: "New CAA communication",
+          unreadBefore: true,
+          revisionBefore: 1,
+          revisionAfter: 2,
+          readRecorded: true,
+          replayExact: true,
+        },
+        {
+          event: "calendar.authorized-work",
+          inspectorItemCount: 1,
+          auditId: "AUD-2026-001",
+          organizationId: "ORG-FLY-NAMIBIA",
+          scheduledDate: "2026-06-18",
+          dueState: "DUE_SOON",
+          nextAction: "Continue Cabin Inspection checklist",
+          managerAuditIds: ["AUD-2026-001", "AUD-2026-099"],
+          auditeeAuditIds: ["AUD-2026-001"],
+        },
+      ]);
+    });
+
+    it("projects all 86 screen/action contracts and the same governed Task 9 transcript", async () => {
+      const harness = await createHarness();
+      const uniqueScreens = new Set<string>();
+      const uniqueActions = new Map<string, {
+        backend: Backend;
+        screenId: string;
+        actionId: string;
+        effect: VisibleActionEffect;
+      }>();
+      for (const principal of Object.values(PRINCIPALS)) {
+        const backend = harness.backendFor(principal);
+        if (!backend.administration) {
+          throw new Error("Task 9 Administration capability is unavailable.");
+        }
+        const expectedRoutes = REACT_ROUTE_CONTRACTS.filter(
+          (route) => route.requiredRole === null || route.requiredRole === principal.role,
+        );
+        const listed = await backend.administration.listScreenProjections({});
+        expect(listed.map(({ screenId }) => screenId)).toEqual(
+          expectedRoutes.map(({ id }) => id),
+        );
+        for (const route of expectedRoutes) {
+          const projection = await backend.administration.getScreenProjection({
+            screenId: route.id,
+          });
+          expect(projection.screenId).toBe(route.id);
+          expect(projection.visibleActions).toEqual(SCREEN_VISIBLE_ACTIONS[route.id]);
+          uniqueScreens.add(route.id);
+          for (const action of projection.visibleActions) {
+            const key = `${route.id}/${action.id}`;
+            uniqueActions.set(key, {
+              backend,
+              screenId: route.id,
+              actionId: action.id,
+              effect: action.effect,
+            });
+          }
+        }
+      }
+      expect([...uniqueScreens]).toHaveLength(86);
+      expect([...uniqueActions]).toHaveLength(108);
+      for (const { backend, screenId, actionId, effect } of uniqueActions.values()) {
+        const invoked = await backend.administration!.invokeVisibleAction({
+          screenId,
+          actionId,
+        });
+        expect(invoked).toEqual({ screenId, actionId, effect });
+      }
+      await expect(
+        harness.backendFor(PRINCIPALS.inspector).administration!
+          .getScreenProjection({ screenId: "admin-reports" }),
+      ).rejects.toThrow(/Forbidden|unavailable|role|authority/i);
+
+      const manager = harness.backendFor(PRINCIPALS.manager);
+      const otherInspector = harness.backendFor(PRINCIPALS.otherInspector);
+      const admin = harness.backendFor(PRINCIPALS.admin);
+      if (!manager.risk || !otherInspector.assistantDrafts || !admin.adminWorkspace) {
+        throw new Error("Task 9 governed capability slice is unavailable.");
+      }
+      const overview = await manager.risk.getOverview({
+        organizationId: "ORG-SKYCARGO",
+      });
+      const management = await manager.risk.getManagementProjection({});
+      const guidance = await otherInspector.assistantDrafts.getGuidance({});
+      const draft = await otherInspector.assistantDrafts.createDraft({
+        findingId: "FND-SKYCARGO-2026-099",
+        prompt: "Draft an evidence request only.",
+      });
+      const reportDefinitions = await admin.adminWorkspace.listReportDefinitions({
+        search: "package",
+      });
+      const directory = await admin.adminWorkspace.listAccessDirectory({
+        search: "David",
+        role: "inspector",
+      });
+      const organizations = await admin.adminWorkspace.listOrganizations({
+        search: "Fly",
+        organizationType: "OPERATOR",
+        status: "ACTIVE",
+        scope: "CAA oversight",
+      });
+
+      expect({
+        overview: {
+          organizationId: overview.organizationId,
+          overdueFindingCount: overview.overdueFindingCount,
+          openFindingCount: overview.openFindingCount,
+          repeatFindingCount: overview.repeatFindingCount,
+          revision: overview.revision,
+        },
+        management: {
+          findings: management.findings.map((finding) => ({
+            findingId: finding.findingId,
+            findingNumber: finding.findingNumber,
+            organizationId: finding.organizationId,
+            severity: finding.severity,
+            riskLevel: finding.riskLevel,
+            status: finding.status,
+            dueState: finding.dueState,
+            capRequired: finding.capRequired,
+          })),
+          capEffectiveness: management.capEffectiveness.map((item) => ({
+            findingId: item.findingId,
+            capRevision: item.capRevision,
+            capStatus: item.capStatus,
+            state: item.state,
+          })),
+          revision: management.revision,
+        },
+        guidance,
+        draft: {
+          findingId: draft.findingId,
+          prompt: draft.prompt,
+          draft: draft.draft,
+          advisoryOnly: draft.advisoryOnly,
+          canCreateFinding: draft.canCreateFinding,
+          canSetSeverity: draft.canSetSeverity,
+          canCloseFinding: draft.canCloseFinding,
+        },
+        reportDefinitions: reportDefinitions.items,
+        directory: directory.items,
+        organizations: organizations.items,
+      }).toEqual({
+        overview: {
+          organizationId: "ORG-SKYCARGO",
+          overdueFindingCount: 1,
+          openFindingCount: 1,
+          repeatFindingCount: 0,
+          revision: 1,
+        },
+        management: {
+          findings: [{
+            findingId: "FND-SKYCARGO-2026-099",
+            findingNumber: "CAR-2026-099",
+            organizationId: "ORG-SKYCARGO",
+            severity: "LEVEL_2_MAJOR",
+            riskLevel: "MEDIUM",
+            status: "OPEN",
+            dueState: "OVERDUE",
+            capRequired: true,
+          }],
+          capEffectiveness: [{
+            findingId: "FND-SKYCARGO-2026-099",
+            capRevision: 2,
+            capStatus: "MORE_INFORMATION_REQUESTED",
+            state: "NOT_ELIGIBLE",
+          }],
+          revision: 1,
+        },
+        guidance: {
+          advisoryOnly: true,
+          prohibitedActions: [
+            "create Finding", "set severity", "close Finding", "enforcement action",
+          ],
+        },
+        draft: {
+          findingId: "FND-SKYCARGO-2026-099",
+          prompt: "Draft an evidence request only.",
+          draft:
+            "Advisory draft for CAR-2026-099: review the configured finding basis and request only the expected evidence.",
+          advisoryOnly: true,
+          canCreateFinding: false,
+          canSetSeverity: false,
+          canCloseFinding: false,
+        },
+        reportDefinitions: [{
+          id: "ADMIN-RPT-PACKAGE-001",
+          title: "Inspection package configuration preview",
+          description: "Typed mock report definition; this is not a real report or PDF engine.",
+          packageFields: [
+            "packageId", "auditId", "organizationId", "questionIds",
+            "configuredReferences", "expectedEvidence", "riskFocus",
+          ],
+          actionReason:
+            "ADMIN-RPT-PACKAGE-001 generation is unavailable because Task 10 provides a typed browser-local preview only.",
+        }],
+        directory: [{
+          subjectId: "USR-INSPECTOR-DAVID",
+          displayName: "David Inspector",
+          role: "inspector",
+          organizationId: null,
+          email: "Not configured in demo",
+          mfa: "Not configured in demo",
+          invitation: "Not configured in demo",
+          accountStatus: "Not configured in demo",
+        }],
+        organizations: [{
+          id: "ORG-FLY-NAMIBIA",
+          legalName: "Fly Namibia",
+          organizationType: "OPERATOR",
+          status: "ACTIVE",
+          scope: "CAA oversight",
+          detailAvailable: true,
+          disabledReason: null,
+        }],
+      });
     });
 
     it("replays the same direct command and rejects operation ID payload drift", async () => {
@@ -499,17 +950,23 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
     it("returns a deterministic sync acknowledgement and exact replay", async () => {
       const harness = await createHarness();
       const inspector = harness.backendFor(PRINCIPALS.inspector);
+      const checkout = await inspector.inspections.checkout({
+        operationId: "OP-SYNC-CONTRACT-CHECKOUT",
+        packageId: "PKG-CAB-2026-001",
+        expectedPackageVersion: 1,
+        deviceInstanceId: "DEVICE-CANDIDATE-001",
+      });
       const request = {
         operation: {
           operationId: "OP-SYNC-CONTRACT",
           protocolVersion: 1,
-          offlineGrantId: "GRANT-CANDIDATE-001",
-          packageId: "PKG-CAB-2026-001",
-          packageVersion: 1,
+          offlineGrantId: checkout.offlineGrant.grantId,
+          packageId: checkout.offlineGrant.packageId,
+          packageVersion: checkout.offlineGrant.packageVersion,
           entityId: "RESP-CAB-EMEQ-PBE-001",
           commandType: "UPSERT_CHECKLIST_RESPONSE" as const,
           baseRevision: null,
-          deviceInstanceId: "DEVICE-CANDIDATE-001",
+          deviceInstanceId: checkout.offlineGrant.deviceInstanceId,
           clientOccurredAt: FIXED_NOW,
           payload: {
             auditId: "AUD-2026-001",
@@ -654,6 +1111,466 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
         "PLANNING_RELEASED",
       ]);
       expect(JSON.stringify(auditEvents)).not.toMatch(/internalCaaNote/i);
+    });
+
+    it("produces the same normalized planning, package, team, and Auditee coordination transcript", async () => {
+      const harness = await createHarness();
+      const manager = harness.backendFor(PRINCIPALS.manager);
+      if (!manager.planningIntake || !manager.packageDrafts || !manager.teams) {
+        throw new Error("Task 4 manager capabilities are unavailable.");
+      }
+      const auditee = harness.backendFor(PRINCIPALS.auditee);
+      if (!auditee.auditeeCoordination) {
+        throw new Error("Task 4 Auditee coordination capability is unavailable.");
+      }
+
+      const transcript: unknown[] = [];
+      const initialDraft = await manager.planningIntake.getDraft({
+        draftId: "PLAN-DRAFT-2026-001",
+      });
+      transcript.push({
+        event: "planning.draft.loaded",
+        id: initialDraft.id,
+        noticePolicy: initialDraft.noticePolicy,
+        requestedBudget: initialDraft.requestedBudget,
+        revision: initialDraft.revision,
+      });
+      const savedDraft = await manager.planningIntake.saveDraft({
+        idempotencyKey: "IDEM-TASK4-CONTRACT-DRAFT",
+        expectedRevision: initialDraft.revision,
+        draftId: initialDraft.id,
+        values: {
+          organizationId: "ORG-FLY-NAMIBIA",
+          organizationName: "Fly Namibia",
+          applicationType: "Continued Surveillance",
+          domain: "Cabin Safety",
+          inspectionCategory: "Routine / Announced",
+          noticePolicy: "ADVANCE",
+          purpose: "Annual routine oversight contract transcript.",
+          triggerType: "Department Manager initiated",
+          riskCategory: "Cabin Safety",
+          plannedDate: "2026-12-10",
+          mode: "On-site",
+          location: "Windhoek",
+          templateVersionId: "CTV-CABIN-1",
+          scope: "Cabin safety and emergency equipment.",
+          requestedBudget: 0,
+          currency: "USD",
+        },
+      });
+      transcript.push({
+        event: "planning.draft.saved",
+        noticePolicy: savedDraft.noticePolicy,
+        purpose: savedDraft.purpose,
+        location: savedDraft.location,
+        revision: savedDraft.revision,
+      });
+      const submitted = await manager.planningIntake.submit({
+        idempotencyKey: "IDEM-TASK4-CONTRACT-SUBMIT",
+        expectedRevision: savedDraft.revision,
+        draftId: savedDraft.id,
+        planningItemId: "PLAN-2026-TASK4-CONTRACT",
+      });
+      transcript.push({
+        event: "planning.intake.submitted",
+        draftRevision: submitted.draft.revision,
+        submittedPlanningItemId: submitted.draft.submittedPlanningItemId,
+        planningStatus: submitted.planningItem.status,
+        ownerRole: submitted.planningItem.currentOwnerRole,
+        requestedBudget: submitted.planningItem.estimatedBudget,
+      });
+
+      const initialPackage = await manager.packageDrafts.get({
+        packageDraftId: "PKG-AUD-2026-001-CABIN",
+      });
+      transcript.push({
+        event: "package.draft.loaded",
+        id: initialPackage.id,
+        applicationType: initialPackage.applicationType,
+        domain: initialPackage.domain,
+        riskFocus: initialPackage.riskFocus,
+        questionIds: initialPackage.questions.map(({ id }) => id),
+        revision: initialPackage.revision,
+      });
+      const savedPackage = await manager.packageDrafts.save({
+        idempotencyKey: "IDEM-TASK4-CONTRACT-PACKAGE",
+        expectedRevision: initialPackage.revision,
+        packageDraftId: initialPackage.id,
+        riskFocus: ["PBE serviceability", "Cabin inspection CAP follow-up"],
+      });
+      transcript.push({
+        event: "package.draft.saved",
+        riskFocus: savedPackage.riskFocus,
+        questionIds: savedPackage.questions.map(({ id }) => id),
+        revision: savedPackage.revision,
+      });
+
+      const leads = await manager.teams.list({ role: "leadInspector" });
+      transcript.push({
+        event: "team.leads.listed",
+        items: leads.items.map(({ subjectId, displayName, role }) => ({
+          subjectId,
+          displayName,
+          role,
+        })),
+      });
+
+      const coordination = await auditee.auditeeCoordination.list({});
+      transcript.push({
+        event: "auditee.coordination.listed",
+        items: coordination.items.map((item) => ({
+          auditId: item.auditId,
+          organizationId: item.organizationId,
+          scheduledStartDate: item.scheduledStartDate,
+          status: item.status,
+          revision: item.revision,
+        })),
+      });
+      const confirmed = await auditee.auditeeCoordination.respond({
+        idempotencyKey: "IDEM-TASK4-CONTRACT-COORDINATION",
+        expectedRevision: coordination.items[0]!.revision,
+        auditId: coordination.items[0]!.auditId,
+        organizationId: coordination.items[0]!.organizationId,
+        decision: "CONFIRM",
+        alternativeDate: null,
+      });
+      transcript.push({
+        event: "auditee.coordination.confirmed",
+        auditId: confirmed.auditId,
+        status: confirmed.status,
+        alternativeDate: confirmed.alternativeDate,
+        revision: confirmed.revision,
+      });
+
+      expect(transcript).toEqual([
+        {
+          event: "planning.draft.loaded",
+          id: "PLAN-DRAFT-2026-001",
+          noticePolicy: "ADVANCE",
+          requestedBudget: 0,
+          revision: 1,
+        },
+        {
+          event: "planning.draft.saved",
+          noticePolicy: "ADVANCE",
+          purpose: "Annual routine oversight contract transcript.",
+          location: "Windhoek",
+          revision: 2,
+        },
+        {
+          event: "planning.intake.submitted",
+          draftRevision: 3,
+          submittedPlanningItemId: "PLAN-2026-TASK4-CONTRACT",
+          planningStatus: "FINANCE_REVIEW",
+          ownerRole: "finance",
+          requestedBudget: 0,
+        },
+        {
+          event: "package.draft.loaded",
+          id: "PKG-AUD-2026-001-CABIN",
+          applicationType: "Cabin Inspection",
+          domain: "Cabin Safety",
+          riskFocus: [
+            "Emergency equipment serviceability",
+            "PBE serviceability",
+            "Cabin inspection CAP follow-up",
+          ],
+          questionIds: ["PKG-Q-CAB-PBE", "PKG-Q-CAB-GALLEY"],
+          revision: 1,
+        },
+        {
+          event: "package.draft.saved",
+          riskFocus: ["PBE serviceability", "Cabin inspection CAP follow-up"],
+          questionIds: ["PKG-Q-CAB-PBE", "PKG-Q-CAB-GALLEY"],
+          revision: 2,
+        },
+        {
+          event: "team.leads.listed",
+          items: [{
+            subjectId: "USR-LEAD-CANER",
+            displayName: "Caner Lead Inspector",
+            role: "leadInspector",
+          }],
+        },
+        {
+          event: "auditee.coordination.listed",
+          items: [{
+            auditId: "AUD-2026-001",
+            organizationId: "ORG-FLY-NAMIBIA",
+            scheduledStartDate: "2026-06-15",
+            status: "AWAITING_AUDITEE_CONFIRMATION",
+            revision: 1,
+          }],
+        },
+        {
+          event: "auditee.coordination.confirmed",
+          auditId: "AUD-2026-001",
+          status: "CONFIRMED",
+          alternativeDate: null,
+          revision: 2,
+        },
+      ]);
+    });
+
+    it("produces the same normalized checklist and configuration transcript", async () => {
+      const harness = await createHarness();
+      const admin = harness.backendFor(PRINCIPALS.admin);
+      const manager = harness.backendFor(PRINCIPALS.manager);
+      if (!admin.adminWorkspace || !manager.adminWorkspace) {
+        throw new Error("Task 5 Admin workspace capability is unavailable.");
+      }
+      await expect(
+        manager.adminWorkspace.listQuestions({}),
+      ).rejects.toThrow();
+
+      const transcript: Array<Record<string, unknown>> = [];
+      const references = await admin.adminWorkspace.listRegulatoryReferences({});
+      transcript.push({
+        event: "configuration.references.listed",
+        items: references.items.map(({ id, version, status }) => ({ id, version, status })),
+      });
+      const masters = await admin.adminWorkspace.listTemplateMasters({});
+      transcript.push({
+        event: "configuration.templates.listed",
+        items: masters.items.map(({
+          id,
+          publishedVersionId,
+          owner,
+          itemCount,
+          previewPath,
+          disabledReason,
+          revision,
+        }) => ({
+          id,
+          publishedVersionId,
+          owner,
+          itemCount,
+          previewPath,
+          disabledReason,
+          revision,
+        })),
+      });
+      const questions = await admin.adminWorkspace.listQuestions({});
+      transcript.push({
+        event: "configuration.questions.listed",
+        ids: questions.items.map(({ id }) => id).sort(),
+      });
+      const question = await admin.adminWorkspace.createQuestion({
+        idempotencyKey: "IDEM-TASK5-CONTRACT-QUESTION",
+        expectedRevision: null,
+        prompt:
+          "Is the multiline emergency equipment record complete?\nDoes it identify the exact cabin position?",
+        configuredReference: "Configured Cabin Inspection reference — EM EQ / PBE",
+        expectedEvidence: "PBE serviceability record\nCabin position confirmation",
+      });
+      transcript.push({
+        event: "configuration.question.created",
+        id: question.id,
+        prompt: question.prompt,
+        expectedEvidence: question.expectedEvidence,
+        revision: question.revision,
+      });
+
+      const template = await admin.adminWorkspace.getTemplate({
+        templateId: "TPL-CABIN-2026",
+      });
+      transcript.push({
+        event: "configuration.template.loaded",
+        id: template.id,
+        publishedVersionId: template.publishedVersionId,
+        versionIds: template.versions.map(({ id }) => id),
+        publishedQuestionIds: template.versions[0]!.questionIds,
+        revision: template.revision,
+      });
+      const draft = await admin.adminWorkspace.createDraft({
+        idempotencyKey: "IDEM-TASK5-CONTRACT-DRAFT",
+        expectedRevision: template.revision,
+        templateId: template.id,
+        changeReason: "Add the multiline emergency equipment Question.",
+      });
+      transcript.push({
+        event: "configuration.template.draft.created",
+        id: draft.id,
+        status: draft.status,
+        owner: draft.owner,
+        questionCount: draft.questionIds.length,
+        revision: draft.revision,
+      });
+      const added = await admin.adminWorkspace.addDraftQuestion({
+        idempotencyKey: "IDEM-TASK5-CONTRACT-ADD",
+        expectedRevision: draft.revision,
+        templateId: template.id,
+        draftVersionId: draft.id,
+        questionId: question.id,
+      });
+      transcript.push({
+        event: "configuration.template.question.added",
+        questionCount: added.questionIds.length,
+        lastQuestionId: added.questionIds.at(-1),
+        revision: added.revision,
+      });
+      const moved = await admin.adminWorkspace.moveDraftQuestion({
+        idempotencyKey: "IDEM-TASK5-CONTRACT-MOVE",
+        expectedRevision: added.revision,
+        templateId: template.id,
+        draftVersionId: added.id,
+        questionId: question.id,
+        direction: "UP",
+      });
+      transcript.push({
+        event: "configuration.template.question.moved",
+        secondLastQuestionId: moved.questionIds.at(-2),
+        revision: moved.revision,
+      });
+      const inspectionPackage = await admin.adminWorkspace.getInspectionPackage({
+        packageId: "PKG-CAB-2026-001",
+      });
+      transcript.push({
+        event: "configuration.package.loaded",
+        id: inspectionPackage.id,
+        auditId: inspectionPackage.auditId,
+        questionCount: inspectionPackage.questionIds.length,
+        configuredReferenceCount: inspectionPackage.configuredReferences.length,
+        expectedEvidenceCount: inspectionPackage.expectedEvidence.length,
+        riskFocusCount: inspectionPackage.riskFocus.length,
+        includesDraftQuestion: inspectionPackage.questionIds.includes(question.id),
+      });
+
+      const inspector = harness.backendFor(PRINCIPALS.inspector);
+      const response = await inspector.inspections.upsertChecklistResponse({
+        operationId: "OP-TASK5-CONTRACT-RESPONSE",
+        responseId: "RESP-TASK5-CONTRACT-PBE",
+        auditId: "AUD-2026-001",
+        questionId: "CAB-EMEQ-PBE-001",
+        expectedResponseRevision: null,
+        answer: "COMPLIANT",
+        comment: "",
+      });
+      const submitted = await inspector.inspections.submitChecklist({
+        operationId: "OP-TASK5-CONTRACT-SUBMIT",
+        auditId: "AUD-2026-001",
+        expectedChecklistRevision: 1,
+      });
+      const reopened = await harness.backendFor(PRINCIPALS.leadInspector)
+        .inspections.reopenChecklist({
+          operationId: "OP-TASK5-CONTRACT-REOPEN",
+          auditId: "AUD-2026-001",
+          expectedChecklistRevision: submitted.checklistRevision,
+          reason: "Continue exact configured sampling.",
+        });
+      transcript.push({
+        event: "checklist.execution.completed",
+        responseRevision: response.revision,
+        submittedStatus: submitted.checklistStatus,
+        submittedRevision: submitted.checklistRevision,
+        reopenedStatus: reopened.checklistStatus,
+        reopenedRevision: reopened.checklistRevision,
+      });
+
+      expect(transcript).toEqual([
+        {
+          event: "configuration.references.listed",
+          items: [
+            { id: "NAMCARS-CAB-001", version: "2026.1", status: "ACTIVE" },
+            { id: "NAMCARS-FOPS-004", version: "2025.4", status: "SUPERSEDED" },
+          ],
+        },
+        {
+          event: "configuration.templates.listed",
+          items: [
+            {
+              id: "TPL-CABIN-2026",
+              publishedVersionId: "CTV-CABIN-1",
+              owner: "Department Manager",
+              itemCount: 6,
+              previewPath: "/admin/templates",
+              disabledReason: null,
+              revision: 1,
+            },
+            {
+              id: "TPL-FOPS-2026",
+              publishedVersionId: "CTV-FOPS-1",
+              owner: "Department Manager",
+              itemCount: 0,
+              previewPath: null,
+              disabledReason:
+                "TPL-FOPS-2026 / CTV-FOPS-1 has no declared Template Preview route in Task 10.",
+              revision: 1,
+            },
+          ],
+        },
+        {
+          event: "configuration.questions.listed",
+          ids: [
+            "CAB-COCKPIT-GEN-001",
+            "CAB-EMEQ-PBE-001",
+            "CAB-GALLEY-001",
+            "CAB-LAV-001",
+            "CAB-PAX-SEAT-001",
+            "CAB-VID-CREW-SEAT-001",
+          ],
+        },
+        {
+          event: "configuration.question.created",
+          id: "Q-ADMIN-2026-007",
+          prompt:
+            "Is the multiline emergency equipment record complete?\nDoes it identify the exact cabin position?",
+          expectedEvidence: "PBE serviceability record\nCabin position confirmation",
+          revision: 1,
+        },
+        {
+          event: "configuration.template.loaded",
+          id: "TPL-CABIN-2026",
+          publishedVersionId: "CTV-CABIN-1",
+          versionIds: ["CTV-CABIN-1"],
+          publishedQuestionIds: [
+            "CAB-GALLEY-001",
+            "CAB-LAV-001",
+            "CAB-PAX-SEAT-001",
+            "CAB-EMEQ-PBE-001",
+            "CAB-VID-CREW-SEAT-001",
+            "CAB-COCKPIT-GEN-001",
+          ],
+          revision: 1,
+        },
+        {
+          event: "configuration.template.draft.created",
+          id: "CTV-CABIN-DRAFT-2",
+          status: "DRAFT",
+          owner: "Admin Preview",
+          questionCount: 6,
+          revision: 1,
+        },
+        {
+          event: "configuration.template.question.added",
+          questionCount: 7,
+          lastQuestionId: "Q-ADMIN-2026-007",
+          revision: 2,
+        },
+        {
+          event: "configuration.template.question.moved",
+          secondLastQuestionId: "Q-ADMIN-2026-007",
+          revision: 3,
+        },
+        {
+          event: "configuration.package.loaded",
+          id: "PKG-CAB-2026-001",
+          auditId: "AUD-2026-001",
+          questionCount: 6,
+          configuredReferenceCount: 6,
+          expectedEvidenceCount: 6,
+          riskFocusCount: 3,
+          includesDraftQuestion: false,
+        },
+        {
+          event: "checklist.execution.completed",
+          responseRevision: 1,
+          submittedStatus: "SUBMITTED",
+          submittedRevision: 2,
+          reopenedStatus: "IN_PROGRESS",
+          reopenedRevision: 3,
+        },
+      ]);
     });
 
     it("exposes immutable checklist template detail only to Admin", async () => {

@@ -180,7 +180,7 @@ export function EvidenceReviewPage() {
               <button disabled title="The open-findings register remains in the accepted legacy demo." type="button"><span>Open Findings</span></button>
               <button disabled title="The overdue-findings register remains in the accepted legacy demo." type="button"><span>Overdue Findings</span></button>
               <button onClick={() => navigate("/department-manager/findings-review")} type="button"><span>CAP / Provider Review</span></button>
-              <button aria-current="page" disabled type="button"><span>Evidence Waiting Review</span></button>
+              <button aria-current="page" disabled title="Current filter: Evidence Waiting Review" type="button"><span>Evidence Waiting Review</span></button>
               <button disabled title="The Due Soon findings register remains in the accepted legacy demo." type="button"><span>Findings Due Soon</span></button>
               <button disabled title="The critical-findings register remains in the accepted legacy demo." type="button"><span>Critical Findings</span></button>
               <button disabled title="The closed-findings register remains in the accepted legacy demo." type="button"><span>Closed Findings</span></button>

@@ -31,6 +31,7 @@ function hydratePersistedState(state: Partial<MockState>, clock: () => string): 
       ...(state.reportPublicMetadata ?? {}),
     },
     auditeeCoordinationResponses: state.auditeeCoordinationResponses ?? {},
+    authorizedSyncChanges: state.authorizedSyncChanges ?? [],
   };
 }
 

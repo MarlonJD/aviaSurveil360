@@ -24,4 +24,8 @@ type Finding struct {
 	Revision           int64              `json:"revision"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
+	CapRequired        bool               `json:"cap_required"`
+	EvidenceRequired   bool               `json:"evidence_required"`
+	IssuedAt           pgtype.Timestamptz `json:"issued_at"`
+	ClosedAt           pgtype.Timestamptz `json:"closed_at"`
 }

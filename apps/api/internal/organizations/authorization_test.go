@@ -16,6 +16,9 @@ func TestAuditeeCanViewOnlyItsOrganization(t *testing.T) {
 	if organizations.CanView(principal, "airline-other") {
 		t.Fatal("Auditee allowed another organization")
 	}
+	if !organizations.CanListRegistry(principal) {
+		t.Fatal("Auditee denied its organization-scoped registry projection")
+	}
 }
 
 func TestCAAOperationalRolesCanViewAuthorizedOrganizationRecords(t *testing.T) {

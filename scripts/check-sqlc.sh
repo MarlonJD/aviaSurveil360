@@ -28,6 +28,12 @@ packages=(
   sync
   auditlog
   configuration
+  assignments
+  communications
+  documents
+  notifications
+  risk
+  administration
 )
 
 sed_arguments=()

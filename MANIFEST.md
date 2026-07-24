@@ -5,14 +5,12 @@ clickable demo** and a separate `candidate-only` React/Go application. It is
 not a production system.
 
 Candidate boundary: a local Go/PostgreSQL API/worker, pinned local Keycloak,
-private MinIO upload, deterministic scan adapter, real canonical HTTP scenario,
-PWA/readiness, atomic offline field/outbox persistence, and manifest-first OPFS
-Inspection Attachment recovery, typed foreground sync, approved
-first-production routes, the complete local release-candidate matrix, and the
-17-surface React migration to the accepted root-demo interface are `verified
-locally`. The exact parity boundary remains 17 routed React surfaces and 69
-legacy-only audit rows. The artifact is `candidate-only`, the local decision is
-`GO`, and release is `release pending`. It is not a deployed production
+private MinIO upload, deterministic scan adapter, complete normalized
+MockBackend/HttpBackend scenarios, PWA/readiness, atomic offline field/outbox
+persistence, manifest-first OPFS Inspection Attachment recovery, typed
+foreground sync, and all 86 React routes in demo and HTTP are `verified
+locally`. The artifact is `candidate-only`, the local decision is `GO`, and
+release is `release pending`. It is not a deployed production
 application. Production OIDC/MFA, production storage/scanning/records policy,
 deployment, cutover, legacy removal, and a `production-ready` claim remain
 excluded or `blocked`.
@@ -49,16 +47,20 @@ The root Vanilla demo remains intact.
 
 ## Versioned Contract, React Candidate, And Go Candidate
 
-- `api/openapi/aviasurveil360.yaml` — minimal versioned transport contract for
-  the authorized local candidate slices.
+- `api/openapi/aviasurveil360.yaml` — generated versioned full-platform
+  transport contract for all frozen local candidate slices.
+- `api/openapi/source/` — six deterministic source fragments for the bundled
+  OpenAPI artifact.
+- `api/openapi/examples/full-platform/` — closed-schema examples for the full
+  platform contract.
 - `api/openapi/examples/canonical/` — canonical closed-schema request and
   response examples.
 - `api/openapi/tests/contract-examples.test.mjs` — OpenAPI example and Auditee
   projection checks.
 - `scripts/generate-contracts.sh` and `scripts/check-contracts.sh` — checked
   TypeScript generation, lint, example validation, and drift detection.
-- `tests/parity/behavior-ledger.json` — version 4 exact 17-route / 69
-  legacy-only behavior and visible-action ownership ledger.
+- `tests/parity/behavior-ledger.json` — version 5 exact 86-route, dual-profile
+  behavior and visible-action ownership ledger.
 - `tests/parity/react-legacy-parity.test.mjs` — executable ledger and intact
   legacy-oracle checks.
 - `apps/web/` — React + TypeScript + Vite candidate with build-time-separated
@@ -90,9 +92,11 @@ The root Vanilla demo remains intact.
   site-data-loss messaging.
 - `apps/web/tests/contract/` — reusable backend contract executed against the
   deterministic mock harness and the seeded live HTTP profile.
-- `apps/web/tests/e2e/canonical-scenario.spec.ts` — normalized mock-mode Cabin
-  lifecycle and organization-isolation browser scenario, executed unchanged
-  under mock and HTTP Playwright projects.
+- `apps/web/tests/e2e/canonical-scenario.spec.ts` — normalized Cabin lifecycle
+  and organization-isolation browser scenario, executed unchanged under mock
+  and HTTP Playwright projects.
+- `apps/web/tests/e2e/full-platform-scenarios.spec.ts` — exact normalized
+  transcript parity for 10 scenario families and 45 required proofs.
 - `apps/web/tests/e2e/offline-*.spec.ts` — dedicated persistent-profile Chrome
   restart/server-stop startup and two-client update/site-data recovery checks.
 - `apps/web/tests/e2e/release-candidate-gates.spec.ts` — dual-profile role,
@@ -101,7 +105,7 @@ The root Vanilla demo remains intact.
   gallery plus 51 route/viewport comparisons with candidate PNG and region
   result attachments.
 - `apps/web/tests/e2e/visible-action-contract.spec.ts` — accessible visible
-  action inventory across all 17 surfaces at desktop, tablet, and mobile.
+  action inventory across all 86 routes at desktop, tablet, and mobile.
 - `apps/web/tests/e2e/oidc-session.spec.ts` — normal same-origin Keycloak
   login/session/CSRF/expiry/logout browser path.
 - `apps/web/tests/e2e/brand-app-shell-restart.spec.ts` — stopped-origin accepted
@@ -259,8 +263,12 @@ separate `apps/web/package.json` owns the React candidate commands.
   51-pair decoded-pixel/manual parity review, and stakeholder handoff.
 - `docs/demo-evidence/REACT_86_SCREEN_DEMO_2026-07-22.md` —
   Full React Tasks 11–12 exact 86-route scope, 258 responsive and action
-  inventories, literal one-shot visual result, baseline-integrity gap, and
-  blocked Plan 2 handoff.
+  inventories, literal one-shot visual result, accepted visual disposition,
+  standalone baseline-integrity gap, and Plan 2 handoff.
+- `docs/demo-evidence/FULL_BACKEND_SCENARIO_PARITY_2026-07-22.md` —
+  Full Backend Tasks 1–12 exact contract/persistence/capability coverage,
+  86 dual-profile routes, 10 scenario families, 45 proofs, final matrix,
+  review verdicts, and preserved Plan 1 gaps.
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.md`
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.turkce.md`
 - `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`
@@ -332,14 +340,18 @@ files in the same folder.
 The files above support stakeholder feedback, local demo verification, and a
 `candidate-only` React/Go vertical. They prove the scoped local HTTP/API,
 authority, audit-event, private upload, deterministic scan, scenario contracts,
-PWA/readiness, atomic field storage, OPFS attachment recovery, and 17-surface
-root-demo visual/interaction parity recorded in Task evidence. They
+PWA/readiness, atomic field storage, OPFS attachment recovery, the historical
+17-surface root-demo parity checkpoint, and the current 86-route dual-profile
+backend candidate recorded in Task evidence. They
 do not prove production identity/MFA, production storage/scanning or records
 operations, regulatory or enforcement approval, notification delivery,
 production sync, deployment, cutover, release, or production readiness.
 
-The first 22 July 2026 follow-up plan now implements 86/86 React demo routes,
-while its full visual and baseline-integrity gates remain `not verified`.
-The later plans still define complete mock/Go/PostgreSQL scenario parity,
-production-like local Docker services, local reliability/DR, and a separately
-authorized AWS trial using Terraform and Terragrunt. Plan 2 remains `blocked`.
+The first 22 July 2026 follow-up plan implements 86/86 React demo routes and is
+`ready-for-verification`. Its one-shot visual matrix remains `not verified` at
+71/259 under an explicit user-accepted non-blocking disposition; standalone
+baseline integrity is `not verified`. Plan 2 implements all 86 HTTP routes and
+complete mock/Go/PostgreSQL scenario parity and is `ready-for-verification`.
+The later plans define production-like local Docker services, local
+reliability/DR, and a separately authorized AWS trial using Terraform and
+Terragrunt. Plans 3–4 remain gated.

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/application"
@@ -360,12 +361,35 @@ func (api *CanonicalAPI) capRevisionProjection(ctx context.Context, record capst
 	if err != nil {
 		return nil, err
 	}
+	var superseded bool
+	if err := api.pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM cap_revisions
+			WHERE finding_id = $1 AND revision > $2
+		)
+	`, record.FindingID, record.Revision).Scan(&superseded); err != nil {
+		return nil, err
+	}
 	responsiblePerson := valueOr(record.ResponsiblePerson, "")
 	commentToCAA := valueOr(record.CommentToCaa, "")
+	status := generated.CapStatus(record.Status)
+	if superseded {
+		status = generated.CapStatus("SUPERSEDED")
+	} else if review != nil {
+		switch review.decision {
+		case "ACCEPT":
+			status = generated.CapStatus("ACCEPTED")
+		case "REJECT":
+			status = generated.CapStatus("REJECTED")
+		case "REQUEST_MORE_INFORMATION":
+			status = generated.CapStatus("MORE_INFORMATION_REQUESTED")
+		}
+	}
 	if audience == caps.AudienceAuditee {
 		view := generated.AuditeeCapRevisionView{
 			Audience: "AUDITEE", Id: record.ID, CapId: record.CapID, FindingId: record.FindingID,
-			OrganizationId: record.OrganizationID, Revision: int64(record.Revision), Status: generated.CapStatus(record.Status),
+			OrganizationId: record.OrganizationID, Revision: int64(record.Revision), Status: status,
 			RootCause: record.RootCause, CorrectiveAction: record.CorrectiveAction, PreventiveAction: record.PreventiveAction,
 			ResponsiblePerson: responsiblePerson, TargetCompletionDate: record.TargetCompletionDate.Time.Format("2006-01-02"),
 			CommentToCaa: commentToCAA, SubmittedAt: record.SubmittedAt.Time.UTC().Format(time.RFC3339Nano),
@@ -380,7 +404,7 @@ func (api *CanonicalAPI) capRevisionProjection(ctx context.Context, record capst
 	}
 	view := generated.CaaCapRevisionView{
 		Audience: "CAA", Id: record.ID, CapId: record.CapID, FindingId: record.FindingID,
-		OrganizationId: record.OrganizationID, Revision: int64(record.Revision), Status: generated.CapStatus(record.Status),
+		OrganizationId: record.OrganizationID, Revision: int64(record.Revision), Status: status,
 		RootCause: record.RootCause, CorrectiveAction: record.CorrectiveAction, PreventiveAction: record.PreventiveAction,
 		ResponsiblePerson: responsiblePerson, TargetCompletionDate: record.TargetCompletionDate.Time.Format("2006-01-02"),
 		CommentToCaa: commentToCAA, SubmittedAt: record.SubmittedAt.Time.UTC().Format(time.RFC3339Nano),
@@ -396,12 +420,11 @@ func (api *CanonicalAPI) capRevisionProjection(ctx context.Context, record capst
 
 func (api *CanonicalAPI) capReadAudience(ctx context.Context, actor identity.Principal, findingID string, organizationID string) (caps.RevisionAudience, error) {
 	_, findingErr := api.application.GetFinding(ctx, actor, findingID)
-	findingAuthorized := findingErr == nil
-	if findingErr != nil && !actor.HasRole(identity.RoleAuditee) {
+	if findingErr != nil {
 		return "", findingErr
 	}
 	audience, err := caps.AuthorizeRevisionRead(caps.RevisionReadAuthorizationInput{
-		Actor: actor, FindingOrganizationID: organizationID, FindingAuthorized: findingAuthorized,
+		Actor: actor, FindingOrganizationID: organizationID, FindingAuthorized: true,
 	})
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", application.ErrForbidden, err)
@@ -469,10 +492,12 @@ func (api *CanonicalAPI) reportProjection(ctx context.Context, actor identity.Pr
 		return generated.ReportVersionView{}, err
 	}
 	if actor.HasRole(identity.RoleAuditee) {
-		if actor.OrganizationID != view.OrganizationId || view.Status != generated.ReportApprovalStatusLOCKED {
-			return generated.ReportVersionView{}, fmt.Errorf("%w: report is unavailable to this Auditee", application.ErrForbidden)
-		}
-	} else if !actor.IsCAA() {
+		return generated.ReportVersionView{}, fmt.Errorf(
+			"%w: report version is unavailable to this Auditee; use released Auditee Reports",
+			application.ErrForbidden,
+		)
+	}
+	if !actor.IsCAA() {
 		return generated.ReportVersionView{}, application.ErrForbidden
 	}
 	var payload struct {
@@ -486,6 +511,305 @@ func (api *CanonicalAPI) reportProjection(ctx context.Context, actor identity.Pr
 	view.ContentHash = payload.ContentHash
 	view.IssuedAt = formatOptionalInstant(issuedAt)
 	return view, nil
+}
+
+type reportPublicSnapshot struct {
+	Kind              string   `json:"kind"`
+	Ready             bool     `json:"ready"`
+	FindingIDs        []string `json:"findingIds"`
+	ContentHash       string   `json:"contentHash"`
+	ResponseDueDate   *string  `json:"responseDueDate"`
+	CAAVisibleComment *string  `json:"caaVisibleComment"`
+}
+
+func (api *CanonicalAPI) auditeeReleasedReportProjection(
+	ctx context.Context,
+	actor identity.Principal,
+	reportVersionID string,
+) (generated.AuditeeReleasedReportView, error) {
+	if !actor.HasRole(identity.RoleAuditee) || actor.OrganizationID == "" {
+		return generated.AuditeeReleasedReportView{}, fmt.Errorf(
+			"%w: Auditee authority is required for released report projections",
+			application.ErrForbidden,
+		)
+	}
+	var view generated.AuditeeReleasedReportView
+	var snapshot []byte
+	var issuedAt *time.Time
+	if err := api.pool.QueryRow(ctx, `
+		SELECT version.id, version.report_id, inspection.organization_id,
+		       version.inspection_id, version.version, version.snapshot,
+		       state.status, state.revision, state.issued_at
+		FROM report_versions version
+		JOIN report_approval_states state ON state.report_version_id = version.id
+		JOIN inspections inspection ON inspection.id = version.inspection_id
+		WHERE version.id = $1
+	`, reportVersionID).Scan(
+		&view.ReportVersionId, &view.ReportId, &view.OrganizationId, &view.AuditId,
+		&view.Version, &snapshot, &view.Status, &view.Revision, &issuedAt,
+	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return generated.AuditeeReleasedReportView{}, application.ErrNotFound
+		}
+		return generated.AuditeeReleasedReportView{}, err
+	}
+	if view.OrganizationId != actor.OrganizationID || view.Status != "LOCKED" {
+		return generated.AuditeeReleasedReportView{}, fmt.Errorf(
+			"%w: released report version is unavailable to this Auditee",
+			application.ErrForbidden,
+		)
+	}
+	if issuedAt == nil {
+		return generated.AuditeeReleasedReportView{}, fmt.Errorf(
+			"%w: released report version has no issue instant",
+			application.ErrForbidden,
+		)
+	}
+	var payload reportPublicSnapshot
+	if err := json.Unmarshal(snapshot, &payload); err != nil {
+		return generated.AuditeeReleasedReportView{}, err
+	}
+	if payload.Kind != "PRELIMINARY" && payload.Kind != "FINAL" {
+		return generated.AuditeeReleasedReportView{}, fmt.Errorf(
+			"%w: released report has no typed public family",
+			application.ErrForbidden,
+		)
+	}
+	if len(payload.FindingIDs) > 0 {
+		var authorizedCount int
+		if err := api.pool.QueryRow(ctx, `
+			SELECT count(*) FROM findings
+			WHERE id = ANY($1::text[]) AND organization_id = $2
+		`, payload.FindingIDs, actor.OrganizationID).Scan(&authorizedCount); err != nil {
+			return generated.AuditeeReleasedReportView{}, err
+		}
+		if authorizedCount != len(payload.FindingIDs) {
+			return generated.AuditeeReleasedReportView{}, fmt.Errorf(
+				"%w: released report contains unavailable Finding identities",
+				application.ErrForbidden,
+			)
+		}
+	}
+	view.Kind = payload.Kind
+	view.FindingIds = append([]string{}, payload.FindingIDs...)
+	view.IssuedAt = issuedAt.UTC().Format(time.RFC3339Nano)
+	view.ResponseDueDate = payload.ResponseDueDate
+	view.CaaVisibleComment = payload.CAAVisibleComment
+	view.CaaVisibleCommentState = "NO_COMMENT_RECORDED"
+	if payload.CAAVisibleComment != nil && strings.TrimSpace(*payload.CAAVisibleComment) != "" {
+		view.CaaVisibleCommentState = "RECORDED"
+	}
+	return view, nil
+}
+
+func (api *CanonicalAPI) auditeeReleasedReportsProjection(
+	ctx context.Context,
+	actor identity.Principal,
+	kind string,
+) (generated.AuditeeReleasedReportPage, error) {
+	if !actor.HasRole(identity.RoleAuditee) || actor.OrganizationID == "" {
+		return generated.AuditeeReleasedReportPage{}, fmt.Errorf(
+			"%w: Auditee authority is required for released report projections",
+			application.ErrForbidden,
+		)
+	}
+	if kind != "" && kind != "PRELIMINARY" && kind != "FINAL" {
+		return generated.AuditeeReleasedReportPage{}, fmt.Errorf(
+			"%w: unsupported Auditee report kind",
+			application.ErrInvalid,
+		)
+	}
+	rows, err := api.pool.Query(ctx, `
+		SELECT version.id
+		FROM report_versions version
+		JOIN report_approval_states state ON state.report_version_id = version.id
+		JOIN inspections inspection ON inspection.id = version.inspection_id
+		WHERE inspection.organization_id = $1
+		  AND state.status = 'LOCKED'
+		  AND state.issued_at IS NOT NULL
+		ORDER BY version.report_id, version.version
+	`, actor.OrganizationID)
+	if err != nil {
+		return generated.AuditeeReleasedReportPage{}, err
+	}
+	defer rows.Close()
+	ids := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return generated.AuditeeReleasedReportPage{}, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return generated.AuditeeReleasedReportPage{}, err
+	}
+	items := []generated.AuditeeReleasedReportView{}
+	for _, id := range ids {
+		item, err := api.auditeeReleasedReportProjection(ctx, actor, id)
+		if errors.Is(err, application.ErrForbidden) {
+			continue
+		}
+		if err != nil {
+			return generated.AuditeeReleasedReportPage{}, err
+		}
+		if kind == "" || item.Kind == kind {
+			items = append(items, item)
+		}
+	}
+	return generated.AuditeeReleasedReportPage{Items: items}, nil
+}
+
+func (api *CanonicalAPI) documentProjection(
+	ctx context.Context,
+	actor identity.Principal,
+	documentID string,
+) (generated.DocumentMetadataView, error) {
+	var reportID, organizationID string
+	var version, revision int64
+	var createdAt time.Time
+	var issuedAt *time.Time
+	err := api.pool.QueryRow(ctx, `
+		SELECT version.report_id, inspection.organization_id, version.version,
+		       state.revision, version.created_at, state.issued_at
+		FROM report_versions version
+		JOIN report_approval_states state ON state.report_version_id = version.id
+		JOIN inspections inspection ON inspection.id = version.inspection_id
+		WHERE version.id = $1
+	`, documentID).Scan(
+		&reportID, &organizationID, &version, &revision, &createdAt, &issuedAt,
+	)
+	if err == nil {
+		view := generated.DocumentMetadataView{
+			Id: documentID, OrganizationId: organizationID, Title: "Report " + reportID,
+			Kind: "REPORT", Version: version, Revision: revision,
+			CreatedAt: createdAt.UTC().Format(time.RFC3339Nano),
+		}
+		if actor.HasRole(identity.RoleAuditee) {
+			released, err := api.auditeeReleasedReportProjection(ctx, actor, documentID)
+			if err != nil {
+				return generated.DocumentMetadataView{}, err
+			}
+			releasedLabel := "RELEASED"
+			fileName := released.ReportId + ".pdf"
+			view.CreatedAt = released.IssuedAt
+			view.PublicReviewResult = &releasedLabel
+			view.DownloadFileName = &fileName
+		} else if !actor.IsCAA() {
+			return generated.DocumentMetadataView{}, application.ErrForbidden
+		} else if issuedAt != nil {
+			view.CreatedAt = issuedAt.UTC().Format(time.RFC3339Nano)
+		}
+		return view, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return generated.DocumentMetadataView{}, err
+	}
+
+	var evidence generated.DocumentMetadataView
+	var reviewState string
+	var submittedAt time.Time
+	if err := api.pool.QueryRow(ctx, `
+		SELECT version.id, version.organization_id, version.filename, version.version,
+		       state.revision, state.review_state, version.submitted_at
+		FROM evidence_versions version
+		JOIN evidence_version_states state ON state.evidence_version_id = version.id
+		WHERE version.id = $1
+	`, documentID).Scan(
+		&evidence.Id, &evidence.OrganizationId, &evidence.Title, &evidence.Version,
+		&evidence.Revision, &reviewState, &submittedAt,
+	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return generated.DocumentMetadataView{}, application.ErrNotFound
+		}
+		return generated.DocumentMetadataView{}, err
+	}
+	evidence.Kind = "EVIDENCE"
+	evidence.CreatedAt = submittedAt.UTC().Format(time.RFC3339Nano)
+	if actor.HasRole(identity.RoleAuditee) {
+		if actor.OrganizationID != evidence.OrganizationId {
+			return generated.DocumentMetadataView{}, application.ErrForbidden
+		}
+		evidence.PublicReviewResult = &reviewState
+		fileName := evidence.Title
+		evidence.DownloadFileName = &fileName
+	} else if !actor.IsCAA() {
+		return generated.DocumentMetadataView{}, application.ErrForbidden
+	}
+	return evidence, nil
+}
+
+func (api *CanonicalAPI) documentsProjection(
+	ctx context.Context,
+	actor identity.Principal,
+	organizationID string,
+) (generated.ListDocumentsOutput, error) {
+	if actor.HasRole(identity.RoleAuditee) {
+		if organizationID != "" && organizationID != actor.OrganizationID {
+			return generated.ListDocumentsOutput{}, application.ErrForbidden
+		}
+		organizationID = actor.OrganizationID
+	} else if !actor.IsCAA() {
+		return generated.ListDocumentsOutput{}, application.ErrForbidden
+	}
+	rows, err := api.pool.Query(ctx, `
+		SELECT version.id
+		FROM report_versions version
+		JOIN inspections inspection ON inspection.id = version.inspection_id
+		WHERE ($1 = '' OR inspection.organization_id = $1)
+		ORDER BY version.created_at DESC, version.id DESC
+	`, organizationID)
+	if err != nil {
+		return generated.ListDocumentsOutput{}, err
+	}
+	ids := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return generated.ListDocumentsOutput{}, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return generated.ListDocumentsOutput{}, err
+	}
+	rows.Close()
+	evidenceRows, err := api.pool.Query(ctx, `
+		SELECT id FROM evidence_versions
+		WHERE ($1 = '' OR organization_id = $1)
+		ORDER BY submitted_at DESC, id DESC
+	`, organizationID)
+	if err != nil {
+		return generated.ListDocumentsOutput{}, err
+	}
+	for evidenceRows.Next() {
+		var id string
+		if err := evidenceRows.Scan(&id); err != nil {
+			evidenceRows.Close()
+			return generated.ListDocumentsOutput{}, err
+		}
+		ids = append(ids, id)
+	}
+	if err := evidenceRows.Err(); err != nil {
+		evidenceRows.Close()
+		return generated.ListDocumentsOutput{}, err
+	}
+	evidenceRows.Close()
+
+	items := []generated.DocumentMetadataView{}
+	for _, id := range ids {
+		item, err := api.documentProjection(ctx, actor, id)
+		if actor.HasRole(identity.RoleAuditee) && errors.Is(err, application.ErrForbidden) {
+			continue
+		}
+		if err != nil {
+			return generated.ListDocumentsOutput{}, err
+		}
+		items = append(items, item)
+	}
+	return generated.ListDocumentsOutput{Items: items}, nil
 }
 
 func (api *CanonicalAPI) managerProjection(ctx context.Context, actor identity.Principal) (generated.ManagerDashboardProjection, error) {

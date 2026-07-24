@@ -1,0 +1,20 @@
+{
+  "schema": "AuditeeCoordinationPage",
+  "value": {
+    "items": [
+      {
+        "auditId": "AUD-2026-001",
+        "organizationId": "ORG-FLY-NAMIBIA",
+        "organizationName": "Fly Namibia",
+        "title": "Cabin Safety Routine Inspection",
+        "inspectionCategory": "Routine / Announced",
+        "scheduledStartDate": "2026-08-17",
+        "status": "AWAITING_AUDITEE_CONFIRMATION",
+        "alternativeDate": null,
+        "nextAction": "Confirm the proposed inspection date",
+        "revision": 2
+      }
+    ],
+    "nextCursor": null
+  }
+}

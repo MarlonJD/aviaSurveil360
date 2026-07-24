@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/documents"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/config"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/database"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/objectstore"
@@ -63,6 +64,10 @@ func run(ctx context.Context) error {
 	worker := evidenceworker.New(pool, objects, evidenceworker.SignatureScanner{}, evidenceworker.Config{
 		WorkerID: "evidence-worker", CanonicalBucket: settings.CanonicalBucket, LeaseDuration: time.Minute,
 	})
+	documentWorker := documents.NewService(pool, objects, documents.Dependencies{
+		Renderer: documents.DeterministicPDFRenderer{},
+		Bucket:   settings.CanonicalBucket, WorkerID: "document-worker",
+	})
 
 	readiness := database.Readiness{Pool: pool, RequiredMigrationVersion: migrations.LatestVersion}
 	ticker := time.NewTicker(settings.WorkerInterval)
@@ -83,8 +88,16 @@ func run(ctx context.Context) error {
 				slog.Error("scan work batch failed", "processed", processed, "error", err)
 				continue
 			}
+			rendered, err := processAvailable(ctx, documentWorker)
+			if err != nil {
+				slog.Error("document work batch failed", "processed", rendered, "error", err)
+				continue
+			}
 			if processed > 0 {
 				slog.Info("scan work batch completed", "processed", processed)
+			}
+			if rendered > 0 {
+				slog.Info("document work batch completed", "processed", rendered)
 			}
 		}
 	}

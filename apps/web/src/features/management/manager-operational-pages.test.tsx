@@ -244,7 +244,7 @@ describe("Department Manager operational workspaces", () => {
       entityType: "finding",
       entityId: "FND-CAB-2026-001",
       reason: "Department authority confirms the explicit alternate closure basis.",
-      entityRevision: 7,
+      entityRevision: 9,
     });
   });
 

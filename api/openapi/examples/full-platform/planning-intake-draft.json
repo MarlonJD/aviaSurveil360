@@ -1,0 +1,25 @@
+{
+  "schema": "PlanningIntakeDraftView",
+  "value": {
+    "id": "PLAN-DRAFT-2026-001",
+    "organizationId": "ORG-FLY-NAMIBIA",
+    "organizationName": "Fly Namibia",
+    "applicationType": "Air Operator Certificate",
+    "domain": "Cabin Safety",
+    "inspectionCategory": "Routine / Announced",
+    "noticePolicy": "ADVANCE",
+    "purpose": "Annual surveillance",
+    "triggerType": "Risk-based cycle",
+    "riskCategory": "Medium",
+    "plannedDate": "2026-08-17",
+    "mode": "On-site",
+    "location": "Windhoek",
+    "templateVersionId": "CTV-CABIN-1",
+    "scope": "Cabin operations and records",
+    "requestedBudget": 12500,
+    "currency": "NAD",
+    "revision": 3,
+    "submittedPlanningItemId": null,
+    "updatedAt": "2026-07-23T08:30:00Z"
+  }
+}

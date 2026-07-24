@@ -11,7 +11,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/administration"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/application"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/assistant"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/evidence"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/httpapi"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
@@ -21,6 +23,7 @@ import (
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/database"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/objectstore"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/session"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/risk"
 	fieldsync "github.com/MarlonJD/aviaSurveil360/apps/api/internal/sync"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/testprofile"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/migrations"
@@ -76,6 +79,10 @@ func run(ctx context.Context) error {
 	if databaseErr == nil {
 		if migrationErr := migrations.Apply(ctx, pool); migrationErr == nil {
 			if bootstrapErr := session.BootstrapTestProfile(ctx, pool, settings, time.Now()); bootstrapErr == nil {
+				canonicalClock := time.Now
+				if settings.CanonicalSeed {
+					canonicalClock = testprofile.CanonicalScenarioTime
+				}
 				databaseProbe := database.Readiness{Pool: pool, RequiredMigrationVersion: migrations.LatestVersion}
 				probe = databaseProbe
 				var authBoundary *httpapi.AuthBoundary
@@ -103,6 +110,7 @@ func run(ctx context.Context) error {
 						Endpoint: settings.ObjectStoreEndpoint, AccessKey: settings.ObjectStoreAccessKey,
 						SecretKey: settings.ObjectStoreSecretKey, UseTLS: settings.ObjectStoreTLS,
 						Region: settings.ObjectStoreRegion, AllowServerManagedCORS: settings.AllowServerManagedCORS,
+						Clock: canonicalClock,
 					})
 					if objectErr == nil {
 						objectErr = objects.EnsurePrivateBuckets(ctx, []string{settings.QuarantineBucket, settings.CanonicalBucket}, settings.ObjectStoreCORSOrigins)
@@ -115,36 +123,58 @@ func run(ctx context.Context) error {
 						generator := testprofile.NewGenerator()
 						appDependencies := application.Dependencies{}
 						if settings.CanonicalSeed {
+							appDependencies.Clock = canonicalClock
 							appDependencies.IDGenerator = generator.Next
 							appDependencies.FindingReferenceGenerator = generator.FindingReference
-							if resetErr := testprofile.Reset(ctx, pool, time.Now()); resetErr != nil {
+							if resetErr := testprofile.Reset(ctx, pool, canonicalClock()); resetErr != nil {
 								probe = unavailableReadiness{err: resetErr}
 								slog.Error("canonical test seed failed; readiness will fail closed", "error", resetErr)
 							}
 						}
 						applicationService := application.NewService(pool, appDependencies)
-						grantService := fieldsync.NewGrantService(pool, fieldsync.GrantDependencies{IDGenerator: generator.Next})
-						syncOperations := fieldsync.NewOperationService(pool, fieldsync.OperationDependencies{IDGenerator: generator.Next})
-						evidenceUploads := evidence.NewUploadService(pool, objects, evidence.UploadServiceConfig{
-							QuarantineBucket: settings.QuarantineBucket, CanonicalBucket: settings.CanonicalBucket,
-							MaximumByteSize: 25 * 1024 * 1024, InstructionTTL: 10 * time.Minute, IDGenerator: generator.Next,
+						grantService := fieldsync.NewGrantService(pool, fieldsync.GrantDependencies{
+							Clock: canonicalClock, IDGenerator: generator.Next,
 						})
-						attachmentUploads := attachments.NewUploadService(pool, objects, attachments.UploadServiceConfig{
-							QuarantineBucket: settings.QuarantineBucket, MaximumByteSize: 25 * 1024 * 1024,
-							InstructionTTL: 10 * time.Minute, IDGenerator: generator.Next,
+						syncOperations := fieldsync.NewOperationService(pool, fieldsync.OperationDependencies{
+							Clock: canonicalClock, IDGenerator: generator.Next,
 						})
-						planningService := planning.NewService(pool, planning.Dependencies{IDGenerator: generator.Next})
+						evidenceUploadConfig, attachmentUploadConfig := uploadServiceConfigs(settings, canonicalClock, generator.Next)
+						evidenceUploads := evidence.NewUploadService(pool, objects, evidenceUploadConfig)
+						attachmentUploads := attachments.NewUploadService(pool, objects, attachmentUploadConfig)
+						planningService := planning.NewService(
+							pool,
+							planningServiceDependencies(canonicalClock, generator.Next),
+						)
+						riskService := risk.NewService(pool, risk.Dependencies{
+							Clock: canonicalClock, IDGenerator: generator.Next,
+						})
+						administrationService := administration.NewProjectionService(
+							pool,
+							administration.ProjectionDependencies{Clock: canonicalClock},
+						)
+						assistantService := assistant.NewService(pool, assistant.Dependencies{
+							Clock: canonicalClock, IDGenerator: generator.Next,
+							Provider: assistant.NewDeterministicProvider(),
+						})
+						communicationsWorkflow := application.NewCommunicationsWorkflow(
+							pool,
+							communicationsWorkflowDependencies(canonicalClock, generator.Next),
+						)
 						apiHandler := httpapi.NewCanonicalAPI(httpapi.CanonicalAPIDependencies{
 							Pool: pool, Application: applicationService, GrantService: grantService,
 							SyncOperations:  syncOperations,
 							EvidenceUploads: evidenceUploads, AttachmentUploads: attachmentUploads,
 							Planning: planningService,
+							Risk:     riskService, Administration: administrationService,
+							Assistant:      assistantService,
+							Communications: communicationsWorkflow,
+							Clock:          canonicalClock,
 						}).Handler()
 						if settings.CanonicalTestProfile {
 							boundary := httpapi.NewCanonicalTestBoundary(settings.CanonicalTestToken)
 							authenticatedAPI = boundary.Protect(apiHandler)
 							admin := httpapi.NewCanonicalTestAdmin(pool, objects,
-								[]string{settings.QuarantineBucket, settings.CanonicalBucket}, generator, time.Now)
+								[]string{settings.QuarantineBucket, settings.CanonicalBucket}, generator, canonicalClock)
 							testAdministration = boundary.Admin(admin)
 						} else if authBoundary != nil {
 							authenticatedAPI = authBoundary.Protect(apiHandler)
@@ -189,5 +219,43 @@ func run(ctx context.Context) error {
 			return nil
 		}
 		return fmt.Errorf("serve HTTP: %w", err)
+	}
+}
+
+func uploadServiceConfigs(
+	settings config.Settings,
+	clock func() time.Time,
+	idGenerator func(string) string,
+) (evidence.UploadServiceConfig, attachments.UploadServiceConfig) {
+	return evidence.UploadServiceConfig{
+			QuarantineBucket: settings.QuarantineBucket,
+			CanonicalBucket:  settings.CanonicalBucket,
+			MaximumByteSize:  25 * 1024 * 1024,
+			InstructionTTL:   10 * time.Minute,
+			Clock:            clock,
+			IDGenerator:      idGenerator,
+		}, attachments.UploadServiceConfig{
+			QuarantineBucket: settings.QuarantineBucket,
+			MaximumByteSize:  25 * 1024 * 1024,
+			InstructionTTL:   10 * time.Minute,
+			Clock:            clock,
+			IDGenerator:      idGenerator,
+		}
+}
+
+func planningServiceDependencies(
+	clock func() time.Time,
+	idGenerator func(string) string,
+) planning.Dependencies {
+	return planning.Dependencies{Clock: clock, IDGenerator: idGenerator}
+}
+
+func communicationsWorkflowDependencies(
+	clock func() time.Time,
+	idGenerator func(string) string,
+) application.CommunicationsWorkflowDependencies {
+	return application.CommunicationsWorkflowDependencies{
+		Clock:       clock,
+		IDGenerator: idGenerator,
 	}
 }

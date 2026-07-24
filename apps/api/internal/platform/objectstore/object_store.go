@@ -40,6 +40,15 @@ type CopyRequest struct {
 	DestinationKey    string
 }
 
+type WriteRequest struct {
+	Bucket      string
+	Key         string
+	ContentType string
+	Size        int64
+	Metadata    map[string]string
+	Body        io.Reader
+}
+
 type GetRequest struct {
 	Bucket    string
 	Key       string
@@ -55,6 +64,7 @@ type GetInstruction struct {
 // issue short-lived instructions instead of exposing durable public URLs.
 type Store interface {
 	CreatePutInstruction(context.Context, PutRequest) (PutInstruction, error)
+	Write(context.Context, WriteRequest) (ObjectInfo, error)
 	Open(context.Context, string, string) (io.ReadCloser, ObjectInfo, error)
 	Copy(context.Context, CopyRequest) error
 	CreateGetInstruction(context.Context, GetRequest) (GetInstruction, error)
