@@ -12,6 +12,7 @@ import (
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/application"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/caps"
 	capstore "github.com/MarlonJD/aviaSurveil360/apps/api/internal/caps/store/postgres"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/documents"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/httpapi/generated"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/potentialfindings"
@@ -664,6 +665,7 @@ func (api *CanonicalAPI) documentProjection(
 	ctx context.Context,
 	actor identity.Principal,
 	documentID string,
+	includeDownload bool,
 ) (generated.DocumentMetadataView, error) {
 	var reportID, organizationID string
 	var version, revision int64
@@ -691,14 +693,65 @@ func (api *CanonicalAPI) documentProjection(
 				return generated.DocumentMetadataView{}, err
 			}
 			releasedLabel := "RELEASED"
-			fileName := released.ReportId + ".pdf"
 			view.CreatedAt = released.IssuedAt
 			view.PublicReviewResult = &releasedLabel
-			view.DownloadFileName = &fileName
 		} else if !actor.IsCAA() {
 			return generated.DocumentMetadataView{}, application.ErrForbidden
 		} else if issuedAt != nil {
 			view.CreatedAt = issuedAt.UTC().Format(time.RFC3339Nano)
+		}
+		var renderStatus string
+		var outputDocumentVersionID *string
+		renderErr := api.pool.QueryRow(ctx, `
+			SELECT status, output_document_version_id
+			FROM document_render_jobs
+			WHERE idempotency_key = 'report-render:' || $1
+		`, documentID).Scan(&renderStatus, &outputDocumentVersionID)
+		if errors.Is(renderErr, pgx.ErrNoRows) {
+			return view, nil
+		}
+		if renderErr != nil {
+			return generated.DocumentMetadataView{}, renderErr
+		}
+		view.RenderStatus = &renderStatus
+		if outputDocumentVersionID == nil {
+			return view, nil
+		}
+		var fileName, pdfHash, rendererHash, templateHash, sourceHash string
+		if err := api.pool.QueryRow(ctx, `
+			SELECT file_name, sha256, renderer_hash, template_hash, source_hash
+			FROM document_versions
+			WHERE id = $1
+		`, *outputDocumentVersionID).Scan(
+			&fileName, &pdfHash, &rendererHash, &templateHash, &sourceHash,
+		); err != nil {
+			return generated.DocumentMetadataView{}, err
+		}
+		view.DocumentVersionId = outputDocumentVersionID
+		view.DownloadFileName = &fileName
+		view.Sha256 = &pdfHash
+		view.RendererHash = &rendererHash
+		view.TemplateHash = &templateHash
+		view.SourceHash = &sourceHash
+		if includeDownload && api.documents != nil {
+			download, err := api.documents.AuthorizeDownload(
+				ctx, actor, *outputDocumentVersionID,
+			)
+			if errors.Is(err, documents.ErrForbidden) {
+				return generated.DocumentMetadataView{}, application.ErrForbidden
+			}
+			if errors.Is(err, documents.ErrNotFound) {
+				return generated.DocumentMetadataView{}, application.ErrNotFound
+			}
+			if errors.Is(err, documents.ErrNotReady) {
+				return view, nil
+			}
+			if err != nil {
+				return generated.DocumentMetadataView{}, err
+			}
+			view.DownloadUrl = &download.URL
+			expiresAt := download.ExpiresAt.UTC().Format(time.RFC3339Nano)
+			view.DownloadExpiresAt = &expiresAt
 		}
 		return view, nil
 	}
@@ -800,7 +853,7 @@ func (api *CanonicalAPI) documentsProjection(
 
 	items := []generated.DocumentMetadataView{}
 	for _, id := range ids {
-		item, err := api.documentProjection(ctx, actor, id)
+		item, err := api.documentProjection(ctx, actor, id, false)
 		if actor.HasRole(identity.RoleAuditee) && errors.Is(err, application.ErrForbidden) {
 			continue
 		}

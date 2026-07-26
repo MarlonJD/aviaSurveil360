@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -101,11 +102,13 @@ func (boundary *AuthBoundary) callback(writer http.ResponseWriter, request *http
 	}
 	authenticated, err := boundary.provider.Exchange(request.Context(), code, loginState.PKCEVerifier, loginState.Nonce)
 	if err != nil {
+		slog.Warn("OIDC callback rejected", "reason", err)
 		writeProblem(writer, http.StatusUnauthorized, "Authentication failed", "OIDC token verification failed", "INVALID_OIDC_TOKEN")
 		return
 	}
 	browserSession, err := boundary.sessions.Create(request.Context(), session.CreateInput{
 		SubjectID: authenticated.SubjectID, Issuer: authenticated.Issuer, DisplayName: authenticated.DisplayName,
+		Email:          authenticated.Email,
 		OrganizationID: authenticated.OrganizationID, Roles: authenticated.Roles,
 		ProviderSessionID: authenticated.ProviderSessionID, ProviderTokens: authenticated.Tokens,
 	})

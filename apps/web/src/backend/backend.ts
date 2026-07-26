@@ -223,6 +223,14 @@ export interface DocumentMetadataView {
   createdAt: Instant;
   publicReviewResult?: EvidenceReviewState | "RELEASED";
   downloadFileName?: string;
+  renderStatus?: "PENDING" | "RUNNING" | "FAILED" | "SUCCEEDED";
+  documentVersionId?: string;
+  downloadUrl?: string;
+  downloadExpiresAt?: Instant;
+  sha256?: string;
+  rendererHash?: string;
+  templateHash?: string;
+  sourceHash?: string;
 }
 
 export interface AuditeeCoordinationView {
@@ -267,6 +275,15 @@ export interface NotificationView {
   title: string;
   body: string;
   readAt: Instant | null;
+  emailDeliveryStatus:
+    | "NOT_CONFIGURED"
+    | "PENDING"
+    | "RETRYING"
+    | "DELIVERED"
+    | "FAILED";
+  emailDeliveryAttempts: number;
+  emailAcceptedAt: Instant | null;
+  emailNextAttemptAt: Instant | null;
   revision: number;
 }
 
@@ -988,10 +1005,49 @@ export interface AdminAccessDirectoryEntryView {
   displayName: string;
   role: Role;
   organizationId: string | null;
-  email: "Not configured in demo";
-  mfa: "Not configured in demo";
-  invitation: "Not configured in demo";
-  accountStatus: "Not configured in demo";
+  email: string;
+  mfa: string;
+  invitation: string;
+  accountStatus: string;
+}
+
+export type UserLifecycleAction =
+  | "PROVISION"
+  | "UPDATE_ROLES"
+  | "SUSPEND"
+  | "REACTIVATE";
+
+export type UserLifecycleStatus =
+  | "PENDING"
+  | "RUNNING"
+  | "SUCCEEDED"
+  | "FAILED";
+
+export interface RequestUserLifecycleInput {
+  idempotencyKey: string;
+  subjectId?: string | null;
+  action: UserLifecycleAction;
+  roles: Role[];
+  organizationId: string;
+  email?: string | null;
+  displayName?: string | null;
+}
+
+export interface UserLifecycleRequestView {
+  id: string;
+  subjectId: string | null;
+  action: UserLifecycleAction;
+  roles: Role[];
+  organizationId: string;
+  email: string | null;
+  displayName: string | null;
+  status: UserLifecycleStatus;
+  idempotencyKey: string;
+  requestedBySubjectId: string;
+  outboxMessageId: string;
+  failureReason: string | null;
+  createdAt: Instant;
+  updatedAt: Instant;
 }
 
 export interface AdminOrganizationView {
@@ -1385,6 +1441,8 @@ export interface AdminWorkspaceBackend {
   getInspectionPackage(input: { packageId: string }, options?: BackendRequestOptions): Promise<AdminInspectionPackageView>;
   listReportDefinitions(input: { search?: string }, options?: BackendRequestOptions): Promise<PageOutput<AdminReportDefinitionView>>;
   listAccessDirectory(input: { search?: string; role?: Role | string }, options?: BackendRequestOptions): Promise<PageOutput<AdminAccessDirectoryEntryView>>;
+  requestUserLifecycle(input: RequestUserLifecycleInput, options?: BackendRequestOptions): Promise<UserLifecycleRequestView>;
+  getUserLifecycleRequest(input: { requestId: string }, options?: BackendRequestOptions): Promise<UserLifecycleRequestView>;
   listOrganizations(input: { search?: string; organizationType?: string; status?: string; scope?: string }, options?: BackendRequestOptions): Promise<PageOutput<AdminOrganizationView>>;
   getOrganization(input: { organizationId: string }, options?: BackendRequestOptions): Promise<AdminOrganizationView>;
   listAuditEvents(input: { actor?: string; action?: string; entity?: string; system?: string; dateText?: string }, options?: BackendRequestOptions): Promise<PageOutput<AuditEventView>>;

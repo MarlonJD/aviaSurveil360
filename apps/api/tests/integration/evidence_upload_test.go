@@ -39,6 +39,9 @@ func TestOfficialEvidenceUploadIsBoundedIdempotentVersionedAndDownloadGated(t *t
 	if begin.UploadID == "" || begin.StagingObjectKey == "" || begin.MaximumByteSize != 25*1024*1024 || !begin.ExpiresAt.Equal(canonicalNow.Add(10*time.Minute)) {
 		t.Fatalf("upload instruction = %+v", begin)
 	}
+	if begin.RequiredHeaders.IfNoneMatch != "*" {
+		t.Fatalf("Evidence upload overwrite guard = %q", begin.RequiredHeaders.IfNoneMatch)
+	}
 	replay, err := service.Begin(context.Background(), auditee, beginInput)
 	if err != nil || replay != begin {
 		t.Fatalf("begin replay = %+v, err = %v", replay, err)
@@ -143,6 +146,32 @@ func TestEvidenceUploadRejectsAuthorityTypeSizeAndObservedObjectMismatchWithoutV
 		UploadID: begin.UploadID, SHA256: valid.SHA256, ByteSize: valid.ByteSize,
 	}); !errors.Is(err, evidence.ErrObjectMismatch) {
 		t.Fatalf("observed mismatch completion error = %v", err)
+	}
+	wrongBucketInput := valid
+	wrongBucketInput.OperationID = "op-evidence-wrong-bucket"
+	wrongBucket, err := service.Begin(context.Background(), auditee, wrongBucketInput)
+	if err != nil {
+		t.Fatalf("begin wrong-bucket upload: %v", err)
+	}
+	if _, err := pool.Exec(
+		context.Background(),
+		"UPDATE upload_sessions SET bucket_name = 'avia-canonical' WHERE id = $1",
+		wrongBucket.UploadID,
+	); err != nil {
+		t.Fatalf("move upload session to wrong bucket: %v", err)
+	}
+	objects.Seed(
+		"avia-canonical",
+		wrongBucket.StagingObjectKey,
+		"application/pdf",
+		body,
+		map[string]string{"sha256": valid.SHA256},
+	)
+	if _, err := service.Complete(context.Background(), auditee, evidence.CompleteUploadInput{
+		OperationID: "op-evidence-wrong-bucket-complete", CorrelationID: "corr-evidence-reject",
+		UploadID: wrongBucket.UploadID, SHA256: valid.SHA256, ByteSize: valid.ByteSize,
+	}); !errors.Is(err, evidence.ErrObjectMismatch) {
+		t.Fatalf("wrong-bucket completion error = %v", err)
 	}
 	var versions int
 	if err := pool.QueryRow(context.Background(), "SELECT count(*) FROM evidence_versions WHERE finding_id = 'finding-upload-reject'").Scan(&versions); err != nil || versions != 0 {

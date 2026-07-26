@@ -295,6 +295,8 @@
     },
     "schemas": {
       "HealthResponse": { "type": "object", "additionalProperties": false, "required": ["status"], "properties": { "status": { "type": "string", "enum": ["ok"] } } },
+      "ReadinessDependency": { "type": "object", "additionalProperties": false, "required": ["name", "required", "status"], "properties": { "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" }, "required": { "type": "boolean" }, "status": { "type": "string", "enum": ["ready", "unavailable"] } } },
+      "ReadinessResponse": { "type": "object", "additionalProperties": false, "required": ["status", "dependencies"], "properties": { "status": { "type": "string", "enum": ["ready", "degraded", "not_ready"] }, "dependencies": { "type": "array", "items": { "$ref": "#/components/schemas/ReadinessDependency" } } } },
       "Problem": { "type": "object", "additionalProperties": false, "required": ["type", "title", "status"], "properties": { "type": { "type": "string" }, "title": { "type": "string" }, "status": { "type": "integer" }, "detail": { "type": ["string", "null"] }, "code": { "type": ["string", "null"] }, "requestId": { "type": ["string", "null"] } } },
       "Role": { "type": "string", "enum": ["inspector", "leadInspector", "manager", "finance", "gm", "executiveDirector", "auditee", "admin"] },
       "ChecklistAnswer": { "type": "string", "enum": ["COMPLIANT", "NON_COMPLIANT", "OBSERVATION", "NOT_APPLICABLE", "NOT_CHECKED"] },

@@ -1,0 +1,11 @@
+.git
+.local
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+**/playwright-report
+**/test-results
+outputs
+qa
+.claude
+.DS_Store

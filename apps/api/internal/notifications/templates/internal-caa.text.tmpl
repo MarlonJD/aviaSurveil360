@@ -1,0 +1,10 @@
+{{.Title}}
+
+{{.Summary}}
+{{if .InternalContext}}
+Internal CAA Note
+{{.InternalContext}}
+{{end}}{{if .RelatedRecordID}}
+Authorized record: {{.RelatedRecordType}} {{.RelatedRecordID}}
+{{end}}
+Sign in to AviaSurveil360 to view the authoritative record.

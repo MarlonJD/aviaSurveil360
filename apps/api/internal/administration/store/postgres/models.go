@@ -47,18 +47,3 @@ type TemplateVersionQuestion struct {
 	Position          int32              `json:"position"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
-
-type UserLifecycleRequest struct {
-	ID                      string             `json:"id"`
-	SubjectID               *string            `json:"subject_id"`
-	RequestedAction         string             `json:"requested_action"`
-	RequestedRoles          []string           `json:"requested_roles"`
-	RequestedOrganizationID *string            `json:"requested_organization_id"`
-	Status                  string             `json:"status"`
-	IdempotencyKey          string             `json:"idempotency_key"`
-	RequestedBySubjectID    string             `json:"requested_by_subject_id"`
-	OutboxMessageID         *string            `json:"outbox_message_id"`
-	FailureReason           *string            `json:"failure_reason"`
-	CreatedAt               pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
-}

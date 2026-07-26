@@ -263,16 +263,17 @@ func (workflow *CommunicationsWorkflow) createNotification(
 	now time.Time,
 ) (notifications.Notification, error) {
 	notification := notifications.Notification{
-		ID:                 workflow.service.idGenerator("notification"),
-		RecipientSubjectID: recipientSubjectID,
-		OrganizationID:     organizationID,
-		Title:              title,
-		Body:               body,
-		RelatedEntityType:  relatedEntityType,
-		RelatedEntityID:    relatedEntityID,
-		DeduplicationKey:   deduplicationKey,
-		Revision:           1,
-		CreatedAt:          now,
+		ID:                  workflow.service.idGenerator("notification"),
+		RecipientSubjectID:  recipientSubjectID,
+		OrganizationID:      organizationID,
+		Title:               title,
+		Body:                body,
+		RelatedEntityType:   relatedEntityType,
+		RelatedEntityID:     relatedEntityID,
+		DeduplicationKey:    deduplicationKey,
+		EmailDeliveryStatus: notifications.EmailDeliveryPending,
+		Revision:            1,
+		CreatedAt:           now,
 	}
 	if _, err := transaction.Exec(ctx, `
 		INSERT INTO notification_records (
@@ -613,14 +614,35 @@ func (workflow *CommunicationsWorkflow) ListNotifications(
 		return notifications.Page{}, ErrForbidden
 	}
 	rows, err := workflow.pool.Query(ctx, `
-		SELECT id, recipient_subject_id, COALESCE(organization_id, ''),
-		       title, body, COALESCE(related_entity_type, ''),
-		       COALESCE(related_entity_id, ''), deduplication_key,
-		       read_at, revision, created_at
-		FROM notification_records
-		WHERE recipient_subject_id = $1
-		  AND tombstoned_at IS NULL
-		ORDER BY created_at DESC, id DESC
+		SELECT record.id, record.recipient_subject_id,
+		       COALESCE(record.organization_id, ''),
+		       record.title, record.body,
+		       COALESCE(record.related_entity_type, ''),
+		       COALESCE(record.related_entity_id, ''),
+		       record.deduplication_key, record.read_at,
+		       CASE COALESCE(delivery.status, '')
+		           WHEN 'PENDING' THEN 'PENDING'
+		           WHEN 'FAILED' THEN 'RETRYING'
+		           WHEN 'DELIVERED' THEN 'DELIVERED'
+		           WHEN 'DEAD_LETTER' THEN 'FAILED'
+		           ELSE 'NOT_CONFIGURED'
+		       END,
+		       COALESCE(delivery.attempt_count, 0),
+		       delivery.accepted_at, delivery.next_attempt_at,
+		       record.revision, record.created_at
+		FROM notification_records record
+		LEFT JOIN LATERAL (
+		    SELECT job.status, job.attempt_count, job.accepted_at,
+		           job.next_attempt_at
+		    FROM notification_delivery_jobs job
+		    WHERE job.notification_id = record.id
+		      AND job.channel = 'EMAIL'
+		    ORDER BY job.created_at DESC, job.id DESC
+		    LIMIT 1
+		) delivery ON true
+		WHERE record.recipient_subject_id = $1
+		  AND record.tombstoned_at IS NULL
+		ORDER BY record.created_at DESC, record.id DESC
 	`, actor.SubjectID)
 	if err != nil {
 		return notifications.Page{}, err
@@ -656,6 +678,10 @@ func scanNotification(row notificationRow) (notifications.Notification, error) {
 		&item.RelatedEntityID,
 		&item.DeduplicationKey,
 		&item.ReadAt,
+		&item.EmailDeliveryStatus,
+		&item.EmailDeliveryAttempts,
+		&item.EmailAcceptedAt,
+		&item.EmailNextAttemptAt,
 		&item.Revision,
 		&item.CreatedAt,
 	)
@@ -698,15 +724,36 @@ func (workflow *CommunicationsWorkflow) MarkNotificationRead(
 			transaction pgx.Tx,
 		) (transition[notifications.Notification], error) {
 			item, err := scanNotification(transaction.QueryRow(ctx, `
-				SELECT id, recipient_subject_id, COALESCE(organization_id, ''),
-				       title, body, COALESCE(related_entity_type, ''),
-				       COALESCE(related_entity_id, ''), deduplication_key,
-				       read_at, revision, created_at
-				FROM notification_records
-				WHERE id = $1
-				  AND recipient_subject_id = $2
-				  AND tombstoned_at IS NULL
-				FOR UPDATE
+				SELECT record.id, record.recipient_subject_id,
+				       COALESCE(record.organization_id, ''),
+				       record.title, record.body,
+				       COALESCE(record.related_entity_type, ''),
+				       COALESCE(record.related_entity_id, ''),
+				       record.deduplication_key, record.read_at,
+				       CASE COALESCE(delivery.status, '')
+				           WHEN 'PENDING' THEN 'PENDING'
+				           WHEN 'FAILED' THEN 'RETRYING'
+				           WHEN 'DELIVERED' THEN 'DELIVERED'
+				           WHEN 'DEAD_LETTER' THEN 'FAILED'
+				           ELSE 'NOT_CONFIGURED'
+				       END,
+				       COALESCE(delivery.attempt_count, 0),
+				       delivery.accepted_at, delivery.next_attempt_at,
+				       record.revision, record.created_at
+				FROM notification_records record
+				LEFT JOIN LATERAL (
+				    SELECT job.status, job.attempt_count, job.accepted_at,
+				           job.next_attempt_at
+				    FROM notification_delivery_jobs job
+				    WHERE job.notification_id = record.id
+				      AND job.channel = 'EMAIL'
+				    ORDER BY job.created_at DESC, job.id DESC
+				    LIMIT 1
+				) delivery ON true
+				WHERE record.id = $1
+				  AND record.recipient_subject_id = $2
+				  AND record.tombstoned_at IS NULL
+				FOR UPDATE OF record
 			`, command.NotificationID, actor.SubjectID))
 			if errors.Is(err, pgx.ErrNoRows) {
 				return transition[notifications.Notification]{}, ErrNotFound

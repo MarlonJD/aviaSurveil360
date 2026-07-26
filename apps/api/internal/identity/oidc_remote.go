@@ -12,6 +12,7 @@ import (
 
 type RemoteOIDCConfig struct {
 	IssuerURL    string
+	DiscoveryURL string
 	ClientID     string
 	ClientSecret string
 	RedirectURL  string
@@ -26,14 +27,35 @@ func NewRemoteOIDCProvider(ctx context.Context, config RemoteOIDCConfig) (*Remot
 	if strings.TrimSpace(config.IssuerURL) == "" || strings.TrimSpace(config.ClientID) == "" || strings.TrimSpace(config.ClientSecret) == "" || strings.TrimSpace(config.RedirectURL) == "" {
 		return nil, fmt.Errorf("OIDC issuer, client ID, client secret, and redirect URL are required")
 	}
-	provider, err := oidc.NewProvider(ctx, config.IssuerURL)
+	discoveryURL := strings.TrimSpace(config.DiscoveryURL)
+	if discoveryURL == "" {
+		discoveryURL = config.IssuerURL
+	}
+	discoveryContext := ctx
+	if discoveryURL != config.IssuerURL {
+		discoveryContext = oidc.InsecureIssuerURLContext(ctx, config.IssuerURL)
+	}
+	provider, err := oidc.NewProvider(discoveryContext, discoveryURL)
 	if err != nil {
 		return nil, fmt.Errorf("discover OIDC provider: %w", err)
+	}
+	var discoveryMetadata struct {
+		Issuer string `json:"issuer"`
+	}
+	if err := provider.Claims(&discoveryMetadata); err != nil {
+		return nil, fmt.Errorf("decode OIDC discovery metadata: %w", err)
+	}
+	if discoveryMetadata.Issuer != config.IssuerURL {
+		return nil, fmt.Errorf(
+			"OIDC discovery issuer %q does not match configured issuer %q",
+			discoveryMetadata.Issuer,
+			config.IssuerURL,
+		)
 	}
 	return &RemoteOIDCProvider{
 		oauthConfig: oauth2.Config{
 			ClientID: config.ClientID, ClientSecret: config.ClientSecret, Endpoint: provider.Endpoint(),
-			RedirectURL: config.RedirectURL, Scopes: []string{oidc.ScopeOpenID, "profile"},
+			RedirectURL: config.RedirectURL, Scopes: []string{oidc.ScopeOpenID, "profile", "email"},
 		},
 		verifier: provider.Verifier(&oidc.Config{ClientID: config.ClientID}),
 	}, nil
@@ -70,6 +92,7 @@ func (provider *RemoteOIDCProvider) Exchange(ctx context.Context, code, pkceVeri
 	var claims struct {
 		Name              string   `json:"name"`
 		PreferredUsername string   `json:"preferred_username"`
+		Email             string   `json:"email"`
 		OrganizationID    string   `json:"organization_id"`
 		Roles             []string `json:"roles"`
 		SID               string   `json:"sid"`
@@ -80,8 +103,12 @@ func (provider *RemoteOIDCProvider) Exchange(ctx context.Context, code, pkceVeri
 	if err := verifiedToken.Claims(&claims); err != nil {
 		return OIDCIdentity{}, fmt.Errorf("decode verified OIDC claims: %w", err)
 	}
-	if strings.TrimSpace(verifiedToken.Subject) == "" || strings.TrimSpace(claims.OrganizationID) == "" {
-		return OIDCIdentity{}, fmt.Errorf("verified OIDC subject and organization_id are required")
+	if strings.TrimSpace(verifiedToken.Subject) == "" ||
+		strings.TrimSpace(claims.OrganizationID) == "" ||
+		!validOIDCEmail(claims.Email) {
+		return OIDCIdentity{}, fmt.Errorf(
+			"verified OIDC subject, organization_id, and email are required",
+		)
 	}
 	roles := canonicalRoles(append(append([]string(nil), claims.Roles...), claims.RealmAccess.Roles...))
 	if len(roles) == 0 {
@@ -96,12 +123,20 @@ func (provider *RemoteOIDCProvider) Exchange(ctx context.Context, code, pkceVeri
 	}
 	return OIDCIdentity{
 		SubjectID: verifiedToken.Subject, Issuer: verifiedToken.Issuer, DisplayName: displayName,
+		Email:          strings.ToLower(strings.TrimSpace(claims.Email)),
 		OrganizationID: strings.TrimSpace(claims.OrganizationID), Roles: roles,
 		ProviderSessionID: strings.TrimSpace(claims.SID),
 		Tokens: ProviderTokens{
 			AccessToken: token.AccessToken, RefreshToken: token.RefreshToken, IDToken: rawIDToken, Expiry: token.Expiry,
 		},
 	}, nil
+}
+
+func validOIDCEmail(value string) bool {
+	value = strings.TrimSpace(value)
+	at := strings.LastIndexByte(value, '@')
+	return at > 0 && at < len(value)-1 &&
+		!strings.ContainsAny(value, "\r\n\t ,;<>")
 }
 
 func canonicalRoles(rawRoles []string) []Role {

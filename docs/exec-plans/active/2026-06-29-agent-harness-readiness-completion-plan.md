@@ -38,6 +38,21 @@ regulatory ingestion, notification service, production audit-log behavior, or
 framework migration was added or claimed. Remaining gate:
 stakeholder/user sign-off before moving to `completed`.
 
+**Maintenance note (2026-07-23):** The user explicitly authorized an
+English-only documentation policy and an entropy cleanup pass. All 53 paired
+`.turkce.md` companions were removed after confirming that each had an English
+canonical counterpart. `AGENTS.md` was reduced from 318 to 121 lines and now
+uses direct Markdown routes to the architecture, planning, plan-index,
+registry, verification, output, and cleanup authorities. `CLAUDE.md` and the
+legacy harness runbook were reduced to thin compatibility adapters.
+`ARCHITECTURE.md` and `docs/PLANS.md` now own the missing system and planning
+maps. Forward Plans 1–4 no longer request Turkish companion evidence. Fresh
+local results: `node tests/harness-docs-smoke.test.js` passed,
+`node tests/demo-boundary-smoke.test.js` passed, `git diff --check` passed, and
+both adaptive `harness.py audit` and `harness.py check` returned 0 errors and 0
+warnings. This is a verified local adaptive harness repair, not `CERT000`
+certification or a production-readiness claim.
+
 **Architecture:** Keep `AGENTS.md` as the short highest-authority map, then move
 working harness detail into a dedicated `docs/agent-harness/` package. The
 package must expose one entrypoint index, one output contract, one surface
@@ -434,16 +449,16 @@ rg -n "docs/agent-harness|agent-harness/index|output-contract|verification-matri
 **Goal:** make the new harness package the default agent entrypoint without
 creating process noise.
 
-- [ ] Use the package on one small future repo task.
-- [ ] Confirm the agent can answer before editing:
+- [x] Use the package on one small future repo task.
+- [x] Confirm the agent can answer before editing:
   - What source rule controls this task?
   - What output contract applies?
   - Which verification level applies?
   - Where will evidence be recorded?
   - What is explicitly out of scope?
-- [ ] If the package causes confusion, update `docs/agent-harness/index.md` and
+- [x] If the package causes confusion, update `docs/agent-harness/index.md` and
   `output-contract.md` rather than adding more broad text to `AGENTS.md`.
-- [ ] If the package works, record the result in this plan or a note and move
+- [x] If the package works, record the result in this plan or a note and move
   this plan toward `completed/` only after user/stakeholder sign-off.
 
 **Verification:**

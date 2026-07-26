@@ -1,4 +1,4 @@
 {
-  "apiBaseUrl": "/",
+  "apiBaseUrl": "/api/",
   "environmentLabel": "Local HTTP candidate"
 }

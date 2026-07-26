@@ -17,6 +17,9 @@ function assertFile(relativePath) {
 }
 
 const requiredFiles = [
+  'AGENTS.md',
+  'ARCHITECTURE.md',
+  'docs/PLANS.md',
   'docs/index.md',
   'docs/agent-harness/index.md',
   'docs/agent-harness/output-contract.md',
@@ -25,7 +28,6 @@ const requiredFiles = [
   'docs/agent-harness/entropy-cleanup-checklist.md',
   'docs/product-specs/index.md',
   'docs/demo-evidence/BUILD_SUMMARY.md',
-  'docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md',
   'tests/harness-docs-smoke.test.js'
 ];
 
@@ -84,14 +86,17 @@ const planIndex = read('docs/exec-plans/index.md');
 
 const harnessIndex = read('docs/agent-harness/index.md');
 [
+  '../../AGENTS.md',
+  '../../ARCHITECTURE.md',
+  '../PLANS.md',
+  '../product-specs/index.md',
   'output-contract.md',
   'registry.md',
   'verification-matrix.md',
   'entropy-cleanup-checklist.md',
   '../exec-plans/index.md',
   '../exec-plans/tech-debt-tracker.md',
-  '../demo-evidence/BUILD_SUMMARY.md',
-  '../demo-handoff/AGENT_HARNESS_RUNBOOK.md'
+  '../demo-evidence/BUILD_SUMMARY.md'
 ].forEach((target) => {
   assert.match(
     harnessIndex,
@@ -99,6 +104,41 @@ const harnessIndex = read('docs/agent-harness/index.md');
     `docs/agent-harness/index.md must link ${target}`
   );
 });
+
+const agents = read('AGENTS.md');
+[
+  '](ARCHITECTURE.md)',
+  '](docs/PLANS.md)',
+  '](docs/exec-plans/index.md)',
+  '](docs/agent-harness/registry.md)',
+  '](docs/agent-harness/verification-matrix.md)'
+].forEach((route) => {
+  assert.match(
+    agents,
+    new RegExp(route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    `AGENTS.md must expose a Markdown route containing ${route}`
+  );
+});
+
+function collectFiles(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const fullPath = path.join(directory, entry.name);
+    if (entry.name === '.git' || entry.name === 'node_modules' || entry.name === 'dist') {
+      return [];
+    }
+    return entry.isDirectory() ? collectFiles(fullPath) : [fullPath];
+  });
+}
+
+const turkishCompanions = collectFiles(root)
+  .filter((file) => file.endsWith('.turkce.md'))
+  .map((file) => path.relative(root, file));
+
+assert.deepEqual(
+  turkishCompanions,
+  [],
+  `English-only documentation policy violated by: ${turkishCompanions.join(', ')}`
+);
 
 const outputContract = read('docs/agent-harness/output-contract.md');
 [

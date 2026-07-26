@@ -61,7 +61,8 @@ func TestRemoteOIDCProviderUsesDiscoveryAuthorizationCodePKCEAndVerifiedClaims(t
 		idToken := signedOIDCTestToken(t, privateKey, map[string]any{
 			"iss": server.URL, "sub": "inspector-oidc", "aud": clientID,
 			"iat": now.Unix(), "exp": now.Add(time.Hour).Unix(), "nonce": expectedNonce,
-			"name": "OIDC Inspector", "organization_id": "caa", "roles": []string{"inspector", "leadInspector"},
+			"name": "OIDC Inspector", "email": "inspector.oidc@example.test",
+			"organization_id": "caa", "roles": []string{"inspector", "leadInspector"},
 			"sid": "provider-session-001",
 		})
 		writeOIDCTestJSON(writer, map[string]any{
@@ -97,7 +98,11 @@ func TestRemoteOIDCProviderUsesDiscoveryAuthorizationCodePKCEAndVerifiedClaims(t
 	if err != nil {
 		t.Fatalf("exchange authorization code: %v", err)
 	}
-	if authenticated.SubjectID != "inspector-oidc" || authenticated.Issuer != server.URL || authenticated.OrganizationID != "caa" || authenticated.DisplayName != "OIDC Inspector" || authenticated.ProviderSessionID != "provider-session-001" {
+	if authenticated.SubjectID != "inspector-oidc" || authenticated.Issuer != server.URL ||
+		authenticated.Email != "inspector.oidc@example.test" ||
+		authenticated.OrganizationID != "caa" ||
+		authenticated.DisplayName != "OIDC Inspector" ||
+		authenticated.ProviderSessionID != "provider-session-001" {
 		t.Fatalf("verified identity = %+v", authenticated)
 	}
 	if len(authenticated.Roles) != 2 || authenticated.Roles[0] != identity.RoleInspector || authenticated.Roles[1] != identity.RoleLeadInspector {
@@ -108,6 +113,65 @@ func TestRemoteOIDCProviderUsesDiscoveryAuthorizationCodePKCEAndVerifiedClaims(t
 	}
 	if _, err := provider.Exchange(context.Background(), "authorization-code", "pkce-verifier", "wrong-nonce"); err == nil || !strings.Contains(strings.ToLower(err.Error()), "nonce") {
 		t.Fatalf("wrong nonce error = %v", err)
+	}
+}
+
+func TestRemoteOIDCProviderUsesPrivateDiscoveryWithPublicIssuer(t *testing.T) {
+	t.Parallel()
+
+	const publicIssuer = "https://localhost:18443/identity/realms/aviasurveil360"
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.URL.Path != "/.well-known/openid-configuration" {
+			http.NotFound(writer, request)
+			return
+		}
+		writeOIDCTestJSON(writer, map[string]any{
+			"issuer":                                publicIssuer,
+			"authorization_endpoint":                publicIssuer + "/protocol/openid-connect/auth",
+			"token_endpoint":                        server.URL + "/token",
+			"jwks_uri":                              server.URL + "/keys",
+			"response_types_supported":              []string{"code"},
+			"subject_types_supported":               []string{"public"},
+			"id_token_signing_alg_values_supported": []string{"RS256"},
+		})
+	}))
+	defer server.Close()
+
+	provider, err := identity.NewRemoteOIDCProvider(context.Background(), identity.RemoteOIDCConfig{
+		IssuerURL: publicIssuer, DiscoveryURL: server.URL,
+		ClientID: "aviasurveil360", ClientSecret: "provider-secret",
+		RedirectURL: "https://localhost:18443/auth/callback",
+	})
+	if err != nil {
+		t.Fatalf("new remote OIDC provider with private discovery: %v", err)
+	}
+	authorizationURL, err := url.Parse(provider.AuthorizationURL("state", "nonce", "challenge"))
+	if err != nil {
+		t.Fatalf("parse authorization URL: %v", err)
+	}
+	if authorizationURL.Host != "localhost:18443" {
+		t.Fatalf("authorization host = %q, want public origin", authorizationURL.Host)
+	}
+
+	mismatchedServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		writeOIDCTestJSON(writer, map[string]any{
+			"issuer":                                "https://attacker.invalid/realms/avia",
+			"authorization_endpoint":                publicIssuer + "/protocol/openid-connect/auth",
+			"token_endpoint":                        server.URL + "/token",
+			"jwks_uri":                              server.URL + "/keys",
+			"response_types_supported":              []string{"code"},
+			"subject_types_supported":               []string{"public"},
+			"id_token_signing_alg_values_supported": []string{"RS256"},
+		})
+	}))
+	defer mismatchedServer.Close()
+	if _, err := identity.NewRemoteOIDCProvider(context.Background(), identity.RemoteOIDCConfig{
+		IssuerURL: publicIssuer, DiscoveryURL: mismatchedServer.URL,
+		ClientID: "aviasurveil360", ClientSecret: "provider-secret",
+		RedirectURL: "https://localhost:18443/auth/callback",
+	}); err == nil || !strings.Contains(err.Error(), "issuer") {
+		t.Fatalf("mismatched discovery issuer error = %v", err)
 	}
 }
 

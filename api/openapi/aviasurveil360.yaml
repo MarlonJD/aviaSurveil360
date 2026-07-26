@@ -33,17 +33,24 @@
         "operationId": "getReadiness",
         "responses": {
           "200": {
-            "description": "Ready",
+            "description": "Ready or degraded only by optional dependencies",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
+                  "$ref": "#/components/schemas/ReadinessResponse"
                 }
               }
             }
           },
           "503": {
-            "$ref": "#/components/responses/Problem"
+            "description": "One or more required dependencies are unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2511,6 +2518,79 @@
         "x-organization-scope": "authorized-projection"
       }
     },
+    "/v1/planning/intake-drafts": {
+      "post": {
+        "operationId": "createPlanningIntakeDraft",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlanningIntakeDraftInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created planning intake draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanningIntakeDraftView"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "oidc": []
+          }
+        ],
+        "x-authorized-roles": [
+          "manager"
+        ],
+        "x-organization-scope": "authorized-projection",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          },
+          {
+            "$ref": "#/components/parameters/ExpectedRevision"
+          }
+        ]
+      }
+    },
     "/v1/planning/intake-drafts/{draftId}": {
       "get": {
         "operationId": "getPlanningIntakeDraft",
@@ -2833,6 +2913,164 @@
           "manager"
         ],
         "x-organization-scope": "authorized-projection"
+      }
+    },
+    "/v1/audit-workspaces": {
+      "post": {
+        "operationId": "createAuditWorkspace",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAuditWorkspaceInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created immutable audit execution workspace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditWorkspaceView"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "oidc": []
+          }
+        ],
+        "x-authorized-roles": [
+          "inspector",
+          "leadInspector",
+          "manager",
+          "finance",
+          "gm",
+          "executiveDirector",
+          "admin"
+        ],
+        "x-organization-scope": "authorized-projection",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          },
+          {
+            "$ref": "#/components/parameters/ExpectedRevision"
+          }
+        ]
+      }
+    },
+    "/v1/report-versions": {
+      "post": {
+        "operationId": "createReportVersion",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportVersionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created immutable report version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportVersionView"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "oidc": []
+          }
+        ],
+        "x-authorized-roles": [
+          "inspector",
+          "leadInspector",
+          "manager",
+          "finance",
+          "gm",
+          "executiveDirector",
+          "admin"
+        ],
+        "x-organization-scope": "authorized-projection",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          },
+          {
+            "$ref": "#/components/parameters/ExpectedRevision"
+          }
+        ]
       }
     },
     "/v1/communications": {
@@ -4348,6 +4586,152 @@
         ]
       }
     },
+    "/v1/admin/checklist-template-versions": {
+      "post": {
+        "operationId": "createChecklistTemplateVersion",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChecklistTemplateVersionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created immutable published checklist template version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChecklistTemplateVersionView"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "oidc": []
+          }
+        ],
+        "x-authorized-roles": [
+          "admin"
+        ],
+        "x-organization-scope": "authorized-projection",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          },
+          {
+            "$ref": "#/components/parameters/ExpectedRevision"
+          }
+        ]
+      }
+    },
+    "/v1/admin/reminder-rules": {
+      "post": {
+        "operationId": "createReminderRule",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReminderRuleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created reminder rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderRuleView"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "oidc": []
+          }
+        ],
+        "x-authorized-roles": [
+          "admin"
+        ],
+        "x-organization-scope": "authorized-projection",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          },
+          {
+            "$ref": "#/components/parameters/ExpectedRevision"
+          }
+        ]
+      }
+    },
     "/v1/admin/templates/{templateId}": {
       "get": {
         "operationId": "getAdminTemplate",
@@ -4811,6 +5195,123 @@
         "x-organization-scope": "authorized-projection"
       }
     },
+    "/v1/admin/user-lifecycle-requests": {
+      "post": {
+        "operationId": "requestUserLifecycle",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestUserLifecycleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Durable user lifecycle request accepted for Keycloak reconciliation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserLifecycleRequestView"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "oidc": []
+          }
+        ],
+        "x-authorized-roles": [
+          "admin"
+        ],
+        "x-organization-scope": "authorized-projection",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          },
+          {
+            "$ref": "#/components/parameters/ExpectedRevision"
+          }
+        ]
+      }
+    },
+    "/v1/admin/user-lifecycle-requests/{requestId}": {
+      "get": {
+        "operationId": "getUserLifecycleRequest",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current durable user lifecycle request status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserLifecycleRequestView"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "oidc": []
+          }
+        ],
+        "x-authorized-roles": [
+          "admin"
+        ],
+        "x-organization-scope": "authorized-projection"
+      }
+    },
     "/v1/admin/organizations": {
       "get": {
         "operationId": "listAdminOrganizations",
@@ -4882,6 +5383,77 @@
           "admin"
         ],
         "x-organization-scope": "authorized-projection"
+      },
+      "post": {
+        "operationId": "createAdminOrganization",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminOrganizationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created organization master record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrganizationView"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "oidc": []
+          }
+        ],
+        "x-authorized-roles": [
+          "admin"
+        ],
+        "x-organization-scope": "authorized-projection",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          },
+          {
+            "$ref": "#/components/parameters/ExpectedRevision"
+          }
+        ]
       }
     },
     "/v1/admin/organizations/{organizationId}": {
@@ -5218,6 +5790,55 @@
             "enum": [
               "ok"
             ]
+          }
+        }
+      },
+      "ReadinessDependency": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "required",
+          "status"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,31}$"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "unavailable"
+            ]
+          }
+        }
+      },
+      "ReadinessResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "dependencies"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "degraded",
+              "not_ready"
+            ]
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadinessDependency"
+            }
           }
         }
       },
@@ -8577,6 +9198,34 @@
           }
         }
       },
+      "CreatePlanningIntakeDraftInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "idempotencyKey",
+          "expectedRevision",
+          "draftId",
+          "values"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "expectedRevision": {
+            "type": "null"
+          },
+          "draftId": {
+            "type": "string"
+          },
+          "values": {
+            "$ref": "#/components/schemas/PlanningIntakeDraftValues"
+          }
+        }
+      },
       "PlanningIntakeDraftView": {
         "type": "object",
         "additionalProperties": false,
@@ -8893,6 +9542,223 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "AuditWorkspaceQuestionInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "questionId",
+          "prompt",
+          "configuredReference",
+          "expectedEvidence",
+          "assignedInspectorSubjectIds"
+        ],
+        "properties": {
+          "questionId": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "configuredReference": {
+            "type": "string"
+          },
+          "expectedEvidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "assignedInspectorSubjectIds": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreateAuditWorkspaceInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "idempotencyKey",
+          "planningItemId",
+          "expectedPlanningRevision",
+          "auditId",
+          "assignmentId",
+          "packageId",
+          "packageDraftId",
+          "templateId",
+          "templateVersionId",
+          "leadInspectorSubjectId",
+          "memberSubjectIds",
+          "scheduledStartDate",
+          "scheduledEndDate",
+          "expiresAt",
+          "questions"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "planningItemId": {
+            "type": "string"
+          },
+          "expectedPlanningRevision": {
+            "type": "integer"
+          },
+          "auditId": {
+            "type": "string"
+          },
+          "assignmentId": {
+            "type": "string"
+          },
+          "packageId": {
+            "type": "string"
+          },
+          "packageDraftId": {
+            "type": "string"
+          },
+          "templateId": {
+            "type": "string"
+          },
+          "templateVersionId": {
+            "type": "string"
+          },
+          "leadInspectorSubjectId": {
+            "type": "string"
+          },
+          "memberSubjectIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "scheduledStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "scheduledEndDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "questions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/AuditWorkspaceQuestionInput"
+            }
+          }
+        }
+      },
+      "AuditWorkspaceView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "auditId",
+          "assignmentId",
+          "packageId",
+          "packageDraftId",
+          "templateVersionId",
+          "packageVersion",
+          "revision"
+        ],
+        "properties": {
+          "auditId": {
+            "type": "string"
+          },
+          "assignmentId": {
+            "type": "string"
+          },
+          "packageId": {
+            "type": "string"
+          },
+          "packageDraftId": {
+            "type": "string"
+          },
+          "templateVersionId": {
+            "type": "string"
+          },
+          "packageVersion": {
+            "type": "integer"
+          },
+          "revision": {
+            "type": "integer"
+          }
+        }
+      },
+      "CreateReportVersionInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "idempotencyKey",
+          "expectedRevision",
+          "reportVersionId",
+          "reportId",
+          "auditId",
+          "kind",
+          "version",
+          "status",
+          "findingIds",
+          "content"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "expectedRevision": {
+            "type": "null"
+          },
+          "reportVersionId": {
+            "type": "string"
+          },
+          "reportId": {
+            "type": "string"
+          },
+          "auditId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "PRELIMINARY",
+              "FINAL"
+            ]
+          },
+          "version": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RETURNED",
+              "DEPARTMENT_REVIEW"
+            ]
+          },
+          "findingIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": true
           }
         }
       },
@@ -9598,6 +10464,41 @@
           },
           "downloadFileName": {
             "type": "string"
+          },
+          "renderStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "RUNNING",
+              "FAILED",
+              "SUCCEEDED"
+            ]
+          },
+          "documentVersionId": {
+            "type": "string"
+          },
+          "downloadUrl": {
+            "type": "string"
+          },
+          "downloadExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "rendererHash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "templateHash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "sourceHash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
           }
         }
       },
@@ -9866,6 +10767,10 @@
           "title",
           "body",
           "readAt",
+          "emailDeliveryStatus",
+          "emailDeliveryAttempts",
+          "emailAcceptedAt",
+          "emailNextAttemptAt",
           "revision"
         ],
         "properties": {
@@ -9882,6 +10787,34 @@
             "type": "string"
           },
           "readAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "emailDeliveryStatus": {
+            "type": "string",
+            "enum": [
+              "NOT_CONFIGURED",
+              "PENDING",
+              "RETRYING",
+              "DELIVERED",
+              "FAILED"
+            ]
+          },
+          "emailDeliveryAttempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "emailAcceptedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "emailNextAttemptAt": {
             "type": [
               "string",
               "null"
@@ -10595,6 +11528,157 @@
           }
         }
       },
+      "RequestUserLifecycleInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "idempotencyKey",
+          "action",
+          "roles",
+          "organizationId"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "subjectId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "PROVISION",
+              "UPDATE_ROLES",
+              "SUSPEND",
+              "REACTIVATE"
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/Role"
+            }
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "email"
+          },
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UserLifecycleRequestView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "subjectId",
+          "action",
+          "roles",
+          "organizationId",
+          "email",
+          "displayName",
+          "status",
+          "idempotencyKey",
+          "requestedBySubjectId",
+          "outboxMessageId",
+          "failureReason",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "subjectId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "PROVISION",
+              "UPDATE_ROLES",
+              "SUSPEND",
+              "REACTIVATE"
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Role"
+            }
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "email"
+          },
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "RUNNING",
+              "SUCCEEDED",
+              "FAILED"
+            ]
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "requestedBySubjectId": {
+            "type": "string"
+          },
+          "outboxMessageId": {
+            "type": "string"
+          },
+          "failureReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "AdminOrganizationView": {
         "type": "object",
         "additionalProperties": false,
@@ -10633,6 +11717,170 @@
             "type": [
               "string",
               "null"
+            ]
+          }
+        }
+      },
+      "CreateAdminOrganizationInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "idempotencyKey",
+          "expectedRevision",
+          "organizationId",
+          "legalName",
+          "organizationType"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "expectedRevision": {
+            "type": "null"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "legalName": {
+            "type": "string"
+          },
+          "organizationType": {
+            "type": "string",
+            "enum": [
+              "AUTHORITY",
+              "OPERATOR",
+              "SERVICE_PROVIDER"
+            ]
+          }
+        }
+      },
+      "PublishedChecklistQuestionInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "questionId",
+          "sectionId",
+          "prompt",
+          "configuredReference",
+          "expectedEvidence",
+          "allowedAnswers",
+          "commentRequiredFor"
+        ],
+        "properties": {
+          "questionId": {
+            "type": "string"
+          },
+          "sectionId": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "configuredReference": {
+            "type": "string"
+          },
+          "expectedEvidence": {
+            "type": "string"
+          },
+          "allowedAnswers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChecklistAnswer"
+            }
+          },
+          "commentRequiredFor": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChecklistAnswer"
+            }
+          }
+        }
+      },
+      "CreateChecklistTemplateVersionInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "idempotencyKey",
+          "expectedRevision",
+          "templateId",
+          "templateVersionId",
+          "title",
+          "ownerRole",
+          "questions"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "expectedRevision": {
+            "type": "null"
+          },
+          "templateId": {
+            "type": "string"
+          },
+          "templateVersionId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "ownerRole": {
+            "type": "string"
+          },
+          "questions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/PublishedChecklistQuestionInput"
+            }
+          }
+        }
+      },
+      "CreateReminderRuleInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "idempotencyKey",
+          "expectedRevision",
+          "ruleId",
+          "label",
+          "offsetDays",
+          "channel"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "expectedRevision": {
+            "type": "null"
+          },
+          "ruleId": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "offsetDays": {
+            "type": "integer"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "IN_APP",
+              "EMAIL",
+              "IN_APP_AND_EMAIL"
             ]
           }
         }

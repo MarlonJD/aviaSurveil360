@@ -50,9 +50,10 @@ type WriteRequest struct {
 }
 
 type GetRequest struct {
-	Bucket    string
-	Key       string
-	ExpiresAt time.Time
+	Bucket           string
+	Key              string
+	DownloadFileName string
+	ExpiresAt        time.Time
 }
 
 type GetInstruction struct {

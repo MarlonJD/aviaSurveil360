@@ -10,6 +10,10 @@ import {
   createHttpBackend,
 } from "./http-backend";
 import { BACKEND_CAPABILITY_KEYS } from "./backend";
+import {
+  activateBrowserTelemetry,
+  createBrowserTelemetry,
+} from "../telemetry/browser-telemetry";
 
 function jsonResponse(value: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(value), {
@@ -59,6 +63,39 @@ describe("HttpBackend", () => {
     expect(url).toBe("/v1/assignments?limit=20");
     expect(init?.credentials).toBe("same-origin");
     expect(new Headers(init?.headers).get("accept")).toBe("application/json");
+  });
+
+  it("propagates the active browser W3C trace and bounded correlation ID", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
+      jsonResponse({ items: [], nextCursor: null }),
+    );
+    const telemetry = createBrowserTelemetry({
+      buildProfile: "http",
+      serviceVersion: "test",
+      correlationID: "CORRELATION-HTTP-001",
+      transport: { send: async () => undefined },
+    });
+    telemetry.recordNavigation("inspector-findings", "load");
+    const deactivate = activateBrowserTelemetry(
+      telemetry,
+      () => "inspector-findings",
+    );
+    const backend = createHttpBackend(
+      { apiBaseUrl: "/", environmentLabel: "Test" },
+      { fetchImplementation },
+    );
+
+    try {
+      await backend.assignments.list({ limit: 20 });
+    } finally {
+      deactivate();
+    }
+
+    const headers = new Headers(fetchImplementation.mock.calls[0]?.[1]?.headers);
+    expect(headers.get("traceparent")).toMatch(
+      /^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/,
+    );
+    expect(headers.get("x-correlation-id")).toBe("CORRELATION-HTTP-001");
   });
 
   it("injects CSRF and operation ID once without hidden command replay", async () => {
@@ -1212,5 +1249,69 @@ describe("HttpBackend", () => {
     expect(assistantBody.idempotencyKey).toMatch(/^assistant-draft:/);
     expect(new Headers(mutations[1]![1]?.headers).get("idempotency-key"))
       .toBe(assistantBody.idempotencyKey);
+  });
+
+  it("requests and reconciles Keycloak user provisioning through the exact admin transport", async () => {
+    const pending = {
+      id: "user-lifecycle-001",
+      subjectId: null,
+      action: "PROVISION" as const,
+      roles: ["inspector" as const],
+      organizationId: "ORG-FLY-NAMIBIA",
+      email: "new.inspector@example.test",
+      displayName: "New Inspector",
+      status: "PENDING" as const,
+      idempotencyKey: "provision:new.inspector@example.test",
+      requestedBySubjectId: "USR-ADMIN-ADA",
+      outboxMessageId: "outbox-user-lifecycle-001",
+      failureReason: null,
+      createdAt: "2026-07-24T08:00:00Z",
+      updatedAt: "2026-07-24T08:00:00Z",
+    };
+    const succeeded = {
+      ...pending,
+      subjectId: "kc-subject-001",
+      status: "SUCCEEDED" as const,
+      updatedAt: "2026-07-24T08:00:01Z",
+    };
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse(pending, { status: 202 }))
+      .mockResolvedValueOnce(jsonResponse(succeeded));
+    const backend = createHttpBackend(
+      { apiBaseUrl: "/", environmentLabel: "Plan 3 Test" },
+      { fetchImplementation, csrfToken: () => "csrf-plan-3" },
+    );
+
+    expect(await backend.adminWorkspace.requestUserLifecycle({
+      idempotencyKey: pending.idempotencyKey,
+      action: "PROVISION",
+      roles: ["inspector"],
+      organizationId: pending.organizationId,
+      email: pending.email,
+      displayName: pending.displayName,
+    })).toEqual(pending);
+    expect(await backend.adminWorkspace.getUserLifecycleRequest({
+      requestId: pending.id,
+    })).toEqual(succeeded);
+
+    const [url, init] = fetchImplementation.mock.calls[0]!;
+    expect(url).toBe("/v1/admin/user-lifecycle-requests");
+    expect(init?.method).toBe("POST");
+    expect(new Headers(init?.headers).get("idempotency-key")).toBe(pending.idempotencyKey);
+    expect(new Headers(init?.headers).get("x-csrf-token")).toBe("csrf-plan-3");
+    expect(JSON.parse(String(init?.body))).toEqual({
+      operationId: pending.idempotencyKey,
+      idempotencyKey: pending.idempotencyKey,
+      subjectId: null,
+      action: "PROVISION",
+      roles: ["inspector"],
+      organizationId: pending.organizationId,
+      email: pending.email,
+      displayName: pending.displayName,
+    });
+    expect(fetchImplementation.mock.calls[1]?.[0]).toBe(
+      "/v1/admin/user-lifecycle-requests/user-lifecycle-001",
+    );
   });
 });

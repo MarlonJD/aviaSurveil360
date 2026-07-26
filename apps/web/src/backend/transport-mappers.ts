@@ -59,6 +59,7 @@ import type {
   SubmitPlanningIntakeOutput,
   SyncPullResponse,
   TeamMemberView,
+  UserLifecycleRequestView,
   VisibleActionResult,
 } from "./backend";
 
@@ -576,12 +577,15 @@ export function mapAdminReportDefinition(
 export function mapAdminAccessDirectoryEntry(
   value: Schemas["AdminAccessDirectoryEntryView"],
 ): AdminAccessDirectoryEntryView {
+  return { ...value };
+}
+
+export function mapUserLifecycleRequest(
+  value: Schemas["UserLifecycleRequestView"],
+): UserLifecycleRequestView {
   return {
     ...value,
-    email: value.email as AdminAccessDirectoryEntryView["email"],
-    mfa: value.mfa as AdminAccessDirectoryEntryView["mfa"],
-    invitation: value.invitation as AdminAccessDirectoryEntryView["invitation"],
-    accountStatus: value.accountStatus as AdminAccessDirectoryEntryView["accountStatus"],
+    roles: [...value.roles],
   };
 }
 

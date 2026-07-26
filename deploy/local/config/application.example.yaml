@@ -1,0 +1,37 @@
+version: 1
+environment: local-production-like
+http:
+  listenAddress: 0.0.0.0:8080
+  publicOrigin: https://localhost:8443
+database:
+  host: postgres
+  port: 5432
+  name: aviasurveil360
+  user: aviasurveil360
+  passwordFile: /run/secrets/app_database_password
+identity:
+  issuer: https://localhost:8443/identity/realms/aviasurveil360
+  internalIssuer: http://keycloak:8080/identity/realms/aviasurveil360
+  clientId: aviasurveil360-web
+  clientSecretFile: /run/secrets/oidc_client_secret
+  bootstrapAdminPasswordFile: /run/secrets/keycloak_bootstrap_admin_password
+session:
+  encryptionKeyFile: /run/secrets/session_encryption_key
+objectStorage:
+  endpoint: http://minio:9000
+  publicEndpoint: https://localhost:8443
+  accessKeyFile: /run/secrets/minio_api_access_key
+  secretKeyFile: /run/secrets/minio_api_secret_key
+  buckets:
+    quarantine: evidence-quarantine
+    cleanEvidence: evidence-clean
+    inspectionAttachments: inspection-attachments
+    generatedDocuments: generated-documents
+scanner:
+  address: clamav:3310
+smtp:
+  address: mailpit:1025
+  username: aviasurveil360
+  passwordFile: /run/secrets/smtp_password
+renderer:
+  endpoint: http://gotenberg:3000

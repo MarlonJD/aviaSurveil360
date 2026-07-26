@@ -8,7 +8,10 @@
   "/health/ready": {
     "get": {
       "operationId": "getReadiness",
-      "responses": { "200": { "description": "Ready", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" } } } }, "503": { "$ref": "#/components/responses/Problem" } }
+      "responses": {
+        "200": { "description": "Ready or degraded only by optional dependencies", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReadinessResponse" } } } },
+        "503": { "description": "One or more required dependencies are unavailable", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReadinessResponse" } } } }
+      }
     }
   }
 }

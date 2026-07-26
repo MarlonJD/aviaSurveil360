@@ -6,7 +6,8 @@ separate.
 
 ## Required Final Readout
 
-For Turkish status/readiness or execution closeout, use this shape:
+For status, readiness, or execution closeout, use this shape when a structured
+readout is useful:
 
 ```text
 Done:

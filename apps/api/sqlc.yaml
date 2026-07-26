@@ -12,6 +12,8 @@ sql:
       - "migrations/000008_communications_documents.up.sql"
       - "migrations/000009_notifications_risk_admin.up.sql"
       - "migrations/000010_identity_settings.up.sql"
+      - "migrations/000011_preliminary_report_versions.up.sql"
+      - "migrations/000012_keycloak_user_lifecycle.up.sql"
     queries: "internal/organizations/store/postgres/queries.sql"
     gen:
       go:
@@ -201,6 +203,8 @@ sql:
       - "migrations/000008_communications_documents.up.sql"
       - "migrations/000009_notifications_risk_admin.up.sql"
       - "migrations/000010_identity_settings.up.sql"
+      - "migrations/000011_preliminary_report_versions.up.sql"
+      - "migrations/000012_keycloak_user_lifecycle.up.sql"
     queries: "internal/assignments/store/postgres/queries.sql"
     gen:
       go:

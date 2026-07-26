@@ -500,6 +500,23 @@
       "acceptedDifference": "React exposes read-only versioned configuration and a server-shaped audit projection; broad editing remains only a later or demo-only concept."
     },
     {
+      "id": "local-production-like-full-profile",
+      "classification": "first-production",
+      "role": "multi-role",
+      "route": "one-https-origin",
+      "action": "run-clean-demo-and-full-profile-proofs",
+      "entityIdRule": "Fresh task-owned volumes with normal OIDC provisioning and application commands",
+      "expectedStatus": "CLEAN_FULL_PROFILE_VERIFIED_LOCALLY",
+      "expectedOwner": "Local candidate platform",
+      "visibilityInvariant": "86 demo and HTTP direct loads, 10 scenario families, MFA, scan-clean Evidence, private SMTP/PDF/object services, no full-profile test boundary, and zero task-owned residue",
+      "legacyTest": "tests/scenario-integrity-regression.test.js",
+      "reactTest": [
+        "apps/web/tests/e2e/local-full-platform.spec.ts",
+        "scripts/test-local-full-profile.sh"
+      ],
+      "acceptedDifference": "The production-like local profile uses normal Keycloak OIDC/MFA and real local service adapters; it remains candidate-only and does not establish production readiness."
+    },
+    {
       "id": "full-platform-mock-http-transcript-parity",
       "classification": "first-production",
       "role": "multi-role",

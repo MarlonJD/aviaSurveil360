@@ -61,10 +61,15 @@ func NewUploadService(pool *database.Pool, objects objectstore.Store, config Upl
 type RequiredHeaders struct {
 	ContentType string
 	SHA256      string
+	IfNoneMatch string
 }
 
 func (headers RequiredHeaders) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]string{"Content-Type": headers.ContentType, "x-amz-meta-sha256": headers.SHA256})
+	return json.Marshal(map[string]string{
+		"Content-Type":      headers.ContentType,
+		"x-amz-meta-sha256": headers.SHA256,
+		"If-None-Match":     headers.IfNoneMatch,
+	})
 }
 
 func (headers *RequiredHeaders) UnmarshalJSON(value []byte) error {
@@ -74,6 +79,7 @@ func (headers *RequiredHeaders) UnmarshalJSON(value []byte) error {
 	}
 	headers.ContentType = decoded["Content-Type"]
 	headers.SHA256 = decoded["x-amz-meta-sha256"]
+	headers.IfNoneMatch = decoded["If-None-Match"]
 	return nil
 }
 
@@ -141,15 +147,23 @@ func (service *UploadService) Begin(ctx context.Context, actor identity.Principa
 		key := fmt.Sprintf("organizations/%s/inspection-attachments/%s/%s", organizationID, input.InspectionAttachmentID, uploadID)
 		instruction, err := service.objects.CreatePutInstruction(ctx, objectstore.PutRequest{
 			Bucket: service.quarantineBucket, Key: key, ExpiresAt: expiresAt,
-			RequiredHeaders: map[string]string{"Content-Type": input.DeclaredMediaType, "x-amz-meta-sha256": input.SHA256},
+			RequiredHeaders: map[string]string{
+				"Content-Type":      input.DeclaredMediaType,
+				"x-amz-meta-sha256": input.SHA256,
+				"If-None-Match":     "*",
+			},
 		})
 		if err != nil {
 			return err
 		}
 		output = BeginUploadOutput{
 			UploadID: uploadID, StagingObjectKey: key, UploadURL: instruction.URL,
-			RequiredHeaders: RequiredHeaders{ContentType: input.DeclaredMediaType, SHA256: input.SHA256},
-			ExpiresAt:       expiresAt, MaximumByteSize: service.maximumByteSize,
+			RequiredHeaders: RequiredHeaders{
+				ContentType: input.DeclaredMediaType,
+				SHA256:      input.SHA256,
+				IfNoneMatch: "*",
+			},
+			ExpiresAt: expiresAt, MaximumByteSize: service.maximumByteSize,
 		}
 		if _, err := transaction.Exec(ctx, `
 			INSERT INTO upload_sessions (
@@ -216,7 +230,9 @@ func (service *UploadService) Complete(ctx context.Context, actor identity.Princ
 		if initiatedBy != actor.SubjectID || state != "PENDING" || now.After(expiresAt) {
 			return ErrAttachmentForbidden
 		}
-		if input.ByteSize != size || input.SHA256 != digest {
+		if bucket != service.quarantineBucket ||
+			input.ByteSize != size ||
+			input.SHA256 != digest {
 			return ErrObjectMismatch
 		}
 		reader, info, err := service.objects.Open(ctx, bucket, key)

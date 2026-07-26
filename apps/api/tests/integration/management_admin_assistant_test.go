@@ -781,7 +781,7 @@ func TestManagementAdminAssistantExactHTTPAndRawWirePrivacy(t *testing.T) {
 		"USR-INSPECTOR-DAVID",
 		"IDEM-TASK9-ASSISTANT",
 	)
-	if draft.Code != http.StatusOK {
+	if draft.Code != http.StatusCreated {
 		t.Fatalf("assistant draft status=%d body=%s", draft.Code, draft.Body.String())
 	}
 	assertClosedJSONKeys(t, draft.Body.Bytes(), []string{
@@ -803,7 +803,7 @@ func TestManagementAdminAssistantExactHTTPAndRawWirePrivacy(t *testing.T) {
 		"USR-INSPECTOR-DAVID",
 		"IDEM-TASK9-ASSISTANT",
 	)
-	if replay.Code != http.StatusOK || replay.Body.String() != draft.Body.String() {
+	if replay.Code != http.StatusCreated || replay.Body.String() != draft.Body.String() {
 		t.Fatalf(
 			"assistant replay status=%d body=%s, want=%s",
 			replay.Code,

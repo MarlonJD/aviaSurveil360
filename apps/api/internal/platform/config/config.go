@@ -2,71 +2,161 @@ package config
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
+	"net"
+	"net/mail"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/netpolicy"
 )
 
 type LookupEnv func(string) (string, bool)
 
+type runtimeRequirements struct {
+	objectStore bool
+	scanner     bool
+	renderer    bool
+	oidc        bool
+}
+
+var (
+	allRuntimeRequirements = runtimeRequirements{
+		objectStore: true,
+		scanner:     true,
+		renderer:    true,
+		oidc:        true,
+	}
+	apiRuntimeRequirements = runtimeRequirements{
+		objectStore: true,
+		scanner:     true,
+		oidc:        true,
+	}
+)
+
 type Settings struct {
-	Environment             string
-	DatabaseURL             string
-	HTTPAddress             string
-	WorkerInterval          time.Duration
-	TestPrincipal           string
-	TestSession             string
-	DevSessionSecret        string
-	OIDCIssuerURL           string
-	OIDCClientID            string
-	OIDCClientSecret        string
-	OIDCRedirectURL         string
-	SessionEncryptionKey    []byte
-	SessionIdleDuration     time.Duration
-	SessionAbsoluteDuration time.Duration
-	CookieSecure            bool
-	CanonicalSeed           bool
-	CanonicalTestProfile    bool
-	CanonicalTestToken      string
-	ObjectStoreEndpoint     string
-	ObjectStoreAccessKey    string
-	ObjectStoreSecretKey    string
-	ObjectStoreTLS          bool
-	ObjectStoreRegion       string
-	ObjectStoreCORSOrigins  []string
-	QuarantineBucket        string
-	CanonicalBucket         string
-	AllowServerManagedCORS  bool
-	ScannerMode             string
+	Environment                 string
+	DatabaseURL                 string
+	HTTPAddress                 string
+	WorkerInterval              time.Duration
+	TestPrincipal               string
+	TestSession                 string
+	DevSessionSecret            string
+	OIDCIssuerURL               string
+	OIDCDiscoveryURL            string
+	OIDCDiscoveryPrivateNetwork bool
+	OIDCClientID                string
+	OIDCClientSecret            string
+	OIDCRedirectURL             string
+	KeycloakAdminURL            string
+	KeycloakRealm               string
+	KeycloakAdminUsername       string
+	KeycloakAdminPassword       string
+	SessionEncryptionKey        []byte
+	SessionIdleDuration         time.Duration
+	SessionAbsoluteDuration     time.Duration
+	CookieSecure                bool
+	CanonicalSeed               bool
+	CanonicalTestProfile        bool
+	CanonicalTestToken          string
+	ObjectStoreEndpoint         string
+	ObjectStorePublicEndpoint   string
+	ObjectStoreAccessKey        string
+	ObjectStoreSecretKey        string
+	ObjectStoreTLS              bool
+	ObjectStorePublicTLS        bool
+	ObjectStorePrivateNetwork   bool
+	ObjectStoreRegion           string
+	ObjectStoreCORSOrigins      []string
+	QuarantineBucket            string
+	CanonicalBucket             string
+	AttachmentBucket            string
+	DocumentBucket              string
+	AllowServerManagedCORS      bool
+	ScannerMode                 string
+	ClamAVAddress               string
+	ClamAVMaximumSignatureAge   time.Duration
+	GotenbergURL                string
+	GotenbergTimeout            time.Duration
+	GotenbergRendererHash       string
+	SMTPAddress                 string
+	SMTPFrom                    string
+	SMTPUsername                string
+	SMTPPassword                string
+	SMTPTimeout                 time.Duration
+	SMTPPrivateNetwork          bool
+	IdentityHealthURL           string
+	GotenbergHealthURL          string
+	SMTPHealthAddress           string
+	RuntimeHealthTimeout        time.Duration
+	OTLPHTTPEndpoint            string
 }
 
 func Load(lookup LookupEnv) (Settings, error) {
+	return load(lookup, allRuntimeRequirements)
+}
+
+func LoadAPI(lookup LookupEnv) (Settings, error) {
+	return load(lookup, apiRuntimeRequirements)
+}
+
+func LoadScheduler(lookup LookupEnv) (Settings, error) {
+	return load(lookup, runtimeRequirements{})
+}
+
+func load(lookup LookupEnv, requirements runtimeRequirements) (Settings, error) {
 	environment := valueOrDefault(lookup, "AVIA_ENVIRONMENT", "development")
 	settings := Settings{
-		Environment:             environment,
-		DatabaseURL:             value(lookup, "AVIA_DATABASE_URL"),
-		HTTPAddress:             valueOrDefault(lookup, "AVIA_HTTP_ADDRESS", ":8080"),
-		TestPrincipal:           value(lookup, "AVIA_TEST_PRINCIPAL"),
-		TestSession:             value(lookup, "AVIA_TEST_SESSION"),
-		DevSessionSecret:        value(lookup, "AVIA_DEV_SESSION_SECRET"),
-		OIDCIssuerURL:           value(lookup, "AVIA_OIDC_ISSUER_URL"),
-		OIDCClientID:            value(lookup, "AVIA_OIDC_CLIENT_ID"),
-		OIDCClientSecret:        value(lookup, "AVIA_OIDC_CLIENT_SECRET"),
-		OIDCRedirectURL:         value(lookup, "AVIA_OIDC_REDIRECT_URL"),
-		SessionIdleDuration:     30 * time.Minute,
-		SessionAbsoluteDuration: 8 * time.Hour,
-		CookieSecure:            true,
-		CanonicalTestToken:      value(lookup, "AVIA_CANONICAL_TEST_TOKEN"),
-		ObjectStoreEndpoint:     value(lookup, "AVIA_OBJECT_STORE_ENDPOINT"),
-		ObjectStoreAccessKey:    value(lookup, "AVIA_OBJECT_STORE_ACCESS_KEY"),
-		ObjectStoreSecretKey:    value(lookup, "AVIA_OBJECT_STORE_SECRET_KEY"),
-		ObjectStoreRegion:       value(lookup, "AVIA_OBJECT_STORE_REGION"),
-		ObjectStoreCORSOrigins:  commaValues(value(lookup, "AVIA_OBJECT_STORE_CORS_ORIGINS")),
-		QuarantineBucket:        valueOrDefault(lookup, "AVIA_OBJECT_STORE_QUARANTINE_BUCKET", "avia-quarantine"),
-		CanonicalBucket:         valueOrDefault(lookup, "AVIA_OBJECT_STORE_CANONICAL_BUCKET", "avia-canonical"),
-		ScannerMode:             value(lookup, "AVIA_SCANNER_MODE"),
+		Environment:               environment,
+		DatabaseURL:               value(lookup, "AVIA_DATABASE_URL"),
+		HTTPAddress:               valueOrDefault(lookup, "AVIA_HTTP_ADDRESS", ":8080"),
+		TestPrincipal:             value(lookup, "AVIA_TEST_PRINCIPAL"),
+		TestSession:               value(lookup, "AVIA_TEST_SESSION"),
+		DevSessionSecret:          value(lookup, "AVIA_DEV_SESSION_SECRET"),
+		OIDCIssuerURL:             value(lookup, "AVIA_OIDC_ISSUER_URL"),
+		OIDCDiscoveryURL:          value(lookup, "AVIA_OIDC_DISCOVERY_URL"),
+		OIDCClientID:              value(lookup, "AVIA_OIDC_CLIENT_ID"),
+		OIDCClientSecret:          value(lookup, "AVIA_OIDC_CLIENT_SECRET"),
+		OIDCRedirectURL:           value(lookup, "AVIA_OIDC_REDIRECT_URL"),
+		KeycloakAdminURL:          value(lookup, "AVIA_KEYCLOAK_ADMIN_URL"),
+		KeycloakRealm:             value(lookup, "AVIA_KEYCLOAK_REALM"),
+		KeycloakAdminUsername:     value(lookup, "AVIA_KEYCLOAK_ADMIN_USERNAME"),
+		KeycloakAdminPassword:     value(lookup, "AVIA_KEYCLOAK_ADMIN_PASSWORD"),
+		SessionIdleDuration:       30 * time.Minute,
+		SessionAbsoluteDuration:   8 * time.Hour,
+		CookieSecure:              true,
+		CanonicalTestToken:        value(lookup, "AVIA_CANONICAL_TEST_TOKEN"),
+		ObjectStoreEndpoint:       value(lookup, "AVIA_OBJECT_STORE_ENDPOINT"),
+		ObjectStorePublicEndpoint: value(lookup, "AVIA_OBJECT_STORE_PUBLIC_ENDPOINT"),
+		ObjectStoreAccessKey:      value(lookup, "AVIA_OBJECT_STORE_ACCESS_KEY"),
+		ObjectStoreSecretKey:      value(lookup, "AVIA_OBJECT_STORE_SECRET_KEY"),
+		ObjectStoreRegion:         value(lookup, "AVIA_OBJECT_STORE_REGION"),
+		ObjectStoreCORSOrigins:    commaValues(value(lookup, "AVIA_OBJECT_STORE_CORS_ORIGINS")),
+		QuarantineBucket:          valueOrDefault(lookup, "AVIA_OBJECT_STORE_QUARANTINE_BUCKET", "evidence-quarantine"),
+		CanonicalBucket:           valueOrDefault(lookup, "AVIA_OBJECT_STORE_CANONICAL_BUCKET", "evidence-clean"),
+		AttachmentBucket:          valueOrDefault(lookup, "AVIA_OBJECT_STORE_ATTACHMENT_BUCKET", "inspection-attachments"),
+		DocumentBucket:            valueOrDefault(lookup, "AVIA_OBJECT_STORE_DOCUMENT_BUCKET", "generated-documents"),
+		ScannerMode:               value(lookup, "AVIA_SCANNER_MODE"),
+		ClamAVAddress:             value(lookup, "AVIA_CLAMAV_ADDRESS"),
+		GotenbergURL:              value(lookup, "AVIA_GOTENBERG_URL"),
+		GotenbergRendererHash:     value(lookup, "AVIA_GOTENBERG_RENDERER_HASH"),
+		SMTPAddress:               value(lookup, "AVIA_SMTP_ADDRESS"),
+		SMTPFrom:                  value(lookup, "AVIA_SMTP_FROM"),
+		SMTPUsername:              value(lookup, "AVIA_SMTP_USERNAME"),
+		SMTPPassword:              value(lookup, "AVIA_SMTP_PASSWORD"),
+		IdentityHealthURL:         value(lookup, "AVIA_IDENTITY_HEALTH_URL"),
+		GotenbergHealthURL:        value(lookup, "AVIA_GOTENBERG_HEALTH_URL"),
+		SMTPHealthAddress:         value(lookup, "AVIA_SMTP_HEALTH_ADDRESS"),
+		OTLPHTTPEndpoint:          value(lookup, "AVIA_OTEL_EXPORTER_OTLP_ENDPOINT"),
+	}
+	if settings.OIDCDiscoveryURL == "" {
+		settings.OIDCDiscoveryURL = settings.OIDCIssuerURL
+	}
+	if settings.ObjectStorePublicEndpoint == "" && settings.Environment != "production" {
+		settings.ObjectStorePublicEndpoint = settings.ObjectStoreEndpoint
 	}
 	canonicalProfile, err := parseBoolean(lookup, "AVIA_ENABLE_CANONICAL_TEST_PROFILE", false)
 	if err != nil {
@@ -83,14 +173,99 @@ func Load(lookup LookupEnv) (Settings, error) {
 		return Settings{}, err
 	}
 	settings.ObjectStoreTLS = objectStoreTLS
-	settings.AllowServerManagedCORS = settings.Environment == "test" && settings.CanonicalSeed
+	objectStorePublicTLS, err := parseBoolean(
+		lookup,
+		"AVIA_OBJECT_STORE_PUBLIC_TLS",
+		objectStoreTLS,
+	)
+	if err != nil {
+		return Settings{}, err
+	}
+	settings.ObjectStorePublicTLS = objectStorePublicTLS
+	objectStorePrivateNetwork, err := parseBoolean(
+		lookup,
+		"AVIA_OBJECT_STORE_PRIVATE_NETWORK",
+		false,
+	)
+	if err != nil {
+		return Settings{}, err
+	}
+	settings.ObjectStorePrivateNetwork = objectStorePrivateNetwork
+	clamAVMaximumSignatureAge, err := time.ParseDuration(
+		valueOrDefault(lookup, "AVIA_CLAMAV_MAX_SIGNATURE_AGE", "48h"),
+	)
+	if err != nil || clamAVMaximumSignatureAge <= 0 {
+		return Settings{}, fmt.Errorf("AVIA_CLAMAV_MAX_SIGNATURE_AGE must be a positive duration")
+	}
+	settings.ClamAVMaximumSignatureAge = clamAVMaximumSignatureAge
+	gotenbergTimeout, err := time.ParseDuration(
+		valueOrDefault(lookup, "AVIA_GOTENBERG_TIMEOUT", "30s"),
+	)
+	if err != nil || gotenbergTimeout <= 0 || gotenbergTimeout > 2*time.Minute {
+		return Settings{}, fmt.Errorf(
+			"AVIA_GOTENBERG_TIMEOUT must be positive and no greater than two minutes",
+		)
+	}
+	settings.GotenbergTimeout = gotenbergTimeout
+	smtpTimeout, err := time.ParseDuration(
+		valueOrDefault(lookup, "AVIA_SMTP_TIMEOUT", "10s"),
+	)
+	if err != nil || smtpTimeout <= 0 || smtpTimeout > time.Minute {
+		return Settings{}, fmt.Errorf(
+			"AVIA_SMTP_TIMEOUT must be positive and no greater than one minute",
+		)
+	}
+	settings.SMTPTimeout = smtpTimeout
+	smtpPrivateNetwork, err := parseBoolean(
+		lookup,
+		"AVIA_SMTP_PRIVATE_NETWORK",
+		false,
+	)
+	if err != nil {
+		return Settings{}, err
+	}
+	settings.SMTPPrivateNetwork = smtpPrivateNetwork
+	oidcDiscoveryPrivateNetwork, err := parseBoolean(
+		lookup,
+		"AVIA_OIDC_DISCOVERY_PRIVATE_NETWORK",
+		false,
+	)
+	if err != nil {
+		return Settings{}, err
+	}
+	settings.OIDCDiscoveryPrivateNetwork = oidcDiscoveryPrivateNetwork
+	runtimeHealthTimeout, err := time.ParseDuration(
+		valueOrDefault(lookup, "AVIA_RUNTIME_HEALTH_TIMEOUT", "1s"),
+	)
+	if err != nil || runtimeHealthTimeout <= 0 ||
+		runtimeHealthTimeout > 5*time.Second {
+		return Settings{}, fmt.Errorf(
+			"AVIA_RUNTIME_HEALTH_TIMEOUT must be positive and no greater than five seconds",
+		)
+	}
+	settings.RuntimeHealthTimeout = runtimeHealthTimeout
+	serverManagedCORS, err := parseBoolean(
+		lookup,
+		"AVIA_OBJECT_STORE_SERVER_MANAGED_CORS",
+		false,
+	)
+	if err != nil {
+		return Settings{}, err
+	}
+	settings.AllowServerManagedCORS = settings.Environment == "test" &&
+		(settings.CanonicalSeed || serverManagedCORS)
 
 	if settings.Environment == "production" {
-		for _, key := range []string{"AVIA_TEST_PRINCIPAL", "AVIA_TEST_SESSION", "AVIA_DEV_SESSION_SECRET", "AVIA_ENABLE_CANONICAL_SEED", "AVIA_ENABLE_CANONICAL_TEST_PROFILE", "AVIA_CANONICAL_TEST_TOKEN"} {
+		for _, key := range []string{"AVIA_TEST_PRINCIPAL", "AVIA_TEST_SESSION", "AVIA_DEV_SESSION_SECRET", "AVIA_ENABLE_CANONICAL_SEED", "AVIA_ENABLE_CANONICAL_TEST_PROFILE", "AVIA_CANONICAL_TEST_TOKEN", "AVIA_OBJECT_STORE_SERVER_MANAGED_CORS"} {
 			if value(lookup, key) != "" {
 				return Settings{}, fmt.Errorf("%s is forbidden in production", key)
 			}
 		}
+	}
+	if serverManagedCORS && settings.Environment != "test" {
+		return Settings{}, fmt.Errorf(
+			"AVIA_OBJECT_STORE_SERVER_MANAGED_CORS requires AVIA_ENVIRONMENT=test",
+		)
 	}
 	if settings.CanonicalSeed && settings.Environment != "test" {
 		return Settings{}, fmt.Errorf("AVIA_ENABLE_CANONICAL_SEED requires AVIA_ENVIRONMENT=test")
@@ -129,13 +304,20 @@ func Load(lookup LookupEnv) (Settings, error) {
 		return Settings{}, fmt.Errorf("AVIA_ENVIRONMENT must be development, test, or production")
 	}
 
-	objectStoreConfigured := settings.ObjectStoreEndpoint != "" || settings.ObjectStoreAccessKey != "" || settings.ObjectStoreSecretKey != "" || len(settings.ObjectStoreCORSOrigins) > 0
-	if settings.Environment == "production" || settings.CanonicalSeed || objectStoreConfigured {
+	objectStoreConfigured := settings.ObjectStoreEndpoint != "" ||
+		settings.ObjectStorePublicEndpoint != "" ||
+		settings.ObjectStoreAccessKey != "" ||
+		settings.ObjectStoreSecretKey != "" ||
+		len(settings.ObjectStoreCORSOrigins) > 0
+	if (settings.Environment == "production" && requirements.objectStore) ||
+		settings.CanonicalSeed ||
+		objectStoreConfigured {
 		for _, entry := range []struct {
 			name  string
 			value any
 		}{
 			{name: "AVIA_OBJECT_STORE_ENDPOINT", value: settings.ObjectStoreEndpoint},
+			{name: "AVIA_OBJECT_STORE_PUBLIC_ENDPOINT", value: settings.ObjectStorePublicEndpoint},
 			{name: "AVIA_OBJECT_STORE_ACCESS_KEY", value: settings.ObjectStoreAccessKey},
 			{name: "AVIA_OBJECT_STORE_SECRET_KEY", value: settings.ObjectStoreSecretKey},
 			{name: "AVIA_OBJECT_STORE_CORS_ORIGINS", value: settings.ObjectStoreCORSOrigins},
@@ -148,11 +330,105 @@ func Load(lookup LookupEnv) (Settings, error) {
 				return Settings{}, fmt.Errorf("%s is required when object storage is enabled", entry.name)
 			}
 		}
-		if settings.QuarantineBucket == settings.CanonicalBucket {
-			return Settings{}, fmt.Errorf("quarantine and canonical object-store buckets must be distinct")
+		buckets := []string{
+			settings.QuarantineBucket,
+			settings.CanonicalBucket,
+			settings.AttachmentBucket,
+			settings.DocumentBucket,
 		}
-		if settings.Environment == "production" && !settings.ObjectStoreTLS {
-			return Settings{}, fmt.Errorf("AVIA_OBJECT_STORE_TLS=true is required in production")
+		seenBuckets := make(map[string]struct{}, len(buckets))
+		for _, bucket := range buckets {
+			if _, exists := seenBuckets[bucket]; exists {
+				return Settings{}, fmt.Errorf("all object-store buckets must be distinct")
+			}
+			seenBuckets[bucket] = struct{}{}
+		}
+		if settings.Environment == "production" &&
+			!settings.ObjectStoreTLS &&
+			!settings.ObjectStorePrivateNetwork {
+			return Settings{}, fmt.Errorf(
+				"plaintext object-store transport requires AVIA_OBJECT_STORE_PRIVATE_NETWORK=true",
+			)
+		}
+		if settings.Environment == "production" && !settings.ObjectStorePublicTLS {
+			return Settings{}, fmt.Errorf("AVIA_OBJECT_STORE_PUBLIC_TLS=true is required in production")
+		}
+	}
+
+	if settings.Environment == "production" && requirements.scanner {
+		if settings.ScannerMode != "clamav" {
+			return Settings{}, fmt.Errorf("AVIA_SCANNER_MODE=clamav is required in production")
+		}
+		if settings.ClamAVAddress == "" {
+			return Settings{}, fmt.Errorf("AVIA_CLAMAV_ADDRESS is required in production")
+		}
+	}
+
+	gotenbergConfigured := settings.GotenbergURL != "" ||
+		settings.GotenbergRendererHash != ""
+	if (settings.Environment == "production" && requirements.renderer) ||
+		gotenbergConfigured {
+		if settings.GotenbergURL == "" {
+			return Settings{}, fmt.Errorf(
+				"AVIA_GOTENBERG_URL is required when document rendering is enabled",
+			)
+		}
+		if !isSHA256(settings.GotenbergRendererHash) {
+			return Settings{}, fmt.Errorf(
+				"AVIA_GOTENBERG_RENDERER_HASH must be a sha256 digest",
+			)
+		}
+		rendererURL, err := url.Parse(settings.GotenbergURL)
+		if err != nil || rendererURL.Host == "" ||
+			(rendererURL.Scheme != "http" && rendererURL.Scheme != "https") ||
+			rendererURL.User != nil || rendererURL.RawQuery != "" ||
+			rendererURL.Fragment != "" {
+			return Settings{}, fmt.Errorf(
+				"AVIA_GOTENBERG_URL must be an absolute HTTP(S) URL without credentials, query, or fragment",
+			)
+		}
+	}
+
+	smtpKeys := []struct {
+		name  string
+		value string
+	}{
+		{name: "AVIA_SMTP_ADDRESS", value: settings.SMTPAddress},
+		{name: "AVIA_SMTP_FROM", value: settings.SMTPFrom},
+		{name: "AVIA_SMTP_USERNAME", value: settings.SMTPUsername},
+		{name: "AVIA_SMTP_PASSWORD", value: settings.SMTPPassword},
+	}
+	smtpConfigured := false
+	for _, entry := range smtpKeys {
+		if entry.value != "" {
+			smtpConfigured = true
+			break
+		}
+	}
+	if smtpConfigured {
+		for _, entry := range smtpKeys {
+			if entry.value == "" {
+				return Settings{}, fmt.Errorf(
+					"%s is required when SMTP delivery is enabled",
+					entry.name,
+				)
+			}
+		}
+		if _, _, err := net.SplitHostPort(settings.SMTPAddress); err != nil {
+			return Settings{}, fmt.Errorf(
+				"AVIA_SMTP_ADDRESS must contain host and port",
+			)
+		}
+		from, err := mail.ParseAddress(settings.SMTPFrom)
+		if err != nil || from.Address == "" {
+			return Settings{}, fmt.Errorf(
+				"AVIA_SMTP_FROM must be a valid email address",
+			)
+		}
+		if !settings.SMTPPrivateNetwork {
+			return Settings{}, fmt.Errorf(
+				"plaintext SMTP transport requires AVIA_SMTP_PRIVATE_NETWORK=true",
+			)
 		}
 	}
 
@@ -173,7 +449,8 @@ func Load(lookup LookupEnv) (Settings, error) {
 			break
 		}
 	}
-	if settings.Environment == "production" || oidcConfigured {
+	if (settings.Environment == "production" && requirements.oidc) ||
+		oidcConfigured {
 		for _, entry := range oidcKeys {
 			if entry.value == "" {
 				return Settings{}, fmt.Errorf("%s is required when OIDC authentication is enabled", entry.name)
@@ -188,12 +465,103 @@ func Load(lookup LookupEnv) (Settings, error) {
 		if err != nil || issuerURL.Scheme == "" || issuerURL.Host == "" {
 			return Settings{}, fmt.Errorf("AVIA_OIDC_ISSUER_URL must be an absolute URL")
 		}
+		discoveryURL, err := url.Parse(settings.OIDCDiscoveryURL)
+		if err != nil || discoveryURL.Host == "" ||
+			(discoveryURL.Scheme != "http" && discoveryURL.Scheme != "https") ||
+			discoveryURL.User != nil || discoveryURL.RawQuery != "" ||
+			discoveryURL.Fragment != "" {
+			return Settings{}, fmt.Errorf(
+				"AVIA_OIDC_DISCOVERY_URL must be an absolute HTTP(S) URL without credentials, query, or fragment",
+			)
+		}
 		redirectURL, err := url.Parse(settings.OIDCRedirectURL)
 		if err != nil || redirectURL.Scheme == "" || redirectURL.Host == "" {
 			return Settings{}, fmt.Errorf("AVIA_OIDC_REDIRECT_URL must be an absolute URL")
 		}
 		if settings.Environment == "production" && (issuerURL.Scheme != "https" || redirectURL.Scheme != "https") {
 			return Settings{}, fmt.Errorf("production OIDC issuer and redirect URLs must use HTTPS")
+		}
+		if settings.Environment == "production" &&
+			discoveryURL.Scheme == "http" &&
+			!settings.OIDCDiscoveryPrivateNetwork {
+			return Settings{}, fmt.Errorf(
+				"plaintext OIDC discovery requires AVIA_OIDC_DISCOVERY_PRIVATE_NETWORK=true",
+			)
+		}
+	}
+
+	keycloakAdminKeys := []struct {
+		name  string
+		value string
+	}{
+		{name: "AVIA_KEYCLOAK_ADMIN_URL", value: settings.KeycloakAdminURL},
+		{name: "AVIA_KEYCLOAK_REALM", value: settings.KeycloakRealm},
+		{name: "AVIA_KEYCLOAK_ADMIN_USERNAME", value: settings.KeycloakAdminUsername},
+		{name: "AVIA_KEYCLOAK_ADMIN_PASSWORD", value: settings.KeycloakAdminPassword},
+	}
+	keycloakAdminConfigured := false
+	for _, entry := range keycloakAdminKeys {
+		if entry.value != "" {
+			keycloakAdminConfigured = true
+			break
+		}
+	}
+	if keycloakAdminConfigured {
+		for _, entry := range keycloakAdminKeys {
+			if entry.value == "" {
+				return Settings{}, fmt.Errorf(
+					"%s is required when Keycloak administration is enabled",
+					entry.name,
+				)
+			}
+		}
+		adminURL, err := url.Parse(settings.KeycloakAdminURL)
+		if err != nil ||
+			adminURL.Host == "" ||
+			(adminURL.Scheme != "http" && adminURL.Scheme != "https") {
+			return Settings{}, fmt.Errorf(
+				"AVIA_KEYCLOAK_ADMIN_URL must be an absolute HTTP(S) URL",
+			)
+		}
+	}
+
+	for _, entry := range []struct {
+		name  string
+		value string
+	}{
+		{name: "AVIA_IDENTITY_HEALTH_URL", value: settings.IdentityHealthURL},
+		{name: "AVIA_GOTENBERG_HEALTH_URL", value: settings.GotenbergHealthURL},
+	} {
+		if entry.value == "" {
+			continue
+		}
+		healthURL, err := url.Parse(entry.value)
+		if err != nil || healthURL.Host == "" ||
+			(healthURL.Scheme != "http" && healthURL.Scheme != "https") ||
+			healthURL.User != nil || healthURL.RawQuery != "" ||
+			healthURL.Fragment != "" {
+			return Settings{}, fmt.Errorf(
+				"%s must be an absolute HTTP(S) URL without credentials, query, or fragment",
+				entry.name,
+			)
+		}
+	}
+	if settings.SMTPHealthAddress != "" {
+		if _, _, err := net.SplitHostPort(settings.SMTPHealthAddress); err != nil {
+			return Settings{}, fmt.Errorf(
+				"AVIA_SMTP_HEALTH_ADDRESS must contain host and port",
+			)
+		}
+	}
+	if settings.OTLPHTTPEndpoint != "" {
+		endpoint, err := url.Parse(settings.OTLPHTTPEndpoint)
+		if err != nil || endpoint.Scheme != "http" || endpoint.Host == "" ||
+			endpoint.User != nil || endpoint.RawQuery != "" ||
+			endpoint.Fragment != "" ||
+			!netpolicy.IsPrivateHost(endpoint.Hostname()) {
+			return Settings{}, fmt.Errorf(
+				"AVIA_OTEL_EXPORTER_OTLP_ENDPOINT must be an absolute private HTTP URL without credentials, query, or fragment",
+			)
 		}
 	}
 
@@ -252,4 +620,13 @@ func commaValues(raw string) []string {
 		}
 	}
 	return values
+}
+
+func isSHA256(value string) bool {
+	if !strings.HasPrefix(value, "sha256:") ||
+		len(value) != len("sha256:")+64 {
+		return false
+	}
+	_, err := hex.DecodeString(strings.TrimPrefix(value, "sha256:"))
+	return err == nil
 }

@@ -44,6 +44,97 @@ func TestProductionRejectsTestAndDevelopmentBypasses(t *testing.T) {
 	}
 }
 
+func TestProductionAPIRuntimeDoesNotRequireWorkerOnlyAdapters(t *testing.T) {
+	t.Parallel()
+
+	values := map[string]string{
+		"AVIA_ENVIRONMENT":                    "production",
+		"AVIA_DATABASE_URL":                   "postgres://example.invalid/avia",
+		"AVIA_OIDC_ISSUER_URL":                "https://identity.example/realms/avia",
+		"AVIA_OIDC_CLIENT_ID":                 "aviasurveil360",
+		"AVIA_OIDC_CLIENT_SECRET":             "provider-secret",
+		"AVIA_OIDC_REDIRECT_URL":              "https://avia.example/auth/callback",
+		"AVIA_OIDC_DISCOVERY_URL":             "http://keycloak:8080/identity/realms/avia",
+		"AVIA_OIDC_DISCOVERY_PRIVATE_NETWORK": "true",
+		"AVIA_SESSION_ENCRYPTION_KEY":         base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")),
+		"AVIA_OBJECT_STORE_ENDPOINT":          "minio:9000",
+		"AVIA_OBJECT_STORE_PUBLIC_ENDPOINT":   "localhost:8443",
+		"AVIA_OBJECT_STORE_ACCESS_KEY":        "production-access",
+		"AVIA_OBJECT_STORE_SECRET_KEY":        "production-secret",
+		"AVIA_OBJECT_STORE_CORS_ORIGINS":      "https://localhost:8443",
+		"AVIA_OBJECT_STORE_PUBLIC_TLS":        "true",
+		"AVIA_OBJECT_STORE_PRIVATE_NETWORK":   "true",
+		"AVIA_SCANNER_MODE":                   "clamav",
+		"AVIA_CLAMAV_ADDRESS":                 "clamav:3310",
+	}
+
+	settings, err := config.LoadAPI(mapLookup(values))
+	if err != nil {
+		t.Fatalf("LoadAPI() required worker-only adapters: %v", err)
+	}
+	if settings.OIDCDiscoveryURL != values["AVIA_OIDC_DISCOVERY_URL"] ||
+		!settings.OIDCDiscoveryPrivateNetwork {
+		t.Fatalf("LoadAPI() private discovery settings = %+v", settings)
+	}
+
+	values["AVIA_OIDC_DISCOVERY_PRIVATE_NETWORK"] = "false"
+	if _, err := config.LoadAPI(mapLookup(values)); err == nil ||
+		!strings.Contains(err.Error(), "AVIA_OIDC_DISCOVERY_PRIVATE_NETWORK") {
+		t.Fatalf("LoadAPI() insecure discovery error = %v", err)
+	}
+}
+
+func TestProductionSchedulerRuntimeRequiresOnlyItsDatabaseCapability(t *testing.T) {
+	t.Parallel()
+
+	values := map[string]string{
+		"AVIA_ENVIRONMENT":  "production",
+		"AVIA_DATABASE_URL": "postgres://example.invalid/avia",
+	}
+	if _, err := config.LoadScheduler(mapLookup(values)); err != nil {
+		t.Fatalf("LoadScheduler() required unrelated adapters: %v", err)
+	}
+
+	values["AVIA_ENABLE_CANONICAL_SEED"] = "true"
+	if _, err := config.LoadScheduler(mapLookup(values)); err == nil ||
+		!strings.Contains(err.Error(), "AVIA_ENABLE_CANONICAL_SEED") {
+		t.Fatalf("LoadScheduler() production bypass error = %v", err)
+	}
+}
+
+func TestTelemetryEndpointIsOptionalAndMustBePrivateHTTP(t *testing.T) {
+	t.Parallel()
+
+	settings, err := config.LoadScheduler(mapLookup(map[string]string{
+		"AVIA_ENVIRONMENT":                 "development",
+		"AVIA_DATABASE_URL":                "postgres://127.0.0.1/avia",
+		"AVIA_OTEL_EXPORTER_OTLP_ENDPOINT": "http://otel-collector:4318",
+	}))
+	if err != nil {
+		t.Fatalf("LoadScheduler() telemetry config error = %v", err)
+	}
+	if settings.OTLPHTTPEndpoint != "http://otel-collector:4318" {
+		t.Fatalf("OTLP endpoint = %q", settings.OTLPHTTPEndpoint)
+	}
+
+	for _, endpoint := range []string{
+		"https://telemetry.example.invalid",
+		"http://telemetry.example.invalid:4318",
+		"http://8.8.8.8:4318",
+		"http://user:secret@otel-collector:4318",
+		"file:///private/telemetry",
+	} {
+		_, err := config.LoadScheduler(mapLookup(map[string]string{
+			"AVIA_ENVIRONMENT":                 "development",
+			"AVIA_DATABASE_URL":                "postgres://127.0.0.1/avia",
+			"AVIA_OTEL_EXPORTER_OTLP_ENDPOINT": endpoint,
+		}))
+		if err == nil || !strings.Contains(err.Error(), "AVIA_OTEL_EXPORTER_OTLP_ENDPOINT") {
+			t.Fatalf("unsafe telemetry endpoint %q error = %v", endpoint, err)
+		}
+	}
+}
+
 func TestCanonicalHTTPProfileRequiresExplicitTestOnlyObjectStoreConfiguration(t *testing.T) {
 	t.Parallel()
 	values := map[string]string{
@@ -124,6 +215,32 @@ func TestCanonicalSeedAndHeaderProfileAreSeparated(t *testing.T) {
 	}
 }
 
+func TestOIDCProfileExplicitlyAllowsTestOnlyServerManagedObjectStoreCORS(t *testing.T) {
+	t.Parallel()
+	values := map[string]string{
+		"AVIA_ENVIRONMENT":                      "test",
+		"AVIA_DATABASE_URL":                     "postgres://127.0.0.1/avia",
+		"AVIA_OBJECT_STORE_ENDPOINT":            "127.0.0.1:59001",
+		"AVIA_OBJECT_STORE_ACCESS_KEY":          "local-access",
+		"AVIA_OBJECT_STORE_SECRET_KEY":          "local-secret",
+		"AVIA_OBJECT_STORE_CORS_ORIGINS":        "http://127.0.0.1:4174",
+		"AVIA_OBJECT_STORE_SERVER_MANAGED_CORS": "true",
+	}
+	settings, err := config.Load(mapLookup(values))
+	if err != nil {
+		t.Fatalf("Load() OIDC object-store profile: %v", err)
+	}
+	if settings.CanonicalSeed || !settings.AllowServerManagedCORS {
+		t.Fatalf("OIDC object-store CORS settings = %+v", settings)
+	}
+
+	values["AVIA_ENVIRONMENT"] = "production"
+	if _, err := config.Load(mapLookup(values)); err == nil ||
+		!strings.Contains(err.Error(), "AVIA_OBJECT_STORE_SERVER_MANAGED_CORS") {
+		t.Fatalf("production server-managed CORS error = %v", err)
+	}
+}
+
 func TestExplicitTestProfileLoadsDeterministicPrincipal(t *testing.T) {
 	t.Parallel()
 
@@ -148,18 +265,26 @@ func TestProductionRequiresCompleteHTTPSOIDCAndSessionConfiguration(t *testing.T
 	t.Parallel()
 
 	base := map[string]string{
-		"AVIA_ENVIRONMENT":               "production",
-		"AVIA_DATABASE_URL":              "postgres://example.invalid/avia",
-		"AVIA_OIDC_ISSUER_URL":           "https://identity.example/realms/avia",
-		"AVIA_OIDC_CLIENT_ID":            "aviasurveil360",
-		"AVIA_OIDC_CLIENT_SECRET":        "provider-secret",
-		"AVIA_OIDC_REDIRECT_URL":         "https://avia.example/auth/callback",
-		"AVIA_SESSION_ENCRYPTION_KEY":    base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")),
-		"AVIA_OBJECT_STORE_ENDPOINT":     "objects.example:443",
-		"AVIA_OBJECT_STORE_ACCESS_KEY":   "production-access",
-		"AVIA_OBJECT_STORE_SECRET_KEY":   "production-secret",
-		"AVIA_OBJECT_STORE_CORS_ORIGINS": "https://avia.example",
-		"AVIA_OBJECT_STORE_TLS":          "true",
+		"AVIA_ENVIRONMENT":                  "production",
+		"AVIA_DATABASE_URL":                 "postgres://example.invalid/avia",
+		"AVIA_OIDC_ISSUER_URL":              "https://identity.example/realms/avia",
+		"AVIA_OIDC_CLIENT_ID":               "aviasurveil360",
+		"AVIA_OIDC_CLIENT_SECRET":           "provider-secret",
+		"AVIA_OIDC_REDIRECT_URL":            "https://avia.example/auth/callback",
+		"AVIA_SESSION_ENCRYPTION_KEY":       base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")),
+		"AVIA_OBJECT_STORE_ENDPOINT":        "objects.example:443",
+		"AVIA_OBJECT_STORE_PUBLIC_ENDPOINT": "objects.example:443",
+		"AVIA_OBJECT_STORE_ACCESS_KEY":      "production-access",
+		"AVIA_OBJECT_STORE_SECRET_KEY":      "production-secret",
+		"AVIA_OBJECT_STORE_CORS_ORIGINS":    "https://avia.example",
+		"AVIA_OBJECT_STORE_TLS":             "true",
+		"AVIA_OBJECT_STORE_PUBLIC_TLS":      "true",
+		"AVIA_SCANNER_MODE":                 "clamav",
+		"AVIA_CLAMAV_ADDRESS":               "scanner.example:3310",
+		"AVIA_CLAMAV_MAX_SIGNATURE_AGE":     "48h",
+		"AVIA_GOTENBERG_URL":                "http://gotenberg:3000",
+		"AVIA_GOTENBERG_TIMEOUT":            "30s",
+		"AVIA_GOTENBERG_RENDERER_HASH":      "sha256:56c47f7b913f3b978554115a0191c4a9dcc2558f9090f27f3f13f28a7c2f8329",
 	}
 	settings, err := config.Load(mapLookup(base))
 	if err != nil {
@@ -192,18 +317,26 @@ func TestProductionRequiresCompleteHTTPSOIDCAndSessionConfiguration(t *testing.T
 func TestProductionRejectsInsecureOIDCEndpointsAndInvalidEncryptionKey(t *testing.T) {
 	t.Parallel()
 	base := map[string]string{
-		"AVIA_ENVIRONMENT":               "production",
-		"AVIA_DATABASE_URL":              "postgres://example.invalid/avia",
-		"AVIA_OIDC_ISSUER_URL":           "https://identity.example/realms/avia",
-		"AVIA_OIDC_CLIENT_ID":            "aviasurveil360",
-		"AVIA_OIDC_CLIENT_SECRET":        "provider-secret",
-		"AVIA_OIDC_REDIRECT_URL":         "https://avia.example/auth/callback",
-		"AVIA_SESSION_ENCRYPTION_KEY":    base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")),
-		"AVIA_OBJECT_STORE_ENDPOINT":     "objects.example:443",
-		"AVIA_OBJECT_STORE_ACCESS_KEY":   "production-access",
-		"AVIA_OBJECT_STORE_SECRET_KEY":   "production-secret",
-		"AVIA_OBJECT_STORE_CORS_ORIGINS": "https://avia.example",
-		"AVIA_OBJECT_STORE_TLS":          "true",
+		"AVIA_ENVIRONMENT":                  "production",
+		"AVIA_DATABASE_URL":                 "postgres://example.invalid/avia",
+		"AVIA_OIDC_ISSUER_URL":              "https://identity.example/realms/avia",
+		"AVIA_OIDC_CLIENT_ID":               "aviasurveil360",
+		"AVIA_OIDC_CLIENT_SECRET":           "provider-secret",
+		"AVIA_OIDC_REDIRECT_URL":            "https://avia.example/auth/callback",
+		"AVIA_SESSION_ENCRYPTION_KEY":       base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")),
+		"AVIA_OBJECT_STORE_ENDPOINT":        "objects.example:443",
+		"AVIA_OBJECT_STORE_PUBLIC_ENDPOINT": "objects.example:443",
+		"AVIA_OBJECT_STORE_ACCESS_KEY":      "production-access",
+		"AVIA_OBJECT_STORE_SECRET_KEY":      "production-secret",
+		"AVIA_OBJECT_STORE_CORS_ORIGINS":    "https://avia.example",
+		"AVIA_OBJECT_STORE_TLS":             "true",
+		"AVIA_OBJECT_STORE_PUBLIC_TLS":      "true",
+		"AVIA_SCANNER_MODE":                 "clamav",
+		"AVIA_CLAMAV_ADDRESS":               "scanner.example:3310",
+		"AVIA_CLAMAV_MAX_SIGNATURE_AGE":     "48h",
+		"AVIA_GOTENBERG_URL":                "http://gotenberg:3000",
+		"AVIA_GOTENBERG_TIMEOUT":            "30s",
+		"AVIA_GOTENBERG_RENDERER_HASH":      "sha256:56c47f7b913f3b978554115a0191c4a9dcc2558f9090f27f3f13f28a7c2f8329",
 	}
 	for name, mutation := range map[string]func(map[string]string){
 		"HTTP issuer":   func(values map[string]string) { values["AVIA_OIDC_ISSUER_URL"] = "http://identity.example/realms/avia" },
@@ -219,6 +352,230 @@ func TestProductionRejectsInsecureOIDCEndpointsAndInvalidEncryptionKey(t *testin
 				t.Fatalf("Load() accepted %s", name)
 			}
 		})
+	}
+}
+
+func TestProductionObjectStorageUsesPrivateTransportPublicHTTPSSigningAndRealClamAV(t *testing.T) {
+	t.Parallel()
+	values := map[string]string{
+		"AVIA_ENVIRONMENT":                  "production",
+		"AVIA_DATABASE_URL":                 "postgres://example.invalid/avia",
+		"AVIA_OIDC_ISSUER_URL":              "https://identity.example/realms/avia",
+		"AVIA_OIDC_CLIENT_ID":               "aviasurveil360",
+		"AVIA_OIDC_CLIENT_SECRET":           "provider-secret",
+		"AVIA_OIDC_REDIRECT_URL":            "https://avia.example/auth/callback",
+		"AVIA_SESSION_ENCRYPTION_KEY":       base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")),
+		"AVIA_OBJECT_STORE_ENDPOINT":        "minio:9000",
+		"AVIA_OBJECT_STORE_PUBLIC_ENDPOINT": "localhost:8443",
+		"AVIA_OBJECT_STORE_ACCESS_KEY":      "production-access",
+		"AVIA_OBJECT_STORE_SECRET_KEY":      "production-secret",
+		"AVIA_OBJECT_STORE_CORS_ORIGINS":    "https://localhost:8443",
+		"AVIA_OBJECT_STORE_TLS":             "false",
+		"AVIA_OBJECT_STORE_PUBLIC_TLS":      "true",
+		"AVIA_OBJECT_STORE_PRIVATE_NETWORK": "true",
+		"AVIA_SCANNER_MODE":                 "clamav",
+		"AVIA_CLAMAV_ADDRESS":               "clamav:3310",
+		"AVIA_CLAMAV_MAX_SIGNATURE_AGE":     "48h",
+		"AVIA_GOTENBERG_URL":                "http://gotenberg:3000",
+		"AVIA_GOTENBERG_TIMEOUT":            "30s",
+		"AVIA_GOTENBERG_RENDERER_HASH":      "sha256:56c47f7b913f3b978554115a0191c4a9dcc2558f9090f27f3f13f28a7c2f8329",
+	}
+	settings, err := config.Load(mapLookup(values))
+	if err != nil {
+		t.Fatalf("Load() production object/scanner config: %v", err)
+	}
+	if settings.ObjectStorePublicEndpoint != "localhost:8443" ||
+		!settings.ObjectStorePublicTLS ||
+		!settings.ObjectStorePrivateNetwork ||
+		settings.QuarantineBucket != "evidence-quarantine" ||
+		settings.CanonicalBucket != "evidence-clean" ||
+		settings.AttachmentBucket != "inspection-attachments" ||
+		settings.DocumentBucket != "generated-documents" ||
+		settings.ClamAVAddress != "clamav:3310" ||
+		settings.ClamAVMaximumSignatureAge != 48*time.Hour ||
+		settings.GotenbergURL != "http://gotenberg:3000" ||
+		settings.GotenbergTimeout != 30*time.Second ||
+		settings.GotenbergRendererHash != values["AVIA_GOTENBERG_RENDERER_HASH"] {
+		t.Fatalf("production object/scanner settings = %+v", settings)
+	}
+
+	for name, mutation := range map[string]func(map[string]string){
+		"missing public signer": func(candidate map[string]string) {
+			delete(candidate, "AVIA_OBJECT_STORE_PUBLIC_ENDPOINT")
+		},
+		"insecure public signer": func(candidate map[string]string) {
+			candidate["AVIA_OBJECT_STORE_PUBLIC_TLS"] = "false"
+		},
+		"plaintext non-private internal transport": func(candidate map[string]string) {
+			candidate["AVIA_OBJECT_STORE_PRIVATE_NETWORK"] = "false"
+		},
+		"deterministic scanner": func(candidate map[string]string) {
+			candidate["AVIA_SCANNER_MODE"] = "deterministic-test"
+		},
+		"missing ClamAV endpoint": func(candidate map[string]string) {
+			delete(candidate, "AVIA_CLAMAV_ADDRESS")
+		},
+		"missing Gotenberg endpoint": func(candidate map[string]string) {
+			delete(candidate, "AVIA_GOTENBERG_URL")
+		},
+		"invalid Gotenberg renderer hash": func(candidate map[string]string) {
+			candidate["AVIA_GOTENBERG_RENDERER_HASH"] = "sha256:not-a-digest"
+		},
+		"unbounded Gotenberg timeout": func(candidate map[string]string) {
+			candidate["AVIA_GOTENBERG_TIMEOUT"] = "3m"
+		},
+		"duplicate clean and attachment buckets": func(candidate map[string]string) {
+			candidate["AVIA_OBJECT_STORE_ATTACHMENT_BUCKET"] = "evidence-clean"
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			candidate := cloneValues(values)
+			mutation(candidate)
+			if _, err := config.Load(mapLookup(candidate)); err == nil {
+				t.Fatalf("Load() accepted %s", name)
+			}
+		})
+	}
+}
+
+func TestKeycloakAdminConfigurationRequiresACompleteInternalEndpointAndCredentials(t *testing.T) {
+	t.Parallel()
+	base := map[string]string{
+		"AVIA_ENVIRONMENT":             "development",
+		"AVIA_DATABASE_URL":            "postgres://127.0.0.1/avia",
+		"AVIA_KEYCLOAK_ADMIN_URL":      "http://keycloak:8080/identity",
+		"AVIA_KEYCLOAK_REALM":          "aviasurveil360",
+		"AVIA_KEYCLOAK_ADMIN_USERNAME": "local-bootstrap-admin",
+		"AVIA_KEYCLOAK_ADMIN_PASSWORD": "bootstrap-admin-secret",
+	}
+	settings, err := config.Load(mapLookup(base))
+	if err != nil {
+		t.Fatalf("Load() Keycloak admin config: %v", err)
+	}
+	if settings.KeycloakAdminURL != base["AVIA_KEYCLOAK_ADMIN_URL"] ||
+		settings.KeycloakRealm != "aviasurveil360" ||
+		settings.KeycloakAdminUsername != "local-bootstrap-admin" ||
+		settings.KeycloakAdminPassword != "bootstrap-admin-secret" {
+		t.Fatalf("Keycloak admin settings = %+v", settings)
+	}
+
+	for _, missing := range []string{
+		"AVIA_KEYCLOAK_ADMIN_URL",
+		"AVIA_KEYCLOAK_REALM",
+		"AVIA_KEYCLOAK_ADMIN_USERNAME",
+		"AVIA_KEYCLOAK_ADMIN_PASSWORD",
+	} {
+		t.Run("missing "+missing, func(t *testing.T) {
+			values := cloneValues(base)
+			delete(values, missing)
+			if _, err := config.Load(mapLookup(values)); err == nil ||
+				!strings.Contains(err.Error(), missing) {
+				t.Fatalf("missing %s error = %v", missing, err)
+			}
+		})
+	}
+
+	insecure := cloneValues(base)
+	insecure["AVIA_KEYCLOAK_ADMIN_URL"] = "file:///run/keycloak"
+	if _, err := config.Load(mapLookup(insecure)); err == nil ||
+		!strings.Contains(err.Error(), "AVIA_KEYCLOAK_ADMIN_URL") {
+		t.Fatalf("invalid Keycloak admin URL error = %v", err)
+	}
+}
+
+func TestSMTPConfigurationRequiresCompleteBoundedPrivateTransport(t *testing.T) {
+	t.Parallel()
+	base := map[string]string{
+		"AVIA_ENVIRONMENT":          "development",
+		"AVIA_DATABASE_URL":         "postgres://example.invalid/avia",
+		"AVIA_SMTP_ADDRESS":         "mailpit:1025",
+		"AVIA_SMTP_FROM":            "no-reply@aviasurveil360.local",
+		"AVIA_SMTP_USERNAME":        "aviasurveil360",
+		"AVIA_SMTP_PASSWORD":        "smtp-secret",
+		"AVIA_SMTP_TIMEOUT":         "10s",
+		"AVIA_SMTP_PRIVATE_NETWORK": "true",
+	}
+	settings, err := config.Load(mapLookup(base))
+	if err != nil {
+		t.Fatalf("Load() SMTP config: %v", err)
+	}
+	if settings.SMTPAddress != "mailpit:1025" ||
+		settings.SMTPFrom != "no-reply@aviasurveil360.local" ||
+		settings.SMTPUsername != "aviasurveil360" ||
+		settings.SMTPPassword != "smtp-secret" ||
+		settings.SMTPTimeout != 10*time.Second ||
+		!settings.SMTPPrivateNetwork {
+		t.Fatalf("SMTP settings = %+v", settings)
+	}
+
+	for _, missing := range []string{
+		"AVIA_SMTP_ADDRESS",
+		"AVIA_SMTP_FROM",
+		"AVIA_SMTP_USERNAME",
+		"AVIA_SMTP_PASSWORD",
+	} {
+		t.Run("missing "+missing, func(t *testing.T) {
+			values := cloneValues(base)
+			delete(values, missing)
+			if _, err := config.Load(mapLookup(values)); err == nil ||
+				!strings.Contains(err.Error(), missing) {
+				t.Fatalf("missing %s error = %v", missing, err)
+			}
+		})
+	}
+	for name, mutate := range map[string]func(map[string]string){
+		"non-private plaintext transport": func(values map[string]string) {
+			values["AVIA_SMTP_PRIVATE_NETWORK"] = "false"
+		},
+		"invalid address": func(values map[string]string) {
+			values["AVIA_SMTP_ADDRESS"] = "mailpit"
+		},
+		"unbounded timeout": func(values map[string]string) {
+			values["AVIA_SMTP_TIMEOUT"] = "2m"
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			values := cloneValues(base)
+			mutate(values)
+			if _, err := config.Load(mapLookup(values)); err == nil {
+				t.Fatalf("Load() accepted %s", name)
+			}
+		})
+	}
+}
+
+func TestRuntimeHealthEndpointsAreBoundedAndContainNoCredentials(t *testing.T) {
+	t.Parallel()
+
+	settings, err := config.Load(mapLookup(map[string]string{
+		"AVIA_DATABASE_URL":           "postgres://localhost/avia",
+		"AVIA_IDENTITY_HEALTH_URL":    "http://keycloak:8080/identity/realms/aviasurveil360/.well-known/openid-configuration",
+		"AVIA_GOTENBERG_HEALTH_URL":   "http://gotenberg:3000/health",
+		"AVIA_SMTP_HEALTH_ADDRESS":    "mailpit:1025",
+		"AVIA_RUNTIME_HEALTH_TIMEOUT": "750ms",
+	}))
+	if err != nil {
+		t.Fatalf("Load() runtime health config: %v", err)
+	}
+	if settings.IdentityHealthURL == "" ||
+		settings.GotenbergHealthURL == "" ||
+		settings.SMTPHealthAddress != "mailpit:1025" ||
+		settings.RuntimeHealthTimeout != 750*time.Millisecond {
+		t.Fatalf("runtime health settings = %+v", settings)
+	}
+
+	for key, value := range map[string]string{
+		"AVIA_IDENTITY_HEALTH_URL":  "http://user:secret@keycloak/health",
+		"AVIA_GOTENBERG_HEALTH_URL": "file:///private/renderer",
+		"AVIA_SMTP_HEALTH_ADDRESS":  "mailpit",
+	} {
+		_, err := config.Load(mapLookup(map[string]string{
+			"AVIA_DATABASE_URL": "postgres://localhost/avia",
+			key:                 value,
+		}))
+		if err == nil {
+			t.Fatalf("unsafe %s=%q was accepted", key, value)
+		}
 	}
 }
 

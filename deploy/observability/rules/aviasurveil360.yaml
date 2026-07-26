@@ -1,0 +1,114 @@
+groups:
+  - name: aviasurveil360-candidate-objectives
+    rules:
+      - alert: AviaAPIReadLatency
+        expr: histogram_quantile(0.95, sum by (le) (rate(aviasurveil_http_server_duration_bucket{operation_class="read"}[5m]))) > 500
+        for: 5m
+        labels:
+          severity: warning
+          owner: Backend
+          service: api
+          dedup_key: api-read-latency
+          catalog_id: api-read-latency
+        annotations:
+          summary: API read p95 exceeds the candidate objective.
+          runbook_url: docs/operations/runbooks/INCIDENT_RESPONSE.md
+          recovery_condition: API read p95 remains at or below 500 ms for five minutes.
+
+      - alert: AviaAPICommandLatency
+        expr: histogram_quantile(0.95, sum by (le) (rate(aviasurveil_http_server_duration_bucket{operation_class="command"}[5m]))) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          owner: Backend
+          service: api
+          dedup_key: api-command-latency
+          catalog_id: api-command-latency
+        annotations:
+          summary: API command p95 exceeds the candidate objective.
+          runbook_url: docs/operations/runbooks/INCIDENT_RESPONSE.md
+          recovery_condition: API command p95 remains at or below 1000 ms for five minutes.
+
+      - alert: AviaOutboxReadyWarning
+        expr: aviasurveil_outbox_ready_age_seconds > 120
+        for: 2m
+        labels:
+          severity: warning
+          owner: Backend
+          service: worker
+          dedup_key: outbox-ready
+          catalog_id: outbox-ready-warning
+        annotations:
+          summary: Ready outbox work is delayed.
+          runbook_url: docs/operations/runbooks/EMAIL_DOCUMENT_WORKERS.md
+          recovery_condition: Oldest ready age stays at or below 120 seconds for two minutes.
+
+      - alert: AviaOutboxReadyCritical
+        expr: aviasurveil_outbox_ready_age_seconds > 600
+        for: 2m
+        labels:
+          severity: critical
+          owner: Backend
+          service: worker
+          dedup_key: outbox-ready
+          catalog_id: outbox-ready-critical
+        annotations:
+          summary: Ready outbox work is critically delayed.
+          runbook_url: docs/operations/runbooks/EMAIL_DOCUMENT_WORKERS.md
+          recovery_condition: Oldest ready age stays below 600 seconds for two minutes.
+
+      - alert: AviaWorkerAttempts
+        expr: increase(aviasurveil_worker_job_attempts_total[15m]) >= 3
+        for: 1m
+        labels:
+          severity: critical
+          owner: Backend
+          service: worker
+          dedup_key: worker-attempts
+          catalog_id: worker-attempts
+        annotations:
+          summary: A bounded worker job exhausted its attempts.
+          runbook_url: docs/operations/runbooks/EMAIL_DOCUMENT_WORKERS.md
+          recovery_condition: The affected job completes or is explicitly dead-lettered.
+
+      - alert: AviaBackupIncrementalAge
+        expr: aviasurveil_backup_recovery_point_age_seconds > 1800
+        for: 5m
+        labels:
+          severity: warning
+          owner: Platform-Operations
+          service: backup
+          dedup_key: backup-age
+          catalog_id: backup-incremental-age
+        annotations:
+          summary: Incremental recovery metadata is stale.
+          runbook_url: docs/operations/runbooks/BACKUP.md
+          recovery_condition: A verified recovery point is newer than 30 minutes.
+
+      - alert: AviaBackupFullAge
+        expr: aviasurveil_backup_full_age_seconds > 93600
+        for: 5m
+        labels:
+          severity: critical
+          owner: Platform-Operations
+          service: backup
+          dedup_key: backup-age
+          catalog_id: backup-full-age
+        annotations:
+          summary: Full or differential recovery data is critically stale.
+          runbook_url: docs/operations/runbooks/BACKUP.md
+          recovery_condition: A verified full or differential point is newer than 26 hours.
+
+      - alert: AviaRequiredDependencyDown
+        expr: min(aviasurveil_dependency_health) < 1
+        for: 1m
+        labels:
+          severity: critical
+          owner: Platform-Operations
+          service: full-stack
+          dedup_key: full-stack-dependency
+          catalog_id: required-dependency-down
+        annotations:
+          summary: A required local dependency is unavailable.
+          runbook_url: docs/operations/runbooks/INCIDENT_RESPONSE.md
+          recovery_condition: All required dependencies report ready for two minutes.

@@ -14,6 +14,7 @@ import (
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/administration"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/application"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/assistant"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/documents"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/evidence"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/httpapi"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
@@ -21,8 +22,11 @@ import (
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/planning"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/config"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/database"
+	platformhealth "github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/health"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/objectstore"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/scanner"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/session"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/telemetry"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/risk"
 	fieldsync "github.com/MarlonJD/aviaSurveil360/apps/api/internal/sync"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/testprofile"
@@ -66,16 +70,40 @@ func main() {
 }
 
 func run(ctx context.Context) error {
-	settings, err := config.Load(os.LookupEnv)
+	settings, err := config.LoadAPI(os.LookupEnv)
 	if err != nil {
 		return fmt.Errorf("load configuration: %w", err)
 	}
+	telemetryRuntime, err := telemetry.NewRuntime(ctx, telemetry.Config{
+		ServiceName:      "api",
+		ServiceVersion:   "candidate",
+		Environment:      settings.Environment,
+		OTLPHTTPEndpoint: settings.OTLPHTTPEndpoint,
+	})
+	if err != nil {
+		return fmt.Errorf("configure telemetry: %w", err)
+	}
+	slog.SetDefault(telemetry.NewJSONLogger(nil, "api"))
+	defer func() {
+		shutdownContext, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if shutdownErr := telemetryRuntime.Shutdown(shutdownContext); shutdownErr != nil {
+			slog.Warn("telemetry shutdown incomplete", "errorClass", telemetry.ErrorClass(shutdownErr))
+		}
+	}()
 
 	var probe httpapi.ReadinessProbe = unavailableReadiness{err: errors.New("PostgreSQL initialization has not completed")}
+	var databaseHealth httpapi.ReadinessProbe = unavailableReadiness{err: errors.New("PostgreSQL initialization has not completed")}
+	var objectStoreHealth httpapi.ReadinessProbe
+	var scannerHealth httpapi.ReadinessProbe
 	var authentication http.Handler
 	var authenticatedAPI http.Handler
 	var testAdministration http.Handler
-	pool, databaseErr := database.Open(ctx, settings.DatabaseURL)
+	pool, databaseErr := database.OpenWithTracer(
+		ctx,
+		settings.DatabaseURL,
+		telemetryRuntime.PostgresTracer("application"),
+	)
 	if databaseErr == nil {
 		if migrationErr := migrations.Apply(ctx, pool); migrationErr == nil {
 			if bootstrapErr := session.BootstrapTestProfile(ctx, pool, settings, time.Now()); bootstrapErr == nil {
@@ -84,6 +112,7 @@ func run(ctx context.Context) error {
 					canonicalClock = testprofile.CanonicalScenarioTime
 				}
 				databaseProbe := database.Readiness{Pool: pool, RequiredMigrationVersion: migrations.LatestVersion}
+				databaseHealth = databaseProbe
 				probe = databaseProbe
 				var authBoundary *httpapi.AuthBoundary
 				if settings.OIDCIssuerURL != "" {
@@ -93,7 +122,8 @@ func run(ctx context.Context) error {
 						slog.Error("session manager unavailable; readiness will fail closed", "error", managerErr)
 					} else {
 						provider, providerErr := identity.NewRemoteOIDCProvider(ctx, identity.RemoteOIDCConfig{
-							IssuerURL: settings.OIDCIssuerURL, ClientID: settings.OIDCClientID,
+							IssuerURL: settings.OIDCIssuerURL, DiscoveryURL: settings.OIDCDiscoveryURL,
+							ClientID:     settings.OIDCClientID,
 							ClientSecret: settings.OIDCClientSecret, RedirectURL: settings.OIDCRedirectURL,
 						})
 						if providerErr != nil {
@@ -107,19 +137,38 @@ func run(ctx context.Context) error {
 				}
 				if settings.ObjectStoreEndpoint != "" {
 					objects, objectErr := objectstore.NewMinIOStore(objectstore.MinIOConfig{
-						Endpoint: settings.ObjectStoreEndpoint, AccessKey: settings.ObjectStoreAccessKey,
-						SecretKey: settings.ObjectStoreSecretKey, UseTLS: settings.ObjectStoreTLS,
+						Endpoint: settings.ObjectStoreEndpoint, PublicEndpoint: settings.ObjectStorePublicEndpoint,
+						AccessKey: settings.ObjectStoreAccessKey, SecretKey: settings.ObjectStoreSecretKey,
+						UseTLS: settings.ObjectStoreTLS, PublicUseTLS: settings.ObjectStorePublicTLS,
 						Region: settings.ObjectStoreRegion, AllowServerManagedCORS: settings.AllowServerManagedCORS,
 						Clock: canonicalClock,
 					})
+					if objectErr == nil && settings.Environment != "production" {
+						objectErr = objects.EnsurePrivateBuckets(ctx, []string{
+							settings.QuarantineBucket,
+							settings.CanonicalBucket,
+							settings.AttachmentBucket,
+							settings.DocumentBucket,
+						}, settings.ObjectStoreCORSOrigins)
+					}
+					var scannerProbe httpapi.ReadinessProbe
 					if objectErr == nil {
-						objectErr = objects.EnsurePrivateBuckets(ctx, []string{settings.QuarantineBucket, settings.CanonicalBucket}, settings.ObjectStoreCORSOrigins)
+						scannerProbe, objectErr = newScannerReadiness(settings)
 					}
 					if objectErr != nil {
 						probe = unavailableReadiness{err: objectErr}
 						slog.Error("object store unavailable; readiness will fail closed", "error", objectErr)
 					} else {
-						probe = combinedReadiness{databaseProbe, objectStoreReadiness{store: objects}}
+						objectStoreHealth = objectStoreReadiness{store: objects}
+						scannerHealth = scannerProbe
+						readinessProbes := combinedReadiness{
+							probe,
+							objectStoreHealth,
+						}
+						if scannerProbe != nil {
+							readinessProbes = append(readinessProbes, scannerProbe)
+						}
+						probe = readinessProbes
 						generator := testprofile.NewGenerator()
 						appDependencies := application.Dependencies{}
 						if settings.CanonicalSeed {
@@ -160,6 +209,13 @@ func run(ctx context.Context) error {
 							pool,
 							communicationsWorkflowDependencies(canonicalClock, generator.Next),
 						)
+						documentAccess := documents.NewService(
+							pool,
+							objects,
+							documents.Dependencies{
+								Bucket: settings.DocumentBucket, Clock: canonicalClock,
+							},
+						)
 						apiHandler := httpapi.NewCanonicalAPI(httpapi.CanonicalAPIDependencies{
 							Pool: pool, Application: applicationService, GrantService: grantService,
 							SyncOperations:  syncOperations,
@@ -168,13 +224,19 @@ func run(ctx context.Context) error {
 							Risk:     riskService, Administration: administrationService,
 							Assistant:      assistantService,
 							Communications: communicationsWorkflow,
+							Documents:      documentAccess,
 							Clock:          canonicalClock,
 						}).Handler()
 						if settings.CanonicalTestProfile {
 							boundary := httpapi.NewCanonicalTestBoundary(settings.CanonicalTestToken)
 							authenticatedAPI = boundary.Protect(apiHandler)
 							admin := httpapi.NewCanonicalTestAdmin(pool, objects,
-								[]string{settings.QuarantineBucket, settings.CanonicalBucket}, generator, canonicalClock)
+								[]string{
+									settings.QuarantineBucket,
+									settings.CanonicalBucket,
+									settings.AttachmentBucket,
+									settings.DocumentBucket,
+								}, generator, canonicalClock)
 							testAdministration = boundary.Admin(admin)
 						} else if authBoundary != nil {
 							authenticatedAPI = authBoundary.Protect(apiHandler)
@@ -196,10 +258,33 @@ func run(ctx context.Context) error {
 	if pool != nil {
 		defer pool.Close()
 	}
+	runtimeReadiness, readinessErr := newRuntimeReadiness(
+		settings,
+		probe,
+		databaseHealth,
+		objectStoreHealth,
+		scannerHealth,
+	)
+	if readinessErr != nil {
+		probe = unavailableReadiness{err: readinessErr}
+		slog.Error(
+			"runtime readiness configuration unavailable; readiness will fail closed",
+			"error",
+			readinessErr,
+		)
+	} else {
+		probe = runtimeReadiness
+	}
 
 	server := &http.Server{
-		Addr:              settings.HTTPAddress,
-		Handler:           httpapi.NewApplicationHandler(probe, authentication, authenticatedAPI, testAdministration),
+		Addr: settings.HTTPAddress,
+		Handler: httpapi.NewInstrumentedApplicationHandler(
+			probe,
+			authentication,
+			authenticatedAPI,
+			testAdministration,
+			telemetryRuntime.HTTPMiddleware,
+		),
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
@@ -219,6 +304,97 @@ func run(ctx context.Context) error {
 			return nil
 		}
 		return fmt.Errorf("serve HTTP: %w", err)
+	}
+}
+
+func newRuntimeReadiness(
+	settings config.Settings,
+	applicationProbe httpapi.ReadinessProbe,
+	databaseProbe httpapi.ReadinessProbe,
+	objectStoreProbe httpapi.ReadinessProbe,
+	scannerProbe httpapi.ReadinessProbe,
+) (httpapi.ReadinessProbe, error) {
+	namedProbe := func(probe httpapi.ReadinessProbe, name string) httpapi.ReadinessProbe {
+		if probe != nil {
+			return probe
+		}
+		return unavailableReadiness{err: fmt.Errorf("%s initialization has not completed", name)}
+	}
+	dependencies := []platformhealth.Dependency{
+		{
+			Name: "application", Required: true,
+			Probe: namedProbe(applicationProbe, "application"), Timeout: settings.RuntimeHealthTimeout,
+		},
+		{
+			Name: "postgresql", Required: true,
+			Probe: namedProbe(databaseProbe, "PostgreSQL"), Timeout: settings.RuntimeHealthTimeout,
+		},
+	}
+	if settings.IdentityHealthURL != "" {
+		probe, err := platformhealth.NewHTTPProbe(
+			settings.IdentityHealthURL,
+			settings.RuntimeHealthTimeout,
+		)
+		if err != nil {
+			return nil, err
+		}
+		dependencies = append(dependencies, platformhealth.Dependency{
+			Name: "identity", Required: true, Probe: probe,
+			Timeout: settings.RuntimeHealthTimeout,
+		})
+	}
+	if settings.ObjectStoreEndpoint != "" {
+		dependencies = append(dependencies, platformhealth.Dependency{
+			Name: "minio", Required: true, Probe: namedProbe(objectStoreProbe, "MinIO"),
+			Timeout: settings.RuntimeHealthTimeout,
+		})
+	}
+	if settings.ScannerMode == "clamav" {
+		dependencies = append(dependencies, platformhealth.Dependency{
+			Name: "clamav", Required: true, Probe: namedProbe(scannerProbe, "ClamAV"),
+			Timeout: settings.RuntimeHealthTimeout,
+		})
+	}
+	if settings.GotenbergHealthURL != "" {
+		probe, err := platformhealth.NewHTTPProbe(
+			settings.GotenbergHealthURL,
+			settings.RuntimeHealthTimeout,
+		)
+		if err != nil {
+			return nil, err
+		}
+		dependencies = append(dependencies, platformhealth.Dependency{
+			Name: "gotenberg", Required: false, Probe: probe,
+			Timeout: settings.RuntimeHealthTimeout,
+		})
+	}
+	if settings.SMTPHealthAddress != "" {
+		probe, err := platformhealth.NewTCPProbe(
+			settings.SMTPHealthAddress,
+			settings.RuntimeHealthTimeout,
+		)
+		if err != nil {
+			return nil, err
+		}
+		dependencies = append(dependencies, platformhealth.Dependency{
+			Name: "mailpit", Required: false, Probe: probe,
+			Timeout: settings.RuntimeHealthTimeout,
+		})
+	}
+	return platformhealth.NewDependencies(dependencies...)
+}
+
+func newScannerReadiness(settings config.Settings) (httpapi.ReadinessProbe, error) {
+	switch settings.ScannerMode {
+	case "", "deterministic-test":
+		return nil, nil
+	case "clamav":
+		return scanner.NewClamAV(scanner.ClamAVConfig{
+			Address:             settings.ClamAVAddress,
+			MaximumSignatureAge: settings.ClamAVMaximumSignatureAge,
+		})
+	default:
+		return nil, fmt.Errorf("unsupported AVIA_SCANNER_MODE %q", settings.ScannerMode)
 	}
 }
 

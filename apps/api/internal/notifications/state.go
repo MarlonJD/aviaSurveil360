@@ -8,6 +8,8 @@ import (
 
 type DueState string
 
+type EmailDeliveryStatus string
+
 const (
 	DueStateNone     DueState = "NONE"
 	DueStateNotDue   DueState = "NOT_DUE"
@@ -16,18 +18,30 @@ const (
 	DueStateOverdue  DueState = "OVERDUE"
 )
 
+const (
+	EmailDeliveryNotConfigured EmailDeliveryStatus = "NOT_CONFIGURED"
+	EmailDeliveryPending       EmailDeliveryStatus = "PENDING"
+	EmailDeliveryRetrying      EmailDeliveryStatus = "RETRYING"
+	EmailDeliveryDelivered     EmailDeliveryStatus = "DELIVERED"
+	EmailDeliveryFailed        EmailDeliveryStatus = "FAILED"
+)
+
 type Notification struct {
-	ID                 string     `json:"id"`
-	RecipientSubjectID string     `json:"recipientSubjectId"`
-	OrganizationID     string     `json:"organizationId"`
-	Title              string     `json:"title"`
-	Body               string     `json:"body"`
-	RelatedEntityType  string     `json:"relatedEntityType"`
-	RelatedEntityID    string     `json:"relatedEntityId"`
-	DeduplicationKey   string     `json:"deduplicationKey"`
-	ReadAt             *time.Time `json:"readAt"`
-	Revision           int64      `json:"revision"`
-	CreatedAt          time.Time  `json:"createdAt"`
+	ID                    string              `json:"id"`
+	RecipientSubjectID    string              `json:"recipientSubjectId"`
+	OrganizationID        string              `json:"organizationId"`
+	Title                 string              `json:"title"`
+	Body                  string              `json:"body"`
+	RelatedEntityType     string              `json:"relatedEntityType"`
+	RelatedEntityID       string              `json:"relatedEntityId"`
+	DeduplicationKey      string              `json:"deduplicationKey"`
+	ReadAt                *time.Time          `json:"readAt"`
+	EmailDeliveryStatus   EmailDeliveryStatus `json:"emailDeliveryStatus"`
+	EmailDeliveryAttempts int                 `json:"emailDeliveryAttempts"`
+	EmailAcceptedAt       *time.Time          `json:"emailAcceptedAt"`
+	EmailNextAttemptAt    *time.Time          `json:"emailNextAttemptAt"`
+	Revision              int64               `json:"revision"`
+	CreatedAt             time.Time           `json:"createdAt"`
 }
 
 type Page struct {

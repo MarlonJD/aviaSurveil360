@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "browserPublishedPorts": {
+    "gateway": [
+      {
+        "hostIp": "127.0.0.1",
+        "published": 8443,
+        "target": 8443
+      }
+    ]
+  },
+  "developerPublishedPorts": {
+    "mailpit-tools": [
+      {
+        "hostIp": "127.0.0.1",
+        "published": 1025,
+        "target": 1025
+      },
+      {
+        "hostIp": "127.0.0.1",
+        "published": 8025,
+        "target": 8025
+      }
+    ]
+  },
+  "databaseIsolation": {
+    "applicationService": "postgres",
+    "identityService": "keycloak-postgres",
+    "dataTarget": "/var/lib/postgresql/data"
+  },
+  "externalImageServices": [
+    "postgres",
+    "keycloak-postgres",
+    "minio",
+    "minio-volume-init",
+    "clamav",
+    "mailpit",
+    "mailpit-volume-init",
+    "mailpit-tools",
+    "gotenberg"
+  ],
+  "healthcheckRequiredServices": [
+    "gateway",
+    "web-demo",
+    "web-http",
+    "api",
+    "worker",
+    "scheduler",
+    "postgres",
+    "keycloak-postgres",
+    "keycloak",
+    "minio",
+    "clamav",
+    "mailpit",
+    "mailpit-tools",
+    "gotenberg"
+  ],
+  "profileServices": {
+    "demo": [
+      "gateway",
+      "web-demo"
+    ],
+    "full": [
+      "gateway",
+      "web-http",
+      "api",
+      "worker",
+      "scheduler",
+      "migration",
+      "postgres",
+      "keycloak-postgres",
+      "keycloak",
+      "minio",
+      "minio-volume-init",
+      "clamav",
+      "mailpit",
+      "mailpit-volume-init",
+      "gotenberg"
+    ],
+    "test": [
+      "fixture-init",
+      "postgres",
+      "minio",
+      "minio-volume-init"
+    ],
+    "recovery": [
+      "postgres",
+      "minio",
+      "minio-volume-init"
+    ],
+    "tools": [
+      "mailpit-volume-init",
+      "mailpit-tools"
+    ]
+  },
+  "publicNetworkServices": [
+    "gateway"
+  ],
+  "egressNetworkServices": {
+    "clamav": [
+      "signature-updates"
+    ],
+    "mailpit-tools": [
+      "tools"
+    ]
+  },
+  "rootUserExceptions": {
+    "clamav": "The reviewed upstream image starts its supervisor with CHOWN/DAC_OVERRIDE/SETGID/SETUID so freshclam can initialize the signature volume, then its daemons drop to the clamav account.",
+    "minio-volume-init": "A networkless one-shot container chowns only the task-scoped MinIO data volume before the non-root MinIO service starts.",
+    "mailpit-volume-init": "A networkless one-shot container chowns only the task-scoped Mailpit data volume before the non-root Mailpit service starts."
+  },
+  "secretMounts": {
+    "api": [
+      "app_database_password",
+      "minio_api_access_key",
+      "minio_api_secret_key",
+      "oidc_client_secret",
+      "session_encryption_key"
+    ],
+    "worker": [
+      "app_database_password",
+      "keycloak_bootstrap_admin_password",
+      "minio_worker_access_key",
+      "minio_worker_secret_key",
+      "oidc_client_secret",
+      "session_encryption_key",
+      "smtp_password"
+    ],
+    "scheduler": [
+      "app_database_password"
+    ],
+    "migration": [
+      "app_database_password"
+    ],
+    "fixture-init": [
+      "app_database_password"
+    ],
+    "postgres": [
+      "app_database_password"
+    ],
+    "keycloak-postgres": [
+      "keycloak_database_password"
+    ],
+    "keycloak": [
+      "keycloak_bootstrap_admin_password",
+      "keycloak_database_password",
+      "keycloak_realm"
+    ],
+    "minio": [
+      "minio_api_access_key",
+      "minio_api_secret_key",
+      "minio_root_password",
+      "minio_root_user",
+      "minio_worker_access_key",
+      "minio_worker_secret_key"
+    ],
+    "mailpit": [
+      "smtp_auth_file"
+    ],
+    "mailpit-tools": [
+      "smtp_auth_file"
+    ]
+  },
+  "writableRootfsExceptions": {}
+}

@@ -83,6 +83,7 @@ type CreateInput struct {
 	SubjectID         string
 	Issuer            string
 	DisplayName       string
+	Email             string
 	OrganizationID    string
 	Roles             []identity.Role
 	ProviderSessionID string
@@ -129,15 +130,64 @@ func (manager *Manager) Create(ctx context.Context, input CreateInput) (BrowserS
 	}
 
 	err = database.WithinTransaction(ctx, manager.pool, func(ctx context.Context, transaction pgx.Tx) error {
+		if input.OrganizationID == "CAA" && containsRole(input.Roles, identity.RoleAdmin) {
+			tag, err := transaction.Exec(ctx, `
+				INSERT INTO organizations (
+					id, legal_name, organization_type, status, revision, created_at, updated_at
+				) VALUES (
+					'CAA', 'Civil Aviation Authority', 'AUTHORITY', 'ACTIVE', 1, $1, $1
+				)
+				ON CONFLICT (id) DO NOTHING
+			`, now)
+			if err != nil {
+				return fmt.Errorf("establish authority organization: %w", err)
+			}
+			var legalName, organizationType, status string
+			if err := transaction.QueryRow(ctx, `
+				SELECT legal_name, organization_type, status
+				FROM organizations
+				WHERE id = 'CAA' AND tombstoned_at IS NULL
+			`).Scan(&legalName, &organizationType, &status); err != nil {
+				return fmt.Errorf("verify authority organization: %w", err)
+			}
+			if legalName != "Civil Aviation Authority" ||
+				organizationType != "AUTHORITY" ||
+				status != "ACTIVE" {
+				return ErrUnauthenticated
+			}
+			if tag.RowsAffected() == 1 {
+				if _, err := transaction.Exec(ctx, `
+					INSERT INTO audit_events (
+						event_id, occurred_at, actor_subject_id, actor_role,
+						organization_id, action, entity_type, entity_id,
+						entity_version, after_status, operation_id, correlation_id,
+						request_id, details
+					) VALUES (
+						$1, $2, $3, 'admin', 'CAA',
+						'identity.authority_organization_established',
+						'organization', 'CAA', 1, 'ACTIVE', $4, $4, $4,
+						'{"source":"first_admin_oidc_session"}'::jsonb
+					)
+				`, manager.idGenerator("audit"), now, input.SubjectID,
+					"identity-bootstrap:"+input.SubjectID); err != nil {
+					return fmt.Errorf("audit authority organization establishment: %w", err)
+				}
+			}
+		}
 		var persistedSubjectID string
 		if err := transaction.QueryRow(ctx, `
-			INSERT INTO identity_references (subject_id, issuer, display_name, created_at)
-			VALUES ($1, $2, $3, $4)
+			INSERT INTO identity_references (
+				subject_id, issuer, display_name, email, created_at
+			)
+			VALUES ($1, $2, $3, NULLIF(lower(trim($4)), ''), $5)
 			ON CONFLICT (subject_id) DO UPDATE
-			SET issuer = EXCLUDED.issuer, display_name = EXCLUDED.display_name
+			SET issuer = EXCLUDED.issuer,
+			    display_name = EXCLUDED.display_name,
+			    email = COALESCE(EXCLUDED.email, identity_references.email)
 			WHERE identity_references.tombstoned_at IS NULL
 			RETURNING subject_id
-		`, input.SubjectID, input.Issuer, input.DisplayName, now).Scan(&persistedSubjectID); errors.Is(err, pgx.ErrNoRows) {
+		`, input.SubjectID, input.Issuer, input.DisplayName,
+			input.Email, now).Scan(&persistedSubjectID); errors.Is(err, pgx.ErrNoRows) {
 			return ErrUnauthenticated
 		} else if err != nil {
 			return fmt.Errorf("persist authenticated identity reference: %w", err)
@@ -186,6 +236,15 @@ func (manager *Manager) Create(ctx context.Context, input CreateInput) (BrowserS
 		ID: sessionID, Token: rawToken, CSRFToken: rawCSRF, ExpiresAt: idleExpiresAt,
 		AbsoluteExpiresAt: absoluteExpiresAt, Principal: principal,
 	}, nil
+}
+
+func containsRole(roles []identity.Role, expected identity.Role) bool {
+	for _, role := range roles {
+		if role == expected {
+			return true
+		}
+	}
+	return false
 }
 
 func (manager *Manager) Authenticate(ctx context.Context, rawToken string) (identity.Principal, error) {

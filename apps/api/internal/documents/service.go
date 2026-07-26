@@ -8,29 +8,33 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/database"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/objectstore"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/telemetry"
 	"github.com/jackc/pgx/v5"
 )
 
 type Dependencies struct {
-	Renderer Renderer
-	Bucket   string
-	Clock    func() time.Time
-	WorkerID string
+	Renderer            Renderer
+	Bucket              string
+	Clock               func() time.Time
+	WorkerID            string
+	AfterExternalEffect func() error
 }
 
 type Service struct {
-	pool     *database.Pool
-	objects  objectstore.Store
-	renderer Renderer
-	bucket   string
-	clock    func() time.Time
-	workerID string
+	pool                *database.Pool
+	objects             objectstore.Store
+	renderer            Renderer
+	bucket              string
+	clock               func() time.Time
+	workerID            string
+	afterExternalEffect func() error
 }
 
 func NewService(pool *database.Pool, objects objectstore.Store, dependencies Dependencies) *Service {
@@ -45,6 +49,7 @@ func NewService(pool *database.Pool, objects objectstore.Store, dependencies Dep
 	return &Service{
 		pool: pool, objects: objects, renderer: dependencies.Renderer,
 		bucket: dependencies.Bucket, clock: clock, workerID: workerID,
+		afterExternalEffect: dependencies.AfterExternalEffect,
 	}
 }
 
@@ -56,9 +61,14 @@ type claimedJob struct {
 	Version        int64
 	AttemptCount   int
 	Snapshot       RenderSnapshot
+	TraceParent    string
+	CorrelationID  string
+	AvailableAt    time.Time
 }
 
-func (service *Service) ProcessNext(ctx context.Context) (bool, error) {
+func (service *Service) ProcessNext(
+	ctx context.Context,
+) (processed bool, resultErr error) {
 	if service.pool == nil || service.objects == nil || service.renderer == nil ||
 		strings.TrimSpace(service.bucket) == "" {
 		return false, fmt.Errorf("%w: document renderer dependencies are incomplete", ErrNotReady)
@@ -67,9 +77,35 @@ func (service *Service) ProcessNext(ctx context.Context) (bool, error) {
 	if err != nil || !found {
 		return found, err
 	}
-	artifact, err := service.renderer.Render(ctx, claimed.Snapshot)
+	jobContext, span := telemetry.StartPersistedJob(
+		ctx,
+		claimed.TraceParent,
+		claimed.CorrelationID,
+		"document",
+		"gotenberg",
+	)
+	telemetry.RecordPersistedOutboxReadyAge(
+		jobContext,
+		"document",
+		"document",
+		claimed.AvailableAt,
+		service.clock().UTC(),
+	)
+	defer func() {
+		telemetry.FinishPersistedJob(
+			jobContext,
+			span,
+			"document",
+			"gotenberg",
+			resultErr,
+		)
+	}()
+	artifact, err := service.renderer.Render(jobContext, claimed.Snapshot)
 	if err != nil {
-		return true, service.recordFailure(ctx, claimed, err)
+		return true, service.recordFailure(jobContext, claimed, err)
+	}
+	if err := validateRenderedArtifact(claimed.Snapshot, artifact); err != nil {
+		return true, service.recordFailure(jobContext, claimed, err)
 	}
 	digest := sha256.Sum256(artifact.Body)
 	hash := "sha256:" + hex.EncodeToString(digest[:])
@@ -77,28 +113,52 @@ func (service *Service) ProcessNext(ctx context.Context) (bool, error) {
 		"organizations/%s/documents/%s/version-%d.pdf",
 		claimed.OrganizationID, claimed.JobID, claimed.Version,
 	)
-	_, writeErr := service.objects.Write(ctx, objectstore.WriteRequest{
+	_, writeErr := service.objects.Write(jobContext, objectstore.WriteRequest{
 		Bucket: service.bucket, Key: key, ContentType: artifact.MediaType,
-		Size: int64(len(artifact.Body)), Metadata: map[string]string{"sha256": hash},
+		Size: int64(len(artifact.Body)), Metadata: map[string]string{
+			"sha256":          hash,
+			"renderer-sha256": artifact.RendererHash,
+			"template-sha256": artifact.TemplateHash,
+			"source-sha256":   artifact.SourceHash,
+		},
 		Body: bytes.NewReader(artifact.Body),
 	})
 	if writeErr != nil && !errors.Is(writeErr, objectstore.ErrObjectAlreadyExists) {
-		return true, service.recordFailure(ctx, claimed, writeErr)
+		return true, service.recordFailure(jobContext, claimed, writeErr)
 	}
 	if writeErr != nil {
-		reader, info, openErr := service.objects.Open(ctx, service.bucket, key)
+		reader, info, openErr := service.objects.Open(jobContext, service.bucket, key)
 		if openErr != nil {
-			return true, service.recordFailure(ctx, claimed, openErr)
+			return true, service.recordFailure(jobContext, claimed, openErr)
 		}
+		existing, readErr := io.ReadAll(io.LimitReader(
+			reader, int64(len(artifact.Body))+1,
+		))
 		closeErr := reader.Close()
-		if closeErr != nil || info.Size != int64(len(artifact.Body)) ||
-			info.Metadata["sha256"] != hash {
+		if readErr != nil || closeErr != nil ||
+			info.Size != int64(len(artifact.Body)) ||
+			info.ContentType != artifact.MediaType ||
+			!bytes.Equal(existing, artifact.Body) ||
+			info.Metadata["sha256"] != hash ||
+			info.Metadata["renderer-sha256"] != artifact.RendererHash ||
+			info.Metadata["template-sha256"] != artifact.TemplateHash ||
+			info.Metadata["source-sha256"] != artifact.SourceHash {
 			return true, service.recordFailure(
-				ctx, claimed, errors.Join(closeErr, errors.New("existing rendered object does not match the immutable output")),
+				jobContext,
+				claimed,
+				errors.Join(
+					readErr,
+					closeErr,
+					errors.New("existing rendered object does not match the immutable output"),
+				),
 			)
 		}
+	} else if service.afterExternalEffect != nil {
+		if err := service.afterExternalEffect(); err != nil {
+			return true, err
+		}
 	}
-	if err := service.finalize(ctx, claimed, artifact, key, hash); err != nil {
+	if err := service.finalize(jobContext, claimed, artifact, key, hash); err != nil {
 		return true, err
 	}
 	return true, nil
@@ -112,7 +172,10 @@ func (service *Service) claimNext(ctx context.Context) (claimedJob, bool, error)
 	err := database.WithinTransaction(ctx, service.pool, func(ctx context.Context, transaction pgx.Tx) error {
 		err := transaction.QueryRow(ctx, `
 			SELECT outbox.id, job.id, job.document_id, job.organization_id,
-			       job.requested_version, job.attempt_count, job.input_snapshot
+			       job.requested_version, job.attempt_count, job.input_snapshot,
+			       COALESCE(outbox.traceparent, ''),
+			       COALESCE(outbox.correlation_id, ''),
+			       outbox.available_at
 			FROM outbox_messages outbox
 			JOIN document_render_jobs job
 			  ON job.idempotency_key = 'report-render:' || outbox.aggregate_id
@@ -128,6 +191,9 @@ func (service *Service) claimNext(ctx context.Context) (claimedJob, bool, error)
 		`, now).Scan(
 			&claimed.OutboxID, &claimed.JobID, &claimed.DocumentID,
 			&claimed.OrganizationID, &claimed.Version, &claimed.AttemptCount, &encoded,
+			&claimed.TraceParent,
+			&claimed.CorrelationID,
+			&claimed.AvailableAt,
 		)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
@@ -205,15 +271,17 @@ func (service *Service) finalize(
 			INSERT INTO document_versions (
 				id, document_id, organization_id, version, visibility, status,
 				file_name, media_type, sha256, size_bytes, object_metadata_id,
-				created_by_subject_id, created_at
+				created_by_subject_id, created_at, renderer_hash, template_hash,
+				source_hash
 			) VALUES (
 				$1, $2, $3, $4, 'AUDITEE_VISIBLE', 'RELEASED',
-				$5, $6, $7, $8, $9, $10, $11
+				$5, $6, $7, $8, $9, $10, $11, $12, $13, $14
 			)
 			ON CONFLICT (document_id, version) DO NOTHING
 		`, documentVersionID, claimed.DocumentID, claimed.OrganizationID,
 			claimed.Version, artifact.FileName, artifact.MediaType, hash,
-			len(artifact.Body), objectMetadataID, claimed.Snapshot.CreatedBySubject, now); err != nil {
+			len(artifact.Body), objectMetadataID, claimed.Snapshot.CreatedBySubject, now,
+			artifact.RendererHash, artifact.TemplateHash, artifact.SourceHash); err != nil {
 			return fmt.Errorf("append immutable DocumentVersion: %w", err)
 		}
 		result, err := transaction.Exec(ctx, `
@@ -237,17 +305,28 @@ func (service *Service) finalize(
 			) VALUES (
 				$1, $2, $3, 'system', $4, 'document.render_completed',
 				'document_version', $5, $6, 'PENDING', 'RELEASED',
-				$7, $7, $7, jsonb_build_object('sha256', $8::text)
+				$7, $7, $7, jsonb_build_object(
+					'sha256', $8::text,
+					'rendererHash', $9::text,
+					'templateHash', $10::text,
+					'sourceHash', $11::text,
+					'reportVersionId', $12::text
+				)
 			)
 			ON CONFLICT (event_id) DO NOTHING
 		`, claimed.JobID+"-audit", now, claimed.Snapshot.CreatedBySubject,
 			claimed.OrganizationID, documentVersionID, claimed.Version,
-			operationID, hash); err != nil {
+			operationID, hash, artifact.RendererHash, artifact.TemplateHash,
+			artifact.SourceHash, claimed.Snapshot.ReportVersionID); err != nil {
 			return fmt.Errorf("append document render audit: %w", err)
 		}
 		projection, err := json.Marshal(map[string]any{
 			"documentVersionId": documentVersionID, "documentId": claimed.DocumentID,
 			"version": claimed.Version, "sha256": hash, "status": "RELEASED",
+			"rendererHash":    artifact.RendererHash,
+			"templateHash":    artifact.TemplateHash,
+			"sourceHash":      artifact.SourceHash,
+			"reportVersionId": claimed.Snapshot.ReportVersionID,
 		})
 		if err != nil {
 			return err
@@ -276,6 +355,38 @@ func (service *Service) finalize(
 		}
 		return service.markDelivered(ctx, transaction, claimed.OutboxID, now)
 	})
+}
+
+func validateRenderedArtifact(
+	snapshot RenderSnapshot,
+	artifact RenderedArtifact,
+) error {
+	if strings.TrimSpace(artifact.FileName) == "" ||
+		strings.ContainsAny(artifact.FileName, `/\`) ||
+		!strings.HasSuffix(strings.ToLower(artifact.FileName), ".pdf") {
+		return fmt.Errorf("rendered PDF filename is invalid")
+	}
+	if artifact.MediaType != "application/pdf" ||
+		len(artifact.Body) < len("%PDF-") ||
+		!bytes.Equal(artifact.Body[:len("%PDF-")], []byte("%PDF-")) {
+		return fmt.Errorf("renderer did not return a PDF artifact")
+	}
+	if len(artifact.Body) > maximumPDFResponseSize {
+		return fmt.Errorf("rendered PDF exceeds %d bytes", maximumPDFResponseSize)
+	}
+	if !validSHA256(artifact.RendererHash) ||
+		!validSHA256(artifact.TemplateHash) ||
+		!validSHA256(artifact.SourceHash) {
+		return fmt.Errorf("complete renderer, template, and source sha256 provenance is required")
+	}
+	source, err := json.Marshal(snapshot)
+	if err != nil {
+		return fmt.Errorf("encode immutable render source: %w", err)
+	}
+	if artifact.SourceHash != digest(source) {
+		return fmt.Errorf("rendered source sha256 does not match the immutable snapshot")
+	}
+	return nil
 }
 
 func (service *Service) recordFailure(ctx context.Context, claimed claimedJob, cause error) error {
@@ -383,7 +494,8 @@ func (service *Service) AuthorizeDownload(
 	}
 	expiresAt := service.clock().UTC().Add(5 * time.Minute)
 	instruction, err := service.objects.CreateGetInstruction(ctx, objectstore.GetRequest{
-		Bucket: *bucket, Key: *key, ExpiresAt: expiresAt,
+		Bucket: *bucket, Key: *key, DownloadFileName: fileName,
+		ExpiresAt: expiresAt,
 	})
 	if err != nil {
 		return Download{}, err

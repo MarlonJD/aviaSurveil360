@@ -18,6 +18,7 @@ func TestCanonicalTestProfileResetSeedsExactServerOwnedScope(t *testing.T) {
 			t.Fatalf("reset canonical profile iteration %d: %v", iteration, err)
 		}
 		var audits, questions, reports, preliminaryReports, otherFindings, offlineGrants int
+		var invalidReportContentHashes int
 		var preliminaryV1Ready bool
 		if err := pool.QueryRow(context.Background(), `
 			SELECT
@@ -29,6 +30,8 @@ func TestCanonicalTestProfileResetSeedsExactServerOwnedScope(t *testing.T) {
 				    OR (id = 'PR-2026-018-V1' AND version = 1)),
 				(SELECT count(*) FROM findings WHERE organization_id = 'ORG-SKYCARGO'),
 				(SELECT count(*) FROM offline_grants),
+				(SELECT count(*) FROM report_versions
+				 WHERE snapshot->>'contentHash' !~ '^sha256:[0-9a-f]{64}$'),
 				(SELECT (snapshot->>'ready')::boolean
 				 FROM report_versions WHERE id = 'PR-2026-018-V1')
 		`).Scan(
@@ -38,6 +41,7 @@ func TestCanonicalTestProfileResetSeedsExactServerOwnedScope(t *testing.T) {
 			&preliminaryReports,
 			&otherFindings,
 			&offlineGrants,
+			&invalidReportContentHashes,
 			&preliminaryV1Ready,
 		); err != nil {
 			t.Fatalf("read canonical profile counts: %v", err)
@@ -53,6 +57,12 @@ func TestCanonicalTestProfileResetSeedsExactServerOwnedScope(t *testing.T) {
 		}
 		if offlineGrants != 0 {
 			t.Fatalf("canonical reset seeded %d OfflineGrant rows; checkout must create the first grant", offlineGrants)
+		}
+		if invalidReportContentHashes != 0 {
+			t.Fatalf(
+				"canonical reset seeded %d report versions without exact sha256 content hashes",
+				invalidReportContentHashes,
+			)
 		}
 	}
 	principal, ok := testprofile.Principal("USR-AUDITEE-FLY")

@@ -65,6 +65,39 @@ inventories, OIDC `1/1`, offline `7/7`, build/artifact/app-shell gates, and
 worker/outbox observability. Independent Plan 2 review is `not run`.
 The backend remains `candidate-only`, release
 remains `release pending`, and this local evidence is not production evidence.
+
+Plan 3 Tasks 1–9 are `verified locally`; see
+[Local Production-Like Services Evidence](LOCAL_PRODUCTION_LIKE_SERVICES_2026-07-22.md).
+The production-like local candidate
+now has the secure Compose/image foundation, production-mode Keycloak/TOTP and
+application provisioning, private versioned MinIO, real ClamAV, immutable
+Gotenberg PDF rendering, and authenticated Mailpit SMTP delivery. Task 6
+preserves server-authoritative organization-scoped recipients, separate
+Auditee-safe and Internal CAA templates, stable Message-ID and transactional
+retry/dead-letter/audit provenance, visible HTTP delivery state, and no
+plaintext credential logging. Task 7 adds concurrent named dependency
+readiness, downstream-independent liveness, one-shot migration ordering,
+process-scoped configuration, private OIDC discovery with a validated public
+HTTPS issuer, bounded resource/shutdown policy, exact runtime network
+membership, real dependency failure/recovery, and scoped cleanup.
+
+The runtime matrix passed required PostgreSQL, Keycloak, MinIO,
+and ClamAV fail-closed loss/recovery, optional Gotenberg and Mailpit degraded
+loss/recovery, and real worker crash/restart. Only Caddy published a port,
+network membership exactly matched policy, orphan containers and
+generated-secret log matches were zero, and cleanup left zero task-owned
+residue. The final Task 9 matrix passed local contracts `37/37`, Compose policy
+`21/21`, eight image builds, eight digest-bound CycloneDX SBOMs, eight
+HIGH/CRITICAL scan gates, dependency audits with zero vulnerabilities, and the
+complete Go suite under `-race`. Two final clean demo runs each passed 86/86
+direct loads; two final full runs each passed 86/86 HTTP direct loads and all
+10 scenario families with real MFA, MinIO, ClamAV, Mailpit, and Gotenberg.
+Each profile first matched its exact runtime tags to the accepted SBOM/scan
+digests and left zero task-owned residue. Separate final main-agent
+spec-compliance and code-quality self-reviews found no remaining Critical or
+Important issue. Plan 3 is `ready-for-verification`, `candidate-only`, and
+`release pending`.
+
 The local recommendation is `GO`, the artifact remains `candidate-only`, and
 release is `release pending`. These adjacent candidates do not make the root
 demo or the overall product `production-ready`; production remains `blocked`.
@@ -127,9 +160,7 @@ results; the completed remediation now records 86 Pass and 0 Issue with fresh
 | `js/views.js` | Existing screens plus Cabin Inspection flow, restricted manager/GM dashboards, Findings Review, Inspection Team, Reports Approval, CAP Monitoring, Checklist Management, Risk Dashboards, and table-first work queues. |
 | `js/app.js` | Role-based navigation, centralized persistence, manager/GM interaction dispatch, PDF/CSV downloads, Cabin Inspection lifecycle transitions, simulated offline transitions, and stable ID generation. |
 | `docs/demo-evidence/BUILD_SUMMARY.md` | This English canonical build summary. |
-| `docs/demo-evidence/BUILD_SUMMARY.turkce.md` | Turkish companion summary for stakeholder handoff. |
 | `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.md` | Canonical 86-screen desktop/tablet/mobile visual audit. |
-| `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.turkce.md` | Turkish stakeholder companion for the visual audit. |
 | `docs/exec-plans/index.md` | Updated only if the active plan status / next todo changes. |
 | `tests/*.test.js` | Focused smoke coverage for the Cabin Inspection path, Department/General Manager workspaces, lifecycle and authorization boundaries, valid PDF construction, responsive contracts, and demo boundaries. |
 

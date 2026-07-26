@@ -20,6 +20,22 @@ func TestPublicErrorTitleRemovesSentinelPrefix(t *testing.T) {
 	}
 }
 
+func TestCreatedResponseMatchesOpenAPIStatusAndPreservesErrorMapping(t *testing.T) {
+	api := &CanonicalAPI{}
+
+	created := httptest.NewRecorder()
+	api.respondCreated(created, map[string]string{"id": "created-record"}, nil)
+	if created.Code != http.StatusCreated {
+		t.Fatalf("created response status = %d, want %d", created.Code, http.StatusCreated)
+	}
+
+	forbidden := httptest.NewRecorder()
+	api.respondCreated(forbidden, nil, application.ErrForbidden)
+	if forbidden.Code != http.StatusForbidden {
+		t.Fatalf("created error status = %d, want %d", forbidden.Code, http.StatusForbidden)
+	}
+}
+
 func TestChecklistTemplateVersionDetailParsesImmutableSnapshot(t *testing.T) {
 	publishedAt := time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC)
 	view, err := checklistTemplateVersionDetailView(checklistTemplateVersionRecord{

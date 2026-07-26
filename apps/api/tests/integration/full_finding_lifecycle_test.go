@@ -498,7 +498,7 @@ func TestFullFindingLifecycleAuthority(t *testing.T) {
 		}
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, newRequest())
-		if response.Code != http.StatusOK {
+		if response.Code != http.StatusCreated {
 			t.Fatalf(
 				"create Potential Finding status=%d body=%s",
 				response.Code,
@@ -518,7 +518,7 @@ func TestFullFindingLifecycleAuthority(t *testing.T) {
 		}
 		replay := httptest.NewRecorder()
 		handler.ServeHTTP(replay, newRequest())
-		if replay.Code != http.StatusOK || replay.Body.String() != response.Body.String() {
+		if replay.Code != http.StatusCreated || replay.Body.String() != response.Body.String() {
 			t.Fatalf(
 				"Potential Finding replay status=%d body=%s, want body=%s",
 				replay.Code,

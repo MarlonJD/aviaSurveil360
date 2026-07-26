@@ -16,7 +16,7 @@ import (
 	"github.com/MarlonJD/aviaSurveil360/apps/api/migrations"
 )
 
-const fullPlatformSchemaVersion int64 = 11
+const fullPlatformSchemaVersion int64 = migrations.LatestVersion
 
 var fullPlatformTables = []string{
 	"planning_intake_drafts",

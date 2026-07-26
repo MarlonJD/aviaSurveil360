@@ -7,9 +7,8 @@ deployment, traffic cutover, legacy removal, hosting, or production use.
 
 This English document is the canonical mapping between current product/source
 language, verified legacy-demo values, the versioned OpenAPI contract, and the
-React UI. The matching Turkish document is a stakeholder companion. The source
-authority for this slice is the canonical product documentation plus the
-verified root Vanilla JavaScript demo.
+React UI. The source authority for this slice is the canonical product
+documentation plus the verified root Vanilla JavaScript demo.
 
 ## Contract rules
 

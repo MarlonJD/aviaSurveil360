@@ -181,6 +181,7 @@ describe("Inspector secondary routes", () => {
     expect(within(page).getByRole("heading", { name: "Messages from the CAA" })).toBeVisible();
     expect(within(page).getByText(/In-app notifications/)).toBeVisible();
     expect(within(page).getByText(/CAA Inspector workspace only/)).toBeVisible();
+    expect(await within(page).findByText("Email delivery: Not configured in demo")).toBeVisible();
     await user.click(within(page).getByRole("button", { name: "Compose message" }));
     await user.type(within(page).getByLabelText("Subject"), "Cabin Inspection follow-up");
     await user.type(within(page).getByLabelText("Message"), "Please review the configured evidence request.");

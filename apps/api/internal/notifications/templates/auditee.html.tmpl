@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en">
+  <body>
+    <h1>{{.Title}}</h1>
+    <p>{{.Summary}}</p>
+    {{if .OrganizationName}}<p>Organization: {{.OrganizationName}}</p>{{end}}
+    {{if .RelatedRecordID}}<p>Authorized record: {{.RelatedRecordType}} {{.RelatedRecordID}}</p>{{end}}
+    <p>Sign in to AviaSurveil360 to view the authoritative record.</p>
+  </body>
+</html>

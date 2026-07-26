@@ -1,4 +1,7 @@
 {
+  "/v1/planning/intake-drafts": {
+    "post": { "operationId": "createPlanningIntakeDraft", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePlanningIntakeDraftInput" } } } }, "responses": { "201": { "description": "Created planning intake draft", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanningIntakeDraftView" } } } }, "default": { "$ref": "#/components/responses/Problem" } } }
+  },
   "/v1/planning/intake-drafts/{draftId}": {
     "get": { "operationId": "getPlanningIntakeDraft", "parameters": [{ "name": "draftId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Planning intake draft", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanningIntakeDraftView" } } } } } },
     "put": { "operationId": "savePlanningIntakeDraft", "parameters": [{ "name": "draftId", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SavePlanningIntakeDraftInput" } } } }, "responses": { "200": { "description": "Saved planning intake draft", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanningIntakeDraftView" } } } } } }
@@ -9,5 +12,11 @@
   "/v1/inspection-package-drafts/{packageDraftId}": {
     "get": { "operationId": "getInspectionPackageDraft", "parameters": [{ "name": "packageDraftId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Inspection package draft", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InspectionPackageDraftView" } } } } } },
     "put": { "operationId": "saveInspectionPackageDraft", "parameters": [{ "name": "packageDraftId", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SaveInspectionPackageDraftInput" } } } }, "responses": { "200": { "description": "Saved inspection package draft", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InspectionPackageDraftView" } } } } } }
+  },
+  "/v1/audit-workspaces": {
+    "post": { "operationId": "createAuditWorkspace", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateAuditWorkspaceInput" } } } }, "responses": { "201": { "description": "Created immutable audit execution workspace", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditWorkspaceView" } } } }, "default": { "$ref": "#/components/responses/Problem" } } }
+  },
+  "/v1/report-versions": {
+    "post": { "operationId": "createReportVersion", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateReportVersionInput" } } } }, "responses": { "201": { "description": "Created immutable report version", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportVersionView" } } } }, "default": { "$ref": "#/components/responses/Problem" } } }
   }
 }

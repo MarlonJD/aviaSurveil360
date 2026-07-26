@@ -70,7 +70,8 @@ RETURNING id, definition_id, version, title, description, definition,
 
 -- name: ListUserLifecycleRequests :many
 SELECT id, subject_id, requested_action, requested_roles,
-       requested_organization_id, status, idempotency_key,
+       requested_organization_id, requested_email, requested_display_name,
+       status, idempotency_key,
        requested_by_subject_id, outbox_message_id, failure_reason,
        created_at, updated_at
 FROM user_lifecycle_requests
@@ -80,7 +81,8 @@ LIMIT sqlc.arg(result_limit);
 
 -- name: GetUserLifecycleRequestByIdempotencyKey :one
 SELECT id, subject_id, requested_action, requested_roles,
-       requested_organization_id, status, idempotency_key,
+       requested_organization_id, requested_email, requested_display_name,
+       status, idempotency_key,
        requested_by_subject_id, outbox_message_id, failure_reason,
        created_at, updated_at
 FROM user_lifecycle_requests
@@ -89,11 +91,12 @@ WHERE idempotency_key = $1;
 -- name: CreateUserLifecycleRequest :one
 INSERT INTO user_lifecycle_requests (
     id, subject_id, requested_action, requested_roles,
-    requested_organization_id, status, idempotency_key,
-    requested_by_subject_id, outbox_message_id
-) VALUES ($1, $2, $3, $4, $5, 'PENDING', $6, $7, $8)
+    requested_organization_id, requested_email, requested_display_name,
+    status, idempotency_key, requested_by_subject_id, outbox_message_id
+) VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING', $8, $9, $10)
 RETURNING id, subject_id, requested_action, requested_roles,
-          requested_organization_id, status, idempotency_key,
+          requested_organization_id, requested_email, requested_display_name,
+          status, idempotency_key,
           requested_by_subject_id, outbox_message_id, failure_reason,
           created_at, updated_at;
 
@@ -104,6 +107,7 @@ SET status = $2,
     updated_at = $4
 WHERE id = $1
 RETURNING id, subject_id, requested_action, requested_roles,
-          requested_organization_id, status, idempotency_key,
+          requested_organization_id, requested_email, requested_display_name,
+          status, idempotency_key,
           requested_by_subject_id, outbox_message_id, failure_reason,
           created_at, updated_at;

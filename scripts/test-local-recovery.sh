@@ -8,6 +8,21 @@ COMPOSE_PROJECT="aviasurveil360-task13-recovery"
 RUNTIME_DIRECTORY="$(mktemp -d /private/tmp/aviasurveil360-task13-recovery.XXXXXX)"
 API_PID=""
 export COMPOSE_PROGRESS="plain"
+export AVIA_TEST_RUNTIME_DIR="${RUNTIME_DIRECTORY}"
+
+. "${REPOSITORY_ROOT}/scripts/lib/init-local-test-runtime.sh"
+initialize_local_test_runtime \
+  "${RUNTIME_DIRECTORY}" \
+  "http://127.0.0.1:4174" \
+  "${REPOSITORY_ROOT}"
+
+read_runtime_secret() {
+  tr -d '\r\n' <"${RUNTIME_DIRECTORY}/secrets/$1"
+}
+
+APP_DATABASE_PASSWORD="$(read_runtime_secret app_database_password)"
+MINIO_ROOT_PASSWORD="$(read_runtime_secret minio_root_password)"
+MINIO_ROOT_USER="$(read_runtime_secret minio_root_user)"
 
 cleanup() {
   local status=$?
@@ -27,14 +42,14 @@ docker compose --project-name "${COMPOSE_PROJECT}" --file "${COMPOSE_FILE}" down
 docker compose --project-name "${COMPOSE_PROJECT}" --file "${COMPOSE_FILE}" up --detach --wait postgres object-store
 
 export AVIA_ENVIRONMENT="test"
-export AVIA_DATABASE_URL="postgres://aviasurveil:aviasurveil@127.0.0.1:55432/aviasurveil?sslmode=disable"
+export AVIA_DATABASE_URL="postgres://aviasurveil:${APP_DATABASE_PASSWORD}@127.0.0.1:55432/aviasurveil?sslmode=disable"
 export AVIA_HTTP_ADDRESS="127.0.0.1:58083"
 export AVIA_ENABLE_CANONICAL_SEED="true"
 export AVIA_ENABLE_CANONICAL_TEST_PROFILE="true"
-export AVIA_CANONICAL_TEST_TOKEN="candidate-recovery-test-token-2026"
+export AVIA_CANONICAL_TEST_TOKEN="$(openssl rand -hex 32)"
 export AVIA_OBJECT_STORE_ENDPOINT="127.0.0.1:59001"
-export AVIA_OBJECT_STORE_ACCESS_KEY="avia-local-access"
-export AVIA_OBJECT_STORE_SECRET_KEY="avia-local-secret-key"
+export AVIA_OBJECT_STORE_ACCESS_KEY="${MINIO_ROOT_USER}"
+export AVIA_OBJECT_STORE_SECRET_KEY="${MINIO_ROOT_PASSWORD}"
 export AVIA_OBJECT_STORE_TLS="false"
 export AVIA_OBJECT_STORE_CORS_ORIGINS="http://127.0.0.1:4174"
 export AVIA_OBJECT_STORE_QUARANTINE_BUCKET="avia-quarantine"

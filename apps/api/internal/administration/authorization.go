@@ -13,5 +13,5 @@ var (
 )
 
 func CanManageUsers(actor identity.Principal) bool {
-	return actor.HasRole(identity.RoleAdmin)
+	return actor.OrganizationID == "CAA" && actor.HasRole(identity.RoleAdmin)
 }

@@ -5,11 +5,30 @@ import (
 	"encoding/json"
 	"net/http"
 
+	platformhealth "github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/health"
 	"github.com/go-chi/chi/v5"
 )
 
 type ReadinessProbe interface {
 	Ready(context.Context) error
+}
+
+type ReadinessStatus = platformhealth.Status
+type DependencyStatus = platformhealth.DependencyStatus
+type ReadinessReport = platformhealth.Report
+type DependencyReadiness = platformhealth.DependencyState
+
+const (
+	ReadinessStatusReady    = platformhealth.StatusReady
+	ReadinessStatusDegraded = platformhealth.StatusDegraded
+	ReadinessStatusNotReady = platformhealth.StatusNotReady
+
+	DependencyStatusReady       = platformhealth.DependencyStatusReady
+	DependencyStatusUnavailable = platformhealth.DependencyStatusUnavailable
+)
+
+type readinessReporter interface {
+	Readiness(context.Context) ReadinessReport
 }
 
 func NewHealthHandler(readiness ReadinessProbe) http.Handler {
@@ -18,6 +37,15 @@ func NewHealthHandler(readiness ReadinessProbe) http.Handler {
 		writeJSON(writer, http.StatusOK, map[string]string{"status": "ok"})
 	})
 	router.Get("/health/ready", func(writer http.ResponseWriter, request *http.Request) {
+		if reporter, ok := readiness.(readinessReporter); ok {
+			report := reporter.Readiness(request.Context())
+			status := http.StatusOK
+			if report.Status == ReadinessStatusNotReady {
+				status = http.StatusServiceUnavailable
+			}
+			writeJSON(writer, status, report)
+			return
+		}
 		if readiness == nil || readiness.Ready(request.Context()) != nil {
 			writeProblem(writer, http.StatusServiceUnavailable, "Service unavailable", "required dependencies are not ready", "NOT_READY")
 			return

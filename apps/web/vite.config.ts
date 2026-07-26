@@ -58,6 +58,13 @@ export default defineConfig(({ command }) => {
       buildProfilePlugin(profile, httpTestProfile ? "http-test" : profile, command === "serve"),
     ],
     publicDir: `public/${profile}`,
+    resolve: {
+      alias: {
+        "react-router-dom": fileURLToPath(
+          new URL("./src/routing/client-router.tsx", import.meta.url),
+        ),
+      },
+    },
     define: {
       __AVIA_BUILD_PROFILE__: JSON.stringify(profile),
       __AVIA_CANONICAL_TEST_TOKEN__: JSON.stringify(
@@ -71,6 +78,10 @@ export default defineConfig(({ command }) => {
       proxy:
         profile === "http" && apiTarget
           ? {
+              "/api": {
+                target: apiTarget,
+                rewrite: (path) => path.replace(/^\/api/, ""),
+              },
               "/v1": { target: apiTarget },
               "/auth": { target: apiTarget },
               "/health": { target: apiTarget },

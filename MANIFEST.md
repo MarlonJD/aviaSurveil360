@@ -19,9 +19,10 @@ The root Vanilla demo remains intact.
 ## Root Files
 
 - `AGENTS.md` — repo-local agent instructions and source-of-truth routing.
-- `CLAUDE.md` — Claude-facing project guidance.
-- `README.md` — English package overview.
-- `README.turkce.md` — Turkish package overview.
+- `CLAUDE.md` — thin Claude adapter to the canonical agent guide.
+- `ARCHITECTURE.md` — runtime surfaces, dependency direction, and high-risk
+  invariants.
+- `README.md` — package overview.
 - `MANIFEST.md` — this package inventory.
 - `index.html` — frontend-only static clickable demo entry point.
 
@@ -129,8 +130,9 @@ The root Vanilla demo remains intact.
   in-memory local-candidate rate-limit classes.
 - `apps/api/internal/` — canonical domain/authority modules, module-owned
   PostgreSQL stores, same-origin OIDC/session boundary, private object-store
-  adapter, Evidence and Inspection Attachment upload services, deterministic
-  scan worker, and fail-closed local test profile.
+  adapter, Evidence and Inspection Attachment upload services, real local
+  ClamAV/Gotenberg/Mailpit adapters, deterministic test scanner, and
+  fail-closed local test profile.
 - `apps/api/internal/httpapi/generated/` — checked generated Go OpenAPI types.
 - `apps/api/migrations/` — forward-only PostgreSQL foundation, authority, and
   Evidence upload migrations with retained N-1 verification.
@@ -141,6 +143,17 @@ The root Vanilla demo remains intact.
   tests.
 - `deploy/local/compose.test.yaml` — digest-pinned, isolated local PostgreSQL,
   Keycloak, and MinIO verification services.
+- `deploy/local/compose.yaml` — profile-scoped local HTTPS gateway, React
+  demo/HTTP artifacts, API/worker/scheduler, separate application and identity
+  databases, Keycloak, MinIO, ClamAV, Gotenberg, and private Mailpit SMTP
+  topology.
+- `tests/local-compose-policy.test.mjs` — fail-closed local topology, image,
+  secret, network, health, and Mailpit wiring contract.
+- `tests/local-runtime-contract.test.mjs` — liveness/readiness, migration,
+  resource, restart, exact-network, leakage, and cleanup contract.
+- `scripts/local-stack.sh` and `scripts/check-local-runtime.sh` — exact
+  task-owned Compose lifecycle plus required/optional failure, crash restart,
+  secret-log, network, publishing, orphan, and residue verification.
 - `scripts/test-http-profile.sh` — fresh Go race/generation, live API/worker,
   React contract/build, mock/HTTP Playwright, worker/outbox drain assertion,
   and task-owned cleanup profile.
@@ -204,6 +217,7 @@ separate `apps/web/package.json` owns the React candidate commands.
 
 - `docs/index.md` — canonical docs map for agent, plan, product, demo handoff,
   and demo evidence surfaces.
+- `docs/PLANS.md` — repository-native ExecPlan contract and lifecycle.
 - `docs/agent-harness/index.md` — canonical harness entrypoint for future
   agents.
 - `docs/agent-harness/output-contract.md` — required status, evidence, and
@@ -218,47 +232,40 @@ separate `apps/web/package.json` owns the React candidate commands.
 
 ## Build Evidence And Handoff
 
-- `docs/demo-evidence/BUILD_SUMMARY.md` — English canonical demo evidence, verification
+- `docs/demo-evidence/BUILD_SUMMARY.md` — canonical demo evidence, verification
   status, and known limitations.
-- `docs/demo-evidence/BUILD_SUMMARY.turkce.md` — Turkish stakeholder companion summary.
 - `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.md` — canonical 86-screen
   desktop, tablet, and mobile visual-audit evidence.
-- `docs/demo-evidence/UI_SCREEN_AUDIT_2026-07-19.turkce.md` — Turkish
-  stakeholder companion for the visual-audit evidence.
 - `docs/demo-evidence/BROWSER_SCENARIO_INTEGRITY_2026-07-20.md` — canonical
   real-click browser matrix, automated gate, console, screenshot, and cleanup evidence.
-- `docs/demo-evidence/BROWSER_SCENARIO_INTEGRITY_2026-07-20.turkce.md` — Turkish
-  stakeholder companion for the scenario-integrity evidence.
 - `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.md` — canonical Tasks 2-4
   React mock slice scope, transcript, local verification, and evidence limits.
-- `docs/demo-evidence/REACT_MOCK_SLICE_2026-07-20.turkce.md` — Turkish
-  stakeholder companion for the React mock slice evidence.
-- `docs/demo-evidence/GO_POSTGRES_FOUNDATION_2026-07-21.md` and `.turkce.md` —
+- `docs/demo-evidence/GO_POSTGRES_FOUNDATION_2026-07-21.md` —
   Task 9 Go/PostgreSQL candidate foundation evidence.
-- `docs/demo-evidence/CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.md` and
-  `.turkce.md` — Task 10 authority, OIDC/session, isolation, and audit evidence.
-- `docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md` and
-  `.turkce.md` — Task 11 bounded upload/scan, live `HttpBackend`, and shared
+- `docs/demo-evidence/CANONICAL_AUTHORITY_FOUNDATION_2026-07-21.md` — Task 10
+  authority, OIDC/session, isolation, and audit evidence.
+- `docs/demo-evidence/BOUNDED_UPLOAD_AND_HTTP_PARITY_2026-07-21.md` — Task 11
+  bounded upload/scan, live `HttpBackend`, and shared
   mock/HTTP scenario evidence.
-- `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md` and `.turkce.md` —
+- `docs/demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md` —
   Task 6 app-shell caching, explicit readiness, restart survival, multi-client
   update, and actual server-stopped startup evidence.
-- `docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.md` and `.turkce.md` —
+- `docs/demo-evidence/INDEXEDDB_FIELD_STORAGE_2026-07-21.md` —
   Task 7 atomic subject-scoped field storage, causal outbox, migration, and
   pending/in-flight restart-recovery evidence.
-- `docs/demo-evidence/OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md` and
-  `.turkce.md` — Task 8 manifest-first OPFS staging, startup reconciliation,
+- `docs/demo-evidence/OPFS_INSPECTION_ATTACHMENT_RECOVERY_2026-07-21.md` —
+  Task 8 manifest-first OPFS staging, startup reconciliation,
   no-delete policy, and server-stopped attachment restart evidence.
-- `docs/demo-evidence/IDEMPOTENT_FOREGROUND_SYNC_2026-07-21.md` and
-  `.turkce.md` — Task 12 one-operation causal sync, exact replay, typed
+- `docs/demo-evidence/IDEMPOTENT_FOREGROUND_SYNC_2026-07-21.md` — Task 12
+  one-operation causal sync, exact replay, typed
   conflict, authorized pull, and foreground recovery evidence.
-- `docs/demo-evidence/FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.md` and
-  `.turkce.md` — Task 5 approved route-family and responsive dual-profile
+- `docs/demo-evidence/FIRST_PRODUCTION_ROUTE_FAMILIES_2026-07-21.md` — Task 5
+  approved route-family and responsive dual-profile
   parity evidence.
-- `docs/demo-evidence/LOCAL_RELEASE_CANDIDATE_2026-07-21.md` and `.turkce.md` —
+- `docs/demo-evidence/LOCAL_RELEASE_CANDIDATE_2026-07-21.md` —
   Task 13 local `GO`, complete verification matrix, dependency/SBOM review,
   restore rehearsal, and explicit production blockers.
-- `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.md` and `.turkce.md` —
+- `docs/demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.md` —
   Task 16 exact 17/69 scope, complete local matrix, normal OIDC, offline/recovery,
   51-pair decoded-pixel/manual parity review, and stakeholder handoff.
 - `docs/demo-evidence/REACT_86_SCREEN_DEMO_2026-07-22.md` —
@@ -269,13 +276,13 @@ separate `apps/web/package.json` owns the React candidate commands.
   Full Backend Tasks 1–12 exact contract/persistence/capability coverage,
   86 dual-profile routes, 10 scenario families, 45 proofs, final matrix,
   review verdicts, and preserved Plan 1 gaps.
+- `docs/demo-evidence/LOCAL_PRODUCTION_LIKE_SERVICES_2026-07-22.md` —
+  Plan 3 scanned-image, clean-profile, real-service, failure/restart, and
+  zero-residue evidence.
 - `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.md`
-- `docs/demo-handoff/ACCEPTANCE_CRITERIA_AND_FEEDBACK.turkce.md`
 - `docs/demo-handoff/AGENT_HARNESS_RUNBOOK.md`
 - `docs/demo-handoff/CODEX_DEMO_ONLY_PROMPT.md`
-- `docs/demo-handoff/CODEX_DEMO_ONLY_PROMPT.turkce.md`
 - `docs/demo-handoff/FULL_MVP_BUILD_PROMPT_LATER.md`
-- `docs/demo-handoff/FULL_MVP_BUILD_PROMPT_LATER.turkce.md`
 
 ## Product Source Documents
 
@@ -297,35 +304,14 @@ separate `apps/web/package.json` owns the React candidate commands.
 - `docs/product-specs/scenarios/` — demo scenario and other domain scenarios.
 - `docs/product-specs/references/` — glossary and source notes.
 
-Most stakeholder-facing canonical docs have matching `.turkce.md` companion
-files in the same folder.
+Repository documentation is English-only. Turkish explanations are delivered
+in user-facing handoffs rather than duplicate companion files.
 
 ## Execution Plans
 
+- `docs/PLANS.md` — repository-native plan contract.
 - `docs/exec-plans/index.md` — active execution-plan tracking index.
-- `docs/exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md`
-- `docs/exec-plans/active/2026-07-21-react-legacy-ui-parity-and-backend-integration-plan.md`
-- `docs/exec-plans/active/2026-07-22-full-react-86-screen-migration-plan.md`
-- `docs/exec-plans/active/2026-07-22-full-backend-scenario-parity-plan.md`
-- `docs/exec-plans/active/2026-07-22-local-production-like-services-plan.md`
-- `docs/exec-plans/active/2026-07-22-reliability-dr-and-aws-terraform-terragrunt-plan.md`
-- `docs/exec-plans/active/2026-06-14-aviasurveil-demo-only-prototype-plan.md`
-- `docs/exec-plans/active/2026-06-23-ncaa-platform-v2-and-mvp-plan.md`
-- `docs/exec-plans/active/2026-06-28-caa-governance-workflow-and-roles-plan.md`
-- `docs/exec-plans/active/2026-06-29-agent-harness-readiness-completion-plan.md`
-- `docs/exec-plans/active/2026-06-29-aviasurveil-harness-engineering-adaptation-plan.md`
-- `docs/exec-plans/active/2026-06-30-planning-panel-simplification-plan.md`
-- `docs/exec-plans/active/2026-07-01-table-first-surveillance-workbench-ux-plan.md`
-- `docs/exec-plans/active/2026-07-08-modern-aviation-saas-rollout-plan.md`
-- `docs/exec-plans/active/2026-07-08-premium-ui-remediation-plan.md`
-- `docs/exec-plans/active/2026-07-09-cabin-inspection-demo-scenario-plan.md`
-- `docs/exec-plans/active/2026-07-09-department-manager-workspaces-plan.md`
-- `docs/exec-plans/active/2026-07-10-inspector-report-and-governance-workflow-remediation-plan.md`
-- `docs/exec-plans/active/2026-07-10-stakeholder-readiness-final-remediation-plan.md`
-- `docs/exec-plans/active/2026-07-18-inspection-lifecycle-alignment-plan.md`
-- `docs/exec-plans/active/2026-07-19-ui-screenshot-audit-remediation-plan.md`
-- `docs/exec-plans/active/2026-07-20-unannounced-inspection-intake-alignment-plan.md`
-- `docs/exec-plans/active/2026-07-20-browser-scenario-integrity-remediation-plan.md`
+- `docs/exec-plans/active/` — living plans.
 
 ## Execution Plan Archive And Tracker
 
@@ -342,16 +328,23 @@ The files above support stakeholder feedback, local demo verification, and a
 authority, audit-event, private upload, deterministic scan, scenario contracts,
 PWA/readiness, atomic field storage, OPFS attachment recovery, the historical
 17-surface root-demo parity checkpoint, and the current 86-route dual-profile
-backend candidate recorded in Task evidence. They
-do not prove production identity/MFA, production storage/scanning or records
-operations, regulatory or enforcement approval, notification delivery,
-production sync, deployment, cutover, release, or production readiness.
+backend candidate recorded in Task evidence. Plan 3 Tasks 1–9 additionally
+prove local production-mode identity/MFA, private versioned storage, real
+malware scanning, immutable PDF rendering, and authenticated Mailpit SMTP
+delivery with retry/restart evidence, plus bounded concurrent readiness,
+failure recovery, exact network membership, two clean 86-route demo/full
+profile repetitions, and zero-residue stack ownership.
+They do not prove production identity
+federation, external email delivery, production storage/scanning or records
+operations, regulatory or enforcement approval, production sync, deployment,
+cutover, release, or production readiness.
 
 The first 22 July 2026 follow-up plan implements 86/86 React demo routes and is
 `ready-for-verification`. Its one-shot visual matrix remains `not verified` at
 71/259 under an explicit user-accepted non-blocking disposition; standalone
 baseline integrity is `not verified`. Plan 2 implements all 86 HTTP routes and
 complete mock/Go/PostgreSQL scenario parity and is `ready-for-verification`.
-The later plans define production-like local Docker services, local
-reliability/DR, and a separately authorized AWS trial using Terraform and
-Terragrunt. Plans 3–4 remain gated.
+Plan 3 Tasks 1–9 are `verified locally`; the required matrix, two final clean
+demo/full repetitions, and separate final main-agent reviews pass. Plan 3 is
+`ready-for-verification`, `candidate-only`, and `release pending`. Plan 4
+remains unstarted and unauthorized.

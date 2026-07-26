@@ -1,0 +1,464 @@
+package identity_test
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"slices"
+	"strings"
+	"testing"
+
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/identity"
+)
+
+func TestKeycloakAdminClientProvisionsOrganizationRolesAndFirstLoginTOTP(t *testing.T) {
+	t.Parallel()
+	var created map[string]any
+	var mappedRoles []map[string]any
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assertKeycloakBearer(t, request)
+		switch {
+		case request.URL.Path == "/identity/realms/master/protocol/openid-connect/token":
+			assertKeycloakAdminTokenRequest(t, request)
+			writeKeycloakJSON(writer, http.StatusOK, map[string]any{
+				"access_token": "admin-access-token",
+				"expires_in":   60,
+			})
+		case request.Method == http.MethodGet &&
+			request.URL.Path == "/identity/admin/realms/aviasurveil360/users":
+			if request.URL.Query().Get("email") != "new.user@example.test" ||
+				request.URL.Query().Get("exact") != "true" {
+				t.Errorf("duplicate-email query = %q", request.URL.RawQuery)
+			}
+			writeKeycloakJSON(writer, http.StatusOK, []any{})
+		case request.Method == http.MethodPost &&
+			request.URL.Path == "/identity/admin/realms/aviasurveil360/users":
+			if err := json.NewDecoder(request.Body).Decode(&created); err != nil {
+				t.Errorf("decode created user: %v", err)
+			}
+			writer.Header().Set(
+				"Location",
+				server.URL+"/identity/admin/realms/aviasurveil360/users/provider-subject-001",
+			)
+			writer.WriteHeader(http.StatusCreated)
+		case request.Method == http.MethodGet &&
+			strings.HasPrefix(
+				request.URL.Path,
+				"/identity/admin/realms/aviasurveil360/roles/",
+			):
+			role := request.URL.Path[strings.LastIndex(request.URL.Path, "/")+1:]
+			writeKeycloakJSON(writer, http.StatusOK, map[string]any{
+				"id": "role-" + role, "name": role,
+			})
+		case request.Method == http.MethodPost &&
+			request.URL.Path == "/identity/admin/realms/aviasurveil360/users/provider-subject-001/role-mappings/realm":
+			if err := json.NewDecoder(request.Body).Decode(&mappedRoles); err != nil {
+				t.Errorf("decode role mapping: %v", err)
+			}
+			writer.WriteHeader(http.StatusNoContent)
+		default:
+			http.Error(writer, "unexpected request", http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	client := newKeycloakAdminTestClient(t, server.URL)
+	subjectID, err := client.ProvisionUser(
+		context.Background(),
+		identity.KeycloakUser{
+			Email:          "new.user@example.test",
+			FirstName:      "New",
+			LastName:       "User",
+			OrganizationID: "CAA",
+			Roles: []identity.Role{
+				identity.RoleInspector,
+				identity.RoleLeadInspector,
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("provision Keycloak user: %v", err)
+	}
+	if subjectID != "provider-subject-001" {
+		t.Fatalf("provider subject = %q", subjectID)
+	}
+	if created["username"] != "new.user@example.test" ||
+		created["email"] != "new.user@example.test" ||
+		created["firstName"] != "New" ||
+		created["lastName"] != "User" ||
+		created["enabled"] != true {
+		t.Fatalf("created representation = %#v", created)
+	}
+	attributes, ok := created["attributes"].(map[string]any)
+	if !ok {
+		t.Fatalf("created attributes = %#v", created["attributes"])
+	}
+	if values, ok := attributes["organization_id"].([]any); !ok ||
+		len(values) != 1 ||
+		values[0] != "CAA" {
+		t.Fatalf("organization attributes = %#v", attributes)
+	}
+	requiredActions, ok := created["requiredActions"].([]any)
+	if !ok || !slices.Contains(requiredActions, any("CONFIGURE_TOTP")) {
+		t.Fatalf("required actions = %#v", created["requiredActions"])
+	}
+	if len(mappedRoles) != 2 ||
+		mappedRoles[0]["name"] != string(identity.RoleInspector) ||
+		mappedRoles[1]["name"] != string(identity.RoleLeadInspector) {
+		t.Fatalf("mapped roles = %#v", mappedRoles)
+	}
+}
+
+func TestKeycloakAdminClientRejectsCrossAuthorityRoleOrganizationMappings(t *testing.T) {
+	t.Parallel()
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(
+		func(writer http.ResponseWriter, _ *http.Request) {
+			requestCount++
+			http.Error(writer, "must not call provider", http.StatusInternalServerError)
+		},
+	))
+	t.Cleanup(server.Close)
+
+	client := newKeycloakAdminTestClient(t, server.URL)
+	if _, err := client.ProvisionUser(
+		context.Background(),
+		identity.KeycloakUser{
+			Email:          "mixed-authority@example.test",
+			FirstName:      "Mixed",
+			LastName:       "Authority",
+			OrganizationID: "auditee-org-001",
+			Roles: []identity.Role{
+				identity.RoleAuditee,
+				identity.RoleInspector,
+			},
+		},
+	); err == nil {
+		t.Fatal("mixed Auditee and CAA roles were accepted")
+	}
+	if err := client.UpdateUserAuthority(
+		context.Background(),
+		"provider-subject-001",
+		"auditee-org-001",
+		[]identity.Role{identity.RoleInspector},
+	); err == nil {
+		t.Fatal("CAA role outside the exact CAA organization was accepted")
+	}
+	if requestCount != 0 {
+		t.Fatalf("invalid authority mapping made %d provider requests", requestCount)
+	}
+}
+
+func TestKeycloakAdminClientRejectsDuplicateEmailBeforeCreate(t *testing.T) {
+	t.Parallel()
+	createCalled := false
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assertKeycloakBearer(t, request)
+		switch {
+		case request.URL.Path == "/identity/realms/master/protocol/openid-connect/token":
+			assertKeycloakAdminTokenRequest(t, request)
+			writeKeycloakJSON(writer, http.StatusOK, map[string]any{
+				"access_token": "admin-access-token",
+				"expires_in":   60,
+			})
+		case request.Method == http.MethodGet &&
+			request.URL.Path == "/identity/admin/realms/aviasurveil360/users":
+			writeKeycloakJSON(writer, http.StatusOK, []map[string]string{
+				{"id": "existing-subject"},
+			})
+		case request.Method == http.MethodPost:
+			createCalled = true
+			http.Error(writer, "must not create", http.StatusInternalServerError)
+		default:
+			http.Error(writer, "unexpected request", http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	client := newKeycloakAdminTestClient(t, server.URL)
+	_, err := client.ProvisionUser(context.Background(), identity.KeycloakUser{
+		Email:          "existing@example.test",
+		FirstName:      "Existing",
+		LastName:       "User",
+		OrganizationID: "CAA",
+		Roles:          []identity.Role{identity.RoleInspector},
+	})
+	if !errors.Is(err, identity.ErrKeycloakDuplicateEmail) {
+		t.Fatalf("duplicate-email error = %v", err)
+	}
+	if createCalled {
+		t.Fatal("duplicate email reached create endpoint")
+	}
+}
+
+func TestKeycloakAdminClientReconcilesOnlyAnExactExistingUser(t *testing.T) {
+	t.Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assertKeycloakBearer(t, request)
+		switch {
+		case request.URL.Path == "/identity/realms/master/protocol/openid-connect/token":
+			assertKeycloakAdminTokenRequest(t, request)
+			writeKeycloakJSON(writer, http.StatusOK, map[string]any{
+				"access_token": "admin-access-token",
+				"expires_in":   60,
+			})
+		case request.Method == http.MethodGet &&
+			request.URL.Path == "/identity/admin/realms/aviasurveil360/users":
+			writeKeycloakJSON(writer, http.StatusOK, []map[string]any{
+				{
+					"id":        "existing-subject",
+					"username":  "existing@example.test",
+					"email":     "existing@example.test",
+					"firstName": "Existing",
+					"lastName":  "User",
+					"enabled":   true,
+					"attributes": map[string][]string{
+						"organization_id": {"airline-xyz"},
+					},
+				},
+			})
+		case request.Method == http.MethodGet &&
+			request.URL.Path == "/identity/admin/realms/aviasurveil360/users/existing-subject/role-mappings/realm":
+			writeKeycloakJSON(writer, http.StatusOK, []map[string]any{
+				{"id": "role-auditee", "name": "auditee"},
+				{"id": "role-offline", "name": "offline_access"},
+			})
+		default:
+			http.Error(writer, "unexpected request", http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	client := newKeycloakAdminTestClient(t, server.URL)
+	subjectID, matched, err := client.ReconcileProvisionedUser(
+		context.Background(),
+		identity.KeycloakUser{
+			Email:          "existing@example.test",
+			FirstName:      "Existing",
+			LastName:       "User",
+			OrganizationID: "airline-xyz",
+			Roles:          []identity.Role{identity.RoleAuditee},
+		},
+	)
+	if err != nil || !matched || subjectID != "existing-subject" {
+		t.Fatalf(
+			"exact reconciliation = subject %q matched %t err %v",
+			subjectID,
+			matched,
+			err,
+		)
+	}
+	_, matched, err = client.ReconcileProvisionedUser(
+		context.Background(),
+		identity.KeycloakUser{
+			Email:          "existing@example.test",
+			FirstName:      "Existing",
+			LastName:       "User",
+			OrganizationID: "other-airline",
+			Roles:          []identity.Role{identity.RoleAuditee},
+		},
+	)
+	if err != nil || matched {
+		t.Fatalf("mismatched reconciliation = matched %t err %v", matched, err)
+	}
+}
+
+func TestKeycloakAdminClientDisablesUserAndRevokesProviderSessions(t *testing.T) {
+	t.Parallel()
+	var requests []string
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assertKeycloakBearer(t, request)
+		switch {
+		case request.URL.Path == "/identity/realms/master/protocol/openid-connect/token":
+			assertKeycloakAdminTokenRequest(t, request)
+			writeKeycloakJSON(writer, http.StatusOK, map[string]any{
+				"access_token": "admin-access-token",
+				"expires_in":   60,
+			})
+		case request.Method == http.MethodPut &&
+			request.URL.Path == "/identity/admin/realms/aviasurveil360/users/provider-subject-001":
+			var update map[string]any
+			if err := json.NewDecoder(request.Body).Decode(&update); err != nil {
+				t.Errorf("decode disable update: %v", err)
+			}
+			if update["enabled"] != false {
+				t.Errorf("disable representation = %#v", update)
+			}
+			requests = append(requests, "disable")
+			writer.WriteHeader(http.StatusNoContent)
+		case request.Method == http.MethodPost &&
+			request.URL.Path == "/identity/admin/realms/aviasurveil360/users/provider-subject-001/logout":
+			requests = append(requests, "logout")
+			writer.WriteHeader(http.StatusNoContent)
+		default:
+			http.Error(writer, "unexpected request", http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	client := newKeycloakAdminTestClient(t, server.URL)
+	if err := client.DisableUser(
+		context.Background(),
+		"provider-subject-001",
+	); err != nil {
+		t.Fatalf("disable Keycloak user: %v", err)
+	}
+	if !slices.Equal(requests, []string{"disable", "logout"}) {
+		t.Fatalf("disable transcript = %#v", requests)
+	}
+}
+
+func TestKeycloakAdminClientUpdatesOrganizationRolesAndReactivatesUser(t *testing.T) {
+	t.Parallel()
+	var transcript []string
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assertKeycloakBearer(t, request)
+		switch {
+		case request.URL.Path == "/identity/realms/master/protocol/openid-connect/token":
+			assertKeycloakAdminTokenRequest(t, request)
+			writeKeycloakJSON(writer, http.StatusOK, map[string]any{
+				"access_token": "admin-access-token",
+				"expires_in":   60,
+			})
+		case request.Method == http.MethodPut &&
+			request.URL.Path == "/identity/admin/realms/aviasurveil360/users/provider-subject-001":
+			var update map[string]any
+			if err := json.NewDecoder(request.Body).Decode(&update); err != nil {
+				t.Errorf("decode user update: %v", err)
+			}
+			if enabled, ok := update["enabled"]; ok {
+				if enabled != true {
+					t.Errorf("reactivation update = %#v", update)
+				}
+				transcript = append(transcript, "enable")
+			} else {
+				attributes, ok := update["attributes"].(map[string]any)
+				if !ok {
+					t.Errorf("organization update = %#v", update)
+				} else if values, ok := attributes["organization_id"].([]any); !ok ||
+					len(values) != 1 ||
+					values[0] != "auditee-org-002" {
+					t.Errorf("organization update = %#v", update)
+				}
+				transcript = append(transcript, "organization")
+			}
+			writer.WriteHeader(http.StatusNoContent)
+		case request.Method == http.MethodGet &&
+			request.URL.Path == "/identity/admin/realms/aviasurveil360/users/provider-subject-001/role-mappings/realm":
+			writeKeycloakJSON(writer, http.StatusOK, []map[string]any{
+				{"id": "role-inspector", "name": "inspector"},
+				{"id": "role-offline-access", "name": "offline_access"},
+			})
+		case request.Method == http.MethodDelete &&
+			request.URL.Path == "/identity/admin/realms/aviasurveil360/users/provider-subject-001/role-mappings/realm":
+			var removed []map[string]any
+			if err := json.NewDecoder(request.Body).Decode(&removed); err != nil {
+				t.Errorf("decode removed roles: %v", err)
+			}
+			if len(removed) != 1 || removed[0]["name"] != "inspector" {
+				t.Errorf("removed roles = %#v", removed)
+			}
+			transcript = append(transcript, "remove-approved")
+			writer.WriteHeader(http.StatusNoContent)
+		case request.Method == http.MethodGet &&
+			request.URL.Path == "/identity/admin/realms/aviasurveil360/roles/auditee":
+			writeKeycloakJSON(writer, http.StatusOK, map[string]any{
+				"id": "role-auditee", "name": "auditee",
+			})
+		case request.Method == http.MethodPost &&
+			request.URL.Path == "/identity/admin/realms/aviasurveil360/users/provider-subject-001/role-mappings/realm":
+			var added []map[string]any
+			if err := json.NewDecoder(request.Body).Decode(&added); err != nil {
+				t.Errorf("decode added roles: %v", err)
+			}
+			if len(added) != 1 || added[0]["name"] != "auditee" {
+				t.Errorf("added roles = %#v", added)
+			}
+			transcript = append(transcript, "add-approved")
+			writer.WriteHeader(http.StatusNoContent)
+		default:
+			http.Error(writer, "unexpected request", http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	client := newKeycloakAdminTestClient(t, server.URL)
+	if err := client.UpdateUserAuthority(
+		context.Background(),
+		"provider-subject-001",
+		"auditee-org-002",
+		[]identity.Role{identity.RoleAuditee},
+	); err != nil {
+		t.Fatalf("update Keycloak authority: %v", err)
+	}
+	if err := client.EnableUser(
+		context.Background(),
+		"provider-subject-001",
+	); err != nil {
+		t.Fatalf("enable Keycloak user: %v", err)
+	}
+	if !slices.Equal(
+		transcript,
+		[]string{"organization", "remove-approved", "add-approved", "enable"},
+	) {
+		t.Fatalf("authority transcript = %#v", transcript)
+	}
+}
+
+func newKeycloakAdminTestClient(
+	t *testing.T,
+	baseURL string,
+) *identity.KeycloakAdminClient {
+	t.Helper()
+	client, err := identity.NewKeycloakAdminClient(identity.KeycloakAdminConfig{
+		BaseURL:       baseURL + "/identity",
+		Realm:         "aviasurveil360",
+		AdminUsername: "local-bootstrap-admin",
+		AdminPassword: "bootstrap-admin-secret",
+		HTTPClient:    http.DefaultClient,
+	})
+	if err != nil {
+		t.Fatalf("new Keycloak admin client: %v", err)
+	}
+	return client
+}
+
+func assertKeycloakAdminTokenRequest(t *testing.T, request *http.Request) {
+	t.Helper()
+	if request.Method != http.MethodPost {
+		t.Errorf("token method = %s", request.Method)
+	}
+	if err := request.ParseForm(); err != nil {
+		t.Errorf("parse token request: %v", err)
+		return
+	}
+	expected := url.Values{
+		"client_id":  {"admin-cli"},
+		"grant_type": {"password"},
+		"password":   {"bootstrap-admin-secret"},
+		"username":   {"local-bootstrap-admin"},
+	}
+	if request.Form.Encode() != expected.Encode() {
+		t.Errorf("token form = %q", request.Form.Encode())
+	}
+}
+
+func assertKeycloakBearer(t *testing.T, request *http.Request) {
+	t.Helper()
+	if request.URL.Path == "/identity/realms/master/protocol/openid-connect/token" {
+		return
+	}
+	if request.Header.Get("Authorization") != "Bearer admin-access-token" {
+		t.Errorf("authorization = %q", request.Header.Get("Authorization"))
+	}
+}
+
+func writeKeycloakJSON(writer http.ResponseWriter, status int, value any) {
+	writer.Header().Set("Content-Type", "application/json")
+	writer.WriteHeader(status)
+	_ = json.NewEncoder(writer).Encode(value)
+}

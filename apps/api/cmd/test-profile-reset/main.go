@@ -40,14 +40,20 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("apply test migrations: %w", err)
 	}
 	objects, err := objectstore.NewMinIOStore(objectstore.MinIOConfig{
-		Endpoint: settings.ObjectStoreEndpoint, AccessKey: settings.ObjectStoreAccessKey,
-		SecretKey: settings.ObjectStoreSecretKey, UseTLS: settings.ObjectStoreTLS,
+		Endpoint: settings.ObjectStoreEndpoint, PublicEndpoint: settings.ObjectStorePublicEndpoint,
+		AccessKey: settings.ObjectStoreAccessKey, SecretKey: settings.ObjectStoreSecretKey,
+		UseTLS: settings.ObjectStoreTLS, PublicUseTLS: settings.ObjectStorePublicTLS,
 		Region: settings.ObjectStoreRegion, AllowServerManagedCORS: settings.AllowServerManagedCORS,
 	})
 	if err != nil {
 		return fmt.Errorf("open test object store: %w", err)
 	}
-	buckets := []string{settings.QuarantineBucket, settings.CanonicalBucket}
+	buckets := []string{
+		settings.QuarantineBucket,
+		settings.CanonicalBucket,
+		settings.AttachmentBucket,
+		settings.DocumentBucket,
+	}
 	if err := objects.EnsurePrivateBuckets(ctx, buckets, settings.ObjectStoreCORSOrigins); err != nil {
 		return fmt.Errorf("prepare private test buckets: %w", err)
 	}

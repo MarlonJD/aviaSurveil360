@@ -1,14 +1,22 @@
 services:
   postgres:
     image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    user: "70:70"
+    read_only: true
     environment:
       POSTGRES_DB: aviasurveil
       POSTGRES_USER: aviasurveil
-      POSTGRES_PASSWORD: aviasurveil
+      POSTGRES_PASSWORD_FILE: /run/secrets/app_database_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    secrets:
+      - app_database_password
     ports:
       - "127.0.0.1:${AVIA_TEST_POSTGRES_PORT:-55432}:5432"
     volumes:
       - postgres-test-data:/var/lib/postgresql/data
+    tmpfs:
+      - /run/postgresql:uid=70,gid=70,mode=0770
+      - /tmp:mode=1777
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U aviasurveil -d aviasurveil"]
       interval: 2s
@@ -17,17 +25,75 @@ services:
       start_period: 5s
     restart: "no"
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.3.4@sha256:2b32a51a31e8d780d9fa9a69a59ead69975263c61b5dd13559090e22aa26f100
-    command: ["start-dev", "--import-realm", "--health-enabled=true"]
+  keycloak-postgres:
+    image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    user: "70:70"
+    read_only: true
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: local-admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: local-admin-password
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD_FILE: /run/secrets/keycloak_database_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    secrets:
+      - keycloak_database_password
+    volumes:
+      - keycloak-postgres-test-data:/var/lib/postgresql/data
+    tmpfs:
+      - /run/postgresql:uid=70,gid=70,mode=0770
+      - /tmp:mode=1777
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    restart: "no"
+
+  keycloak:
+    image: aviasurveil360/keycloak:local
+    build:
+      context: ../..
+      dockerfile: deploy/local/keycloak/Dockerfile
+      target: keycloak
+    user: "1000:0"
+    read_only: true
+    entrypoint:
+      - /bin/sh
+      - /opt/aviasurveil360/keycloak-entrypoint.sh
+    command:
+      - start
+      - --optimized
+      - --import-realm
+      - --http-enabled=true
+      - --hostname=http://127.0.0.1:${AVIA_TEST_KEYCLOAK_PORT:-58080}/identity
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD_FILE: /run/secrets/keycloak_database_password
+      KC_BOOTSTRAP_ADMIN_USERNAME: local-bootstrap-admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD_FILE: /run/secrets/keycloak_bootstrap_admin_password
+      KC_HTTP_RELATIVE_PATH: /identity
+    configs:
+      - source: keycloak_entrypoint
+        target: /opt/aviasurveil360/keycloak-entrypoint.sh
+        uid: "1000"
+        gid: "0"
+        mode: 0550
+    secrets:
+      - keycloak_bootstrap_admin_password
+      - keycloak_database_password
+      - source: keycloak_realm
+        target: /opt/keycloak/data/import/realm.json
+        uid: "1000"
+        gid: "0"
+        mode: 0400
     ports:
       - "127.0.0.1:${AVIA_TEST_KEYCLOAK_PORT:-58080}:8080"
       - "127.0.0.1:${AVIA_TEST_KEYCLOAK_MANAGEMENT_PORT:-59000}:9000"
-    volumes:
-      - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+    tmpfs:
+      - /tmp:mode=1777
+      - /opt/keycloak/data/tmp:uid=1000,gid=0,mode=0770
     healthcheck:
       test:
         - CMD
@@ -35,26 +101,45 @@ services:
         - -c
         - >-
           exec 3<>/dev/tcp/127.0.0.1/9000;
-          printf 'GET /health/ready HTTP/1.1\r\nHost: 127.0.0.1:9000\r\nConnection: close\r\n\r\n' >&3;
+          printf 'GET /identity/health/ready HTTP/1.1\r\nHost: 127.0.0.1:9000\r\nConnection: close\r\n\r\n' >&3;
           grep -q 'HTTP/1.1 200 OK' <&3
       interval: 2s
       timeout: 3s
       retries: 60
-      start_period: 15s
+      start_period: 30s
+    restart: "no"
+
+  object-store-init:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["chown -R 1000:1000 /data"]
+    volumes:
+      - object-store-test-data:/data
     restart: "no"
 
   object-store:
     image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    user: "1000:1000"
+    read_only: true
     command: ["server", "/data", "--console-address", ":9001"]
+    depends_on:
+      object-store-init:
+        condition: service_completed_successfully
     environment:
-      MINIO_ROOT_USER: avia-local-access
-      MINIO_ROOT_PASSWORD: avia-local-secret-key
+      MINIO_ROOT_USER_FILE: /run/secrets/minio_root_user
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_root_password
       MINIO_API_CORS_ALLOW_ORIGIN: http://127.0.0.1:4174
+    secrets:
+      - minio_root_password
+      - minio_root_user
     ports:
       - "127.0.0.1:${AVIA_TEST_OBJECT_STORE_PORT:-59001}:9000"
       - "127.0.0.1:${AVIA_TEST_OBJECT_STORE_CONSOLE_PORT:-59002}:9001"
     volumes:
       - object-store-test-data:/data
+    tmpfs:
+      - /tmp:mode=1777
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://127.0.0.1:9000/minio/health/live"]
       interval: 2s
@@ -63,6 +148,25 @@ services:
       start_period: 5s
     restart: "no"
 
+configs:
+  keycloak_entrypoint:
+    file: ./keycloak/entrypoint.sh
+
+secrets:
+  app_database_password:
+    file: ${AVIA_TEST_RUNTIME_DIR:?AVIA_TEST_RUNTIME_DIR is required}/secrets/app_database_password
+  keycloak_bootstrap_admin_password:
+    file: ${AVIA_TEST_RUNTIME_DIR:?AVIA_TEST_RUNTIME_DIR is required}/secrets/keycloak_bootstrap_admin_password
+  keycloak_database_password:
+    file: ${AVIA_TEST_RUNTIME_DIR:?AVIA_TEST_RUNTIME_DIR is required}/secrets/keycloak_database_password
+  keycloak_realm:
+    file: ${AVIA_TEST_RUNTIME_DIR:?AVIA_TEST_RUNTIME_DIR is required}/keycloak/realm.json
+  minio_root_password:
+    file: ${AVIA_TEST_RUNTIME_DIR:?AVIA_TEST_RUNTIME_DIR is required}/secrets/minio_root_password
+  minio_root_user:
+    file: ${AVIA_TEST_RUNTIME_DIR:?AVIA_TEST_RUNTIME_DIR is required}/secrets/minio_root_user
+
 volumes:
   postgres-test-data:
+  keycloak-postgres-test-data:
   object-store-test-data:

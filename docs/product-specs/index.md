@@ -1,8 +1,8 @@
 # Product Specs Index
 
-This folder is the AviaSurveil360 product source of truth. English documents
-are canonical for implementation; `.turkce.md` companions support stakeholder
-handoff and local-language review.
+This folder is the English canonical AviaSurveil360 product source of truth.
+Turkish explanations belong in user-facing handoffs rather than duplicated
+repository documents.
 
 ## Reading Order
 
@@ -14,23 +14,22 @@ handoff and local-language review.
 6. `ux-plan/UX_PRINCIPLES.md`
 7. `ux-plan/NAVIGATION_AND_INFORMATION_ARCHITECTURE.md`
 8. `ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.md`
-9. `ux-plan/REACT_LEGACY_UI_PARITY_CONTRACT.turkce.md`
-10. `workflows/MASTER_WORKFLOW.md`
-11. `workflows/SURVEILLANCE_PLANNING_WORKFLOW.md`
-12. `workflows/AUDIT_CHECKLIST_WORKFLOW.md`
-13. `workflows/FINDING_CAP_EVIDENCE_WORKFLOW.md`
-14. `workflows/REMINDERS_AND_ESCALATION_WORKFLOW.md`
-15. `modules/`
-16. `screen-specs/SCREEN_INVENTORY_AND_FORMS.md`
-17. `screen-specs/DEPARTMENT_MANAGER_WORKSPACES.md`
-18. `data-and-rules/CONCEPTUAL_DATA_MODEL.md`
-19. `data-and-rules/STATUS_PERMISSION_SECURITY.md`
-20. `data-and-rules/PRODUCTION_CONTRACT_VOCABULARY.md`
-21. `analytics/OVERSIGHT_HEALTH_INDEX_AND_KPIS.md`
-22. `analytics/REPORT_CATALOG.md`
-23. `scenarios/DEMO_SCENARIO_OPERATOR_AUDIT.md`
-24. `scenarios/OTHER_DOMAIN_SCENARIOS_AND_EDGE_CASES.md`
-25. `references/GLOSSARY_AND_SOURCE_NOTES.md`
+9. `workflows/MASTER_WORKFLOW.md`
+10. `workflows/SURVEILLANCE_PLANNING_WORKFLOW.md`
+11. `workflows/AUDIT_CHECKLIST_WORKFLOW.md`
+12. `workflows/FINDING_CAP_EVIDENCE_WORKFLOW.md`
+13. `workflows/REMINDERS_AND_ESCALATION_WORKFLOW.md`
+14. `modules/`
+15. `screen-specs/SCREEN_INVENTORY_AND_FORMS.md`
+16. `screen-specs/DEPARTMENT_MANAGER_WORKSPACES.md`
+17. `data-and-rules/CONCEPTUAL_DATA_MODEL.md`
+18. `data-and-rules/STATUS_PERMISSION_SECURITY.md`
+19. `data-and-rules/PRODUCTION_CONTRACT_VOCABULARY.md`
+20. `analytics/OVERSIGHT_HEALTH_INDEX_AND_KPIS.md`
+21. `analytics/REPORT_CATALOG.md`
+22. `scenarios/DEMO_SCENARIO_OPERATOR_AUDIT.md`
+23. `scenarios/OTHER_DOMAIN_SCENARIOS_AND_EDGE_CASES.md`
+24. `references/GLOSSARY_AND_SOURCE_NOTES.md`
 
 ## Folder Map
 

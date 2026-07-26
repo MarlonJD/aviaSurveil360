@@ -541,6 +541,10 @@ export class MockBackendEngine implements DemoBackend {
             title,
             body: `${message.subject} — open the authorized message record for details.`,
             readAt: null,
+            emailDeliveryStatus: "NOT_CONFIGURED",
+            emailDeliveryAttempts: 0,
+            emailAcceptedAt: null,
+            emailNextAttemptAt: null,
             revision: 1,
           });
         }
@@ -1095,6 +1099,20 @@ export class MockBackendEngine implements DemoBackend {
           nextCursor: null,
         };
       });
+    },
+    requestUserLifecycle: async () => {
+      requireDemoCapability(this.principal, "adminWorkspace");
+      requireRole(this.principal, ["admin"], "Admin Preview authority is required for Administration workspace data.");
+      throw new BackendInvariantError(
+        "Keycloak user lifecycle commands are unavailable in the browser-local demo profile.",
+      );
+    },
+    getUserLifecycleRequest: async () => {
+      requireDemoCapability(this.principal, "adminWorkspace");
+      requireRole(this.principal, ["admin"], "Admin Preview authority is required for Administration workspace data.");
+      throw new BackendInvariantError(
+        "Keycloak user lifecycle status is unavailable in the browser-local demo profile.",
+      );
     },
     listOrganizations: async ({ search = "", organizationType = "", status = "", scope = "" }) => {
       requireDemoCapability(this.principal, "adminWorkspace");

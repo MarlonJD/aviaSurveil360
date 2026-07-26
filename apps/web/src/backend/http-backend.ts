@@ -7,6 +7,10 @@ import type {
   FieldSyncOperation,
 } from "./backend";
 import {
+  activeBrowserRequestHeaders,
+  recordActiveBrowserAPIOutcome,
+} from "../telemetry/browser-telemetry";
+import {
   mapAdminAccessDirectoryEntry,
   mapAdminInspectionPackage,
   mapAdminOrganization,
@@ -66,6 +70,7 @@ import {
   mapSubmitPlanningIntake,
   mapSyncPull,
   mapTeamMember,
+  mapUserLifecycleRequest,
   mapVisibleActionResult,
 } from "./transport-mappers";
 
@@ -212,8 +217,13 @@ export function createHttpBackend(
     options: BackendRequestOptions = {},
   ): Promise<T> {
     const method = requestInput.method ?? "GET";
+    const telemetryOperation =
+      method === "GET" ? "read" : "command";
     const headers = new Headers({ Accept: "application/json" });
     for (const [name, value] of Object.entries(requestInput.headers ?? {})) {
+      headers.set(name, value);
+    }
+    for (const [name, value] of Object.entries(activeBrowserRequestHeaders())) {
       headers.set(name, value);
     }
     if (requestInput.body !== undefined) {
@@ -245,10 +255,13 @@ export function createHttpBackend(
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         if (timeoutController?.signal.aborted && !options.signal?.aborted) {
+          recordActiveBrowserAPIOutcome(telemetryOperation, "failed");
           throw new BackendTimeoutError();
         }
+        recordActiveBrowserAPIOutcome(telemetryOperation, "canceled");
         throw new BackendCancelledError();
       }
+      recordActiveBrowserAPIOutcome(telemetryOperation, "failed");
       throw error;
     } finally {
       if (timeoutHandle) clearTimeout(timeoutHandle);
@@ -257,6 +270,7 @@ export function createHttpBackend(
     const requestId = response.headers.get("x-request-id");
     const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
     if (!contentType.includes("application/json") && !contentType.includes("application/problem+json")) {
+      recordActiveBrowserAPIOutcome(telemetryOperation, "failed");
       throw new BackendProtocolError(
         `Backend response ${response.status} did not use a JSON content type.`,
         requestId,
@@ -267,9 +281,11 @@ export function createHttpBackend(
     try {
       body = await response.json();
     } catch {
+      recordActiveBrowserAPIOutcome(telemetryOperation, "failed");
       throw new BackendProtocolError("Backend response contained invalid JSON.", requestId);
     }
     if (!response.ok) {
+      recordActiveBrowserAPIOutcome(telemetryOperation, "failed");
       const problem = parseProblem(body, response.status);
       const correlatedRequestId = problem?.requestId ?? requestId;
       if (response.status === 401) {
@@ -289,6 +305,7 @@ export function createHttpBackend(
         problem,
       );
     }
+    recordActiveBrowserAPIOutcome(telemetryOperation, "succeeded");
     return body as T;
   }
 
@@ -1008,6 +1025,35 @@ export function createHttpBackend(
           nextCursor: output.nextCursor,
         };
       },
+      requestUserLifecycle: async (input, options) =>
+        mapUserLifecycleRequest(
+          await request<Schemas["UserLifecycleRequestView"]>(
+            "/v1/admin/user-lifecycle-requests",
+            {
+              method: "POST",
+              headers: { "Idempotency-Key": input.idempotencyKey },
+              body: {
+                operationId: input.idempotencyKey,
+                idempotencyKey: input.idempotencyKey,
+                subjectId: input.subjectId ?? null,
+                action: input.action,
+                roles: input.roles,
+                organizationId: input.organizationId,
+                email: input.email ?? null,
+                displayName: input.displayName ?? null,
+              } satisfies Schemas["RequestUserLifecycleInput"],
+            },
+            options,
+          ),
+        ),
+      getUserLifecycleRequest: async ({ requestId }, options) =>
+        mapUserLifecycleRequest(
+          await request<Schemas["UserLifecycleRequestView"]>(
+            `/v1/admin/user-lifecycle-requests/${encodeURIComponent(requestId)}`,
+            {},
+            options,
+          ),
+        ),
       listOrganizations: async (input, options) => {
         const output = await request<Schemas["AdminOrganizationPage"]>(
           appendQuery("/v1/admin/organizations", input),

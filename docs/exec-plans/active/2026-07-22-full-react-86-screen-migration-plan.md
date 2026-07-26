@@ -115,7 +115,7 @@ activate HTTP without redesigning components.
   explicit local state with a visible durable effect.
 - Add tracked, hash-verified legacy baselines and decoded-pixel comparison for
   86 routes × 3 viewports.
-- Produce synchronized English/Turkish evidence and update the plan lifecycle.
+- Produce canonical English evidence and update the plan lifecycle.
 
 ## Assumptions
 
@@ -647,9 +647,7 @@ finding remains. Independent review is `not run`.
 **Files**
 
 - Create `docs/demo-evidence/REACT_86_SCREEN_DEMO_2026-07-22.md`
-- Create `docs/demo-evidence/REACT_86_SCREEN_DEMO_2026-07-22.turkce.md`
 - Modify `docs/demo-evidence/BUILD_SUMMARY.md`
-- Modify `docs/demo-evidence/BUILD_SUMMARY.turkce.md`
 - Modify `docs/index.md`
 - Modify `MANIFEST.md`
 - Modify `docs/exec-plans/index.md`

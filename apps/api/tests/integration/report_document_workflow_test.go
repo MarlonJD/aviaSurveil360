@@ -332,8 +332,19 @@ func TestReportDocumentHTTPUsesExactIdentityAndAuditeeSafeProjections(t *testing
 		t.Fatalf("seed unsafe Report approval: %v", err)
 	}
 
+	objects := newMemoryObjectStore()
+	documentService := documents.NewService(
+		pool,
+		objects,
+		documents.Dependencies{
+			Renderer: documents.DeterministicPDFRenderer{},
+			Bucket:   "generated-documents", Clock: func() time.Time { return canonicalNow },
+			WorkerID: "document-http-test",
+		},
+	)
 	api := httpapi.NewCanonicalAPI(httpapi.CanonicalAPIDependencies{
-		Pool: pool, Application: testService(pool), Clock: func() time.Time { return canonicalNow },
+		Pool: pool, Application: testService(pool), Documents: documentService,
+		Clock: func() time.Time { return canonicalNow },
 	})
 	handler := httpapi.NewCanonicalTestBoundary("task-7-token").Protect(api.Handler())
 	request := func(method, path, body, subjectID string) *httptest.ResponseRecorder {
@@ -417,6 +428,25 @@ func TestReportDocumentHTTPUsesExactIdentityAndAuditeeSafeProjections(t *testing
 		!strings.Contains(issued.Body.String(), `"findingIds":[]`) {
 		t.Fatalf("issue Report status=%d body=%s", issued.Code, issued.Body.String())
 	}
+	pendingDocument := request(
+		http.MethodGet,
+		"/v1/documents/RPT-CAB-2026-001-V1",
+		"",
+		"USR-AUDITEE-FLY",
+	)
+	if pendingDocument.Code != http.StatusOK ||
+		!strings.Contains(pendingDocument.Body.String(), `"renderStatus":"PENDING"`) ||
+		strings.Contains(pendingDocument.Body.String(), `"downloadUrl"`) {
+		t.Fatalf(
+			"pending generated Document status=%d body=%s",
+			pendingDocument.Code,
+			pendingDocument.Body.String(),
+		)
+	}
+	processed, err := documentService.ProcessNext(context.Background())
+	if err != nil || !processed {
+		t.Fatalf("process HTTP generated Document = %t, err %v", processed, err)
+	}
 
 	for _, check := range []struct {
 		path       string
@@ -444,14 +474,23 @@ func TestReportDocumentHTTPUsesExactIdentityAndAuditeeSafeProjections(t *testing
 				`"id":"RPT-CAB-2026-001-V1"`,
 				`"publicReviewResult":"RELEASED"`,
 				`"downloadFileName":"RPT-CAB-2026-001.pdf"`,
+				`"renderStatus":"SUCCEEDED"`,
 			},
-			prohibited: []string{"RPT-UNSAFE-FINDING-V1", "FND-SKYCARGO-2026-099"},
+			prohibited: []string{
+				"RPT-UNSAFE-FINDING-V1", "FND-SKYCARGO-2026-099", `"downloadUrl"`,
+			},
 		},
 		{
 			path: "/v1/documents/RPT-CAB-2026-001-V1",
 			required: []string{
 				`"id":"RPT-CAB-2026-001-V1"`,
 				`"kind":"REPORT"`,
+				`"renderStatus":"SUCCEEDED"`,
+				`"documentVersionId":`,
+				`"downloadUrl":"memory://download/generated-documents/`,
+				`"rendererHash":"sha256:`,
+				`"templateHash":"sha256:`,
+				`"sourceHash":"sha256:`,
 			},
 		},
 	} {

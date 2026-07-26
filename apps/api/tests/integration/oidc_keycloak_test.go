@@ -18,10 +18,22 @@ import (
 )
 
 func TestPinnedLocalKeycloakCompletesRealAuthorizationCodePKCEFlow(t *testing.T) {
-	issuerURL := requiredTestEnv(t, "AVIA_TEST_OIDC_ISSUER_URL")
-	clientID := requiredTestEnv(t, "AVIA_TEST_OIDC_CLIENT_ID")
-	clientSecret := requiredTestEnv(t, "AVIA_TEST_OIDC_CLIENT_SECRET")
-	redirectURL := requiredTestEnv(t, "AVIA_TEST_OIDC_REDIRECT_URL")
+	oidcEnv, missing := configuredOIDCTestEnv()
+	if len(oidcEnv) == 0 {
+		t.Skip("runtime-provisioned OIDC provider is not configured")
+	}
+	if len(missing) > 0 {
+		t.Fatalf("partial OIDC test configuration; missing %s", strings.Join(missing, ", "))
+	}
+	issuerURL := oidcEnv["AVIA_TEST_OIDC_ISSUER_URL"]
+	clientID := oidcEnv["AVIA_TEST_OIDC_CLIENT_ID"]
+	clientSecret := oidcEnv["AVIA_TEST_OIDC_CLIENT_SECRET"]
+	redirectURL := oidcEnv["AVIA_TEST_OIDC_REDIRECT_URL"]
+	username := strings.TrimSpace(os.Getenv("AVIA_TEST_OIDC_USERNAME"))
+	password := strings.TrimSpace(os.Getenv("AVIA_TEST_OIDC_PASSWORD"))
+	if username == "" || password == "" {
+		t.Skip("runtime-provisioned OIDC test credentials are not configured")
+	}
 	provider, err := identity.NewRemoteOIDCProvider(context.Background(), identity.RemoteOIDCConfig{
 		IssuerURL: issuerURL, ClientID: clientID, ClientSecret: clientSecret, RedirectURL: redirectURL,
 	})
@@ -58,8 +70,8 @@ func TestPinnedLocalKeycloakCompletesRealAuthorizationCodePKCEFlow(t *testing.T)
 	}
 	actionURL := html.UnescapeString(string(actionMatch[1]))
 	values := url.Values{
-		"username":     {"inspector.local"},
-		"password":     {"LocalInspectorPass123!"},
+		"username":     {username},
+		"password":     {password},
 		"credentialId": {""},
 	}
 	client.CheckRedirect = func(request *http.Request, _ []*http.Request) error {
@@ -100,13 +112,49 @@ func TestPinnedLocalKeycloakCompletesRealAuthorizationCodePKCEFlow(t *testing.T)
 	}
 }
 
-func requiredTestEnv(t *testing.T, key string) string {
-	t.Helper()
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		t.Fatalf("%s is required; run ./scripts/test-http-profile.sh", key)
+func configuredOIDCTestEnv() (map[string]string, []string) {
+	keys := []string{
+		"AVIA_TEST_OIDC_ISSUER_URL",
+		"AVIA_TEST_OIDC_CLIENT_ID",
+		"AVIA_TEST_OIDC_CLIENT_SECRET",
+		"AVIA_TEST_OIDC_REDIRECT_URL",
 	}
-	return value
+	values := make(map[string]string, len(keys))
+	missing := make([]string, 0, len(keys))
+	for _, key := range keys {
+		value := strings.TrimSpace(os.Getenv(key))
+		if value == "" {
+			missing = append(missing, key)
+			continue
+		}
+		values[key] = value
+	}
+	if len(values) == 0 {
+		return nil, nil
+	}
+	return values, missing
+}
+
+func TestOIDCTestConfigurationIsAllOrNothing(t *testing.T) {
+	keys := []string{
+		"AVIA_TEST_OIDC_ISSUER_URL",
+		"AVIA_TEST_OIDC_CLIENT_ID",
+		"AVIA_TEST_OIDC_CLIENT_SECRET",
+		"AVIA_TEST_OIDC_REDIRECT_URL",
+	}
+	for _, key := range keys {
+		t.Setenv(key, "")
+	}
+	values, missing := configuredOIDCTestEnv()
+	if values != nil || missing != nil {
+		t.Fatalf("empty OIDC test configuration = values %v, missing %v", values, missing)
+	}
+
+	t.Setenv("AVIA_TEST_OIDC_ISSUER_URL", "https://identity.example.test/realms/avia")
+	values, missing = configuredOIDCTestEnv()
+	if len(values) != 1 || values["AVIA_TEST_OIDC_ISSUER_URL"] == "" || len(missing) != 3 {
+		t.Fatalf("partial OIDC test configuration = values %v, missing %v", values, missing)
+	}
 }
 
 func containsIdentityRole(roles []identity.Role, expected identity.Role) bool {

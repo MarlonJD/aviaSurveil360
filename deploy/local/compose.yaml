@@ -1,0 +1,726 @@
+name: aviasurveil360-local
+
+x-runtime-security: &runtime-security
+  init: true
+  read_only: true
+  stop_grace_period: 15s
+  pids_limit: 256
+  deploy:
+    resources:
+      limits:
+        cpus: "2"
+        memory: 2G
+        pids: 256
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+
+x-health-defaults: &health-defaults
+  interval: 5s
+  timeout: 3s
+  retries: 30
+  start_period: 10s
+
+services:
+  gateway:
+    <<: *runtime-security
+    image: aviasurveil360/gateway:local
+    build:
+      context: ../..
+      dockerfile: deploy/local/gateway/Dockerfile
+      target: gateway
+    profiles: [demo, full]
+    user: "1000:1000"
+    environment:
+      AVIA_WEB_UPSTREAM: web:8080
+      AVIA_API_UPSTREAM: api:8080
+      AVIA_IDENTITY_UPSTREAM: keycloak:8080
+    ports:
+      - target: 8443
+        published: "${AVIA_LOCAL_HTTPS_PORT:-8443}"
+        host_ip: 127.0.0.1
+        protocol: tcp
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    tmpfs:
+      - /tmp:mode=1777
+    networks:
+      - edge
+      - frontend
+      - identity
+      - platform
+    healthcheck:
+      <<: *health-defaults
+      test: [CMD, /healthcheck, https://localhost:8443/]
+    restart: unless-stopped
+
+  web-demo:
+    <<: *runtime-security
+    image: aviasurveil360/web-demo:local
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+      target: demo
+    profiles: [demo]
+    user: "10001:10001"
+    tmpfs:
+      - /tmp:mode=1777
+    networks:
+      frontend:
+        aliases:
+          - web
+    healthcheck:
+      <<: *health-defaults
+      test: [CMD, /web-server, healthcheck]
+    restart: unless-stopped
+
+  web-http:
+    <<: *runtime-security
+    image: aviasurveil360/web-http:local
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+      target: http
+    profiles: [full]
+    user: "10001:10001"
+    tmpfs:
+      - /tmp:mode=1777
+    networks:
+      frontend:
+        aliases:
+          - web
+    healthcheck:
+      <<: *health-defaults
+      test: [CMD, /web-server, healthcheck]
+    restart: unless-stopped
+
+  api:
+    <<: *runtime-security
+    image: aviasurveil360/api:local
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+      target: api
+    profiles: [full]
+    user: "10001:10001"
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+    environment:
+      AVIA_ENVIRONMENT: production
+      AVIA_HTTP_ADDRESS: 0.0.0.0:8080
+      AVIA_DATABASE_HOST: postgres
+      AVIA_DATABASE_PORT: "5432"
+      AVIA_DATABASE_NAME: aviasurveil360
+      AVIA_DATABASE_USER: aviasurveil360
+      AVIA_DATABASE_PASSWORD_FILE: /run/secrets/app_database_password
+      AVIA_OIDC_ISSUER_URL: "https://localhost:${AVIA_LOCAL_HTTPS_PORT:-8443}/identity/realms/aviasurveil360"
+      AVIA_OIDC_DISCOVERY_URL: http://keycloak:8080/identity/realms/aviasurveil360
+      AVIA_OIDC_DISCOVERY_PRIVATE_NETWORK: "true"
+      AVIA_OIDC_CLIENT_ID: aviasurveil360-web
+      AVIA_OIDC_CLIENT_SECRET_FILE: /run/secrets/oidc_client_secret
+      AVIA_OIDC_REDIRECT_URL: "https://localhost:${AVIA_LOCAL_HTTPS_PORT:-8443}/auth/callback"
+      AVIA_SESSION_ENCRYPTION_KEY_FILE: /run/secrets/session_encryption_key
+      AVIA_OBJECT_STORE_ENDPOINT: minio:9000
+      AVIA_OBJECT_STORE_PUBLIC_ENDPOINT: "localhost:${AVIA_LOCAL_HTTPS_PORT:-8443}"
+      AVIA_OBJECT_STORE_ACCESS_KEY_FILE: /run/secrets/minio_api_access_key
+      AVIA_OBJECT_STORE_SECRET_KEY_FILE: /run/secrets/minio_api_secret_key
+      AVIA_OBJECT_STORE_TLS: "false"
+      AVIA_OBJECT_STORE_PUBLIC_TLS: "true"
+      AVIA_OBJECT_STORE_PRIVATE_NETWORK: "true"
+      AVIA_OBJECT_STORE_REGION: local
+      AVIA_OBJECT_STORE_CORS_ORIGINS: "https://localhost:${AVIA_LOCAL_HTTPS_PORT:-8443}"
+      AVIA_OBJECT_STORE_QUARANTINE_BUCKET: evidence-quarantine
+      AVIA_OBJECT_STORE_CANONICAL_BUCKET: evidence-clean
+      AVIA_OBJECT_STORE_ATTACHMENT_BUCKET: inspection-attachments
+      AVIA_OBJECT_STORE_DOCUMENT_BUCKET: generated-documents
+      AVIA_SCANNER_MODE: clamav
+      AVIA_CLAMAV_ADDRESS: clamav:3310
+      AVIA_CLAMAV_MAX_SIGNATURE_AGE: 48h
+      AVIA_IDENTITY_HEALTH_URL: http://keycloak:8080/identity/realms/aviasurveil360/.well-known/openid-configuration
+      AVIA_GOTENBERG_HEALTH_URL: http://gotenberg:3000/health
+      AVIA_SMTP_HEALTH_ADDRESS: mailpit:1025
+      AVIA_RUNTIME_HEALTH_TIMEOUT: 1s
+    configs:
+      - source: application_config
+        target: /etc/aviasurveil360/application.yaml
+        mode: 0444
+    secrets:
+      - app_database_password
+      - minio_api_access_key
+      - minio_api_secret_key
+      - oidc_client_secret
+      - session_encryption_key
+    tmpfs:
+      - /tmp:mode=1777
+    networks:
+      - frontend
+      - database
+      - identity
+      - platform
+    healthcheck:
+      <<: *health-defaults
+      test: [CMD, wget, --quiet, --output-document=/dev/null, http://127.0.0.1:8080/health/ready]
+    restart: unless-stopped
+
+  worker:
+    <<: *runtime-security
+    image: aviasurveil360/worker:local
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+      target: worker
+    profiles: [full]
+    user: "10001:10001"
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+      gotenberg:
+        condition: service_started
+      mailpit:
+        condition: service_started
+    environment:
+      AVIA_ENVIRONMENT: production
+      AVIA_DATABASE_HOST: postgres
+      AVIA_DATABASE_PORT: "5432"
+      AVIA_DATABASE_NAME: aviasurveil360
+      AVIA_DATABASE_USER: aviasurveil360
+      AVIA_DATABASE_PASSWORD_FILE: /run/secrets/app_database_password
+      AVIA_KEYCLOAK_ADMIN_URL: http://keycloak:8080/identity
+      AVIA_KEYCLOAK_REALM: aviasurveil360
+      AVIA_KEYCLOAK_ADMIN_USERNAME: local-bootstrap-admin
+      AVIA_KEYCLOAK_ADMIN_PASSWORD_FILE: /run/secrets/keycloak_bootstrap_admin_password
+      AVIA_OIDC_ISSUER_URL: "https://localhost:${AVIA_LOCAL_HTTPS_PORT:-8443}/identity/realms/aviasurveil360"
+      AVIA_OIDC_CLIENT_ID: aviasurveil360-web
+      AVIA_OIDC_CLIENT_SECRET_FILE: /run/secrets/oidc_client_secret
+      AVIA_OIDC_REDIRECT_URL: "https://localhost:${AVIA_LOCAL_HTTPS_PORT:-8443}/auth/callback"
+      AVIA_SESSION_ENCRYPTION_KEY_FILE: /run/secrets/session_encryption_key
+      AVIA_OBJECT_STORE_ENDPOINT: minio:9000
+      AVIA_OBJECT_STORE_PUBLIC_ENDPOINT: "localhost:${AVIA_LOCAL_HTTPS_PORT:-8443}"
+      AVIA_OBJECT_STORE_ACCESS_KEY_FILE: /run/secrets/minio_worker_access_key
+      AVIA_OBJECT_STORE_SECRET_KEY_FILE: /run/secrets/minio_worker_secret_key
+      AVIA_OBJECT_STORE_TLS: "false"
+      AVIA_OBJECT_STORE_PUBLIC_TLS: "true"
+      AVIA_OBJECT_STORE_PRIVATE_NETWORK: "true"
+      AVIA_OBJECT_STORE_REGION: local
+      AVIA_OBJECT_STORE_CORS_ORIGINS: "https://localhost:${AVIA_LOCAL_HTTPS_PORT:-8443}"
+      AVIA_OBJECT_STORE_QUARANTINE_BUCKET: evidence-quarantine
+      AVIA_OBJECT_STORE_CANONICAL_BUCKET: evidence-clean
+      AVIA_OBJECT_STORE_ATTACHMENT_BUCKET: inspection-attachments
+      AVIA_OBJECT_STORE_DOCUMENT_BUCKET: generated-documents
+      AVIA_SCANNER_MODE: clamav
+      AVIA_CLAMAV_ADDRESS: clamav:3310
+      AVIA_CLAMAV_MAX_SIGNATURE_AGE: 48h
+      AVIA_GOTENBERG_URL: http://gotenberg:3000
+      AVIA_GOTENBERG_TIMEOUT: 30s
+      AVIA_GOTENBERG_RENDERER_HASH: sha256:56c47f7b913f3b978554115a0191c4a9dcc2558f9090f27f3f13f28a7c2f8329
+      AVIA_SMTP_ADDRESS: mailpit:1025
+      AVIA_SMTP_FROM: no-reply@aviasurveil360.local
+      AVIA_SMTP_USERNAME: aviasurveil360
+      AVIA_SMTP_PASSWORD_FILE: /run/secrets/smtp_password
+      AVIA_SMTP_TIMEOUT: 10s
+      AVIA_SMTP_PRIVATE_NETWORK: "true"
+    configs:
+      - source: application_config
+        target: /etc/aviasurveil360/application.yaml
+        mode: 0444
+    secrets:
+      - app_database_password
+      - keycloak_bootstrap_admin_password
+      - minio_worker_access_key
+      - minio_worker_secret_key
+      - oidc_client_secret
+      - session_encryption_key
+      - smtp_password
+    tmpfs:
+      - /tmp:mode=1777
+    networks:
+      - database
+      - identity
+      - platform
+    healthcheck:
+      <<: *health-defaults
+      test: [CMD-SHELL, kill -0 1]
+    restart: unless-stopped
+
+  scheduler:
+    <<: *runtime-security
+    image: aviasurveil360/scheduler:local
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+      target: scheduler
+    profiles: [full]
+    user: "10001:10001"
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+    environment:
+      AVIA_ENVIRONMENT: production
+      AVIA_DATABASE_HOST: postgres
+      AVIA_DATABASE_PORT: "5432"
+      AVIA_DATABASE_NAME: aviasurveil360
+      AVIA_DATABASE_USER: aviasurveil360
+      AVIA_DATABASE_PASSWORD_FILE: /run/secrets/app_database_password
+    configs:
+      - source: application_config
+        target: /etc/aviasurveil360/application.yaml
+        mode: 0444
+    secrets:
+      - app_database_password
+    tmpfs:
+      - /tmp:mode=1777
+    networks:
+      - database
+    healthcheck:
+      <<: *health-defaults
+      test: [CMD-SHELL, test -f /tmp/scheduler-ready]
+    restart: unless-stopped
+
+  migration:
+    <<: *runtime-security
+    image: aviasurveil360/migration:local
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+      target: migration
+    profiles: [full]
+    user: "10001:10001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AVIA_DATABASE_HOST: postgres
+      AVIA_DATABASE_PORT: "5432"
+      AVIA_DATABASE_NAME: aviasurveil360
+      AVIA_DATABASE_USER: aviasurveil360
+      AVIA_DATABASE_PASSWORD_FILE: /run/secrets/app_database_password
+    secrets:
+      - app_database_password
+    tmpfs:
+      - /tmp:mode=1777
+    networks:
+      - database
+    restart: "no"
+
+  fixture-init:
+    <<: *runtime-security
+    image: aviasurveil360/migration:local
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+      target: migration
+    profiles: [test]
+    user: "10001:10001"
+    command: [fixture-init]
+    environment:
+      AVIA_CONFIG_FILE: /etc/aviasurveil360/application.yaml
+      AVIA_DATABASE_PASSWORD_FILE: /run/secrets/app_database_password
+    configs:
+      - source: application_config
+        target: /etc/aviasurveil360/application.yaml
+        mode: 0444
+    secrets:
+      - app_database_password
+    tmpfs:
+      - /tmp:mode=1777
+    networks:
+      - database
+      - platform
+    restart: "no"
+
+  postgres:
+    <<: *runtime-security
+    image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    profiles: [full, test, recovery]
+    user: "70:70"
+    environment:
+      POSTGRES_DB: aviasurveil360
+      POSTGRES_USER: aviasurveil360
+      POSTGRES_PASSWORD_FILE: /run/secrets/app_database_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    secrets:
+      - app_database_password
+    volumes:
+      - app-database:/var/lib/postgresql/data
+    tmpfs:
+      - /run/postgresql:uid=70,gid=70,mode=0770
+      - /tmp:mode=1777
+    networks:
+      - database
+    healthcheck:
+      <<: *health-defaults
+      timeout: 8s
+      test:
+        - CMD-SHELL
+        - >-
+          sleep 5;
+          pg_isready -U aviasurveil360 -d aviasurveil360 &&
+          psql -U aviasurveil360 -d aviasurveil360 -tAc 'SELECT 1' |
+          grep -qx 1
+    restart: unless-stopped
+
+  keycloak-postgres:
+    <<: *runtime-security
+    image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    profiles: [full]
+    user: "70:70"
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD_FILE: /run/secrets/keycloak_database_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    secrets:
+      - keycloak_database_password
+    volumes:
+      - keycloak-database:/var/lib/postgresql/data
+    tmpfs:
+      - /run/postgresql:uid=70,gid=70,mode=0770
+      - /tmp:mode=1777
+    networks:
+      - identity-database
+    healthcheck:
+      <<: *health-defaults
+      timeout: 8s
+      test:
+        - CMD-SHELL
+        - >-
+          sleep 5;
+          pg_isready -U keycloak -d keycloak &&
+          psql -U keycloak -d keycloak -tAc 'SELECT 1' |
+          grep -qx 1
+    restart: unless-stopped
+
+  keycloak:
+    <<: *runtime-security
+    image: aviasurveil360/keycloak:local
+    build:
+      context: ../..
+      dockerfile: deploy/local/keycloak/Dockerfile
+      target: keycloak
+    profiles: [full]
+    user: "1000:0"
+    entrypoint:
+      - /bin/sh
+      - /opt/aviasurveil360/keycloak-entrypoint.sh
+    command:
+      - start
+      - --optimized
+      - --import-realm
+      - --http-enabled=true
+      - "--hostname=https://localhost:${AVIA_LOCAL_HTTPS_PORT:-8443}/identity"
+      - --hostname-backchannel-dynamic=true
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD_FILE: /run/secrets/keycloak_database_password
+      KC_BOOTSTRAP_ADMIN_USERNAME: local-bootstrap-admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD_FILE: /run/secrets/keycloak_bootstrap_admin_password
+      KC_HTTP_RELATIVE_PATH: /identity
+      KC_PROXY_HEADERS: xforwarded
+    configs:
+      - source: keycloak_entrypoint
+        target: /opt/aviasurveil360/keycloak-entrypoint.sh
+        uid: "1000"
+        gid: "0"
+        mode: 0550
+    secrets:
+      - keycloak_bootstrap_admin_password
+      - keycloak_database_password
+      - source: keycloak_realm
+        target: /opt/keycloak/data/import/realm.json
+        uid: "1000"
+        gid: "0"
+        mode: 0400
+    tmpfs:
+      - /tmp:mode=1777
+      - /opt/keycloak/data/tmp:uid=1000,gid=0,mode=0770
+    networks:
+      - identity
+      - identity-database
+    healthcheck:
+      <<: *health-defaults
+      start_period: 30s
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000;
+          printf 'GET /identity/health/ready HTTP/1.1\r\nHost: 127.0.0.1:9000\r\nConnection: close\r\n\r\n' >&3;
+          grep -q 'HTTP/1.1 200 OK' <&3
+    restart: unless-stopped
+
+  minio-volume-init:
+    <<: *runtime-security
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    profiles: [full, test, recovery]
+    user: "0:0"
+    entrypoint: [/usr/bin/chown]
+    command: [-R, 1000:1000, /data]
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    network_mode: none
+    volumes:
+      - object-store:/data
+    restart: "no"
+
+  minio:
+    <<: *runtime-security
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    profiles: [full, test, recovery]
+    user: "1000:1000"
+    depends_on:
+      minio-volume-init:
+        condition: service_completed_successfully
+    entrypoint: [/bin/sh, /opt/aviasurveil360/minio-init.sh]
+    environment:
+      MINIO_ROOT_USER_FILE: /run/secrets/minio_root_user
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_root_password
+      MINIO_API_ACCESS_KEY_FILE: /run/secrets/minio_api_access_key
+      MINIO_API_SECRET_KEY_FILE: /run/secrets/minio_api_secret_key
+      MINIO_WORKER_ACCESS_KEY_FILE: /run/secrets/minio_worker_access_key
+      MINIO_WORKER_SECRET_KEY_FILE: /run/secrets/minio_worker_secret_key
+    configs:
+      - source: minio_init
+        target: /opt/aviasurveil360/minio-init.sh
+        uid: "1000"
+        gid: "1000"
+        mode: 0550
+    secrets:
+      - minio_api_access_key
+      - minio_api_secret_key
+      - minio_root_password
+      - minio_root_user
+      - minio_worker_access_key
+      - minio_worker_secret_key
+    volumes:
+      - object-store:/data
+    tmpfs:
+      - /tmp:mode=1777
+    networks:
+      - platform
+    healthcheck:
+      <<: *health-defaults
+      test: [CMD-SHELL, test -f /tmp/minio-initialized && curl --fail http://127.0.0.1:9000/minio/health/live]
+    restart: unless-stopped
+
+  clamav:
+    <<: *runtime-security
+    image: clamav/clamav:1.4.3@sha256:75fb5fd95fcbe1d7e6d240c369c1572b686ee2c95949d1042b5148de8eddebb4
+    profiles: [full]
+    user: "0:0"
+    init: false
+    entrypoint:
+      - /bin/sh
+      - /opt/aviasurveil360/clamav-entrypoint.sh
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    volumes:
+      - clamav-signatures:/var/lib/clamav
+    configs:
+      - source: clamav_entrypoint
+        target: /opt/aviasurveil360/clamav-entrypoint.sh
+        uid: "0"
+        gid: "0"
+        mode: 0550
+    tmpfs:
+      - /run/clamav:uid=0,gid=101,mode=0770
+      - /run/lock:mode=1777
+      - /var/log/clamav:uid=0,gid=101,mode=0770
+      - /tmp:mode=1777
+    networks:
+      - platform
+      - signature-updates
+    healthcheck:
+      <<: *health-defaults
+      start_period: 60s
+      test: [CMD, clamdscan, --ping, "1"]
+    restart: unless-stopped
+
+  mailpit-volume-init:
+    <<: *runtime-security
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    profiles: [full, tools]
+    user: "0:0"
+    entrypoint: [/usr/bin/chown]
+    command: [-R, 1000:1000, /data]
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    network_mode: none
+    volumes:
+      - mailpit-data:/data
+    restart: "no"
+
+  mailpit:
+    <<: *runtime-security
+    image: axllent/mailpit:v1.27.8@sha256:6abc8e633df15eaf785cfcf38bae48e66f64beecdc03121e249d0f9ec15f0707
+    profiles: [full]
+    user: "1000:1000"
+    depends_on:
+      mailpit-volume-init:
+        condition: service_completed_successfully
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_AUTH_FILE: /run/secrets/smtp_auth_file
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+      MP_SMTP_REQUIRE_STARTTLS: "false"
+      MP_SMTP_DISABLE_RDNS: "true"
+    secrets:
+      - smtp_auth_file
+    volumes:
+      - mailpit-data:/data
+    tmpfs:
+      - /tmp:mode=1777
+    networks:
+      - platform
+    healthcheck:
+      <<: *health-defaults
+      test: [CMD, /mailpit, readyz]
+    restart: unless-stopped
+
+  mailpit-tools:
+    <<: *runtime-security
+    image: axllent/mailpit:v1.27.8@sha256:6abc8e633df15eaf785cfcf38bae48e66f64beecdc03121e249d0f9ec15f0707
+    profiles: [tools]
+    user: "1000:1000"
+    depends_on:
+      mailpit-volume-init:
+        condition: service_completed_successfully
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_AUTH_FILE: /run/secrets/smtp_auth_file
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+      MP_SMTP_REQUIRE_STARTTLS: "false"
+      MP_SMTP_DISABLE_RDNS: "true"
+    secrets:
+      - smtp_auth_file
+    ports:
+      - target: 1025
+        published: "${AVIA_LOCAL_MAILPIT_SMTP_PORT:-1025}"
+        host_ip: 127.0.0.1
+        protocol: tcp
+      - target: 8025
+        published: "${AVIA_LOCAL_MAILPIT_UI_PORT:-8025}"
+        host_ip: 127.0.0.1
+        protocol: tcp
+    volumes:
+      - mailpit-data:/data
+    tmpfs:
+      - /tmp:mode=1777
+    networks:
+      - platform
+      - tools
+    healthcheck:
+      <<: *health-defaults
+      test: [CMD, /mailpit, readyz]
+    restart: unless-stopped
+
+  gotenberg:
+    <<: *runtime-security
+    image: gotenberg/gotenberg:8.23.2@sha256:56c47f7b913f3b978554115a0191c4a9dcc2558f9090f27f3f13f28a7c2f8329
+    profiles: [full]
+    user: "1001:1001"
+    read_only: true
+    environment:
+      XDG_CONFIG_HOME: /tmp/.chromium
+      XDG_CACHE_HOME: /tmp/.chromium
+    command:
+      - gotenberg
+      - --api-port=3000
+      - --api-disable-health-check-logging=true
+      - --chromium-disable-routes=false
+    tmpfs:
+      - /tmp:uid=1001,gid=1001,mode=1777
+    networks:
+      - platform
+    healthcheck:
+      <<: *health-defaults
+      test: [CMD, curl, --fail, http://127.0.0.1:3000/health]
+    restart: unless-stopped
+
+configs:
+  application_config:
+    file: ./config/application.example.yaml
+  clamav_entrypoint:
+    file: ./clamav/entrypoint.sh
+  keycloak_entrypoint:
+    file: ./keycloak/entrypoint.sh
+  minio_init:
+    file: ./minio/init.sh
+
+secrets:
+  app_database_password:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/app_database_password
+  keycloak_bootstrap_admin_password:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/keycloak_bootstrap_admin_password
+  keycloak_database_password:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/keycloak_database_password
+  keycloak_realm:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/keycloak/realm.json
+  minio_api_access_key:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/minio_api_access_key
+  minio_api_secret_key:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/minio_api_secret_key
+  minio_root_password:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/minio_root_password
+  minio_root_user:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/minio_root_user
+  minio_worker_access_key:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/minio_worker_access_key
+  minio_worker_secret_key:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/minio_worker_secret_key
+  oidc_client_secret:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/oidc_client_secret
+  session_encryption_key:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/session_encryption_key
+  smtp_password:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/smtp_password
+  smtp_auth_file:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/smtp_auth_file
+
+networks:
+  edge:
+  frontend:
+    internal: true
+  database:
+    internal: true
+  identity:
+    internal: true
+  identity-database:
+    internal: true
+  platform:
+    internal: true
+  tools:
+  signature-updates:
+
+volumes:
+  app-database:
+  keycloak-database:
+  object-store:
+  clamav-signatures:
+  mailpit-data:
+  caddy-data:
+  caddy-config:

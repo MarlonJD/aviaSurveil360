@@ -1,0 +1,118 @@
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - https://localhost:*
+          allowed_headers:
+            - Content-Type
+            - traceparent
+            - tracestate
+            - X-Correlation-ID
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  filter/allowlisted_attributes:
+    error_mode: ignore
+    traces:
+      span:
+        - IsMatch(name, "(?i).*(authorization|password|token|cookie|session|internal_caa_note|evidence_bytes|message_body).*")
+    metrics:
+      metric:
+        - IsMatch(name, "(?i).*(authorization|password|token|cookie|session|internal_caa_note|evidence_bytes|message_body).*")
+    logs:
+      log_record:
+        - IsMatch(body.string, "(?i).*(authorization|password|token|cookie|session|internal_caa_note|evidence_bytes|message_body).*")
+
+  transform/redaction:
+    error_mode: ignore
+    trace_statements:
+      - context: resource
+        statements:
+          - keep_keys(attributes, ["service.name", "service.version", "service.instance.id", "deployment.environment.name", "build.profile"])
+      - context: span
+        statements:
+          - keep_keys(attributes, ["http.request.method", "http.route", "http.response.status_code", "operation.class", "module", "db.system.name", "db.operation.name", "job.kind", "queue", "adapter", "dependency.name", "required", "route.id", "build.profile", "navigation.type", "outcome.class", "correlation.id"])
+    metric_statements:
+      - context: resource
+        statements:
+          - keep_keys(attributes, ["service.name", "service.version", "service.instance.id", "deployment.environment.name", "build.profile"])
+      - context: datapoint
+        statements:
+          - keep_keys(attributes, ["http.request.method", "http.route", "http.response.status_code", "operation.class", "module", "db.system.name", "db.operation.name", "job.kind", "queue", "adapter", "dependency.name", "required", "route.id", "build.profile", "web_vital.name", "rating", "outcome.class", "backup.stanza", "backup.type", "recovery.component", "scenario"])
+    log_statements:
+      - context: resource
+        statements:
+          - keep_keys(attributes, ["service.name", "service.version", "service.instance.id", "deployment.environment.name", "build.profile"])
+      - context: log
+        statements:
+          - keep_keys(attributes, ["route.id", "build.profile", "error.class", "outcome.class", "correlation.id"])
+          - set(body, "redacted operational event")
+
+  batch:
+    send_batch_size: 512
+    timeout: 2s
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+    sending_queue:
+      enabled: true
+      queue_size: 1024
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+    sending_queue:
+      enabled: true
+      queue_size: 1024
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    namespace: aviasurveil
+    translation_strategy: UnderscoreEscapingWithoutSuffixes
+    resource_to_telemetry_conversion:
+      enabled: true
+
+service:
+  extensions:
+    - health_check
+  telemetry:
+    logs:
+      level: info
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors:
+        - memory_limiter
+        - filter/allowlisted_attributes
+        - transform/redaction
+        - batch
+      exporters: [otlp/tempo]
+    metrics:
+      receivers: [otlp]
+      processors:
+        - memory_limiter
+        - filter/allowlisted_attributes
+        - transform/redaction
+        - batch
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors:
+        - memory_limiter
+        - filter/allowlisted_attributes
+        - transform/redaction
+        - batch
+      exporters: [otlphttp/loki]

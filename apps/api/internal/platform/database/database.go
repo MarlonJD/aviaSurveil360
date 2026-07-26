@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/telemetry"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -15,10 +16,19 @@ type Pool struct {
 type TransactionFunc func(context.Context, pgx.Tx) error
 
 func Open(ctx context.Context, databaseURL string) (*Pool, error) {
+	return OpenWithTracer(ctx, databaseURL, nil)
+}
+
+func OpenWithTracer(
+	ctx context.Context,
+	databaseURL string,
+	tracer pgx.QueryTracer,
+) (*Pool, error) {
 	configuration, err := pgxpool.ParseConfig(databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse PostgreSQL configuration: %w", err)
 	}
+	configuration.ConnConfig.Tracer = tracer
 	pool, err := pgxpool.NewWithConfig(ctx, configuration)
 	if err != nil {
 		return nil, fmt.Errorf("open PostgreSQL pool: %w", err)
@@ -32,6 +42,15 @@ func WithinTransaction(ctx context.Context, pool *Pool, function TransactionFunc
 		return fmt.Errorf("begin PostgreSQL transaction: %w", err)
 	}
 	defer func() { _ = transaction.Rollback(ctx) }()
+	if traceParent := telemetry.TraceParentFromContext(ctx); traceParent != "" {
+		if _, err := transaction.Exec(
+			ctx,
+			"SELECT set_config('avia.traceparent', $1, true)",
+			traceParent,
+		); err != nil {
+			return fmt.Errorf("bind PostgreSQL trace context: %w", err)
+		}
+	}
 	if err := function(ctx, transaction); err != nil {
 		return err
 	}

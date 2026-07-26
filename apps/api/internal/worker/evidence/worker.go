@@ -1,7 +1,6 @@
 package evidenceworker
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -11,36 +10,19 @@ import (
 
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/database"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/objectstore"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/scanner"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/platform/telemetry"
 	"github.com/jackc/pgx/v5"
 )
 
-type ScanResult struct {
-	Clean  bool
-	Reason string
-}
-
-type Scanner interface {
-	Scan(context.Context, io.Reader) (ScanResult, error)
-}
-
-// SignatureScanner is deterministic and intentionally narrow. It is suitable
-// for the local candidate profile; production must provide an approved scanner.
-type SignatureScanner struct{}
-
-func (SignatureScanner) Scan(_ context.Context, reader io.Reader) (ScanResult, error) {
-	body, err := io.ReadAll(reader)
-	if err != nil {
-		return ScanResult{}, err
-	}
-	if bytes.Contains(body, []byte("EICAR-STANDARD-ANTIVIRUS-TEST-FILE")) {
-		return ScanResult{Clean: false, Reason: "deterministic test signature detected"}, nil
-	}
-	return ScanResult{Clean: true}, nil
-}
+type ScanResult = scanner.Result
+type Scanner = scanner.Scanner
+type SignatureScanner = scanner.SignatureScanner
 
 type Config struct {
 	WorkerID            string
 	CanonicalBucket     string
+	AttachmentBucket    string
 	LeaseDuration       time.Duration
 	RetryDelay          time.Duration
 	ScanTimeout         time.Duration
@@ -56,6 +38,7 @@ type Worker struct {
 	scanner             Scanner
 	workerID            string
 	canonicalBucket     string
+	attachmentBucket    string
 	leaseDuration       time.Duration
 	retryDelay          time.Duration
 	scanTimeout         time.Duration
@@ -86,32 +69,69 @@ func New(pool *database.Pool, objects objectstore.Store, scanner Scanner, config
 	if maximumAttempts <= 0 {
 		maximumAttempts = 3
 	}
+	attachmentBucket := config.AttachmentBucket
+	if attachmentBucket == "" {
+		attachmentBucket = config.CanonicalBucket
+	}
 	return &Worker{
 		pool: pool, objects: objects, scanner: scanner, workerID: config.WorkerID,
-		canonicalBucket: config.CanonicalBucket, leaseDuration: leaseDuration,
-		retryDelay: retryDelay, scanTimeout: scanTimeout, maximumAttempts: maximumAttempts, clock: clock,
+		canonicalBucket: config.CanonicalBucket, attachmentBucket: attachmentBucket,
+		leaseDuration: leaseDuration,
+		retryDelay:    retryDelay, scanTimeout: scanTimeout, maximumAttempts: maximumAttempts, clock: clock,
 		idGenerator: config.IDGenerator, afterExternalEffect: config.AfterExternalEffect,
 	}
 }
 
 type claim struct {
-	ID           string
-	Topic        string
-	AggregateID  string
-	AttemptCount int
+	ID            string
+	Topic         string
+	AggregateID   string
+	AttemptCount  int
+	TraceParent   string
+	CorrelationID string
+	AvailableAt   time.Time
 }
 
-func (worker *Worker) ProcessNext(ctx context.Context) (bool, error) {
+func (worker *Worker) ProcessNext(
+	ctx context.Context,
+) (processed bool, resultErr error) {
 	claimed, ok, err := worker.claimNext(ctx)
 	if err != nil || !ok {
 		return ok, err
 	}
+	jobContext, span := telemetry.StartPersistedJob(
+		ctx,
+		claimed.TraceParent,
+		claimed.CorrelationID,
+		"scan",
+		"clamav",
+	)
+	queue := "evidence"
+	if claimed.Topic == "inspection_attachment.scan_requested" {
+		queue = "attachment"
+	}
+	telemetry.RecordPersistedOutboxReadyAge(
+		jobContext,
+		"scan",
+		queue,
+		claimed.AvailableAt,
+		worker.clock().UTC(),
+	)
+	defer func() {
+		telemetry.FinishPersistedJob(
+			jobContext,
+			span,
+			"scan",
+			"clamav",
+			resultErr,
+		)
+	}()
 	var processErr error
 	switch claimed.Topic {
 	case "evidence.scan_requested":
-		processErr = worker.processEvidence(ctx, claimed)
+		processErr = worker.processEvidence(jobContext, claimed)
 	case "inspection_attachment.scan_requested":
-		processErr = worker.processAttachment(ctx, claimed)
+		processErr = worker.processAttachment(jobContext, claimed)
 	default:
 		processErr = fmt.Errorf("unsupported scan topic %q", claimed.Topic)
 	}
@@ -120,7 +140,7 @@ func (worker *Worker) ProcessNext(ctx context.Context) (bool, error) {
 		if errors.As(processErr, &crashWindow) {
 			return true, processErr
 		}
-		if err := worker.recordFailure(ctx, claimed, processErr); err != nil {
+		if err := worker.recordFailure(jobContext, claimed, processErr); err != nil {
 			return true, errors.Join(processErr, err)
 		}
 		return true, processErr
@@ -134,14 +154,25 @@ func (worker *Worker) claimNext(ctx context.Context) (claim, bool, error) {
 	now := worker.clock().UTC()
 	err := database.WithinTransaction(ctx, worker.pool, func(ctx context.Context, transaction pgx.Tx) error {
 		err := transaction.QueryRow(ctx, `
-			SELECT id, topic, aggregate_id, attempt_count
+			SELECT id, topic, aggregate_id, attempt_count,
+			       COALESCE(traceparent, ''),
+			       COALESCE(correlation_id, ''),
+			       available_at
 			FROM outbox_messages
 			WHERE topic IN ('evidence.scan_requested', 'inspection_attachment.scan_requested')
 			  AND delivered_at IS NULL AND terminal_state IS NULL AND available_at <= $1
 			  AND (lease_expires_at IS NULL OR lease_expires_at <= $1)
 			ORDER BY available_at, created_at, id
 			FOR UPDATE SKIP LOCKED LIMIT 1
-		`, now).Scan(&claimed.ID, &claimed.Topic, &claimed.AggregateID, &claimed.AttemptCount)
+		`, now).Scan(
+			&claimed.ID,
+			&claimed.Topic,
+			&claimed.AggregateID,
+			&claimed.AttemptCount,
+			&claimed.TraceParent,
+			&claimed.CorrelationID,
+			&claimed.AvailableAt,
+		)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
 		}
@@ -253,12 +284,14 @@ func (worker *Worker) finalizeEvidence(ctx context.Context, claimed claim, recor
 				INSERT INTO object_metadata (
 					id, aggregate_type, aggregate_id, organization_id, bucket_name, object_key, filename,
 					declared_media_type, detected_media_type, sha256, size_bytes, scan_status, object_state,
-					upload_id, created_at
-				) VALUES ($1, 'evidence_version', $2, $3, $4, $5, $6, $7, $7, $8, $9, 'CLEAN', 'CANONICAL', $10, $11)
+					upload_id, scan_engine_version, scan_signature_version, scanned_at, created_at
+				) VALUES ($1, 'evidence_version', $2, $3, $4, $5, $6, $7, $7, $8, $9, 'CLEAN', 'CANONICAL',
+					$10, $11, $12, $13, $14)
 				ON CONFLICT (object_key) DO UPDATE SET scan_status = 'CLEAN'
 				RETURNING id
 			`, canonicalMetadataID, claimed.AggregateID, record.OrganizationID, worker.canonicalBucket,
-				destinationKey, record.FileName, record.MediaType, record.SHA256, record.Size, record.UploadID, now).Scan(&canonicalMetadataID); err != nil {
+				destinationKey, record.FileName, record.MediaType, record.SHA256, record.Size, record.UploadID,
+				result.EngineVersion, result.SignatureVersion, result.ScannedAt, now).Scan(&canonicalMetadataID); err != nil {
 				return fmt.Errorf("record canonical Evidence object: %w", err)
 			}
 			if _, err := transaction.Exec(ctx, `
@@ -298,7 +331,12 @@ func (worker *Worker) finalizeEvidence(ctx context.Context, claimed claim, recor
 			reviewState = "PENDING_CAA_REVIEW"
 			afterFindingStatus = "PENDING_CAA_REVIEW"
 		}
-		if _, err := transaction.Exec(ctx, `UPDATE object_metadata SET scan_status = $2 WHERE id = $1`, record.SourceMetadata, scanState); err != nil {
+		if _, err := transaction.Exec(ctx, `
+			UPDATE object_metadata
+			SET scan_status = $2, scan_engine_version = $3,
+			    scan_signature_version = $4, scanned_at = $5
+			WHERE id = $1
+		`, record.SourceMetadata, scanState, result.EngineVersion, result.SignatureVersion, result.ScannedAt); err != nil {
 			return err
 		}
 		details, _ := json.Marshal(map[string]string{"scanState": scanState, "reviewState": reviewState})
@@ -364,29 +402,59 @@ func (worker *Worker) processAttachment(ctx context.Context, claimed claim) erro
 	if scanErr != nil || closeErr != nil {
 		return errors.Join(scanErr, closeErr)
 	}
-	destinationKey := fmt.Sprintf("organizations/%s/canonical-inspection-attachments/%s", record.OrganizationID, claimed.AggregateID)
+	destinationKey := fmt.Sprintf("organizations/%s/inspection-attachments/%s", record.OrganizationID, claimed.AggregateID)
 	if result.Clean {
 		err := worker.objects.Copy(ctx, objectstore.CopyRequest{
 			SourceBucket: record.SourceBucket, SourceKey: record.SourceKey,
-			DestinationBucket: worker.canonicalBucket, DestinationKey: destinationKey,
+			DestinationBucket: worker.attachmentBucket, DestinationKey: destinationKey,
 		})
 		if err != nil && !errors.Is(err, objectstore.ErrObjectAlreadyExists) {
 			return err
+		}
+		if worker.afterExternalEffect != nil {
+			if err := worker.afterExternalEffect(); err != nil {
+				return afterExternalEffectError{cause: err}
+			}
 		}
 	}
 	now := worker.clock().UTC()
 	return database.WithinTransaction(ctx, worker.pool, func(ctx context.Context, transaction pgx.Tx) error {
 		state := "QUARANTINED"
+		var canonicalMetadataID *string
 		if result.Clean {
 			state = "CLEAN"
+			canonicalID := worker.nextID("canonical-object")
+			if err := transaction.QueryRow(ctx, `
+				INSERT INTO object_metadata (
+					id, aggregate_type, aggregate_id, organization_id, bucket_name, object_key, filename,
+					declared_media_type, detected_media_type, sha256, size_bytes, scan_status, object_state,
+					upload_id, scan_engine_version, scan_signature_version, scanned_at, created_at
+				) VALUES ($1, 'inspection_attachment', $2, $3, $4, $5, $6, $7, $7, $8, $9,
+					'CLEAN', 'CANONICAL', $10, $11, $12, $13, $14)
+				ON CONFLICT (object_key) DO UPDATE SET scan_status = 'CLEAN'
+				RETURNING id
+			`, canonicalID, claimed.AggregateID, record.OrganizationID, worker.attachmentBucket,
+				destinationKey, record.FileName, record.MediaType, record.SHA256, record.Size,
+				record.UploadID, result.EngineVersion, result.SignatureVersion, result.ScannedAt, now,
+			).Scan(&canonicalID); err != nil {
+				return fmt.Errorf("record canonical Inspection Attachment object: %w", err)
+			}
+			canonicalMetadataID = &canonicalID
 		}
 		if _, err := transaction.Exec(ctx, `
-			UPDATE inspection_attachments SET scan_state = $2, revision = revision + 1, updated_at = $3
+			UPDATE inspection_attachments
+			SET scan_state = $2, canonical_object_metadata_id = $3,
+			    revision = revision + 1, updated_at = $4
 			WHERE id = $1 AND scan_state = 'PENDING'
-		`, claimed.AggregateID, state, now); err != nil {
+		`, claimed.AggregateID, state, canonicalMetadataID, now); err != nil {
 			return err
 		}
-		if _, err := transaction.Exec(ctx, `UPDATE object_metadata SET scan_status = $2 WHERE id = $1`, record.SourceMetadata, state); err != nil {
+		if _, err := transaction.Exec(ctx, `
+			UPDATE object_metadata
+			SET scan_status = $2, scan_engine_version = $3,
+			    scan_signature_version = $4, scanned_at = $5
+			WHERE id = $1
+		`, record.SourceMetadata, state, result.EngineVersion, result.SignatureVersion, result.ScannedAt); err != nil {
 			return err
 		}
 		return markDeliveredTx(ctx, transaction, claimed.ID, worker.workerID, now)

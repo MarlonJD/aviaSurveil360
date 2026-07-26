@@ -218,6 +218,36 @@ test("the minimal OpenAPI contract and canonical vocabulary exist", () => {
   assert.match(fs.readFileSync(vocabularyPath, "utf8"), /Canonical transport values/);
 });
 
+test("readiness exposes only closed named dependency states", () => {
+  const document = readRequiredJson(openApiPath);
+  const operation = document.paths["/health/ready"].get;
+  for (const status of ["200", "503"]) {
+    const response = operation.responses[status];
+    const schema = response.content?.["application/json"]?.schema;
+    assert.equal(
+      schema?.$ref,
+      "#/components/schemas/ReadinessResponse",
+      `readiness ${status} must use the safe named report`,
+    );
+  }
+  const report = document.components.schemas.ReadinessResponse;
+  const dependency = document.components.schemas.ReadinessDependency;
+  assert.equal(report.additionalProperties, false);
+  assert.deepEqual(report.required, ["status", "dependencies"]);
+  assert.deepEqual(report.properties.status.enum, [
+    "ready",
+    "degraded",
+    "not_ready",
+  ]);
+  assert.equal(dependency.additionalProperties, false);
+  assert.deepEqual(dependency.required, ["name", "required", "status"]);
+  assert.equal(
+    Object.hasOwn(dependency.properties, "error"),
+    false,
+    "readiness must not serialize downstream error details",
+  );
+});
+
 test("every frozen Plan 1 backend capability maps to a bundled operation ID", () => {
   const document = readRequiredJson(openApiPath);
   const bundledOperationIds = new Set(

@@ -2,7 +2,11 @@ import { defineConfig } from "@playwright/test";
 
 const e2eProfile = process.env.AVIA_E2E_PROFILE;
 const profile =
-  e2eProfile === "http"
+  e2eProfile === "local-demo"
+    ? "local-demo"
+    : e2eProfile === "local-full"
+      ? "local-full"
+      : e2eProfile === "http"
     ? "http"
     : e2eProfile === "oidc"
       ? "oidc"
@@ -20,7 +24,10 @@ const command =
         ? "VITE_AVIA_VISUAL_FIXTURES=1 npm run dev:demo -- --host 127.0.0.1 --port 4174 --strictPort"
     : "npm run dev:demo -- --host 127.0.0.1 --port 4174 --strictPort";
 const shouldStartWebServer =
-  profile !== "offline" && process.env.AVIA_UPDATE_LEGACY_BASELINES !== "1";
+  profile !== "offline" &&
+  profile !== "local-demo" &&
+  profile !== "local-full" &&
+  process.env.AVIA_UPDATE_LEGACY_BASELINES !== "1";
 const visualUse = {
   browserName: "chromium" as const,
   colorScheme: "light" as const,
@@ -35,16 +42,19 @@ const visualUse = {
 
 export default defineConfig({
   testDir: "./tests",
-  outputDir: "/private/tmp/aviasurveil360-react-playwright-results",
+  outputDir:
+    process.env.AVIA_PLAYWRIGHT_OUTPUT_DIR ??
+    "/private/tmp/aviasurveil360-react-playwright-results",
   fullyParallel: false,
   workers: 1,
   forbidOnly: true,
   retries: 0,
   reporter: [["line"]],
   use: {
-    baseURL: "http://127.0.0.1:4174",
+    baseURL: process.env.AVIA_E2E_BASE_URL ?? "http://127.0.0.1:4174",
     browserName: "chromium",
     headless: true,
+    ignoreHTTPSErrors: process.env.AVIA_E2E_IGNORE_HTTPS_ERRORS === "1",
     viewport: { width: 1440, height: 900 },
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
@@ -62,6 +72,14 @@ export default defineConfig({
           stderr: "pipe",
         },
   projects: [
+    {
+      name: "local-demo",
+      testMatch: ["e2e/local-demo-platform.spec.ts"],
+    },
+    {
+      name: "local-full",
+      testMatch: ["e2e/local-full-platform.spec.ts"],
+    },
     {
       name: "mock",
       testMatch: [
@@ -87,11 +105,14 @@ export default defineConfig({
         "e2e/offline-sync.http.spec.ts",
         "e2e/release-candidate-gates.spec.ts",
         "e2e/visible-action-contract.spec.ts",
+        "e2e/generated-document.http.spec.ts",
+        "e2e/notification-delivery.http.spec.ts",
+        "e2e/local-service-failures.http.spec.ts",
       ],
     },
     {
       name: "oidc",
-      testMatch: ["e2e/oidc-session.spec.ts"],
+      testMatch: ["e2e/oidc-mfa-provisioning.spec.ts"],
     },
     {
       name: "offline",

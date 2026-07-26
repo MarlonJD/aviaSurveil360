@@ -10,8 +10,12 @@ qa/
 .vercel
 
 # React candidate local dependencies and generated build/test output
+node_modules/
 apps/web/node_modules/
 apps/web/dist/
 apps/web/*.tsbuildinfo
 apps/web/playwright-report/
 apps/web/test-results/
+
+# Generated local production-like credentials and runtime state
+.local/aviasurveil360/

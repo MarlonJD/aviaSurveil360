@@ -7,8 +7,10 @@ evidence afterward. It is an inventory, not a new product specification.
 
 | Surface | Purpose |
 |---|---|
-| `../../AGENTS.md` | Highest local authority for scope, product rules, planning, verification, git, and demo boundaries. |
-| `../../CLAUDE.md` | Claude-facing project guidance; defer to `AGENTS.md` when conflicts exist. |
+| `../../AGENTS.md` | Concise canonical router for scope, product boundaries, plans, verification, and change control. |
+| `../../ARCHITECTURE.md` | Runtime surfaces, dependency direction, and high-risk invariants. |
+| `../PLANS.md` | Repository-native ExecPlan contract and lifecycle. |
+| `../../CLAUDE.md` | Thin Claude adapter that routes back to `AGENTS.md`. |
 | `index.md` | Canonical harness entrypoint. |
 | `output-contract.md` | Response shape, status labels, evidence wording, and forbidden claims. |
 | `verification-matrix.md` | Local command ladder and risk-based verification. |
@@ -40,7 +42,6 @@ evidence afterward. It is an inventory, not a new product specification.
 | `../exec-plans/active/2026-07-20-react-vite-pwa-go-offline-first-production-plan.md` | Active authorized local-candidate task order, scope boundaries, decisions, and next todo. |
 | `../exec-plans/tech-debt-tracker.md` | Durable blocker, accepted-risk, missing-evidence, and technical-debt tracker. |
 | `../demo-evidence/BUILD_SUMMARY.md` | Current demo evidence, local verification status, and production gaps. |
-| `../demo-evidence/BUILD_SUMMARY.turkce.md` | Turkish stakeholder companion summary when demo evidence changes. |
 | `../demo-evidence/PWA_OFFLINE_READINESS_2026-07-21.md` | Task 6 app-shell, readiness, restart, multi-client update, and actual offline startup evidence. |
 
 ## Static Demo Surfaces
@@ -61,7 +62,8 @@ evidence afterward. It is an inventory, not a new product specification.
 
 ## Local Smoke Tests
 
-There is no `package.json`; run tests directly with `node`.
+There is no root `package.json`; root legacy tests run directly with `node`.
+The React candidate uses `apps/web/package.json`.
 
 | Test | Main coverage |
 |---|---|
@@ -83,7 +85,7 @@ There is no `package.json`; run tests directly with `node`.
 |---|---|---|
 | Harness readiness | `index.md`, completion plan, `../exec-plans/index.md` | Completion plan, plan index, this package. |
 | Status readout | `../exec-plans/index.md`, relevant plan, `../demo-evidence/BUILD_SUMMARY.md` | Chat only unless repo status is stale. |
-| Product docs | Relevant product spec folder and `../product-specs/references/` | Matching English doc and Turkish companion when required. |
+| Product docs | Relevant product spec folder and `../product-specs/references/` | Canonical English document and focused verification evidence. |
 | Prototype behavior | Active plan, relevant workflow/module docs, static demo files | Targeted tests, demo summary when evidence changes. |
 | Role visibility | `../product-specs/data-and-rules/STATUS_PERMISSION_SECURITY.md`, auditee portal docs | Targeted tests and demo summary if behavior changes. |
 | Finding/CAP/Evidence | Workflow docs and module docs for findings, CAP, evidence | Targeted tests and plan/evidence summary. |

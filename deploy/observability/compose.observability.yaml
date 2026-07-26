@@ -1,0 +1,238 @@
+x-observability-security: &observability-security
+  init: true
+  read_only: true
+  stop_grace_period: 15s
+  pids_limit: 256
+  deploy:
+    resources:
+      limits:
+        cpus: "1"
+        memory: 768M
+        pids: 256
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  restart: unless-stopped
+
+x-observability-health: &observability-health
+  interval: 5s
+  timeout: 3s
+  retries: 30
+  start_period: 10s
+
+services:
+  gateway:
+    volumes:
+      - type: bind
+        source: ./gateway/Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+    networks:
+      - observability
+
+  api:
+    environment:
+      AVIA_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    networks:
+      - observability
+
+  worker:
+    environment:
+      AVIA_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    networks:
+      - observability
+
+  scheduler:
+    environment:
+      AVIA_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    networks:
+      - observability
+
+  otel-collector:
+    <<: *observability-security
+    image: otel/opentelemetry-collector-contrib:0.153.0@sha256:93aad750175cbf1a973ae1c5886c3371f4d800f61be25cdd26870b8441ffe9fa
+    profiles: [observability]
+    user: "10001:10001"
+    command:
+      - --config=/etc/otelcol-contrib/config.yaml
+    depends_on:
+      loki:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
+    volumes:
+      - type: bind
+        source: ../observability/otel-collector.yaml
+        target: /etc/otelcol-contrib/config.yaml
+        read_only: true
+    tmpfs:
+      - /tmp:uid=10001,gid=10001,mode=1777
+    networks:
+      - observability
+    healthcheck:
+      <<: *observability-health
+      test: [CMD, /otelcol-contrib, --version]
+
+  prometheus:
+    <<: *observability-security
+    image: prom/prometheus:v3.12.0@sha256:69f5241418838263316593f7274a304b095c40bcf22e57272865da91bd60a8ac
+    profiles: [observability]
+    user: "65534:65534"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yaml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --storage.tsdb.retention.size=1GB
+      - --web.enable-lifecycle
+    depends_on:
+      alertmanager:
+        condition: service_healthy
+      otel-collector:
+        condition: service_healthy
+    volumes:
+      - prometheus-data:/prometheus
+      - type: bind
+        source: ../observability/prometheus.yaml
+        target: /etc/prometheus/prometheus.yaml
+        read_only: true
+      - type: bind
+        source: ../observability/rules
+        target: /etc/prometheus/rules
+        read_only: true
+    tmpfs:
+      - /tmp:uid=65534,gid=65534,mode=1777
+    networks:
+      - observability
+    healthcheck:
+      <<: *observability-health
+      test: [CMD, /bin/prometheus, --version]
+
+  alertmanager:
+    <<: *observability-security
+    image: prom/alertmanager:v0.32.1@sha256:51a825c2a40acc3e338fdd00d622e01ec090f72be2b3ea46be0839cd47a4d286
+    profiles: [observability]
+    user: "65534:65534"
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yaml
+      - --storage.path=/alertmanager
+      - --data.retention=120h
+      - --silences.max-silences=100
+      - --silences.max-silence-size-bytes=65536
+    volumes:
+      - alertmanager-data:/alertmanager
+      - type: bind
+        source: ../observability/alertmanager.yaml
+        target: /etc/alertmanager/alertmanager.yaml
+        read_only: true
+    secrets:
+      - smtp_password
+    tmpfs:
+      - /tmp:uid=65534,gid=65534,mode=1777
+    networks:
+      - observability
+      - platform
+    healthcheck:
+      <<: *observability-health
+      test: [CMD, /bin/alertmanager, --version]
+
+  loki:
+    <<: *observability-security
+    image: grafana/loki:3.7.2@sha256:191d4fdfb7264f16989f0a57f320872620a5a7c2ceeec6229212c4190ec49b86
+    profiles: [observability]
+    user: "10001:10001"
+    command:
+      - -config.file=/etc/loki/loki.yaml
+    volumes:
+      - loki-data:/loki
+      - type: bind
+        source: ../observability/loki.yaml
+        target: /etc/loki/loki.yaml
+        read_only: true
+    tmpfs:
+      - /tmp:uid=10001,gid=10001,mode=1777
+    networks:
+      - observability
+    healthcheck:
+      <<: *observability-health
+      test: [CMD, /usr/bin/loki, -version]
+
+  tempo:
+    <<: *observability-security
+    image: grafana/tempo:2.10.5@sha256:ee21727732c7a7199cb71c3eee9153bbf23f9b0b87619f0555a0cf21a67f1a33
+    profiles: [observability]
+    user: "10001:10001"
+    command:
+      - -config.file=/etc/tempo/tempo.yaml
+    volumes:
+      - tempo-data:/var/tempo
+      - type: bind
+        source: ../observability/tempo.yaml
+        target: /etc/tempo/tempo.yaml
+        read_only: true
+    tmpfs:
+      - /tmp:uid=10001,gid=10001,mode=1777
+    networks:
+      - observability
+    healthcheck:
+      <<: *observability-health
+      test: [CMD, /tempo, -version]
+
+  grafana:
+    <<: *observability-security
+    image: grafana/grafana:13.0.2@sha256:0b35c0b9de28b45b6d07b92c8b09a7b53559c9cacde2a535b0179b7ace673411
+    platform: ${AVIA_OBSERVABILITY_GRAFANA_PLATFORM:-linux/arm64}
+    profiles: [observability]
+    user: "472:0"
+    depends_on:
+      loki:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SECURITY_ADMIN_USER: local-observability-admin
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin_password
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_USERS_ALLOW_ORG_CREATE: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_SERVER_DOMAIN: localhost
+      GF_SERVER_ROOT_URL: "https://localhost:${AVIA_LOCAL_HTTPS_PORT:-8443}/operations/"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - type: bind
+        source: ../observability/grafana/provisioning
+        target: /etc/grafana/provisioning
+        read_only: true
+      - type: bind
+        source: ../observability/grafana/dashboards
+        target: /var/lib/grafana/dashboards
+        read_only: true
+    secrets:
+      - grafana_admin_password
+    tmpfs:
+      - /tmp:uid=472,gid=0,mode=1777
+    networks:
+      - observability
+    healthcheck:
+      <<: *observability-health
+      test: [CMD, /usr/share/grafana/bin/grafana, --version]
+
+secrets:
+  grafana_admin_password:
+    file: ${AVIASURVEIL_LOCAL_STATE_DIR:-../../.local/aviasurveil360}/secrets/grafana_admin_password
+
+networks:
+  observability:
+    internal: true
+
+volumes:
+  alertmanager-data:
+  grafana-data:
+  loki-data:
+  prometheus-data:
+  tempo-data:

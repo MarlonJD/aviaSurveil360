@@ -17,6 +17,14 @@ const inspectorProjection: MessageCenterProjection = { role: "inspector", roleLa
 const leadProjection: MessageCenterProjection = { role: "leadInspector", roleLabel: "Lead Inspector", routeLabel: "Lead Messages", scopeLabel: "Lead Inspector CAA workspace only", testId: "lead-messages-page" };
 const auditeeProjection: MessageCenterProjection = { role: "auditee", roleLabel: "Auditee — Fly Namibia", routeLabel: "Auditee Messages", scopeLabel: "Fly Namibia · ORG-FLY-NAMIBIA", testId: "auditee-messages-page", auditeeOnly: true };
 
+const deliveryLabels: Record<NotificationView["emailDeliveryStatus"], string> = {
+  NOT_CONFIGURED: "Not configured in demo",
+  PENDING: "Pending",
+  RETRYING: "Retrying",
+  DELIVERED: "Delivered",
+  FAILED: "Failed",
+};
+
 export function MessageCenterPage({ projection }: { projection: MessageCenterProjection }) {
   const runtime = useApplicationRuntime();
   const backend = useMemo(() => runtime.backendForRole?.(projection.role) ?? runtime.backend, [projection.role, runtime]);
@@ -60,7 +68,7 @@ export function MessageCenterPage({ projection }: { projection: MessageCenterPro
 
   return <WorkspaceShell roleLabel={projection.roleLabel} routeLabel={projection.routeLabel}>
     <div className="inspector-secondary-page inspector-messages-page" data-testid={projection.testId}>
-      <header className="inspector-secondary-head workbench-page-header"><div><h1>Messages from the CAA</h1><p>{projection.auditeeOnly ? "Auditee-visible communication only — messages are scoped to Fly Namibia." : "In-app notifications (mock — no real email or SMS is sent)."}</p></div><button className="inspector-secondary-button" onClick={() => setComposeOpen((open) => !open)} type="button">{projection.auditeeOnly ? "Compose message to CAA" : "Compose message"}</button></header>
+      <header className="inspector-secondary-head workbench-page-header"><div><h1>Messages from the CAA</h1><p>{projection.auditeeOnly ? "Auditee-visible communication only — messages are scoped to Fly Namibia." : runtime.buildProfile === "demo" ? "In-app notifications (demo — no real email or SMS is sent)." : "In-app notifications with server-authoritative email delivery state."}</p></div><button className="inspector-secondary-button" onClick={() => setComposeOpen((open) => !open)} type="button">{projection.auditeeOnly ? "Compose message to CAA" : "Compose message"}</button></header>
       <p className="inspector-scope-note">🔒 {projection.scopeLabel}</p>
       <CommandError message={error} />
       {composeOpen ? <section className="inspector-compose-panel">{projection.auditeeOnly ? <p>To: CAA · exact organization scope ORG-FLY-NAMIBIA</p> : <label>Visibility<select aria-label="Visibility" value={audience} onChange={(event) => setAudience(event.target.value as typeof audience)}><option value="CAA">Internal CAA Note</option><option value="AUDITEE">Comment to Auditee</option></select></label>}<label>Subject<input value={subject} onChange={(event) => setSubject(event.target.value)} /></label><label>Message<textarea value={body} onChange={(event) => setBody(event.target.value)} /></label><button className="inspector-secondary-button inspector-secondary-button--primary" onClick={() => void sendMessage()} type="button">Send in-app message</button></section> : null}
@@ -69,7 +77,7 @@ export function MessageCenterPage({ projection }: { projection: MessageCenterPro
         {communications.map((item) => <article key={item.id}><div><h2>{item.subject}</h2><p>{item.body}</p><small>{item.direction === "AUDITEE_TO_CAA" ? "Sent by Fly Namibia to CAA" : "Received from CAA"} · {item.organizationId}</small></div><span>{item.direction === "AUDITEE_TO_CAA" ? "Sent" : "Received"}</span></article>)}
         {!communications.length ? <p>No Auditee-visible messages are recorded.</p> : null}
       </section> : <><section className="inspector-message-list" aria-label="Internal CAA Note messages">
-        {notifications.map((item) => <article key={item.id}><div><h2>{item.title}</h2><p>{item.body}</p><small>{item.id} · related CAA request where applicable</small></div><span>{item.readAt ? "Read" : "Unread"}</span></article>)}
+        {notifications.map((item) => <article aria-label={`Notification ${item.id}`} key={item.id}><div><h2>{item.title}</h2><p>{item.body}</p><small>{item.id} · related CAA request where applicable</small><small>Email delivery: {deliveryLabels[item.emailDeliveryStatus]}{item.emailDeliveryAttempts > 0 ? ` · ${item.emailDeliveryAttempts} attempt${item.emailDeliveryAttempts === 1 ? "" : "s"}` : ""}{item.emailAcceptedAt ? ` · accepted ${item.emailAcceptedAt}` : ""}</small></div><span>{item.readAt ? "Read" : "Unread"}</span></article>)}
         {communications.filter((item) => item.audience === "CAA").map((item) => <article key={item.id}><div><h2>{item.subject}</h2><p>{item.body}</p><small>Internal CAA Note · CAA-only</small></div><span>Sent</span></article>)}
       </section>
       <section className="inspector-message-list" aria-label="Comment to Auditee messages">

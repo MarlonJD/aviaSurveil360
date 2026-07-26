@@ -16,6 +16,7 @@ type OIDCIdentity struct {
 	SubjectID         string
 	Issuer            string
 	DisplayName       string
+	Email             string
 	OrganizationID    string
 	Roles             []Role
 	ProviderSessionID string

@@ -29,7 +29,7 @@
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "react-hook-form": "7.82.0",
-    "react-router-dom": "7.18.1",
+    "react-router-dom-v5": "npm:react-router-dom@5.3.4",
     "zod": "4.4.3"
   },
   "devDependencies": {
@@ -51,7 +51,8 @@
   },
   "overrides": {
     "@redocly/openapi-core": {
-      "js-yaml": "4.3.0"
+      "js-yaml": "4.3.0",
+      "minimatch": "10.2.5"
     }
   }
 }

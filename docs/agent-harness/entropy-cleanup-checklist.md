@@ -9,10 +9,11 @@ from becoming the next agent's default context.
 | Item | Status | Owner | Evidence / next action |
 |---|---|---|---|
 | Canonical harness package exists under `docs/agent-harness/`. | verified locally | Agent executing readiness plan | Verified with `node tests/harness-docs-smoke.test.js`. |
-| Old runbook points to the canonical entrypoint. | verified locally | Agent executing readiness plan | `../demo-handoff/AGENT_HARNESS_RUNBOOK.md` opening section points to `../agent-harness/index.md`. |
-| `AGENTS.md` stays short and map-like. | recurring check | Future agents | Add pointers only; move working detail into this package. |
+| Old runbook is a compatibility pointer only. | verified locally | Harness maintainer | `../demo-handoff/AGENT_HARNESS_RUNBOOK.md` no longer duplicates operating rules. |
+| `AGENTS.md` stays short and map-like. | verified locally | Harness maintainer | Reduced from 318 to 121 lines; adaptive harness audit/check report 0 errors and 0 warnings. |
+| Repository documentation stays English-only. | recurring check | Future agents | Do not recreate `.turkce.md` companion files; Turkish remains available in chat handoffs. |
 | `MANIFEST.md` lists new harness docs and smoke test. | verified locally | Agent executing readiness plan | Manifest Agent Harness and Smoke Tests sections. |
-| Active plan index matches actual harness status. | ready-for-verification | Plan owner / future agents | `../exec-plans/index.md` row for harness readiness. |
+| Active plan index matches actual harness status. | ready-for-verification | Plan owner / future agents | Maintenance repair is verified locally; user sign-off remains the next lifecycle action. |
 | Superseded partial adaptation remains historical, not completed by inference. | accepted current risk | Future agents | Keep continuation note linked to readiness plan. |
 | Demo summary keeps local evidence separate from production gaps. | recurring check | Future agents | `../demo-evidence/BUILD_SUMMARY.md` after visible demo verification. |
 
@@ -20,8 +21,7 @@ from becoming the next agent's default context.
 
 - `AGENTS.md` grows into a long encyclopedia instead of routing agents to
   focused docs.
-- `../demo-handoff/AGENT_HARNESS_RUNBOOK.md` and this package
-  repeat the same rule with different wording.
+- Compatibility pointers grow back into duplicate runbooks.
 - `../exec-plans/index.md` keeps an old next todo after implementation evidence
   changes.
 - A plan is moved to `completed/` without user/stakeholder sign-off.
@@ -29,8 +29,8 @@ from becoming the next agent's default context.
 - README or MANIFEST omits current prototype, test, plan, or harness files.
 - Browser evidence uses hidden navigation labels instead of visible target
   content.
-- A new test or instruction implies `npm test`, GitHub Actions, remote CI, or
-  paid automation even though this repo uses direct local commands.
+- A root test instruction assumes a root `package.json`; legacy root checks use
+  direct Node commands while React checks use `npm --prefix apps/web`.
 
 ## Cleanup Rules
 

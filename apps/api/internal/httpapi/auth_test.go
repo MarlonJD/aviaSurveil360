@@ -92,6 +92,7 @@ func TestOIDCLoginAndCallbackUseOneTimeStatePKCEAndSecureBrowserCookies(t *testi
 	now := time.Date(2026, time.July, 21, 12, 0, 0, 0, time.UTC)
 	provider := &fakeOIDCProvider{identity: identity.OIDCIdentity{
 		SubjectID: "inspector-001", Issuer: "https://identity.example/realms/avia", DisplayName: "Inspector One",
+		Email:          "inspector.one@example.test",
 		OrganizationID: "caa", Roles: []identity.Role{identity.RoleInspector}, ProviderSessionID: "provider-session",
 		Tokens: identity.ProviderTokens{AccessToken: "server-only-access"},
 	}}
@@ -122,7 +123,9 @@ func TestOIDCLoginAndCallbackUseOneTimeStatePKCEAndSecureBrowserCookies(t *testi
 	if sessions.consumedState != "raw-state" || provider.exchangeCode != "authorization-code" || provider.exchangeVerifier != "pkce-verifier" || provider.exchangeNonce != "raw-nonce" {
 		t.Fatalf("callback exchange = provider %+v, consumed %q", provider, sessions.consumedState)
 	}
-	if sessions.createInput.ProviderTokens.AccessToken != "server-only-access" || sessions.createInput.SubjectID != "inspector-001" {
+	if sessions.createInput.ProviderTokens.AccessToken != "server-only-access" ||
+		sessions.createInput.SubjectID != "inspector-001" ||
+		sessions.createInput.Email != "inspector.one@example.test" {
 		t.Fatalf("session creation input = %+v", sessions.createInput)
 	}
 

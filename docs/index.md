@@ -7,6 +7,8 @@ This is the canonical docs map for AviaSurveil360. Use it after the root
 
 | Surface | Use |
 |---|---|
+| `../ARCHITECTURE.md` | Runtime surfaces, dependency direction, and high-risk invariants. |
+| `PLANS.md` | Repository-native ExecPlan contract and lifecycle. |
 | `agent-harness/index.md` | Agent routing, output contracts, verification, registry, and cleanup rules. |
 | `exec-plans/index.md` | Active execution-plan status and one next concrete todo per plan. |
 | `exec-plans/tech-debt-tracker.md` | Durable blockers, accepted risks, missing evidence, and technical debt. |
@@ -26,6 +28,7 @@ This is the canonical docs map for AviaSurveil360. Use it after the root
 | `demo-evidence/REACT_LEGACY_UI_PARITY_2026-07-22.md` | Task 16 exact 17/69 scope, full candidate matrix, 51-pair decoded-pixel and manual review, OIDC/offline/recovery evidence, and stakeholder handoff. |
 | `demo-evidence/REACT_86_SCREEN_DEMO_2026-07-22.md` | Full React Tasks 11–12 evidence: exact 86-route scope, 258 responsive and action checks, literal 71/259 one-shot visual result, baseline-integrity gap, and Plan 2 block. |
 | `demo-evidence/FULL_BACKEND_SCENARIO_PARITY_2026-07-22.md` | Full Backend Tasks 1–12 evidence: 86 dual-profile routes, 28 Backend slices, 10 scenario families, 45 proofs, final matrix, reviews, and preserved Plan 1 gaps. |
+| `demo-evidence/LOCAL_PRODUCTION_LIKE_SERVICES_2026-07-22.md` | Local production-like services evidence: scanned runtime digests, clean 86-route demo/full profiles, 10 scenario families, real MFA/MinIO/ClamAV/Mailpit/Gotenberg proofs, failure/restart, and cleanup. |
 | `../api/openapi/aviasurveil360.yaml` | Minimal versioned transport source for the authorized local candidate slices. |
 | `../apps/web/` | Build-time-separated React/Vite mock and HTTP candidate entries with the canonical lifecycle, approved route families, PWA/readiness, atomic field storage, OPFS attachment recovery, and typed foreground sync. |
 | `../apps/api/` | One-module Go API/worker candidate with canonical and planning authority, local OIDC/session, PostgreSQL stores, bounded upload/scan, configuration/audit projections, and typed sync services. |
@@ -40,8 +43,9 @@ deterministic scan worker, canonical and approved route-family mock/HTTP browser
 parity, Task 6 app-shell/readiness/restart behavior, Task 7-8 field/attachment
 recovery, Task 12 foreground sync, and the Task 13 complete local matrix are
 `verified locally`. The Full React candidate now owns all 86 routes in demo and
-HTTP profiles, and Full Backend Tasks 1–12 pass exact parity for 10 scenario
-families and 45 proofs. The result is `candidate-only` and `release pending`.
+HTTP profiles, Full Backend Tasks 1–12 pass exact parity for 10 scenario
+families and 45 proofs, and Local Production-Like Services Tasks 1–9 are
+`verified locally`. The result is `candidate-only` and `release pending`.
 These are not deployed production services. The docs do not claim production OIDC/MFA,
 production authorization operations, production storage/scanning or Evidence
 records management, notification delivery, deployment, remote CI, cutover,

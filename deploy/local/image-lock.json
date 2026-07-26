@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "resolvedAt": "2026-07-25",
+  "images": {
+    "node-build": {
+      "reference": "node:24.16.0-alpine3.23@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14",
+      "purpose": "React and Vite deterministic build stage"
+    },
+    "go-build": {
+      "reference": "golang:1.26.5-alpine3.23@sha256:622e56dbc11a8cfe87cafa2331e9a201877271cbff918af53d3be315f3da88cc",
+      "purpose": "Go modular-monolith build stage"
+    },
+    "go-runtime": {
+      "reference": "alpine:3.23@sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40",
+      "purpose": "Minimal Go process runtime"
+    },
+    "syft-tool": {
+      "reference": "anchore/syft:v1.44.0@sha256:86fde6445b483d902fe011dd9f68c4987dd94e07da1e9edc004e3c2422650de6",
+      "purpose": "Containerized CycloneDX SBOM generation"
+    },
+    "trivy-tool": {
+      "reference": "aquasec/trivy:0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e",
+      "purpose": "Containerized HIGH/CRITICAL vulnerability scanning after the reviewed 0.70.0 remediation release"
+    },
+    "postgres": {
+      "reference": "postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+      "purpose": "Application and Keycloak databases"
+    },
+    "keycloak": {
+      "reference": "quay.io/keycloak/keycloak:26.7.0@sha256:0f198be292568439d700cdbfb893e69a6009bb43a94a06a945b1d3d506c76b13",
+      "purpose": "Production-mode local identity provider"
+    },
+    "minio": {
+      "reference": "quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e",
+      "purpose": "Private versioned object storage"
+    },
+    "clamav": {
+      "reference": "clamav/clamav:1.4.3@sha256:75fb5fd95fcbe1d7e6d240c369c1572b686ee2c95949d1042b5148de8eddebb4",
+      "purpose": "Malware scanning and signature updates"
+    },
+    "mailpit": {
+      "reference": "axllent/mailpit:v1.27.8@sha256:6abc8e633df15eaf785cfcf38bae48e66f64beecdc03121e249d0f9ec15f0707",
+      "purpose": "Local SMTP receiver and inspection UI"
+    },
+    "gotenberg": {
+      "reference": "gotenberg/gotenberg:8.23.2@sha256:56c47f7b913f3b978554115a0191c4a9dcc2558f9090f27f3f13f28a7c2f8329",
+      "purpose": "Versioned PDF rendering"
+    }
+  },
+  "components": {
+    "caddy": {
+      "version": "v2.11.4",
+      "purpose": "Gateway source release"
+    },
+    "grpc": {
+      "version": "v1.82.1",
+      "purpose": "Patched Caddy transitive dependency override"
+    }
+  }
+}

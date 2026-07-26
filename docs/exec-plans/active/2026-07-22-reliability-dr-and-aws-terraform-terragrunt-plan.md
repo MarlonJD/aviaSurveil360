@@ -27,10 +27,15 @@ AWS provider 6.x-compatible modules, native Terraform tests, TFLint, Trivy
 configuration and image scanning, CycloneDX SBOMs, Playwright, Go
 race/integration tests, and shell-based recovery drills.
 
-**Status:** `active` — plan-only; implementation has not started. Independent
-review is complete. Tasks 1–9 plus Task 11 define the authorized local/IaC
-readiness path. AWS Task 10 is an optional future branch, is excluded from the
-local milestone, and is not authorized by this plan document.
+**Status:** `active` — Tasks 1–2 are `verified locally`. Task 3 config,
+Collector, Prometheus-rule, and Alertmanager contracts are `verified locally`;
+its required live profile proof is `blocked` by exhausted host/Docker storage
+after the daemon reported `no space left on device`, an unhealthy fresh
+PostgreSQL volume, and containerd garbage-collection failure. Tasks 4 onward
+have not started. Independent plan review is complete. Tasks 1–9 plus Task 11
+define the authorized local/IaC readiness path. AWS Task 10 is an optional
+future branch, is excluded from the local milestone, and is not authorized by
+this plan document.
 
 ## Objective
 
@@ -207,15 +212,16 @@ Every span/log/metric uses a documented name, bounded attributes, correlation
 ID, owner, and redaction class. Alert catalog entries require expression,
 duration, severity, owner, runbook path, deduplication key, and test fixture.
 
-- [ ] Write failing docs/code contract tests for missing objective, owner,
+- [x] Write failing docs/code contract tests for missing objective, owner,
   runbook, unit, histogram boundary, unbounded ID labels, forbidden field names,
   or alert without duration/recovery.
-- [ ] Run Node, Go, and Vitest contract tests; confirm missing contracts fail.
-- [ ] Define local targets, resource attributes, trace/log/metric names, redaction
+- [x] Run Node, Go, and Vitest contract tests; confirm missing contracts fail.
+- [x] Define local targets, resource attributes, trace/log/metric names, redaction
   rules, cardinality limits, alert catalog, ownership, and review cadence.
-- [ ] Run the contracts plus a repository scan for secrets/PII in telemetry
+- [x] Run the contracts plus a repository scan for secrets/PII in telemetry
   declarations; expect zero unowned or forbidden signals.
-- [ ] Commit exactly `docs(ops): define reliability contracts`.
+- [ ] Commit exactly `docs(ops): define reliability contracts` (`not run`;
+  Git authorization was not granted).
 
 ### Task 2: Instrument Browser, Gateway, API, PostgreSQL, And Workers
 
@@ -239,16 +245,17 @@ Metrics use bounded status/operation/module labels, never entity IDs. Browser
 telemetry records route ID, build profile, Web Vitals, API outcome class, and
 handled error boundary without user content.
 
-- [ ] Write failing tests for trace propagation, correlation, required spans,
+- [x] Write failing tests for trace propagation, correlation, required spans,
   job links, histogram metrics, sanitized errors, route Web Vitals, shutdown
   flush, unavailable collector, and forbidden high-cardinality/sensitive labels.
-- [ ] Run focused tests and confirm missing telemetry pipeline.
-- [ ] Implement OTel bootstrap/middleware/instrumentation, browser exporter,
+- [x] Run focused tests and confirm missing telemetry pipeline.
+- [x] Implement OTel bootstrap/middleware/instrumentation, browser exporter,
   structured JSON logs, bounded metrics, job trace links, and graceful flush.
-- [ ] Run routine/Ad Hoc/Finding/scan/email/PDF scenarios and verify one trace
+- [x] Run routine/Ad Hoc/Finding/scan/email/PDF scenarios and verify one trace
   graph per action, bounded label sets, no forbidden data, and no request failure
   when the collector is unavailable.
-- [ ] Commit exactly `feat(ops): instrument application telemetry`.
+- [ ] Commit exactly `feat(ops): instrument application telemetry` (`not run`;
+  Git authorization was not granted).
 
 ### Task 3: Add The Local Observability And Alerting Profile
 
@@ -273,17 +280,28 @@ backend ports beyond loopback tools access. Dashboards are provisioned from Git.
 Alertmanager delivers local alert messages to Mailpit with inhibition for a
 declared full-stack outage.
 
-- [ ] Write failing config tests for unpinned images, missing retention/resource
+- [x] Write failing config tests for unpinned images, missing retention/resource
   limits, open anonymous admin, absent redaction processor, unowned rule,
   missing runbook, alert storm, or internal port exposure.
-- [ ] Run config contracts; confirm absent profile red.
-- [ ] Implement immutable-digest Compose services, data volumes, OTel routing,
+- [x] Run config contracts; confirm absent profile red.
+- [x] Implement immutable-digest Compose services, data volumes, OTel routing,
   scrape/rules, dashboards, datasources, retention, authentication secrets,
   Mailpit receiver, grouping, and inhibition.
 - [ ] Run the profile, generate every alert fixture, verify dashboard queries,
   trace/log/metric correlation, deduplicated Mailpit receipt, recovery message,
   persistence across restart, and task-owned cleanup.
-- [ ] Commit exactly `feat(ops): add local observability stack`.
+  - Initial RED: 0/8 config contracts passed because the profile was absent.
+  - Current config contract: 8/8 passed.
+  - Pinned Collector `validate`, Prometheus config plus 8/8 alert rules, and
+    Alertmanager config checks passed.
+  - The stack reached all services healthy in prior focused attempts, but the
+    complete proof remains `blocked`: the host had only 2.2 GiB free and Docker
+    subsequently reported `no space left on device`, an unhealthy fresh
+    PostgreSQL volume, and containerd `gc failed`.
+  - Every attempt ended with zero task-owned containers, volumes, or networks;
+    no unrelated Docker resources were deleted.
+- [ ] Commit exactly `feat(ops): add local observability stack`. (`not run`;
+  Git authorization was not granted.)
 
 ### Task 4: Implement PostgreSQL And Object Backup Pipelines
 
@@ -570,9 +588,7 @@ phase, stop, produce/review the next plan, and request a new authorization.
 **Files**
 
 - Create `docs/demo-evidence/LOCAL_RELIABILITY_AND_DR_2026-07-22.md`
-- Create `docs/demo-evidence/LOCAL_RELIABILITY_AND_DR_2026-07-22.turkce.md`
 - Modify `docs/demo-evidence/BUILD_SUMMARY.md`
-- Modify `docs/demo-evidence/BUILD_SUMMARY.turkce.md`
 - Modify `docs/index.md`
 - Modify `MANIFEST.md`
 - Modify `docs/exec-plans/index.md`

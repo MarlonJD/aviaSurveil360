@@ -1,5 +1,11 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
+function requiredEnvironment(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`${name} is required`);
+  return value;
+}
+
 async function installManagedOfflineReadiness(context: BrowserContext): Promise<void> {
   await context.addInitScript(() => {
     Object.defineProperties(navigator.storage, {
@@ -59,8 +65,12 @@ test("normal OIDC session gates protected routes and uses server session authori
   await expect(page.getByText(/Lead Review/i)).toHaveCount(0);
 
   await page.getByRole("button", { name: "Sign in with organization identity" }).click();
-  await page.getByLabel(/username or email/i).fill("inspector.local");
-  await page.getByRole("textbox", { name: "Password" }).fill("LocalInspectorPass123!");
+  await page
+    .getByLabel(/username or email/i)
+    .fill(requiredEnvironment("AVIA_OIDC_TEST_INSPECTOR_USERNAME"));
+  await page
+    .getByRole("textbox", { name: "Password" })
+    .fill(requiredEnvironment("AVIA_OIDC_TEST_INSPECTOR_PASSWORD"));
   await page.getByRole("button", { name: /sign in/i }).click();
 
   await expect(page).toHaveURL(/\/inspector\/inspector-assignments$/);

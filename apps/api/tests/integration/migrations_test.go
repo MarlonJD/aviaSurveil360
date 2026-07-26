@@ -59,6 +59,30 @@ func TestMigrationsApplyFromAnEmptyDatabase(t *testing.T) {
 	if version, err := migrations.CurrentVersion(context.Background(), pool); err != nil || version != migrations.LatestVersion {
 		t.Fatalf("migration version = %d, err = %v", version, err)
 	}
+	var organizationID, legalName, organizationType, status string
+	if err := pool.QueryRow(context.Background(), `
+		SELECT id, legal_name, organization_type, status
+		FROM organizations
+	`).Scan(
+		&organizationID,
+		&legalName,
+		&organizationType,
+		&status,
+	); err != nil {
+		t.Fatalf("read built-in authority organization: %v", err)
+	}
+	if organizationID != "CAA" ||
+		legalName != "Civil Aviation Authority" ||
+		organizationType != "AUTHORITY" ||
+		status != "ACTIVE" {
+		t.Fatalf(
+			"built-in authority organization = %q %q %q %q",
+			organizationID,
+			legalName,
+			organizationType,
+			status,
+		)
+	}
 }
 
 func TestEveryRetainedNMinusOneFixtureUpgrades(t *testing.T) {

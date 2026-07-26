@@ -2,15 +2,20 @@ package documents
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
 )
 
 type RenderedArtifact struct {
-	FileName  string
-	MediaType string
-	Body      []byte
+	FileName     string
+	MediaType    string
+	Body         []byte
+	RendererHash string
+	TemplateHash string
+	SourceHash   string
 }
 
 type Renderer interface {
@@ -35,9 +40,13 @@ func (DeterministicPDFRenderer) Render(_ context.Context, snapshot RenderSnapsho
 	body := []byte("%PDF-1.7\n% AviaSurveil360 deterministic candidate document\n")
 	body = append(body, payload...)
 	body = append(body, []byte("\n%%EOF\n")...)
+	sourceDigest := sha256.Sum256(payload)
 	return RenderedArtifact{
-		FileName:  snapshot.ReportID + ".pdf",
-		MediaType: "application/pdf",
-		Body:      body,
+		FileName:     snapshot.ReportID + ".pdf",
+		MediaType:    "application/pdf",
+		Body:         body,
+		RendererHash: digest([]byte("deterministic-test-renderer-v1")),
+		TemplateHash: digest([]byte("deterministic-test-template-v1")),
+		SourceHash:   "sha256:" + hex.EncodeToString(sourceDigest[:]),
 	}, nil
 }

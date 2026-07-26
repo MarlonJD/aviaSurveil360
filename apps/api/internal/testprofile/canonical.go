@@ -209,16 +209,18 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 				return fmt.Errorf("seed canonical organizations: %w", err)
 			}
 			if _, err := transaction.Exec(ctx, `
-			INSERT INTO identity_references (subject_id, issuer, display_name, created_at) VALUES
-				($2, 'urn:avia:test', 'Local Inspector', $1),
-				('USR-INSPECTOR-DAVID', 'urn:avia:test', 'David Inspector', $1),
-				('USR-LEAD-CANER', 'urn:avia:test', 'Caner Lead Inspector', $1),
-				('USR-MANAGER-NORA', 'urn:avia:test', 'Nora Department Manager', $1),
-				('USR-FINANCE-LINA', 'urn:avia:test', 'Lina Finance Reviewer', $1),
-				('USR-GM-OMAR', 'urn:avia:test', 'Omar General Manager', $1),
-				('USR-ED-ZARA', 'urn:avia:test', 'Zara Executive Director', $1),
-				('USR-ADMIN-ADA', 'urn:avia:test', 'Ada Administrator', $1),
-				('USR-AUDITEE-FLY', 'urn:avia:test', 'Fly Namibia Auditee', $1)
+			INSERT INTO identity_references (
+				subject_id, issuer, display_name, email, created_at
+			) VALUES
+				($2, 'urn:avia:test', 'Local Inspector', 'local.inspector@example.test', $1),
+				('USR-INSPECTOR-DAVID', 'urn:avia:test', 'David Inspector', 'david.inspector@example.test', $1),
+				('USR-LEAD-CANER', 'urn:avia:test', 'Caner Lead Inspector', 'caner.lead@example.test', $1),
+				('USR-MANAGER-NORA', 'urn:avia:test', 'Nora Department Manager', 'nora.manager@example.test', $1),
+				('USR-FINANCE-LINA', 'urn:avia:test', 'Lina Finance Reviewer', 'lina.finance@example.test', $1),
+				('USR-GM-OMAR', 'urn:avia:test', 'Omar General Manager', 'omar.gm@example.test', $1),
+				('USR-ED-ZARA', 'urn:avia:test', 'Zara Executive Director', 'zara.executive@example.test', $1),
+				('USR-ADMIN-ADA', 'urn:avia:test', 'Ada Administrator', 'ada.admin@example.test', $1),
+				('USR-AUDITEE-FLY', 'urn:avia:test', 'Fly Namibia Auditee', 'auditee.fly@example.test', $1)
 		`, now, CanonicalInspectorSubjectID); err != nil {
 				return fmt.Errorf("seed canonical identities: %w", err)
 			}
@@ -488,17 +490,17 @@ func Reset(ctx context.Context, pool *database.Pool, now time.Time) error {
 			}
 			reportSnapshot, _ := json.Marshal(map[string]any{
 				"kind": "FINAL", "ready": true,
-				"findingIds": []string{}, "contentHash": "sha256:candidate-report-v1",
+				"findingIds": []string{}, "contentHash": "sha256:7961a5302bc8b86e945ff0377df996f317b01337df2928aac7375ecc35a8917d",
 				"responseDueDate": nil, "caaVisibleComment": nil,
 			})
 			preliminaryV0Snapshot, _ := json.Marshal(map[string]any{
 				"kind": "PRELIMINARY", "ready": false,
-				"findingIds": []string{}, "contentHash": "sha256:preliminary-report-v0-returned",
+				"findingIds": []string{}, "contentHash": "sha256:bf2808353c67d92c37b6a1f0aec20feeaea14bd746d9d8ec07a1850590677071",
 				"responseDueDate": nil, "caaVisibleComment": nil,
 			})
 			preliminaryV1Snapshot, _ := json.Marshal(map[string]any{
 				"kind": "PRELIMINARY", "ready": true,
-				"findingIds": []string{}, "contentHash": "sha256:preliminary-report-v1-department-review",
+				"findingIds": []string{}, "contentHash": "sha256:59f2a462c7e884f376db7e849ff68c64714ec9479de83b129a91bf2ec0f32642",
 				"responseDueDate": nil, "caaVisibleComment": nil,
 			})
 			if _, err := transaction.Exec(ctx, `

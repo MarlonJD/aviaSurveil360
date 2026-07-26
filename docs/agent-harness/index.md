@@ -4,22 +4,23 @@ This is the canonical entrypoint for AviaSurveil360 agent harness work. Read it
 after `../../AGENTS.md` when the task touches repo implementation, plans,
 verification, readiness, handoff, or demo evidence.
 
-The harness does not change product scope. AviaSurveil360 remains a planning
-pack plus a frontend-only static clickable demo until the user explicitly
-approves a different build direction.
+The harness does not change product scope. AviaSurveil360 contains the intact
+root static demo plus separately bounded React/Go candidates. Local candidate
+evidence does not establish deployment or production readiness.
 
 ## Source Hierarchy
 
-1. `../../AGENTS.md` is the highest local authority for product, demo,
-   planning, verification, and git boundaries.
-2. Product specs under `../product-specs/` define the AviaSurveil360 domain.
-3. `../exec-plans/index.md` is the active plan router and next-todo tracker.
-4. This harness package defines agent-facing output, registry, verification,
-   and cleanup rules.
-5. `../demo-evidence/BUILD_SUMMARY.md` records local demo evidence and known production
-   gaps.
-6. `../demo-handoff/AGENT_HARNESS_RUNBOOK.md` remains the applied
-   historical runbook and scenario-oriented operating notes.
+1. [`../../AGENTS.md`](../../AGENTS.md) is the concise instruction router.
+2. [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) maps runtime and knowledge
+   boundaries.
+3. [`../product-specs/index.md`](../product-specs/index.md) routes product
+   behavior and terminology.
+4. [`../PLANS.md`](../PLANS.md) defines the plan contract, while
+   [`../exec-plans/index.md`](../exec-plans/index.md) tracks current state.
+5. This package defines agent-facing output, registry, verification, and
+   cleanup rules.
+6. [`../demo-evidence/BUILD_SUMMARY.md`](../demo-evidence/BUILD_SUMMARY.md)
+   records historical local evidence and known gaps.
 
 ## Harness Package Map
 
@@ -29,7 +30,6 @@ approves a different build direction.
 | `registry.md` | Repo surface inventory and task-to-source routing. |
 | `verification-matrix.md` | Local command ladder by risk level. |
 | `entropy-cleanup-checklist.md` | Drift, stale-claim, plan-index, and evidence-label cleanup. |
-| `../demo-handoff/AGENT_HARNESS_RUNBOOK.md` | Applied examples, browser QA paths, and older runbook context. |
 | `../exec-plans/index.md` | Active plan state and one concrete next todo per active plan. |
 | `../exec-plans/tech-debt-tracker.md` | Durable blockers, accepted risks, missing evidence, and technical debt. |
 | `../demo-evidence/BUILD_SUMMARY.md` | Current demo evidence, local verification status, and limitations. |
@@ -40,10 +40,10 @@ approves a different build direction.
 |---|---|---|
 | Status or readiness readout | `../exec-plans/index.md`, `../demo-evidence/BUILD_SUMMARY.md` | Use `output-contract.md`; separate local proof from production scope. |
 | Plan creation or execution | `../../AGENTS.md`, `../exec-plans/index.md`, nearest plan | Keep the index row and next todo synchronized with the actual result. |
-| Docs-only product update | Relevant product specs and glossary | Preserve careful regulatory wording and bilingual companions when applicable. |
+| Docs-only product update | Relevant product specs and glossary | Keep English canonical documentation and careful regulatory wording. |
 | Static demo behavior | Relevant workflow/module docs, `../demo-evidence/BUILD_SUMMARY.md`, targeted tests | Use the smallest local verification level that covers the changed path. |
 | Role, visibility, CAP, evidence, upload, AI, or regulatory copy | `../product-specs/data-and-rules/STATUS_PERMISSION_SECURITY.md` plus workflow/module docs | Treat as boundary-sensitive and review demo-only labels. |
-| Harness maintenance | This package, runbook, manifest, plan index | Prefer one focused harness doc update over broad AGENTS expansion. |
+| Harness maintenance | This package, manifest, plan index | Prefer one focused harness doc update over broad AGENTS expansion. |
 
 ## Demo-Only Boundary
 

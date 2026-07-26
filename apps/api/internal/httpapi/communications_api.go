@@ -273,12 +273,26 @@ func notificationView(
 		value := item.ReadAt.UTC().Format(time.RFC3339Nano)
 		readAt = &value
 	}
+	var emailAcceptedAt *string
+	if item.EmailAcceptedAt != nil {
+		value := item.EmailAcceptedAt.UTC().Format(time.RFC3339Nano)
+		emailAcceptedAt = &value
+	}
+	var emailNextAttemptAt *string
+	if item.EmailNextAttemptAt != nil {
+		value := item.EmailNextAttemptAt.UTC().Format(time.RFC3339Nano)
+		emailNextAttemptAt = &value
+	}
 	return generated.NotificationView{
-		Id:        item.ID,
-		SubjectId: item.RecipientSubjectID,
-		Title:     item.Title,
-		Body:      item.Body,
-		ReadAt:    readAt,
-		Revision:  item.Revision,
+		Id:                    item.ID,
+		SubjectId:             item.RecipientSubjectID,
+		Title:                 item.Title,
+		Body:                  item.Body,
+		ReadAt:                readAt,
+		EmailDeliveryStatus:   string(item.EmailDeliveryStatus),
+		EmailDeliveryAttempts: int64(item.EmailDeliveryAttempts),
+		EmailAcceptedAt:       emailAcceptedAt,
+		EmailNextAttemptAt:    emailNextAttemptAt,
+		Revision:              item.Revision,
 	}
 }

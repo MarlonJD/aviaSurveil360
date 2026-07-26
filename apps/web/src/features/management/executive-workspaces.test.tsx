@@ -397,6 +397,7 @@ describe("General Manager and Executive Director workspaces", () => {
     renderGovernanceRoute("/executive-director/notifications", "executiveDirector", runtime);
     const notifications = await screen.findByTestId("executive-notifications-page");
     const record = await within(notifications).findByRole("article", { name: "Notification NOT-EXEC-001" });
+    expect(record).toHaveTextContent("Email delivery: Not configured in demo");
     await user.click(within(record).getByRole("button", { name: "Mark NOT-EXEC-001 read" }));
     await screen.findByText("Read · revision 2");
     expect(record).toHaveTextContent("Read · revision 2");

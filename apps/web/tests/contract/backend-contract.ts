@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type {
   Backend,
   BackendPrincipal,
+  DocumentMetadataView,
   EvidenceVersionView,
   FindingView,
   VisibleActionEffect,
@@ -17,6 +18,22 @@ export interface BackendContractHarness {
 }
 
 export type BackendContractHarnessFactory = () => Promise<BackendContractHarness>;
+
+function normalizeReleasedDocument(
+  document: DocumentMetadataView,
+): DocumentMetadataView {
+  return {
+    id: document.id,
+    organizationId: document.organizationId,
+    title: document.title,
+    kind: document.kind,
+    version: document.version,
+    revision: document.revision,
+    createdAt: document.createdAt,
+    publicReviewResult: document.publicReviewResult,
+    downloadFileName: document.downloadFileName,
+  };
+}
 
 export const PRINCIPALS = {
   inspector: {
@@ -566,8 +583,25 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
         reportVersionId: issued.reportVersionId,
       })).toEqual(releasedReports.items[0]);
 
-      const releasedDocuments = await auditee.documents!.list({});
-      expect(releasedDocuments).toEqual({
+      let releasedDocuments = await auditee.documents!.list({});
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        const document = releasedDocuments.items.find(
+          ({ id }) => id === issued.reportVersionId,
+        );
+        if (
+          document?.downloadFileName &&
+          (auditee.mode === "mock" || document.renderStatus === "SUCCEEDED")
+        ) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        releasedDocuments = await auditee.documents!.list({});
+      }
+      const normalizedReleasedDocuments = {
+        items: releasedDocuments.items.map(normalizeReleasedDocument),
+        nextCursor: releasedDocuments.nextCursor,
+      };
+      expect(normalizedReleasedDocuments).toEqual({
         items: [{
           id: "RPT-CAB-2026-001-V1",
           organizationId: "ORG-FLY-NAMIBIA",
@@ -581,8 +615,9 @@ export function backendContract(createHarness: BackendContractHarnessFactory): v
         }],
         nextCursor: null,
       });
-      expect(await auditee.documents!.open({ documentId: issued.reportVersionId }))
-        .toEqual(releasedDocuments.items[0]);
+      expect(normalizeReleasedDocument(await auditee.documents!.open({
+        documentId: issued.reportVersionId,
+      }))).toEqual(normalizedReleasedDocuments.items[0]);
     });
 
     it("produces the same normalized communication, notification, and calendar transcript", async () => {

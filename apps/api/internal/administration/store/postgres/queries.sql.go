@@ -211,11 +211,12 @@ func (q *Queries) CreateTemplateMaster(ctx context.Context, arg CreateTemplateMa
 const createUserLifecycleRequest = `-- name: CreateUserLifecycleRequest :one
 INSERT INTO user_lifecycle_requests (
     id, subject_id, requested_action, requested_roles,
-    requested_organization_id, status, idempotency_key,
-    requested_by_subject_id, outbox_message_id
-) VALUES ($1, $2, $3, $4, $5, 'PENDING', $6, $7, $8)
+    requested_organization_id, requested_email, requested_display_name,
+    status, idempotency_key, requested_by_subject_id, outbox_message_id
+) VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING', $8, $9, $10)
 RETURNING id, subject_id, requested_action, requested_roles,
-          requested_organization_id, status, idempotency_key,
+          requested_organization_id, requested_email, requested_display_name,
+          status, idempotency_key,
           requested_by_subject_id, outbox_message_id, failure_reason,
           created_at, updated_at
 `
@@ -226,29 +227,52 @@ type CreateUserLifecycleRequestParams struct {
 	RequestedAction         string   `json:"requested_action"`
 	RequestedRoles          []string `json:"requested_roles"`
 	RequestedOrganizationID *string  `json:"requested_organization_id"`
+	RequestedEmail          *string  `json:"requested_email"`
+	RequestedDisplayName    *string  `json:"requested_display_name"`
 	IdempotencyKey          string   `json:"idempotency_key"`
 	RequestedBySubjectID    string   `json:"requested_by_subject_id"`
 	OutboxMessageID         *string  `json:"outbox_message_id"`
 }
 
-func (q *Queries) CreateUserLifecycleRequest(ctx context.Context, arg CreateUserLifecycleRequestParams) (UserLifecycleRequest, error) {
+type CreateUserLifecycleRequestRow struct {
+	ID                      string             `json:"id"`
+	SubjectID               *string            `json:"subject_id"`
+	RequestedAction         string             `json:"requested_action"`
+	RequestedRoles          []string           `json:"requested_roles"`
+	RequestedOrganizationID *string            `json:"requested_organization_id"`
+	RequestedEmail          *string            `json:"requested_email"`
+	RequestedDisplayName    *string            `json:"requested_display_name"`
+	Status                  string             `json:"status"`
+	IdempotencyKey          string             `json:"idempotency_key"`
+	RequestedBySubjectID    string             `json:"requested_by_subject_id"`
+	OutboxMessageID         *string            `json:"outbox_message_id"`
+	FailureReason           *string            `json:"failure_reason"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) CreateUserLifecycleRequest(ctx context.Context, arg CreateUserLifecycleRequestParams) (CreateUserLifecycleRequestRow, error) {
 	row := q.db.QueryRow(ctx, createUserLifecycleRequest,
 		arg.ID,
 		arg.SubjectID,
 		arg.RequestedAction,
 		arg.RequestedRoles,
 		arg.RequestedOrganizationID,
+		arg.RequestedEmail,
+		arg.RequestedDisplayName,
 		arg.IdempotencyKey,
 		arg.RequestedBySubjectID,
 		arg.OutboxMessageID,
 	)
-	var i UserLifecycleRequest
+	var i CreateUserLifecycleRequestRow
 	err := row.Scan(
 		&i.ID,
 		&i.SubjectID,
 		&i.RequestedAction,
 		&i.RequestedRoles,
 		&i.RequestedOrganizationID,
+		&i.RequestedEmail,
+		&i.RequestedDisplayName,
 		&i.Status,
 		&i.IdempotencyKey,
 		&i.RequestedBySubjectID,
@@ -294,22 +318,42 @@ func (q *Queries) GetTemplateMaster(ctx context.Context, id string) (GetTemplate
 
 const getUserLifecycleRequestByIdempotencyKey = `-- name: GetUserLifecycleRequestByIdempotencyKey :one
 SELECT id, subject_id, requested_action, requested_roles,
-       requested_organization_id, status, idempotency_key,
+       requested_organization_id, requested_email, requested_display_name,
+       status, idempotency_key,
        requested_by_subject_id, outbox_message_id, failure_reason,
        created_at, updated_at
 FROM user_lifecycle_requests
 WHERE idempotency_key = $1
 `
 
-func (q *Queries) GetUserLifecycleRequestByIdempotencyKey(ctx context.Context, idempotencyKey string) (UserLifecycleRequest, error) {
+type GetUserLifecycleRequestByIdempotencyKeyRow struct {
+	ID                      string             `json:"id"`
+	SubjectID               *string            `json:"subject_id"`
+	RequestedAction         string             `json:"requested_action"`
+	RequestedRoles          []string           `json:"requested_roles"`
+	RequestedOrganizationID *string            `json:"requested_organization_id"`
+	RequestedEmail          *string            `json:"requested_email"`
+	RequestedDisplayName    *string            `json:"requested_display_name"`
+	Status                  string             `json:"status"`
+	IdempotencyKey          string             `json:"idempotency_key"`
+	RequestedBySubjectID    string             `json:"requested_by_subject_id"`
+	OutboxMessageID         *string            `json:"outbox_message_id"`
+	FailureReason           *string            `json:"failure_reason"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetUserLifecycleRequestByIdempotencyKey(ctx context.Context, idempotencyKey string) (GetUserLifecycleRequestByIdempotencyKeyRow, error) {
 	row := q.db.QueryRow(ctx, getUserLifecycleRequestByIdempotencyKey, idempotencyKey)
-	var i UserLifecycleRequest
+	var i GetUserLifecycleRequestByIdempotencyKeyRow
 	err := row.Scan(
 		&i.ID,
 		&i.SubjectID,
 		&i.RequestedAction,
 		&i.RequestedRoles,
 		&i.RequestedOrganizationID,
+		&i.RequestedEmail,
+		&i.RequestedDisplayName,
 		&i.Status,
 		&i.IdempotencyKey,
 		&i.RequestedBySubjectID,
@@ -486,7 +530,8 @@ func (q *Queries) ListTemplateMasters(ctx context.Context, limit int32) ([]ListT
 
 const listUserLifecycleRequests = `-- name: ListUserLifecycleRequests :many
 SELECT id, subject_id, requested_action, requested_roles,
-       requested_organization_id, status, idempotency_key,
+       requested_organization_id, requested_email, requested_display_name,
+       status, idempotency_key,
        requested_by_subject_id, outbox_message_id, failure_reason,
        created_at, updated_at
 FROM user_lifecycle_requests
@@ -500,21 +545,40 @@ type ListUserLifecycleRequestsParams struct {
 	ResultLimit  int32  `json:"result_limit"`
 }
 
-func (q *Queries) ListUserLifecycleRequests(ctx context.Context, arg ListUserLifecycleRequestsParams) ([]UserLifecycleRequest, error) {
+type ListUserLifecycleRequestsRow struct {
+	ID                      string             `json:"id"`
+	SubjectID               *string            `json:"subject_id"`
+	RequestedAction         string             `json:"requested_action"`
+	RequestedRoles          []string           `json:"requested_roles"`
+	RequestedOrganizationID *string            `json:"requested_organization_id"`
+	RequestedEmail          *string            `json:"requested_email"`
+	RequestedDisplayName    *string            `json:"requested_display_name"`
+	Status                  string             `json:"status"`
+	IdempotencyKey          string             `json:"idempotency_key"`
+	RequestedBySubjectID    string             `json:"requested_by_subject_id"`
+	OutboxMessageID         *string            `json:"outbox_message_id"`
+	FailureReason           *string            `json:"failure_reason"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListUserLifecycleRequests(ctx context.Context, arg ListUserLifecycleRequestsParams) ([]ListUserLifecycleRequestsRow, error) {
 	rows, err := q.db.Query(ctx, listUserLifecycleRequests, arg.StatusFilter, arg.ResultLimit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []UserLifecycleRequest
+	var items []ListUserLifecycleRequestsRow
 	for rows.Next() {
-		var i UserLifecycleRequest
+		var i ListUserLifecycleRequestsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.SubjectID,
 			&i.RequestedAction,
 			&i.RequestedRoles,
 			&i.RequestedOrganizationID,
+			&i.RequestedEmail,
+			&i.RequestedDisplayName,
 			&i.Status,
 			&i.IdempotencyKey,
 			&i.RequestedBySubjectID,
@@ -540,7 +604,8 @@ SET status = $2,
     updated_at = $4
 WHERE id = $1
 RETURNING id, subject_id, requested_action, requested_roles,
-          requested_organization_id, status, idempotency_key,
+          requested_organization_id, requested_email, requested_display_name,
+          status, idempotency_key,
           requested_by_subject_id, outbox_message_id, failure_reason,
           created_at, updated_at
 `
@@ -552,20 +617,39 @@ type UpdateUserLifecycleRequestParams struct {
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }
 
-func (q *Queries) UpdateUserLifecycleRequest(ctx context.Context, arg UpdateUserLifecycleRequestParams) (UserLifecycleRequest, error) {
+type UpdateUserLifecycleRequestRow struct {
+	ID                      string             `json:"id"`
+	SubjectID               *string            `json:"subject_id"`
+	RequestedAction         string             `json:"requested_action"`
+	RequestedRoles          []string           `json:"requested_roles"`
+	RequestedOrganizationID *string            `json:"requested_organization_id"`
+	RequestedEmail          *string            `json:"requested_email"`
+	RequestedDisplayName    *string            `json:"requested_display_name"`
+	Status                  string             `json:"status"`
+	IdempotencyKey          string             `json:"idempotency_key"`
+	RequestedBySubjectID    string             `json:"requested_by_subject_id"`
+	OutboxMessageID         *string            `json:"outbox_message_id"`
+	FailureReason           *string            `json:"failure_reason"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) UpdateUserLifecycleRequest(ctx context.Context, arg UpdateUserLifecycleRequestParams) (UpdateUserLifecycleRequestRow, error) {
 	row := q.db.QueryRow(ctx, updateUserLifecycleRequest,
 		arg.ID,
 		arg.Status,
 		arg.FailureReason,
 		arg.UpdatedAt,
 	)
-	var i UserLifecycleRequest
+	var i UpdateUserLifecycleRequestRow
 	err := row.Scan(
 		&i.ID,
 		&i.SubjectID,
 		&i.RequestedAction,
 		&i.RequestedRoles,
 		&i.RequestedOrganizationID,
+		&i.RequestedEmail,
+		&i.RequestedDisplayName,
 		&i.Status,
 		&i.IdempotencyKey,
 		&i.RequestedBySubjectID,

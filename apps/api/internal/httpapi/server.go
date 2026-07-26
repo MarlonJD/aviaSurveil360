@@ -7,7 +7,33 @@ func NewServerHandler(readiness ReadinessProbe, authentication http.Handler) htt
 }
 
 func NewApplicationHandler(readiness ReadinessProbe, authentication, api, testAdministration http.Handler) http.Handler {
-	return newApplicationHandler(readiness, authentication, api, testAdministration, applicationSecurityOptions{})
+	return NewInstrumentedApplicationHandler(
+		readiness,
+		authentication,
+		api,
+		testAdministration,
+		nil,
+	)
+}
+
+func NewInstrumentedApplicationHandler(
+	readiness ReadinessProbe,
+	authentication http.Handler,
+	api http.Handler,
+	testAdministration http.Handler,
+	instrument func(http.Handler) http.Handler,
+) http.Handler {
+	handler := newApplicationHandler(
+		readiness,
+		authentication,
+		api,
+		testAdministration,
+		applicationSecurityOptions{},
+	)
+	if instrument != nil {
+		return instrument(handler)
+	}
+	return handler
 }
 
 func newApplicationHandler(readiness ReadinessProbe, authentication, api, testAdministration http.Handler, options applicationSecurityOptions) http.Handler {

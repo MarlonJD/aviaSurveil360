@@ -16,6 +16,7 @@ import (
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/assistant"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/caps"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/configuration"
+	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/documents"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/evidence"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/findings"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/httpapi/generated"
@@ -49,8 +50,10 @@ type CanonicalAPIDependencies struct {
 	AdminWorkspace    *configuration.WorkspaceService
 	Risk              *risk.Service
 	Administration    *administration.ProjectionService
+	Users             *administration.UserService
 	Assistant         *assistant.Service
 	Communications    *application.CommunicationsWorkflow
+	Documents         *documents.Service
 	Clock             func() time.Time
 }
 
@@ -68,8 +71,10 @@ type CanonicalAPI struct {
 	adminWorkspace    *configuration.WorkspaceService
 	risk              *risk.Service
 	administration    *administration.ProjectionService
+	users             *administration.UserService
 	assistant         *assistant.Service
 	communications    *application.CommunicationsWorkflow
+	documents         *documents.Service
 	clock             func() time.Time
 }
 
@@ -119,6 +124,13 @@ func NewCanonicalAPI(dependencies CanonicalAPIDependencies) *CanonicalAPI {
 			administration.ProjectionDependencies{Clock: clock},
 		)
 	}
+	userService := dependencies.Users
+	if userService == nil && dependencies.Pool != nil {
+		userService = administration.NewUserService(
+			dependencies.Pool,
+			administration.UserServiceDependencies{Clock: clock},
+		)
+	}
 	assistantService := dependencies.Assistant
 	if assistantService == nil && dependencies.Pool != nil {
 		assistantService = assistant.NewService(
@@ -146,8 +158,10 @@ func NewCanonicalAPI(dependencies CanonicalAPIDependencies) *CanonicalAPI {
 		adminWorkspace: adminWorkspaceService,
 		risk:           riskService,
 		administration: administrationService,
+		users:          userService,
 		assistant:      assistantService,
 		communications: communicationsWorkflow,
+		documents:      dependencies.Documents,
 		clock:          clock,
 	}
 }
@@ -178,6 +192,7 @@ func (api *CanonicalAPI) Handler() http.Handler {
 	router.Post("/v1/evidence/uploads/{uploadId}/complete", api.completeEvidenceUpload)
 	router.Post("/v1/evidence/{evidenceVersionId}/reviews", api.reviewEvidence)
 	router.Get("/v1/report-versions/{id}", api.getReportVersion)
+	router.Post("/v1/report-versions", api.createReportVersion)
 	router.Post("/v1/report-versions/{id}/decisions", api.decideReport)
 	router.Get("/v1/documents", api.listDocuments)
 	router.Get("/v1/documents/{documentId}", api.getDocument)
@@ -189,6 +204,8 @@ func (api *CanonicalAPI) Handler() http.Handler {
 	router.Put("/v1/profile", api.updateMyProfile)
 	router.Get("/v1/planning/items", api.listPlanningItems)
 	router.Post("/v1/planning/items/{id}/decisions", api.decidePlanningItem)
+	router.Post("/v1/planning/intake-drafts", api.createPlanningIntakeDraft)
+	router.Post("/v1/audit-workspaces", api.createAuditWorkspace)
 	router.Get("/v1/planning/intake-drafts/{draftId}", api.getPlanningIntakeDraft)
 	router.Put("/v1/planning/intake-drafts/{draftId}", api.savePlanningIntakeDraft)
 	router.Post("/v1/planning/intake-drafts/{draftId}/submissions", api.submitPlanningIntake)
@@ -220,6 +237,10 @@ func (api *CanonicalAPI) Handler() http.Handler {
 	)
 	router.Get("/v1/admin/regulatory-references", api.listAdminRegulatoryReferences)
 	router.Get("/v1/admin/templates", api.listAdminTemplateMasters)
+	router.Post(
+		"/v1/admin/checklist-template-versions",
+		api.createChecklistTemplateVersion,
+	)
 	router.Get("/v1/admin/questions", api.listAdminQuestions)
 	router.Post("/v1/admin/questions", api.createAdminQuestion)
 	router.Get("/v1/admin/templates/{templateId}", api.getAdminTemplate)
@@ -235,8 +256,18 @@ func (api *CanonicalAPI) Handler() http.Handler {
 	router.Get("/v1/admin/inspection-packages/{packageId}", api.getAdminInspectionPackage)
 	router.Get("/v1/admin/report-definitions", api.listAdminReportDefinitions)
 	router.Get("/v1/admin/access-directory", api.listAdminAccessDirectory)
+	router.Post(
+		"/v1/admin/user-lifecycle-requests",
+		api.requestUserLifecycle,
+	)
+	router.Get(
+		"/v1/admin/user-lifecycle-requests/{requestId}",
+		api.getUserLifecycleRequest,
+	)
 	router.Get("/v1/admin/organizations", api.listAdminOrganizations)
+	router.Post("/v1/admin/organizations", api.createAdminOrganization)
 	router.Get("/v1/admin/organizations/{organizationId}", api.getAdminOrganization)
+	router.Post("/v1/admin/reminder-rules", api.createReminderRule)
 	router.Get("/v1/admin/audit-events", api.listAdminAuditEvents)
 	router.Get("/v1/assistant/guidance", api.getAssistantGuidance)
 	router.Post("/v1/assistant/drafts", api.createAssistantDraft)
@@ -413,7 +444,7 @@ func (api *CanonicalAPI) createPotentialFinding(writer http.ResponseWriter, requ
 		return
 	}
 	output, err := api.potentialFindingProjection(request.Context(), result.ID)
-	api.respond(writer, output, err)
+	api.respondCreated(writer, output, err)
 }
 
 func (api *CanonicalAPI) decidePotentialFinding(writer http.ResponseWriter, request *http.Request) {
@@ -570,7 +601,7 @@ func (api *CanonicalAPI) submitCAP(writer http.ResponseWriter, request *http.Req
 		CorrectiveAction: input.CorrectiveAction, PreventiveAction: input.PreventiveAction,
 		ResponsiblePerson: input.ResponsiblePerson, TargetCompletionDate: target, CommentToCAA: input.CommentToCaa,
 	})
-	api.respond(writer, generated.SubmitCapOutput{
+	api.respondCreated(writer, generated.SubmitCapOutput{
 		CapRevisionId: result.CAPRevisionID, CapRevision: result.CAPRevision, CapStatus: string(result.CAPStatus),
 		FindingStatus: generated.FindingStatus(result.FindingStatus), FindingRevision: result.FindingRevision,
 	}, err)
@@ -616,10 +647,14 @@ func (api *CanonicalAPI) beginInspectionAttachmentUpload(writer http.ResponseWri
 		PackageID: input.PackageId, ByteSize: input.ByteSize, SHA256: input.Sha256,
 		FileName: input.FileName, DeclaredMediaType: input.DeclaredMediaType,
 	})
-	api.respond(writer, generated.BeginInspectionAttachmentUploadOutput{
+	api.respondCreated(writer, generated.BeginInspectionAttachmentUploadOutput{
 		UploadId: result.UploadID, StagingObjectKey: result.StagingObjectKey, UploadUrl: result.UploadURL,
-		RequiredHeaders: map[string]any{"Content-Type": result.RequiredHeaders.ContentType, "x-amz-meta-sha256": result.RequiredHeaders.SHA256},
-		ExpiresAt:       result.ExpiresAt.UTC().Format(time.RFC3339Nano), MaximumByteSize: result.MaximumByteSize,
+		RequiredHeaders: map[string]any{
+			"Content-Type":      result.RequiredHeaders.ContentType,
+			"x-amz-meta-sha256": result.RequiredHeaders.SHA256,
+			"If-None-Match":     result.RequiredHeaders.IfNoneMatch,
+		},
+		ExpiresAt: result.ExpiresAt.UTC().Format(time.RFC3339Nano), MaximumByteSize: result.MaximumByteSize,
 	}, err)
 }
 
@@ -655,10 +690,14 @@ func (api *CanonicalAPI) beginEvidenceUpload(writer http.ResponseWriter, request
 		ExpectedFindingRevision: input.ExpectedFindingRevision, FileName: input.FileName,
 		DeclaredMediaType: input.DeclaredMediaType, ByteSize: input.ByteSize, SHA256: input.Sha256,
 	})
-	api.respond(writer, generated.BeginEvidenceUploadOutput{
+	api.respondCreated(writer, generated.BeginEvidenceUploadOutput{
 		UploadId: result.UploadID, StagingObjectKey: result.StagingObjectKey, UploadUrl: result.UploadURL,
-		RequiredHeaders: map[string]any{"Content-Type": result.RequiredHeaders.ContentType, "x-amz-meta-sha256": result.RequiredHeaders.SHA256},
-		ExpiresAt:       result.ExpiresAt.UTC().Format(time.RFC3339Nano), MaximumByteSize: result.MaximumByteSize,
+		RequiredHeaders: map[string]any{
+			"Content-Type":      result.RequiredHeaders.ContentType,
+			"x-amz-meta-sha256": result.RequiredHeaders.SHA256,
+			"If-None-Match":     result.RequiredHeaders.IfNoneMatch,
+		},
+		ExpiresAt: result.ExpiresAt.UTC().Format(time.RFC3339Nano), MaximumByteSize: result.MaximumByteSize,
 	}, err)
 }
 
@@ -780,7 +819,7 @@ func (api *CanonicalAPI) getDocument(writer http.ResponseWriter, request *http.R
 		return
 	}
 	output, err := api.documentProjection(
-		request.Context(), actor, chi.URLParam(request, "documentId"),
+		request.Context(), actor, chi.URLParam(request, "documentId"), true,
 	)
 	api.respond(writer, output, err)
 }
@@ -912,6 +951,7 @@ func (api *CanonicalAPI) respond(writer http.ResponseWriter, output any, err err
 		status, code = http.StatusNotFound, "NOT_FOUND"
 	case errors.Is(err, application.ErrConflict), errors.Is(err, identity.ErrConflict),
 		errors.Is(err, assignments.ErrConflict), errors.Is(err, inspections.ErrPackageDraftConflict),
+		errors.Is(err, administration.ErrConflict),
 		errors.Is(err, idempotency.ErrOperationIDReuse):
 		status, code = http.StatusConflict, "CONFLICT"
 	case errors.Is(err, identity.ErrPrecondition):
@@ -919,6 +959,7 @@ func (api *CanonicalAPI) respond(writer http.ResponseWriter, output any, err err
 	case errors.Is(err, application.ErrInvalid), errors.Is(err, evidence.ErrInvalidUpload),
 		errors.Is(err, identity.ErrInvalidProfile),
 		errors.Is(err, risk.ErrInvalid), errors.Is(err, assistant.ErrInvalid),
+		errors.Is(err, administration.ErrInvalid),
 		errors.Is(err, configuration.ErrWorkspaceInvalid),
 		errors.Is(err, assignments.ErrInvalid), errors.Is(err, inspections.ErrPackageDraftInvalid),
 		errors.Is(err, attachments.ErrInvalidUpload), errors.Is(err, evidence.ErrObjectMismatch),
@@ -931,6 +972,14 @@ func (api *CanonicalAPI) respond(writer http.ResponseWriter, output any, err err
 	}
 	title := publicErrorTitle(err)
 	writeProblem(writer, status, title, title, code)
+}
+
+func (api *CanonicalAPI) respondCreated(writer http.ResponseWriter, output any, err error) {
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	writeJSON(writer, http.StatusCreated, output)
 }
 
 func publicErrorTitle(err error) string {

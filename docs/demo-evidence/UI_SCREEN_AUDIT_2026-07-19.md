@@ -1,7 +1,5 @@
 # AviaSurveil360 — Page-by-Page UI Screenshot Audit
 
-> Turkish stakeholder companion: [`UI_SCREEN_AUDIT_2026-07-19.turkce.md`](UI_SCREEN_AUDIT_2026-07-19.turkce.md).
-
 **Audit date:** 19 July 2026
 **Scope:** 86 screens × desktop (1440 px), tablet (1024 px), and mobile (390 px) = 258 views.
 **Current result:** 86 **Pass**, 0 **Issue** after the 19 July remediation.

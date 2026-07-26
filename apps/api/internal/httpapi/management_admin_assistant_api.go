@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/administration"
 	"github.com/MarlonJD/aviaSurveil360/apps/api/internal/application"
@@ -217,6 +218,111 @@ func (api *CanonicalAPI) listAdminAccessDirectory(
 	}, nil)
 }
 
+func (api *CanonicalAPI) requestUserLifecycle(
+	writer http.ResponseWriter,
+	request *http.Request,
+) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	var input generated.RequestUserLifecycleInput
+	if !decodeJSON(writer, request, &input) {
+		return
+	}
+	if api.users == nil ||
+		strings.TrimSpace(request.Header.Get("Idempotency-Key")) == "" ||
+		request.Header.Get("Idempotency-Key") != input.IdempotencyKey {
+		api.respond(writer, nil, administration.ErrInvalid)
+		return
+	}
+	roles := make([]identity.Role, len(input.Roles))
+	for index, role := range input.Roles {
+		roles[index] = identity.Role(role)
+	}
+	command := administration.RequestUserLifecycleCommand{
+		OperationID: input.OperationId, IdempotencyKey: input.IdempotencyKey,
+		Action: administration.UserLifecycleAction(input.Action),
+		Roles:  roles, OrganizationID: input.OrganizationId,
+	}
+	if input.SubjectId != nil {
+		command.SubjectID = *input.SubjectId
+	}
+	if input.Email != nil {
+		command.Email = *input.Email
+	}
+	if input.DisplayName != nil {
+		command.DisplayName = *input.DisplayName
+	}
+	record, err := api.users.RequestLifecycle(
+		request.Context(),
+		actor,
+		command,
+	)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	writeJSON(writer, http.StatusAccepted, userLifecycleRequestView(record))
+}
+
+func (api *CanonicalAPI) getUserLifecycleRequest(
+	writer http.ResponseWriter,
+	request *http.Request,
+) {
+	actor, ok := requirePrincipal(writer, request)
+	if !ok {
+		return
+	}
+	if api.users == nil {
+		api.respond(writer, nil, administration.ErrInvalid)
+		return
+	}
+	record, err := api.users.GetLifecycle(
+		request.Context(),
+		actor,
+		chi.URLParam(request, "requestId"),
+	)
+	if err != nil {
+		api.respond(writer, nil, err)
+		return
+	}
+	api.respond(writer, userLifecycleRequestView(record), nil)
+}
+
+func userLifecycleRequestView(
+	record administration.UserLifecycleRequest,
+) generated.UserLifecycleRequestView {
+	var subjectID, email, displayName, failureReason *string
+	if record.SubjectID != "" {
+		subjectID = &record.SubjectID
+	}
+	if record.Email != "" {
+		email = &record.Email
+	}
+	if record.DisplayName != "" {
+		displayName = &record.DisplayName
+	}
+	if record.FailureReason != "" {
+		failureReason = &record.FailureReason
+	}
+	roles := make([]generated.Role, len(record.Roles))
+	for index, role := range record.Roles {
+		roles[index] = generated.Role(role)
+	}
+	return generated.UserLifecycleRequestView{
+		Id: record.ID, SubjectId: subjectID, Action: string(record.Action),
+		Roles: roles, OrganizationId: record.OrganizationID,
+		Email: email, DisplayName: displayName, Status: string(record.Status),
+		IdempotencyKey:       record.IdempotencyKey,
+		RequestedBySubjectId: record.RequestedBy,
+		OutboxMessageId:      record.OutboxMessageID,
+		FailureReason:        failureReason,
+		CreatedAt:            record.CreatedAt.UTC().Format(time.RFC3339Nano),
+		UpdatedAt:            record.UpdatedAt.UTC().Format(time.RFC3339Nano),
+	}
+}
+
 func (api *CanonicalAPI) listAdminOrganizations(
 	writer http.ResponseWriter,
 	request *http.Request,
@@ -371,7 +477,7 @@ func (api *CanonicalAPI) createAssistantDraft(
 		api.respond(writer, nil, err)
 		return
 	}
-	api.respond(writer, generated.AssistantDraftView{
+	api.respondCreated(writer, generated.AssistantDraftView{
 		Id: record.ID, FindingId: record.FindingID, Prompt: record.Prompt,
 		Draft: record.Draft, AdvisoryOnly: record.AdvisoryOnly,
 		CanCreateFinding: record.CanCreateFinding,

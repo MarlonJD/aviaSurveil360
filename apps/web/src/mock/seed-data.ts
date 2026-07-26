@@ -268,6 +268,13 @@ const allowedAnswers = [
   "NOT_CHECKED",
 ] as const;
 
+const demoEmailDelivery = {
+  emailDeliveryStatus: "NOT_CONFIGURED",
+  emailDeliveryAttempts: 0,
+  emailAcceptedAt: null,
+  emailNextAttemptAt: null,
+} as const;
+
 function cabinQuestion(
   id: string,
   sectionId: string,
@@ -783,16 +790,16 @@ export function createCanonicalSeedState(now: string): MockState {
     },
     communications: [],
     notifications: Object.values({
-      "USR-INSPECTOR-AMINA": { id: "NOT-INSPECTOR-001", subjectId: "USR-INSPECTOR-AMINA", title: "Checklist Due Soon", body: "Continue the Cabin Inspection checklist before its Due Date.", readAt: null, revision: 1 },
-      "USR-LEAD-CANER": { id: "NOT-LEAD-001", subjectId: "USR-LEAD-CANER", title: "Potential Finding Review", body: "A deterministic Potential Finding is ready for Lead review.", readAt: null, revision: 1 },
-      "USR-MANAGER-NORA": { id: "NOT-MANAGER-001", subjectId: "USR-MANAGER-NORA", title: "Overdue Finding", body: "A configured Finding requires management attention.", readAt: null, revision: 1 },
-      "USR-AUDITEE-FLY": { id: "NOT-AUDITEE-001", subjectId: "USR-AUDITEE-FLY", title: "CAP Request", body: "Submit the requested CAP and expected Evidence.", readAt: null, revision: 1 },
+      "USR-INSPECTOR-AMINA": { id: "NOT-INSPECTOR-001", subjectId: "USR-INSPECTOR-AMINA", title: "Checklist Due Soon", body: "Continue the Cabin Inspection checklist before its Due Date.", readAt: null, ...demoEmailDelivery, revision: 1 },
+      "USR-LEAD-CANER": { id: "NOT-LEAD-001", subjectId: "USR-LEAD-CANER", title: "Potential Finding Review", body: "A deterministic Potential Finding is ready for Lead review.", readAt: null, ...demoEmailDelivery, revision: 1 },
+      "USR-MANAGER-NORA": { id: "NOT-MANAGER-001", subjectId: "USR-MANAGER-NORA", title: "Overdue Finding", body: "A configured Finding requires management attention.", readAt: null, ...demoEmailDelivery, revision: 1 },
+      "USR-AUDITEE-FLY": { id: "NOT-AUDITEE-001", subjectId: "USR-AUDITEE-FLY", title: "CAP Request", body: "Submit the requested CAP and expected Evidence.", readAt: null, ...demoEmailDelivery, revision: 1 },
     }).concat(
       Object.values({
-        "USR-GM-OMAR": { id: "NOT-GM-001", subjectId: "USR-GM-OMAR", title: "Management View", body: "Review the surveillance overview.", readAt: null, revision: 1 },
-        "USR-FINANCE-LINA": { id: "NOT-FINANCE-001", subjectId: "USR-FINANCE-LINA", title: "Finance Review", body: "Review the configured audit budget.", readAt: null, revision: 1 },
-        "USR-ED-ZARA": { id: "NOT-EXEC-001", subjectId: "USR-ED-ZARA", title: "Report Review", body: "An executive report is ready for review.", readAt: null, revision: 1 },
-        "USR-ADMIN-ADA": { id: "NOT-ADMIN-001", subjectId: "USR-ADMIN-ADA", title: "Template Library", body: "A checklist template version is available.", readAt: null, revision: 1 },
+        "USR-GM-OMAR": { id: "NOT-GM-001", subjectId: "USR-GM-OMAR", title: "Management View", body: "Review the surveillance overview.", readAt: null, ...demoEmailDelivery, revision: 1 },
+        "USR-FINANCE-LINA": { id: "NOT-FINANCE-001", subjectId: "USR-FINANCE-LINA", title: "Finance Review", body: "Review the configured audit budget.", readAt: null, ...demoEmailDelivery, revision: 1 },
+        "USR-ED-ZARA": { id: "NOT-EXEC-001", subjectId: "USR-ED-ZARA", title: "Report Review", body: "An executive report is ready for review.", readAt: null, ...demoEmailDelivery, revision: 1 },
+        "USR-ADMIN-ADA": { id: "NOT-ADMIN-001", subjectId: "USR-ADMIN-ADA", title: "Template Library", body: "A checklist template version is available.", readAt: null, ...demoEmailDelivery, revision: 1 },
       }),
     ),
     authorizedSyncChanges: [],

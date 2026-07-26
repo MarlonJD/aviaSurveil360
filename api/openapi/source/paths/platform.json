@@ -74,6 +74,12 @@
     "get": { "operationId": "listAdminQuestions", "parameters": [{ "name": "search", "in": "query", "schema": { "type": "string" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Question bank", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminQuestionPage" } } } } } },
     "post": { "operationId": "createAdminQuestion", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateAdminQuestionInput" } } } }, "responses": { "201": { "description": "Created question", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminQuestionView" } } } } } }
   },
+  "/v1/admin/checklist-template-versions": {
+    "post": { "operationId": "createChecklistTemplateVersion", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateChecklistTemplateVersionInput" } } } }, "responses": { "201": { "description": "Created immutable published checklist template version", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChecklistTemplateVersionView" } } } }, "default": { "$ref": "#/components/responses/Problem" } } }
+  },
+  "/v1/admin/reminder-rules": {
+    "post": { "operationId": "createReminderRule", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateReminderRuleInput" } } } }, "responses": { "201": { "description": "Created reminder rule", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReminderRuleView" } } } }, "default": { "$ref": "#/components/responses/Problem" } } }
+  },
   "/v1/admin/templates/{templateId}": {
     "get": { "operationId": "getAdminTemplate", "parameters": [{ "name": "templateId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Template and immutable versions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminTemplateView" } } } } } }
   },
@@ -95,8 +101,15 @@
   "/v1/admin/access-directory": {
     "get": { "operationId": "listAccessDirectory", "parameters": [{ "name": "search", "in": "query", "schema": { "type": "string" } }, { "name": "role", "in": "query", "schema": { "type": "string" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Read-only configured access directory", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminAccessDirectoryPage" } } } } } }
   },
+  "/v1/admin/user-lifecycle-requests": {
+    "post": { "operationId": "requestUserLifecycle", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RequestUserLifecycleInput" } } } }, "responses": { "202": { "description": "Durable user lifecycle request accepted for Keycloak reconciliation", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserLifecycleRequestView" } } } } } }
+  },
+  "/v1/admin/user-lifecycle-requests/{requestId}": {
+    "get": { "operationId": "getUserLifecycleRequest", "parameters": [{ "name": "requestId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Current durable user lifecycle request status", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserLifecycleRequestView" } } } } } }
+  },
   "/v1/admin/organizations": {
-    "get": { "operationId": "listAdminOrganizations", "parameters": [{ "name": "search", "in": "query", "schema": { "type": "string" } }, { "name": "organizationType", "in": "query", "schema": { "type": "string" } }, { "name": "status", "in": "query", "schema": { "type": "string" } }, { "name": "scope", "in": "query", "schema": { "type": "string" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Organization administration page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminOrganizationPage" } } } } } }
+    "get": { "operationId": "listAdminOrganizations", "parameters": [{ "name": "search", "in": "query", "schema": { "type": "string" } }, { "name": "organizationType", "in": "query", "schema": { "type": "string" } }, { "name": "status", "in": "query", "schema": { "type": "string" } }, { "name": "scope", "in": "query", "schema": { "type": "string" } }, { "$ref": "#/components/parameters/Cursor" }, { "$ref": "#/components/parameters/Limit" }], "responses": { "200": { "description": "Organization administration page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminOrganizationPage" } } } } } },
+    "post": { "operationId": "createAdminOrganization", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateAdminOrganizationInput" } } } }, "responses": { "201": { "description": "Created organization master record", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminOrganizationView" } } } }, "default": { "$ref": "#/components/responses/Problem" } } }
   },
   "/v1/admin/organizations/{organizationId}": {
     "get": { "operationId": "getAdminOrganization", "parameters": [{ "name": "organizationId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Organization administration projection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminOrganizationView" } } } } } }

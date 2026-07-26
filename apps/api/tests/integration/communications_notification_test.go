@@ -529,7 +529,7 @@ func TestNotificationEmailDeliveryFailureIsRetriedAndAudited(t *testing.T) {
 		t.Fatalf("read failed Notification delivery: %v", err)
 	}
 	if status != "FAILED" || attempts != 1 ||
-		!strings.Contains(lastError, providerFailure.Error()) ||
+		lastError != "SMTP_DELIVERY_FAILED" ||
 		deliveredAt != nil {
 		t.Fatalf(
 			"failed Notification delivery state = %s attempts %d error %q deliveredAt %v",

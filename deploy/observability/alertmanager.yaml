@@ -1,0 +1,38 @@
+global:
+  resolve_timeout: 2m
+  smtp_from: alertmanager@aviasurveil360.local
+  smtp_smarthost: mailpit:1025
+  smtp_hello: alertmanager.aviasurveil360.local
+  smtp_auth_username: aviasurveil360
+  smtp_auth_password_file: /run/secrets/smtp_password
+  smtp_require_tls: false
+
+route:
+  receiver: local-mailpit
+  group_by: [alertname, service, severity]
+  group_wait: 5s
+  group_interval: 15s
+  repeat_interval: 4h
+
+inhibit_rules:
+  - source_matchers:
+      - catalog_id="required-dependency-down"
+      - severity="critical"
+    target_matchers:
+      - catalog_id=~"api-read-latency|api-command-latency|outbox-ready-warning|outbox-ready-critical|worker-attempts"
+receivers:
+  - name: local-mailpit
+    email_configs:
+      - to: local-operations@aviasurveil360.local
+        send_resolved: true
+        headers:
+          Subject: >-
+            [AviaSurveil360][{{ .Status | toUpper }}]
+            {{ .CommonLabels.catalog_id }}
+        text: >-
+          Status: {{ .Status }}
+          Owner: {{ .CommonLabels.owner }}
+          Service: {{ .CommonLabels.service }}
+          Deduplication key: {{ .CommonLabels.dedup_key }}
+          Runbook: {{ .CommonAnnotations.runbook_url }}
+          Recovery: {{ .CommonAnnotations.recovery_condition }}
